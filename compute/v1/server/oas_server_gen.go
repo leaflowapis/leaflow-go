@@ -8,13 +8,7 @@ import (
 
 // Handler handles operations described by OpenAPI v3 specification.
 type Handler interface {
-	// AcceptPeering implements accept-peering operation.
-	//
-	// Accept peering.
-	//
-	// POST /api/v1/peerings/{peeringId}/accept
-	AcceptPeering(ctx context.Context, params AcceptPeeringParams) (AcceptPeeringRes, error)
-	// AttachDisk implements attach-disk operation.
+	// AttachVirtualMachineDisk implements attach-virtual-machine-disk operation.
 	//
 	// The disk must be in the same region and availability zone as the virtual machine. Returns the disk;
 	// the virtual machine shows the `attach_disk` operation and the disk the `attach` operation until the
@@ -22,51 +16,31 @@ type Handler interface {
 	// once it is attached.
 	//
 	// POST /api/v1/virtual-machines/{virtualMachineId}/disks
-	AttachDisk(ctx context.Context, req *AttachDiskRequestBody, params AttachDiskParams) (AttachDiskRes, error)
-	// AttachNetworkInterface implements attach-network-interface operation.
+	AttachVirtualMachineDisk(ctx context.Context, req *AttachDiskRequestBody, params AttachVirtualMachineDiskParams) (AttachVirtualMachineDiskRes, error)
+	// AttachVirtualMachineNetworkInterface implements attach-virtual-machine-network-interface operation.
 	//
 	// Returns the network interface; the virtual machine shows the `attach_network_interface` operation
 	// and the interface the `attach` operation until the attachment is confirmed.
 	//
 	// POST /api/v1/virtual-machines/{virtualMachineId}/network-interfaces
-	AttachNetworkInterface(ctx context.Context, req *AttachNetworkInterfaceRequestBody, params AttachNetworkInterfaceParams) (AttachNetworkInterfaceRes, error)
-	// AttachVirtualMachineElasticIP implements attach-virtual-machine-elastic-ip operation.
-	//
-	// Changes the public IP binding on the virtual machine's primary network interface. The virtual
-	// machine shows the `bind_elastic_ip` operation until the binding is confirmed.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/elastic-ips
-	AttachVirtualMachineElasticIP(ctx context.Context, req *AttachElasticIPRequestBody, params AttachVirtualMachineElasticIPParams) (AttachVirtualMachineElasticIPRes, error)
-	// BindElasticIP implements bind-elastic-ip operation.
-	//
-	// The elastic IP shows the `bind` operation until the binding is confirmed.
-	//
-	// PUT /api/v1/elastic-ips/{elasticIpId}/binding
-	BindElasticIP(ctx context.Context, req *BindElasticIPRequestBody, params BindElasticIPParams) (BindElasticIPRes, error)
-	// CreateBackup implements create-backup operation.
-	//
-	// Creates a backup of the disk. It remains restorable after the source disk is deleted and may be
-	// restored to another availability zone in the same region. A running virtual machine may produce a
-	// file-system-inconsistent backup. Pending backups count toward Compute project quotas until cleanup
-	// is confirmed.
-	//
-	// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
-	// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
-	// backup is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
-	// the customer completes checkout in Billing. The source and project quotas are checked before the
-	// Checkout Session is created, and a refused request creates nothing.
-	//
-	// The backup shows the `create` operation from the moment its Checkout Session is created until it is
-	// delivered or its checkout or order ends. Every other operation on it is refused with
-	// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-	// purchase awaits checkout or payment.
-	//
-	// POST /api/v1/backups
-	CreateBackup(ctx context.Context, req *CreateBackupRequestBody) (CreateBackupRes, error)
+	AttachVirtualMachineNetworkInterface(ctx context.Context, req *AttachNetworkInterfaceRequestBody, params AttachVirtualMachineNetworkInterfaceParams) (AttachVirtualMachineNetworkInterfaceRes, error)
 	// CreateDisk implements create-disk operation.
 	//
 	// The disk is created in the availability zone of the selected disk type, and a virtual machine must
 	// reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
+	//
+	// The disk is empty, or is restored from exactly one source: `snapshot_id` or `disk_backup_id`. Giving
+	// both is refused with 422 `DISK_SOURCE_CONFLICT`. A restore is a purchase of a new disk; the source
+	// disk is unaffected and need not still exist.
+	//
+	//  - From a snapshot, the disk type must be in the availability zone of the snapshot
+	//    (`availability_zone_id` of the snapshot), because a snapshot lives in the same storage pool as
+	//    its source and restores only into its own zone. `size_gb` is required and must be no smaller than
+	//    the snapshot.
+	//  - From a disk backup, the disk type may belong to another availability zone of the same region,
+	//    because a backup is an independent copy in different storage. `size_gb` matches the size of the
+	//    backup when omitted, and when given it must not be smaller than the backup. The disk cannot be
+	//    attached until it is `available`.
 	//
 	// A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still
 	// resolves. Types that are off sale do not appear in the disk type listing; disks already bought on
@@ -83,6 +57,41 @@ type Handler interface {
 	//
 	// POST /api/v1/disks
 	CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (CreateDiskRes, error)
+	// CreateDiskBackup implements create-disk-backup operation.
+	//
+	// Creates a backup of the disk. It remains restorable after the source disk is deleted and may be
+	// restored to another availability zone in the same region, by creating a disk with `disk_backup_id`
+	// (`create-disk`). A running virtual machine may produce a file-system-inconsistent backup. Pending
+	// backups count toward Compute project quotas until cleanup is confirmed.
+	//
+	// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
+	// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
+	// backup is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
+	// the customer completes checkout in Billing. The source and project quotas are checked before the
+	// Checkout Session is created, and a refused request creates nothing.
+	//
+	// The backup shows the `create` operation from the moment its Checkout Session is created until it is
+	// delivered or its checkout or order ends. Every other operation on it is refused with
+	// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+	// purchase awaits checkout or payment.
+	//
+	// POST /api/v1/disk-backups
+	CreateDiskBackup(ctx context.Context, req *CreateDiskBackupRequestBody) (CreateDiskBackupRes, error)
+	// CreateDiskRevert implements create-disk-revert operation.
+	//
+	// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
+	// moment is lost and cannot be recovered.
+	//
+	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
+	// must be detached from its virtual machine first; and a disk resized since the snapshot was taken
+	// cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a
+	// new disk from the snapshot instead.
+	//
+	// The revert is a request of its own rather than a state of the disk: the response is the disk, which
+	// shows the `revert` operation until the revert is complete.
+	//
+	// POST /api/v1/disks/{diskId}/reverts
+	CreateDiskRevert(ctx context.Context, req *CreateDiskRevertRequestBody, params CreateDiskRevertParams) (CreateDiskRevertRes, error)
 	// CreateElasticIP implements create-elastic-ip operation.
 	//
 	// Select a public elastic IP type. The elastic IP is bought through a Billing Checkout Session, and no
@@ -106,7 +115,21 @@ type Handler interface {
 	//
 	// POST /api/v1/elastic-ips
 	CreateElasticIP(ctx context.Context, req *CreateElasticIPRequestBody) (CreateElasticIPRes, error)
-	// CreateImage implements create-image operation.
+	// CreateNetworkInterface implements create-network-interface operation.
+	//
+	// The new network interface is not attached to any virtual machine. Primary network interfaces are not
+	// created here; they are created with the virtual machine.
+	//
+	// POST /api/v1/network-interfaces
+	CreateNetworkInterface(ctx context.Context, req *CreateNetworkInterfaceRequestBody) (*NetworkInterface, error)
+	// CreatePeering implements create-peering operation.
+	//
+	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
+	// before any connectivity is created. Does not change security groups or provide transitive routing.
+	//
+	// POST /api/v1/peerings
+	CreatePeering(ctx context.Context, req *CreatePeeringRequestBody) (*PeeringResource, error)
+	// CreatePrivateImage implements create-private-image operation.
 	//
 	// Creates a project image from the virtual machine system disk, excluding data disks. Stop the virtual
 	// machine first for file-system consistency. The virtual machine cannot be released while its source
@@ -123,22 +146,8 @@ type Handler interface {
 	// is refused with `COMPUTE_PURCHASE_PENDING`; once the capture runs, deletion is the one operation it
 	// accepts.
 	//
-	// POST /api/v1/images
-	CreateImage(ctx context.Context, req *CreateImageRequestBody) (CreateImageRes, error)
-	// CreateNetworkInterface implements create-network-interface operation.
-	//
-	// The new network interface is not attached to any virtual machine. Primary network interfaces are not
-	// created here; they are created with the virtual machine.
-	//
-	// POST /api/v1/network-interfaces
-	CreateNetworkInterface(ctx context.Context, req *CreateNetworkInterfaceRequestBody) (*NetworkInterface, error)
-	// CreatePeering implements create-peering operation.
-	//
-	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
-	// before any connectivity is created. Does not change security groups or provide transitive routing.
-	//
-	// POST /api/v1/peerings
-	CreatePeering(ctx context.Context, req *CreatePeeringRequestBody) (*PeeringResource, error)
+	// POST /api/v1/private-images
+	CreatePrivateImage(ctx context.Context, req *CreatePrivateImageRequestBody) (CreatePrivateImageRes, error)
 	// CreateRoute implements create-route operation.
 	//
 	// Three forms that would sever connectivity are refused: a destination of `0.0.0.0/0`, which overrides
@@ -237,6 +246,68 @@ type Handler interface {
 	//
 	// POST /api/v1/virtual-machines
 	CreateVirtualMachine(ctx context.Context, req *CreateVirtualMachineRequestBody) (CreateVirtualMachineRes, error)
+	// CreateVirtualMachineCommand implements create-virtual-machine-command operation.
+	//
+	// Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
+	// standard input and no way to answer a prompt: a command that waits for input produces nothing and is
+	// killed at the timeout. Chain steps with `&&`, or write a script and run that.
+	//
+	// A command that fails is still a 200. Its failure is its own result, not this endpoint's: read
+	// `exit_code` for what it exited with and `stderr` for what it said, and decide from those. A `grep`
+	// that matches nothing exits 1 and is a perfectly successful call.
+	//
+	// The status therefore answers a different question — did the command run at all. A non-2xx means it
+	// did not, and nothing about the virtual machine was changed by this request: it was suspended, not
+	// running or had no elastic IP associated; or it refused the platform key; or the connection could not
+	// be opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
+	//
+	// Three conditions must hold; the virtual machine is unreachable otherwise:
+	//
+	//  - it is `active`
+	//  - an elastic IP is associated with it, since this endpoint connects over the public internet
+	//  - its security group permits inbound TCP 22
+	//
+	// Authentication uses the key the platform attaches to every virtual machine at creation, so nothing
+	// has to be set up first. The virtual machine must have applied that key at first boot, which images
+	// without a full cloud-init do not do.
+	//
+	// Do not pass secrets in the command. Read them from a file on the virtual machine instead: neither
+	// the command nor its output is a confidential channel.
+	//
+	// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
+	//
+	// POST /api/v1/virtual-machines/{virtualMachineId}/commands
+	CreateVirtualMachineCommand(ctx context.Context, req *CreateVirtualMachineCommandRequestBody, params CreateVirtualMachineCommandParams) (*CreateVirtualMachineCommandResponseBody, error)
+	// CreateVirtualMachineReboot implements create-virtual-machine-reboot operation.
+	//
+	// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+	//
+	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
+	// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
+	//
+	// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft
+	// reboot the virtual machine never carried out. Any other request for an operation, including a second
+	// soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
+	//
+	// A virtual machine suspended by the platform must be unsuspended first.
+	//
+	// The virtual machine shows the `reboot` operation until the reboot has finished.
+	//
+	// POST /api/v1/virtual-machines/{virtualMachineId}/reboots
+	CreateVirtualMachineReboot(ctx context.Context, req *CreateVirtualMachineRebootRequestBody, params CreateVirtualMachineRebootParams) (CreateVirtualMachineRebootRes, error)
+	// CreateVirtualMachineRebuild implements create-virtual-machine-rebuild operation.
+	//
+	// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
+	//
+	// The image this virtual machine already runs is accepted even after the platform has withdrawn it,
+	// since rebuilding is the only way back into a virtual machine broken from the inside. Any other
+	// withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new
+	// order.
+	//
+	// The virtual machine shows the `rebuild` operation until the rebuild has finished.
+	//
+	// POST /api/v1/virtual-machines/{virtualMachineId}/rebuilds
+	CreateVirtualMachineRebuild(ctx context.Context, req *CreateVirtualMachineRebuildRequestBody, params CreateVirtualMachineRebuildParams) (CreateVirtualMachineRebuildRes, error)
 	// CreateVirtualPrivateCloud implements create-virtual-private-cloud operation.
 	//
 	// Creates a virtual private cloud definition and its default security group. The default security
@@ -244,22 +315,6 @@ type Handler interface {
 	//
 	// POST /api/v1/virtual-private-clouds
 	CreateVirtualPrivateCloud(ctx context.Context, req *CreateVirtualPrivateCloudRequestBody) (*VirtualPrivateCloud, error)
-	// DeleteBackup implements delete-backup operation.
-	//
-	// Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of
-	// the backup ends once it is deleted.
-	//
-	// Quota capacity and storage metering are released only after cleanup is confirmed. Billing determines
-	// whether its commercial subscription must be canceled first.
-	//
-	// A resource whose purchase still awaits checkout or payment is refused with
-	// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
-	// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
-	// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
-	// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
-	//
-	// DELETE /api/v1/backups/{backupId}
-	DeleteBackup(ctx context.Context, params DeleteBackupParams) (DeleteBackupRes, error)
 	// DeleteDisk implements delete-disk operation.
 	//
 	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
@@ -275,9 +330,65 @@ type Handler interface {
 	//
 	// DELETE /api/v1/disks/{diskId}
 	DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error)
-	// DeleteImage implements delete-image operation.
+	// DeleteDiskBackup implements delete-disk-backup operation.
 	//
-	// Only a private image of this project can be deleted; any other image is reported as not found.
+	// Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of
+	// the backup ends once it is deleted.
+	//
+	// Quota capacity and storage metering are released only after cleanup is confirmed. Billing determines
+	// whether its commercial subscription must be canceled first.
+	//
+	// A resource whose purchase still awaits checkout or payment is refused with
+	// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
+	// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
+	// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
+	// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+	//
+	// DELETE /api/v1/disk-backups/{diskBackupId}
+	DeleteDiskBackup(ctx context.Context, params DeleteDiskBackupParams) (DeleteDiskBackupRes, error)
+	// DeleteElasticIP implements delete-elastic-ip operation.
+	//
+	// Releases the elastic IP after dissociating it. The elastic IP shows the `delete` operation until
+	// cleanup is confirmed; the address then immediately returns to available inventory, with no cooldown
+	// period. Deleting the association or replacing it alone does not release the address.
+	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
+	// pay-as-you-go subscription. `meta.resource_id` names the elastic IP. It is released by canceling the
+	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+	// `release_subscription_ids`.
+	//
+	// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
+	// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
+	// checkout created one. Expire the session or cancel the order in Billing instead.
+	//
+	// DELETE /api/v1/elastic-ips/{elasticIpId}
+	DeleteElasticIP(ctx context.Context, params DeleteElasticIPParams) (DeleteElasticIPRes, error)
+	// DeleteElasticIPAssociation implements delete-elastic-ip-association operation.
+	//
+	// The address remains held by the project and simply no longer points at any network interface. The
+	// elastic IP shows the `unbind` operation until the change is confirmed, and a virtual machine whose
+	// primary interface it pointed at shows the `unbind_elastic_ip` operation. Removing an association
+	// that does not exist is refused with 404 `ELASTIC_IP_NOT_ASSOCIATED`.
+	//
+	// DELETE /api/v1/elastic-ips/{elasticIpId}/association
+	DeleteElasticIPAssociation(ctx context.Context, params DeleteElasticIPAssociationParams) (DeleteElasticIPAssociationRes, error)
+	// DeleteNetworkInterface implements delete-network-interface operation.
+	//
+	// The primary network interface cannot be deleted on its own, as it is released with the virtual
+	// machine. A network interface still attached to a virtual machine cannot be deleted either.
+	//
+	// DELETE /api/v1/network-interfaces/{networkInterfaceId}
+	DeleteNetworkInterface(ctx context.Context, params DeleteNetworkInterfaceParams) (DeleteNetworkInterfaceRes, error)
+	// DeletePeering implements delete-peering operation.
+	//
+	// Delete peering.
+	//
+	// DELETE /api/v1/peerings/{peeringId}
+	DeletePeering(ctx context.Context, params DeletePeeringParams) (DeletePeeringRes, error)
+	// DeletePrivateImage implements delete-private-image operation.
+	//
+	// Deletes a private image of this project; any other image, public images included, is reported as not
+	// found.
 	//
 	// Deletion is rejected while virtual machines created from the image still exist, as they need it in
 	// order to be rebuilt.
@@ -294,21 +405,8 @@ type Handler interface {
 	// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 	// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 	//
-	// DELETE /api/v1/images/{imageId}
-	DeleteImage(ctx context.Context, params DeleteImageParams) (DeleteImageRes, error)
-	// DeleteNetworkInterface implements delete-network-interface operation.
-	//
-	// The primary network interface cannot be deleted on its own, as it is released with the virtual
-	// machine. A network interface still attached to a virtual machine cannot be deleted either.
-	//
-	// DELETE /api/v1/network-interfaces/{networkInterfaceId}
-	DeleteNetworkInterface(ctx context.Context, params DeleteNetworkInterfaceParams) (DeleteNetworkInterfaceRes, error)
-	// DeletePeering implements delete-peering operation.
-	//
-	// Delete peering.
-	//
-	// DELETE /api/v1/peerings/{peeringId}
-	DeletePeering(ctx context.Context, params DeletePeeringParams) (DeletePeeringRes, error)
+	// DELETE /api/v1/private-images/{privateImageId}
+	DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (DeletePrivateImageRes, error)
 	// DeleteRoute implements delete-route operation.
 	//
 	// A route has no update; replace it by creating the new route and deleting the old one. A peering's
@@ -327,7 +425,7 @@ type Handler interface {
 	//
 	// Delete a security group rule.
 	//
-	// DELETE /api/v1/security-group-rules/{ruleId}
+	// DELETE /api/v1/security-group-rules/{securityGroupRuleId}
 	DeleteSecurityGroupRule(ctx context.Context, params DeleteSecurityGroupRuleParams) error
 	// DeleteSnapshot implements delete-snapshot operation.
 	//
@@ -369,6 +467,13 @@ type Handler interface {
 	//
 	// DELETE /api/v1/virtual-machines/{virtualMachineId}
 	DeleteVirtualMachine(ctx context.Context, params DeleteVirtualMachineParams) (DeleteVirtualMachineRes, error)
+	// DeleteVirtualMachineRescue implements delete-virtual-machine-rescue operation.
+	//
+	// Restores boot from the original system disk. Completion is shown by the virtual machine state, and
+	// the virtual machine shows the `unrescue` operation until then.
+	//
+	// DELETE /api/v1/virtual-machines/{virtualMachineId}/rescue
+	DeleteVirtualMachineRescue(ctx context.Context, params DeleteVirtualMachineRescueParams) (DeleteVirtualMachineRescueRes, error)
 	// DeleteVirtualPrivateCloud implements delete-virtual-private-cloud operation.
 	//
 	// Deletion is rejected while virtual machines or network interfaces remain in the network. Its
@@ -383,7 +488,7 @@ type Handler interface {
 	//
 	// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
 	DeleteVirtualPrivateCloudIpv6(ctx context.Context, params DeleteVirtualPrivateCloudIpv6Params) (DeleteVirtualPrivateCloudIpv6Res, error)
-	// DetachDisk implements detach-disk operation.
+	// DetachVirtualMachineDisk implements detach-virtual-machine-disk operation.
 	//
 	// Unmount the device inside the virtual machine before calling this endpoint. Forcibly detaching a
 	// file system that is being written to corrupts data.
@@ -397,8 +502,8 @@ type Handler interface {
 	// operation until the disk is detached.
 	//
 	// DELETE /api/v1/virtual-machines/{virtualMachineId}/disks/{diskId}
-	DetachDisk(ctx context.Context, params DetachDiskParams) (DetachDiskRes, error)
-	// DetachNetworkInterface implements detach-network-interface operation.
+	DetachVirtualMachineDisk(ctx context.Context, params DetachVirtualMachineDiskParams) (DetachVirtualMachineDiskRes, error)
+	// DetachVirtualMachineNetworkInterface implements detach-virtual-machine-network-interface operation.
 	//
 	// The primary network interface cannot be detached; the virtual machine would lose its network
 	// address.
@@ -407,27 +512,26 @@ type Handler interface {
 	// and the interface the `detach` operation until it is detached.
 	//
 	// DELETE /api/v1/virtual-machines/{virtualMachineId}/network-interfaces/{networkInterfaceId}
-	DetachNetworkInterface(ctx context.Context, params DetachNetworkInterfaceParams) (DetachNetworkInterfaceRes, error)
-	// DetachVirtualMachineElasticIP implements detach-virtual-machine-elastic-ip operation.
+	DetachVirtualMachineNetworkInterface(ctx context.Context, params DetachVirtualMachineNetworkInterfaceParams) (DetachVirtualMachineNetworkInterfaceRes, error)
+	// GetAvailabilityZone implements get-availability-zone operation.
 	//
-	// Changes the public IP binding on the virtual machine's primary network interface. The virtual
-	// machine shows the `unbind_elastic_ip` operation until the change is confirmed.
+	// A disk and a virtual machine must reside in the same availability zone to be attached.
 	//
-	// DELETE /api/v1/virtual-machines/{virtualMachineId}/elastic-ips/{elasticIpId}
-	DetachVirtualMachineElasticIP(ctx context.Context, params DetachVirtualMachineElasticIPParams) (DetachVirtualMachineElasticIPRes, error)
-	// GetBackup implements get-backup operation.
-	//
-	// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
-	// progress.
-	//
-	// GET /api/v1/backups/{backupId}
-	GetBackup(ctx context.Context, params GetBackupParams) (*BackupResource, error)
+	// GET /api/v1/availability-zones/{availabilityZoneId}
+	GetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (*ZoneResource, error)
 	// GetDisk implements get-disk operation.
 	//
 	// Returns the stored state of the disk; it does not query the cloud.
 	//
 	// GET /api/v1/disks/{diskId}
 	GetDisk(ctx context.Context, params GetDiskParams) (*DiskResource, error)
+	// GetDiskBackup implements get-disk-backup operation.
+	//
+	// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
+	// progress.
+	//
+	// GET /api/v1/disk-backups/{diskBackupId}
+	GetDiskBackup(ctx context.Context, params GetDiskBackupParams) (*DiskBackupResource, error)
 	// GetDiskType implements get-disk-type operation.
 	//
 	// Retrieve capacity and performance constraints for an existing disk, including system disk types and
@@ -441,6 +545,16 @@ type Handler interface {
 	//
 	// GET /api/v1/elastic-ips/{elasticIpId}
 	GetElasticIP(ctx context.Context, params GetElasticIPParams) (*ElasticIP, error)
+	// GetElasticIPAssociation implements get-elastic-ip-association operation.
+	//
+	// The private address of a network interface this elastic IP currently points at. Returns the stored
+	// state; it does not query the cloud.
+	//
+	// An elastic IP that points at nothing has no association: the request is refused with 404
+	// `ELASTIC_IP_NOT_ASSOCIATED`.
+	//
+	// GET /api/v1/elastic-ips/{elasticIpId}/association
+	GetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (*IPv4Binding, error)
 	// GetElasticIPType implements get-elastic-ip-type operation.
 	//
 	// Includes off-sale or retired products referenced by existing elastic IPs. No inventory or gateway
@@ -448,14 +562,6 @@ type Handler interface {
 	//
 	// GET /api/v1/elastic-ip-types/{elasticIpTypeId}
 	GetElasticIPType(ctx context.Context, params GetElasticIPTypeParams) (*ElasticIPType, error)
-	// GetImage implements get-image operation.
-	//
-	// Returns a public image, or a private image of this project; any other image is reported as not
-	// found. Use this endpoint to poll capture progress. When `status` is `failed`, `failure` describes
-	// the outcome.
-	//
-	// GET /api/v1/images/{imageId}
-	GetImage(ctx context.Context, params GetImageParams) (*ImageResource, error)
 	// GetMachineType implements get-machine-type operation.
 	//
 	// Returns only an on-sale machine type, under the same access rules as listing. Off-sale, retired or
@@ -463,12 +569,42 @@ type Handler interface {
 	//
 	// GET /api/v1/machine-types/{machineTypeId}
 	GetMachineType(ctx context.Context, params GetMachineTypeParams) (*MachineType, error)
+	// GetNetworkInterface implements get-network-interface operation.
+	//
+	// Returns the stored state of the network interface; it does not query the cloud.
+	//
+	// GET /api/v1/network-interfaces/{networkInterfaceId}
+	GetNetworkInterface(ctx context.Context, params GetNetworkInterfaceParams) (*NetworkInterface, error)
+	// GetOperationLog implements get-operation-log operation.
+	//
+	// Returns one entry of the project's operation log. Like the listing, it never discloses the
+	// individual operator of an operation performed by the platform.
+	//
+	// GET /api/v1/operation-logs/{operationLogId}
+	GetOperationLog(ctx context.Context, params GetOperationLogParams) (*OperationLogResource, error)
 	// GetPeering implements get-peering operation.
 	//
 	// Get peering.
 	//
 	// GET /api/v1/peerings/{peeringId}
 	GetPeering(ctx context.Context, params GetPeeringParams) (*PeeringResource, error)
+	// GetPrivateImage implements get-private-image operation.
+	//
+	// Returns a private image of this project; any other image, public images included, is reported as not
+	// found. Use this endpoint to poll capture progress. When `status` is `failed`, `failure` describes
+	// the outcome.
+	//
+	// GET /api/v1/private-images/{privateImageId}
+	GetPrivateImage(ctx context.Context, params GetPrivateImageParams) (*PrivateImageResource, error)
+	// GetPublicImage implements get-public-image operation.
+	//
+	// Returns a public image, on sale or withdrawn. A withdrawn image (`sale_status` is `off_sale`) is
+	// still returned because virtual machines may keep running it; it cannot be chosen for a new virtual
+	// machine and can only be rebuilt onto by a virtual machine that already runs it. A private image id
+	// is reported as not found here; use `/private-images`.
+	//
+	// GET /api/v1/public-images/{publicImageId}
+	GetPublicImage(ctx context.Context, params GetPublicImageParams) (*PublicImageResource, error)
 	// GetQuota implements get-quota operation.
 	//
 	// Reads only the IAM project authorized by the scoped token; callers cannot select another project.
@@ -477,6 +613,12 @@ type Handler interface {
 	//
 	// GET /api/v1/quotas/{resource}
 	GetQuota(ctx context.Context, params GetQuotaParams) (*ProjectQuota, error)
+	// GetRegion implements get-region operation.
+	//
+	// The availability zones of a region are listed by `list-availability-zones` with `region_id`.
+	//
+	// GET /api/v1/regions/{regionId}
+	GetRegion(ctx context.Context, params GetRegionParams) (*RegionResource, error)
 	// GetRoute implements get-route operation.
 	//
 	// Get a route.
@@ -493,7 +635,7 @@ type Handler interface {
 	//
 	// Get a security group rule.
 	//
-	// GET /api/v1/security-group-rules/{ruleId}
+	// GET /api/v1/security-group-rules/{securityGroupRuleId}
 	GetSecurityGroupRule(ctx context.Context, params GetSecurityGroupRuleParams) (*SecurityGroupRule, error)
 	// GetSnapshot implements get-snapshot operation.
 	//
@@ -514,6 +656,16 @@ type Handler interface {
 	//
 	// GET /api/v1/virtual-machines/{virtualMachineId}
 	GetVirtualMachine(ctx context.Context, params GetVirtualMachineParams) (*VirtualMachine, error)
+	// GetVirtualMachineConsole implements get-virtual-machine-console operation.
+	//
+	// Operates the virtual machine directly from a browser and does not require the virtual machine to be
+	// reachable over the network, which makes it usable when a network misconfiguration prevents login.
+	//
+	// The returned address is single-use and expires within minutes. Every request issues a new address,
+	// so request one before each use and do not cache the response.
+	//
+	// GET /api/v1/virtual-machines/{virtualMachineId}/console
+	GetVirtualMachineConsole(ctx context.Context, params GetVirtualMachineConsoleParams) (*ConsoleResponseBody, error)
 	// GetVirtualPrivateCloud implements get-virtual-private-cloud operation.
 	//
 	// Retrieve a virtual private cloud.
@@ -536,16 +688,16 @@ type Handler interface {
 	// ListAvailabilityZones implements list-availability-zones operation.
 	//
 	// A disk and a virtual machine must reside in the same availability zone to be attached. Confirm the
-	// zone before creating either.
+	// zone before creating either. Without `region_id`, the zones of every region are listed.
 	//
-	// GET /api/v1/regions/{regionId}/availability-zones
+	// GET /api/v1/availability-zones
 	ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*ZoneListResponseBody, error)
-	// ListBackups implements list-backups operation.
+	// ListDiskBackups implements list-disk-backups operation.
 	//
-	// List backups.
+	// List disk backups.
 	//
-	// GET /api/v1/backups
-	ListBackups(ctx context.Context, params ListBackupsParams) (*BackupListResponseBody, error)
+	// GET /api/v1/disk-backups
+	ListDiskBackups(ctx context.Context, params ListDiskBackupsParams) (*DiskBackupListResponseBody, error)
 	// ListDiskTypes implements list-disk-types operation.
 	//
 	// Only disk types currently on sale are listed, both system disk types and data disk types; `purpose`
@@ -556,7 +708,7 @@ type Handler interface {
 	ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeListResponseBody, error)
 	// ListDisks implements list-disks operation.
 	//
-	// When both `region_code` and `availability_zone` are supplied, only disks attachable to a virtual
+	// When both `region_id` and `availability_zone_id` are supplied, only disks attachable to a virtual
 	// machine at that location are returned.
 	//
 	// GET /api/v1/disks
@@ -564,7 +716,8 @@ type Handler interface {
 	// ListElasticIPTypes implements list-elastic-ip-types operation.
 	//
 	// Lists on-sale products. Region is optional. Prices, commercial terms and checkout are read directly
-	// from Billing.
+	// from Billing. `q` searches the names and descriptions of the on-sale products; filters combine with
+	// AND, and pagination is independent of them.
 	//
 	// GET /api/v1/elastic-ip-types
 	ListElasticIPTypes(ctx context.Context, params ListElasticIPTypesParams) (*ElasticIPTypeListResponseBody, error)
@@ -574,23 +727,6 @@ type Handler interface {
 	//
 	// GET /api/v1/elastic-ips
 	ListElasticIps(ctx context.Context, params ListElasticIpsParams) (*ElasticIPListResponseBody, error)
-	// ListImages implements list-images operation.
-	//
-	// Lists the public images on sale together with the private images of this project. `visibility`
-	// narrows the list to one of the two.
-	//
-	// A public image is offered to every project. Only public images currently on sale are listed: one the
-	// platform withdraws disappears from here and can no longer install new virtual machines, while the
-	// virtual machines already running it keep running and can still be rebuilt onto it.
-	//
-	// A private image belongs to this project, which captured it from one of its virtual machines, and is
-	// listed in every status, including while its capture is in progress and after the capture failed.
-	//
-	// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
-	// memory of the selected machine type cannot boot; filter the options accordingly.
-	//
-	// GET /api/v1/images
-	ListImages(ctx context.Context, params ListImagesParams) (*ImageListResponseBody, error)
 	// ListMachineTypes implements list-machine-types operation.
 	//
 	// Only machine types currently on sale are listed. A withdrawn one disappears from here and can no
@@ -625,6 +761,34 @@ type Handler interface {
 	//
 	// GET /api/v1/peerings
 	ListPeerings(ctx context.Context, params ListPeeringsParams) (*PeeringListResponseBody, error)
+	// ListPrivateImages implements list-private-images operation.
+	//
+	// Lists the private images of this project, newest first, in every status: including while a capture
+	// is in progress and after it failed. Private images of other projects are never listed.
+	//
+	// A private image is usable only by the project that captured it from one of its virtual machines. Its
+	// storage is metered by the hour on a subscription of the project.
+	//
+	// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
+	// memory of the selected machine type cannot boot; filter the options accordingly. Public images are
+	// in `/public-images`.
+	//
+	// GET /api/v1/private-images
+	ListPrivateImages(ctx context.Context, params ListPrivateImagesParams) (*PrivateImageListResponseBody, error)
+	// ListPublicImages implements list-public-images operation.
+	//
+	// Lists the platform's public images that are on sale. A public image is offered to every project. One
+	// the platform withdraws disappears from here and can no longer install new virtual machines, while
+	// the virtual machines already running it keep running and can still be rebuilt onto it; retrieve it
+	// by id to see it.
+	//
+	// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
+	// memory of the selected machine type cannot boot; filter the options accordingly.
+	//
+	// Images this project captured from its own virtual machines are in `/private-images`.
+	//
+	// GET /api/v1/public-images
+	ListPublicImages(ctx context.Context, params ListPublicImagesParams) (*PublicImageListResponseBody, error)
 	// ListQuotas implements list-quotas operation.
 	//
 	// Reads only the IAM project authorized by the scoped token; callers cannot select another project.
@@ -695,15 +859,53 @@ type Handler interface {
 	//
 	// GET /api/v1/virtual-private-clouds
 	ListVirtualPrivateClouds(ctx context.Context, params ListVirtualPrivateCloudsParams) (*VirtualPrivateCloudListResponseBody, error)
-	// OpenVirtualMachineConsole implements open-virtual-machine-console operation.
+	// PutElasticIPAssociation implements put-elastic-ip-association operation.
 	//
-	// Operates the virtual machine directly from a browser and does not require the virtual machine to be
-	// reachable over the network, which makes it usable when a network misconfiguration prevents login.
+	// Points the elastic IP at a target: a virtual machine, which means the primary private IPv4 address
+	// of its primary network interface, or a network interface address (`network_interface_address_id`)
+	// given directly. Exactly one of `virtual_machine_id` and `network_interface_address_id`. A network
+	// interface address must be an assigned, unreleased IPv4 address on a network interface in this
+	// project and region; IPv6 addresses are rejected.
 	//
-	// The returned address is single-use and expires within minutes. Request a new one before each use.
+	// The target becomes what the elastic IP points at. Repeating the request for the target it already
+	// points at changes nothing; an elastic IP associated with another target is refused with
+	// `ELASTIC_IP_ALREADY_ASSOCIATED` (409), and is moved by deleting the association first, so that the
+	// moment traffic stops reaching the old target is one the caller chose. The elastic IP shows the
+	// `bind` operation until the association is confirmed, and with a virtual machine as the target that
+	// virtual machine shows the `bind_elastic_ip` operation as well, so the virtual machine must not have
+	// another operation in progress.
 	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/console
-	OpenVirtualMachineConsole(ctx context.Context, params OpenVirtualMachineConsoleParams) (*ConsoleResponseBody, error)
+	// The elastic IP must be in the same region as the target. With a virtual machine as the target, the
+	// elastic IP's `bandwidth_mbps` must not exceed the `max_bandwidth_mbps` of that virtual machine's
+	// type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`.
+	//
+	// PUT /api/v1/elastic-ips/{elasticIpId}/association
+	PutElasticIPAssociation(ctx context.Context, req PutElasticIPAssociationRequestBody, params PutElasticIPAssociationParams) (PutElasticIPAssociationRes, error)
+	// PutVirtualMachinePassword implements put-virtual-machine-password operation.
+	//
+	// Sets the root password without a reboot. The virtual machine must be running.
+	//
+	// Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
+	// password can then only be set by rebuilding the virtual machine, which erases all data on the system
+	// disk.
+	//
+	// The request is also rejected when the image is marked as supported but the corresponding component
+	// has been removed or stopped inside the virtual machine.
+	//
+	// PUT /api/v1/virtual-machines/{virtualMachineId}/password
+	PutVirtualMachinePassword(ctx context.Context, req *PutVirtualMachinePasswordRequestBody, params PutVirtualMachinePasswordParams) (PutVirtualMachinePasswordRes, error)
+	// PutVirtualMachineRescue implements put-virtual-machine-rescue operation.
+	//
+	// Boots a temporary rescue environment while retaining the original system disk. Changing
+	// `power_state` or `machine_type_id`, rebuilding and putting a password are unavailable in rescue
+	// mode.
+	//
+	// The request does not name an image. The rescue image is the region's enabled rescue image for the
+	// architecture of the virtual machine's system disk. A region and architecture with no enabled rescue
+	// image is refused with `RESCUE_IMAGE_NOT_CONFIGURED` (409).
+	//
+	// PUT /api/v1/virtual-machines/{virtualMachineId}/rescue
+	PutVirtualMachineRescue(ctx context.Context, req *PutVirtualMachineRescueRequestBody, params PutVirtualMachineRescueParams) (PutVirtualMachineRescueRes, error)
 	// PutVirtualPrivateCloudIpv6 implements put-virtual-private-cloud-ipv6 operation.
 	//
 	// Delegates and routes a /64 prefix to the virtual private cloud and creates its IPv6 subnet. It
@@ -715,137 +917,149 @@ type Handler interface {
 	//
 	// PUT /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
 	PutVirtualPrivateCloudIpv6(ctx context.Context, params PutVirtualPrivateCloudIpv6Params) (PutVirtualPrivateCloudIpv6Res, error)
-	// RebootVirtualMachine implements reboot-virtual-machine operation.
+	// UpdateDisk implements update-disk operation.
 	//
-	// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+	// Changes the name, or the capacity. Type and availability zone are immutable.
 	//
-	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
-	// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
+	// `size_gb` is an operational field: it starts a resize and cannot be combined with any other field in
+	// the same request. Such a request is refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that
+	// committed beside a change that was then refused would leave the request half applied. `checkout` and
+	// `proration_date` belong to the purchase of the `size_gb` change and are accepted only together with
+	// it.
 	//
-	// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft
-	// reboot the virtual machine never carried out. Any other request for an operation, including a second
-	// soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
+	// Renaming is not an operation and is accepted at any time. It returns 200 with `checkout_session_id`
+	// and `order_id` null.
 	//
-	// A virtual machine suspended by the platform must be unsuspended first.
-	//
-	// The virtual machine shows the `reboot` operation until the reboot has finished.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/reboot
-	RebootVirtualMachine(ctx context.Context, req *RebootVirtualMachineRequestBody, params RebootVirtualMachineParams) (RebootVirtualMachineRes, error)
-	// RebuildVirtualMachine implements rebuild-virtual-machine operation.
-	//
-	// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
-	//
-	// The image this virtual machine already runs is accepted even after the platform has withdrawn it,
-	// since rebuilding is the only way back into a virtual machine broken from the inside. Any other
-	// withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new
-	// order.
-	//
-	// The virtual machine shows the `rebuild` operation until the rebuild has finished.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/rebuild
-	RebuildVirtualMachine(ctx context.Context, req *RebuildVirtualMachineRequestBody, params RebuildVirtualMachineParams) (RebuildVirtualMachineRes, error)
-	// RejectPeering implements reject-peering operation.
-	//
-	// Reject peering.
-	//
-	// POST /api/v1/peerings/{peeringId}/reject
-	RejectPeering(ctx context.Context, params RejectPeeringParams) (*PeeringResource, error)
-	// ReleaseElasticIP implements release-elastic-ip operation.
-	//
-	// Releases the elastic IP after unbinding it. The elastic IP shows the `delete` operation until
-	// cleanup is confirmed; the address then immediately returns to available inventory, with no cooldown
-	// period. Unbinding or moving a binding alone does not release the address.
-	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the elastic IP. It is released by canceling the
-	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-	// `release_subscription_ids`.
-	//
-	// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
-	// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
-	// checkout created one. Expire the session or cancel the order in Billing instead.
-	//
-	// DELETE /api/v1/elastic-ips/{elasticIpId}
-	ReleaseElasticIP(ctx context.Context, params ReleaseElasticIPParams) (ReleaseElasticIPRes, error)
-	// RenameBackup implements rename-backup operation.
-	//
-	// Rename a backup.
-	//
-	// PATCH /api/v1/backups/{backupId}
-	RenameBackup(ctx context.Context, req *RenameBackupRequestBody, params RenameBackupParams) (*BackupResource, error)
-	// RenameDisk implements rename-disk operation.
-	//
-	// Changes the name only. Use the resize endpoint for capacity; type and availability zone are
-	// immutable.
-	//
-	// PATCH /api/v1/disks/{diskId}
-	RenameDisk(ctx context.Context, req *RenameDiskRequestBody, params RenameDiskParams) (*DiskResource, error)
-	// RenameImage implements rename-image operation.
-	//
-	// Only a private image of this project can be renamed; any other image is reported as not found.
-	//
-	// PATCH /api/v1/images/{imageId}
-	RenameImage(ctx context.Context, req *RenameImageRequestBody, params RenameImageParams) (*ImageResource, error)
-	// RenameSnapshot implements rename-snapshot operation.
-	//
-	// Rename a snapshot.
-	//
-	// PATCH /api/v1/snapshots/{snapshotId}
-	RenameSnapshot(ctx context.Context, req *RenameSnapshotRequestBody, params RenameSnapshotParams) (*SnapshotResource, error)
-	// RenameVirtualMachine implements rename-virtual-machine operation.
-	//
-	// Changes the display name only. The hostname inside the virtual machine is unchanged; it equals the
-	// virtual machine id.
-	//
-	// PATCH /api/v1/virtual-machines/{virtualMachineId}
-	RenameVirtualMachine(ctx context.Context, req *RenameVirtualMachineRequestBody, params RenameVirtualMachineParams) (*VirtualMachine, error)
-	// RescueVirtualMachine implements rescue-virtual-machine operation.
-	//
-	// Boots a temporary rescue environment while retaining the original system disk. The selected image
-	// must support this virtual machine. Stop, resize, rebuild and password reset are unavailable in
-	// rescue mode.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/rescue
-	RescueVirtualMachine(ctx context.Context, req *RescueVirtualMachineRequestBody, params RescueVirtualMachineParams) (RescueVirtualMachineRes, error)
-	// ResetVirtualMachinePassword implements reset-virtual-machine-password operation.
-	//
-	// Changes the root password without a reboot. The virtual machine must be running.
-	//
-	// Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
-	// password can then only be set by rebuilding the virtual machine, which erases all data on the system
-	// disk.
-	//
-	// The request is also rejected when the image is marked as supported but the corresponding component
-	// has been removed or stopped inside the virtual machine.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/password
-	ResetVirtualMachinePassword(ctx context.Context, req *ResetPasswordRequestBody, params ResetVirtualMachinePasswordParams) (ResetVirtualMachinePasswordRes, error)
-	// ResizeDisk implements resize-disk operation.
-	//
-	// Capacity can only be increased; shrinking is not supported. Returns the disk with the Checkout
-	// Session for the resize, which keeps the disk's usage type and period. The disk shows the `resize`
-	// operation until the resize is applied, its Checkout Session expires or its order is canceled, so
-	// other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk
-	// keeps its current size until the resize is applied; once `size_gb` shows the new size, extend the
-	// file system inside the virtual machine. If checkout is not completed, the order is not accepted or
-	// the resize fails, the disk keeps its size and Billing shows the outcome.
+	// Resizing accepts only an increase; a smaller `size_gb` is refused with `DISK_CANNOT_SHRINK` (422),
+	// since a file system cannot be shrunk from outside the virtual machine. It returns 202 with the disk
+	// and the Checkout Session for the resize, which keeps the disk's usage type and period. The disk
+	// shows the `resize` operation until the resize is applied, its Checkout Session expires or its order
+	// is canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
+	// meanwhile. The disk keeps its current size until the resize is applied; once `size_gb` shows the new
+	// size, extend the file system inside the virtual machine. If checkout is not completed, the order is
+	// not accepted or the resize fails, the disk keeps its size and Billing shows the outcome.
 	//
 	// An attached disk, including a system disk, can be resized. The capacity is usable at once, and the
 	// disk's `performance` shows what its type gives the new size. That performance applies from the
 	// disk's next attachment, or the next start of its stopped virtual machine: the storage reads a disk's
 	// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
 	//
-	// POST /api/v1/disks/{diskId}/resize
-	ResizeDisk(ctx context.Context, req *ResizeDiskRequestBody, params ResizeDiskParams) (ResizeDiskRes, error)
-	// ResizeVirtualMachine implements resize-virtual-machine operation.
+	// PATCH /api/v1/disks/{diskId}
+	UpdateDisk(ctx context.Context, req *UpdateDiskRequestBody, params UpdateDiskParams) (UpdateDiskRes, error)
+	// UpdateDiskBackup implements update-disk-backup operation.
 	//
-	// Creates a Billing Checkout Session for the change, including for metered terms, and returns the
-	// virtual machine with it. The virtual machine keeps its usage type and period, priced with the target
-	// type's matching option; a target type without that option is refused with 409
-	// `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing accepts the order. Do not submit the
-	// change again after paying. After an uncertain response, look the Checkout Session up in Billing
-	// before submitting again.
+	// Changes the name only. A backup's source disk and capacity cannot be changed.
+	//
+	// PATCH /api/v1/disk-backups/{diskBackupId}
+	UpdateDiskBackup(ctx context.Context, req *UpdateDiskBackupRequestBody, params UpdateDiskBackupParams) (*DiskBackupResource, error)
+	// UpdateElasticIP implements update-elastic-ip operation.
+	//
+	// Changes the bandwidth of this elastic IP. `bandwidth_mbps` is an operational field: it starts a
+	// change and cannot be combined with any other field in the same request. Such a request is refused
+	// with 422 `UPDATE_FIELDS_COMBINED`, because a change that committed beside another that was then
+	// refused would leave the request half applied. An elastic IP has no descriptive field today, so 200
+	// is reserved for the fields that may be added to it and every accepted update answers 202. `checkout`
+	// and `proration_date` belong to the purchase of the `bandwidth_mbps` change and are accepted only
+	// together with it.
+	//
+	// The change goes through a Checkout Session that keeps the elastic IP's usage type and period; no
+	// separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The
+	// elastic IP shows the `set_bandwidth` operation until the change is applied, its Checkout Session
+	// expires or its order is canceled, so other operations and a second change are refused with
+	// `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If
+	// checkout is not completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its
+	// value and Billing shows the outcome.
+	//
+	// While the address is associated with a virtual machine, the limit must not exceed the
+	// `max_bandwidth_mbps` of that virtual machine's type; a higher limit is refused with
+	// `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not associated is checked when the
+	// address is associated with a virtual machine.
+	//
+	// PATCH /api/v1/elastic-ips/{elasticIpId}
+	UpdateElasticIP(ctx context.Context, req *UpdateElasticIPRequestBody, params UpdateElasticIPParams) (UpdateElasticIPRes, error)
+	// UpdateNetworkInterface implements update-network-interface operation.
+	//
+	// Changes the name only. Renaming is not an operation and is accepted at any time. The security groups
+	// and addresses of a network interface cannot be changed through this endpoint.
+	//
+	// PATCH /api/v1/network-interfaces/{networkInterfaceId}
+	UpdateNetworkInterface(ctx context.Context, req *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (*NetworkInterface, error)
+	// UpdatePeering implements update-peering operation.
+	//
+	// The accepter project writes its decision as `acceptance`. Only the accepter project may write it;
+	// the requester project is refused, because a peering would otherwise be accepted by the party who
+	// asked for it. The decision is written once: a peering that is no longer `pending_acceptance` refuses
+	// it.
+	//
+	// `accepted` starts the provisioning of the connectivity and returns 202; the peering shows the
+	// `provision` operation until it is `active`. `rejected` returns 200 with the peering `rejected`, and
+	// no connectivity is ever created. Does not change security groups or provide transitive routing.
+	//
+	// PATCH /api/v1/peerings/{peeringId}
+	UpdatePeering(ctx context.Context, req *UpdatePeeringRequestBody, params UpdatePeeringParams) (UpdatePeeringRes, error)
+	// UpdatePrivateImage implements update-private-image operation.
+	//
+	// Renames a private image of this project. Any other image, public images included, is reported as not
+	// found.
+	//
+	// PATCH /api/v1/private-images/{privateImageId}
+	UpdatePrivateImage(ctx context.Context, req *UpdatePrivateImageRequestBody, params UpdatePrivateImageParams) (*PrivateImageResource, error)
+	// UpdateSecurityGroup implements update-security-group operation.
+	//
+	// Changes the name or description. Rules are resources of their own, created and deleted under
+	// `/security-group-rules`.
+	//
+	// PATCH /api/v1/security-groups/{securityGroupId}
+	UpdateSecurityGroup(ctx context.Context, req *UpdateSecurityGroupRequestBody, params UpdateSecurityGroupParams) (*SecurityGroup, error)
+	// UpdateSnapshot implements update-snapshot operation.
+	//
+	// Changes the name only. A snapshot's source disk and capacity cannot be changed.
+	//
+	// PATCH /api/v1/snapshots/{snapshotId}
+	UpdateSnapshot(ctx context.Context, req *UpdateSnapshotRequestBody, params UpdateSnapshotParams) (*SnapshotResource, error)
+	// UpdateSubnet implements update-subnet operation.
+	//
+	// Only the name can change. The CIDR is fixed for the subnet's life, because addresses already handed
+	// out inside it would fall outside a changed range.
+	//
+	// PATCH /api/v1/subnets/{subnetId}
+	UpdateSubnet(ctx context.Context, req *UpdateSubnetRequestBody, params UpdateSubnetParams) (*Subnet, error)
+	// UpdateVirtualMachine implements update-virtual-machine operation.
+	//
+	// Changes the descriptive fields (`name`, `labels`, `notes`) or one operational field (`power_state`
+	// or `machine_type_id`). All fields are optional and at least one is required.
+	//
+	// `power_state` and `machine_type_id` are operational fields: each starts a workflow, and neither can
+	// be combined with any other field in the same request, including the other one. Such a request is
+	// refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside a change that was
+	// then refused would leave the request half applied. `checkout` and `proration_date` belong to the
+	// purchase of the `machine_type_id` change and are accepted only together with it.
+	//
+	// Descriptive fields are not operations and are accepted at any time, whatever the virtual machine is
+	// doing. The request returns 200 with `checkout_session_id` and `order_id` null.
+	//
+	//  - `name` changes the display name only. The hostname inside the virtual machine is unchanged; it
+	//    equals the virtual machine id.
+	//  - `labels` records what this virtual machine is for, as key-value pairs. Nothing on the platform
+	//    reads them. The whole set is replaced: whatever is absent from the request is removed, and an
+	//    empty object clears them all. Do not put credentials here. Labels are visible to platform
+	//    operators.
+	//  - `notes` is a free-text note about this virtual machine: what it runs, and what to be careful
+	//    about before touching it. The whole note is replaced; send an empty string to clear it. Do not
+	//    put credentials here. The note is visible to platform operators.
+	//
+	// `power_state` is the state the virtual machine should be in, and the request returns 202 with the
+	// virtual machine as it is when the request is accepted. `running` starts it: outstanding restrictions
+	// can prevent starting, and the virtual machine shows the `start` operation until it is running or the
+	// start has failed. `stopped` stops it: a stopped virtual machine keeps its disks, network attachments
+	// and sellable quota, and shows the `stop` operation until it is stopped or the stop has failed.
+	//
+	// `machine_type_id` resizes the virtual machine and returns 202 with the virtual machine and the
+	// Checkout Session for the change, including for metered terms. The virtual machine keeps its usage
+	// type and period, priced with the target type's matching option; a target type without that option is
+	// refused with 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing accepts the order. Do
+	// not submit the change again after paying. After an uncertain response, look the Checkout Session up
+	// in Billing before submitting again.
 	//
 	// The virtual machine shows the `resize` operation until the resize is applied, its Checkout Session
 	// expires or its order is canceled, so other operations and a second resize are refused with
@@ -855,149 +1069,8 @@ type Handler interface {
 	// and Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
 	// previous type, submit another resize.
 	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/resize
-	ResizeVirtualMachine(ctx context.Context, req *ResizeVirtualMachineRequestBody, params ResizeVirtualMachineParams) (ResizeVirtualMachineRes, error)
-	// RestoreBackup implements restore-backup operation.
-	//
-	// Restores onto a newly created disk. The source disk is unaffected and need not still exist.
-	//
-	// The target disk type may belong to another availability zone of the same region, and its capacity
-	// must not be smaller than the backup. Returns the new disk as `pending` with its Checkout Session; it
-	// cannot be attached until it is `available`. The new disk is bought on its own, so it is licensed:
-	// `billing.usage_type` `metered` is refused with `DISK_USAGE_TYPE_UNAVAILABLE`.
-	//
-	// POST /api/v1/backups/{backupId}/restore
-	RestoreBackup(ctx context.Context, req *RestoreBackupRequestBody, params RestoreBackupParams) (RestoreBackupRes, error)
-	// RevertDisk implements revert-disk operation.
-	//
-	// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
-	// moment is lost and cannot be recovered.
-	//
-	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
-	// must be detached from its virtual machine first; and a disk resized since the snapshot was taken
-	// cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a
-	// new disk from the snapshot instead.
-	//
-	// The disk shows the `revert` operation until the revert is complete.
-	//
-	// POST /api/v1/disks/{diskId}/revert
-	RevertDisk(ctx context.Context, req *RevertDiskRequestBody, params RevertDiskParams) (RevertDiskRes, error)
-	// RunVirtualMachineCommand implements run-virtual-machine-command operation.
-	//
-	// Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
-	// standard input and no way to answer a prompt: a command that waits for input produces nothing and is
-	// killed at the timeout. Chain steps with `&&`, or write a script and run that.
-	//
-	// A command that fails is still a 200. Its failure is its own result, not this endpoint's: read
-	// `exit_code` for what it exited with and `stderr` for what it said, and decide from those. A `grep`
-	// that matches nothing exits 1 and is a perfectly successful call.
-	//
-	// The status therefore answers a different question — did the command run at all. A non-2xx means it
-	// did not, and nothing about the virtual machine was changed by this request: it was suspended, not
-	// running or had no elastic IP; or it refused the platform key; or the connection could not be opened.
-	// Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
-	//
-	// Three conditions must hold; the virtual machine is unreachable otherwise:
-	//
-	//  - it is `active`
-	//  - an elastic IP is bound to it, since this endpoint connects over the public internet
-	//  - its security group permits inbound TCP 22
-	//
-	// Authentication uses the key the platform attaches to every virtual machine at creation, so nothing
-	// has to be set up first. The virtual machine must have applied that key at first boot, which images
-	// without a full cloud-init do not do.
-	//
-	// Do not pass secrets in the command. Read them from a file on the virtual machine instead: neither
-	// the command nor its output is a confidential channel.
-	//
-	// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/commands
-	RunVirtualMachineCommand(ctx context.Context, req *RunCommandRequestBody, params RunVirtualMachineCommandParams) (*CommandResultResponseBody, error)
-	// SearchElasticIPTypes implements search-elastic-ip-types operation.
-	//
-	// Search on-sale product names and descriptions. Filters use AND; pagination is independent.
-	//
-	// GET /api/v1/elastic-ip-types/search
-	SearchElasticIPTypes(ctx context.Context, params SearchElasticIPTypesParams) (*ElasticIPTypeListResponseBody, error)
-	// SetElasticIPBandwidth implements set-elastic-ip-bandwidth operation.
-	//
-	// Changes the bandwidth of this elastic IP through a Checkout Session that keeps its usage type and
-	// period; no separate bandwidth resource is created. The limit applies to inbound and outbound traffic
-	// alike. The elastic IP shows the `set_bandwidth` operation until the change is applied, its Checkout
-	// Session expires or its order is canceled, so other operations and a second change are refused with
-	// `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If
-	// checkout is not completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its
-	// value and Billing shows the outcome.
-	//
-	// While the address is bound to a virtual machine, the limit must not exceed the `max_bandwidth_mbps`
-	// of that virtual machine's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The
-	// limit of an address that is not bound is checked when the address is bound to a virtual machine.
-	//
-	// PUT /api/v1/elastic-ips/{elasticIpId}/bandwidth
-	SetElasticIPBandwidth(ctx context.Context, req *SetElasticIPBandwidthRequestBody, params SetElasticIPBandwidthParams) (SetElasticIPBandwidthRes, error)
-	// SetVirtualMachineLabels implements set-virtual-machine-labels operation.
-	//
-	// Records what this virtual machine is for, as key-value pairs. Nothing on the platform reads them.
-	//
-	// The whole set is replaced: whatever is absent from the request is removed.
-	//
-	// Do not put credentials here. Labels are visible to platform operators.
-	//
-	// PUT /api/v1/virtual-machines/{virtualMachineId}/labels
-	SetVirtualMachineLabels(ctx context.Context, req *SetVirtualMachineLabelsRequestBody, params SetVirtualMachineLabelsParams) (*VirtualMachine, error)
-	// SetVirtualMachineNotes implements set-virtual-machine-notes operation.
-	//
-	// A free-text note about this virtual machine — what it runs, and what to be careful about before
-	// touching it.
-	//
-	// The whole note is replaced; send an empty string to clear it.
-	//
-	// Do not put credentials here. The note is visible to platform operators.
-	//
-	// PUT /api/v1/virtual-machines/{virtualMachineId}/notes
-	SetVirtualMachineNotes(ctx context.Context, req *SetVirtualMachineNotesRequestBody, params SetVirtualMachineNotesParams) (*VirtualMachine, error)
-	// StartVirtualMachine implements start-virtual-machine operation.
-	//
-	// Outstanding restrictions can prevent starting. The virtual machine shows the `start` operation until
-	// it is running or the start has failed.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/start
-	StartVirtualMachine(ctx context.Context, req *PowerRequest, params StartVirtualMachineParams) (StartVirtualMachineRes, error)
-	// StopVirtualMachine implements stop-virtual-machine operation.
-	//
-	// A stopped virtual machine keeps its disks, network attachments and sellable quota. The virtual
-	// machine shows the `stop` operation until it is stopped or the stop has failed.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/stop
-	StopVirtualMachine(ctx context.Context, req *PowerRequest, params StopVirtualMachineParams) (StopVirtualMachineRes, error)
-	// UnbindElasticIP implements unbind-elastic-ip operation.
-	//
-	// The address remains held by the project and simply no longer points at any network interface. The
-	// elastic IP shows the `unbind` operation until the change is confirmed.
-	//
-	// DELETE /api/v1/elastic-ips/{elasticIpId}/binding
-	UnbindElasticIP(ctx context.Context, params UnbindElasticIPParams) (UnbindElasticIPRes, error)
-	// UnrescueVirtualMachine implements unrescue-virtual-machine operation.
-	//
-	// Restores boot from the original system disk. Completion is shown by the virtual machine state.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/unrescue
-	UnrescueVirtualMachine(ctx context.Context, params UnrescueVirtualMachineParams) (UnrescueVirtualMachineRes, error)
-	// UpdateSecurityGroup implements update-security-group operation.
-	//
-	// Changes the name or description. Rules are resources of their own, created and deleted under
-	// `/security-group-rules`.
-	//
-	// PATCH /api/v1/security-groups/{securityGroupId}
-	UpdateSecurityGroup(ctx context.Context, req *UpdateSecurityGroupRequestBody, params UpdateSecurityGroupParams) (*SecurityGroup, error)
-	// UpdateSubnet implements update-subnet operation.
-	//
-	// Only the name can change. The CIDR is fixed for the subnet's life, because addresses already handed
-	// out inside it would fall outside a changed range.
-	//
-	// PATCH /api/v1/subnets/{subnetId}
-	UpdateSubnet(ctx context.Context, req *UpdateSubnetRequestBody, params UpdateSubnetParams) (*Subnet, error)
+	// PATCH /api/v1/virtual-machines/{virtualMachineId}
+	UpdateVirtualMachine(ctx context.Context, req *UpdateVirtualMachineRequestBody, params UpdateVirtualMachineParams) (UpdateVirtualMachineRes, error)
 	// UpdateVirtualPrivateCloud implements update-virtual-private-cloud operation.
 	//
 	// Only the name can change. The CIDR is fixed for the network's life, because every subnet and address

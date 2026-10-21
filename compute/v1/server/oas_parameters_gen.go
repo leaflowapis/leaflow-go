@@ -14,92 +14,12 @@ import (
 	"github.com/ogen-go/ogen/validate"
 )
 
-// AcceptPeeringParams is parameters of accept-peering operation.
-type AcceptPeeringParams struct {
-	PeeringId PeeringID
-}
-
-func unpackAcceptPeeringParams(packed middleware.Parameters) (params AcceptPeeringParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "peeringId",
-			In:   "path",
-		}
-		params.PeeringId = packed[key].(PeeringID)
-	}
-	return params
-}
-
-func decodeAcceptPeeringParams(args [1]string, argsEscaped bool, r *http.Request) (params AcceptPeeringParams, _ error) {
-	// Decode path: peeringId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "peeringId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotPeeringIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotPeeringIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.PeeringId = PeeringID(paramsDotPeeringIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.PeeringId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "peeringId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// AttachDiskParams is parameters of attach-disk operation.
-type AttachDiskParams struct {
+// AttachVirtualMachineDiskParams is parameters of attach-virtual-machine-disk operation.
+type AttachVirtualMachineDiskParams struct {
 	VirtualMachineId VirtualMachineID
 }
 
-func unpackAttachDiskParams(packed middleware.Parameters) (params AttachDiskParams) {
+func unpackAttachVirtualMachineDiskParams(packed middleware.Parameters) (params AttachVirtualMachineDiskParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "virtualMachineId",
@@ -110,7 +30,7 @@ func unpackAttachDiskParams(packed middleware.Parameters) (params AttachDiskPara
 	return params
 }
 
-func decodeAttachDiskParams(args [1]string, argsEscaped bool, r *http.Request) (params AttachDiskParams, _ error) {
+func decodeAttachVirtualMachineDiskParams(args [1]string, argsEscaped bool, r *http.Request) (params AttachVirtualMachineDiskParams, _ error) {
 	// Decode path: virtualMachineId.
 	if err := func() error {
 		param := args[0]
@@ -174,12 +94,12 @@ func decodeAttachDiskParams(args [1]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
-// AttachNetworkInterfaceParams is parameters of attach-network-interface operation.
-type AttachNetworkInterfaceParams struct {
+// AttachVirtualMachineNetworkInterfaceParams is parameters of attach-virtual-machine-network-interface operation.
+type AttachVirtualMachineNetworkInterfaceParams struct {
 	VirtualMachineId VirtualMachineID
 }
 
-func unpackAttachNetworkInterfaceParams(packed middleware.Parameters) (params AttachNetworkInterfaceParams) {
+func unpackAttachVirtualMachineNetworkInterfaceParams(packed middleware.Parameters) (params AttachVirtualMachineNetworkInterfaceParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "virtualMachineId",
@@ -190,7 +110,7 @@ func unpackAttachNetworkInterfaceParams(packed middleware.Parameters) (params At
 	return params
 }
 
-func decodeAttachNetworkInterfaceParams(args [1]string, argsEscaped bool, r *http.Request) (params AttachNetworkInterfaceParams, _ error) {
+func decodeAttachVirtualMachineNetworkInterfaceParams(args [1]string, argsEscaped bool, r *http.Request) (params AttachVirtualMachineNetworkInterfaceParams, _ error) {
 	// Decode path: virtualMachineId.
 	if err := func() error {
 		param := args[0]
@@ -254,12 +174,92 @@ func decodeAttachNetworkInterfaceParams(args [1]string, argsEscaped bool, r *htt
 	return params, nil
 }
 
-// AttachVirtualMachineElasticIPParams is parameters of attach-virtual-machine-elastic-ip operation.
-type AttachVirtualMachineElasticIPParams struct {
+// CreateDiskRevertParams is parameters of create-disk-revert operation.
+type CreateDiskRevertParams struct {
+	DiskId DiskID
+}
+
+func unpackCreateDiskRevertParams(packed middleware.Parameters) (params CreateDiskRevertParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "diskId",
+			In:   "path",
+		}
+		params.DiskId = packed[key].(DiskID)
+	}
+	return params
+}
+
+func decodeCreateDiskRevertParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateDiskRevertParams, _ error) {
+	// Decode path: diskId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "diskId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotDiskIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotDiskIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.DiskId = DiskID(paramsDotDiskIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.DiskId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "diskId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// CreateVirtualMachineCommandParams is parameters of create-virtual-machine-command operation.
+type CreateVirtualMachineCommandParams struct {
 	VirtualMachineId VirtualMachineID
 }
 
-func unpackAttachVirtualMachineElasticIPParams(packed middleware.Parameters) (params AttachVirtualMachineElasticIPParams) {
+func unpackCreateVirtualMachineCommandParams(packed middleware.Parameters) (params CreateVirtualMachineCommandParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "virtualMachineId",
@@ -270,7 +270,7 @@ func unpackAttachVirtualMachineElasticIPParams(packed middleware.Parameters) (pa
 	return params
 }
 
-func decodeAttachVirtualMachineElasticIPParams(args [1]string, argsEscaped bool, r *http.Request) (params AttachVirtualMachineElasticIPParams, _ error) {
+func decodeCreateVirtualMachineCommandParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateVirtualMachineCommandParams, _ error) {
 	// Decode path: virtualMachineId.
 	if err := func() error {
 		param := args[0]
@@ -334,24 +334,24 @@ func decodeAttachVirtualMachineElasticIPParams(args [1]string, argsEscaped bool,
 	return params, nil
 }
 
-// BindElasticIPParams is parameters of bind-elastic-ip operation.
-type BindElasticIPParams struct {
-	ElasticIpId ElasticIPID
+// CreateVirtualMachineRebootParams is parameters of create-virtual-machine-reboot operation.
+type CreateVirtualMachineRebootParams struct {
+	VirtualMachineId VirtualMachineID
 }
 
-func unpackBindElasticIPParams(packed middleware.Parameters) (params BindElasticIPParams) {
+func unpackCreateVirtualMachineRebootParams(packed middleware.Parameters) (params CreateVirtualMachineRebootParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "elasticIpId",
+			Name: "virtualMachineId",
 			In:   "path",
 		}
-		params.ElasticIpId = packed[key].(ElasticIPID)
+		params.VirtualMachineId = packed[key].(VirtualMachineID)
 	}
 	return params
 }
 
-func decodeBindElasticIPParams(args [1]string, argsEscaped bool, r *http.Request) (params BindElasticIPParams, _ error) {
-	// Decode path: elasticIpId.
+func decodeCreateVirtualMachineRebootParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateVirtualMachineRebootParams, _ error) {
+	// Decode path: virtualMachineId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -363,14 +363,14 @@ func decodeBindElasticIPParams(args [1]string, argsEscaped bool, r *http.Request
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "elasticIpId",
+				Param:   "virtualMachineId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
 			})
 
 			if err := func() error {
-				var paramsDotElasticIpIdVal string
+				var paramsDotVirtualMachineIdVal string
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
@@ -382,18 +382,18 @@ func decodeBindElasticIPParams(args [1]string, argsEscaped bool, r *http.Request
 						return err
 					}
 
-					paramsDotElasticIpIdVal = c
+					paramsDotVirtualMachineIdVal = c
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.ElasticIpId = ElasticIPID(paramsDotElasticIpIdVal)
+				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
 				return nil
 			}(); err != nil {
 				return err
 			}
 			if err := func() error {
-				if err := params.ElasticIpId.Validate(); err != nil {
+				if err := params.VirtualMachineId.Validate(); err != nil {
 					return err
 				}
 				return nil
@@ -406,7 +406,7 @@ func decodeBindElasticIPParams(args [1]string, argsEscaped bool, r *http.Request
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "elasticIpId",
+			Name: "virtualMachineId",
 			In:   "path",
 			Err:  err,
 		}
@@ -414,24 +414,24 @@ func decodeBindElasticIPParams(args [1]string, argsEscaped bool, r *http.Request
 	return params, nil
 }
 
-// DeleteBackupParams is parameters of delete-backup operation.
-type DeleteBackupParams struct {
-	BackupId DiskBackupID
+// CreateVirtualMachineRebuildParams is parameters of create-virtual-machine-rebuild operation.
+type CreateVirtualMachineRebuildParams struct {
+	VirtualMachineId VirtualMachineID
 }
 
-func unpackDeleteBackupParams(packed middleware.Parameters) (params DeleteBackupParams) {
+func unpackCreateVirtualMachineRebuildParams(packed middleware.Parameters) (params CreateVirtualMachineRebuildParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "backupId",
+			Name: "virtualMachineId",
 			In:   "path",
 		}
-		params.BackupId = packed[key].(DiskBackupID)
+		params.VirtualMachineId = packed[key].(VirtualMachineID)
 	}
 	return params
 }
 
-func decodeDeleteBackupParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteBackupParams, _ error) {
-	// Decode path: backupId.
+func decodeCreateVirtualMachineRebuildParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateVirtualMachineRebuildParams, _ error) {
+	// Decode path: virtualMachineId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -443,14 +443,14 @@ func decodeDeleteBackupParams(args [1]string, argsEscaped bool, r *http.Request)
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "backupId",
+				Param:   "virtualMachineId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
 			})
 
 			if err := func() error {
-				var paramsDotBackupIdVal string
+				var paramsDotVirtualMachineIdVal string
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
@@ -462,18 +462,18 @@ func decodeDeleteBackupParams(args [1]string, argsEscaped bool, r *http.Request)
 						return err
 					}
 
-					paramsDotBackupIdVal = c
+					paramsDotVirtualMachineIdVal = c
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.BackupId = DiskBackupID(paramsDotBackupIdVal)
+				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
 				return nil
 			}(); err != nil {
 				return err
 			}
 			if err := func() error {
-				if err := params.BackupId.Validate(); err != nil {
+				if err := params.VirtualMachineId.Validate(); err != nil {
 					return err
 				}
 				return nil
@@ -486,7 +486,7 @@ func decodeDeleteBackupParams(args [1]string, argsEscaped bool, r *http.Request)
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "backupId",
+			Name: "virtualMachineId",
 			In:   "path",
 			Err:  err,
 		}
@@ -574,24 +574,24 @@ func decodeDeleteDiskParams(args [1]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
-// DeleteImageParams is parameters of delete-image operation.
-type DeleteImageParams struct {
-	ImageId ImageID
+// DeleteDiskBackupParams is parameters of delete-disk-backup operation.
+type DeleteDiskBackupParams struct {
+	DiskBackupId DiskBackupID
 }
 
-func unpackDeleteImageParams(packed middleware.Parameters) (params DeleteImageParams) {
+func unpackDeleteDiskBackupParams(packed middleware.Parameters) (params DeleteDiskBackupParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "imageId",
+			Name: "diskBackupId",
 			In:   "path",
 		}
-		params.ImageId = packed[key].(ImageID)
+		params.DiskBackupId = packed[key].(DiskBackupID)
 	}
 	return params
 }
 
-func decodeDeleteImageParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteImageParams, _ error) {
-	// Decode path: imageId.
+func decodeDeleteDiskBackupParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteDiskBackupParams, _ error) {
+	// Decode path: diskBackupId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -603,14 +603,14 @@ func decodeDeleteImageParams(args [1]string, argsEscaped bool, r *http.Request) 
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "imageId",
+				Param:   "diskBackupId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
 			})
 
 			if err := func() error {
-				var paramsDotImageIdVal string
+				var paramsDotDiskBackupIdVal string
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
@@ -622,18 +622,18 @@ func decodeDeleteImageParams(args [1]string, argsEscaped bool, r *http.Request) 
 						return err
 					}
 
-					paramsDotImageIdVal = c
+					paramsDotDiskBackupIdVal = c
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.ImageId = ImageID(paramsDotImageIdVal)
+				params.DiskBackupId = DiskBackupID(paramsDotDiskBackupIdVal)
 				return nil
 			}(); err != nil {
 				return err
 			}
 			if err := func() error {
-				if err := params.ImageId.Validate(); err != nil {
+				if err := params.DiskBackupId.Validate(); err != nil {
 					return err
 				}
 				return nil
@@ -646,7 +646,167 @@ func decodeDeleteImageParams(args [1]string, argsEscaped bool, r *http.Request) 
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "imageId",
+			Name: "diskBackupId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// DeleteElasticIPParams is parameters of delete-elastic-ip operation.
+type DeleteElasticIPParams struct {
+	ElasticIpId ElasticIPID
+}
+
+func unpackDeleteElasticIPParams(packed middleware.Parameters) (params DeleteElasticIPParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "elasticIpId",
+			In:   "path",
+		}
+		params.ElasticIpId = packed[key].(ElasticIPID)
+	}
+	return params
+}
+
+func decodeDeleteElasticIPParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteElasticIPParams, _ error) {
+	// Decode path: elasticIpId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "elasticIpId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotElasticIpIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotElasticIpIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ElasticIpId = ElasticIPID(paramsDotElasticIpIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.ElasticIpId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "elasticIpId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// DeleteElasticIPAssociationParams is parameters of delete-elastic-ip-association operation.
+type DeleteElasticIPAssociationParams struct {
+	ElasticIpId ElasticIPID
+}
+
+func unpackDeleteElasticIPAssociationParams(packed middleware.Parameters) (params DeleteElasticIPAssociationParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "elasticIpId",
+			In:   "path",
+		}
+		params.ElasticIpId = packed[key].(ElasticIPID)
+	}
+	return params
+}
+
+func decodeDeleteElasticIPAssociationParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteElasticIPAssociationParams, _ error) {
+	// Decode path: elasticIpId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "elasticIpId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotElasticIpIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotElasticIpIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ElasticIpId = ElasticIPID(paramsDotElasticIpIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.ElasticIpId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "elasticIpId",
 			In:   "path",
 			Err:  err,
 		}
@@ -807,6 +967,86 @@ func decodeDeletePeeringParams(args [1]string, argsEscaped bool, r *http.Request
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "peeringId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// DeletePrivateImageParams is parameters of delete-private-image operation.
+type DeletePrivateImageParams struct {
+	PrivateImageId ImageID
+}
+
+func unpackDeletePrivateImageParams(packed middleware.Parameters) (params DeletePrivateImageParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "privateImageId",
+			In:   "path",
+		}
+		params.PrivateImageId = packed[key].(ImageID)
+	}
+	return params
+}
+
+func decodeDeletePrivateImageParams(args [1]string, argsEscaped bool, r *http.Request) (params DeletePrivateImageParams, _ error) {
+	// Decode path: privateImageId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "privateImageId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotPrivateImageIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPrivateImageIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.PrivateImageId = ImageID(paramsDotPrivateImageIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.PrivateImageId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "privateImageId",
 			In:   "path",
 			Err:  err,
 		}
@@ -976,22 +1216,22 @@ func decodeDeleteSecurityGroupParams(args [1]string, argsEscaped bool, r *http.R
 
 // DeleteSecurityGroupRuleParams is parameters of delete-security-group-rule operation.
 type DeleteSecurityGroupRuleParams struct {
-	RuleId SecurityGroupRuleID
+	SecurityGroupRuleId SecurityGroupRuleID
 }
 
 func unpackDeleteSecurityGroupRuleParams(packed middleware.Parameters) (params DeleteSecurityGroupRuleParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "ruleId",
+			Name: "securityGroupRuleId",
 			In:   "path",
 		}
-		params.RuleId = packed[key].(SecurityGroupRuleID)
+		params.SecurityGroupRuleId = packed[key].(SecurityGroupRuleID)
 	}
 	return params
 }
 
 func decodeDeleteSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteSecurityGroupRuleParams, _ error) {
-	// Decode path: ruleId.
+	// Decode path: securityGroupRuleId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -1003,14 +1243,14 @@ func decodeDeleteSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *ht
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "ruleId",
+				Param:   "securityGroupRuleId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
 			})
 
 			if err := func() error {
-				var paramsDotRuleIdVal string
+				var paramsDotSecurityGroupRuleIdVal string
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
@@ -1022,18 +1262,18 @@ func decodeDeleteSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *ht
 						return err
 					}
 
-					paramsDotRuleIdVal = c
+					paramsDotSecurityGroupRuleIdVal = c
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.RuleId = SecurityGroupRuleID(paramsDotRuleIdVal)
+				params.SecurityGroupRuleId = SecurityGroupRuleID(paramsDotSecurityGroupRuleIdVal)
 				return nil
 			}(); err != nil {
 				return err
 			}
 			if err := func() error {
-				if err := params.RuleId.Validate(); err != nil {
+				if err := params.SecurityGroupRuleId.Validate(); err != nil {
 					return err
 				}
 				return nil
@@ -1046,7 +1286,7 @@ func decodeDeleteSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *ht
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "ruleId",
+			Name: "securityGroupRuleId",
 			In:   "path",
 			Err:  err,
 		}
@@ -1294,6 +1534,86 @@ func decodeDeleteVirtualMachineParams(args [1]string, argsEscaped bool, r *http.
 	return params, nil
 }
 
+// DeleteVirtualMachineRescueParams is parameters of delete-virtual-machine-rescue operation.
+type DeleteVirtualMachineRescueParams struct {
+	VirtualMachineId VirtualMachineID
+}
+
+func unpackDeleteVirtualMachineRescueParams(packed middleware.Parameters) (params DeleteVirtualMachineRescueParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "virtualMachineId",
+			In:   "path",
+		}
+		params.VirtualMachineId = packed[key].(VirtualMachineID)
+	}
+	return params
+}
+
+func decodeDeleteVirtualMachineRescueParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteVirtualMachineRescueParams, _ error) {
+	// Decode path: virtualMachineId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "virtualMachineId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotVirtualMachineIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotVirtualMachineIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.VirtualMachineId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "virtualMachineId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // DeleteVirtualPrivateCloudParams is parameters of delete-virtual-private-cloud operation.
 type DeleteVirtualPrivateCloudParams struct {
 	VirtualPrivateCloudId VirtualPrivateCloudID
@@ -1454,13 +1774,13 @@ func decodeDeleteVirtualPrivateCloudIpv6Params(args [1]string, argsEscaped bool,
 	return params, nil
 }
 
-// DetachDiskParams is parameters of detach-disk operation.
-type DetachDiskParams struct {
+// DetachVirtualMachineDiskParams is parameters of detach-virtual-machine-disk operation.
+type DetachVirtualMachineDiskParams struct {
 	VirtualMachineId VirtualMachineID
 	DiskId           DiskID
 }
 
-func unpackDetachDiskParams(packed middleware.Parameters) (params DetachDiskParams) {
+func unpackDetachVirtualMachineDiskParams(packed middleware.Parameters) (params DetachVirtualMachineDiskParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "virtualMachineId",
@@ -1478,7 +1798,7 @@ func unpackDetachDiskParams(packed middleware.Parameters) (params DetachDiskPara
 	return params
 }
 
-func decodeDetachDiskParams(args [2]string, argsEscaped bool, r *http.Request) (params DetachDiskParams, _ error) {
+func decodeDetachVirtualMachineDiskParams(args [2]string, argsEscaped bool, r *http.Request) (params DetachVirtualMachineDiskParams, _ error) {
 	// Decode path: virtualMachineId.
 	if err := func() error {
 		param := args[0]
@@ -1602,13 +1922,13 @@ func decodeDetachDiskParams(args [2]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
-// DetachNetworkInterfaceParams is parameters of detach-network-interface operation.
-type DetachNetworkInterfaceParams struct {
+// DetachVirtualMachineNetworkInterfaceParams is parameters of detach-virtual-machine-network-interface operation.
+type DetachVirtualMachineNetworkInterfaceParams struct {
 	VirtualMachineId   VirtualMachineID
 	NetworkInterfaceId NetworkInterfaceID
 }
 
-func unpackDetachNetworkInterfaceParams(packed middleware.Parameters) (params DetachNetworkInterfaceParams) {
+func unpackDetachVirtualMachineNetworkInterfaceParams(packed middleware.Parameters) (params DetachVirtualMachineNetworkInterfaceParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "virtualMachineId",
@@ -1626,7 +1946,7 @@ func unpackDetachNetworkInterfaceParams(packed middleware.Parameters) (params De
 	return params
 }
 
-func decodeDetachNetworkInterfaceParams(args [2]string, argsEscaped bool, r *http.Request) (params DetachNetworkInterfaceParams, _ error) {
+func decodeDetachVirtualMachineNetworkInterfaceParams(args [2]string, argsEscaped bool, r *http.Request) (params DetachVirtualMachineNetworkInterfaceParams, _ error) {
 	// Decode path: virtualMachineId.
 	if err := func() error {
 		param := args[0]
@@ -1750,32 +2070,24 @@ func decodeDetachNetworkInterfaceParams(args [2]string, argsEscaped bool, r *htt
 	return params, nil
 }
 
-// DetachVirtualMachineElasticIPParams is parameters of detach-virtual-machine-elastic-ip operation.
-type DetachVirtualMachineElasticIPParams struct {
-	VirtualMachineId VirtualMachineID
-	ElasticIpId      ElasticIPID
+// GetAvailabilityZoneParams is parameters of get-availability-zone operation.
+type GetAvailabilityZoneParams struct {
+	AvailabilityZoneId AvailabilityZoneID
 }
 
-func unpackDetachVirtualMachineElasticIPParams(packed middleware.Parameters) (params DetachVirtualMachineElasticIPParams) {
+func unpackGetAvailabilityZoneParams(packed middleware.Parameters) (params GetAvailabilityZoneParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "virtualMachineId",
+			Name: "availabilityZoneId",
 			In:   "path",
 		}
-		params.VirtualMachineId = packed[key].(VirtualMachineID)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "elasticIpId",
-			In:   "path",
-		}
-		params.ElasticIpId = packed[key].(ElasticIPID)
+		params.AvailabilityZoneId = packed[key].(AvailabilityZoneID)
 	}
 	return params
 }
 
-func decodeDetachVirtualMachineElasticIPParams(args [2]string, argsEscaped bool, r *http.Request) (params DetachVirtualMachineElasticIPParams, _ error) {
-	// Decode path: virtualMachineId.
+func decodeGetAvailabilityZoneParams(args [1]string, argsEscaped bool, r *http.Request) (params GetAvailabilityZoneParams, _ error) {
+	// Decode path: availabilityZoneId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -1787,14 +2099,14 @@ func decodeDetachVirtualMachineElasticIPParams(args [2]string, argsEscaped bool,
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualMachineId",
+				Param:   "availabilityZoneId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
 			})
 
 			if err := func() error {
-				var paramsDotVirtualMachineIdVal string
+				var paramsDotAvailabilityZoneIdVal string
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
@@ -1806,18 +2118,18 @@ func decodeDetachVirtualMachineElasticIPParams(args [2]string, argsEscaped bool,
 						return err
 					}
 
-					paramsDotVirtualMachineIdVal = c
+					paramsDotAvailabilityZoneIdVal = c
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
+				params.AvailabilityZoneId = AvailabilityZoneID(paramsDotAvailabilityZoneIdVal)
 				return nil
 			}(); err != nil {
 				return err
 			}
 			if err := func() error {
-				if err := params.VirtualMachineId.Validate(); err != nil {
+				if err := params.AvailabilityZoneId.Validate(); err != nil {
 					return err
 				}
 				return nil
@@ -1830,147 +2142,7 @@ func decodeDetachVirtualMachineElasticIPParams(args [2]string, argsEscaped bool,
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualMachineId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode path: elasticIpId.
-	if err := func() error {
-		param := args[1]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[1])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "elasticIpId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotElasticIpIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotElasticIpIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.ElasticIpId = ElasticIPID(paramsDotElasticIpIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.ElasticIpId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "elasticIpId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// GetBackupParams is parameters of get-backup operation.
-type GetBackupParams struct {
-	BackupId DiskBackupID
-}
-
-func unpackGetBackupParams(packed middleware.Parameters) (params GetBackupParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "backupId",
-			In:   "path",
-		}
-		params.BackupId = packed[key].(DiskBackupID)
-	}
-	return params
-}
-
-func decodeGetBackupParams(args [1]string, argsEscaped bool, r *http.Request) (params GetBackupParams, _ error) {
-	// Decode path: backupId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "backupId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotBackupIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotBackupIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.BackupId = DiskBackupID(paramsDotBackupIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.BackupId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "backupId",
+			Name: "availabilityZoneId",
 			In:   "path",
 			Err:  err,
 		}
@@ -2051,6 +2223,86 @@ func decodeGetDiskParams(args [1]string, argsEscaped bool, r *http.Request) (par
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "diskId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetDiskBackupParams is parameters of get-disk-backup operation.
+type GetDiskBackupParams struct {
+	DiskBackupId DiskBackupID
+}
+
+func unpackGetDiskBackupParams(packed middleware.Parameters) (params GetDiskBackupParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "diskBackupId",
+			In:   "path",
+		}
+		params.DiskBackupId = packed[key].(DiskBackupID)
+	}
+	return params
+}
+
+func decodeGetDiskBackupParams(args [1]string, argsEscaped bool, r *http.Request) (params GetDiskBackupParams, _ error) {
+	// Decode path: diskBackupId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "diskBackupId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotDiskBackupIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotDiskBackupIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.DiskBackupId = DiskBackupID(paramsDotDiskBackupIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.DiskBackupId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "diskBackupId",
 			In:   "path",
 			Err:  err,
 		}
@@ -2218,6 +2470,86 @@ func decodeGetElasticIPParams(args [1]string, argsEscaped bool, r *http.Request)
 	return params, nil
 }
 
+// GetElasticIPAssociationParams is parameters of get-elastic-ip-association operation.
+type GetElasticIPAssociationParams struct {
+	ElasticIpId ElasticIPID
+}
+
+func unpackGetElasticIPAssociationParams(packed middleware.Parameters) (params GetElasticIPAssociationParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "elasticIpId",
+			In:   "path",
+		}
+		params.ElasticIpId = packed[key].(ElasticIPID)
+	}
+	return params
+}
+
+func decodeGetElasticIPAssociationParams(args [1]string, argsEscaped bool, r *http.Request) (params GetElasticIPAssociationParams, _ error) {
+	// Decode path: elasticIpId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "elasticIpId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotElasticIpIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotElasticIpIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ElasticIpId = ElasticIPID(paramsDotElasticIpIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.ElasticIpId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "elasticIpId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetElasticIPTypeParams is parameters of get-elastic-ip-type operation.
 type GetElasticIPTypeParams struct {
 	ElasticIpTypeId ElasticIPTypeID
@@ -2291,86 +2623,6 @@ func decodeGetElasticIPTypeParams(args [1]string, argsEscaped bool, r *http.Requ
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "elasticIpTypeId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// GetImageParams is parameters of get-image operation.
-type GetImageParams struct {
-	ImageId ImageID
-}
-
-func unpackGetImageParams(packed middleware.Parameters) (params GetImageParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "imageId",
-			In:   "path",
-		}
-		params.ImageId = packed[key].(ImageID)
-	}
-	return params
-}
-
-func decodeGetImageParams(args [1]string, argsEscaped bool, r *http.Request) (params GetImageParams, _ error) {
-	// Decode path: imageId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "imageId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotImageIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotImageIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.ImageId = ImageID(paramsDotImageIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.ImageId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "imageId",
 			In:   "path",
 			Err:  err,
 		}
@@ -2458,6 +2710,166 @@ func decodeGetMachineTypeParams(args [1]string, argsEscaped bool, r *http.Reques
 	return params, nil
 }
 
+// GetNetworkInterfaceParams is parameters of get-network-interface operation.
+type GetNetworkInterfaceParams struct {
+	NetworkInterfaceId NetworkInterfaceID
+}
+
+func unpackGetNetworkInterfaceParams(packed middleware.Parameters) (params GetNetworkInterfaceParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "networkInterfaceId",
+			In:   "path",
+		}
+		params.NetworkInterfaceId = packed[key].(NetworkInterfaceID)
+	}
+	return params
+}
+
+func decodeGetNetworkInterfaceParams(args [1]string, argsEscaped bool, r *http.Request) (params GetNetworkInterfaceParams, _ error) {
+	// Decode path: networkInterfaceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "networkInterfaceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotNetworkInterfaceIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotNetworkInterfaceIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.NetworkInterfaceId = NetworkInterfaceID(paramsDotNetworkInterfaceIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.NetworkInterfaceId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "networkInterfaceId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetOperationLogParams is parameters of get-operation-log operation.
+type GetOperationLogParams struct {
+	OperationLogId OperationLogID
+}
+
+func unpackGetOperationLogParams(packed middleware.Parameters) (params GetOperationLogParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "operationLogId",
+			In:   "path",
+		}
+		params.OperationLogId = packed[key].(OperationLogID)
+	}
+	return params
+}
+
+func decodeGetOperationLogParams(args [1]string, argsEscaped bool, r *http.Request) (params GetOperationLogParams, _ error) {
+	// Decode path: operationLogId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "operationLogId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotOperationLogIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotOperationLogIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.OperationLogId = OperationLogID(paramsDotOperationLogIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.OperationLogId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "operationLogId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetPeeringParams is parameters of get-peering operation.
 type GetPeeringParams struct {
 	PeeringId PeeringID
@@ -2538,6 +2950,166 @@ func decodeGetPeeringParams(args [1]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
+// GetPrivateImageParams is parameters of get-private-image operation.
+type GetPrivateImageParams struct {
+	PrivateImageId ImageID
+}
+
+func unpackGetPrivateImageParams(packed middleware.Parameters) (params GetPrivateImageParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "privateImageId",
+			In:   "path",
+		}
+		params.PrivateImageId = packed[key].(ImageID)
+	}
+	return params
+}
+
+func decodeGetPrivateImageParams(args [1]string, argsEscaped bool, r *http.Request) (params GetPrivateImageParams, _ error) {
+	// Decode path: privateImageId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "privateImageId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotPrivateImageIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPrivateImageIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.PrivateImageId = ImageID(paramsDotPrivateImageIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.PrivateImageId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "privateImageId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetPublicImageParams is parameters of get-public-image operation.
+type GetPublicImageParams struct {
+	PublicImageId ImageID
+}
+
+func unpackGetPublicImageParams(packed middleware.Parameters) (params GetPublicImageParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "publicImageId",
+			In:   "path",
+		}
+		params.PublicImageId = packed[key].(ImageID)
+	}
+	return params
+}
+
+func decodeGetPublicImageParams(args [1]string, argsEscaped bool, r *http.Request) (params GetPublicImageParams, _ error) {
+	// Decode path: publicImageId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "publicImageId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotPublicImageIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPublicImageIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.PublicImageId = ImageID(paramsDotPublicImageIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.PublicImageId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "publicImageId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetQuotaParams is parameters of get-quota operation.
 type GetQuotaParams struct {
 	Resource ProjectQuotaResource
@@ -2604,6 +3176,86 @@ func decodeGetQuotaParams(args [1]string, argsEscaped bool, r *http.Request) (pa
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "resource",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetRegionParams is parameters of get-region operation.
+type GetRegionParams struct {
+	RegionId RegionID
+}
+
+func unpackGetRegionParams(packed middleware.Parameters) (params GetRegionParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "regionId",
+			In:   "path",
+		}
+		params.RegionId = packed[key].(RegionID)
+	}
+	return params
+}
+
+func decodeGetRegionParams(args [1]string, argsEscaped bool, r *http.Request) (params GetRegionParams, _ error) {
+	// Decode path: regionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "regionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotRegionIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotRegionIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.RegionId = RegionID(paramsDotRegionIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.RegionId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "regionId",
 			In:   "path",
 			Err:  err,
 		}
@@ -2773,22 +3425,22 @@ func decodeGetSecurityGroupParams(args [1]string, argsEscaped bool, r *http.Requ
 
 // GetSecurityGroupRuleParams is parameters of get-security-group-rule operation.
 type GetSecurityGroupRuleParams struct {
-	RuleId SecurityGroupRuleID
+	SecurityGroupRuleId SecurityGroupRuleID
 }
 
 func unpackGetSecurityGroupRuleParams(packed middleware.Parameters) (params GetSecurityGroupRuleParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "ruleId",
+			Name: "securityGroupRuleId",
 			In:   "path",
 		}
-		params.RuleId = packed[key].(SecurityGroupRuleID)
+		params.SecurityGroupRuleId = packed[key].(SecurityGroupRuleID)
 	}
 	return params
 }
 
 func decodeGetSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *http.Request) (params GetSecurityGroupRuleParams, _ error) {
-	// Decode path: ruleId.
+	// Decode path: securityGroupRuleId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -2800,14 +3452,14 @@ func decodeGetSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *http.
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "ruleId",
+				Param:   "securityGroupRuleId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
 			})
 
 			if err := func() error {
-				var paramsDotRuleIdVal string
+				var paramsDotSecurityGroupRuleIdVal string
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
@@ -2819,18 +3471,18 @@ func decodeGetSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *http.
 						return err
 					}
 
-					paramsDotRuleIdVal = c
+					paramsDotSecurityGroupRuleIdVal = c
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.RuleId = SecurityGroupRuleID(paramsDotRuleIdVal)
+				params.SecurityGroupRuleId = SecurityGroupRuleID(paramsDotSecurityGroupRuleIdVal)
 				return nil
 			}(); err != nil {
 				return err
 			}
 			if err := func() error {
-				if err := params.RuleId.Validate(); err != nil {
+				if err := params.SecurityGroupRuleId.Validate(); err != nil {
 					return err
 				}
 				return nil
@@ -2843,7 +3495,7 @@ func decodeGetSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *http.
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "ruleId",
+			Name: "securityGroupRuleId",
 			In:   "path",
 			Err:  err,
 		}
@@ -3028,6 +3680,86 @@ func unpackGetVirtualMachineParams(packed middleware.Parameters) (params GetVirt
 }
 
 func decodeGetVirtualMachineParams(args [1]string, argsEscaped bool, r *http.Request) (params GetVirtualMachineParams, _ error) {
+	// Decode path: virtualMachineId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "virtualMachineId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotVirtualMachineIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotVirtualMachineIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.VirtualMachineId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "virtualMachineId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetVirtualMachineConsoleParams is parameters of get-virtual-machine-console operation.
+type GetVirtualMachineConsoleParams struct {
+	VirtualMachineId VirtualMachineID
+}
+
+func unpackGetVirtualMachineConsoleParams(packed middleware.Parameters) (params GetVirtualMachineConsoleParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "virtualMachineId",
+			In:   "path",
+		}
+		params.VirtualMachineId = packed[key].(VirtualMachineID)
+	}
+	return params
+}
+
+func decodeGetVirtualMachineConsoleParams(args [1]string, argsEscaped bool, r *http.Request) (params GetVirtualMachineConsoleParams, _ error) {
 	// Decode path: virtualMachineId.
 	if err := func() error {
 		param := args[0]
@@ -3415,7 +4147,8 @@ func decodeGetVirtualPrivateCloudIpv6Params(args [1]string, argsEscaped bool, r 
 
 // ListAvailabilityZonesParams is parameters of list-availability-zones operation.
 type ListAvailabilityZonesParams struct {
-	RegionId RegionID
+	// Return only the zones of this region.
+	RegionID OptRegionID `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -3425,10 +4158,12 @@ type ListAvailabilityZonesParams struct {
 func unpackListAvailabilityZonesParams(packed middleware.Parameters) (params ListAvailabilityZonesParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "regionId",
-			In:   "path",
+			Name: "region_id",
+			In:   "query",
 		}
-		params.RegionId = packed[key].(RegionID)
+		if v, ok := packed[key]; ok {
+			params.RegionID = v.(OptRegionID)
+		}
 	}
 	{
 		key := middleware.ParameterKey{
@@ -3451,65 +4186,68 @@ func unpackListAvailabilityZonesParams(packed middleware.Parameters) (params Lis
 	return params
 }
 
-func decodeListAvailabilityZonesParams(args [1]string, argsEscaped bool, r *http.Request) (params ListAvailabilityZonesParams, _ error) {
+func decodeListAvailabilityZonesParams(args [0]string, argsEscaped bool, r *http.Request) (params ListAvailabilityZonesParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode path: regionId.
+	// Decode query: region_id.
 	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "region_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
 		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "regionId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
 
-			if err := func() error {
-				var paramsDotRegionIdVal string
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotRegionIDVal RegionID
 				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
+					var paramsDotRegionIDValVal string
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotRegionIDValVal = c
+						return nil
+					}(); err != nil {
 						return err
 					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotRegionIdVal = c
+					paramsDotRegionIDVal = RegionID(paramsDotRegionIDValVal)
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.RegionId = RegionID(paramsDotRegionIdVal)
+				params.RegionID.SetTo(paramsDotRegionIDVal)
 				return nil
-			}(); err != nil {
+			}); err != nil {
 				return err
 			}
 			if err := func() error {
-				if err := params.RegionId.Validate(); err != nil {
-					return err
+				if value, ok := params.RegionID.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
 				}
 				return nil
 			}(); err != nil {
 				return err
 			}
-		} else {
-			return validate.ErrFieldRequired
 		}
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "regionId",
-			In:   "path",
+			Name: "region_id",
+			In:   "query",
 			Err:  err,
 		}
 	}
@@ -3658,8 +4396,8 @@ func decodeListAvailabilityZonesParams(args [1]string, argsEscaped bool, r *http
 	return params, nil
 }
 
-// ListBackupsParams is parameters of list-backups operation.
-type ListBackupsParams struct {
+// ListDiskBackupsParams is parameters of list-disk-backups operation.
+type ListDiskBackupsParams struct {
 	// Return only the backups of this disk.
 	DiskID OptDiskID `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
@@ -3668,7 +4406,7 @@ type ListBackupsParams struct {
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
-func unpackListBackupsParams(packed middleware.Parameters) (params ListBackupsParams) {
+func unpackListDiskBackupsParams(packed middleware.Parameters) (params ListDiskBackupsParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "disk_id",
@@ -3699,7 +4437,7 @@ func unpackListBackupsParams(packed middleware.Parameters) (params ListBackupsPa
 	return params
 }
 
-func decodeListBackupsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListBackupsParams, _ error) {
+func decodeListDiskBackupsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListDiskBackupsParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
 	// Decode query: disk_id.
 	if err := func() error {
@@ -4229,7 +4967,7 @@ func decodeListDiskTypesParams(args [0]string, argsEscaped bool, r *http.Request
 // ListDisksParams is parameters of list-disks operation.
 type ListDisksParams struct {
 	RegionID OptRegionID `json:",omitempty,omitzero"`
-	// Supplied together with `region_code` to filter attachable disks.
+	// Supplied together with `region_id` to filter attachable disks.
 	AvailabilityZoneID OptAvailabilityZoneID `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
@@ -4553,6 +5291,9 @@ func decodeListDisksParams(args [0]string, argsEscaped bool, r *http.Request) (p
 // ListElasticIPTypesParams is parameters of list-elastic-ip-types operation.
 type ListElasticIPTypesParams struct {
 	RegionID OptRegionID `json:",omitempty,omitzero"`
+	// Search text matched against product names and descriptions; combined with the other filters using
+	// AND.
+	Q OptString `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -4567,6 +5308,15 @@ func unpackListElasticIPTypesParams(packed middleware.Parameters) (params ListEl
 		}
 		if v, ok := packed[key]; ok {
 			params.RegionID = v.(OptRegionID)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "q",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Q = v.(OptString)
 		}
 	}
 	{
@@ -4651,6 +5401,74 @@ func decodeListElasticIPTypesParams(args [0]string, argsEscaped bool, r *http.Re
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "region_id",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: q.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "q",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotQVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotQVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Q.SetTo(paramsDotQVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Q.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     255,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "q",
 			In:   "query",
 			Err:  err,
 		}
@@ -4832,324 +5650,6 @@ func unpackListElasticIpsParams(packed middleware.Parameters) (params ListElasti
 
 func decodeListElasticIpsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListElasticIpsParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
-	// Set default value for query: page.
-	{
-		val := int64(1)
-		params.Page.SetTo(val)
-	}
-	// Decode query: page.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotPageVal int64
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToInt64(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotPageVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Page.SetTo(paramsDotPageVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.Page.Get(); ok {
-					if err := func() error {
-						if err := (validate.Int{
-							MinSet:        true,
-							Min:           1,
-							MaxSet:        true,
-							Max:           2147483647,
-							MinExclusive:  false,
-							MaxExclusive:  false,
-							MultipleOfSet: false,
-							MultipleOf:    0,
-							Pattern:       nil,
-						}).Validate(int64(value)); err != nil {
-							return errors.Wrap(err, "int")
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "page",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	// Set default value for query: page_size.
-	{
-		val := int64(50)
-		params.PageSize.SetTo(val)
-	}
-	// Decode query: page_size.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotPageSizeVal int64
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToInt64(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotPageSizeVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.PageSize.SetTo(paramsDotPageSizeVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.PageSize.Get(); ok {
-					if err := func() error {
-						if err := (validate.Int{
-							MinSet:        true,
-							Min:           1,
-							MaxSet:        true,
-							Max:           200,
-							MinExclusive:  false,
-							MaxExclusive:  false,
-							MultipleOfSet: false,
-							MultipleOf:    0,
-							Pattern:       nil,
-						}).Validate(int64(value)); err != nil {
-							return errors.Wrap(err, "int")
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "page_size",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// ListImagesParams is parameters of list-images operation.
-type ListImagesParams struct {
-	// Return only the images of this region.
-	RegionID OptRegionID `json:",omitempty,omitzero"`
-	// Return only public or only private images. Both are returned when omitted.
-	Visibility OptImageVisibility `json:",omitempty,omitzero"`
-	// 1-based page number. Defaults to 1.
-	Page OptInt64 `json:",omitempty,omitzero"`
-	// Items per page. Defaults to 50; at most 200.
-	PageSize OptInt64 `json:",omitempty,omitzero"`
-}
-
-func unpackListImagesParams(packed middleware.Parameters) (params ListImagesParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "region_id",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.RegionID = v.(OptRegionID)
-		}
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "visibility",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.Visibility = v.(OptImageVisibility)
-		}
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "page",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.Page = v.(OptInt64)
-		}
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "page_size",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.PageSize = v.(OptInt64)
-		}
-	}
-	return params
-}
-
-func decodeListImagesParams(args [0]string, argsEscaped bool, r *http.Request) (params ListImagesParams, _ error) {
-	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode query: region_id.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "region_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotRegionIDVal RegionID
-				if err := func() error {
-					var paramsDotRegionIDValVal string
-					if err := func() error {
-						val, err := d.DecodeValue()
-						if err != nil {
-							return err
-						}
-
-						c, err := conv.ToString(val)
-						if err != nil {
-							return err
-						}
-
-						paramsDotRegionIDValVal = c
-						return nil
-					}(); err != nil {
-						return err
-					}
-					paramsDotRegionIDVal = RegionID(paramsDotRegionIDValVal)
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.RegionID.SetTo(paramsDotRegionIDVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.RegionID.Get(); ok {
-					if err := func() error {
-						if err := value.Validate(); err != nil {
-							return err
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "region_id",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	// Decode query: visibility.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "visibility",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotVisibilityVal ImageVisibility
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVisibilityVal = ImageVisibility(c)
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Visibility.SetTo(paramsDotVisibilityVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.Visibility.Get(); ok {
-					if err := func() error {
-						if err := value.Validate(); err != nil {
-							return err
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "visibility",
-			In:   "query",
-			Err:  err,
-		}
-	}
 	// Set default value for query: page.
 	{
 		val := int64(1)
@@ -6010,6 +6510,508 @@ func unpackListPeeringsParams(packed middleware.Parameters) (params ListPeerings
 
 func decodeListPeeringsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListPeeringsParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
+	// Set default value for query: page.
+	{
+		val := int64(1)
+		params.Page.SetTo(val)
+	}
+	// Decode query: page.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Page.SetTo(paramsDotPageVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Page.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           2147483647,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: page_size.
+	{
+		val := int64(50)
+		params.PageSize.SetTo(val)
+	}
+	// Decode query: page_size.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageSizeVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageSizeVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.PageSize.SetTo(paramsDotPageSizeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.PageSize.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           200,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page_size",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListPrivateImagesParams is parameters of list-private-images operation.
+type ListPrivateImagesParams struct {
+	// Return only the images of this region.
+	RegionID OptRegionID `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize OptInt64 `json:",omitempty,omitzero"`
+}
+
+func unpackListPrivateImagesParams(packed middleware.Parameters) (params ListPrivateImagesParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "region_id",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.RegionID = v.(OptRegionID)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "page",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Page = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "page_size",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.PageSize = v.(OptInt64)
+		}
+	}
+	return params
+}
+
+func decodeListPrivateImagesParams(args [0]string, argsEscaped bool, r *http.Request) (params ListPrivateImagesParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: region_id.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "region_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotRegionIDVal RegionID
+				if err := func() error {
+					var paramsDotRegionIDValVal string
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotRegionIDValVal = c
+						return nil
+					}(); err != nil {
+						return err
+					}
+					paramsDotRegionIDVal = RegionID(paramsDotRegionIDValVal)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.RegionID.SetTo(paramsDotRegionIDVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.RegionID.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "region_id",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: page.
+	{
+		val := int64(1)
+		params.Page.SetTo(val)
+	}
+	// Decode query: page.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Page.SetTo(paramsDotPageVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Page.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           2147483647,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: page_size.
+	{
+		val := int64(50)
+		params.PageSize.SetTo(val)
+	}
+	// Decode query: page_size.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageSizeVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageSizeVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.PageSize.SetTo(paramsDotPageSizeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.PageSize.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           200,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page_size",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListPublicImagesParams is parameters of list-public-images operation.
+type ListPublicImagesParams struct {
+	// Return only the images of this region.
+	RegionID OptRegionID `json:",omitempty,omitzero"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:",omitempty,omitzero"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize OptInt64 `json:",omitempty,omitzero"`
+}
+
+func unpackListPublicImagesParams(packed middleware.Parameters) (params ListPublicImagesParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "region_id",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.RegionID = v.(OptRegionID)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "page",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Page = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "page_size",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.PageSize = v.(OptInt64)
+		}
+	}
+	return params
+}
+
+func decodeListPublicImagesParams(args [0]string, argsEscaped bool, r *http.Request) (params ListPublicImagesParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: region_id.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "region_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotRegionIDVal RegionID
+				if err := func() error {
+					var paramsDotRegionIDValVal string
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotRegionIDValVal = c
+						return nil
+					}(); err != nil {
+						return err
+					}
+					paramsDotRegionIDVal = RegionID(paramsDotRegionIDValVal)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.RegionID.SetTo(paramsDotRegionIDVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.RegionID.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "region_id",
+			In:   "query",
+			Err:  err,
+		}
+	}
 	// Set default value for query: page.
 	{
 		val := int64(1)
@@ -8836,12 +9838,92 @@ func decodeListVirtualPrivateCloudsParams(args [0]string, argsEscaped bool, r *h
 	return params, nil
 }
 
-// OpenVirtualMachineConsoleParams is parameters of open-virtual-machine-console operation.
-type OpenVirtualMachineConsoleParams struct {
+// PutElasticIPAssociationParams is parameters of put-elastic-ip-association operation.
+type PutElasticIPAssociationParams struct {
+	ElasticIpId ElasticIPID
+}
+
+func unpackPutElasticIPAssociationParams(packed middleware.Parameters) (params PutElasticIPAssociationParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "elasticIpId",
+			In:   "path",
+		}
+		params.ElasticIpId = packed[key].(ElasticIPID)
+	}
+	return params
+}
+
+func decodePutElasticIPAssociationParams(args [1]string, argsEscaped bool, r *http.Request) (params PutElasticIPAssociationParams, _ error) {
+	// Decode path: elasticIpId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "elasticIpId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotElasticIpIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotElasticIpIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ElasticIpId = ElasticIPID(paramsDotElasticIpIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.ElasticIpId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "elasticIpId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// PutVirtualMachinePasswordParams is parameters of put-virtual-machine-password operation.
+type PutVirtualMachinePasswordParams struct {
 	VirtualMachineId VirtualMachineID
 }
 
-func unpackOpenVirtualMachineConsoleParams(packed middleware.Parameters) (params OpenVirtualMachineConsoleParams) {
+func unpackPutVirtualMachinePasswordParams(packed middleware.Parameters) (params PutVirtualMachinePasswordParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "virtualMachineId",
@@ -8852,7 +9934,87 @@ func unpackOpenVirtualMachineConsoleParams(packed middleware.Parameters) (params
 	return params
 }
 
-func decodeOpenVirtualMachineConsoleParams(args [1]string, argsEscaped bool, r *http.Request) (params OpenVirtualMachineConsoleParams, _ error) {
+func decodePutVirtualMachinePasswordParams(args [1]string, argsEscaped bool, r *http.Request) (params PutVirtualMachinePasswordParams, _ error) {
+	// Decode path: virtualMachineId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "virtualMachineId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotVirtualMachineIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotVirtualMachineIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.VirtualMachineId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "virtualMachineId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// PutVirtualMachineRescueParams is parameters of put-virtual-machine-rescue operation.
+type PutVirtualMachineRescueParams struct {
+	VirtualMachineId VirtualMachineID
+}
+
+func unpackPutVirtualMachineRescueParams(packed middleware.Parameters) (params PutVirtualMachineRescueParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "virtualMachineId",
+			In:   "path",
+		}
+		params.VirtualMachineId = packed[key].(VirtualMachineID)
+	}
+	return params
+}
+
+func decodePutVirtualMachineRescueParams(args [1]string, argsEscaped bool, r *http.Request) (params PutVirtualMachineRescueParams, _ error) {
 	// Decode path: virtualMachineId.
 	if err := func() error {
 		param := args[0]
@@ -8996,24 +10158,24 @@ func decodePutVirtualPrivateCloudIpv6Params(args [1]string, argsEscaped bool, r 
 	return params, nil
 }
 
-// RebootVirtualMachineParams is parameters of reboot-virtual-machine operation.
-type RebootVirtualMachineParams struct {
-	VirtualMachineId VirtualMachineID
+// UpdateDiskParams is parameters of update-disk operation.
+type UpdateDiskParams struct {
+	DiskId DiskID
 }
 
-func unpackRebootVirtualMachineParams(packed middleware.Parameters) (params RebootVirtualMachineParams) {
+func unpackUpdateDiskParams(packed middleware.Parameters) (params UpdateDiskParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "virtualMachineId",
+			Name: "diskId",
 			In:   "path",
 		}
-		params.VirtualMachineId = packed[key].(VirtualMachineID)
+		params.DiskId = packed[key].(DiskID)
 	}
 	return params
 }
 
-func decodeRebootVirtualMachineParams(args [1]string, argsEscaped bool, r *http.Request) (params RebootVirtualMachineParams, _ error) {
-	// Decode path: virtualMachineId.
+func decodeUpdateDiskParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateDiskParams, _ error) {
+	// Decode path: diskId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -9025,14 +10187,14 @@ func decodeRebootVirtualMachineParams(args [1]string, argsEscaped bool, r *http.
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualMachineId",
+				Param:   "diskId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
 			})
 
 			if err := func() error {
-				var paramsDotVirtualMachineIdVal string
+				var paramsDotDiskIdVal string
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
@@ -9044,18 +10206,18 @@ func decodeRebootVirtualMachineParams(args [1]string, argsEscaped bool, r *http.
 						return err
 					}
 
-					paramsDotVirtualMachineIdVal = c
+					paramsDotDiskIdVal = c
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
+				params.DiskId = DiskID(paramsDotDiskIdVal)
 				return nil
 			}(); err != nil {
 				return err
 			}
 			if err := func() error {
-				if err := params.VirtualMachineId.Validate(); err != nil {
+				if err := params.DiskId.Validate(); err != nil {
 					return err
 				}
 				return nil
@@ -9068,7 +10230,7 @@ func decodeRebootVirtualMachineParams(args [1]string, argsEscaped bool, r *http.
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualMachineId",
+			Name: "diskId",
 			In:   "path",
 			Err:  err,
 		}
@@ -9076,24 +10238,24 @@ func decodeRebootVirtualMachineParams(args [1]string, argsEscaped bool, r *http.
 	return params, nil
 }
 
-// RebuildVirtualMachineParams is parameters of rebuild-virtual-machine operation.
-type RebuildVirtualMachineParams struct {
-	VirtualMachineId VirtualMachineID
+// UpdateDiskBackupParams is parameters of update-disk-backup operation.
+type UpdateDiskBackupParams struct {
+	DiskBackupId DiskBackupID
 }
 
-func unpackRebuildVirtualMachineParams(packed middleware.Parameters) (params RebuildVirtualMachineParams) {
+func unpackUpdateDiskBackupParams(packed middleware.Parameters) (params UpdateDiskBackupParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "virtualMachineId",
+			Name: "diskBackupId",
 			In:   "path",
 		}
-		params.VirtualMachineId = packed[key].(VirtualMachineID)
+		params.DiskBackupId = packed[key].(DiskBackupID)
 	}
 	return params
 }
 
-func decodeRebuildVirtualMachineParams(args [1]string, argsEscaped bool, r *http.Request) (params RebuildVirtualMachineParams, _ error) {
-	// Decode path: virtualMachineId.
+func decodeUpdateDiskBackupParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateDiskBackupParams, _ error) {
+	// Decode path: diskBackupId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -9105,14 +10267,14 @@ func decodeRebuildVirtualMachineParams(args [1]string, argsEscaped bool, r *http
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualMachineId",
+				Param:   "diskBackupId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
 			})
 
 			if err := func() error {
-				var paramsDotVirtualMachineIdVal string
+				var paramsDotDiskBackupIdVal string
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
@@ -9124,18 +10286,18 @@ func decodeRebuildVirtualMachineParams(args [1]string, argsEscaped bool, r *http
 						return err
 					}
 
-					paramsDotVirtualMachineIdVal = c
+					paramsDotDiskBackupIdVal = c
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
+				params.DiskBackupId = DiskBackupID(paramsDotDiskBackupIdVal)
 				return nil
 			}(); err != nil {
 				return err
 			}
 			if err := func() error {
-				if err := params.VirtualMachineId.Validate(); err != nil {
+				if err := params.DiskBackupId.Validate(); err != nil {
 					return err
 				}
 				return nil
@@ -9148,7 +10310,7 @@ func decodeRebuildVirtualMachineParams(args [1]string, argsEscaped bool, r *http
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualMachineId",
+			Name: "diskBackupId",
 			In:   "path",
 			Err:  err,
 		}
@@ -9156,12 +10318,172 @@ func decodeRebuildVirtualMachineParams(args [1]string, argsEscaped bool, r *http
 	return params, nil
 }
 
-// RejectPeeringParams is parameters of reject-peering operation.
-type RejectPeeringParams struct {
+// UpdateElasticIPParams is parameters of update-elastic-ip operation.
+type UpdateElasticIPParams struct {
+	ElasticIpId ElasticIPID
+}
+
+func unpackUpdateElasticIPParams(packed middleware.Parameters) (params UpdateElasticIPParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "elasticIpId",
+			In:   "path",
+		}
+		params.ElasticIpId = packed[key].(ElasticIPID)
+	}
+	return params
+}
+
+func decodeUpdateElasticIPParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateElasticIPParams, _ error) {
+	// Decode path: elasticIpId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "elasticIpId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotElasticIpIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotElasticIpIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ElasticIpId = ElasticIPID(paramsDotElasticIpIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.ElasticIpId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "elasticIpId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UpdateNetworkInterfaceParams is parameters of update-network-interface operation.
+type UpdateNetworkInterfaceParams struct {
+	NetworkInterfaceId NetworkInterfaceID
+}
+
+func unpackUpdateNetworkInterfaceParams(packed middleware.Parameters) (params UpdateNetworkInterfaceParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "networkInterfaceId",
+			In:   "path",
+		}
+		params.NetworkInterfaceId = packed[key].(NetworkInterfaceID)
+	}
+	return params
+}
+
+func decodeUpdateNetworkInterfaceParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateNetworkInterfaceParams, _ error) {
+	// Decode path: networkInterfaceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "networkInterfaceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotNetworkInterfaceIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotNetworkInterfaceIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.NetworkInterfaceId = NetworkInterfaceID(paramsDotNetworkInterfaceIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.NetworkInterfaceId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "networkInterfaceId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UpdatePeeringParams is parameters of update-peering operation.
+type UpdatePeeringParams struct {
 	PeeringId PeeringID
 }
 
-func unpackRejectPeeringParams(packed middleware.Parameters) (params RejectPeeringParams) {
+func unpackUpdatePeeringParams(packed middleware.Parameters) (params UpdatePeeringParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "peeringId",
@@ -9172,7 +10494,7 @@ func unpackRejectPeeringParams(packed middleware.Parameters) (params RejectPeeri
 	return params
 }
 
-func decodeRejectPeeringParams(args [1]string, argsEscaped bool, r *http.Request) (params RejectPeeringParams, _ error) {
+func decodeUpdatePeeringParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdatePeeringParams, _ error) {
 	// Decode path: peeringId.
 	if err := func() error {
 		param := args[0]
@@ -9236,24 +10558,24 @@ func decodeRejectPeeringParams(args [1]string, argsEscaped bool, r *http.Request
 	return params, nil
 }
 
-// ReleaseElasticIPParams is parameters of release-elastic-ip operation.
-type ReleaseElasticIPParams struct {
-	ElasticIpId ElasticIPID
+// UpdatePrivateImageParams is parameters of update-private-image operation.
+type UpdatePrivateImageParams struct {
+	PrivateImageId ImageID
 }
 
-func unpackReleaseElasticIPParams(packed middleware.Parameters) (params ReleaseElasticIPParams) {
+func unpackUpdatePrivateImageParams(packed middleware.Parameters) (params UpdatePrivateImageParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "elasticIpId",
+			Name: "privateImageId",
 			In:   "path",
 		}
-		params.ElasticIpId = packed[key].(ElasticIPID)
+		params.PrivateImageId = packed[key].(ImageID)
 	}
 	return params
 }
 
-func decodeReleaseElasticIPParams(args [1]string, argsEscaped bool, r *http.Request) (params ReleaseElasticIPParams, _ error) {
-	// Decode path: elasticIpId.
+func decodeUpdatePrivateImageParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdatePrivateImageParams, _ error) {
+	// Decode path: privateImageId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -9265,14 +10587,14 @@ func decodeReleaseElasticIPParams(args [1]string, argsEscaped bool, r *http.Requ
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "elasticIpId",
+				Param:   "privateImageId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
 			})
 
 			if err := func() error {
-				var paramsDotElasticIpIdVal string
+				var paramsDotPrivateImageIdVal string
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
@@ -9284,18 +10606,18 @@ func decodeReleaseElasticIPParams(args [1]string, argsEscaped bool, r *http.Requ
 						return err
 					}
 
-					paramsDotElasticIpIdVal = c
+					paramsDotPrivateImageIdVal = c
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.ElasticIpId = ElasticIPID(paramsDotElasticIpIdVal)
+				params.PrivateImageId = ImageID(paramsDotPrivateImageIdVal)
 				return nil
 			}(); err != nil {
 				return err
 			}
 			if err := func() error {
-				if err := params.ElasticIpId.Validate(); err != nil {
+				if err := params.PrivateImageId.Validate(); err != nil {
 					return err
 				}
 				return nil
@@ -9308,1842 +10630,7 @@ func decodeReleaseElasticIPParams(args [1]string, argsEscaped bool, r *http.Requ
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "elasticIpId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// RenameBackupParams is parameters of rename-backup operation.
-type RenameBackupParams struct {
-	BackupId DiskBackupID
-}
-
-func unpackRenameBackupParams(packed middleware.Parameters) (params RenameBackupParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "backupId",
-			In:   "path",
-		}
-		params.BackupId = packed[key].(DiskBackupID)
-	}
-	return params
-}
-
-func decodeRenameBackupParams(args [1]string, argsEscaped bool, r *http.Request) (params RenameBackupParams, _ error) {
-	// Decode path: backupId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "backupId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotBackupIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotBackupIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.BackupId = DiskBackupID(paramsDotBackupIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.BackupId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "backupId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// RenameDiskParams is parameters of rename-disk operation.
-type RenameDiskParams struct {
-	DiskId DiskID
-}
-
-func unpackRenameDiskParams(packed middleware.Parameters) (params RenameDiskParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "diskId",
-			In:   "path",
-		}
-		params.DiskId = packed[key].(DiskID)
-	}
-	return params
-}
-
-func decodeRenameDiskParams(args [1]string, argsEscaped bool, r *http.Request) (params RenameDiskParams, _ error) {
-	// Decode path: diskId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "diskId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotDiskIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotDiskIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.DiskId = DiskID(paramsDotDiskIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.DiskId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "diskId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// RenameImageParams is parameters of rename-image operation.
-type RenameImageParams struct {
-	ImageId ImageID
-}
-
-func unpackRenameImageParams(packed middleware.Parameters) (params RenameImageParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "imageId",
-			In:   "path",
-		}
-		params.ImageId = packed[key].(ImageID)
-	}
-	return params
-}
-
-func decodeRenameImageParams(args [1]string, argsEscaped bool, r *http.Request) (params RenameImageParams, _ error) {
-	// Decode path: imageId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "imageId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotImageIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotImageIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.ImageId = ImageID(paramsDotImageIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.ImageId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "imageId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// RenameSnapshotParams is parameters of rename-snapshot operation.
-type RenameSnapshotParams struct {
-	SnapshotId SnapshotID
-}
-
-func unpackRenameSnapshotParams(packed middleware.Parameters) (params RenameSnapshotParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "snapshotId",
-			In:   "path",
-		}
-		params.SnapshotId = packed[key].(SnapshotID)
-	}
-	return params
-}
-
-func decodeRenameSnapshotParams(args [1]string, argsEscaped bool, r *http.Request) (params RenameSnapshotParams, _ error) {
-	// Decode path: snapshotId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "snapshotId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotSnapshotIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotSnapshotIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.SnapshotId = SnapshotID(paramsDotSnapshotIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.SnapshotId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "snapshotId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// RenameVirtualMachineParams is parameters of rename-virtual-machine operation.
-type RenameVirtualMachineParams struct {
-	VirtualMachineId VirtualMachineID
-}
-
-func unpackRenameVirtualMachineParams(packed middleware.Parameters) (params RenameVirtualMachineParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualMachineId",
-			In:   "path",
-		}
-		params.VirtualMachineId = packed[key].(VirtualMachineID)
-	}
-	return params
-}
-
-func decodeRenameVirtualMachineParams(args [1]string, argsEscaped bool, r *http.Request) (params RenameVirtualMachineParams, _ error) {
-	// Decode path: virtualMachineId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualMachineId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualMachineIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualMachineIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualMachineId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualMachineId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// RescueVirtualMachineParams is parameters of rescue-virtual-machine operation.
-type RescueVirtualMachineParams struct {
-	VirtualMachineId VirtualMachineID
-}
-
-func unpackRescueVirtualMachineParams(packed middleware.Parameters) (params RescueVirtualMachineParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualMachineId",
-			In:   "path",
-		}
-		params.VirtualMachineId = packed[key].(VirtualMachineID)
-	}
-	return params
-}
-
-func decodeRescueVirtualMachineParams(args [1]string, argsEscaped bool, r *http.Request) (params RescueVirtualMachineParams, _ error) {
-	// Decode path: virtualMachineId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualMachineId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualMachineIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualMachineIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualMachineId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualMachineId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// ResetVirtualMachinePasswordParams is parameters of reset-virtual-machine-password operation.
-type ResetVirtualMachinePasswordParams struct {
-	VirtualMachineId VirtualMachineID
-}
-
-func unpackResetVirtualMachinePasswordParams(packed middleware.Parameters) (params ResetVirtualMachinePasswordParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualMachineId",
-			In:   "path",
-		}
-		params.VirtualMachineId = packed[key].(VirtualMachineID)
-	}
-	return params
-}
-
-func decodeResetVirtualMachinePasswordParams(args [1]string, argsEscaped bool, r *http.Request) (params ResetVirtualMachinePasswordParams, _ error) {
-	// Decode path: virtualMachineId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualMachineId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualMachineIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualMachineIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualMachineId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualMachineId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// ResizeDiskParams is parameters of resize-disk operation.
-type ResizeDiskParams struct {
-	DiskId DiskID
-}
-
-func unpackResizeDiskParams(packed middleware.Parameters) (params ResizeDiskParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "diskId",
-			In:   "path",
-		}
-		params.DiskId = packed[key].(DiskID)
-	}
-	return params
-}
-
-func decodeResizeDiskParams(args [1]string, argsEscaped bool, r *http.Request) (params ResizeDiskParams, _ error) {
-	// Decode path: diskId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "diskId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotDiskIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotDiskIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.DiskId = DiskID(paramsDotDiskIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.DiskId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "diskId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// ResizeVirtualMachineParams is parameters of resize-virtual-machine operation.
-type ResizeVirtualMachineParams struct {
-	VirtualMachineId VirtualMachineID
-}
-
-func unpackResizeVirtualMachineParams(packed middleware.Parameters) (params ResizeVirtualMachineParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualMachineId",
-			In:   "path",
-		}
-		params.VirtualMachineId = packed[key].(VirtualMachineID)
-	}
-	return params
-}
-
-func decodeResizeVirtualMachineParams(args [1]string, argsEscaped bool, r *http.Request) (params ResizeVirtualMachineParams, _ error) {
-	// Decode path: virtualMachineId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualMachineId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualMachineIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualMachineIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualMachineId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualMachineId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// RestoreBackupParams is parameters of restore-backup operation.
-type RestoreBackupParams struct {
-	BackupId DiskBackupID
-}
-
-func unpackRestoreBackupParams(packed middleware.Parameters) (params RestoreBackupParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "backupId",
-			In:   "path",
-		}
-		params.BackupId = packed[key].(DiskBackupID)
-	}
-	return params
-}
-
-func decodeRestoreBackupParams(args [1]string, argsEscaped bool, r *http.Request) (params RestoreBackupParams, _ error) {
-	// Decode path: backupId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "backupId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotBackupIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotBackupIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.BackupId = DiskBackupID(paramsDotBackupIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.BackupId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "backupId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// RevertDiskParams is parameters of revert-disk operation.
-type RevertDiskParams struct {
-	DiskId DiskID
-}
-
-func unpackRevertDiskParams(packed middleware.Parameters) (params RevertDiskParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "diskId",
-			In:   "path",
-		}
-		params.DiskId = packed[key].(DiskID)
-	}
-	return params
-}
-
-func decodeRevertDiskParams(args [1]string, argsEscaped bool, r *http.Request) (params RevertDiskParams, _ error) {
-	// Decode path: diskId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "diskId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotDiskIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotDiskIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.DiskId = DiskID(paramsDotDiskIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.DiskId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "diskId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// RunVirtualMachineCommandParams is parameters of run-virtual-machine-command operation.
-type RunVirtualMachineCommandParams struct {
-	VirtualMachineId VirtualMachineID
-}
-
-func unpackRunVirtualMachineCommandParams(packed middleware.Parameters) (params RunVirtualMachineCommandParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualMachineId",
-			In:   "path",
-		}
-		params.VirtualMachineId = packed[key].(VirtualMachineID)
-	}
-	return params
-}
-
-func decodeRunVirtualMachineCommandParams(args [1]string, argsEscaped bool, r *http.Request) (params RunVirtualMachineCommandParams, _ error) {
-	// Decode path: virtualMachineId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualMachineId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualMachineIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualMachineIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualMachineId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualMachineId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// SearchElasticIPTypesParams is parameters of search-elastic-ip-types operation.
-type SearchElasticIPTypesParams struct {
-	RegionID OptRegionID `json:",omitempty,omitzero"`
-	// Search text; combined with the other filters using AND.
-	Q string
-	// 1-based page number. Defaults to 1.
-	Page OptInt64 `json:",omitempty,omitzero"`
-	// Items per page. Defaults to 50; at most 200.
-	PageSize OptInt64 `json:",omitempty,omitzero"`
-}
-
-func unpackSearchElasticIPTypesParams(packed middleware.Parameters) (params SearchElasticIPTypesParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "region_id",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.RegionID = v.(OptRegionID)
-		}
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "q",
-			In:   "query",
-		}
-		params.Q = packed[key].(string)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "page",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.Page = v.(OptInt64)
-		}
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "page_size",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.PageSize = v.(OptInt64)
-		}
-	}
-	return params
-}
-
-func decodeSearchElasticIPTypesParams(args [0]string, argsEscaped bool, r *http.Request) (params SearchElasticIPTypesParams, _ error) {
-	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode query: region_id.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "region_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotRegionIDVal RegionID
-				if err := func() error {
-					var paramsDotRegionIDValVal string
-					if err := func() error {
-						val, err := d.DecodeValue()
-						if err != nil {
-							return err
-						}
-
-						c, err := conv.ToString(val)
-						if err != nil {
-							return err
-						}
-
-						paramsDotRegionIDValVal = c
-						return nil
-					}(); err != nil {
-						return err
-					}
-					paramsDotRegionIDVal = RegionID(paramsDotRegionIDValVal)
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.RegionID.SetTo(paramsDotRegionIDVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.RegionID.Get(); ok {
-					if err := func() error {
-						if err := value.Validate(); err != nil {
-							return err
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "region_id",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	// Decode query: q.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "q",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Q = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.Q)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "q",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	// Set default value for query: page.
-	{
-		val := int64(1)
-		params.Page.SetTo(val)
-	}
-	// Decode query: page.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotPageVal int64
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToInt64(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotPageVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Page.SetTo(paramsDotPageVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.Page.Get(); ok {
-					if err := func() error {
-						if err := (validate.Int{
-							MinSet:        true,
-							Min:           1,
-							MaxSet:        true,
-							Max:           2147483647,
-							MinExclusive:  false,
-							MaxExclusive:  false,
-							MultipleOfSet: false,
-							MultipleOf:    0,
-							Pattern:       nil,
-						}).Validate(int64(value)); err != nil {
-							return errors.Wrap(err, "int")
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "page",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	// Set default value for query: page_size.
-	{
-		val := int64(50)
-		params.PageSize.SetTo(val)
-	}
-	// Decode query: page_size.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotPageSizeVal int64
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToInt64(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotPageSizeVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.PageSize.SetTo(paramsDotPageSizeVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.PageSize.Get(); ok {
-					if err := func() error {
-						if err := (validate.Int{
-							MinSet:        true,
-							Min:           1,
-							MaxSet:        true,
-							Max:           200,
-							MinExclusive:  false,
-							MaxExclusive:  false,
-							MultipleOfSet: false,
-							MultipleOf:    0,
-							Pattern:       nil,
-						}).Validate(int64(value)); err != nil {
-							return errors.Wrap(err, "int")
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "page_size",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// SetElasticIPBandwidthParams is parameters of set-elastic-ip-bandwidth operation.
-type SetElasticIPBandwidthParams struct {
-	ElasticIpId ElasticIPID
-}
-
-func unpackSetElasticIPBandwidthParams(packed middleware.Parameters) (params SetElasticIPBandwidthParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "elasticIpId",
-			In:   "path",
-		}
-		params.ElasticIpId = packed[key].(ElasticIPID)
-	}
-	return params
-}
-
-func decodeSetElasticIPBandwidthParams(args [1]string, argsEscaped bool, r *http.Request) (params SetElasticIPBandwidthParams, _ error) {
-	// Decode path: elasticIpId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "elasticIpId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotElasticIpIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotElasticIpIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.ElasticIpId = ElasticIPID(paramsDotElasticIpIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.ElasticIpId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "elasticIpId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// SetVirtualMachineLabelsParams is parameters of set-virtual-machine-labels operation.
-type SetVirtualMachineLabelsParams struct {
-	VirtualMachineId VirtualMachineID
-}
-
-func unpackSetVirtualMachineLabelsParams(packed middleware.Parameters) (params SetVirtualMachineLabelsParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualMachineId",
-			In:   "path",
-		}
-		params.VirtualMachineId = packed[key].(VirtualMachineID)
-	}
-	return params
-}
-
-func decodeSetVirtualMachineLabelsParams(args [1]string, argsEscaped bool, r *http.Request) (params SetVirtualMachineLabelsParams, _ error) {
-	// Decode path: virtualMachineId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualMachineId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualMachineIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualMachineIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualMachineId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualMachineId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// SetVirtualMachineNotesParams is parameters of set-virtual-machine-notes operation.
-type SetVirtualMachineNotesParams struct {
-	VirtualMachineId VirtualMachineID
-}
-
-func unpackSetVirtualMachineNotesParams(packed middleware.Parameters) (params SetVirtualMachineNotesParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualMachineId",
-			In:   "path",
-		}
-		params.VirtualMachineId = packed[key].(VirtualMachineID)
-	}
-	return params
-}
-
-func decodeSetVirtualMachineNotesParams(args [1]string, argsEscaped bool, r *http.Request) (params SetVirtualMachineNotesParams, _ error) {
-	// Decode path: virtualMachineId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualMachineId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualMachineIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualMachineIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualMachineId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualMachineId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// StartVirtualMachineParams is parameters of start-virtual-machine operation.
-type StartVirtualMachineParams struct {
-	VirtualMachineId VirtualMachineID
-}
-
-func unpackStartVirtualMachineParams(packed middleware.Parameters) (params StartVirtualMachineParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualMachineId",
-			In:   "path",
-		}
-		params.VirtualMachineId = packed[key].(VirtualMachineID)
-	}
-	return params
-}
-
-func decodeStartVirtualMachineParams(args [1]string, argsEscaped bool, r *http.Request) (params StartVirtualMachineParams, _ error) {
-	// Decode path: virtualMachineId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualMachineId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualMachineIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualMachineIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualMachineId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualMachineId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// StopVirtualMachineParams is parameters of stop-virtual-machine operation.
-type StopVirtualMachineParams struct {
-	VirtualMachineId VirtualMachineID
-}
-
-func unpackStopVirtualMachineParams(packed middleware.Parameters) (params StopVirtualMachineParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualMachineId",
-			In:   "path",
-		}
-		params.VirtualMachineId = packed[key].(VirtualMachineID)
-	}
-	return params
-}
-
-func decodeStopVirtualMachineParams(args [1]string, argsEscaped bool, r *http.Request) (params StopVirtualMachineParams, _ error) {
-	// Decode path: virtualMachineId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualMachineId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualMachineIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualMachineIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualMachineId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualMachineId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// UnbindElasticIPParams is parameters of unbind-elastic-ip operation.
-type UnbindElasticIPParams struct {
-	ElasticIpId ElasticIPID
-}
-
-func unpackUnbindElasticIPParams(packed middleware.Parameters) (params UnbindElasticIPParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "elasticIpId",
-			In:   "path",
-		}
-		params.ElasticIpId = packed[key].(ElasticIPID)
-	}
-	return params
-}
-
-func decodeUnbindElasticIPParams(args [1]string, argsEscaped bool, r *http.Request) (params UnbindElasticIPParams, _ error) {
-	// Decode path: elasticIpId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "elasticIpId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotElasticIpIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotElasticIpIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.ElasticIpId = ElasticIPID(paramsDotElasticIpIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.ElasticIpId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "elasticIpId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// UnrescueVirtualMachineParams is parameters of unrescue-virtual-machine operation.
-type UnrescueVirtualMachineParams struct {
-	VirtualMachineId VirtualMachineID
-}
-
-func unpackUnrescueVirtualMachineParams(packed middleware.Parameters) (params UnrescueVirtualMachineParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "virtualMachineId",
-			In:   "path",
-		}
-		params.VirtualMachineId = packed[key].(VirtualMachineID)
-	}
-	return params
-}
-
-func decodeUnrescueVirtualMachineParams(args [1]string, argsEscaped bool, r *http.Request) (params UnrescueVirtualMachineParams, _ error) {
-	// Decode path: virtualMachineId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "virtualMachineId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotVirtualMachineIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotVirtualMachineIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.VirtualMachineId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "virtualMachineId",
+			Name: "privateImageId",
 			In:   "path",
 			Err:  err,
 		}
@@ -11231,6 +10718,86 @@ func decodeUpdateSecurityGroupParams(args [1]string, argsEscaped bool, r *http.R
 	return params, nil
 }
 
+// UpdateSnapshotParams is parameters of update-snapshot operation.
+type UpdateSnapshotParams struct {
+	SnapshotId SnapshotID
+}
+
+func unpackUpdateSnapshotParams(packed middleware.Parameters) (params UpdateSnapshotParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "snapshotId",
+			In:   "path",
+		}
+		params.SnapshotId = packed[key].(SnapshotID)
+	}
+	return params
+}
+
+func decodeUpdateSnapshotParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateSnapshotParams, _ error) {
+	// Decode path: snapshotId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "snapshotId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotSnapshotIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotSnapshotIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.SnapshotId = SnapshotID(paramsDotSnapshotIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.SnapshotId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "snapshotId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // UpdateSubnetParams is parameters of update-subnet operation.
 type UpdateSubnetParams struct {
 	SubnetId SubnetID
@@ -11304,6 +10871,86 @@ func decodeUpdateSubnetParams(args [1]string, argsEscaped bool, r *http.Request)
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "subnetId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UpdateVirtualMachineParams is parameters of update-virtual-machine operation.
+type UpdateVirtualMachineParams struct {
+	VirtualMachineId VirtualMachineID
+}
+
+func unpackUpdateVirtualMachineParams(packed middleware.Parameters) (params UpdateVirtualMachineParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "virtualMachineId",
+			In:   "path",
+		}
+		params.VirtualMachineId = packed[key].(VirtualMachineID)
+	}
+	return params
+}
+
+func decodeUpdateVirtualMachineParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateVirtualMachineParams, _ error) {
+	// Decode path: virtualMachineId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "virtualMachineId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotVirtualMachineIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotVirtualMachineIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.VirtualMachineId = VirtualMachineID(paramsDotVirtualMachineIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.VirtualMachineId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "virtualMachineId",
 			In:   "path",
 			Err:  err,
 		}

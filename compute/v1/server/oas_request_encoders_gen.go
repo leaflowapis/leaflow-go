@@ -10,7 +10,7 @@ import (
 	ht "github.com/ogen-go/ogen/http"
 )
 
-func encodeAttachDiskRequest(
+func encodeAttachVirtualMachineDiskRequest(
 	req *AttachDiskRequestBody,
 	r *http.Request,
 ) error {
@@ -24,50 +24,8 @@ func encodeAttachDiskRequest(
 	return nil
 }
 
-func encodeAttachNetworkInterfaceRequest(
+func encodeAttachVirtualMachineNetworkInterfaceRequest(
 	req *AttachNetworkInterfaceRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeAttachVirtualMachineElasticIPRequest(
-	req *AttachElasticIPRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeBindElasticIPRequest(
-	req *BindElasticIPRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeCreateBackupRequest(
-	req *CreateBackupRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -94,8 +52,8 @@ func encodeCreateDiskRequest(
 	return nil
 }
 
-func encodeCreateElasticIPRequest(
-	req *CreateElasticIPRequestBody,
+func encodeCreateDiskBackupRequest(
+	req *CreateDiskBackupRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -108,8 +66,22 @@ func encodeCreateElasticIPRequest(
 	return nil
 }
 
-func encodeCreateImageRequest(
-	req *CreateImageRequestBody,
+func encodeCreateDiskRevertRequest(
+	req *CreateDiskRevertRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateElasticIPRequest(
+	req *CreateElasticIPRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -138,6 +110,20 @@ func encodeCreateNetworkInterfaceRequest(
 
 func encodeCreatePeeringRequest(
 	req *CreatePeeringRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreatePrivateImageRequest(
+	req *CreatePrivateImageRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -234,6 +220,48 @@ func encodeCreateVirtualMachineRequest(
 	return nil
 }
 
+func encodeCreateVirtualMachineCommandRequest(
+	req *CreateVirtualMachineCommandRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateVirtualMachineRebootRequest(
+	req *CreateVirtualMachineRebootRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateVirtualMachineRebuildRequest(
+	req *CreateVirtualMachineRebuildRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCreateVirtualPrivateCloudRequest(
 	req *CreateVirtualPrivateCloudRequestBody,
 	r *http.Request,
@@ -248,8 +276,8 @@ func encodeCreateVirtualPrivateCloudRequest(
 	return nil
 }
 
-func encodeRebootVirtualMachineRequest(
-	req *RebootVirtualMachineRequestBody,
+func encodePutElasticIPAssociationRequest(
+	req PutElasticIPAssociationRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -262,8 +290,8 @@ func encodeRebootVirtualMachineRequest(
 	return nil
 }
 
-func encodeRebuildVirtualMachineRequest(
-	req *RebuildVirtualMachineRequestBody,
+func encodePutVirtualMachinePasswordRequest(
+	req *PutVirtualMachinePasswordRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -276,8 +304,8 @@ func encodeRebuildVirtualMachineRequest(
 	return nil
 }
 
-func encodeRenameBackupRequest(
-	req *RenameBackupRequestBody,
+func encodePutVirtualMachineRescueRequest(
+	req *PutVirtualMachineRescueRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -290,8 +318,8 @@ func encodeRenameBackupRequest(
 	return nil
 }
 
-func encodeRenameDiskRequest(
-	req *RenameDiskRequestBody,
+func encodeUpdateDiskRequest(
+	req *UpdateDiskRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -304,8 +332,8 @@ func encodeRenameDiskRequest(
 	return nil
 }
 
-func encodeRenameImageRequest(
-	req *RenameImageRequestBody,
+func encodeUpdateDiskBackupRequest(
+	req *UpdateDiskBackupRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -318,8 +346,8 @@ func encodeRenameImageRequest(
 	return nil
 }
 
-func encodeRenameSnapshotRequest(
-	req *RenameSnapshotRequestBody,
+func encodeUpdateElasticIPRequest(
+	req *UpdateElasticIPRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -332,8 +360,8 @@ func encodeRenameSnapshotRequest(
 	return nil
 }
 
-func encodeRenameVirtualMachineRequest(
-	req *RenameVirtualMachineRequestBody,
+func encodeUpdateNetworkInterfaceRequest(
+	req *UpdateNetworkInterfaceRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -346,8 +374,8 @@ func encodeRenameVirtualMachineRequest(
 	return nil
 }
 
-func encodeRescueVirtualMachineRequest(
-	req *RescueVirtualMachineRequestBody,
+func encodeUpdatePeeringRequest(
+	req *UpdatePeeringRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -360,148 +388,8 @@ func encodeRescueVirtualMachineRequest(
 	return nil
 }
 
-func encodeResetVirtualMachinePasswordRequest(
-	req *ResetPasswordRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeResizeDiskRequest(
-	req *ResizeDiskRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeResizeVirtualMachineRequest(
-	req *ResizeVirtualMachineRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeRestoreBackupRequest(
-	req *RestoreBackupRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeRevertDiskRequest(
-	req *RevertDiskRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeRunVirtualMachineCommandRequest(
-	req *RunCommandRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeSetElasticIPBandwidthRequest(
-	req *SetElasticIPBandwidthRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeSetVirtualMachineLabelsRequest(
-	req *SetVirtualMachineLabelsRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeSetVirtualMachineNotesRequest(
-	req *SetVirtualMachineNotesRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeStartVirtualMachineRequest(
-	req *PowerRequest,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeStopVirtualMachineRequest(
-	req *PowerRequest,
+func encodeUpdatePrivateImageRequest(
+	req *UpdatePrivateImageRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -528,8 +416,36 @@ func encodeUpdateSecurityGroupRequest(
 	return nil
 }
 
+func encodeUpdateSnapshotRequest(
+	req *UpdateSnapshotRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeUpdateSubnetRequest(
 	req *UpdateSubnetRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateVirtualMachineRequest(
+	req *UpdateVirtualMachineRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

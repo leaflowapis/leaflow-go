@@ -29,13 +29,7 @@ func trimTrailingSlashes(u *url.URL) {
 
 // Invoker invokes operations described by OpenAPI v3 specification.
 type Invoker interface {
-	// AcceptPeering invokes accept-peering operation.
-	//
-	// Accept peering.
-	//
-	// POST /api/v1/peerings/{peeringId}/accept
-	AcceptPeering(ctx context.Context, params AcceptPeeringParams) (AcceptPeeringRes, error)
-	// AttachDisk invokes attach-disk operation.
+	// AttachVirtualMachineDisk invokes attach-virtual-machine-disk operation.
 	//
 	// The disk must be in the same region and availability zone as the virtual machine. Returns the disk;
 	// the virtual machine shows the `attach_disk` operation and the disk the `attach` operation until the
@@ -43,51 +37,31 @@ type Invoker interface {
 	// once it is attached.
 	//
 	// POST /api/v1/virtual-machines/{virtualMachineId}/disks
-	AttachDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachDiskParams) (AttachDiskRes, error)
-	// AttachNetworkInterface invokes attach-network-interface operation.
+	AttachVirtualMachineDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachVirtualMachineDiskParams) (AttachVirtualMachineDiskRes, error)
+	// AttachVirtualMachineNetworkInterface invokes attach-virtual-machine-network-interface operation.
 	//
 	// Returns the network interface; the virtual machine shows the `attach_network_interface` operation
 	// and the interface the `attach` operation until the attachment is confirmed.
 	//
 	// POST /api/v1/virtual-machines/{virtualMachineId}/network-interfaces
-	AttachNetworkInterface(ctx context.Context, request *AttachNetworkInterfaceRequestBody, params AttachNetworkInterfaceParams) (AttachNetworkInterfaceRes, error)
-	// AttachVirtualMachineElasticIP invokes attach-virtual-machine-elastic-ip operation.
-	//
-	// Changes the public IP binding on the virtual machine's primary network interface. The virtual
-	// machine shows the `bind_elastic_ip` operation until the binding is confirmed.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/elastic-ips
-	AttachVirtualMachineElasticIP(ctx context.Context, request *AttachElasticIPRequestBody, params AttachVirtualMachineElasticIPParams) (AttachVirtualMachineElasticIPRes, error)
-	// BindElasticIP invokes bind-elastic-ip operation.
-	//
-	// The elastic IP shows the `bind` operation until the binding is confirmed.
-	//
-	// PUT /api/v1/elastic-ips/{elasticIpId}/binding
-	BindElasticIP(ctx context.Context, request *BindElasticIPRequestBody, params BindElasticIPParams) (BindElasticIPRes, error)
-	// CreateBackup invokes create-backup operation.
-	//
-	// Creates a backup of the disk. It remains restorable after the source disk is deleted and may be
-	// restored to another availability zone in the same region. A running virtual machine may produce a
-	// file-system-inconsistent backup. Pending backups count toward Compute project quotas until cleanup
-	// is confirmed.
-	//
-	// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
-	// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
-	// backup is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
-	// the customer completes checkout in Billing. The source and project quotas are checked before the
-	// Checkout Session is created, and a refused request creates nothing.
-	//
-	// The backup shows the `create` operation from the moment its Checkout Session is created until it is
-	// delivered or its checkout or order ends. Every other operation on it is refused with
-	// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-	// purchase awaits checkout or payment.
-	//
-	// POST /api/v1/backups
-	CreateBackup(ctx context.Context, request *CreateBackupRequestBody) (CreateBackupRes, error)
+	AttachVirtualMachineNetworkInterface(ctx context.Context, request *AttachNetworkInterfaceRequestBody, params AttachVirtualMachineNetworkInterfaceParams) (AttachVirtualMachineNetworkInterfaceRes, error)
 	// CreateDisk invokes create-disk operation.
 	//
 	// The disk is created in the availability zone of the selected disk type, and a virtual machine must
 	// reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
+	//
+	// The disk is empty, or is restored from exactly one source: `snapshot_id` or `disk_backup_id`. Giving
+	// both is refused with 422 `DISK_SOURCE_CONFLICT`. A restore is a purchase of a new disk; the source
+	// disk is unaffected and need not still exist.
+	//
+	//  - From a snapshot, the disk type must be in the availability zone of the snapshot
+	//    (`availability_zone_id` of the snapshot), because a snapshot lives in the same storage pool as
+	//    its source and restores only into its own zone. `size_gb` is required and must be no smaller than
+	//    the snapshot.
+	//  - From a disk backup, the disk type may belong to another availability zone of the same region,
+	//    because a backup is an independent copy in different storage. `size_gb` matches the size of the
+	//    backup when omitted, and when given it must not be smaller than the backup. The disk cannot be
+	//    attached until it is `available`.
 	//
 	// A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still
 	// resolves. Types that are off sale do not appear in the disk type listing; disks already bought on
@@ -104,6 +78,41 @@ type Invoker interface {
 	//
 	// POST /api/v1/disks
 	CreateDisk(ctx context.Context, request *CreateDiskRequestBody) (CreateDiskRes, error)
+	// CreateDiskBackup invokes create-disk-backup operation.
+	//
+	// Creates a backup of the disk. It remains restorable after the source disk is deleted and may be
+	// restored to another availability zone in the same region, by creating a disk with `disk_backup_id`
+	// (`create-disk`). A running virtual machine may produce a file-system-inconsistent backup. Pending
+	// backups count toward Compute project quotas until cleanup is confirmed.
+	//
+	// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
+	// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
+	// backup is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
+	// the customer completes checkout in Billing. The source and project quotas are checked before the
+	// Checkout Session is created, and a refused request creates nothing.
+	//
+	// The backup shows the `create` operation from the moment its Checkout Session is created until it is
+	// delivered or its checkout or order ends. Every other operation on it is refused with
+	// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+	// purchase awaits checkout or payment.
+	//
+	// POST /api/v1/disk-backups
+	CreateDiskBackup(ctx context.Context, request *CreateDiskBackupRequestBody) (CreateDiskBackupRes, error)
+	// CreateDiskRevert invokes create-disk-revert operation.
+	//
+	// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
+	// moment is lost and cannot be recovered.
+	//
+	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
+	// must be detached from its virtual machine first; and a disk resized since the snapshot was taken
+	// cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a
+	// new disk from the snapshot instead.
+	//
+	// The revert is a request of its own rather than a state of the disk: the response is the disk, which
+	// shows the `revert` operation until the revert is complete.
+	//
+	// POST /api/v1/disks/{diskId}/reverts
+	CreateDiskRevert(ctx context.Context, request *CreateDiskRevertRequestBody, params CreateDiskRevertParams) (CreateDiskRevertRes, error)
 	// CreateElasticIP invokes create-elastic-ip operation.
 	//
 	// Select a public elastic IP type. The elastic IP is bought through a Billing Checkout Session, and no
@@ -127,7 +136,21 @@ type Invoker interface {
 	//
 	// POST /api/v1/elastic-ips
 	CreateElasticIP(ctx context.Context, request *CreateElasticIPRequestBody) (CreateElasticIPRes, error)
-	// CreateImage invokes create-image operation.
+	// CreateNetworkInterface invokes create-network-interface operation.
+	//
+	// The new network interface is not attached to any virtual machine. Primary network interfaces are not
+	// created here; they are created with the virtual machine.
+	//
+	// POST /api/v1/network-interfaces
+	CreateNetworkInterface(ctx context.Context, request *CreateNetworkInterfaceRequestBody) (*NetworkInterface, error)
+	// CreatePeering invokes create-peering operation.
+	//
+	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
+	// before any connectivity is created. Does not change security groups or provide transitive routing.
+	//
+	// POST /api/v1/peerings
+	CreatePeering(ctx context.Context, request *CreatePeeringRequestBody) (*PeeringResource, error)
+	// CreatePrivateImage invokes create-private-image operation.
 	//
 	// Creates a project image from the virtual machine system disk, excluding data disks. Stop the virtual
 	// machine first for file-system consistency. The virtual machine cannot be released while its source
@@ -144,22 +167,8 @@ type Invoker interface {
 	// is refused with `COMPUTE_PURCHASE_PENDING`; once the capture runs, deletion is the one operation it
 	// accepts.
 	//
-	// POST /api/v1/images
-	CreateImage(ctx context.Context, request *CreateImageRequestBody) (CreateImageRes, error)
-	// CreateNetworkInterface invokes create-network-interface operation.
-	//
-	// The new network interface is not attached to any virtual machine. Primary network interfaces are not
-	// created here; they are created with the virtual machine.
-	//
-	// POST /api/v1/network-interfaces
-	CreateNetworkInterface(ctx context.Context, request *CreateNetworkInterfaceRequestBody) (*NetworkInterface, error)
-	// CreatePeering invokes create-peering operation.
-	//
-	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
-	// before any connectivity is created. Does not change security groups or provide transitive routing.
-	//
-	// POST /api/v1/peerings
-	CreatePeering(ctx context.Context, request *CreatePeeringRequestBody) (*PeeringResource, error)
+	// POST /api/v1/private-images
+	CreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (CreatePrivateImageRes, error)
 	// CreateRoute invokes create-route operation.
 	//
 	// Three forms that would sever connectivity are refused: a destination of `0.0.0.0/0`, which overrides
@@ -258,6 +267,68 @@ type Invoker interface {
 	//
 	// POST /api/v1/virtual-machines
 	CreateVirtualMachine(ctx context.Context, request *CreateVirtualMachineRequestBody) (CreateVirtualMachineRes, error)
+	// CreateVirtualMachineCommand invokes create-virtual-machine-command operation.
+	//
+	// Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
+	// standard input and no way to answer a prompt: a command that waits for input produces nothing and is
+	// killed at the timeout. Chain steps with `&&`, or write a script and run that.
+	//
+	// A command that fails is still a 200. Its failure is its own result, not this endpoint's: read
+	// `exit_code` for what it exited with and `stderr` for what it said, and decide from those. A `grep`
+	// that matches nothing exits 1 and is a perfectly successful call.
+	//
+	// The status therefore answers a different question — did the command run at all. A non-2xx means it
+	// did not, and nothing about the virtual machine was changed by this request: it was suspended, not
+	// running or had no elastic IP associated; or it refused the platform key; or the connection could not
+	// be opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
+	//
+	// Three conditions must hold; the virtual machine is unreachable otherwise:
+	//
+	//  - it is `active`
+	//  - an elastic IP is associated with it, since this endpoint connects over the public internet
+	//  - its security group permits inbound TCP 22
+	//
+	// Authentication uses the key the platform attaches to every virtual machine at creation, so nothing
+	// has to be set up first. The virtual machine must have applied that key at first boot, which images
+	// without a full cloud-init do not do.
+	//
+	// Do not pass secrets in the command. Read them from a file on the virtual machine instead: neither
+	// the command nor its output is a confidential channel.
+	//
+	// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
+	//
+	// POST /api/v1/virtual-machines/{virtualMachineId}/commands
+	CreateVirtualMachineCommand(ctx context.Context, request *CreateVirtualMachineCommandRequestBody, params CreateVirtualMachineCommandParams) (*CreateVirtualMachineCommandResponseBody, error)
+	// CreateVirtualMachineReboot invokes create-virtual-machine-reboot operation.
+	//
+	// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+	//
+	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
+	// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
+	//
+	// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft
+	// reboot the virtual machine never carried out. Any other request for an operation, including a second
+	// soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
+	//
+	// A virtual machine suspended by the platform must be unsuspended first.
+	//
+	// The virtual machine shows the `reboot` operation until the reboot has finished.
+	//
+	// POST /api/v1/virtual-machines/{virtualMachineId}/reboots
+	CreateVirtualMachineReboot(ctx context.Context, request *CreateVirtualMachineRebootRequestBody, params CreateVirtualMachineRebootParams) (CreateVirtualMachineRebootRes, error)
+	// CreateVirtualMachineRebuild invokes create-virtual-machine-rebuild operation.
+	//
+	// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
+	//
+	// The image this virtual machine already runs is accepted even after the platform has withdrawn it,
+	// since rebuilding is the only way back into a virtual machine broken from the inside. Any other
+	// withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new
+	// order.
+	//
+	// The virtual machine shows the `rebuild` operation until the rebuild has finished.
+	//
+	// POST /api/v1/virtual-machines/{virtualMachineId}/rebuilds
+	CreateVirtualMachineRebuild(ctx context.Context, request *CreateVirtualMachineRebuildRequestBody, params CreateVirtualMachineRebuildParams) (CreateVirtualMachineRebuildRes, error)
 	// CreateVirtualPrivateCloud invokes create-virtual-private-cloud operation.
 	//
 	// Creates a virtual private cloud definition and its default security group. The default security
@@ -265,22 +336,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/virtual-private-clouds
 	CreateVirtualPrivateCloud(ctx context.Context, request *CreateVirtualPrivateCloudRequestBody) (*VirtualPrivateCloud, error)
-	// DeleteBackup invokes delete-backup operation.
-	//
-	// Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of
-	// the backup ends once it is deleted.
-	//
-	// Quota capacity and storage metering are released only after cleanup is confirmed. Billing determines
-	// whether its commercial subscription must be canceled first.
-	//
-	// A resource whose purchase still awaits checkout or payment is refused with
-	// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
-	// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
-	// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
-	// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
-	//
-	// DELETE /api/v1/backups/{backupId}
-	DeleteBackup(ctx context.Context, params DeleteBackupParams) (DeleteBackupRes, error)
 	// DeleteDisk invokes delete-disk operation.
 	//
 	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
@@ -296,9 +351,65 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/disks/{diskId}
 	DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error)
-	// DeleteImage invokes delete-image operation.
+	// DeleteDiskBackup invokes delete-disk-backup operation.
 	//
-	// Only a private image of this project can be deleted; any other image is reported as not found.
+	// Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of
+	// the backup ends once it is deleted.
+	//
+	// Quota capacity and storage metering are released only after cleanup is confirmed. Billing determines
+	// whether its commercial subscription must be canceled first.
+	//
+	// A resource whose purchase still awaits checkout or payment is refused with
+	// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
+	// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
+	// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
+	// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+	//
+	// DELETE /api/v1/disk-backups/{diskBackupId}
+	DeleteDiskBackup(ctx context.Context, params DeleteDiskBackupParams) (DeleteDiskBackupRes, error)
+	// DeleteElasticIP invokes delete-elastic-ip operation.
+	//
+	// Releases the elastic IP after dissociating it. The elastic IP shows the `delete` operation until
+	// cleanup is confirmed; the address then immediately returns to available inventory, with no cooldown
+	// period. Deleting the association or replacing it alone does not release the address.
+	//
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
+	// pay-as-you-go subscription. `meta.resource_id` names the elastic IP. It is released by canceling the
+	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+	// `release_subscription_ids`.
+	//
+	// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
+	// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
+	// checkout created one. Expire the session or cancel the order in Billing instead.
+	//
+	// DELETE /api/v1/elastic-ips/{elasticIpId}
+	DeleteElasticIP(ctx context.Context, params DeleteElasticIPParams) (DeleteElasticIPRes, error)
+	// DeleteElasticIPAssociation invokes delete-elastic-ip-association operation.
+	//
+	// The address remains held by the project and simply no longer points at any network interface. The
+	// elastic IP shows the `unbind` operation until the change is confirmed, and a virtual machine whose
+	// primary interface it pointed at shows the `unbind_elastic_ip` operation. Removing an association
+	// that does not exist is refused with 404 `ELASTIC_IP_NOT_ASSOCIATED`.
+	//
+	// DELETE /api/v1/elastic-ips/{elasticIpId}/association
+	DeleteElasticIPAssociation(ctx context.Context, params DeleteElasticIPAssociationParams) (DeleteElasticIPAssociationRes, error)
+	// DeleteNetworkInterface invokes delete-network-interface operation.
+	//
+	// The primary network interface cannot be deleted on its own, as it is released with the virtual
+	// machine. A network interface still attached to a virtual machine cannot be deleted either.
+	//
+	// DELETE /api/v1/network-interfaces/{networkInterfaceId}
+	DeleteNetworkInterface(ctx context.Context, params DeleteNetworkInterfaceParams) (DeleteNetworkInterfaceRes, error)
+	// DeletePeering invokes delete-peering operation.
+	//
+	// Delete peering.
+	//
+	// DELETE /api/v1/peerings/{peeringId}
+	DeletePeering(ctx context.Context, params DeletePeeringParams) (DeletePeeringRes, error)
+	// DeletePrivateImage invokes delete-private-image operation.
+	//
+	// Deletes a private image of this project; any other image, public images included, is reported as not
+	// found.
 	//
 	// Deletion is rejected while virtual machines created from the image still exist, as they need it in
 	// order to be rebuilt.
@@ -315,21 +426,8 @@ type Invoker interface {
 	// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 	// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 	//
-	// DELETE /api/v1/images/{imageId}
-	DeleteImage(ctx context.Context, params DeleteImageParams) (DeleteImageRes, error)
-	// DeleteNetworkInterface invokes delete-network-interface operation.
-	//
-	// The primary network interface cannot be deleted on its own, as it is released with the virtual
-	// machine. A network interface still attached to a virtual machine cannot be deleted either.
-	//
-	// DELETE /api/v1/network-interfaces/{networkInterfaceId}
-	DeleteNetworkInterface(ctx context.Context, params DeleteNetworkInterfaceParams) (DeleteNetworkInterfaceRes, error)
-	// DeletePeering invokes delete-peering operation.
-	//
-	// Delete peering.
-	//
-	// DELETE /api/v1/peerings/{peeringId}
-	DeletePeering(ctx context.Context, params DeletePeeringParams) (DeletePeeringRes, error)
+	// DELETE /api/v1/private-images/{privateImageId}
+	DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (DeletePrivateImageRes, error)
 	// DeleteRoute invokes delete-route operation.
 	//
 	// A route has no update; replace it by creating the new route and deleting the old one. A peering's
@@ -348,7 +446,7 @@ type Invoker interface {
 	//
 	// Delete a security group rule.
 	//
-	// DELETE /api/v1/security-group-rules/{ruleId}
+	// DELETE /api/v1/security-group-rules/{securityGroupRuleId}
 	DeleteSecurityGroupRule(ctx context.Context, params DeleteSecurityGroupRuleParams) error
 	// DeleteSnapshot invokes delete-snapshot operation.
 	//
@@ -390,6 +488,13 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/virtual-machines/{virtualMachineId}
 	DeleteVirtualMachine(ctx context.Context, params DeleteVirtualMachineParams) (DeleteVirtualMachineRes, error)
+	// DeleteVirtualMachineRescue invokes delete-virtual-machine-rescue operation.
+	//
+	// Restores boot from the original system disk. Completion is shown by the virtual machine state, and
+	// the virtual machine shows the `unrescue` operation until then.
+	//
+	// DELETE /api/v1/virtual-machines/{virtualMachineId}/rescue
+	DeleteVirtualMachineRescue(ctx context.Context, params DeleteVirtualMachineRescueParams) (DeleteVirtualMachineRescueRes, error)
 	// DeleteVirtualPrivateCloud invokes delete-virtual-private-cloud operation.
 	//
 	// Deletion is rejected while virtual machines or network interfaces remain in the network. Its
@@ -404,7 +509,7 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
 	DeleteVirtualPrivateCloudIpv6(ctx context.Context, params DeleteVirtualPrivateCloudIpv6Params) (DeleteVirtualPrivateCloudIpv6Res, error)
-	// DetachDisk invokes detach-disk operation.
+	// DetachVirtualMachineDisk invokes detach-virtual-machine-disk operation.
 	//
 	// Unmount the device inside the virtual machine before calling this endpoint. Forcibly detaching a
 	// file system that is being written to corrupts data.
@@ -418,8 +523,8 @@ type Invoker interface {
 	// operation until the disk is detached.
 	//
 	// DELETE /api/v1/virtual-machines/{virtualMachineId}/disks/{diskId}
-	DetachDisk(ctx context.Context, params DetachDiskParams) (DetachDiskRes, error)
-	// DetachNetworkInterface invokes detach-network-interface operation.
+	DetachVirtualMachineDisk(ctx context.Context, params DetachVirtualMachineDiskParams) (DetachVirtualMachineDiskRes, error)
+	// DetachVirtualMachineNetworkInterface invokes detach-virtual-machine-network-interface operation.
 	//
 	// The primary network interface cannot be detached; the virtual machine would lose its network
 	// address.
@@ -428,27 +533,26 @@ type Invoker interface {
 	// and the interface the `detach` operation until it is detached.
 	//
 	// DELETE /api/v1/virtual-machines/{virtualMachineId}/network-interfaces/{networkInterfaceId}
-	DetachNetworkInterface(ctx context.Context, params DetachNetworkInterfaceParams) (DetachNetworkInterfaceRes, error)
-	// DetachVirtualMachineElasticIP invokes detach-virtual-machine-elastic-ip operation.
+	DetachVirtualMachineNetworkInterface(ctx context.Context, params DetachVirtualMachineNetworkInterfaceParams) (DetachVirtualMachineNetworkInterfaceRes, error)
+	// GetAvailabilityZone invokes get-availability-zone operation.
 	//
-	// Changes the public IP binding on the virtual machine's primary network interface. The virtual
-	// machine shows the `unbind_elastic_ip` operation until the change is confirmed.
+	// A disk and a virtual machine must reside in the same availability zone to be attached.
 	//
-	// DELETE /api/v1/virtual-machines/{virtualMachineId}/elastic-ips/{elasticIpId}
-	DetachVirtualMachineElasticIP(ctx context.Context, params DetachVirtualMachineElasticIPParams) (DetachVirtualMachineElasticIPRes, error)
-	// GetBackup invokes get-backup operation.
-	//
-	// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
-	// progress.
-	//
-	// GET /api/v1/backups/{backupId}
-	GetBackup(ctx context.Context, params GetBackupParams) (*BackupResource, error)
+	// GET /api/v1/availability-zones/{availabilityZoneId}
+	GetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (*ZoneResource, error)
 	// GetDisk invokes get-disk operation.
 	//
 	// Returns the stored state of the disk; it does not query the cloud.
 	//
 	// GET /api/v1/disks/{diskId}
 	GetDisk(ctx context.Context, params GetDiskParams) (*DiskResource, error)
+	// GetDiskBackup invokes get-disk-backup operation.
+	//
+	// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
+	// progress.
+	//
+	// GET /api/v1/disk-backups/{diskBackupId}
+	GetDiskBackup(ctx context.Context, params GetDiskBackupParams) (*DiskBackupResource, error)
 	// GetDiskType invokes get-disk-type operation.
 	//
 	// Retrieve capacity and performance constraints for an existing disk, including system disk types and
@@ -462,6 +566,16 @@ type Invoker interface {
 	//
 	// GET /api/v1/elastic-ips/{elasticIpId}
 	GetElasticIP(ctx context.Context, params GetElasticIPParams) (*ElasticIP, error)
+	// GetElasticIPAssociation invokes get-elastic-ip-association operation.
+	//
+	// The private address of a network interface this elastic IP currently points at. Returns the stored
+	// state; it does not query the cloud.
+	//
+	// An elastic IP that points at nothing has no association: the request is refused with 404
+	// `ELASTIC_IP_NOT_ASSOCIATED`.
+	//
+	// GET /api/v1/elastic-ips/{elasticIpId}/association
+	GetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (*IPv4Binding, error)
 	// GetElasticIPType invokes get-elastic-ip-type operation.
 	//
 	// Includes off-sale or retired products referenced by existing elastic IPs. No inventory or gateway
@@ -469,14 +583,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/elastic-ip-types/{elasticIpTypeId}
 	GetElasticIPType(ctx context.Context, params GetElasticIPTypeParams) (*ElasticIPType, error)
-	// GetImage invokes get-image operation.
-	//
-	// Returns a public image, or a private image of this project; any other image is reported as not
-	// found. Use this endpoint to poll capture progress. When `status` is `failed`, `failure` describes
-	// the outcome.
-	//
-	// GET /api/v1/images/{imageId}
-	GetImage(ctx context.Context, params GetImageParams) (*ImageResource, error)
 	// GetMachineType invokes get-machine-type operation.
 	//
 	// Returns only an on-sale machine type, under the same access rules as listing. Off-sale, retired or
@@ -484,12 +590,42 @@ type Invoker interface {
 	//
 	// GET /api/v1/machine-types/{machineTypeId}
 	GetMachineType(ctx context.Context, params GetMachineTypeParams) (*MachineType, error)
+	// GetNetworkInterface invokes get-network-interface operation.
+	//
+	// Returns the stored state of the network interface; it does not query the cloud.
+	//
+	// GET /api/v1/network-interfaces/{networkInterfaceId}
+	GetNetworkInterface(ctx context.Context, params GetNetworkInterfaceParams) (*NetworkInterface, error)
+	// GetOperationLog invokes get-operation-log operation.
+	//
+	// Returns one entry of the project's operation log. Like the listing, it never discloses the
+	// individual operator of an operation performed by the platform.
+	//
+	// GET /api/v1/operation-logs/{operationLogId}
+	GetOperationLog(ctx context.Context, params GetOperationLogParams) (*OperationLogResource, error)
 	// GetPeering invokes get-peering operation.
 	//
 	// Get peering.
 	//
 	// GET /api/v1/peerings/{peeringId}
 	GetPeering(ctx context.Context, params GetPeeringParams) (*PeeringResource, error)
+	// GetPrivateImage invokes get-private-image operation.
+	//
+	// Returns a private image of this project; any other image, public images included, is reported as not
+	// found. Use this endpoint to poll capture progress. When `status` is `failed`, `failure` describes
+	// the outcome.
+	//
+	// GET /api/v1/private-images/{privateImageId}
+	GetPrivateImage(ctx context.Context, params GetPrivateImageParams) (*PrivateImageResource, error)
+	// GetPublicImage invokes get-public-image operation.
+	//
+	// Returns a public image, on sale or withdrawn. A withdrawn image (`sale_status` is `off_sale`) is
+	// still returned because virtual machines may keep running it; it cannot be chosen for a new virtual
+	// machine and can only be rebuilt onto by a virtual machine that already runs it. A private image id
+	// is reported as not found here; use `/private-images`.
+	//
+	// GET /api/v1/public-images/{publicImageId}
+	GetPublicImage(ctx context.Context, params GetPublicImageParams) (*PublicImageResource, error)
 	// GetQuota invokes get-quota operation.
 	//
 	// Reads only the IAM project authorized by the scoped token; callers cannot select another project.
@@ -498,6 +634,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/quotas/{resource}
 	GetQuota(ctx context.Context, params GetQuotaParams) (*ProjectQuota, error)
+	// GetRegion invokes get-region operation.
+	//
+	// The availability zones of a region are listed by `list-availability-zones` with `region_id`.
+	//
+	// GET /api/v1/regions/{regionId}
+	GetRegion(ctx context.Context, params GetRegionParams) (*RegionResource, error)
 	// GetRoute invokes get-route operation.
 	//
 	// Get a route.
@@ -514,7 +656,7 @@ type Invoker interface {
 	//
 	// Get a security group rule.
 	//
-	// GET /api/v1/security-group-rules/{ruleId}
+	// GET /api/v1/security-group-rules/{securityGroupRuleId}
 	GetSecurityGroupRule(ctx context.Context, params GetSecurityGroupRuleParams) (*SecurityGroupRule, error)
 	// GetSnapshot invokes get-snapshot operation.
 	//
@@ -535,6 +677,16 @@ type Invoker interface {
 	//
 	// GET /api/v1/virtual-machines/{virtualMachineId}
 	GetVirtualMachine(ctx context.Context, params GetVirtualMachineParams) (*VirtualMachine, error)
+	// GetVirtualMachineConsole invokes get-virtual-machine-console operation.
+	//
+	// Operates the virtual machine directly from a browser and does not require the virtual machine to be
+	// reachable over the network, which makes it usable when a network misconfiguration prevents login.
+	//
+	// The returned address is single-use and expires within minutes. Every request issues a new address,
+	// so request one before each use and do not cache the response.
+	//
+	// GET /api/v1/virtual-machines/{virtualMachineId}/console
+	GetVirtualMachineConsole(ctx context.Context, params GetVirtualMachineConsoleParams) (*ConsoleResponseBody, error)
 	// GetVirtualPrivateCloud invokes get-virtual-private-cloud operation.
 	//
 	// Retrieve a virtual private cloud.
@@ -557,16 +709,16 @@ type Invoker interface {
 	// ListAvailabilityZones invokes list-availability-zones operation.
 	//
 	// A disk and a virtual machine must reside in the same availability zone to be attached. Confirm the
-	// zone before creating either.
+	// zone before creating either. Without `region_id`, the zones of every region are listed.
 	//
-	// GET /api/v1/regions/{regionId}/availability-zones
+	// GET /api/v1/availability-zones
 	ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*ZoneListResponseBody, error)
-	// ListBackups invokes list-backups operation.
+	// ListDiskBackups invokes list-disk-backups operation.
 	//
-	// List backups.
+	// List disk backups.
 	//
-	// GET /api/v1/backups
-	ListBackups(ctx context.Context, params ListBackupsParams) (*BackupListResponseBody, error)
+	// GET /api/v1/disk-backups
+	ListDiskBackups(ctx context.Context, params ListDiskBackupsParams) (*DiskBackupListResponseBody, error)
 	// ListDiskTypes invokes list-disk-types operation.
 	//
 	// Only disk types currently on sale are listed, both system disk types and data disk types; `purpose`
@@ -577,7 +729,7 @@ type Invoker interface {
 	ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeListResponseBody, error)
 	// ListDisks invokes list-disks operation.
 	//
-	// When both `region_code` and `availability_zone` are supplied, only disks attachable to a virtual
+	// When both `region_id` and `availability_zone_id` are supplied, only disks attachable to a virtual
 	// machine at that location are returned.
 	//
 	// GET /api/v1/disks
@@ -585,7 +737,8 @@ type Invoker interface {
 	// ListElasticIPTypes invokes list-elastic-ip-types operation.
 	//
 	// Lists on-sale products. Region is optional. Prices, commercial terms and checkout are read directly
-	// from Billing.
+	// from Billing. `q` searches the names and descriptions of the on-sale products; filters combine with
+	// AND, and pagination is independent of them.
 	//
 	// GET /api/v1/elastic-ip-types
 	ListElasticIPTypes(ctx context.Context, params ListElasticIPTypesParams) (*ElasticIPTypeListResponseBody, error)
@@ -595,23 +748,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/elastic-ips
 	ListElasticIps(ctx context.Context, params ListElasticIpsParams) (*ElasticIPListResponseBody, error)
-	// ListImages invokes list-images operation.
-	//
-	// Lists the public images on sale together with the private images of this project. `visibility`
-	// narrows the list to one of the two.
-	//
-	// A public image is offered to every project. Only public images currently on sale are listed: one the
-	// platform withdraws disappears from here and can no longer install new virtual machines, while the
-	// virtual machines already running it keep running and can still be rebuilt onto it.
-	//
-	// A private image belongs to this project, which captured it from one of its virtual machines, and is
-	// listed in every status, including while its capture is in progress and after the capture failed.
-	//
-	// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
-	// memory of the selected machine type cannot boot; filter the options accordingly.
-	//
-	// GET /api/v1/images
-	ListImages(ctx context.Context, params ListImagesParams) (*ImageListResponseBody, error)
 	// ListMachineTypes invokes list-machine-types operation.
 	//
 	// Only machine types currently on sale are listed. A withdrawn one disappears from here and can no
@@ -646,6 +782,34 @@ type Invoker interface {
 	//
 	// GET /api/v1/peerings
 	ListPeerings(ctx context.Context, params ListPeeringsParams) (*PeeringListResponseBody, error)
+	// ListPrivateImages invokes list-private-images operation.
+	//
+	// Lists the private images of this project, newest first, in every status: including while a capture
+	// is in progress and after it failed. Private images of other projects are never listed.
+	//
+	// A private image is usable only by the project that captured it from one of its virtual machines. Its
+	// storage is metered by the hour on a subscription of the project.
+	//
+	// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
+	// memory of the selected machine type cannot boot; filter the options accordingly. Public images are
+	// in `/public-images`.
+	//
+	// GET /api/v1/private-images
+	ListPrivateImages(ctx context.Context, params ListPrivateImagesParams) (*PrivateImageListResponseBody, error)
+	// ListPublicImages invokes list-public-images operation.
+	//
+	// Lists the platform's public images that are on sale. A public image is offered to every project. One
+	// the platform withdraws disappears from here and can no longer install new virtual machines, while
+	// the virtual machines already running it keep running and can still be rebuilt onto it; retrieve it
+	// by id to see it.
+	//
+	// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
+	// memory of the selected machine type cannot boot; filter the options accordingly.
+	//
+	// Images this project captured from its own virtual machines are in `/private-images`.
+	//
+	// GET /api/v1/public-images
+	ListPublicImages(ctx context.Context, params ListPublicImagesParams) (*PublicImageListResponseBody, error)
 	// ListQuotas invokes list-quotas operation.
 	//
 	// Reads only the IAM project authorized by the scoped token; callers cannot select another project.
@@ -716,15 +880,53 @@ type Invoker interface {
 	//
 	// GET /api/v1/virtual-private-clouds
 	ListVirtualPrivateClouds(ctx context.Context, params ListVirtualPrivateCloudsParams) (*VirtualPrivateCloudListResponseBody, error)
-	// OpenVirtualMachineConsole invokes open-virtual-machine-console operation.
+	// PutElasticIPAssociation invokes put-elastic-ip-association operation.
 	//
-	// Operates the virtual machine directly from a browser and does not require the virtual machine to be
-	// reachable over the network, which makes it usable when a network misconfiguration prevents login.
+	// Points the elastic IP at a target: a virtual machine, which means the primary private IPv4 address
+	// of its primary network interface, or a network interface address (`network_interface_address_id`)
+	// given directly. Exactly one of `virtual_machine_id` and `network_interface_address_id`. A network
+	// interface address must be an assigned, unreleased IPv4 address on a network interface in this
+	// project and region; IPv6 addresses are rejected.
 	//
-	// The returned address is single-use and expires within minutes. Request a new one before each use.
+	// The target becomes what the elastic IP points at. Repeating the request for the target it already
+	// points at changes nothing; an elastic IP associated with another target is refused with
+	// `ELASTIC_IP_ALREADY_ASSOCIATED` (409), and is moved by deleting the association first, so that the
+	// moment traffic stops reaching the old target is one the caller chose. The elastic IP shows the
+	// `bind` operation until the association is confirmed, and with a virtual machine as the target that
+	// virtual machine shows the `bind_elastic_ip` operation as well, so the virtual machine must not have
+	// another operation in progress.
 	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/console
-	OpenVirtualMachineConsole(ctx context.Context, params OpenVirtualMachineConsoleParams) (*ConsoleResponseBody, error)
+	// The elastic IP must be in the same region as the target. With a virtual machine as the target, the
+	// elastic IP's `bandwidth_mbps` must not exceed the `max_bandwidth_mbps` of that virtual machine's
+	// type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`.
+	//
+	// PUT /api/v1/elastic-ips/{elasticIpId}/association
+	PutElasticIPAssociation(ctx context.Context, request PutElasticIPAssociationRequestBody, params PutElasticIPAssociationParams) (PutElasticIPAssociationRes, error)
+	// PutVirtualMachinePassword invokes put-virtual-machine-password operation.
+	//
+	// Sets the root password without a reboot. The virtual machine must be running.
+	//
+	// Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
+	// password can then only be set by rebuilding the virtual machine, which erases all data on the system
+	// disk.
+	//
+	// The request is also rejected when the image is marked as supported but the corresponding component
+	// has been removed or stopped inside the virtual machine.
+	//
+	// PUT /api/v1/virtual-machines/{virtualMachineId}/password
+	PutVirtualMachinePassword(ctx context.Context, request *PutVirtualMachinePasswordRequestBody, params PutVirtualMachinePasswordParams) (PutVirtualMachinePasswordRes, error)
+	// PutVirtualMachineRescue invokes put-virtual-machine-rescue operation.
+	//
+	// Boots a temporary rescue environment while retaining the original system disk. Changing
+	// `power_state` or `machine_type_id`, rebuilding and putting a password are unavailable in rescue
+	// mode.
+	//
+	// The request does not name an image. The rescue image is the region's enabled rescue image for the
+	// architecture of the virtual machine's system disk. A region and architecture with no enabled rescue
+	// image is refused with `RESCUE_IMAGE_NOT_CONFIGURED` (409).
+	//
+	// PUT /api/v1/virtual-machines/{virtualMachineId}/rescue
+	PutVirtualMachineRescue(ctx context.Context, request *PutVirtualMachineRescueRequestBody, params PutVirtualMachineRescueParams) (PutVirtualMachineRescueRes, error)
 	// PutVirtualPrivateCloudIpv6 invokes put-virtual-private-cloud-ipv6 operation.
 	//
 	// Delegates and routes a /64 prefix to the virtual private cloud and creates its IPv6 subnet. It
@@ -736,137 +938,149 @@ type Invoker interface {
 	//
 	// PUT /api/v1/virtual-private-clouds/{virtualPrivateCloudId}/ipv6
 	PutVirtualPrivateCloudIpv6(ctx context.Context, params PutVirtualPrivateCloudIpv6Params) (PutVirtualPrivateCloudIpv6Res, error)
-	// RebootVirtualMachine invokes reboot-virtual-machine operation.
+	// UpdateDisk invokes update-disk operation.
 	//
-	// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+	// Changes the name, or the capacity. Type and availability zone are immutable.
 	//
-	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
-	// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
+	// `size_gb` is an operational field: it starts a resize and cannot be combined with any other field in
+	// the same request. Such a request is refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that
+	// committed beside a change that was then refused would leave the request half applied. `checkout` and
+	// `proration_date` belong to the purchase of the `size_gb` change and are accepted only together with
+	// it.
 	//
-	// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft
-	// reboot the virtual machine never carried out. Any other request for an operation, including a second
-	// soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
+	// Renaming is not an operation and is accepted at any time. It returns 200 with `checkout_session_id`
+	// and `order_id` null.
 	//
-	// A virtual machine suspended by the platform must be unsuspended first.
-	//
-	// The virtual machine shows the `reboot` operation until the reboot has finished.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/reboot
-	RebootVirtualMachine(ctx context.Context, request *RebootVirtualMachineRequestBody, params RebootVirtualMachineParams) (RebootVirtualMachineRes, error)
-	// RebuildVirtualMachine invokes rebuild-virtual-machine operation.
-	//
-	// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
-	//
-	// The image this virtual machine already runs is accepted even after the platform has withdrawn it,
-	// since rebuilding is the only way back into a virtual machine broken from the inside. Any other
-	// withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new
-	// order.
-	//
-	// The virtual machine shows the `rebuild` operation until the rebuild has finished.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/rebuild
-	RebuildVirtualMachine(ctx context.Context, request *RebuildVirtualMachineRequestBody, params RebuildVirtualMachineParams) (RebuildVirtualMachineRes, error)
-	// RejectPeering invokes reject-peering operation.
-	//
-	// Reject peering.
-	//
-	// POST /api/v1/peerings/{peeringId}/reject
-	RejectPeering(ctx context.Context, params RejectPeeringParams) (*PeeringResource, error)
-	// ReleaseElasticIP invokes release-elastic-ip operation.
-	//
-	// Releases the elastic IP after unbinding it. The elastic IP shows the `delete` operation until
-	// cleanup is confirmed; the address then immediately returns to available inventory, with no cooldown
-	// period. Unbinding or moving a binding alone does not release the address.
-	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the elastic IP. It is released by canceling the
-	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-	// `release_subscription_ids`.
-	//
-	// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
-	// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
-	// checkout created one. Expire the session or cancel the order in Billing instead.
-	//
-	// DELETE /api/v1/elastic-ips/{elasticIpId}
-	ReleaseElasticIP(ctx context.Context, params ReleaseElasticIPParams) (ReleaseElasticIPRes, error)
-	// RenameBackup invokes rename-backup operation.
-	//
-	// Rename a backup.
-	//
-	// PATCH /api/v1/backups/{backupId}
-	RenameBackup(ctx context.Context, request *RenameBackupRequestBody, params RenameBackupParams) (*BackupResource, error)
-	// RenameDisk invokes rename-disk operation.
-	//
-	// Changes the name only. Use the resize endpoint for capacity; type and availability zone are
-	// immutable.
-	//
-	// PATCH /api/v1/disks/{diskId}
-	RenameDisk(ctx context.Context, request *RenameDiskRequestBody, params RenameDiskParams) (*DiskResource, error)
-	// RenameImage invokes rename-image operation.
-	//
-	// Only a private image of this project can be renamed; any other image is reported as not found.
-	//
-	// PATCH /api/v1/images/{imageId}
-	RenameImage(ctx context.Context, request *RenameImageRequestBody, params RenameImageParams) (*ImageResource, error)
-	// RenameSnapshot invokes rename-snapshot operation.
-	//
-	// Rename a snapshot.
-	//
-	// PATCH /api/v1/snapshots/{snapshotId}
-	RenameSnapshot(ctx context.Context, request *RenameSnapshotRequestBody, params RenameSnapshotParams) (*SnapshotResource, error)
-	// RenameVirtualMachine invokes rename-virtual-machine operation.
-	//
-	// Changes the display name only. The hostname inside the virtual machine is unchanged; it equals the
-	// virtual machine id.
-	//
-	// PATCH /api/v1/virtual-machines/{virtualMachineId}
-	RenameVirtualMachine(ctx context.Context, request *RenameVirtualMachineRequestBody, params RenameVirtualMachineParams) (*VirtualMachine, error)
-	// RescueVirtualMachine invokes rescue-virtual-machine operation.
-	//
-	// Boots a temporary rescue environment while retaining the original system disk. The selected image
-	// must support this virtual machine. Stop, resize, rebuild and password reset are unavailable in
-	// rescue mode.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/rescue
-	RescueVirtualMachine(ctx context.Context, request *RescueVirtualMachineRequestBody, params RescueVirtualMachineParams) (RescueVirtualMachineRes, error)
-	// ResetVirtualMachinePassword invokes reset-virtual-machine-password operation.
-	//
-	// Changes the root password without a reboot. The virtual machine must be running.
-	//
-	// Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
-	// password can then only be set by rebuilding the virtual machine, which erases all data on the system
-	// disk.
-	//
-	// The request is also rejected when the image is marked as supported but the corresponding component
-	// has been removed or stopped inside the virtual machine.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/password
-	ResetVirtualMachinePassword(ctx context.Context, request *ResetPasswordRequestBody, params ResetVirtualMachinePasswordParams) (ResetVirtualMachinePasswordRes, error)
-	// ResizeDisk invokes resize-disk operation.
-	//
-	// Capacity can only be increased; shrinking is not supported. Returns the disk with the Checkout
-	// Session for the resize, which keeps the disk's usage type and period. The disk shows the `resize`
-	// operation until the resize is applied, its Checkout Session expires or its order is canceled, so
-	// other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk
-	// keeps its current size until the resize is applied; once `size_gb` shows the new size, extend the
-	// file system inside the virtual machine. If checkout is not completed, the order is not accepted or
-	// the resize fails, the disk keeps its size and Billing shows the outcome.
+	// Resizing accepts only an increase; a smaller `size_gb` is refused with `DISK_CANNOT_SHRINK` (422),
+	// since a file system cannot be shrunk from outside the virtual machine. It returns 202 with the disk
+	// and the Checkout Session for the resize, which keeps the disk's usage type and period. The disk
+	// shows the `resize` operation until the resize is applied, its Checkout Session expires or its order
+	// is canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
+	// meanwhile. The disk keeps its current size until the resize is applied; once `size_gb` shows the new
+	// size, extend the file system inside the virtual machine. If checkout is not completed, the order is
+	// not accepted or the resize fails, the disk keeps its size and Billing shows the outcome.
 	//
 	// An attached disk, including a system disk, can be resized. The capacity is usable at once, and the
 	// disk's `performance` shows what its type gives the new size. That performance applies from the
 	// disk's next attachment, or the next start of its stopped virtual machine: the storage reads a disk's
 	// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
 	//
-	// POST /api/v1/disks/{diskId}/resize
-	ResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (ResizeDiskRes, error)
-	// ResizeVirtualMachine invokes resize-virtual-machine operation.
+	// PATCH /api/v1/disks/{diskId}
+	UpdateDisk(ctx context.Context, request *UpdateDiskRequestBody, params UpdateDiskParams) (UpdateDiskRes, error)
+	// UpdateDiskBackup invokes update-disk-backup operation.
 	//
-	// Creates a Billing Checkout Session for the change, including for metered terms, and returns the
-	// virtual machine with it. The virtual machine keeps its usage type and period, priced with the target
-	// type's matching option; a target type without that option is refused with 409
-	// `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing accepts the order. Do not submit the
-	// change again after paying. After an uncertain response, look the Checkout Session up in Billing
-	// before submitting again.
+	// Changes the name only. A backup's source disk and capacity cannot be changed.
+	//
+	// PATCH /api/v1/disk-backups/{diskBackupId}
+	UpdateDiskBackup(ctx context.Context, request *UpdateDiskBackupRequestBody, params UpdateDiskBackupParams) (*DiskBackupResource, error)
+	// UpdateElasticIP invokes update-elastic-ip operation.
+	//
+	// Changes the bandwidth of this elastic IP. `bandwidth_mbps` is an operational field: it starts a
+	// change and cannot be combined with any other field in the same request. Such a request is refused
+	// with 422 `UPDATE_FIELDS_COMBINED`, because a change that committed beside another that was then
+	// refused would leave the request half applied. An elastic IP has no descriptive field today, so 200
+	// is reserved for the fields that may be added to it and every accepted update answers 202. `checkout`
+	// and `proration_date` belong to the purchase of the `bandwidth_mbps` change and are accepted only
+	// together with it.
+	//
+	// The change goes through a Checkout Session that keeps the elastic IP's usage type and period; no
+	// separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The
+	// elastic IP shows the `set_bandwidth` operation until the change is applied, its Checkout Session
+	// expires or its order is canceled, so other operations and a second change are refused with
+	// `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If
+	// checkout is not completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its
+	// value and Billing shows the outcome.
+	//
+	// While the address is associated with a virtual machine, the limit must not exceed the
+	// `max_bandwidth_mbps` of that virtual machine's type; a higher limit is refused with
+	// `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not associated is checked when the
+	// address is associated with a virtual machine.
+	//
+	// PATCH /api/v1/elastic-ips/{elasticIpId}
+	UpdateElasticIP(ctx context.Context, request *UpdateElasticIPRequestBody, params UpdateElasticIPParams) (UpdateElasticIPRes, error)
+	// UpdateNetworkInterface invokes update-network-interface operation.
+	//
+	// Changes the name only. Renaming is not an operation and is accepted at any time. The security groups
+	// and addresses of a network interface cannot be changed through this endpoint.
+	//
+	// PATCH /api/v1/network-interfaces/{networkInterfaceId}
+	UpdateNetworkInterface(ctx context.Context, request *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (*NetworkInterface, error)
+	// UpdatePeering invokes update-peering operation.
+	//
+	// The accepter project writes its decision as `acceptance`. Only the accepter project may write it;
+	// the requester project is refused, because a peering would otherwise be accepted by the party who
+	// asked for it. The decision is written once: a peering that is no longer `pending_acceptance` refuses
+	// it.
+	//
+	// `accepted` starts the provisioning of the connectivity and returns 202; the peering shows the
+	// `provision` operation until it is `active`. `rejected` returns 200 with the peering `rejected`, and
+	// no connectivity is ever created. Does not change security groups or provide transitive routing.
+	//
+	// PATCH /api/v1/peerings/{peeringId}
+	UpdatePeering(ctx context.Context, request *UpdatePeeringRequestBody, params UpdatePeeringParams) (UpdatePeeringRes, error)
+	// UpdatePrivateImage invokes update-private-image operation.
+	//
+	// Renames a private image of this project. Any other image, public images included, is reported as not
+	// found.
+	//
+	// PATCH /api/v1/private-images/{privateImageId}
+	UpdatePrivateImage(ctx context.Context, request *UpdatePrivateImageRequestBody, params UpdatePrivateImageParams) (*PrivateImageResource, error)
+	// UpdateSecurityGroup invokes update-security-group operation.
+	//
+	// Changes the name or description. Rules are resources of their own, created and deleted under
+	// `/security-group-rules`.
+	//
+	// PATCH /api/v1/security-groups/{securityGroupId}
+	UpdateSecurityGroup(ctx context.Context, request *UpdateSecurityGroupRequestBody, params UpdateSecurityGroupParams) (*SecurityGroup, error)
+	// UpdateSnapshot invokes update-snapshot operation.
+	//
+	// Changes the name only. A snapshot's source disk and capacity cannot be changed.
+	//
+	// PATCH /api/v1/snapshots/{snapshotId}
+	UpdateSnapshot(ctx context.Context, request *UpdateSnapshotRequestBody, params UpdateSnapshotParams) (*SnapshotResource, error)
+	// UpdateSubnet invokes update-subnet operation.
+	//
+	// Only the name can change. The CIDR is fixed for the subnet's life, because addresses already handed
+	// out inside it would fall outside a changed range.
+	//
+	// PATCH /api/v1/subnets/{subnetId}
+	UpdateSubnet(ctx context.Context, request *UpdateSubnetRequestBody, params UpdateSubnetParams) (*Subnet, error)
+	// UpdateVirtualMachine invokes update-virtual-machine operation.
+	//
+	// Changes the descriptive fields (`name`, `labels`, `notes`) or one operational field (`power_state`
+	// or `machine_type_id`). All fields are optional and at least one is required.
+	//
+	// `power_state` and `machine_type_id` are operational fields: each starts a workflow, and neither can
+	// be combined with any other field in the same request, including the other one. Such a request is
+	// refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside a change that was
+	// then refused would leave the request half applied. `checkout` and `proration_date` belong to the
+	// purchase of the `machine_type_id` change and are accepted only together with it.
+	//
+	// Descriptive fields are not operations and are accepted at any time, whatever the virtual machine is
+	// doing. The request returns 200 with `checkout_session_id` and `order_id` null.
+	//
+	//  - `name` changes the display name only. The hostname inside the virtual machine is unchanged; it
+	//    equals the virtual machine id.
+	//  - `labels` records what this virtual machine is for, as key-value pairs. Nothing on the platform
+	//    reads them. The whole set is replaced: whatever is absent from the request is removed, and an
+	//    empty object clears them all. Do not put credentials here. Labels are visible to platform
+	//    operators.
+	//  - `notes` is a free-text note about this virtual machine: what it runs, and what to be careful
+	//    about before touching it. The whole note is replaced; send an empty string to clear it. Do not
+	//    put credentials here. The note is visible to platform operators.
+	//
+	// `power_state` is the state the virtual machine should be in, and the request returns 202 with the
+	// virtual machine as it is when the request is accepted. `running` starts it: outstanding restrictions
+	// can prevent starting, and the virtual machine shows the `start` operation until it is running or the
+	// start has failed. `stopped` stops it: a stopped virtual machine keeps its disks, network attachments
+	// and sellable quota, and shows the `stop` operation until it is stopped or the stop has failed.
+	//
+	// `machine_type_id` resizes the virtual machine and returns 202 with the virtual machine and the
+	// Checkout Session for the change, including for metered terms. The virtual machine keeps its usage
+	// type and period, priced with the target type's matching option; a target type without that option is
+	// refused with 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing accepts the order. Do
+	// not submit the change again after paying. After an uncertain response, look the Checkout Session up
+	// in Billing before submitting again.
 	//
 	// The virtual machine shows the `resize` operation until the resize is applied, its Checkout Session
 	// expires or its order is canceled, so other operations and a second resize are refused with
@@ -876,149 +1090,8 @@ type Invoker interface {
 	// and Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
 	// previous type, submit another resize.
 	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/resize
-	ResizeVirtualMachine(ctx context.Context, request *ResizeVirtualMachineRequestBody, params ResizeVirtualMachineParams) (ResizeVirtualMachineRes, error)
-	// RestoreBackup invokes restore-backup operation.
-	//
-	// Restores onto a newly created disk. The source disk is unaffected and need not still exist.
-	//
-	// The target disk type may belong to another availability zone of the same region, and its capacity
-	// must not be smaller than the backup. Returns the new disk as `pending` with its Checkout Session; it
-	// cannot be attached until it is `available`. The new disk is bought on its own, so it is licensed:
-	// `billing.usage_type` `metered` is refused with `DISK_USAGE_TYPE_UNAVAILABLE`.
-	//
-	// POST /api/v1/backups/{backupId}/restore
-	RestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (RestoreBackupRes, error)
-	// RevertDisk invokes revert-disk operation.
-	//
-	// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
-	// moment is lost and cannot be recovered.
-	//
-	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
-	// must be detached from its virtual machine first; and a disk resized since the snapshot was taken
-	// cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a
-	// new disk from the snapshot instead.
-	//
-	// The disk shows the `revert` operation until the revert is complete.
-	//
-	// POST /api/v1/disks/{diskId}/revert
-	RevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (RevertDiskRes, error)
-	// RunVirtualMachineCommand invokes run-virtual-machine-command operation.
-	//
-	// Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
-	// standard input and no way to answer a prompt: a command that waits for input produces nothing and is
-	// killed at the timeout. Chain steps with `&&`, or write a script and run that.
-	//
-	// A command that fails is still a 200. Its failure is its own result, not this endpoint's: read
-	// `exit_code` for what it exited with and `stderr` for what it said, and decide from those. A `grep`
-	// that matches nothing exits 1 and is a perfectly successful call.
-	//
-	// The status therefore answers a different question — did the command run at all. A non-2xx means it
-	// did not, and nothing about the virtual machine was changed by this request: it was suspended, not
-	// running or had no elastic IP; or it refused the platform key; or the connection could not be opened.
-	// Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
-	//
-	// Three conditions must hold; the virtual machine is unreachable otherwise:
-	//
-	//  - it is `active`
-	//  - an elastic IP is bound to it, since this endpoint connects over the public internet
-	//  - its security group permits inbound TCP 22
-	//
-	// Authentication uses the key the platform attaches to every virtual machine at creation, so nothing
-	// has to be set up first. The virtual machine must have applied that key at first boot, which images
-	// without a full cloud-init do not do.
-	//
-	// Do not pass secrets in the command. Read them from a file on the virtual machine instead: neither
-	// the command nor its output is a confidential channel.
-	//
-	// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/commands
-	RunVirtualMachineCommand(ctx context.Context, request *RunCommandRequestBody, params RunVirtualMachineCommandParams) (*CommandResultResponseBody, error)
-	// SearchElasticIPTypes invokes search-elastic-ip-types operation.
-	//
-	// Search on-sale product names and descriptions. Filters use AND; pagination is independent.
-	//
-	// GET /api/v1/elastic-ip-types/search
-	SearchElasticIPTypes(ctx context.Context, params SearchElasticIPTypesParams) (*ElasticIPTypeListResponseBody, error)
-	// SetElasticIPBandwidth invokes set-elastic-ip-bandwidth operation.
-	//
-	// Changes the bandwidth of this elastic IP through a Checkout Session that keeps its usage type and
-	// period; no separate bandwidth resource is created. The limit applies to inbound and outbound traffic
-	// alike. The elastic IP shows the `set_bandwidth` operation until the change is applied, its Checkout
-	// Session expires or its order is canceled, so other operations and a second change are refused with
-	// `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If
-	// checkout is not completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its
-	// value and Billing shows the outcome.
-	//
-	// While the address is bound to a virtual machine, the limit must not exceed the `max_bandwidth_mbps`
-	// of that virtual machine's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The
-	// limit of an address that is not bound is checked when the address is bound to a virtual machine.
-	//
-	// PUT /api/v1/elastic-ips/{elasticIpId}/bandwidth
-	SetElasticIPBandwidth(ctx context.Context, request *SetElasticIPBandwidthRequestBody, params SetElasticIPBandwidthParams) (SetElasticIPBandwidthRes, error)
-	// SetVirtualMachineLabels invokes set-virtual-machine-labels operation.
-	//
-	// Records what this virtual machine is for, as key-value pairs. Nothing on the platform reads them.
-	//
-	// The whole set is replaced: whatever is absent from the request is removed.
-	//
-	// Do not put credentials here. Labels are visible to platform operators.
-	//
-	// PUT /api/v1/virtual-machines/{virtualMachineId}/labels
-	SetVirtualMachineLabels(ctx context.Context, request *SetVirtualMachineLabelsRequestBody, params SetVirtualMachineLabelsParams) (*VirtualMachine, error)
-	// SetVirtualMachineNotes invokes set-virtual-machine-notes operation.
-	//
-	// A free-text note about this virtual machine — what it runs, and what to be careful about before
-	// touching it.
-	//
-	// The whole note is replaced; send an empty string to clear it.
-	//
-	// Do not put credentials here. The note is visible to platform operators.
-	//
-	// PUT /api/v1/virtual-machines/{virtualMachineId}/notes
-	SetVirtualMachineNotes(ctx context.Context, request *SetVirtualMachineNotesRequestBody, params SetVirtualMachineNotesParams) (*VirtualMachine, error)
-	// StartVirtualMachine invokes start-virtual-machine operation.
-	//
-	// Outstanding restrictions can prevent starting. The virtual machine shows the `start` operation until
-	// it is running or the start has failed.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/start
-	StartVirtualMachine(ctx context.Context, request *PowerRequest, params StartVirtualMachineParams) (StartVirtualMachineRes, error)
-	// StopVirtualMachine invokes stop-virtual-machine operation.
-	//
-	// A stopped virtual machine keeps its disks, network attachments and sellable quota. The virtual
-	// machine shows the `stop` operation until it is stopped or the stop has failed.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/stop
-	StopVirtualMachine(ctx context.Context, request *PowerRequest, params StopVirtualMachineParams) (StopVirtualMachineRes, error)
-	// UnbindElasticIP invokes unbind-elastic-ip operation.
-	//
-	// The address remains held by the project and simply no longer points at any network interface. The
-	// elastic IP shows the `unbind` operation until the change is confirmed.
-	//
-	// DELETE /api/v1/elastic-ips/{elasticIpId}/binding
-	UnbindElasticIP(ctx context.Context, params UnbindElasticIPParams) (UnbindElasticIPRes, error)
-	// UnrescueVirtualMachine invokes unrescue-virtual-machine operation.
-	//
-	// Restores boot from the original system disk. Completion is shown by the virtual machine state.
-	//
-	// POST /api/v1/virtual-machines/{virtualMachineId}/unrescue
-	UnrescueVirtualMachine(ctx context.Context, params UnrescueVirtualMachineParams) (UnrescueVirtualMachineRes, error)
-	// UpdateSecurityGroup invokes update-security-group operation.
-	//
-	// Changes the name or description. Rules are resources of their own, created and deleted under
-	// `/security-group-rules`.
-	//
-	// PATCH /api/v1/security-groups/{securityGroupId}
-	UpdateSecurityGroup(ctx context.Context, request *UpdateSecurityGroupRequestBody, params UpdateSecurityGroupParams) (*SecurityGroup, error)
-	// UpdateSubnet invokes update-subnet operation.
-	//
-	// Only the name can change. The CIDR is fixed for the subnet's life, because addresses already handed
-	// out inside it would fall outside a changed range.
-	//
-	// PATCH /api/v1/subnets/{subnetId}
-	UpdateSubnet(ctx context.Context, request *UpdateSubnetRequestBody, params UpdateSubnetParams) (*Subnet, error)
+	// PATCH /api/v1/virtual-machines/{virtualMachineId}
+	UpdateVirtualMachine(ctx context.Context, request *UpdateVirtualMachineRequestBody, params UpdateVirtualMachineParams) (UpdateVirtualMachineRes, error)
 	// UpdateVirtualPrivateCloud invokes update-virtual-private-cloud operation.
 	//
 	// Only the name can change. The CIDR is fixed for the network's life, because every subnet and address
@@ -1069,142 +1142,7 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 	return u
 }
 
-// AcceptPeering invokes accept-peering operation.
-//
-// Accept peering.
-//
-// POST /api/v1/peerings/{peeringId}/accept
-func (c *Client) AcceptPeering(ctx context.Context, params AcceptPeeringParams) (AcceptPeeringRes, error) {
-	res, err := c.sendAcceptPeering(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendAcceptPeering(ctx context.Context, params AcceptPeeringParams) (res AcceptPeeringRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("accept-peering"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/peerings/{peeringId}/accept"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, AcceptPeeringOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/peerings/"
-	{
-		// Encode "peeringId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "peeringId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.PeeringId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/accept"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, AcceptPeeringOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeAcceptPeeringResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// AttachDisk invokes attach-disk operation.
+// AttachVirtualMachineDisk invokes attach-virtual-machine-disk operation.
 //
 // The disk must be in the same region and availability zone as the virtual machine. Returns the disk;
 // the virtual machine shows the `attach_disk` operation and the disk the `attach` operation until the
@@ -1212,12 +1150,12 @@ func (c *Client) sendAcceptPeering(ctx context.Context, params AcceptPeeringPara
 // once it is attached.
 //
 // POST /api/v1/virtual-machines/{virtualMachineId}/disks
-func (c *Client) AttachDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachDiskParams) (AttachDiskRes, error) {
-	res, err := c.sendAttachDisk(ctx, request, params)
+func (c *Client) AttachVirtualMachineDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachVirtualMachineDiskParams) (AttachVirtualMachineDiskRes, error) {
+	res, err := c.sendAttachVirtualMachineDisk(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendAttachDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachDiskParams) (res AttachDiskRes, err error) {
+func (c *Client) sendAttachVirtualMachineDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachVirtualMachineDiskParams) (res AttachVirtualMachineDiskRes, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -1228,7 +1166,7 @@ func (c *Client) sendAttachDisk(ctx context.Context, request *AttachDiskRequestB
 		return res, errors.Wrap(err, "validate")
 	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("attach-disk"),
+		otelogen.OperationID("attach-virtual-machine-disk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
 		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/disks"),
 	}
@@ -1246,7 +1184,7 @@ func (c *Client) sendAttachDisk(ctx context.Context, request *AttachDiskRequestB
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, AttachDiskOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, AttachVirtualMachineDiskOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -1294,7 +1232,7 @@ func (c *Client) sendAttachDisk(ctx context.Context, request *AttachDiskRequestB
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeAttachDiskRequest(request, r); err != nil {
+	if err := encodeAttachVirtualMachineDiskRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -1303,7 +1241,7 @@ func (c *Client) sendAttachDisk(ctx context.Context, request *AttachDiskRequestB
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, AttachDiskOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, AttachVirtualMachineDiskOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -1346,7 +1284,7 @@ func (c *Client) sendAttachDisk(ctx context.Context, request *AttachDiskRequestB
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeAttachDiskResponse(resp)
+	result, err := decodeAttachVirtualMachineDiskResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1354,18 +1292,18 @@ func (c *Client) sendAttachDisk(ctx context.Context, request *AttachDiskRequestB
 	return result, nil
 }
 
-// AttachNetworkInterface invokes attach-network-interface operation.
+// AttachVirtualMachineNetworkInterface invokes attach-virtual-machine-network-interface operation.
 //
 // Returns the network interface; the virtual machine shows the `attach_network_interface` operation
 // and the interface the `attach` operation until the attachment is confirmed.
 //
 // POST /api/v1/virtual-machines/{virtualMachineId}/network-interfaces
-func (c *Client) AttachNetworkInterface(ctx context.Context, request *AttachNetworkInterfaceRequestBody, params AttachNetworkInterfaceParams) (AttachNetworkInterfaceRes, error) {
-	res, err := c.sendAttachNetworkInterface(ctx, request, params)
+func (c *Client) AttachVirtualMachineNetworkInterface(ctx context.Context, request *AttachNetworkInterfaceRequestBody, params AttachVirtualMachineNetworkInterfaceParams) (AttachVirtualMachineNetworkInterfaceRes, error) {
+	res, err := c.sendAttachVirtualMachineNetworkInterface(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendAttachNetworkInterface(ctx context.Context, request *AttachNetworkInterfaceRequestBody, params AttachNetworkInterfaceParams) (res AttachNetworkInterfaceRes, err error) {
+func (c *Client) sendAttachVirtualMachineNetworkInterface(ctx context.Context, request *AttachNetworkInterfaceRequestBody, params AttachVirtualMachineNetworkInterfaceParams) (res AttachVirtualMachineNetworkInterfaceRes, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -1376,7 +1314,7 @@ func (c *Client) sendAttachNetworkInterface(ctx context.Context, request *Attach
 		return res, errors.Wrap(err, "validate")
 	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("attach-network-interface"),
+		otelogen.OperationID("attach-virtual-machine-network-interface"),
 		semconv.HTTPRequestMethodKey.String("POST"),
 		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/network-interfaces"),
 	}
@@ -1394,7 +1332,7 @@ func (c *Client) sendAttachNetworkInterface(ctx context.Context, request *Attach
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, AttachNetworkInterfaceOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, AttachVirtualMachineNetworkInterfaceOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -1442,7 +1380,7 @@ func (c *Client) sendAttachNetworkInterface(ctx context.Context, request *Attach
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeAttachNetworkInterfaceRequest(request, r); err != nil {
+	if err := encodeAttachVirtualMachineNetworkInterfaceRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -1451,7 +1389,7 @@ func (c *Client) sendAttachNetworkInterface(ctx context.Context, request *Attach
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, AttachNetworkInterfaceOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, AttachVirtualMachineNetworkInterfaceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -1494,441 +1432,7 @@ func (c *Client) sendAttachNetworkInterface(ctx context.Context, request *Attach
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeAttachNetworkInterfaceResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// AttachVirtualMachineElasticIP invokes attach-virtual-machine-elastic-ip operation.
-//
-// Changes the public IP binding on the virtual machine's primary network interface. The virtual
-// machine shows the `bind_elastic_ip` operation until the binding is confirmed.
-//
-// POST /api/v1/virtual-machines/{virtualMachineId}/elastic-ips
-func (c *Client) AttachVirtualMachineElasticIP(ctx context.Context, request *AttachElasticIPRequestBody, params AttachVirtualMachineElasticIPParams) (AttachVirtualMachineElasticIPRes, error) {
-	res, err := c.sendAttachVirtualMachineElasticIP(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendAttachVirtualMachineElasticIP(ctx context.Context, request *AttachElasticIPRequestBody, params AttachVirtualMachineElasticIPParams) (res AttachVirtualMachineElasticIPRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("attach-virtual-machine-elastic-ip"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/elastic-ips"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, AttachVirtualMachineElasticIPOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/elastic-ips"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeAttachVirtualMachineElasticIPRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, AttachVirtualMachineElasticIPOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeAttachVirtualMachineElasticIPResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// BindElasticIP invokes bind-elastic-ip operation.
-//
-// The elastic IP shows the `bind` operation until the binding is confirmed.
-//
-// PUT /api/v1/elastic-ips/{elasticIpId}/binding
-func (c *Client) BindElasticIP(ctx context.Context, request *BindElasticIPRequestBody, params BindElasticIPParams) (BindElasticIPRes, error) {
-	res, err := c.sendBindElasticIP(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendBindElasticIP(ctx context.Context, request *BindElasticIPRequestBody, params BindElasticIPParams) (res BindElasticIPRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("bind-elastic-ip"),
-		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.URLTemplateKey.String("/api/v1/elastic-ips/{elasticIpId}/binding"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, BindElasticIPOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/elastic-ips/"
-	{
-		// Encode "elasticIpId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "elasticIpId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.ElasticIpId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/binding"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PUT", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeBindElasticIPRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, BindElasticIPOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeBindElasticIPResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateBackup invokes create-backup operation.
-//
-// Creates a backup of the disk. It remains restorable after the source disk is deleted and may be
-// restored to another availability zone in the same region. A running virtual machine may produce a
-// file-system-inconsistent backup. Pending backups count toward Compute project quotas until cleanup
-// is confirmed.
-//
-// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
-// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
-// backup is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
-// the customer completes checkout in Billing. The source and project quotas are checked before the
-// Checkout Session is created, and a refused request creates nothing.
-//
-// The backup shows the `create` operation from the moment its Checkout Session is created until it is
-// delivered or its checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
-//
-// POST /api/v1/backups
-func (c *Client) CreateBackup(ctx context.Context, request *CreateBackupRequestBody) (CreateBackupRes, error) {
-	res, err := c.sendCreateBackup(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendCreateBackup(ctx context.Context, request *CreateBackupRequestBody) (res CreateBackupRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-backup"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/backups"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateBackupOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/backups"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateBackupRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateBackupOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateBackupResponse(resp)
+	result, err := decodeAttachVirtualMachineNetworkInterfaceResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1940,6 +1444,19 @@ func (c *Client) sendCreateBackup(ctx context.Context, request *CreateBackupRequ
 //
 // The disk is created in the availability zone of the selected disk type, and a virtual machine must
 // reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
+//
+// The disk is empty, or is restored from exactly one source: `snapshot_id` or `disk_backup_id`. Giving
+// both is refused with 422 `DISK_SOURCE_CONFLICT`. A restore is a purchase of a new disk; the source
+// disk is unaffected and need not still exist.
+//
+//   - From a snapshot, the disk type must be in the availability zone of the snapshot
+//     (`availability_zone_id` of the snapshot), because a snapshot lives in the same storage pool as
+//     its source and restores only into its own zone. `size_gb` is required and must be no smaller than
+//     the snapshot.
+//   - From a disk backup, the disk type may belong to another availability zone of the same region,
+//     because a backup is an independent copy in different storage. `size_gb` matches the size of the
+//     backup when omitted, and when given it must not be smaller than the backup. The disk cannot be
+//     attached until it is `available`.
 //
 // A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still
 // resolves. Types that are off sale do not appear in the disk type listing; disks already bought on
@@ -2068,6 +1585,301 @@ func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestB
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateDiskResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateDiskBackup invokes create-disk-backup operation.
+//
+// Creates a backup of the disk. It remains restorable after the source disk is deleted and may be
+// restored to another availability zone in the same region, by creating a disk with `disk_backup_id`
+// (`create-disk`). A running virtual machine may produce a file-system-inconsistent backup. Pending
+// backups count toward Compute project quotas until cleanup is confirmed.
+//
+// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
+// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
+// backup is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
+// the customer completes checkout in Billing. The source and project quotas are checked before the
+// Checkout Session is created, and a refused request creates nothing.
+//
+// The backup shows the `create` operation from the moment its Checkout Session is created until it is
+// delivered or its checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
+//
+// POST /api/v1/disk-backups
+func (c *Client) CreateDiskBackup(ctx context.Context, request *CreateDiskBackupRequestBody) (CreateDiskBackupRes, error) {
+	res, err := c.sendCreateDiskBackup(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateDiskBackup(ctx context.Context, request *CreateDiskBackupRequestBody) (res CreateDiskBackupRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-disk-backup"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/disk-backups"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateDiskBackupOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/disk-backups"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateDiskBackupRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateDiskBackupOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateDiskBackupResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateDiskRevert invokes create-disk-revert operation.
+//
+// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
+// moment is lost and cannot be recovered.
+//
+// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
+// must be detached from its virtual machine first; and a disk resized since the snapshot was taken
+// cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a
+// new disk from the snapshot instead.
+//
+// The revert is a request of its own rather than a state of the disk: the response is the disk, which
+// shows the `revert` operation until the revert is complete.
+//
+// POST /api/v1/disks/{diskId}/reverts
+func (c *Client) CreateDiskRevert(ctx context.Context, request *CreateDiskRevertRequestBody, params CreateDiskRevertParams) (CreateDiskRevertRes, error) {
+	res, err := c.sendCreateDiskRevert(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCreateDiskRevert(ctx context.Context, request *CreateDiskRevertRequestBody, params CreateDiskRevertParams) (res CreateDiskRevertRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-disk-revert"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/disks/{diskId}/reverts"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateDiskRevertOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/disks/"
+	{
+		// Encode "diskId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "diskId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.DiskId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/reverts"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateDiskRevertRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateDiskRevertOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateDiskRevertResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2210,144 +2022,6 @@ func (c *Client) sendCreateElasticIP(ctx context.Context, request *CreateElastic
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateElasticIPResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateImage invokes create-image operation.
-//
-// Creates a project image from the virtual machine system disk, excluding data disks. Stop the virtual
-// machine first for file-system consistency. The virtual machine cannot be released while its source
-// disk is being captured. Compute project quotas are enforced independently of billing.
-//
-// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
-// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
-// image is captured as soon as the order is accepted; with deferred checkout it stays `pending` until
-// the customer completes checkout in Billing. The source and project quotas are checked before the
-// Checkout Session is created, and a refused request creates nothing.
-//
-// The image shows the `create` operation from the moment its Checkout Session is created until it is
-// delivered or its checkout or order ends. While its purchase awaits checkout or payment its deletion
-// is refused with `COMPUTE_PURCHASE_PENDING`; once the capture runs, deletion is the one operation it
-// accepts.
-//
-// POST /api/v1/images
-func (c *Client) CreateImage(ctx context.Context, request *CreateImageRequestBody) (CreateImageRes, error) {
-	res, err := c.sendCreateImage(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendCreateImage(ctx context.Context, request *CreateImageRequestBody) (res CreateImageRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-image"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/images"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateImageOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/images"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateImageRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateImageOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateImageResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2600,6 +2274,144 @@ func (c *Client) sendCreatePeering(ctx context.Context, request *CreatePeeringRe
 
 	stage = "DecodeResponse"
 	result, err := decodeCreatePeeringResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreatePrivateImage invokes create-private-image operation.
+//
+// Creates a project image from the virtual machine system disk, excluding data disks. Stop the virtual
+// machine first for file-system consistency. The virtual machine cannot be released while its source
+// disk is being captured. Compute project quotas are enforced independently of billing.
+//
+// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
+// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
+// image is captured as soon as the order is accepted; with deferred checkout it stays `pending` until
+// the customer completes checkout in Billing. The source and project quotas are checked before the
+// Checkout Session is created, and a refused request creates nothing.
+//
+// The image shows the `create` operation from the moment its Checkout Session is created until it is
+// delivered or its checkout or order ends. While its purchase awaits checkout or payment its deletion
+// is refused with `COMPUTE_PURCHASE_PENDING`; once the capture runs, deletion is the one operation it
+// accepts.
+//
+// POST /api/v1/private-images
+func (c *Client) CreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (CreatePrivateImageRes, error) {
+	res, err := c.sendCreatePrivateImage(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreatePrivateImage(ctx context.Context, request *CreatePrivateImageRequestBody) (res CreatePrivateImageRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-private-image"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/private-images"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreatePrivateImageOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/private-images"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreatePrivateImageRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreatePrivateImageOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreatePrivateImageResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3419,6 +3231,482 @@ func (c *Client) sendCreateVirtualMachine(ctx context.Context, request *CreateVi
 	return result, nil
 }
 
+// CreateVirtualMachineCommand invokes create-virtual-machine-command operation.
+//
+// Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
+// standard input and no way to answer a prompt: a command that waits for input produces nothing and is
+// killed at the timeout. Chain steps with `&&`, or write a script and run that.
+//
+// A command that fails is still a 200. Its failure is its own result, not this endpoint's: read
+// `exit_code` for what it exited with and `stderr` for what it said, and decide from those. A `grep`
+// that matches nothing exits 1 and is a perfectly successful call.
+//
+// The status therefore answers a different question — did the command run at all. A non-2xx means it
+// did not, and nothing about the virtual machine was changed by this request: it was suspended, not
+// running or had no elastic IP associated; or it refused the platform key; or the connection could not
+// be opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
+//
+// Three conditions must hold; the virtual machine is unreachable otherwise:
+//
+//   - it is `active`
+//   - an elastic IP is associated with it, since this endpoint connects over the public internet
+//   - its security group permits inbound TCP 22
+//
+// Authentication uses the key the platform attaches to every virtual machine at creation, so nothing
+// has to be set up first. The virtual machine must have applied that key at first boot, which images
+// without a full cloud-init do not do.
+//
+// Do not pass secrets in the command. Read them from a file on the virtual machine instead: neither
+// the command nor its output is a confidential channel.
+//
+// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
+//
+// POST /api/v1/virtual-machines/{virtualMachineId}/commands
+func (c *Client) CreateVirtualMachineCommand(ctx context.Context, request *CreateVirtualMachineCommandRequestBody, params CreateVirtualMachineCommandParams) (*CreateVirtualMachineCommandResponseBody, error) {
+	res, err := c.sendCreateVirtualMachineCommand(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCreateVirtualMachineCommand(ctx context.Context, request *CreateVirtualMachineCommandRequestBody, params CreateVirtualMachineCommandParams) (res *CreateVirtualMachineCommandResponseBody, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-virtual-machine-command"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/commands"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateVirtualMachineCommandOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/virtual-machines/"
+	{
+		// Encode "virtualMachineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "virtualMachineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VirtualMachineId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/commands"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateVirtualMachineCommandRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateVirtualMachineCommandOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateVirtualMachineCommandResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateVirtualMachineReboot invokes create-virtual-machine-reboot operation.
+//
+// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+//
+// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
+// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
+//
+// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft
+// reboot the virtual machine never carried out. Any other request for an operation, including a second
+// soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
+//
+// A virtual machine suspended by the platform must be unsuspended first.
+//
+// The virtual machine shows the `reboot` operation until the reboot has finished.
+//
+// POST /api/v1/virtual-machines/{virtualMachineId}/reboots
+func (c *Client) CreateVirtualMachineReboot(ctx context.Context, request *CreateVirtualMachineRebootRequestBody, params CreateVirtualMachineRebootParams) (CreateVirtualMachineRebootRes, error) {
+	res, err := c.sendCreateVirtualMachineReboot(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCreateVirtualMachineReboot(ctx context.Context, request *CreateVirtualMachineRebootRequestBody, params CreateVirtualMachineRebootParams) (res CreateVirtualMachineRebootRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-virtual-machine-reboot"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/reboots"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateVirtualMachineRebootOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/virtual-machines/"
+	{
+		// Encode "virtualMachineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "virtualMachineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VirtualMachineId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/reboots"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateVirtualMachineRebootRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateVirtualMachineRebootOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateVirtualMachineRebootResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateVirtualMachineRebuild invokes create-virtual-machine-rebuild operation.
+//
+// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
+//
+// The image this virtual machine already runs is accepted even after the platform has withdrawn it,
+// since rebuilding is the only way back into a virtual machine broken from the inside. Any other
+// withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new
+// order.
+//
+// The virtual machine shows the `rebuild` operation until the rebuild has finished.
+//
+// POST /api/v1/virtual-machines/{virtualMachineId}/rebuilds
+func (c *Client) CreateVirtualMachineRebuild(ctx context.Context, request *CreateVirtualMachineRebuildRequestBody, params CreateVirtualMachineRebuildParams) (CreateVirtualMachineRebuildRes, error) {
+	res, err := c.sendCreateVirtualMachineRebuild(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCreateVirtualMachineRebuild(ctx context.Context, request *CreateVirtualMachineRebuildRequestBody, params CreateVirtualMachineRebuildParams) (res CreateVirtualMachineRebuildRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-virtual-machine-rebuild"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/rebuilds"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateVirtualMachineRebuildOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/virtual-machines/"
+	{
+		// Encode "virtualMachineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "virtualMachineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VirtualMachineId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/rebuilds"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateVirtualMachineRebuildRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateVirtualMachineRebuildOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateVirtualMachineRebuildResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // CreateVirtualPrivateCloud invokes create-virtual-private-cloud operation.
 //
 // Creates a virtual private cloud definition and its default security group. The default security
@@ -3538,150 +3826,6 @@ func (c *Client) sendCreateVirtualPrivateCloud(ctx context.Context, request *Cre
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateVirtualPrivateCloudResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// DeleteBackup invokes delete-backup operation.
-//
-// Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of
-// the backup ends once it is deleted.
-//
-// Quota capacity and storage metering are released only after cleanup is confirmed. Billing determines
-// whether its commercial subscription must be canceled first.
-//
-// A resource whose purchase still awaits checkout or payment is refused with
-// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
-// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
-// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
-// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
-//
-// DELETE /api/v1/backups/{backupId}
-func (c *Client) DeleteBackup(ctx context.Context, params DeleteBackupParams) (DeleteBackupRes, error) {
-	res, err := c.sendDeleteBackup(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendDeleteBackup(ctx context.Context, params DeleteBackupParams) (res DeleteBackupRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-backup"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/backups/{backupId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DeleteBackupOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/backups/"
-	{
-		// Encode "backupId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "backupId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.BackupId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, DeleteBackupOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeDeleteBackupResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3832,15 +3976,10 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 	return result, nil
 }
 
-// DeleteImage invokes delete-image operation.
+// DeleteDiskBackup invokes delete-disk-backup operation.
 //
-// Only a private image of this project can be deleted; any other image is reported as not found.
-//
-// Deletion is rejected while virtual machines created from the image still exist, as they need it in
-// order to be rebuilt.
-//
-// An image whose capture has not finished can be deleted; the capture is aborted. This is the one
-// operation accepted while the `create` operation is in progress.
+// Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of
+// the backup ends once it is deleted.
 //
 // Quota capacity and storage metering are released only after cleanup is confirmed. Billing determines
 // whether its commercial subscription must be canceled first.
@@ -3851,17 +3990,17 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 // Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 // must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 //
-// DELETE /api/v1/images/{imageId}
-func (c *Client) DeleteImage(ctx context.Context, params DeleteImageParams) (DeleteImageRes, error) {
-	res, err := c.sendDeleteImage(ctx, params)
+// DELETE /api/v1/disk-backups/{diskBackupId}
+func (c *Client) DeleteDiskBackup(ctx context.Context, params DeleteDiskBackupParams) (DeleteDiskBackupRes, error) {
+	res, err := c.sendDeleteDiskBackup(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDeleteImage(ctx context.Context, params DeleteImageParams) (res DeleteImageRes, err error) {
+func (c *Client) sendDeleteDiskBackup(ctx context.Context, params DeleteDiskBackupParams) (res DeleteDiskBackupRes, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-image"),
+		otelogen.OperationID("delete-disk-backup"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/images/{imageId}"),
+		semconv.URLTemplateKey.String("/api/v1/disk-backups/{diskBackupId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3877,7 +4016,7 @@ func (c *Client) sendDeleteImage(ctx context.Context, params DeleteImageParams) 
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DeleteImageOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteDiskBackupOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -3895,16 +4034,16 @@ func (c *Client) sendDeleteImage(ctx context.Context, params DeleteImageParams) 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [2]string
-	pathParts[0] = "/api/v1/images/"
+	pathParts[0] = "/api/v1/disk-backups/"
 	{
-		// Encode "imageId" parameter.
+		// Encode "diskBackupId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "imageId",
+			Param:   "diskBackupId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.ImageId); true {
+			if unwrapped := string(params.DiskBackupId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -3930,7 +4069,7 @@ func (c *Client) sendDeleteImage(ctx context.Context, params DeleteImageParams) 
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, DeleteImageOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, DeleteDiskBackupOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -3973,7 +4112,290 @@ func (c *Client) sendDeleteImage(ctx context.Context, params DeleteImageParams) 
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeDeleteImageResponse(resp)
+	result, err := decodeDeleteDiskBackupResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeleteElasticIP invokes delete-elastic-ip operation.
+//
+// Releases the elastic IP after dissociating it. The elastic IP shows the `delete` operation until
+// cleanup is confirmed; the address then immediately returns to available inventory, with no cooldown
+// period. Deleting the association or replacing it alone does not release the address.
+//
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
+// pay-as-you-go subscription. `meta.resource_id` names the elastic IP. It is released by canceling the
+// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
+// `release_subscription_ids`.
+//
+// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
+// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
+// checkout created one. Expire the session or cancel the order in Billing instead.
+//
+// DELETE /api/v1/elastic-ips/{elasticIpId}
+func (c *Client) DeleteElasticIP(ctx context.Context, params DeleteElasticIPParams) (DeleteElasticIPRes, error) {
+	res, err := c.sendDeleteElasticIP(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeleteElasticIP(ctx context.Context, params DeleteElasticIPParams) (res DeleteElasticIPRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-elastic-ip"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/elastic-ips/{elasticIpId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteElasticIPOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/elastic-ips/"
+	{
+		// Encode "elasticIpId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "elasticIpId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.ElasticIpId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteElasticIPOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteElasticIPResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeleteElasticIPAssociation invokes delete-elastic-ip-association operation.
+//
+// The address remains held by the project and simply no longer points at any network interface. The
+// elastic IP shows the `unbind` operation until the change is confirmed, and a virtual machine whose
+// primary interface it pointed at shows the `unbind_elastic_ip` operation. Removing an association
+// that does not exist is refused with 404 `ELASTIC_IP_NOT_ASSOCIATED`.
+//
+// DELETE /api/v1/elastic-ips/{elasticIpId}/association
+func (c *Client) DeleteElasticIPAssociation(ctx context.Context, params DeleteElasticIPAssociationParams) (DeleteElasticIPAssociationRes, error) {
+	res, err := c.sendDeleteElasticIPAssociation(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeleteElasticIPAssociation(ctx context.Context, params DeleteElasticIPAssociationParams) (res DeleteElasticIPAssociationRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-elastic-ip-association"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/elastic-ips/{elasticIpId}/association"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteElasticIPAssociationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/elastic-ips/"
+	{
+		// Encode "elasticIpId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "elasticIpId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.ElasticIpId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/association"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteElasticIPAssociationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteElasticIPAssociationResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4243,6 +4665,156 @@ func (c *Client) sendDeletePeering(ctx context.Context, params DeletePeeringPara
 
 	stage = "DecodeResponse"
 	result, err := decodeDeletePeeringResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeletePrivateImage invokes delete-private-image operation.
+//
+// Deletes a private image of this project; any other image, public images included, is reported as not
+// found.
+//
+// Deletion is rejected while virtual machines created from the image still exist, as they need it in
+// order to be rebuilt.
+//
+// An image whose capture has not finished can be deleted; the capture is aborted. This is the one
+// operation accepted while the `create` operation is in progress.
+//
+// Quota capacity and storage metering are released only after cleanup is confirmed. Billing determines
+// whether its commercial subscription must be canceled first.
+//
+// A resource whose purchase still awaits checkout or payment is refused with
+// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
+// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
+// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
+// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+//
+// DELETE /api/v1/private-images/{privateImageId}
+func (c *Client) DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (DeletePrivateImageRes, error) {
+	res, err := c.sendDeletePrivateImage(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (res DeletePrivateImageRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-private-image"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/private-images/{privateImageId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeletePrivateImageOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/private-images/"
+	{
+		// Encode "privateImageId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "privateImageId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.PrivateImageId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeletePrivateImageOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeletePrivateImageResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4524,7 +5096,7 @@ func (c *Client) sendDeleteSecurityGroup(ctx context.Context, params DeleteSecur
 //
 // Delete a security group rule.
 //
-// DELETE /api/v1/security-group-rules/{ruleId}
+// DELETE /api/v1/security-group-rules/{securityGroupRuleId}
 func (c *Client) DeleteSecurityGroupRule(ctx context.Context, params DeleteSecurityGroupRuleParams) error {
 	_, err := c.sendDeleteSecurityGroupRule(ctx, params)
 	return err
@@ -4534,7 +5106,7 @@ func (c *Client) sendDeleteSecurityGroupRule(ctx context.Context, params DeleteS
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-security-group-rule"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/security-group-rules/{ruleId}"),
+		semconv.URLTemplateKey.String("/api/v1/security-group-rules/{securityGroupRuleId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -4570,14 +5142,14 @@ func (c *Client) sendDeleteSecurityGroupRule(ctx context.Context, params DeleteS
 	var pathParts [2]string
 	pathParts[0] = "/api/v1/security-group-rules/"
 	{
-		// Encode "ruleId" parameter.
+		// Encode "securityGroupRuleId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "ruleId",
+			Param:   "securityGroupRuleId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.RuleId); true {
+			if unwrapped := string(params.SecurityGroupRuleId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -5078,6 +5650,142 @@ func (c *Client) sendDeleteVirtualMachine(ctx context.Context, params DeleteVirt
 	return result, nil
 }
 
+// DeleteVirtualMachineRescue invokes delete-virtual-machine-rescue operation.
+//
+// Restores boot from the original system disk. Completion is shown by the virtual machine state, and
+// the virtual machine shows the `unrescue` operation until then.
+//
+// DELETE /api/v1/virtual-machines/{virtualMachineId}/rescue
+func (c *Client) DeleteVirtualMachineRescue(ctx context.Context, params DeleteVirtualMachineRescueParams) (DeleteVirtualMachineRescueRes, error) {
+	res, err := c.sendDeleteVirtualMachineRescue(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeleteVirtualMachineRescue(ctx context.Context, params DeleteVirtualMachineRescueParams) (res DeleteVirtualMachineRescueRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-virtual-machine-rescue"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/rescue"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteVirtualMachineRescueOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/virtual-machines/"
+	{
+		// Encode "virtualMachineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "virtualMachineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VirtualMachineId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/rescue"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteVirtualMachineRescueOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteVirtualMachineRescueResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // DeleteVirtualPrivateCloud invokes delete-virtual-private-cloud operation.
 //
 // Deletion is rejected while virtual machines or network interfaces remain in the network. Its
@@ -5349,7 +6057,7 @@ func (c *Client) sendDeleteVirtualPrivateCloudIpv6(ctx context.Context, params D
 	return result, nil
 }
 
-// DetachDisk invokes detach-disk operation.
+// DetachVirtualMachineDisk invokes detach-virtual-machine-disk operation.
 //
 // Unmount the device inside the virtual machine before calling this endpoint. Forcibly detaching a
 // file system that is being written to corrupts data.
@@ -5363,14 +6071,14 @@ func (c *Client) sendDeleteVirtualPrivateCloudIpv6(ctx context.Context, params D
 // operation until the disk is detached.
 //
 // DELETE /api/v1/virtual-machines/{virtualMachineId}/disks/{diskId}
-func (c *Client) DetachDisk(ctx context.Context, params DetachDiskParams) (DetachDiskRes, error) {
-	res, err := c.sendDetachDisk(ctx, params)
+func (c *Client) DetachVirtualMachineDisk(ctx context.Context, params DetachVirtualMachineDiskParams) (DetachVirtualMachineDiskRes, error) {
+	res, err := c.sendDetachVirtualMachineDisk(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDetachDisk(ctx context.Context, params DetachDiskParams) (res DetachDiskRes, err error) {
+func (c *Client) sendDetachVirtualMachineDisk(ctx context.Context, params DetachVirtualMachineDiskParams) (res DetachVirtualMachineDiskRes, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("detach-disk"),
+		otelogen.OperationID("detach-virtual-machine-disk"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
 		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/disks/{diskId}"),
 	}
@@ -5388,7 +6096,7 @@ func (c *Client) sendDetachDisk(ctx context.Context, params DetachDiskParams) (r
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DetachDiskOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, DetachVirtualMachineDiskOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -5463,7 +6171,7 @@ func (c *Client) sendDetachDisk(ctx context.Context, params DetachDiskParams) (r
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, DetachDiskOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, DetachVirtualMachineDiskOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -5506,7 +6214,7 @@ func (c *Client) sendDetachDisk(ctx context.Context, params DetachDiskParams) (r
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeDetachDiskResponse(resp)
+	result, err := decodeDetachVirtualMachineDiskResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5514,7 +6222,7 @@ func (c *Client) sendDetachDisk(ctx context.Context, params DetachDiskParams) (r
 	return result, nil
 }
 
-// DetachNetworkInterface invokes detach-network-interface operation.
+// DetachVirtualMachineNetworkInterface invokes detach-virtual-machine-network-interface operation.
 //
 // The primary network interface cannot be detached; the virtual machine would lose its network
 // address.
@@ -5523,14 +6231,14 @@ func (c *Client) sendDetachDisk(ctx context.Context, params DetachDiskParams) (r
 // and the interface the `detach` operation until it is detached.
 //
 // DELETE /api/v1/virtual-machines/{virtualMachineId}/network-interfaces/{networkInterfaceId}
-func (c *Client) DetachNetworkInterface(ctx context.Context, params DetachNetworkInterfaceParams) (DetachNetworkInterfaceRes, error) {
-	res, err := c.sendDetachNetworkInterface(ctx, params)
+func (c *Client) DetachVirtualMachineNetworkInterface(ctx context.Context, params DetachVirtualMachineNetworkInterfaceParams) (DetachVirtualMachineNetworkInterfaceRes, error) {
+	res, err := c.sendDetachVirtualMachineNetworkInterface(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDetachNetworkInterface(ctx context.Context, params DetachNetworkInterfaceParams) (res DetachNetworkInterfaceRes, err error) {
+func (c *Client) sendDetachVirtualMachineNetworkInterface(ctx context.Context, params DetachVirtualMachineNetworkInterfaceParams) (res DetachVirtualMachineNetworkInterfaceRes, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("detach-network-interface"),
+		otelogen.OperationID("detach-virtual-machine-network-interface"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
 		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/network-interfaces/{networkInterfaceId}"),
 	}
@@ -5548,7 +6256,7 @@ func (c *Client) sendDetachNetworkInterface(ctx context.Context, params DetachNe
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DetachNetworkInterfaceOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, DetachVirtualMachineNetworkInterfaceOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -5623,7 +6331,7 @@ func (c *Client) sendDetachNetworkInterface(ctx context.Context, params DetachNe
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, DetachNetworkInterfaceOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, DetachVirtualMachineNetworkInterfaceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -5666,7 +6374,7 @@ func (c *Client) sendDetachNetworkInterface(ctx context.Context, params DetachNe
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeDetachNetworkInterfaceResponse(resp)
+	result, err := decodeDetachVirtualMachineNetworkInterfaceResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5674,179 +6382,21 @@ func (c *Client) sendDetachNetworkInterface(ctx context.Context, params DetachNe
 	return result, nil
 }
 
-// DetachVirtualMachineElasticIP invokes detach-virtual-machine-elastic-ip operation.
+// GetAvailabilityZone invokes get-availability-zone operation.
 //
-// Changes the public IP binding on the virtual machine's primary network interface. The virtual
-// machine shows the `unbind_elastic_ip` operation until the change is confirmed.
+// A disk and a virtual machine must reside in the same availability zone to be attached.
 //
-// DELETE /api/v1/virtual-machines/{virtualMachineId}/elastic-ips/{elasticIpId}
-func (c *Client) DetachVirtualMachineElasticIP(ctx context.Context, params DetachVirtualMachineElasticIPParams) (DetachVirtualMachineElasticIPRes, error) {
-	res, err := c.sendDetachVirtualMachineElasticIP(ctx, params)
+// GET /api/v1/availability-zones/{availabilityZoneId}
+func (c *Client) GetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (*ZoneResource, error) {
+	res, err := c.sendGetAvailabilityZone(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDetachVirtualMachineElasticIP(ctx context.Context, params DetachVirtualMachineElasticIPParams) (res DetachVirtualMachineElasticIPRes, err error) {
+func (c *Client) sendGetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (res *ZoneResource, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("detach-virtual-machine-elastic-ip"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/elastic-ips/{elasticIpId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DetachVirtualMachineElasticIPOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/api/v1/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/elastic-ips/"
-	{
-		// Encode "elasticIpId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "elasticIpId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.ElasticIpId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, DetachVirtualMachineElasticIPOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeDetachVirtualMachineElasticIPResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetBackup invokes get-backup operation.
-//
-// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
-// progress.
-//
-// GET /api/v1/backups/{backupId}
-func (c *Client) GetBackup(ctx context.Context, params GetBackupParams) (*BackupResource, error) {
-	res, err := c.sendGetBackup(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetBackup(ctx context.Context, params GetBackupParams) (res *BackupResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-backup"),
+		otelogen.OperationID("get-availability-zone"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/backups/{backupId}"),
+		semconv.URLTemplateKey.String("/api/v1/availability-zones/{availabilityZoneId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5862,7 +6412,7 @@ func (c *Client) sendGetBackup(ctx context.Context, params GetBackupParams) (res
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetBackupOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, GetAvailabilityZoneOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -5880,16 +6430,16 @@ func (c *Client) sendGetBackup(ctx context.Context, params GetBackupParams) (res
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [2]string
-	pathParts[0] = "/api/v1/backups/"
+	pathParts[0] = "/api/v1/availability-zones/"
 	{
-		// Encode "backupId" parameter.
+		// Encode "availabilityZoneId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "backupId",
+			Param:   "availabilityZoneId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.BackupId); true {
+			if unwrapped := string(params.AvailabilityZoneId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -5915,7 +6465,7 @@ func (c *Client) sendGetBackup(ctx context.Context, params GetBackupParams) (res
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, GetBackupOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, GetAvailabilityZoneOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -5958,7 +6508,7 @@ func (c *Client) sendGetBackup(ctx context.Context, params GetBackupParams) (res
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeGetBackupResponse(resp)
+	result, err := decodeGetAvailabilityZoneResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -6093,6 +6643,141 @@ func (c *Client) sendGetDisk(ctx context.Context, params GetDiskParams) (res *Di
 
 	stage = "DecodeResponse"
 	result, err := decodeGetDiskResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetDiskBackup invokes get-disk-backup operation.
+//
+// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
+// progress.
+//
+// GET /api/v1/disk-backups/{diskBackupId}
+func (c *Client) GetDiskBackup(ctx context.Context, params GetDiskBackupParams) (*DiskBackupResource, error) {
+	res, err := c.sendGetDiskBackup(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetDiskBackup(ctx context.Context, params GetDiskBackupParams) (res *DiskBackupResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-disk-backup"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/disk-backups/{diskBackupId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetDiskBackupOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/disk-backups/"
+	{
+		// Encode "diskBackupId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "diskBackupId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.DiskBackupId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetDiskBackupOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetDiskBackupResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -6369,6 +7054,145 @@ func (c *Client) sendGetElasticIP(ctx context.Context, params GetElasticIPParams
 	return result, nil
 }
 
+// GetElasticIPAssociation invokes get-elastic-ip-association operation.
+//
+// The private address of a network interface this elastic IP currently points at. Returns the stored
+// state; it does not query the cloud.
+//
+// An elastic IP that points at nothing has no association: the request is refused with 404
+// `ELASTIC_IP_NOT_ASSOCIATED`.
+//
+// GET /api/v1/elastic-ips/{elasticIpId}/association
+func (c *Client) GetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (*IPv4Binding, error) {
+	res, err := c.sendGetElasticIPAssociation(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (res *IPv4Binding, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-elastic-ip-association"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/elastic-ips/{elasticIpId}/association"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetElasticIPAssociationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/elastic-ips/"
+	{
+		// Encode "elasticIpId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "elasticIpId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.ElasticIpId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/association"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetElasticIPAssociationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetElasticIPAssociationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetElasticIPType invokes get-elastic-ip-type operation.
 //
 // Includes off-sale or retired products referenced by existing elastic IPs. No inventory or gateway
@@ -6497,142 +7321,6 @@ func (c *Client) sendGetElasticIPType(ctx context.Context, params GetElasticIPTy
 
 	stage = "DecodeResponse"
 	result, err := decodeGetElasticIPTypeResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetImage invokes get-image operation.
-//
-// Returns a public image, or a private image of this project; any other image is reported as not
-// found. Use this endpoint to poll capture progress. When `status` is `failed`, `failure` describes
-// the outcome.
-//
-// GET /api/v1/images/{imageId}
-func (c *Client) GetImage(ctx context.Context, params GetImageParams) (*ImageResource, error) {
-	res, err := c.sendGetImage(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetImage(ctx context.Context, params GetImageParams) (res *ImageResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-image"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/images/{imageId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetImageOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/images/"
-	{
-		// Encode "imageId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "imageId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.ImageId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, GetImageOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetImageResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -6775,6 +7463,275 @@ func (c *Client) sendGetMachineType(ctx context.Context, params GetMachineTypePa
 	return result, nil
 }
 
+// GetNetworkInterface invokes get-network-interface operation.
+//
+// Returns the stored state of the network interface; it does not query the cloud.
+//
+// GET /api/v1/network-interfaces/{networkInterfaceId}
+func (c *Client) GetNetworkInterface(ctx context.Context, params GetNetworkInterfaceParams) (*NetworkInterface, error) {
+	res, err := c.sendGetNetworkInterface(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetNetworkInterface(ctx context.Context, params GetNetworkInterfaceParams) (res *NetworkInterface, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-network-interface"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/network-interfaces/{networkInterfaceId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetNetworkInterfaceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/network-interfaces/"
+	{
+		// Encode "networkInterfaceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "networkInterfaceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.NetworkInterfaceId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetNetworkInterfaceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetNetworkInterfaceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetOperationLog invokes get-operation-log operation.
+//
+// Returns one entry of the project's operation log. Like the listing, it never discloses the
+// individual operator of an operation performed by the platform.
+//
+// GET /api/v1/operation-logs/{operationLogId}
+func (c *Client) GetOperationLog(ctx context.Context, params GetOperationLogParams) (*OperationLogResource, error) {
+	res, err := c.sendGetOperationLog(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetOperationLog(ctx context.Context, params GetOperationLogParams) (res *OperationLogResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-operation-log"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/operation-logs/{operationLogId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetOperationLogOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/operation-logs/"
+	{
+		// Encode "operationLogId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "operationLogId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.OperationLogId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetOperationLogOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetOperationLogResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetPeering invokes get-peering operation.
 //
 // Get peering.
@@ -6909,6 +7866,279 @@ func (c *Client) sendGetPeering(ctx context.Context, params GetPeeringParams) (r
 	return result, nil
 }
 
+// GetPrivateImage invokes get-private-image operation.
+//
+// Returns a private image of this project; any other image, public images included, is reported as not
+// found. Use this endpoint to poll capture progress. When `status` is `failed`, `failure` describes
+// the outcome.
+//
+// GET /api/v1/private-images/{privateImageId}
+func (c *Client) GetPrivateImage(ctx context.Context, params GetPrivateImageParams) (*PrivateImageResource, error) {
+	res, err := c.sendGetPrivateImage(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetPrivateImage(ctx context.Context, params GetPrivateImageParams) (res *PrivateImageResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-private-image"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/private-images/{privateImageId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetPrivateImageOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/private-images/"
+	{
+		// Encode "privateImageId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "privateImageId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.PrivateImageId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetPrivateImageOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetPrivateImageResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetPublicImage invokes get-public-image operation.
+//
+// Returns a public image, on sale or withdrawn. A withdrawn image (`sale_status` is `off_sale`) is
+// still returned because virtual machines may keep running it; it cannot be chosen for a new virtual
+// machine and can only be rebuilt onto by a virtual machine that already runs it. A private image id
+// is reported as not found here; use `/private-images`.
+//
+// GET /api/v1/public-images/{publicImageId}
+func (c *Client) GetPublicImage(ctx context.Context, params GetPublicImageParams) (*PublicImageResource, error) {
+	res, err := c.sendGetPublicImage(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetPublicImage(ctx context.Context, params GetPublicImageParams) (res *PublicImageResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-public-image"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/public-images/{publicImageId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetPublicImageOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/public-images/"
+	{
+		// Encode "publicImageId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "publicImageId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.PublicImageId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetPublicImageOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetPublicImageResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetQuota invokes get-quota operation.
 //
 // Reads only the IAM project authorized by the scoped token; callers cannot select another project.
@@ -7035,6 +8265,140 @@ func (c *Client) sendGetQuota(ctx context.Context, params GetQuotaParams) (res *
 
 	stage = "DecodeResponse"
 	result, err := decodeGetQuotaResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetRegion invokes get-region operation.
+//
+// The availability zones of a region are listed by `list-availability-zones` with `region_id`.
+//
+// GET /api/v1/regions/{regionId}
+func (c *Client) GetRegion(ctx context.Context, params GetRegionParams) (*RegionResource, error) {
+	res, err := c.sendGetRegion(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetRegion(ctx context.Context, params GetRegionParams) (res *RegionResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-region"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/regions/{regionId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetRegionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/regions/"
+	{
+		// Encode "regionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "regionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.RegionId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetRegionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetRegionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -7314,7 +8678,7 @@ func (c *Client) sendGetSecurityGroup(ctx context.Context, params GetSecurityGro
 //
 // Get a security group rule.
 //
-// GET /api/v1/security-group-rules/{ruleId}
+// GET /api/v1/security-group-rules/{securityGroupRuleId}
 func (c *Client) GetSecurityGroupRule(ctx context.Context, params GetSecurityGroupRuleParams) (*SecurityGroupRule, error) {
 	res, err := c.sendGetSecurityGroupRule(ctx, params)
 	return res, err
@@ -7324,7 +8688,7 @@ func (c *Client) sendGetSecurityGroupRule(ctx context.Context, params GetSecurit
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-security-group-rule"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/security-group-rules/{ruleId}"),
+		semconv.URLTemplateKey.String("/api/v1/security-group-rules/{securityGroupRuleId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -7360,14 +8724,14 @@ func (c *Client) sendGetSecurityGroupRule(ctx context.Context, params GetSecurit
 	var pathParts [2]string
 	pathParts[0] = "/api/v1/security-group-rules/"
 	{
-		// Encode "ruleId" parameter.
+		// Encode "securityGroupRuleId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "ruleId",
+			Param:   "securityGroupRuleId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.RuleId); true {
+			if unwrapped := string(params.SecurityGroupRuleId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -7847,6 +9211,145 @@ func (c *Client) sendGetVirtualMachine(ctx context.Context, params GetVirtualMac
 	return result, nil
 }
 
+// GetVirtualMachineConsole invokes get-virtual-machine-console operation.
+//
+// Operates the virtual machine directly from a browser and does not require the virtual machine to be
+// reachable over the network, which makes it usable when a network misconfiguration prevents login.
+//
+// The returned address is single-use and expires within minutes. Every request issues a new address,
+// so request one before each use and do not cache the response.
+//
+// GET /api/v1/virtual-machines/{virtualMachineId}/console
+func (c *Client) GetVirtualMachineConsole(ctx context.Context, params GetVirtualMachineConsoleParams) (*ConsoleResponseBody, error) {
+	res, err := c.sendGetVirtualMachineConsole(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetVirtualMachineConsole(ctx context.Context, params GetVirtualMachineConsoleParams) (res *ConsoleResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-virtual-machine-console"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/console"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetVirtualMachineConsoleOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/virtual-machines/"
+	{
+		// Encode "virtualMachineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "virtualMachineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VirtualMachineId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/console"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetVirtualMachineConsoleOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetVirtualMachineConsoleResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetVirtualPrivateCloud invokes get-virtual-private-cloud operation.
 //
 // Retrieve a virtual private cloud.
@@ -8276,9 +9779,9 @@ func (c *Client) sendGetVirtualPrivateCloudIpv6(ctx context.Context, params GetV
 // ListAvailabilityZones invokes list-availability-zones operation.
 //
 // A disk and a virtual machine must reside in the same availability zone to be attached. Confirm the
-// zone before creating either.
+// zone before creating either. Without `region_id`, the zones of every region are listed.
 //
-// GET /api/v1/regions/{regionId}/availability-zones
+// GET /api/v1/availability-zones
 func (c *Client) ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*ZoneListResponseBody, error) {
 	res, err := c.sendListAvailabilityZones(ctx, params)
 	return res, err
@@ -8288,7 +9791,7 @@ func (c *Client) sendListAvailabilityZones(ctx context.Context, params ListAvail
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-availability-zones"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/regions/{regionId}/availability-zones"),
+		semconv.URLTemplateKey.String("/api/v1/availability-zones"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -8321,34 +9824,32 @@ func (c *Client) sendListAvailabilityZones(ctx context.Context, params ListAvail
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/regions/"
-	{
-		// Encode "regionId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "regionId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.RegionId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/availability-zones"
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/availability-zones"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
 	q := uri.NewQueryEncoder()
+	{
+		// Encode "region_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "region_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.RegionID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
 	{
 		// Encode "page" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
@@ -8447,21 +9948,21 @@ func (c *Client) sendListAvailabilityZones(ctx context.Context, params ListAvail
 	return result, nil
 }
 
-// ListBackups invokes list-backups operation.
+// ListDiskBackups invokes list-disk-backups operation.
 //
-// List backups.
+// List disk backups.
 //
-// GET /api/v1/backups
-func (c *Client) ListBackups(ctx context.Context, params ListBackupsParams) (*BackupListResponseBody, error) {
-	res, err := c.sendListBackups(ctx, params)
+// GET /api/v1/disk-backups
+func (c *Client) ListDiskBackups(ctx context.Context, params ListDiskBackupsParams) (*DiskBackupListResponseBody, error) {
+	res, err := c.sendListDiskBackups(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListBackups(ctx context.Context, params ListBackupsParams) (res *BackupListResponseBody, err error) {
+func (c *Client) sendListDiskBackups(ctx context.Context, params ListDiskBackupsParams) (res *DiskBackupListResponseBody, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-backups"),
+		otelogen.OperationID("list-disk-backups"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/backups"),
+		semconv.URLTemplateKey.String("/api/v1/disk-backups"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -8477,7 +9978,7 @@ func (c *Client) sendListBackups(ctx context.Context, params ListBackupsParams) 
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListBackupsOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListDiskBackupsOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -8495,7 +9996,7 @@ func (c *Client) sendListBackups(ctx context.Context, params ListBackupsParams) 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/api/v1/backups"
+	pathParts[0] = "/api/v1/disk-backups"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -8567,7 +10068,7 @@ func (c *Client) sendListBackups(ctx context.Context, params ListBackupsParams) 
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListBackupsOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, ListDiskBackupsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -8610,7 +10111,7 @@ func (c *Client) sendListBackups(ctx context.Context, params ListBackupsParams) 
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeListBackupsResponse(resp)
+	result, err := decodeListDiskBackupsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -8810,7 +10311,7 @@ func (c *Client) sendListDiskTypes(ctx context.Context, params ListDiskTypesPara
 
 // ListDisks invokes list-disks operation.
 //
-// When both `region_code` and `availability_zone` are supplied, only disks attachable to a virtual
+// When both `region_id` and `availability_zone_id` are supplied, only disks attachable to a virtual
 // machine at that location are returned.
 //
 // GET /api/v1/disks
@@ -9003,7 +10504,8 @@ func (c *Client) sendListDisks(ctx context.Context, params ListDisksParams) (res
 // ListElasticIPTypes invokes list-elastic-ip-types operation.
 //
 // Lists on-sale products. Region is optional. Prices, commercial terms and checkout are read directly
-// from Billing.
+// from Billing. `q` searches the names and descriptions of the on-sale products; filters combine with
+// AND, and pagination is independent of them.
 //
 // GET /api/v1/elastic-ip-types
 func (c *Client) ListElasticIPTypes(ctx context.Context, params ListElasticIPTypesParams) (*ElasticIPTypeListResponseBody, error) {
@@ -9068,6 +10570,23 @@ func (c *Client) sendListElasticIPTypes(ctx context.Context, params ListElasticI
 					return e.EncodeValue(conv.StringToString(unwrapped))
 				}
 				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "q" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "q",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Q.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -9316,205 +10835,6 @@ func (c *Client) sendListElasticIps(ctx context.Context, params ListElasticIpsPa
 
 	stage = "DecodeResponse"
 	result, err := decodeListElasticIpsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListImages invokes list-images operation.
-//
-// Lists the public images on sale together with the private images of this project. `visibility`
-// narrows the list to one of the two.
-//
-// A public image is offered to every project. Only public images currently on sale are listed: one the
-// platform withdraws disappears from here and can no longer install new virtual machines, while the
-// virtual machines already running it keep running and can still be rebuilt onto it.
-//
-// A private image belongs to this project, which captured it from one of its virtual machines, and is
-// listed in every status, including while its capture is in progress and after the capture failed.
-//
-// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
-// memory of the selected machine type cannot boot; filter the options accordingly.
-//
-// GET /api/v1/images
-func (c *Client) ListImages(ctx context.Context, params ListImagesParams) (*ImageListResponseBody, error) {
-	res, err := c.sendListImages(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListImages(ctx context.Context, params ListImagesParams) (res *ImageListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-images"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/images"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListImagesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/images"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "region_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "region_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.RegionID.Get(); ok {
-				if unwrapped := string(val); true {
-					return e.EncodeValue(conv.StringToString(unwrapped))
-				}
-				return nil
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "visibility" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "visibility",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Visibility.Get(); ok {
-				return e.EncodeValue(conv.StringToString(string(val)))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListImagesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListImagesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -10166,6 +11486,364 @@ func (c *Client) sendListPeerings(ctx context.Context, params ListPeeringsParams
 
 	stage = "DecodeResponse"
 	result, err := decodeListPeeringsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListPrivateImages invokes list-private-images operation.
+//
+// Lists the private images of this project, newest first, in every status: including while a capture
+// is in progress and after it failed. Private images of other projects are never listed.
+//
+// A private image is usable only by the project that captured it from one of its virtual machines. Its
+// storage is metered by the hour on a subscription of the project.
+//
+// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
+// memory of the selected machine type cannot boot; filter the options accordingly. Public images are
+// in `/public-images`.
+//
+// GET /api/v1/private-images
+func (c *Client) ListPrivateImages(ctx context.Context, params ListPrivateImagesParams) (*PrivateImageListResponseBody, error) {
+	res, err := c.sendListPrivateImages(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListPrivateImages(ctx context.Context, params ListPrivateImagesParams) (res *PrivateImageListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-private-images"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/private-images"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListPrivateImagesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/private-images"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "region_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "region_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.RegionID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListPrivateImagesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListPrivateImagesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListPublicImages invokes list-public-images operation.
+//
+// Lists the platform's public images that are on sale. A public image is offered to every project. One
+// the platform withdraws disappears from here and can no longer install new virtual machines, while
+// the virtual machines already running it keep running and can still be rebuilt onto it; retrieve it
+// by id to see it.
+//
+// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
+// memory of the selected machine type cannot boot; filter the options accordingly.
+//
+// Images this project captured from its own virtual machines are in `/private-images`.
+//
+// GET /api/v1/public-images
+func (c *Client) ListPublicImages(ctx context.Context, params ListPublicImagesParams) (*PublicImageListResponseBody, error) {
+	res, err := c.sendListPublicImages(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListPublicImages(ctx context.Context, params ListPublicImagesParams) (res *PublicImageListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-public-images"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/public-images"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListPublicImagesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/public-images"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "region_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "region_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.RegionID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListPublicImagesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListPublicImagesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -12039,24 +13717,46 @@ func (c *Client) sendListVirtualPrivateClouds(ctx context.Context, params ListVi
 	return result, nil
 }
 
-// OpenVirtualMachineConsole invokes open-virtual-machine-console operation.
+// PutElasticIPAssociation invokes put-elastic-ip-association operation.
 //
-// Operates the virtual machine directly from a browser and does not require the virtual machine to be
-// reachable over the network, which makes it usable when a network misconfiguration prevents login.
+// Points the elastic IP at a target: a virtual machine, which means the primary private IPv4 address
+// of its primary network interface, or a network interface address (`network_interface_address_id`)
+// given directly. Exactly one of `virtual_machine_id` and `network_interface_address_id`. A network
+// interface address must be an assigned, unreleased IPv4 address on a network interface in this
+// project and region; IPv6 addresses are rejected.
 //
-// The returned address is single-use and expires within minutes. Request a new one before each use.
+// The target becomes what the elastic IP points at. Repeating the request for the target it already
+// points at changes nothing; an elastic IP associated with another target is refused with
+// `ELASTIC_IP_ALREADY_ASSOCIATED` (409), and is moved by deleting the association first, so that the
+// moment traffic stops reaching the old target is one the caller chose. The elastic IP shows the
+// `bind` operation until the association is confirmed, and with a virtual machine as the target that
+// virtual machine shows the `bind_elastic_ip` operation as well, so the virtual machine must not have
+// another operation in progress.
 //
-// POST /api/v1/virtual-machines/{virtualMachineId}/console
-func (c *Client) OpenVirtualMachineConsole(ctx context.Context, params OpenVirtualMachineConsoleParams) (*ConsoleResponseBody, error) {
-	res, err := c.sendOpenVirtualMachineConsole(ctx, params)
+// The elastic IP must be in the same region as the target. With a virtual machine as the target, the
+// elastic IP's `bandwidth_mbps` must not exceed the `max_bandwidth_mbps` of that virtual machine's
+// type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`.
+//
+// PUT /api/v1/elastic-ips/{elasticIpId}/association
+func (c *Client) PutElasticIPAssociation(ctx context.Context, request PutElasticIPAssociationRequestBody, params PutElasticIPAssociationParams) (PutElasticIPAssociationRes, error) {
+	res, err := c.sendPutElasticIPAssociation(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendOpenVirtualMachineConsole(ctx context.Context, params OpenVirtualMachineConsoleParams) (res *ConsoleResponseBody, err error) {
+func (c *Client) sendPutElasticIPAssociation(ctx context.Context, request PutElasticIPAssociationRequestBody, params PutElasticIPAssociationParams) (res PutElasticIPAssociationRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("open-virtual-machine-console"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/console"),
+		otelogen.OperationID("put-elastic-ip-association"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/api/v1/elastic-ips/{elasticIpId}/association"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -12072,7 +13772,7 @@ func (c *Client) sendOpenVirtualMachineConsole(ctx context.Context, params OpenV
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, OpenVirtualMachineConsoleOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, PutElasticIPAssociationOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -12090,16 +13790,16 @@ func (c *Client) sendOpenVirtualMachineConsole(ctx context.Context, params OpenV
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-machines/"
+	pathParts[0] = "/api/v1/elastic-ips/"
 	{
-		// Encode "virtualMachineId" parameter.
+		// Encode "elasticIpId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
+			Param:   "elasticIpId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
+			if unwrapped := string(params.ElasticIpId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -12112,13 +13812,16 @@ func (c *Client) sendOpenVirtualMachineConsole(ctx context.Context, params OpenV
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/console"
+	pathParts[2] = "/association"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
+	r, err := ht.NewRequest(ctx, "PUT", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodePutElasticIPAssociationRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
 	}
 
 	{
@@ -12126,7 +13829,7 @@ func (c *Client) sendOpenVirtualMachineConsole(ctx context.Context, params OpenV
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, OpenVirtualMachineConsoleOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, PutElasticIPAssociationOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -12169,7 +13872,314 @@ func (c *Client) sendOpenVirtualMachineConsole(ctx context.Context, params OpenV
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeOpenVirtualMachineConsoleResponse(resp)
+	result, err := decodePutElasticIPAssociationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// PutVirtualMachinePassword invokes put-virtual-machine-password operation.
+//
+// Sets the root password without a reboot. The virtual machine must be running.
+//
+// Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
+// password can then only be set by rebuilding the virtual machine, which erases all data on the system
+// disk.
+//
+// The request is also rejected when the image is marked as supported but the corresponding component
+// has been removed or stopped inside the virtual machine.
+//
+// PUT /api/v1/virtual-machines/{virtualMachineId}/password
+func (c *Client) PutVirtualMachinePassword(ctx context.Context, request *PutVirtualMachinePasswordRequestBody, params PutVirtualMachinePasswordParams) (PutVirtualMachinePasswordRes, error) {
+	res, err := c.sendPutVirtualMachinePassword(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendPutVirtualMachinePassword(ctx context.Context, request *PutVirtualMachinePasswordRequestBody, params PutVirtualMachinePasswordParams) (res PutVirtualMachinePasswordRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("put-virtual-machine-password"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/password"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, PutVirtualMachinePasswordOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/virtual-machines/"
+	{
+		// Encode "virtualMachineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "virtualMachineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VirtualMachineId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/password"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodePutVirtualMachinePasswordRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, PutVirtualMachinePasswordOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodePutVirtualMachinePasswordResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// PutVirtualMachineRescue invokes put-virtual-machine-rescue operation.
+//
+// Boots a temporary rescue environment while retaining the original system disk. Changing
+// `power_state` or `machine_type_id`, rebuilding and putting a password are unavailable in rescue
+// mode.
+//
+// The request does not name an image. The rescue image is the region's enabled rescue image for the
+// architecture of the virtual machine's system disk. A region and architecture with no enabled rescue
+// image is refused with `RESCUE_IMAGE_NOT_CONFIGURED` (409).
+//
+// PUT /api/v1/virtual-machines/{virtualMachineId}/rescue
+func (c *Client) PutVirtualMachineRescue(ctx context.Context, request *PutVirtualMachineRescueRequestBody, params PutVirtualMachineRescueParams) (PutVirtualMachineRescueRes, error) {
+	res, err := c.sendPutVirtualMachineRescue(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendPutVirtualMachineRescue(ctx context.Context, request *PutVirtualMachineRescueRequestBody, params PutVirtualMachineRescueParams) (res PutVirtualMachineRescueRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("put-virtual-machine-rescue"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/rescue"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, PutVirtualMachineRescueOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/virtual-machines/"
+	{
+		// Encode "virtualMachineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "virtualMachineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VirtualMachineId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/rescue"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodePutVirtualMachineRescueRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, PutVirtualMachineRescueOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodePutVirtualMachineRescueResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -12317,173 +14327,40 @@ func (c *Client) sendPutVirtualPrivateCloudIpv6(ctx context.Context, params PutV
 	return result, nil
 }
 
-// RebootVirtualMachine invokes reboot-virtual-machine operation.
+// UpdateDisk invokes update-disk operation.
 //
-// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+// Changes the name, or the capacity. Type and availability zone are immutable.
 //
-// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
-// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
+// `size_gb` is an operational field: it starts a resize and cannot be combined with any other field in
+// the same request. Such a request is refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that
+// committed beside a change that was then refused would leave the request half applied. `checkout` and
+// `proration_date` belong to the purchase of the `size_gb` change and are accepted only together with
+// it.
 //
-// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft
-// reboot the virtual machine never carried out. Any other request for an operation, including a second
-// soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
+// Renaming is not an operation and is accepted at any time. It returns 200 with `checkout_session_id`
+// and `order_id` null.
 //
-// A virtual machine suspended by the platform must be unsuspended first.
+// Resizing accepts only an increase; a smaller `size_gb` is refused with `DISK_CANNOT_SHRINK` (422),
+// since a file system cannot be shrunk from outside the virtual machine. It returns 202 with the disk
+// and the Checkout Session for the resize, which keeps the disk's usage type and period. The disk
+// shows the `resize` operation until the resize is applied, its Checkout Session expires or its order
+// is canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
+// meanwhile. The disk keeps its current size until the resize is applied; once `size_gb` shows the new
+// size, extend the file system inside the virtual machine. If checkout is not completed, the order is
+// not accepted or the resize fails, the disk keeps its size and Billing shows the outcome.
 //
-// The virtual machine shows the `reboot` operation until the reboot has finished.
+// An attached disk, including a system disk, can be resized. The capacity is usable at once, and the
+// disk's `performance` shows what its type gives the new size. That performance applies from the
+// disk's next attachment, or the next start of its stopped virtual machine: the storage reads a disk's
+// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
 //
-// POST /api/v1/virtual-machines/{virtualMachineId}/reboot
-func (c *Client) RebootVirtualMachine(ctx context.Context, request *RebootVirtualMachineRequestBody, params RebootVirtualMachineParams) (RebootVirtualMachineRes, error) {
-	res, err := c.sendRebootVirtualMachine(ctx, request, params)
+// PATCH /api/v1/disks/{diskId}
+func (c *Client) UpdateDisk(ctx context.Context, request *UpdateDiskRequestBody, params UpdateDiskParams) (UpdateDiskRes, error) {
+	res, err := c.sendUpdateDisk(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendRebootVirtualMachine(ctx context.Context, request *RebootVirtualMachineRequestBody, params RebootVirtualMachineParams) (res RebootVirtualMachineRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("reboot-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/reboot"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RebootVirtualMachineOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/reboot"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRebootVirtualMachineRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RebootVirtualMachineOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRebootVirtualMachineResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RebuildVirtualMachine invokes rebuild-virtual-machine operation.
-//
-// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
-//
-// The image this virtual machine already runs is accepted even after the platform has withdrawn it,
-// since rebuilding is the only way back into a virtual machine broken from the inside. Any other
-// withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new
-// order.
-//
-// The virtual machine shows the `rebuild` operation until the rebuild has finished.
-//
-// POST /api/v1/virtual-machines/{virtualMachineId}/rebuild
-func (c *Client) RebuildVirtualMachine(ctx context.Context, request *RebuildVirtualMachineRequestBody, params RebuildVirtualMachineParams) (RebuildVirtualMachineRes, error) {
-	res, err := c.sendRebuildVirtualMachine(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRebuildVirtualMachine(ctx context.Context, request *RebuildVirtualMachineRequestBody, params RebuildVirtualMachineParams) (res RebuildVirtualMachineRes, err error) {
+func (c *Client) sendUpdateDisk(ctx context.Context, request *UpdateDiskRequestBody, params UpdateDiskParams) (res UpdateDiskRes, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -12494,9 +14371,9 @@ func (c *Client) sendRebuildVirtualMachine(ctx context.Context, request *Rebuild
 		return res, errors.Wrap(err, "validate")
 	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rebuild-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/rebuild"),
+		otelogen.OperationID("update-disk"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/disks/{diskId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -12512,7 +14389,7 @@ func (c *Client) sendRebuildVirtualMachine(ctx context.Context, request *Rebuild
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RebuildVirtualMachineOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateDiskOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -12529,17 +14406,17 @@ func (c *Client) sendRebuildVirtualMachine(ctx context.Context, request *Rebuild
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-machines/"
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/disks/"
 	{
-		// Encode "virtualMachineId" parameter.
+		// Encode "diskId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
+			Param:   "diskId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
+			if unwrapped := string(params.DiskId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -12552,15 +14429,14 @@ func (c *Client) sendRebuildVirtualMachine(ctx context.Context, request *Rebuild
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/rebuild"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
+	r, err := ht.NewRequest(ctx, "PATCH", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeRebuildVirtualMachineRequest(request, r); err != nil {
+	if err := encodeUpdateDiskRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -12569,7 +14445,7 @@ func (c *Client) sendRebuildVirtualMachine(ctx context.Context, request *Rebuild
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RebuildVirtualMachineOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, UpdateDiskOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -12612,7 +14488,7 @@ func (c *Client) sendRebuildVirtualMachine(ctx context.Context, request *Rebuild
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeRebuildVirtualMachineResponse(resp)
+	result, err := decodeUpdateDiskResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -12620,21 +14496,30 @@ func (c *Client) sendRebuildVirtualMachine(ctx context.Context, request *Rebuild
 	return result, nil
 }
 
-// RejectPeering invokes reject-peering operation.
+// UpdateDiskBackup invokes update-disk-backup operation.
 //
-// Reject peering.
+// Changes the name only. A backup's source disk and capacity cannot be changed.
 //
-// POST /api/v1/peerings/{peeringId}/reject
-func (c *Client) RejectPeering(ctx context.Context, params RejectPeeringParams) (*PeeringResource, error) {
-	res, err := c.sendRejectPeering(ctx, params)
+// PATCH /api/v1/disk-backups/{diskBackupId}
+func (c *Client) UpdateDiskBackup(ctx context.Context, request *UpdateDiskBackupRequestBody, params UpdateDiskBackupParams) (*DiskBackupResource, error) {
+	res, err := c.sendUpdateDiskBackup(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendRejectPeering(ctx context.Context, params RejectPeeringParams) (res *PeeringResource, err error) {
+func (c *Client) sendUpdateDiskBackup(ctx context.Context, request *UpdateDiskBackupRequestBody, params UpdateDiskBackupParams) (res *DiskBackupResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("reject-peering"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/peerings/{peeringId}/reject"),
+		otelogen.OperationID("update-disk-backup"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/disk-backups/{diskBackupId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -12650,7 +14535,7 @@ func (c *Client) sendRejectPeering(ctx context.Context, params RejectPeeringPara
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RejectPeeringOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateDiskBackupOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -12667,7 +14552,472 @@ func (c *Client) sendRejectPeering(ctx context.Context, params RejectPeeringPara
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/disk-backups/"
+	{
+		// Encode "diskBackupId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "diskBackupId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.DiskBackupId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateDiskBackupRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, UpdateDiskBackupOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateDiskBackupResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateElasticIP invokes update-elastic-ip operation.
+//
+// Changes the bandwidth of this elastic IP. `bandwidth_mbps` is an operational field: it starts a
+// change and cannot be combined with any other field in the same request. Such a request is refused
+// with 422 `UPDATE_FIELDS_COMBINED`, because a change that committed beside another that was then
+// refused would leave the request half applied. An elastic IP has no descriptive field today, so 200
+// is reserved for the fields that may be added to it and every accepted update answers 202. `checkout`
+// and `proration_date` belong to the purchase of the `bandwidth_mbps` change and are accepted only
+// together with it.
+//
+// The change goes through a Checkout Session that keeps the elastic IP's usage type and period; no
+// separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The
+// elastic IP shows the `set_bandwidth` operation until the change is applied, its Checkout Session
+// expires or its order is canceled, so other operations and a second change are refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If
+// checkout is not completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its
+// value and Billing shows the outcome.
+//
+// While the address is associated with a virtual machine, the limit must not exceed the
+// `max_bandwidth_mbps` of that virtual machine's type; a higher limit is refused with
+// `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not associated is checked when the
+// address is associated with a virtual machine.
+//
+// PATCH /api/v1/elastic-ips/{elasticIpId}
+func (c *Client) UpdateElasticIP(ctx context.Context, request *UpdateElasticIPRequestBody, params UpdateElasticIPParams) (UpdateElasticIPRes, error) {
+	res, err := c.sendUpdateElasticIP(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateElasticIP(ctx context.Context, request *UpdateElasticIPRequestBody, params UpdateElasticIPParams) (res UpdateElasticIPRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-elastic-ip"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/elastic-ips/{elasticIpId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateElasticIPOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/elastic-ips/"
+	{
+		// Encode "elasticIpId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "elasticIpId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.ElasticIpId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateElasticIPRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, UpdateElasticIPOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateElasticIPResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateNetworkInterface invokes update-network-interface operation.
+//
+// Changes the name only. Renaming is not an operation and is accepted at any time. The security groups
+// and addresses of a network interface cannot be changed through this endpoint.
+//
+// PATCH /api/v1/network-interfaces/{networkInterfaceId}
+func (c *Client) UpdateNetworkInterface(ctx context.Context, request *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (*NetworkInterface, error) {
+	res, err := c.sendUpdateNetworkInterface(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateNetworkInterface(ctx context.Context, request *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (res *NetworkInterface, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-network-interface"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/network-interfaces/{networkInterfaceId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateNetworkInterfaceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/network-interfaces/"
+	{
+		// Encode "networkInterfaceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "networkInterfaceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.NetworkInterfaceId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateNetworkInterfaceRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, UpdateNetworkInterfaceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateNetworkInterfaceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdatePeering invokes update-peering operation.
+//
+// The accepter project writes its decision as `acceptance`. Only the accepter project may write it;
+// the requester project is refused, because a peering would otherwise be accepted by the party who
+// asked for it. The decision is written once: a peering that is no longer `pending_acceptance` refuses
+// it.
+//
+// `accepted` starts the provisioning of the connectivity and returns 202; the peering shows the
+// `provision` operation until it is `active`. `rejected` returns 200 with the peering `rejected`, and
+// no connectivity is ever created. Does not change security groups or provide transitive routing.
+//
+// PATCH /api/v1/peerings/{peeringId}
+func (c *Client) UpdatePeering(ctx context.Context, request *UpdatePeeringRequestBody, params UpdatePeeringParams) (UpdatePeeringRes, error) {
+	res, err := c.sendUpdatePeering(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdatePeering(ctx context.Context, request *UpdatePeeringRequestBody, params UpdatePeeringParams) (res UpdatePeeringRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-peering"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/peerings/{peeringId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdatePeeringOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
 	pathParts[0] = "/api/v1/peerings/"
 	{
 		// Encode "peeringId" parameter.
@@ -12690,13 +15040,15 @@ func (c *Client) sendRejectPeering(ctx context.Context, params RejectPeeringPara
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/reject"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
+	r, err := ht.NewRequest(ctx, "PATCH", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdatePeeringRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
 	}
 
 	{
@@ -12704,7 +15056,7 @@ func (c *Client) sendRejectPeering(ctx context.Context, params RejectPeeringPara
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RejectPeeringOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, UpdatePeeringOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -12747,7 +15099,7 @@ func (c *Client) sendRejectPeering(ctx context.Context, params RejectPeeringPara
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeRejectPeeringResponse(resp)
+	result, err := decodeUpdatePeeringResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -12755,162 +15107,18 @@ func (c *Client) sendRejectPeering(ctx context.Context, params RejectPeeringPara
 	return result, nil
 }
 
-// ReleaseElasticIP invokes release-elastic-ip operation.
+// UpdatePrivateImage invokes update-private-image operation.
 //
-// Releases the elastic IP after unbinding it. The elastic IP shows the `delete` operation until
-// cleanup is confirmed; the address then immediately returns to available inventory, with no cooldown
-// period. Unbinding or moving a binding alone does not release the address.
+// Renames a private image of this project. Any other image, public images included, is reported as not
+// found.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
-// pay-as-you-go subscription. `meta.resource_id` names the elastic IP. It is released by canceling the
-// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-// `release_subscription_ids`.
-//
-// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
-// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
-// checkout created one. Expire the session or cancel the order in Billing instead.
-//
-// DELETE /api/v1/elastic-ips/{elasticIpId}
-func (c *Client) ReleaseElasticIP(ctx context.Context, params ReleaseElasticIPParams) (ReleaseElasticIPRes, error) {
-	res, err := c.sendReleaseElasticIP(ctx, params)
+// PATCH /api/v1/private-images/{privateImageId}
+func (c *Client) UpdatePrivateImage(ctx context.Context, request *UpdatePrivateImageRequestBody, params UpdatePrivateImageParams) (*PrivateImageResource, error) {
+	res, err := c.sendUpdatePrivateImage(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendReleaseElasticIP(ctx context.Context, params ReleaseElasticIPParams) (res ReleaseElasticIPRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("release-elastic-ip"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/elastic-ips/{elasticIpId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ReleaseElasticIPOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/elastic-ips/"
-	{
-		// Encode "elasticIpId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "elasticIpId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.ElasticIpId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ReleaseElasticIPOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeReleaseElasticIPResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RenameBackup invokes rename-backup operation.
-//
-// Rename a backup.
-//
-// PATCH /api/v1/backups/{backupId}
-func (c *Client) RenameBackup(ctx context.Context, request *RenameBackupRequestBody, params RenameBackupParams) (*BackupResource, error) {
-	res, err := c.sendRenameBackup(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRenameBackup(ctx context.Context, request *RenameBackupRequestBody, params RenameBackupParams) (res *BackupResource, err error) {
+func (c *Client) sendUpdatePrivateImage(ctx context.Context, request *UpdatePrivateImageRequestBody, params UpdatePrivateImageParams) (res *PrivateImageResource, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -12921,9 +15129,9 @@ func (c *Client) sendRenameBackup(ctx context.Context, request *RenameBackupRequ
 		return res, errors.Wrap(err, "validate")
 	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rename-backup"),
+		otelogen.OperationID("update-private-image"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v1/backups/{backupId}"),
+		semconv.URLTemplateKey.String("/api/v1/private-images/{privateImageId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -12939,7 +15147,7 @@ func (c *Client) sendRenameBackup(ctx context.Context, request *RenameBackupRequ
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RenameBackupOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdatePrivateImageOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -12957,16 +15165,16 @@ func (c *Client) sendRenameBackup(ctx context.Context, request *RenameBackupRequ
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [2]string
-	pathParts[0] = "/api/v1/backups/"
+	pathParts[0] = "/api/v1/private-images/"
 	{
-		// Encode "backupId" parameter.
+		// Encode "privateImageId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "backupId",
+			Param:   "privateImageId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.BackupId); true {
+			if unwrapped := string(params.PrivateImageId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -12986,7 +15194,7 @@ func (c *Client) sendRenameBackup(ctx context.Context, request *RenameBackupRequ
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeRenameBackupRequest(request, r); err != nil {
+	if err := encodeUpdatePrivateImageRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -12995,7 +15203,7 @@ func (c *Client) sendRenameBackup(ctx context.Context, request *RenameBackupRequ
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RenameBackupOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, UpdatePrivateImageOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -13038,2906 +15246,7 @@ func (c *Client) sendRenameBackup(ctx context.Context, request *RenameBackupRequ
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeRenameBackupResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RenameDisk invokes rename-disk operation.
-//
-// Changes the name only. Use the resize endpoint for capacity; type and availability zone are
-// immutable.
-//
-// PATCH /api/v1/disks/{diskId}
-func (c *Client) RenameDisk(ctx context.Context, request *RenameDiskRequestBody, params RenameDiskParams) (*DiskResource, error) {
-	res, err := c.sendRenameDisk(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRenameDisk(ctx context.Context, request *RenameDiskRequestBody, params RenameDiskParams) (res *DiskResource, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rename-disk"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v1/disks/{diskId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RenameDiskOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/disks/"
-	{
-		// Encode "diskId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.DiskId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PATCH", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRenameDiskRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RenameDiskOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRenameDiskResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RenameImage invokes rename-image operation.
-//
-// Only a private image of this project can be renamed; any other image is reported as not found.
-//
-// PATCH /api/v1/images/{imageId}
-func (c *Client) RenameImage(ctx context.Context, request *RenameImageRequestBody, params RenameImageParams) (*ImageResource, error) {
-	res, err := c.sendRenameImage(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRenameImage(ctx context.Context, request *RenameImageRequestBody, params RenameImageParams) (res *ImageResource, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rename-image"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v1/images/{imageId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RenameImageOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/images/"
-	{
-		// Encode "imageId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "imageId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.ImageId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PATCH", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRenameImageRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RenameImageOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRenameImageResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RenameSnapshot invokes rename-snapshot operation.
-//
-// Rename a snapshot.
-//
-// PATCH /api/v1/snapshots/{snapshotId}
-func (c *Client) RenameSnapshot(ctx context.Context, request *RenameSnapshotRequestBody, params RenameSnapshotParams) (*SnapshotResource, error) {
-	res, err := c.sendRenameSnapshot(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRenameSnapshot(ctx context.Context, request *RenameSnapshotRequestBody, params RenameSnapshotParams) (res *SnapshotResource, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rename-snapshot"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v1/snapshots/{snapshotId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RenameSnapshotOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/snapshots/"
-	{
-		// Encode "snapshotId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "snapshotId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.SnapshotId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PATCH", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRenameSnapshotRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RenameSnapshotOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRenameSnapshotResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RenameVirtualMachine invokes rename-virtual-machine operation.
-//
-// Changes the display name only. The hostname inside the virtual machine is unchanged; it equals the
-// virtual machine id.
-//
-// PATCH /api/v1/virtual-machines/{virtualMachineId}
-func (c *Client) RenameVirtualMachine(ctx context.Context, request *RenameVirtualMachineRequestBody, params RenameVirtualMachineParams) (*VirtualMachine, error) {
-	res, err := c.sendRenameVirtualMachine(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRenameVirtualMachine(ctx context.Context, request *RenameVirtualMachineRequestBody, params RenameVirtualMachineParams) (res *VirtualMachine, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rename-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RenameVirtualMachineOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PATCH", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRenameVirtualMachineRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RenameVirtualMachineOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRenameVirtualMachineResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RescueVirtualMachine invokes rescue-virtual-machine operation.
-//
-// Boots a temporary rescue environment while retaining the original system disk. The selected image
-// must support this virtual machine. Stop, resize, rebuild and password reset are unavailable in
-// rescue mode.
-//
-// POST /api/v1/virtual-machines/{virtualMachineId}/rescue
-func (c *Client) RescueVirtualMachine(ctx context.Context, request *RescueVirtualMachineRequestBody, params RescueVirtualMachineParams) (RescueVirtualMachineRes, error) {
-	res, err := c.sendRescueVirtualMachine(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRescueVirtualMachine(ctx context.Context, request *RescueVirtualMachineRequestBody, params RescueVirtualMachineParams) (res RescueVirtualMachineRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rescue-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/rescue"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RescueVirtualMachineOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/rescue"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRescueVirtualMachineRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RescueVirtualMachineOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRescueVirtualMachineResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ResetVirtualMachinePassword invokes reset-virtual-machine-password operation.
-//
-// Changes the root password without a reboot. The virtual machine must be running.
-//
-// Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
-// password can then only be set by rebuilding the virtual machine, which erases all data on the system
-// disk.
-//
-// The request is also rejected when the image is marked as supported but the corresponding component
-// has been removed or stopped inside the virtual machine.
-//
-// POST /api/v1/virtual-machines/{virtualMachineId}/password
-func (c *Client) ResetVirtualMachinePassword(ctx context.Context, request *ResetPasswordRequestBody, params ResetVirtualMachinePasswordParams) (ResetVirtualMachinePasswordRes, error) {
-	res, err := c.sendResetVirtualMachinePassword(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendResetVirtualMachinePassword(ctx context.Context, request *ResetPasswordRequestBody, params ResetVirtualMachinePasswordParams) (res ResetVirtualMachinePasswordRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("reset-virtual-machine-password"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/password"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ResetVirtualMachinePasswordOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/password"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeResetVirtualMachinePasswordRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ResetVirtualMachinePasswordOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeResetVirtualMachinePasswordResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ResizeDisk invokes resize-disk operation.
-//
-// Capacity can only be increased; shrinking is not supported. Returns the disk with the Checkout
-// Session for the resize, which keeps the disk's usage type and period. The disk shows the `resize`
-// operation until the resize is applied, its Checkout Session expires or its order is canceled, so
-// other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk
-// keeps its current size until the resize is applied; once `size_gb` shows the new size, extend the
-// file system inside the virtual machine. If checkout is not completed, the order is not accepted or
-// the resize fails, the disk keeps its size and Billing shows the outcome.
-//
-// An attached disk, including a system disk, can be resized. The capacity is usable at once, and the
-// disk's `performance` shows what its type gives the new size. That performance applies from the
-// disk's next attachment, or the next start of its stopped virtual machine: the storage reads a disk's
-// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
-//
-// POST /api/v1/disks/{diskId}/resize
-func (c *Client) ResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (ResizeDiskRes, error) {
-	res, err := c.sendResizeDisk(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (res ResizeDiskRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("resize-disk"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/disks/{diskId}/resize"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ResizeDiskOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/disks/"
-	{
-		// Encode "diskId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.DiskId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/resize"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeResizeDiskRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ResizeDiskOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeResizeDiskResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ResizeVirtualMachine invokes resize-virtual-machine operation.
-//
-// Creates a Billing Checkout Session for the change, including for metered terms, and returns the
-// virtual machine with it. The virtual machine keeps its usage type and period, priced with the target
-// type's matching option; a target type without that option is refused with 409
-// `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing accepts the order. Do not submit the
-// change again after paying. After an uncertain response, look the Checkout Session up in Billing
-// before submitting again.
-//
-// The virtual machine shows the `resize` operation until the resize is applied, its Checkout Session
-// expires or its order is canceled, so other operations and a second resize are refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new
-// type takes effect, and is billed from then on, when `machine_type_id` shows it. If checkout is not
-// completed, the order is not accepted or the resize fails, the virtual machine keeps its current type
-// and Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
-// previous type, submit another resize.
-//
-// POST /api/v1/virtual-machines/{virtualMachineId}/resize
-func (c *Client) ResizeVirtualMachine(ctx context.Context, request *ResizeVirtualMachineRequestBody, params ResizeVirtualMachineParams) (ResizeVirtualMachineRes, error) {
-	res, err := c.sendResizeVirtualMachine(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendResizeVirtualMachine(ctx context.Context, request *ResizeVirtualMachineRequestBody, params ResizeVirtualMachineParams) (res ResizeVirtualMachineRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("resize-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/resize"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ResizeVirtualMachineOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/resize"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeResizeVirtualMachineRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ResizeVirtualMachineOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeResizeVirtualMachineResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RestoreBackup invokes restore-backup operation.
-//
-// Restores onto a newly created disk. The source disk is unaffected and need not still exist.
-//
-// The target disk type may belong to another availability zone of the same region, and its capacity
-// must not be smaller than the backup. Returns the new disk as `pending` with its Checkout Session; it
-// cannot be attached until it is `available`. The new disk is bought on its own, so it is licensed:
-// `billing.usage_type` `metered` is refused with `DISK_USAGE_TYPE_UNAVAILABLE`.
-//
-// POST /api/v1/backups/{backupId}/restore
-func (c *Client) RestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (RestoreBackupRes, error) {
-	res, err := c.sendRestoreBackup(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (res RestoreBackupRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("restore-backup"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/backups/{backupId}/restore"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RestoreBackupOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/backups/"
-	{
-		// Encode "backupId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "backupId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.BackupId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/restore"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRestoreBackupRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RestoreBackupOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRestoreBackupResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RevertDisk invokes revert-disk operation.
-//
-// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
-// moment is lost and cannot be recovered.
-//
-// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
-// must be detached from its virtual machine first; and a disk resized since the snapshot was taken
-// cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a
-// new disk from the snapshot instead.
-//
-// The disk shows the `revert` operation until the revert is complete.
-//
-// POST /api/v1/disks/{diskId}/revert
-func (c *Client) RevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (RevertDiskRes, error) {
-	res, err := c.sendRevertDisk(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (res RevertDiskRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("revert-disk"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/disks/{diskId}/revert"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RevertDiskOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/disks/"
-	{
-		// Encode "diskId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.DiskId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/revert"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRevertDiskRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RevertDiskOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRevertDiskResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RunVirtualMachineCommand invokes run-virtual-machine-command operation.
-//
-// Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
-// standard input and no way to answer a prompt: a command that waits for input produces nothing and is
-// killed at the timeout. Chain steps with `&&`, or write a script and run that.
-//
-// A command that fails is still a 200. Its failure is its own result, not this endpoint's: read
-// `exit_code` for what it exited with and `stderr` for what it said, and decide from those. A `grep`
-// that matches nothing exits 1 and is a perfectly successful call.
-//
-// The status therefore answers a different question — did the command run at all. A non-2xx means it
-// did not, and nothing about the virtual machine was changed by this request: it was suspended, not
-// running or had no elastic IP; or it refused the platform key; or the connection could not be opened.
-// Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
-//
-// Three conditions must hold; the virtual machine is unreachable otherwise:
-//
-//   - it is `active`
-//   - an elastic IP is bound to it, since this endpoint connects over the public internet
-//   - its security group permits inbound TCP 22
-//
-// Authentication uses the key the platform attaches to every virtual machine at creation, so nothing
-// has to be set up first. The virtual machine must have applied that key at first boot, which images
-// without a full cloud-init do not do.
-//
-// Do not pass secrets in the command. Read them from a file on the virtual machine instead: neither
-// the command nor its output is a confidential channel.
-//
-// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
-//
-// POST /api/v1/virtual-machines/{virtualMachineId}/commands
-func (c *Client) RunVirtualMachineCommand(ctx context.Context, request *RunCommandRequestBody, params RunVirtualMachineCommandParams) (*CommandResultResponseBody, error) {
-	res, err := c.sendRunVirtualMachineCommand(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRunVirtualMachineCommand(ctx context.Context, request *RunCommandRequestBody, params RunVirtualMachineCommandParams) (res *CommandResultResponseBody, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("run-virtual-machine-command"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/commands"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RunVirtualMachineCommandOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/commands"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRunVirtualMachineCommandRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RunVirtualMachineCommandOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRunVirtualMachineCommandResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// SearchElasticIPTypes invokes search-elastic-ip-types operation.
-//
-// Search on-sale product names and descriptions. Filters use AND; pagination is independent.
-//
-// GET /api/v1/elastic-ip-types/search
-func (c *Client) SearchElasticIPTypes(ctx context.Context, params SearchElasticIPTypesParams) (*ElasticIPTypeListResponseBody, error) {
-	res, err := c.sendSearchElasticIPTypes(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendSearchElasticIPTypes(ctx context.Context, params SearchElasticIPTypesParams) (res *ElasticIPTypeListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("search-elastic-ip-types"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/elastic-ip-types/search"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, SearchElasticIPTypesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/elastic-ip-types/search"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "region_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "region_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.RegionID.Get(); ok {
-				if unwrapped := string(val); true {
-					return e.EncodeValue(conv.StringToString(unwrapped))
-				}
-				return nil
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "q" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "q",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.Q))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, SearchElasticIPTypesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeSearchElasticIPTypesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// SetElasticIPBandwidth invokes set-elastic-ip-bandwidth operation.
-//
-// Changes the bandwidth of this elastic IP through a Checkout Session that keeps its usage type and
-// period; no separate bandwidth resource is created. The limit applies to inbound and outbound traffic
-// alike. The elastic IP shows the `set_bandwidth` operation until the change is applied, its Checkout
-// Session expires or its order is canceled, so other operations and a second change are refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If
-// checkout is not completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its
-// value and Billing shows the outcome.
-//
-// While the address is bound to a virtual machine, the limit must not exceed the `max_bandwidth_mbps`
-// of that virtual machine's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The
-// limit of an address that is not bound is checked when the address is bound to a virtual machine.
-//
-// PUT /api/v1/elastic-ips/{elasticIpId}/bandwidth
-func (c *Client) SetElasticIPBandwidth(ctx context.Context, request *SetElasticIPBandwidthRequestBody, params SetElasticIPBandwidthParams) (SetElasticIPBandwidthRes, error) {
-	res, err := c.sendSetElasticIPBandwidth(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendSetElasticIPBandwidth(ctx context.Context, request *SetElasticIPBandwidthRequestBody, params SetElasticIPBandwidthParams) (res SetElasticIPBandwidthRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("set-elastic-ip-bandwidth"),
-		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.URLTemplateKey.String("/api/v1/elastic-ips/{elasticIpId}/bandwidth"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, SetElasticIPBandwidthOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/elastic-ips/"
-	{
-		// Encode "elasticIpId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "elasticIpId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.ElasticIpId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/bandwidth"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PUT", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeSetElasticIPBandwidthRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, SetElasticIPBandwidthOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeSetElasticIPBandwidthResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// SetVirtualMachineLabels invokes set-virtual-machine-labels operation.
-//
-// Records what this virtual machine is for, as key-value pairs. Nothing on the platform reads them.
-//
-// The whole set is replaced: whatever is absent from the request is removed.
-//
-// Do not put credentials here. Labels are visible to platform operators.
-//
-// PUT /api/v1/virtual-machines/{virtualMachineId}/labels
-func (c *Client) SetVirtualMachineLabels(ctx context.Context, request *SetVirtualMachineLabelsRequestBody, params SetVirtualMachineLabelsParams) (*VirtualMachine, error) {
-	res, err := c.sendSetVirtualMachineLabels(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendSetVirtualMachineLabels(ctx context.Context, request *SetVirtualMachineLabelsRequestBody, params SetVirtualMachineLabelsParams) (res *VirtualMachine, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("set-virtual-machine-labels"),
-		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/labels"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, SetVirtualMachineLabelsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/labels"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PUT", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeSetVirtualMachineLabelsRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, SetVirtualMachineLabelsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeSetVirtualMachineLabelsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// SetVirtualMachineNotes invokes set-virtual-machine-notes operation.
-//
-// A free-text note about this virtual machine — what it runs, and what to be careful about before
-// touching it.
-//
-// The whole note is replaced; send an empty string to clear it.
-//
-// Do not put credentials here. The note is visible to platform operators.
-//
-// PUT /api/v1/virtual-machines/{virtualMachineId}/notes
-func (c *Client) SetVirtualMachineNotes(ctx context.Context, request *SetVirtualMachineNotesRequestBody, params SetVirtualMachineNotesParams) (*VirtualMachine, error) {
-	res, err := c.sendSetVirtualMachineNotes(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendSetVirtualMachineNotes(ctx context.Context, request *SetVirtualMachineNotesRequestBody, params SetVirtualMachineNotesParams) (res *VirtualMachine, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("set-virtual-machine-notes"),
-		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/notes"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, SetVirtualMachineNotesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/notes"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PUT", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeSetVirtualMachineNotesRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, SetVirtualMachineNotesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeSetVirtualMachineNotesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// StartVirtualMachine invokes start-virtual-machine operation.
-//
-// Outstanding restrictions can prevent starting. The virtual machine shows the `start` operation until
-// it is running or the start has failed.
-//
-// POST /api/v1/virtual-machines/{virtualMachineId}/start
-func (c *Client) StartVirtualMachine(ctx context.Context, request *PowerRequest, params StartVirtualMachineParams) (StartVirtualMachineRes, error) {
-	res, err := c.sendStartVirtualMachine(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendStartVirtualMachine(ctx context.Context, request *PowerRequest, params StartVirtualMachineParams) (res StartVirtualMachineRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("start-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/start"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, StartVirtualMachineOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/start"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeStartVirtualMachineRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, StartVirtualMachineOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeStartVirtualMachineResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// StopVirtualMachine invokes stop-virtual-machine operation.
-//
-// A stopped virtual machine keeps its disks, network attachments and sellable quota. The virtual
-// machine shows the `stop` operation until it is stopped or the stop has failed.
-//
-// POST /api/v1/virtual-machines/{virtualMachineId}/stop
-func (c *Client) StopVirtualMachine(ctx context.Context, request *PowerRequest, params StopVirtualMachineParams) (StopVirtualMachineRes, error) {
-	res, err := c.sendStopVirtualMachine(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendStopVirtualMachine(ctx context.Context, request *PowerRequest, params StopVirtualMachineParams) (res StopVirtualMachineRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("stop-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/stop"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, StopVirtualMachineOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/stop"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeStopVirtualMachineRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, StopVirtualMachineOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeStopVirtualMachineResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// UnbindElasticIP invokes unbind-elastic-ip operation.
-//
-// The address remains held by the project and simply no longer points at any network interface. The
-// elastic IP shows the `unbind` operation until the change is confirmed.
-//
-// DELETE /api/v1/elastic-ips/{elasticIpId}/binding
-func (c *Client) UnbindElasticIP(ctx context.Context, params UnbindElasticIPParams) (UnbindElasticIPRes, error) {
-	res, err := c.sendUnbindElasticIP(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendUnbindElasticIP(ctx context.Context, params UnbindElasticIPParams) (res UnbindElasticIPRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("unbind-elastic-ip"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/elastic-ips/{elasticIpId}/binding"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, UnbindElasticIPOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/elastic-ips/"
-	{
-		// Encode "elasticIpId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "elasticIpId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.ElasticIpId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/binding"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, UnbindElasticIPOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeUnbindElasticIPResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// UnrescueVirtualMachine invokes unrescue-virtual-machine operation.
-//
-// Restores boot from the original system disk. Completion is shown by the virtual machine state.
-//
-// POST /api/v1/virtual-machines/{virtualMachineId}/unrescue
-func (c *Client) UnrescueVirtualMachine(ctx context.Context, params UnrescueVirtualMachineParams) (UnrescueVirtualMachineRes, error) {
-	res, err := c.sendUnrescueVirtualMachine(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendUnrescueVirtualMachine(ctx context.Context, params UnrescueVirtualMachineParams) (res UnrescueVirtualMachineRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("unrescue-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}/unrescue"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, UnrescueVirtualMachineOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/unrescue"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, UnrescueVirtualMachineOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeUnrescueVirtualMachineResponse(resp)
+	result, err := decodeUpdatePrivateImageResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -16092,6 +15401,152 @@ func (c *Client) sendUpdateSecurityGroup(ctx context.Context, request *UpdateSec
 	return result, nil
 }
 
+// UpdateSnapshot invokes update-snapshot operation.
+//
+// Changes the name only. A snapshot's source disk and capacity cannot be changed.
+//
+// PATCH /api/v1/snapshots/{snapshotId}
+func (c *Client) UpdateSnapshot(ctx context.Context, request *UpdateSnapshotRequestBody, params UpdateSnapshotParams) (*SnapshotResource, error) {
+	res, err := c.sendUpdateSnapshot(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateSnapshot(ctx context.Context, request *UpdateSnapshotRequestBody, params UpdateSnapshotParams) (res *SnapshotResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-snapshot"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/snapshots/{snapshotId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateSnapshotOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/snapshots/"
+	{
+		// Encode "snapshotId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "snapshotId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.SnapshotId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateSnapshotRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, UpdateSnapshotOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateSnapshotResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // UpdateSubnet invokes update-subnet operation.
 //
 // Only the name can change. The CIDR is fixed for the subnet's life, because addresses already handed
@@ -16232,6 +15687,193 @@ func (c *Client) sendUpdateSubnet(ctx context.Context, request *UpdateSubnetRequ
 
 	stage = "DecodeResponse"
 	result, err := decodeUpdateSubnetResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateVirtualMachine invokes update-virtual-machine operation.
+//
+// Changes the descriptive fields (`name`, `labels`, `notes`) or one operational field (`power_state`
+// or `machine_type_id`). All fields are optional and at least one is required.
+//
+// `power_state` and `machine_type_id` are operational fields: each starts a workflow, and neither can
+// be combined with any other field in the same request, including the other one. Such a request is
+// refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside a change that was
+// then refused would leave the request half applied. `checkout` and `proration_date` belong to the
+// purchase of the `machine_type_id` change and are accepted only together with it.
+//
+// Descriptive fields are not operations and are accepted at any time, whatever the virtual machine is
+// doing. The request returns 200 with `checkout_session_id` and `order_id` null.
+//
+//   - `name` changes the display name only. The hostname inside the virtual machine is unchanged; it
+//     equals the virtual machine id.
+//   - `labels` records what this virtual machine is for, as key-value pairs. Nothing on the platform
+//     reads them. The whole set is replaced: whatever is absent from the request is removed, and an
+//     empty object clears them all. Do not put credentials here. Labels are visible to platform
+//     operators.
+//   - `notes` is a free-text note about this virtual machine: what it runs, and what to be careful
+//     about before touching it. The whole note is replaced; send an empty string to clear it. Do not
+//     put credentials here. The note is visible to platform operators.
+//
+// `power_state` is the state the virtual machine should be in, and the request returns 202 with the
+// virtual machine as it is when the request is accepted. `running` starts it: outstanding restrictions
+// can prevent starting, and the virtual machine shows the `start` operation until it is running or the
+// start has failed. `stopped` stops it: a stopped virtual machine keeps its disks, network attachments
+// and sellable quota, and shows the `stop` operation until it is stopped or the stop has failed.
+//
+// `machine_type_id` resizes the virtual machine and returns 202 with the virtual machine and the
+// Checkout Session for the change, including for metered terms. The virtual machine keeps its usage
+// type and period, priced with the target type's matching option; a target type without that option is
+// refused with 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing accepts the order. Do
+// not submit the change again after paying. After an uncertain response, look the Checkout Session up
+// in Billing before submitting again.
+//
+// The virtual machine shows the `resize` operation until the resize is applied, its Checkout Session
+// expires or its order is canceled, so other operations and a second resize are refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new
+// type takes effect, and is billed from then on, when `machine_type_id` shows it. If checkout is not
+// completed, the order is not accepted or the resize fails, the virtual machine keeps its current type
+// and Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
+// previous type, submit another resize.
+//
+// PATCH /api/v1/virtual-machines/{virtualMachineId}
+func (c *Client) UpdateVirtualMachine(ctx context.Context, request *UpdateVirtualMachineRequestBody, params UpdateVirtualMachineParams) (UpdateVirtualMachineRes, error) {
+	res, err := c.sendUpdateVirtualMachine(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateVirtualMachine(ctx context.Context, request *UpdateVirtualMachineRequestBody, params UpdateVirtualMachineParams) (res UpdateVirtualMachineRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-virtual-machine"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/virtual-machines/{virtualMachineId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateVirtualMachineOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/virtual-machines/"
+	{
+		// Encode "virtualMachineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "virtualMachineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VirtualMachineId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateVirtualMachineRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, UpdateVirtualMachineOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateVirtualMachineResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
