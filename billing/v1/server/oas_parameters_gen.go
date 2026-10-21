@@ -2568,8 +2568,7 @@ type ListAccountDiscountsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Only this account; all of yours when omitted. An account you do not own needs `project_ids`, each
-	// project currently assigned to it.
+	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -2799,12 +2798,12 @@ type ListActiveResourcesParams struct {
 	// Items per page. Defaults to 50; at most 200.
 	PageSize   OptInt64  `json:",omitempty,omitzero"`
 	ResourceID OptString `json:",omitempty,omitzero"`
-	// Only this account; all of yours when omitted. An account you do not own needs `project_ids`, each
-	// project currently assigned to it.
+	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 	// Only records of these projects. Omit for all projects and account-level records of your billing
-	// accounts. Each project must be assigned to a billing account you own or have you as a member; a
-	// member sees the records of the project that the owner of its current billing account sees.
+	// accounts. Where an operation is open to project members, each project must be assigned to a billing
+	// account you own or have you as a member, and a member sees the records of the project that the owner
+	// of its current billing account sees.
 	ProjectIds []uuid.UUID                  `json:",omitempty"`
 	MeterID    OptUUID                      `json:",omitempty,omitzero"`
 	ProductID  OptProductID                 `json:",omitempty,omitzero"`
@@ -3345,16 +3344,16 @@ type ListAllowancesParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Only this account; all of yours when omitted. An account you do not own needs `project_ids`, each
-	// project currently assigned to it.
+	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 	// Filter by the meter UUID.
 	MeterID   OptUUID                 `json:",omitempty,omitzero"`
 	Status    OptListAllowancesStatus `json:",omitempty,omitzero"`
 	ProductID OptProductID            `json:",omitempty,omitzero"`
 	// Only records of these projects. Omit for all projects and account-level records of your billing
-	// accounts. Each project must be assigned to a billing account you own or have you as a member; a
-	// member sees the records of the project that the owner of its current billing account sees.
+	// accounts. Where an operation is open to project members, each project must be assigned to a billing
+	// account you own or have you as a member, and a member sees the records of the project that the owner
+	// of its current billing account sees.
 	ProjectIds []uuid.UUID `json:",omitempty"`
 }
 
@@ -4019,16 +4018,16 @@ type ListCancellationsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Only this account; all of yours when omitted. An account you do not own needs `project_ids`, each
-	// project currently assigned to it.
+	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 	// Only cancellations that include this subscription.
 	SubscriptionID OptUUID `json:",omitempty,omitzero"`
 	// Only cancellations in this status. `open` means requested, scheduled or releasing.
 	Status OptListCancellationsStatus `json:",omitempty,omitzero"`
 	// Only records of these projects. Omit for all projects and account-level records of your billing
-	// accounts. Each project must be assigned to a billing account you own or have you as a member; a
-	// member sees the records of the project that the owner of its current billing account sees.
+	// accounts. Where an operation is open to project members, each project must be assigned to a billing
+	// account you own or have you as a member, and a member sees the records of the project that the owner
+	// of its current billing account sees.
 	ProjectIds []uuid.UUID `json:",omitempty"`
 }
 
@@ -4674,13 +4673,13 @@ type ListCheckoutSessionsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Only this account; all of yours when omitted. An account you do not own needs `project_ids`, each
-	// project currently assigned to it.
+	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64                 `json:",omitempty,omitzero"`
 	Status           OptCheckoutSessionStatus `json:",omitempty,omitzero"`
 	// Only records of these projects. Omit for all projects and account-level records of your billing
-	// accounts. Each project must be assigned to a billing account you own or have you as a member; a
-	// member sees the records of the project that the owner of its current billing account sees.
+	// accounts. Where an operation is open to project members, each project must be assigned to a billing
+	// account you own or have you as a member, and a member sees the records of the project that the owner
+	// of its current billing account sees.
 	ProjectIds []uuid.UUID `json:",omitempty"`
 }
 
@@ -5276,8 +5275,7 @@ type ListCreditGrantsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Only this account; all of yours when omitted. An account you do not own needs `project_ids`, each
-	// project currently assigned to it.
+	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64                  `json:",omitempty,omitzero"`
 	Status           OptListCreditGrantsStatus `json:",omitempty,omitzero"`
 }
@@ -5802,8 +5800,7 @@ type ListCreditNotesParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Only this account; all of yours when omitted. An account you do not own needs `project_ids`, each
-	// project currently assigned to it.
+	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 	// Only the notes for this invoice.
 	InvoiceID OptUUID `json:",omitempty,omitzero"`
@@ -6261,12 +6258,12 @@ type ListEntitlementsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Only this account; all of yours when omitted. An account you do not own needs `project_ids`, each
-	// project currently assigned to it.
+	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 	// Only records of these projects. Omit for all projects and account-level records of your billing
-	// accounts. Each project must be assigned to a billing account you own or have you as a member; a
-	// member sees the records of the project that the owner of its current billing account sees.
+	// accounts. Where an operation is open to project members, each project must be assigned to a billing
+	// account you own or have you as a member, and a member sees the records of the project that the owner
+	// of its current billing account sees.
 	ProjectIds []uuid.UUID  `json:",omitempty"`
 	ProductID  OptProductID `json:",omitempty,omitzero"`
 }
@@ -6640,8 +6637,7 @@ type ListFeatureGrantsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Only this account; all of yours when omitted. An account you do not own needs `project_ids`, each
-	// project currently assigned to it.
+	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64              `json:",omitempty,omitzero"`
 	ProductID        OptProductID          `json:",omitempty,omitzero"`
 	Status           OptFeatureGrantStatus `json:",omitempty,omitzero"`
@@ -7239,8 +7235,7 @@ type ListInvoicesParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Only this account; all of yours when omitted. An account you do not own needs `project_ids`, each
-	// project currently assigned to it.
+	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64         `json:",omitempty,omitzero"`
 	Status           OptInvoiceStatus `json:",omitempty,omitzero"`
 	// Only invoices with a charge from this subscription; amounts are for the whole invoice.
@@ -8252,16 +8247,16 @@ type ListOrdersParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Only this account; all of yours when omitted. An account you do not own needs `project_ids`, each
-	// project currently assigned to it.
+	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64       `json:",omitempty,omitzero"`
 	Status           OptOrderStatus `json:",omitempty,omitzero"`
 	From             OptDateTime    `json:",omitempty,omitzero"`
 	// Exclusive.
 	To OptDateTime `json:",omitempty,omitzero"`
 	// Only records of these projects. Omit for all projects and account-level records of your billing
-	// accounts. Each project must be assigned to a billing account you own or have you as a member; a
-	// member sees the records of the project that the owner of its current billing account sees.
+	// accounts. Where an operation is open to project members, each project must be assigned to a billing
+	// account you own or have you as a member, and a member sees the records of the project that the owner
+	// of its current billing account sees.
 	ProjectIds []uuid.UUID `json:",omitempty"`
 }
 
@@ -8727,8 +8722,7 @@ type ListPaymentMethodsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Only this account; all of yours when omitted. An account you do not own needs `project_ids`, each
-	// project currently assigned to it.
+	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -10592,8 +10586,9 @@ type ListProjectAssignmentsParams struct {
 	PageSize         OptInt64 `json:",omitempty,omitzero"`
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 	// Only records of these projects. Omit for all projects and account-level records of your billing
-	// accounts. Each project must be assigned to a billing account you own or have you as a member; a
-	// member sees the records of the project that the owner of its current billing account sees.
+	// accounts. Where an operation is open to project members, each project must be assigned to a billing
+	// account you own or have you as a member, and a member sees the records of the project that the owner
+	// of its current billing account sees.
 	ProjectIds []uuid.UUID `json:",omitempty"`
 }
 
@@ -11280,8 +11275,7 @@ type ListRefundsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Only this account; all of yours when omitted. An account you do not own needs `project_ids`, each
-	// project currently assigned to it.
+	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 	// Only the refunds of this invoice.
 	InvoiceID OptUUID `json:",omitempty,omitzero"`
@@ -11858,8 +11852,9 @@ type ListSpendParams struct {
 	// The billing account whose currency and charges the report uses; it must be authorized.
 	BillingAccountID int64
 	// Only records of these projects. Omit for all projects and account-level records of your billing
-	// accounts. Each project must be assigned to a billing account you own or have you as a member; a
-	// member sees the records of the project that the owner of its current billing account sees.
+	// accounts. Where an operation is open to project members, each project must be assigned to a billing
+	// account you own or have you as a member, and a member sees the records of the project that the owner
+	// of its current billing account sees.
 	ProjectIds []uuid.UUID `json:",omitempty"`
 }
 
@@ -12778,12 +12773,12 @@ type ListSubscriptionsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Only this account; all of yours when omitted. An account you do not own needs `project_ids`, each
-	// project currently assigned to it.
+	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 	// Only records of these projects. Omit for all projects and account-level records of your billing
-	// accounts. Each project must be assigned to a billing account you own or have you as a member; a
-	// member sees the records of the project that the owner of its current billing account sees.
+	// accounts. Where an operation is open to project members, each project must be assigned to a billing
+	// account you own or have you as a member, and a member sees the records of the project that the owner
+	// of its current billing account sees.
 	ProjectIds []uuid.UUID `json:",omitempty"`
 }
 
@@ -13134,8 +13129,7 @@ type ListTopUpsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Only this account; all of yours when omitted. An account you do not own needs `project_ids`, each
-	// project currently assigned to it.
+	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -13364,8 +13358,7 @@ type ListTransactionsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Only this account; all of yours when omitted. An account you do not own needs `project_ids`, each
-	// project currently assigned to it.
+	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64    `json:",omitempty,omitzero"`
 	From             OptDateTime `json:",omitempty,omitzero"`
 	// Exclusive.
@@ -13697,8 +13690,7 @@ type ListUsageChargesParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	// Only this account; all of yours when omitted. An account you do not own needs `project_ids`, each
-	// project currently assigned to it.
+	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64     `json:",omitempty,omitzero"`
 	ProductID        OptProductID `json:",omitempty,omitzero"`
 	ResourceID       OptString    `json:",omitempty,omitzero"`
@@ -13708,8 +13700,9 @@ type ListUsageChargesParams struct {
 	// Exclusive.
 	To OptDateTime `json:",omitempty,omitzero"`
 	// Only records of these projects. Omit for all projects and account-level records of your billing
-	// accounts. Each project must be assigned to a billing account you own or have you as a member; a
-	// member sees the records of the project that the owner of its current billing account sees.
+	// accounts. Where an operation is open to project members, each project must be assigned to a billing
+	// account you own or have you as a member, and a member sees the records of the project that the owner
+	// of its current billing account sees.
 	ProjectIds  []uuid.UUID `json:",omitempty"`
 	MeterID     OptUUID     `json:",omitempty,omitzero"`
 	StatementID OptUUID     `json:",omitempty,omitzero"`
