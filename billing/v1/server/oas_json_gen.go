@@ -24567,12 +24567,6 @@ func (s *QuoteRequest) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.ProjectID.Set {
-			e.FieldStart("project_id")
-			s.ProjectID.Encode(e)
-		}
-	}
-	{
 		if s.Currency.Set {
 			e.FieldStart("currency")
 			s.Currency.Encode(e)
@@ -24606,13 +24600,12 @@ func (s *QuoteRequest) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfQuoteRequest = [6]string{
+var jsonFieldsNameOfQuoteRequest = [5]string{
 	0: "billing_account_id",
-	1: "project_id",
-	2: "currency",
-	3: "items",
-	4: "renewals",
-	5: "promotion_code",
+	1: "currency",
+	2: "items",
+	3: "renewals",
+	4: "promotion_code",
 }
 
 // Decode decodes QuoteRequest from json.
@@ -24632,16 +24625,6 @@ func (s *QuoteRequest) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"billing_account_id\"")
-			}
-		case "project_id":
-			if err := func() error {
-				s.ProjectID.Reset()
-				if err := s.ProjectID.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"project_id\"")
 			}
 		case "currency":
 			if err := func() error {

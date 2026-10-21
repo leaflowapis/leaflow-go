@@ -262,8 +262,9 @@ func (UnimplementedHandler) ExpireCheckoutSession(ctx context.Context, params Ex
 
 // GetAccountBalance implements get-account-balance operation.
 //
-// The balance of your account, with credit groups, unpaid invoice amounts, unbilled estimates and
-// pending returns. Returns 404 for a missing account and 403 for another user's account.
+// The balance of an account, with credit groups, unpaid invoice amounts, unbilled estimates and
+// pending returns, readable by its owner and by members of the projects it currently pays for. Returns
+// 404 for a missing account and 403 to anyone else.
 //
 // GET /api/v1/billing-accounts/{accountId}/balance
 func (UnimplementedHandler) GetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (r *AccountBalance, _ error) {
@@ -286,8 +287,9 @@ func (UnimplementedHandler) GetAccountDeletionReadiness(ctx context.Context) (r 
 
 // GetBillingAccount implements get-billing-account operation.
 //
-// Your billing account with its currency, status and invoice contact. Returns 404 if it does not exist
-// and 403 if it belongs to another user.
+// A billing account with its currency, status and invoice contact, readable by its owner and by
+// members of the projects it currently pays for. Returns 404 if it does not exist and 403 to anyone
+// else.
 //
 // GET /api/v1/billing-accounts/{accountId}
 func (UnimplementedHandler) GetBillingAccount(ctx context.Context, params GetBillingAccountParams) (r *BillingAccount, _ error) {
@@ -418,11 +420,9 @@ func (UnimplementedHandler) GetProjectAssignment(ctx context.Context, params Get
 //
 // With `billing_account_id`, the quote is for that billing account: its currency, account discounts,
 // tax and funds apply, renewals use the account currently paying for each subscription, and an access
-// token is required. The account must be yours, or, with `project_id`, the current billing account of
-// a project you are a member of; renewals then must be of the project's subscriptions and need the
-// project permission `billing:subscription.write`. Without it, proposed items are priced in `currency`
-// for anyone, signed in or not: no account discount or funds apply, and `tax_status` is
-// `requires_location_inputs`.
+// token is required. The account must be yours or currently pay for a project you are a member of.
+// Without it, proposed items are priced in `currency` for anyone, signed in or not: no account
+// discount or funds apply, and `tax_status` is `requires_location_inputs`.
 //
 // A promotion code is evaluated without being applied. It is applied only when a Checkout Session is
 // completed with it; conditions that depend on the account, such as a first purchase, are checked only
@@ -692,8 +692,8 @@ func (UnimplementedHandler) ListPaymentMethods(ctx context.Context, params ListP
 //
 // The payment gateways and methods currently accepting the account's currency, preferred gateway
 // first. Top-ups and invoice payments must use one listed here. An empty result means online payment
-// is unavailable for the account. Open to the owner of the account and, with `project_id`, to members
-// of a project the account is currently assigned to.
+// is unavailable for the account. Open to the owner of the account and to members of the projects it
+// currently pays for.
 //
 // GET /api/v1/billing-accounts/{accountId}/payment-options
 func (UnimplementedHandler) ListPaymentOptions(ctx context.Context, params ListPaymentOptionsParams) (r *PaymentOptionList, _ error) {

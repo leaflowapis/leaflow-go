@@ -8947,8 +8947,6 @@ func decodeListPaymentMethodsParams(args [0]string, argsEscaped bool, r *http.Re
 
 // ListPaymentOptionsParams is parameters of list-payment-options operation.
 type ListPaymentOptionsParams struct {
-	// A project currently assigned to the account, for listing as a member of the project.
-	ProjectID OptUUID `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -8957,15 +8955,6 @@ type ListPaymentOptionsParams struct {
 }
 
 func unpackListPaymentOptionsParams(packed middleware.Parameters) (params ListPaymentOptionsParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "project_id",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.ProjectID = v.(OptUUID)
-		}
-	}
 	{
 		key := middleware.ParameterKey{
 			Name: "page",
@@ -8996,47 +8985,6 @@ func unpackListPaymentOptionsParams(packed middleware.Parameters) (params ListPa
 
 func decodeListPaymentOptionsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListPaymentOptionsParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode query: project_id.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "project_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotProjectIDVal uuid.UUID
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToUUID(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotProjectIDVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.ProjectID.SetTo(paramsDotProjectIDVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "project_id",
-			In:   "query",
-			Err:  err,
-		}
-	}
 	// Set default value for query: page.
 	{
 		val := int64(1)
