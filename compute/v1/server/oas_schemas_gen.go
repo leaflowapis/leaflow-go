@@ -48,6 +48,83 @@ func (s *AttachNetworkInterfaceRequestBody) SetNetworkInterfaceID(val NetworkInt
 
 type AvailabilityZoneID string
 
+// Ref: #/components/schemas/AvailabilityZoneListResponseBody
+type AvailabilityZoneListResponseBody struct {
+	Items      []AvailabilityZoneResource `json:"items"`
+	Pagination OffsetPagination           `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *AvailabilityZoneListResponseBody) GetItems() []AvailabilityZoneResource {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *AvailabilityZoneListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *AvailabilityZoneListResponseBody) SetItems(val []AvailabilityZoneResource) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *AvailabilityZoneListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// Ref: #/components/schemas/AvailabilityZoneResource
+type AvailabilityZoneResource struct {
+	// Display name for this zone, shown to tenants (Hong Kong A). The stable handle is code.
+	Name string `json:"name"`
+	// The zone's code within its region (hk-1-a). Stable and human-written; addressing is by id.
+	Code string             `json:"code"`
+	ID   AvailabilityZoneID `json:"id"`
+	// The region this zone belongs to; the value `region_id` filters the listing by.
+	RegionID RegionID `json:"region_id"`
+}
+
+// GetName returns the value of Name.
+func (s *AvailabilityZoneResource) GetName() string {
+	return s.Name
+}
+
+// GetCode returns the value of Code.
+func (s *AvailabilityZoneResource) GetCode() string {
+	return s.Code
+}
+
+// GetID returns the value of ID.
+func (s *AvailabilityZoneResource) GetID() AvailabilityZoneID {
+	return s.ID
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *AvailabilityZoneResource) GetRegionID() RegionID {
+	return s.RegionID
+}
+
+// SetName sets the value of Name.
+func (s *AvailabilityZoneResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetCode sets the value of Code.
+func (s *AvailabilityZoneResource) SetCode(val string) {
+	s.Code = val
+}
+
+// SetID sets the value of ID.
+func (s *AvailabilityZoneResource) SetID(val AvailabilityZoneID) {
+	s.ID = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *AvailabilityZoneResource) SetRegionID(val RegionID) {
+	s.RegionID = val
+}
+
 // The commercial terms for one newly purchased component. Licensed requires period and
 // termination_policy; metered refuses both. Components in one virtual machine purchase must use the
 // same usage type and period, while their termination policies may differ.
@@ -780,10 +857,10 @@ func (s *CreateNetworkInterfaceRequestBody) SetAddress(val OptString) {
 
 // Ref: #/components/schemas/CreatePeeringRequestBody
 type CreatePeeringRequestBody struct {
-	Name               string                `json:"name"`
-	RequesterNetworkID VirtualPrivateCloudID `json:"requester_network_id"`
-	AccepterProjectID  uuid.UUID             `json:"accepter_project_id"`
-	AccepterNetworkID  VirtualPrivateCloudID `json:"accepter_network_id"`
+	Name                           string                `json:"name"`
+	RequesterVirtualPrivateCloudID VirtualPrivateCloudID `json:"requester_virtual_private_cloud_id"`
+	AccepterProjectID              uuid.UUID             `json:"accepter_project_id"`
+	AccepterVirtualPrivateCloudID  VirtualPrivateCloudID `json:"accepter_virtual_private_cloud_id"`
 }
 
 // GetName returns the value of Name.
@@ -791,9 +868,9 @@ func (s *CreatePeeringRequestBody) GetName() string {
 	return s.Name
 }
 
-// GetRequesterNetworkID returns the value of RequesterNetworkID.
-func (s *CreatePeeringRequestBody) GetRequesterNetworkID() VirtualPrivateCloudID {
-	return s.RequesterNetworkID
+// GetRequesterVirtualPrivateCloudID returns the value of RequesterVirtualPrivateCloudID.
+func (s *CreatePeeringRequestBody) GetRequesterVirtualPrivateCloudID() VirtualPrivateCloudID {
+	return s.RequesterVirtualPrivateCloudID
 }
 
 // GetAccepterProjectID returns the value of AccepterProjectID.
@@ -801,9 +878,9 @@ func (s *CreatePeeringRequestBody) GetAccepterProjectID() uuid.UUID {
 	return s.AccepterProjectID
 }
 
-// GetAccepterNetworkID returns the value of AccepterNetworkID.
-func (s *CreatePeeringRequestBody) GetAccepterNetworkID() VirtualPrivateCloudID {
-	return s.AccepterNetworkID
+// GetAccepterVirtualPrivateCloudID returns the value of AccepterVirtualPrivateCloudID.
+func (s *CreatePeeringRequestBody) GetAccepterVirtualPrivateCloudID() VirtualPrivateCloudID {
+	return s.AccepterVirtualPrivateCloudID
 }
 
 // SetName sets the value of Name.
@@ -811,9 +888,9 @@ func (s *CreatePeeringRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// SetRequesterNetworkID sets the value of RequesterNetworkID.
-func (s *CreatePeeringRequestBody) SetRequesterNetworkID(val VirtualPrivateCloudID) {
-	s.RequesterNetworkID = val
+// SetRequesterVirtualPrivateCloudID sets the value of RequesterVirtualPrivateCloudID.
+func (s *CreatePeeringRequestBody) SetRequesterVirtualPrivateCloudID(val VirtualPrivateCloudID) {
+	s.RequesterVirtualPrivateCloudID = val
 }
 
 // SetAccepterProjectID sets the value of AccepterProjectID.
@@ -821,9 +898,9 @@ func (s *CreatePeeringRequestBody) SetAccepterProjectID(val uuid.UUID) {
 	s.AccepterProjectID = val
 }
 
-// SetAccepterNetworkID sets the value of AccepterNetworkID.
-func (s *CreatePeeringRequestBody) SetAccepterNetworkID(val VirtualPrivateCloudID) {
-	s.AccepterNetworkID = val
+// SetAccepterVirtualPrivateCloudID sets the value of AccepterVirtualPrivateCloudID.
+func (s *CreatePeeringRequestBody) SetAccepterVirtualPrivateCloudID(val VirtualPrivateCloudID) {
+	s.AccepterVirtualPrivateCloudID = val
 }
 
 // Creation configuration for this resource. Compute project quotas and Billing authorization are
@@ -1413,11 +1490,12 @@ type CreateVirtualMachineRequestBody struct {
 	// Mutually exclusive with `bandwidth_mbps`: an address you already hold has its own bandwidth ceiling,
 	// set when it was allocated, and changing it is a separate operation.
 	//
-	// Like `bandwidth_mbps`, this happens inside the creation: if binding fails, no virtual machine is
+	// Like `bandwidth_mbps`, this happens inside the creation: if association fails, no virtual machine is
 	// created. Associating afterwards is still possible (`put-elastic-ip-association`), but then it is two
 	// operations and a failure in between leaves a virtual machine you cannot reach.
 	//
-	// Only one virtual machine can be created when it is used — one address binds to one interface.
+	// Only one virtual machine can be created when it is used — one address is associated with one
+	// interface.
 	ElasticIPID OptElasticIPID `json:"elastic_ip_id"`
 	// Number of virtual machines to create; 1 when omitted. Names are numbered automatically for several.
 	Count OptInt64 `json:"count"`
@@ -1428,8 +1506,8 @@ type CreateVirtualMachineRequestBody struct {
 	// The password to set, on the login account and on root. Only the SSH public keys of the project are
 	// used when omitted.
 	Password OptString `json:"password"`
-	// Use an existing network interface, which may already have an elastic IP bound. Exactly one of this
-	// and `subnet_id`; only one virtual machine can be created when it is used.
+	// Use an existing network interface, which may already have an elastic IP associated. Exactly one of
+	// this and `subnet_id`; only one virtual machine can be created when it is used.
 	NetworkInterfaceID OptNetworkInterfaceID `json:"network_interface_id"`
 	// Required when a primary network interface is created, at least one; the default security group is
 	// not applied automatically. Ignored together with `network_interface_id`, as the security groups of
@@ -2030,6 +2108,80 @@ func (s *DiskBackupOperationType) UnmarshalText(data []byte) error {
 	}
 }
 
+// A resource a release set releases.
+// Ref: #/components/schemas/DiskBackupReleaseResource
+type DiskBackupReleaseResource struct {
+	Type DiskBackupReleaseResourceType `json:"type"`
+	// The identifier of the resource selected by type.
+	ID DiskBackupID `json:"id"`
+	// The current display name of the selected resource.
+	Name string `json:"name"`
+}
+
+// GetType returns the value of Type.
+func (s *DiskBackupReleaseResource) GetType() DiskBackupReleaseResourceType {
+	return s.Type
+}
+
+// GetID returns the value of ID.
+func (s *DiskBackupReleaseResource) GetID() DiskBackupID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *DiskBackupReleaseResource) GetName() string {
+	return s.Name
+}
+
+// SetType sets the value of Type.
+func (s *DiskBackupReleaseResource) SetType(val DiskBackupReleaseResourceType) {
+	s.Type = val
+}
+
+// SetID sets the value of ID.
+func (s *DiskBackupReleaseResource) SetID(val DiskBackupID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *DiskBackupReleaseResource) SetName(val string) {
+	s.Name = val
+}
+
+type DiskBackupReleaseResourceType string
+
+const (
+	DiskBackupReleaseResourceTypeDiskBackup DiskBackupReleaseResourceType = "disk_backup"
+)
+
+// AllValues returns all DiskBackupReleaseResourceType values.
+func (DiskBackupReleaseResourceType) AllValues() []DiskBackupReleaseResourceType {
+	return []DiskBackupReleaseResourceType{
+		DiskBackupReleaseResourceTypeDiskBackup,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s DiskBackupReleaseResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case DiskBackupReleaseResourceTypeDiskBackup:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *DiskBackupReleaseResourceType) UnmarshalText(data []byte) error {
+	switch DiskBackupReleaseResourceType(data) {
+	case DiskBackupReleaseResourceTypeDiskBackup:
+		*s = DiskBackupReleaseResourceTypeDiskBackup
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // A retained copy of a disk, restorable after its source disk is deleted. Compute project quotas
 // constrain its count; retained storage is metered independently.
 // Ref: #/components/schemas/DiskBackupResource
@@ -2049,9 +2201,7 @@ type DiskBackupResource struct {
 	// created. `missing` means the backup no longer exists in the cloud.
 	Status DiskBackupResourceStatus `json:"status"`
 	// The operation in progress on this backup, or null when none is.
-	Operation  NilDiskBackupOperation `json:"operation"`
-	Generation int64                  `json:"generation"`
-	ObservedAt NilDateTime            `json:"observed_at"`
+	Operation NilDiskBackupOperation `json:"operation"`
 	// Availability zone of the source disk. A restore may target another zone in the same region.
 	SourceAvailabilityZoneID AvailabilityZoneID `json:"source_availability_zone_id"`
 	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
@@ -2067,6 +2217,10 @@ type DiskBackupResource struct {
 	OrderItemID NilUUID `json:"order_item_id"`
 	// The subscription for this resource; its presence alone does not imply delivery.
 	SubscriptionID NilUUID `json:"subscription_id"`
+	// The subscription that pays for this disk backup, with the resource it pays for, so that a
+	// cancellation through Billing can name what it releases. Empty when no subscription pays for it, and
+	// once it is released.
+	ReleaseSet []ReleaseSetItem `json:"release_set"`
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -2114,16 +2268,6 @@ func (s *DiskBackupResource) GetOperation() NilDiskBackupOperation {
 	return s.Operation
 }
 
-// GetGeneration returns the value of Generation.
-func (s *DiskBackupResource) GetGeneration() int64 {
-	return s.Generation
-}
-
-// GetObservedAt returns the value of ObservedAt.
-func (s *DiskBackupResource) GetObservedAt() NilDateTime {
-	return s.ObservedAt
-}
-
 // GetSourceAvailabilityZoneID returns the value of SourceAvailabilityZoneID.
 func (s *DiskBackupResource) GetSourceAvailabilityZoneID() AvailabilityZoneID {
 	return s.SourceAvailabilityZoneID
@@ -2152,6 +2296,11 @@ func (s *DiskBackupResource) GetOrderItemID() NilUUID {
 // GetSubscriptionID returns the value of SubscriptionID.
 func (s *DiskBackupResource) GetSubscriptionID() NilUUID {
 	return s.SubscriptionID
+}
+
+// GetReleaseSet returns the value of ReleaseSet.
+func (s *DiskBackupResource) GetReleaseSet() []ReleaseSetItem {
+	return s.ReleaseSet
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -2199,16 +2348,6 @@ func (s *DiskBackupResource) SetOperation(val NilDiskBackupOperation) {
 	s.Operation = val
 }
 
-// SetGeneration sets the value of Generation.
-func (s *DiskBackupResource) SetGeneration(val int64) {
-	s.Generation = val
-}
-
-// SetObservedAt sets the value of ObservedAt.
-func (s *DiskBackupResource) SetObservedAt(val NilDateTime) {
-	s.ObservedAt = val
-}
-
 // SetSourceAvailabilityZoneID sets the value of SourceAvailabilityZoneID.
 func (s *DiskBackupResource) SetSourceAvailabilityZoneID(val AvailabilityZoneID) {
 	s.SourceAvailabilityZoneID = val
@@ -2237,6 +2376,11 @@ func (s *DiskBackupResource) SetOrderItemID(val NilUUID) {
 // SetSubscriptionID sets the value of SubscriptionID.
 func (s *DiskBackupResource) SetSubscriptionID(val NilUUID) {
 	s.SubscriptionID = val
+}
+
+// SetReleaseSet sets the value of ReleaseSet.
+func (s *DiskBackupResource) SetReleaseSet(val []ReleaseSetItem) {
+	s.ReleaseSet = val
 }
 
 func (*DiskBackupResource) deleteDiskBackupRes() {}
@@ -2656,13 +2800,11 @@ type DiskResource struct {
 	// The Billing subscription associated with this resource. It may still be pending; its presence does
 	// not imply delivery or metering. Null when no subscription is associated.
 	SubscriptionID NilUUID `json:"subscription_id"`
-	// The subscriptions a cancellation through Billing has to cover to release this disk: its own.
+	// The subscriptions a cancellation through Billing has to cover to release this disk: its own, each
+	// with the resource it pays for, so that each line of a cancellation can name what it releases.
 	// Snapshots have no individual subscriptions. A system disk is released only with its virtual machine,
-	// so for a system disk the list is that of the virtual machine. Subscriptions that have ended are not
-	// listed, and the list is empty when no subscription pays for any of them.
-	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
-	// The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays
-	// for, so that each line of a cancellation can name what it releases.
+	// so for a system disk the set is that of the virtual machine. Subscriptions that have ended are not
+	// listed, and the set is empty when no subscription pays for any of them.
 	ReleaseSet  []ReleaseSetItem           `json:"release_set"`
 	AccessState NilDiskResourceAccessState `json:"access_state"`
 	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
@@ -2670,10 +2812,8 @@ type DiskResource struct {
 	// order was accepted, and the charge for this disk is refunded.
 	FailureReason NilDiskResourceFailureReason `json:"failure_reason"`
 	// The operation in progress on this disk, or null when none is.
-	Operation  NilDiskOperation     `json:"operation"`
-	Attachment OptNilDiskAttachment `json:"attachment"`
-	Generation int64                `json:"generation"`
-	ObservedAt NilDateTime          `json:"observed_at"`
+	Operation  NilDiskOperation  `json:"operation"`
+	Attachment NilDiskAttachment `json:"attachment"`
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
@@ -2746,11 +2886,6 @@ func (s *DiskResource) GetSubscriptionID() NilUUID {
 	return s.SubscriptionID
 }
 
-// GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
-func (s *DiskResource) GetReleaseSubscriptionIds() []uuid.UUID {
-	return s.ReleaseSubscriptionIds
-}
-
 // GetReleaseSet returns the value of ReleaseSet.
 func (s *DiskResource) GetReleaseSet() []ReleaseSetItem {
 	return s.ReleaseSet
@@ -2772,18 +2907,8 @@ func (s *DiskResource) GetOperation() NilDiskOperation {
 }
 
 // GetAttachment returns the value of Attachment.
-func (s *DiskResource) GetAttachment() OptNilDiskAttachment {
+func (s *DiskResource) GetAttachment() NilDiskAttachment {
 	return s.Attachment
-}
-
-// GetGeneration returns the value of Generation.
-func (s *DiskResource) GetGeneration() int64 {
-	return s.Generation
-}
-
-// GetObservedAt returns the value of ObservedAt.
-func (s *DiskResource) GetObservedAt() NilDateTime {
-	return s.ObservedAt
 }
 
 // SetAvailabilityZoneID sets the value of AvailabilityZoneID.
@@ -2856,11 +2981,6 @@ func (s *DiskResource) SetSubscriptionID(val NilUUID) {
 	s.SubscriptionID = val
 }
 
-// SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
-func (s *DiskResource) SetReleaseSubscriptionIds(val []uuid.UUID) {
-	s.ReleaseSubscriptionIds = val
-}
-
 // SetReleaseSet sets the value of ReleaseSet.
 func (s *DiskResource) SetReleaseSet(val []ReleaseSetItem) {
 	s.ReleaseSet = val
@@ -2882,18 +3002,8 @@ func (s *DiskResource) SetOperation(val NilDiskOperation) {
 }
 
 // SetAttachment sets the value of Attachment.
-func (s *DiskResource) SetAttachment(val OptNilDiskAttachment) {
+func (s *DiskResource) SetAttachment(val NilDiskAttachment) {
 	s.Attachment = val
-}
-
-// SetGeneration sets the value of Generation.
-func (s *DiskResource) SetGeneration(val int64) {
-	s.Generation = val
-}
-
-// SetObservedAt sets the value of ObservedAt.
-func (s *DiskResource) SetObservedAt(val NilDateTime) {
-	s.ObservedAt = val
 }
 
 func (*DiskResource) attachVirtualMachineDiskRes() {}
@@ -3424,12 +3534,9 @@ type ElasticIP struct {
 	// The Billing subscription associated with this resource. It may still be pending; its presence does
 	// not imply delivery or metering. Null when no subscription is associated.
 	SubscriptionID NilUUID `json:"subscription_id"`
-	// The subscription a cancellation through Billing has to cover to release this elastic IP. A
-	// subscription that has ended is not listed, and the list is empty when no subscription pays for the
-	// elastic IP.
-	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
-	// The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays
-	// for, so that each line of a cancellation can name what it releases.
+	// The subscription a cancellation through Billing has to cover to release this elastic IP, with the
+	// resource it pays for, so that each line of a cancellation can name what it releases. A subscription
+	// that has ended is not listed, and the set is empty when no subscription pays for the elastic IP.
 	ReleaseSet  []ReleaseSetItem        `json:"release_set"`
 	AccessState NilElasticIPAccessState `json:"access_state"`
 	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
@@ -3437,8 +3544,8 @@ type ElasticIP struct {
 	// order was accepted, and the charge for this elastic IP is refunded.
 	FailureReason NilElasticIPFailureReason `json:"failure_reason"`
 	// The operation in progress on this elastic IP, or null when none is.
-	Operation NilElasticIPOperation `json:"operation"`
-	Binding   NilIPv4Binding        `json:"binding"`
+	Operation   NilElasticIPOperation   `json:"operation"`
+	Association NilElasticIPAssociation `json:"association"`
 }
 
 // GetInternetChargeType returns the value of InternetChargeType.
@@ -3511,11 +3618,6 @@ func (s *ElasticIP) GetSubscriptionID() NilUUID {
 	return s.SubscriptionID
 }
 
-// GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
-func (s *ElasticIP) GetReleaseSubscriptionIds() []uuid.UUID {
-	return s.ReleaseSubscriptionIds
-}
-
 // GetReleaseSet returns the value of ReleaseSet.
 func (s *ElasticIP) GetReleaseSet() []ReleaseSetItem {
 	return s.ReleaseSet
@@ -3536,9 +3638,9 @@ func (s *ElasticIP) GetOperation() NilElasticIPOperation {
 	return s.Operation
 }
 
-// GetBinding returns the value of Binding.
-func (s *ElasticIP) GetBinding() NilIPv4Binding {
-	return s.Binding
+// GetAssociation returns the value of Association.
+func (s *ElasticIP) GetAssociation() NilElasticIPAssociation {
+	return s.Association
 }
 
 // SetInternetChargeType sets the value of InternetChargeType.
@@ -3611,11 +3713,6 @@ func (s *ElasticIP) SetSubscriptionID(val NilUUID) {
 	s.SubscriptionID = val
 }
 
-// SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
-func (s *ElasticIP) SetReleaseSubscriptionIds(val []uuid.UUID) {
-	s.ReleaseSubscriptionIds = val
-}
-
 // SetReleaseSet sets the value of ReleaseSet.
 func (s *ElasticIP) SetReleaseSet(val []ReleaseSetItem) {
 	s.ReleaseSet = val
@@ -3636,9 +3733,9 @@ func (s *ElasticIP) SetOperation(val NilElasticIPOperation) {
 	s.Operation = val
 }
 
-// SetBinding sets the value of Binding.
-func (s *ElasticIP) SetBinding(val NilIPv4Binding) {
-	s.Binding = val
+// SetAssociation sets the value of Association.
+func (s *ElasticIP) SetAssociation(val NilElasticIPAssociation) {
+	s.Association = val
 }
 
 func (*ElasticIP) deleteElasticIPAssociationRes() {}
@@ -3700,7 +3797,159 @@ func (s *ElasticIPAccessState) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/ElasticIPAssociation
+type ElasticIPAssociation struct {
+	ID ElasticIPAssociationID `json:"id"`
+	// The commercial ElasticIP identity. This is not an internal holding ID.
+	ElasticIPID               ElasticIPID               `json:"elastic_ip_id"`
+	NetworkInterfaceAddressID NetworkInterfaceAddressID `json:"network_interface_address_id"`
+	Address                   IPv4HostAddress           `json:"address"`
+	FixedIP                   IPv4HostAddress           `json:"fixed_ip"`
+	State                     ElasticIPAssociationState `json:"state"`
+	BoundAt                   NilDateTime               `json:"bound_at"`
+	UnboundAt                 NilDateTime               `json:"unbound_at"`
+	ReleasedAt                NilDateTime               `json:"released_at"`
+}
+
+// GetID returns the value of ID.
+func (s *ElasticIPAssociation) GetID() ElasticIPAssociationID {
+	return s.ID
+}
+
+// GetElasticIPID returns the value of ElasticIPID.
+func (s *ElasticIPAssociation) GetElasticIPID() ElasticIPID {
+	return s.ElasticIPID
+}
+
+// GetNetworkInterfaceAddressID returns the value of NetworkInterfaceAddressID.
+func (s *ElasticIPAssociation) GetNetworkInterfaceAddressID() NetworkInterfaceAddressID {
+	return s.NetworkInterfaceAddressID
+}
+
+// GetAddress returns the value of Address.
+func (s *ElasticIPAssociation) GetAddress() IPv4HostAddress {
+	return s.Address
+}
+
+// GetFixedIP returns the value of FixedIP.
+func (s *ElasticIPAssociation) GetFixedIP() IPv4HostAddress {
+	return s.FixedIP
+}
+
+// GetState returns the value of State.
+func (s *ElasticIPAssociation) GetState() ElasticIPAssociationState {
+	return s.State
+}
+
+// GetBoundAt returns the value of BoundAt.
+func (s *ElasticIPAssociation) GetBoundAt() NilDateTime {
+	return s.BoundAt
+}
+
+// GetUnboundAt returns the value of UnboundAt.
+func (s *ElasticIPAssociation) GetUnboundAt() NilDateTime {
+	return s.UnboundAt
+}
+
+// GetReleasedAt returns the value of ReleasedAt.
+func (s *ElasticIPAssociation) GetReleasedAt() NilDateTime {
+	return s.ReleasedAt
+}
+
+// SetID sets the value of ID.
+func (s *ElasticIPAssociation) SetID(val ElasticIPAssociationID) {
+	s.ID = val
+}
+
+// SetElasticIPID sets the value of ElasticIPID.
+func (s *ElasticIPAssociation) SetElasticIPID(val ElasticIPID) {
+	s.ElasticIPID = val
+}
+
+// SetNetworkInterfaceAddressID sets the value of NetworkInterfaceAddressID.
+func (s *ElasticIPAssociation) SetNetworkInterfaceAddressID(val NetworkInterfaceAddressID) {
+	s.NetworkInterfaceAddressID = val
+}
+
+// SetAddress sets the value of Address.
+func (s *ElasticIPAssociation) SetAddress(val IPv4HostAddress) {
+	s.Address = val
+}
+
+// SetFixedIP sets the value of FixedIP.
+func (s *ElasticIPAssociation) SetFixedIP(val IPv4HostAddress) {
+	s.FixedIP = val
+}
+
+// SetState sets the value of State.
+func (s *ElasticIPAssociation) SetState(val ElasticIPAssociationState) {
+	s.State = val
+}
+
+// SetBoundAt sets the value of BoundAt.
+func (s *ElasticIPAssociation) SetBoundAt(val NilDateTime) {
+	s.BoundAt = val
+}
+
+// SetUnboundAt sets the value of UnboundAt.
+func (s *ElasticIPAssociation) SetUnboundAt(val NilDateTime) {
+	s.UnboundAt = val
+}
+
+// SetReleasedAt sets the value of ReleasedAt.
+func (s *ElasticIPAssociation) SetReleasedAt(val NilDateTime) {
+	s.ReleasedAt = val
+}
+
 type ElasticIPAssociationID string
+
+type ElasticIPAssociationState string
+
+const (
+	ElasticIPAssociationStateBound    ElasticIPAssociationState = "bound"
+	ElasticIPAssociationStateReleased ElasticIPAssociationState = "released"
+	ElasticIPAssociationStateUnknown  ElasticIPAssociationState = "unknown"
+)
+
+// AllValues returns all ElasticIPAssociationState values.
+func (ElasticIPAssociationState) AllValues() []ElasticIPAssociationState {
+	return []ElasticIPAssociationState{
+		ElasticIPAssociationStateBound,
+		ElasticIPAssociationStateReleased,
+		ElasticIPAssociationStateUnknown,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ElasticIPAssociationState) MarshalText() ([]byte, error) {
+	switch s {
+	case ElasticIPAssociationStateBound:
+		return []byte(s), nil
+	case ElasticIPAssociationStateReleased:
+		return []byte(s), nil
+	case ElasticIPAssociationStateUnknown:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ElasticIPAssociationState) UnmarshalText(data []byte) error {
+	switch ElasticIPAssociationState(data) {
+	case ElasticIPAssociationStateBound:
+		*s = ElasticIPAssociationStateBound
+		return nil
+	case ElasticIPAssociationStateReleased:
+		*s = ElasticIPAssociationStateReleased
+		return nil
+	case ElasticIPAssociationStateUnknown:
+		*s = ElasticIPAssociationStateUnknown
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
 
 // Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
 // completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
@@ -3826,22 +4075,22 @@ func (s *ElasticIPOperation) SetStartedAt(val time.Time) {
 type ElasticIPOperationType string
 
 const (
-	ElasticIPOperationTypeCreate       ElasticIPOperationType = "create"
-	ElasticIPOperationTypeBind         ElasticIPOperationType = "bind"
-	ElasticIPOperationTypeUnbind       ElasticIPOperationType = "unbind"
-	ElasticIPOperationTypeSetBandwidth ElasticIPOperationType = "set_bandwidth"
-	ElasticIPOperationTypeSuspend      ElasticIPOperationType = "suspend"
-	ElasticIPOperationTypeResume       ElasticIPOperationType = "resume"
-	ElasticIPOperationTypeDelete       ElasticIPOperationType = "delete"
+	ElasticIPOperationTypeCreate          ElasticIPOperationType = "create"
+	ElasticIPOperationTypeAssociate       ElasticIPOperationType = "associate"
+	ElasticIPOperationTypeDisassociate    ElasticIPOperationType = "disassociate"
+	ElasticIPOperationTypeUpdateBandwidth ElasticIPOperationType = "update_bandwidth"
+	ElasticIPOperationTypeSuspend         ElasticIPOperationType = "suspend"
+	ElasticIPOperationTypeResume          ElasticIPOperationType = "resume"
+	ElasticIPOperationTypeDelete          ElasticIPOperationType = "delete"
 )
 
 // AllValues returns all ElasticIPOperationType values.
 func (ElasticIPOperationType) AllValues() []ElasticIPOperationType {
 	return []ElasticIPOperationType{
 		ElasticIPOperationTypeCreate,
-		ElasticIPOperationTypeBind,
-		ElasticIPOperationTypeUnbind,
-		ElasticIPOperationTypeSetBandwidth,
+		ElasticIPOperationTypeAssociate,
+		ElasticIPOperationTypeDisassociate,
+		ElasticIPOperationTypeUpdateBandwidth,
 		ElasticIPOperationTypeSuspend,
 		ElasticIPOperationTypeResume,
 		ElasticIPOperationTypeDelete,
@@ -3853,11 +4102,11 @@ func (s ElasticIPOperationType) MarshalText() ([]byte, error) {
 	switch s {
 	case ElasticIPOperationTypeCreate:
 		return []byte(s), nil
-	case ElasticIPOperationTypeBind:
+	case ElasticIPOperationTypeAssociate:
 		return []byte(s), nil
-	case ElasticIPOperationTypeUnbind:
+	case ElasticIPOperationTypeDisassociate:
 		return []byte(s), nil
-	case ElasticIPOperationTypeSetBandwidth:
+	case ElasticIPOperationTypeUpdateBandwidth:
 		return []byte(s), nil
 	case ElasticIPOperationTypeSuspend:
 		return []byte(s), nil
@@ -3876,14 +4125,14 @@ func (s *ElasticIPOperationType) UnmarshalText(data []byte) error {
 	case ElasticIPOperationTypeCreate:
 		*s = ElasticIPOperationTypeCreate
 		return nil
-	case ElasticIPOperationTypeBind:
-		*s = ElasticIPOperationTypeBind
+	case ElasticIPOperationTypeAssociate:
+		*s = ElasticIPOperationTypeAssociate
 		return nil
-	case ElasticIPOperationTypeUnbind:
-		*s = ElasticIPOperationTypeUnbind
+	case ElasticIPOperationTypeDisassociate:
+		*s = ElasticIPOperationTypeDisassociate
 		return nil
-	case ElasticIPOperationTypeSetBandwidth:
-		*s = ElasticIPOperationTypeSetBandwidth
+	case ElasticIPOperationTypeUpdateBandwidth:
+		*s = ElasticIPOperationTypeUpdateBandwidth
 		return nil
 	case ElasticIPOperationTypeSuspend:
 		*s = ElasticIPOperationTypeSuspend
@@ -3893,6 +4142,80 @@ func (s *ElasticIPOperationType) UnmarshalText(data []byte) error {
 		return nil
 	case ElasticIPOperationTypeDelete:
 		*s = ElasticIPOperationTypeDelete
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A resource a release set releases.
+// Ref: #/components/schemas/ElasticIPReleaseResource
+type ElasticIPReleaseResource struct {
+	Type ElasticIPReleaseResourceType `json:"type"`
+	// The identifier of the resource selected by type.
+	ID ElasticIPID `json:"id"`
+	// The current display name of the selected resource.
+	Name string `json:"name"`
+}
+
+// GetType returns the value of Type.
+func (s *ElasticIPReleaseResource) GetType() ElasticIPReleaseResourceType {
+	return s.Type
+}
+
+// GetID returns the value of ID.
+func (s *ElasticIPReleaseResource) GetID() ElasticIPID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *ElasticIPReleaseResource) GetName() string {
+	return s.Name
+}
+
+// SetType sets the value of Type.
+func (s *ElasticIPReleaseResource) SetType(val ElasticIPReleaseResourceType) {
+	s.Type = val
+}
+
+// SetID sets the value of ID.
+func (s *ElasticIPReleaseResource) SetID(val ElasticIPID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *ElasticIPReleaseResource) SetName(val string) {
+	s.Name = val
+}
+
+type ElasticIPReleaseResourceType string
+
+const (
+	ElasticIPReleaseResourceTypeElasticIP ElasticIPReleaseResourceType = "elastic_ip"
+)
+
+// AllValues returns all ElasticIPReleaseResourceType values.
+func (ElasticIPReleaseResourceType) AllValues() []ElasticIPReleaseResourceType {
+	return []ElasticIPReleaseResourceType{
+		ElasticIPReleaseResourceTypeElasticIP,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ElasticIPReleaseResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case ElasticIPReleaseResourceTypeElasticIP:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ElasticIPReleaseResourceType) UnmarshalText(data []byte) error {
+	switch ElasticIPReleaseResourceType(data) {
+	case ElasticIPReleaseResourceTypeElasticIP:
+		*s = ElasticIPReleaseResourceTypeElasticIP
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -4178,80 +4501,6 @@ func (s *ElasticIPTypeStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// A resource a release set releases.
-// Ref: #/components/schemas/ElasticIpReleaseResource
-type ElasticIpReleaseResource struct {
-	Type ElasticIpReleaseResourceType `json:"type"`
-	// The identifier of the resource selected by type.
-	ID ElasticIPID `json:"id"`
-	// The current display name of the selected resource.
-	Name string `json:"name"`
-}
-
-// GetType returns the value of Type.
-func (s *ElasticIpReleaseResource) GetType() ElasticIpReleaseResourceType {
-	return s.Type
-}
-
-// GetID returns the value of ID.
-func (s *ElasticIpReleaseResource) GetID() ElasticIPID {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *ElasticIpReleaseResource) GetName() string {
-	return s.Name
-}
-
-// SetType sets the value of Type.
-func (s *ElasticIpReleaseResource) SetType(val ElasticIpReleaseResourceType) {
-	s.Type = val
-}
-
-// SetID sets the value of ID.
-func (s *ElasticIpReleaseResource) SetID(val ElasticIPID) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *ElasticIpReleaseResource) SetName(val string) {
-	s.Name = val
-}
-
-type ElasticIpReleaseResourceType string
-
-const (
-	ElasticIpReleaseResourceTypeElasticIP ElasticIpReleaseResourceType = "elastic_ip"
-)
-
-// AllValues returns all ElasticIpReleaseResourceType values.
-func (ElasticIpReleaseResourceType) AllValues() []ElasticIpReleaseResourceType {
-	return []ElasticIpReleaseResourceType{
-		ElasticIpReleaseResourceTypeElasticIP,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ElasticIpReleaseResourceType) MarshalText() ([]byte, error) {
-	switch s {
-	case ElasticIpReleaseResourceTypeElasticIP:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ElasticIpReleaseResourceType) UnmarshalText(data []byte) error {
-	switch ElasticIpReleaseResourceType(data) {
-	case ElasticIpReleaseResourceTypeElasticIP:
-		*s = ElasticIpReleaseResourceTypeElasticIP
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/Error
 type Error struct {
 	Code    OptString `json:"code"`
@@ -4476,158 +4725,6 @@ func (s *FreeSubnetCidr) SetCidr(val NilString) {
 	s.Cidr = val
 }
 
-// Ref: #/components/schemas/IPv4Binding
-type IPv4Binding struct {
-	ID ElasticIPAssociationID `json:"id"`
-	// The commercial ElasticIP identity. This is not an internal holding ID.
-	ElasticIPID               ElasticIPID               `json:"elastic_ip_id"`
-	NetworkInterfaceAddressID NetworkInterfaceAddressID `json:"network_interface_address_id"`
-	Address                   IPv4HostAddress           `json:"address"`
-	FixedIP                   IPv4HostAddress           `json:"fixed_ip"`
-	State                     IPv4BindingState          `json:"state"`
-	BoundAt                   NilDateTime               `json:"bound_at"`
-	UnboundAt                 NilDateTime               `json:"unbound_at"`
-	ReleasedAt                NilDateTime               `json:"released_at"`
-}
-
-// GetID returns the value of ID.
-func (s *IPv4Binding) GetID() ElasticIPAssociationID {
-	return s.ID
-}
-
-// GetElasticIPID returns the value of ElasticIPID.
-func (s *IPv4Binding) GetElasticIPID() ElasticIPID {
-	return s.ElasticIPID
-}
-
-// GetNetworkInterfaceAddressID returns the value of NetworkInterfaceAddressID.
-func (s *IPv4Binding) GetNetworkInterfaceAddressID() NetworkInterfaceAddressID {
-	return s.NetworkInterfaceAddressID
-}
-
-// GetAddress returns the value of Address.
-func (s *IPv4Binding) GetAddress() IPv4HostAddress {
-	return s.Address
-}
-
-// GetFixedIP returns the value of FixedIP.
-func (s *IPv4Binding) GetFixedIP() IPv4HostAddress {
-	return s.FixedIP
-}
-
-// GetState returns the value of State.
-func (s *IPv4Binding) GetState() IPv4BindingState {
-	return s.State
-}
-
-// GetBoundAt returns the value of BoundAt.
-func (s *IPv4Binding) GetBoundAt() NilDateTime {
-	return s.BoundAt
-}
-
-// GetUnboundAt returns the value of UnboundAt.
-func (s *IPv4Binding) GetUnboundAt() NilDateTime {
-	return s.UnboundAt
-}
-
-// GetReleasedAt returns the value of ReleasedAt.
-func (s *IPv4Binding) GetReleasedAt() NilDateTime {
-	return s.ReleasedAt
-}
-
-// SetID sets the value of ID.
-func (s *IPv4Binding) SetID(val ElasticIPAssociationID) {
-	s.ID = val
-}
-
-// SetElasticIPID sets the value of ElasticIPID.
-func (s *IPv4Binding) SetElasticIPID(val ElasticIPID) {
-	s.ElasticIPID = val
-}
-
-// SetNetworkInterfaceAddressID sets the value of NetworkInterfaceAddressID.
-func (s *IPv4Binding) SetNetworkInterfaceAddressID(val NetworkInterfaceAddressID) {
-	s.NetworkInterfaceAddressID = val
-}
-
-// SetAddress sets the value of Address.
-func (s *IPv4Binding) SetAddress(val IPv4HostAddress) {
-	s.Address = val
-}
-
-// SetFixedIP sets the value of FixedIP.
-func (s *IPv4Binding) SetFixedIP(val IPv4HostAddress) {
-	s.FixedIP = val
-}
-
-// SetState sets the value of State.
-func (s *IPv4Binding) SetState(val IPv4BindingState) {
-	s.State = val
-}
-
-// SetBoundAt sets the value of BoundAt.
-func (s *IPv4Binding) SetBoundAt(val NilDateTime) {
-	s.BoundAt = val
-}
-
-// SetUnboundAt sets the value of UnboundAt.
-func (s *IPv4Binding) SetUnboundAt(val NilDateTime) {
-	s.UnboundAt = val
-}
-
-// SetReleasedAt sets the value of ReleasedAt.
-func (s *IPv4Binding) SetReleasedAt(val NilDateTime) {
-	s.ReleasedAt = val
-}
-
-type IPv4BindingState string
-
-const (
-	IPv4BindingStateBound    IPv4BindingState = "bound"
-	IPv4BindingStateReleased IPv4BindingState = "released"
-	IPv4BindingStateUnknown  IPv4BindingState = "unknown"
-)
-
-// AllValues returns all IPv4BindingState values.
-func (IPv4BindingState) AllValues() []IPv4BindingState {
-	return []IPv4BindingState{
-		IPv4BindingStateBound,
-		IPv4BindingStateReleased,
-		IPv4BindingStateUnknown,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s IPv4BindingState) MarshalText() ([]byte, error) {
-	switch s {
-	case IPv4BindingStateBound:
-		return []byte(s), nil
-	case IPv4BindingStateReleased:
-		return []byte(s), nil
-	case IPv4BindingStateUnknown:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *IPv4BindingState) UnmarshalText(data []byte) error {
-	switch IPv4BindingState(data) {
-	case IPv4BindingStateBound:
-		*s = IPv4BindingStateBound
-		return nil
-	case IPv4BindingStateReleased:
-		*s = IPv4BindingStateReleased
-		return nil
-	case IPv4BindingStateUnknown:
-		*s = IPv4BindingStateUnknown
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 type IPv4HostAddress string
 
 type ImageID string
@@ -4684,8 +4781,8 @@ type MachineType struct {
 	// directions — per interface rather than shared, so a machine with two interfaces has this rate on
 	// each of them; `max_network_interfaces` says how many it may have. Zero is no limit.
 	//
-	// An elastic IP bound to the machine cannot be bought faster than this rate; asking for more is
-	// refused with `INSTANCE_BANDWIDTH_CEILING`.
+	// An elastic IP associated with the machine cannot be bought faster than this rate; asking for more is
+	// refused with `VIRTUAL_MACHINE_BANDWIDTH_CEILING`.
 	MaxBandwidthMbps     int64    `json:"max_bandwidth_mbps"`
 	MaxElasticIps        int64    `json:"max_elastic_ips"`
 	MaxNetworkInterfaces int64    `json:"max_network_interfaces"`
@@ -4832,14 +4929,13 @@ type NetworkInterface struct {
 	MAC                   NilString             `json:"mac"`
 	Name                  string                `json:"name"`
 	VirtualPrivateCloudID VirtualPrivateCloudID `json:"virtual_private_cloud_id"`
-	// Floating IPv4 addresses bound to this network interface; an empty array when none are bound.
-	PublicIps  []string                         `json:"public_ips"`
-	Addresses  []NetworkInterfaceAddress        `json:"addresses"`
-	Attachment OptNilNetworkInterfaceAttachment `json:"attachment"`
+	// Elastic IPv4 addresses associated with this network interface; an empty array when none are
+	// associated.
+	ElasticIPAddresses []string                      `json:"elastic_ip_addresses"`
+	Addresses          []NetworkInterfaceAddress     `json:"addresses"`
+	Attachment         NilNetworkInterfaceAttachment `json:"attachment"`
 	// `missing` means the interface no longer exists in the cloud.
-	Status     NetworkInterfaceStatus `json:"status"`
-	Generation int64                  `json:"generation"`
-	ObservedAt NilDateTime            `json:"observed_at"`
+	Status NetworkInterfaceStatus `json:"status"`
 	// The operation in progress on this network interface, or null when none is.
 	Operation NilNetworkInterfaceOperation `json:"operation"`
 }
@@ -4864,9 +4960,9 @@ func (s *NetworkInterface) GetVirtualPrivateCloudID() VirtualPrivateCloudID {
 	return s.VirtualPrivateCloudID
 }
 
-// GetPublicIps returns the value of PublicIps.
-func (s *NetworkInterface) GetPublicIps() []string {
-	return s.PublicIps
+// GetElasticIPAddresses returns the value of ElasticIPAddresses.
+func (s *NetworkInterface) GetElasticIPAddresses() []string {
+	return s.ElasticIPAddresses
 }
 
 // GetAddresses returns the value of Addresses.
@@ -4875,23 +4971,13 @@ func (s *NetworkInterface) GetAddresses() []NetworkInterfaceAddress {
 }
 
 // GetAttachment returns the value of Attachment.
-func (s *NetworkInterface) GetAttachment() OptNilNetworkInterfaceAttachment {
+func (s *NetworkInterface) GetAttachment() NilNetworkInterfaceAttachment {
 	return s.Attachment
 }
 
 // GetStatus returns the value of Status.
 func (s *NetworkInterface) GetStatus() NetworkInterfaceStatus {
 	return s.Status
-}
-
-// GetGeneration returns the value of Generation.
-func (s *NetworkInterface) GetGeneration() int64 {
-	return s.Generation
-}
-
-// GetObservedAt returns the value of ObservedAt.
-func (s *NetworkInterface) GetObservedAt() NilDateTime {
-	return s.ObservedAt
 }
 
 // GetOperation returns the value of Operation.
@@ -4919,9 +5005,9 @@ func (s *NetworkInterface) SetVirtualPrivateCloudID(val VirtualPrivateCloudID) {
 	s.VirtualPrivateCloudID = val
 }
 
-// SetPublicIps sets the value of PublicIps.
-func (s *NetworkInterface) SetPublicIps(val []string) {
-	s.PublicIps = val
+// SetElasticIPAddresses sets the value of ElasticIPAddresses.
+func (s *NetworkInterface) SetElasticIPAddresses(val []string) {
+	s.ElasticIPAddresses = val
 }
 
 // SetAddresses sets the value of Addresses.
@@ -4930,23 +5016,13 @@ func (s *NetworkInterface) SetAddresses(val []NetworkInterfaceAddress) {
 }
 
 // SetAttachment sets the value of Attachment.
-func (s *NetworkInterface) SetAttachment(val OptNilNetworkInterfaceAttachment) {
+func (s *NetworkInterface) SetAttachment(val NilNetworkInterfaceAttachment) {
 	s.Attachment = val
 }
 
 // SetStatus sets the value of Status.
 func (s *NetworkInterface) SetStatus(val NetworkInterfaceStatus) {
 	s.Status = val
-}
-
-// SetGeneration sets the value of Generation.
-func (s *NetworkInterface) SetGeneration(val int64) {
-	s.Generation = val
-}
-
-// SetObservedAt sets the value of ObservedAt.
-func (s *NetworkInterface) SetObservedAt(val NilDateTime) {
-	s.ObservedAt = val
 }
 
 // SetOperation sets the value of Operation.
@@ -4960,10 +5036,12 @@ func (*NetworkInterface) detachVirtualMachineNetworkInterfaceRes() {}
 
 // Ref: #/components/schemas/NetworkInterfaceAddress
 type NetworkInterfaceAddress struct {
-	ID         NetworkInterfaceAddressID    `json:"id"`
-	SubnetID   SubnetID                     `json:"subnet_id"`
-	Address    string                       `json:"address"`
-	IsPrimary  bool                         `json:"is_primary"`
+	ID       NetworkInterfaceAddressID `json:"id"`
+	SubnetID SubnetID                  `json:"subnet_id"`
+	Address  string                    `json:"address"`
+	// `primary` is the interface's primary private address, which is the virtual machine's network
+	// location; every other address of the interface is `secondary`.
+	Role       NetworkInterfaceAddressRole  `json:"role"`
 	State      NetworkInterfaceAddressState `json:"state"`
 	AssignedAt NilDateTime                  `json:"assigned_at"`
 	ReleasedAt NilDateTime                  `json:"released_at"`
@@ -4984,9 +5062,9 @@ func (s *NetworkInterfaceAddress) GetAddress() string {
 	return s.Address
 }
 
-// GetIsPrimary returns the value of IsPrimary.
-func (s *NetworkInterfaceAddress) GetIsPrimary() bool {
-	return s.IsPrimary
+// GetRole returns the value of Role.
+func (s *NetworkInterfaceAddress) GetRole() NetworkInterfaceAddressRole {
+	return s.Role
 }
 
 // GetState returns the value of State.
@@ -5019,9 +5097,9 @@ func (s *NetworkInterfaceAddress) SetAddress(val string) {
 	s.Address = val
 }
 
-// SetIsPrimary sets the value of IsPrimary.
-func (s *NetworkInterfaceAddress) SetIsPrimary(val bool) {
-	s.IsPrimary = val
+// SetRole sets the value of Role.
+func (s *NetworkInterfaceAddress) SetRole(val NetworkInterfaceAddressRole) {
+	s.Role = val
 }
 
 // SetState sets the value of State.
@@ -5059,6 +5137,49 @@ func (s *NetworkInterfaceAddressAssociationTarget) SetNetworkInterfaceAddressID(
 }
 
 type NetworkInterfaceAddressID string
+
+// `primary` is the interface's primary private address, which is the virtual machine's network
+// location; every other address of the interface is `secondary`.
+type NetworkInterfaceAddressRole string
+
+const (
+	NetworkInterfaceAddressRolePrimary   NetworkInterfaceAddressRole = "primary"
+	NetworkInterfaceAddressRoleSecondary NetworkInterfaceAddressRole = "secondary"
+)
+
+// AllValues returns all NetworkInterfaceAddressRole values.
+func (NetworkInterfaceAddressRole) AllValues() []NetworkInterfaceAddressRole {
+	return []NetworkInterfaceAddressRole{
+		NetworkInterfaceAddressRolePrimary,
+		NetworkInterfaceAddressRoleSecondary,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NetworkInterfaceAddressRole) MarshalText() ([]byte, error) {
+	switch s {
+	case NetworkInterfaceAddressRolePrimary:
+		return []byte(s), nil
+	case NetworkInterfaceAddressRoleSecondary:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NetworkInterfaceAddressRole) UnmarshalText(data []byte) error {
+	switch NetworkInterfaceAddressRole(data) {
+	case NetworkInterfaceAddressRolePrimary:
+		*s = NetworkInterfaceAddressRolePrimary
+		return nil
+	case NetworkInterfaceAddressRoleSecondary:
+		*s = NetworkInterfaceAddressRoleSecondary
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
 
 type NetworkInterfaceAddressState string
 
@@ -5247,15 +5368,15 @@ func (s *NetworkInterfaceAttachmentList) SetPagination(val OffsetPagination) {
 type NetworkInterfaceAttachmentRole string
 
 const (
-	NetworkInterfaceAttachmentRolePrimary    NetworkInterfaceAttachmentRole = "primary"
-	NetworkInterfaceAttachmentRoleAdditional NetworkInterfaceAttachmentRole = "additional"
+	NetworkInterfaceAttachmentRolePrimary   NetworkInterfaceAttachmentRole = "primary"
+	NetworkInterfaceAttachmentRoleSecondary NetworkInterfaceAttachmentRole = "secondary"
 )
 
 // AllValues returns all NetworkInterfaceAttachmentRole values.
 func (NetworkInterfaceAttachmentRole) AllValues() []NetworkInterfaceAttachmentRole {
 	return []NetworkInterfaceAttachmentRole{
 		NetworkInterfaceAttachmentRolePrimary,
-		NetworkInterfaceAttachmentRoleAdditional,
+		NetworkInterfaceAttachmentRoleSecondary,
 	}
 }
 
@@ -5264,7 +5385,7 @@ func (s NetworkInterfaceAttachmentRole) MarshalText() ([]byte, error) {
 	switch s {
 	case NetworkInterfaceAttachmentRolePrimary:
 		return []byte(s), nil
-	case NetworkInterfaceAttachmentRoleAdditional:
+	case NetworkInterfaceAttachmentRoleSecondary:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -5277,8 +5398,8 @@ func (s *NetworkInterfaceAttachmentRole) UnmarshalText(data []byte) error {
 	case NetworkInterfaceAttachmentRolePrimary:
 		*s = NetworkInterfaceAttachmentRolePrimary
 		return nil
-	case NetworkInterfaceAttachmentRoleAdditional:
-		*s = NetworkInterfaceAttachmentRoleAdditional
+	case NetworkInterfaceAttachmentRoleSecondary:
+		*s = NetworkInterfaceAttachmentRoleSecondary
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -5373,6 +5494,8 @@ func (s *NetworkInterfaceListResponseBody) SetPagination(val OffsetPagination) {
 // result.
 // Ref: #/components/schemas/NetworkInterfaceOperation
 type NetworkInterfaceOperation struct {
+	// `associate_elastic_ip` holds the network interface while an elastic IP is associated with it
+	// directly rather than through a virtual machine.
 	Type      NetworkInterfaceOperationType `json:"type"`
 	StartedAt time.Time                     `json:"started_at"`
 }
@@ -5397,13 +5520,16 @@ func (s *NetworkInterfaceOperation) SetStartedAt(val time.Time) {
 	s.StartedAt = val
 }
 
+// `associate_elastic_ip` holds the network interface while an elastic IP is associated with it
+// directly rather than through a virtual machine.
 type NetworkInterfaceOperationType string
 
 const (
-	NetworkInterfaceOperationTypeCreate NetworkInterfaceOperationType = "create"
-	NetworkInterfaceOperationTypeAttach NetworkInterfaceOperationType = "attach"
-	NetworkInterfaceOperationTypeDetach NetworkInterfaceOperationType = "detach"
-	NetworkInterfaceOperationTypeDelete NetworkInterfaceOperationType = "delete"
+	NetworkInterfaceOperationTypeCreate             NetworkInterfaceOperationType = "create"
+	NetworkInterfaceOperationTypeAttach             NetworkInterfaceOperationType = "attach"
+	NetworkInterfaceOperationTypeDetach             NetworkInterfaceOperationType = "detach"
+	NetworkInterfaceOperationTypeAssociateElasticIP NetworkInterfaceOperationType = "associate_elastic_ip"
+	NetworkInterfaceOperationTypeDelete             NetworkInterfaceOperationType = "delete"
 )
 
 // AllValues returns all NetworkInterfaceOperationType values.
@@ -5412,6 +5538,7 @@ func (NetworkInterfaceOperationType) AllValues() []NetworkInterfaceOperationType
 		NetworkInterfaceOperationTypeCreate,
 		NetworkInterfaceOperationTypeAttach,
 		NetworkInterfaceOperationTypeDetach,
+		NetworkInterfaceOperationTypeAssociateElasticIP,
 		NetworkInterfaceOperationTypeDelete,
 	}
 }
@@ -5424,6 +5551,8 @@ func (s NetworkInterfaceOperationType) MarshalText() ([]byte, error) {
 	case NetworkInterfaceOperationTypeAttach:
 		return []byte(s), nil
 	case NetworkInterfaceOperationTypeDetach:
+		return []byte(s), nil
+	case NetworkInterfaceOperationTypeAssociateElasticIP:
 		return []byte(s), nil
 	case NetworkInterfaceOperationTypeDelete:
 		return []byte(s), nil
@@ -5443,6 +5572,9 @@ func (s *NetworkInterfaceOperationType) UnmarshalText(data []byte) error {
 		return nil
 	case NetworkInterfaceOperationTypeDetach:
 		*s = NetworkInterfaceOperationTypeDetach
+		return nil
+	case NetworkInterfaceOperationTypeAssociateElasticIP:
+		*s = NetworkInterfaceOperationTypeAssociateElasticIP
 		return nil
 	case NetworkInterfaceOperationTypeDelete:
 		*s = NetworkInterfaceOperationTypeDelete
@@ -5742,6 +5874,51 @@ func (o NilDateTime) Get() (v time.Time, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilDiskAttachment returns new NilDiskAttachment with value set to v.
+func NewNilDiskAttachment(v DiskAttachment) NilDiskAttachment {
+	return NilDiskAttachment{
+		Value: v,
+	}
+}
+
+// NilDiskAttachment is nullable DiskAttachment.
+type NilDiskAttachment struct {
+	Value DiskAttachment
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilDiskAttachment) SetTo(v DiskAttachment) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilDiskAttachment) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilDiskAttachment) SetToNull() {
+	o.Null = true
+	var v DiskAttachment
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilDiskAttachment) Get() (v DiskAttachment, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilDiskAttachment) Or(d DiskAttachment) DiskAttachment {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -6108,6 +6285,51 @@ func (o NilElasticIPAccessState) Or(d ElasticIPAccessState) ElasticIPAccessState
 	return d
 }
 
+// NewNilElasticIPAssociation returns new NilElasticIPAssociation with value set to v.
+func NewNilElasticIPAssociation(v ElasticIPAssociation) NilElasticIPAssociation {
+	return NilElasticIPAssociation{
+		Value: v,
+	}
+}
+
+// NilElasticIPAssociation is nullable ElasticIPAssociation.
+type NilElasticIPAssociation struct {
+	Value ElasticIPAssociation
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilElasticIPAssociation) SetTo(v ElasticIPAssociation) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilElasticIPAssociation) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilElasticIPAssociation) SetToNull() {
+	o.Null = true
+	var v ElasticIPAssociation
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilElasticIPAssociation) Get() (v ElasticIPAssociation, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilElasticIPAssociation) Or(d ElasticIPAssociation) ElasticIPAssociation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilElasticIPFailureReason returns new NilElasticIPFailureReason with value set to v.
 func NewNilElasticIPFailureReason(v ElasticIPFailureReason) NilElasticIPFailureReason {
 	return NilElasticIPFailureReason{
@@ -6192,96 +6414,6 @@ func (o NilElasticIPOperation) Get() (v ElasticIPOperation, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilElasticIPOperation) Or(d ElasticIPOperation) ElasticIPOperation {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilFunds returns new NilFunds with value set to v.
-func NewNilFunds(v Funds) NilFunds {
-	return NilFunds{
-		Value: v,
-	}
-}
-
-// NilFunds is nullable Funds.
-type NilFunds struct {
-	Value Funds
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilFunds) SetTo(v Funds) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilFunds) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilFunds) SetToNull() {
-	o.Null = true
-	var v Funds
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilFunds) Get() (v Funds, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilFunds) Or(d Funds) Funds {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilIPv4Binding returns new NilIPv4Binding with value set to v.
-func NewNilIPv4Binding(v IPv4Binding) NilIPv4Binding {
-	return NilIPv4Binding{
-		Value: v,
-	}
-}
-
-// NilIPv4Binding is nullable IPv4Binding.
-type NilIPv4Binding struct {
-	Value IPv4Binding
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilIPv4Binding) SetTo(v IPv4Binding) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilIPv4Binding) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilIPv4Binding) SetToNull() {
-	o.Null = true
-	var v IPv4Binding
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilIPv4Binding) Get() (v IPv4Binding, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilIPv4Binding) Or(d IPv4Binding) IPv4Binding {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -6417,6 +6549,51 @@ func (o NilInt64) Get() (v int64, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilInt64) Or(d int64) int64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilNetworkInterfaceAttachment returns new NilNetworkInterfaceAttachment with value set to v.
+func NewNilNetworkInterfaceAttachment(v NetworkInterfaceAttachment) NilNetworkInterfaceAttachment {
+	return NilNetworkInterfaceAttachment{
+		Value: v,
+	}
+}
+
+// NilNetworkInterfaceAttachment is nullable NetworkInterfaceAttachment.
+type NilNetworkInterfaceAttachment struct {
+	Value NetworkInterfaceAttachment
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilNetworkInterfaceAttachment) SetTo(v NetworkInterfaceAttachment) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilNetworkInterfaceAttachment) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilNetworkInterfaceAttachment) SetToNull() {
+	o.Null = true
+	var v NetworkInterfaceAttachment
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilNetworkInterfaceAttachment) Get() (v NetworkInterfaceAttachment, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilNetworkInterfaceAttachment) Or(d NetworkInterfaceAttachment) NetworkInterfaceAttachment {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -7143,6 +7320,51 @@ func (o NilVirtualPrivateCloudID) Or(d VirtualPrivateCloudID) VirtualPrivateClou
 	return d
 }
 
+// NewNilVirtualPrivateCloudOperation returns new NilVirtualPrivateCloudOperation with value set to v.
+func NewNilVirtualPrivateCloudOperation(v VirtualPrivateCloudOperation) NilVirtualPrivateCloudOperation {
+	return NilVirtualPrivateCloudOperation{
+		Value: v,
+	}
+}
+
+// NilVirtualPrivateCloudOperation is nullable VirtualPrivateCloudOperation.
+type NilVirtualPrivateCloudOperation struct {
+	Value VirtualPrivateCloudOperation
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilVirtualPrivateCloudOperation) SetTo(v VirtualPrivateCloudOperation) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilVirtualPrivateCloudOperation) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilVirtualPrivateCloudOperation) SetToNull() {
+	o.Null = true
+	var v VirtualPrivateCloudOperation
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilVirtualPrivateCloudOperation) Get() (v VirtualPrivateCloudOperation, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilVirtualPrivateCloudOperation) Or(d VirtualPrivateCloudOperation) VirtualPrivateCloudOperation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // Pagination metadata for stable numbered pages. total_count is returned only when the operation can
 // determine it without an unbounded scan.
 // Ref: #/components/schemas/OffsetPagination
@@ -7214,19 +7436,20 @@ func (s *OperationLogListResponseBody) SetPagination(val OffsetPagination) {
 type OperationLogResource struct {
 	// Name of the operation; matches the operation id of the endpoint.
 	Action string `json:"action"`
-	// The user who initiated the operation. Empty when the platform performed it.
-	Actor NilString `json:"actor"`
+	// The user who initiated the operation. Null when `actor_type` is `platform`.
+	UserID NilUUID `json:"user_id"`
 	// The name this user went by at the time of the operation, recorded alongside the operation itself. It
 	// is not refreshed afterwards: the record states who acted then, and a name read today is a statement
 	// about a different moment.
 	//
-	// Null on entries recorded before this field existed, and on entries performed by the platform. An
-	// empty string means the account had no name recorded.
-	ActorName NilString `json:"actor_name"`
-	// True when the operation was performed by the platform.
-	ByPlatform bool      `json:"by_platform"`
-	CreatedAt  time.Time `json:"created_at"`
-	// Brief reason for the failure.
+	// Null on entries recorded before this field existed, and when `actor_type` is `platform`. An empty
+	// string means the account had no name recorded.
+	UserName NilString `json:"user_name"`
+	// `user` when a user of the project initiated the operation, `platform` when the platform performed
+	// it.
+	ActorType OperationLogResourceActorType `json:"actor_type"`
+	CreatedAt time.Time                     `json:"created_at"`
+	// Brief reason for the failure; null when `outcome` is `succeeded`.
 	Failure NilString      `json:"failure"`
 	ID      OperationLogID `json:"id"`
 	// Path and query parameters of the request. Fields such as passwords are redacted.
@@ -7235,7 +7458,10 @@ type OperationLogResource struct {
 	// Empty for create operations: the id of the new resource is in the response, not in the request path.
 	SubjectID   string `json:"subject_id"`
 	SubjectType string `json:"subject_type"`
-	Succeeded   bool   `json:"succeeded"`
+	// `succeeded` means the operation took effect. `rejected` means it was refused with a 4xx the caller
+	// can act on, such as a validation failure, a conflict or an exhausted quota. `failed` means the
+	// platform failed to carry it out (5xx).
+	Outcome OperationLogResourceOutcome `json:"outcome"`
 }
 
 // GetAction returns the value of Action.
@@ -7243,19 +7469,19 @@ func (s *OperationLogResource) GetAction() string {
 	return s.Action
 }
 
-// GetActor returns the value of Actor.
-func (s *OperationLogResource) GetActor() NilString {
-	return s.Actor
+// GetUserID returns the value of UserID.
+func (s *OperationLogResource) GetUserID() NilUUID {
+	return s.UserID
 }
 
-// GetActorName returns the value of ActorName.
-func (s *OperationLogResource) GetActorName() NilString {
-	return s.ActorName
+// GetUserName returns the value of UserName.
+func (s *OperationLogResource) GetUserName() NilString {
+	return s.UserName
 }
 
-// GetByPlatform returns the value of ByPlatform.
-func (s *OperationLogResource) GetByPlatform() bool {
-	return s.ByPlatform
+// GetActorType returns the value of ActorType.
+func (s *OperationLogResource) GetActorType() OperationLogResourceActorType {
+	return s.ActorType
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -7293,9 +7519,9 @@ func (s *OperationLogResource) GetSubjectType() string {
 	return s.SubjectType
 }
 
-// GetSucceeded returns the value of Succeeded.
-func (s *OperationLogResource) GetSucceeded() bool {
-	return s.Succeeded
+// GetOutcome returns the value of Outcome.
+func (s *OperationLogResource) GetOutcome() OperationLogResourceOutcome {
+	return s.Outcome
 }
 
 // SetAction sets the value of Action.
@@ -7303,19 +7529,19 @@ func (s *OperationLogResource) SetAction(val string) {
 	s.Action = val
 }
 
-// SetActor sets the value of Actor.
-func (s *OperationLogResource) SetActor(val NilString) {
-	s.Actor = val
+// SetUserID sets the value of UserID.
+func (s *OperationLogResource) SetUserID(val NilUUID) {
+	s.UserID = val
 }
 
-// SetActorName sets the value of ActorName.
-func (s *OperationLogResource) SetActorName(val NilString) {
-	s.ActorName = val
+// SetUserName sets the value of UserName.
+func (s *OperationLogResource) SetUserName(val NilString) {
+	s.UserName = val
 }
 
-// SetByPlatform sets the value of ByPlatform.
-func (s *OperationLogResource) SetByPlatform(val bool) {
-	s.ByPlatform = val
+// SetActorType sets the value of ActorType.
+func (s *OperationLogResource) SetActorType(val OperationLogResourceActorType) {
+	s.ActorType = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -7353,9 +7579,103 @@ func (s *OperationLogResource) SetSubjectType(val string) {
 	s.SubjectType = val
 }
 
-// SetSucceeded sets the value of Succeeded.
-func (s *OperationLogResource) SetSucceeded(val bool) {
-	s.Succeeded = val
+// SetOutcome sets the value of Outcome.
+func (s *OperationLogResource) SetOutcome(val OperationLogResourceOutcome) {
+	s.Outcome = val
+}
+
+// `user` when a user of the project initiated the operation, `platform` when the platform performed
+// it.
+type OperationLogResourceActorType string
+
+const (
+	OperationLogResourceActorTypeUser     OperationLogResourceActorType = "user"
+	OperationLogResourceActorTypePlatform OperationLogResourceActorType = "platform"
+)
+
+// AllValues returns all OperationLogResourceActorType values.
+func (OperationLogResourceActorType) AllValues() []OperationLogResourceActorType {
+	return []OperationLogResourceActorType{
+		OperationLogResourceActorTypeUser,
+		OperationLogResourceActorTypePlatform,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s OperationLogResourceActorType) MarshalText() ([]byte, error) {
+	switch s {
+	case OperationLogResourceActorTypeUser:
+		return []byte(s), nil
+	case OperationLogResourceActorTypePlatform:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *OperationLogResourceActorType) UnmarshalText(data []byte) error {
+	switch OperationLogResourceActorType(data) {
+	case OperationLogResourceActorTypeUser:
+		*s = OperationLogResourceActorTypeUser
+		return nil
+	case OperationLogResourceActorTypePlatform:
+		*s = OperationLogResourceActorTypePlatform
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `succeeded` means the operation took effect. `rejected` means it was refused with a 4xx the caller
+// can act on, such as a validation failure, a conflict or an exhausted quota. `failed` means the
+// platform failed to carry it out (5xx).
+type OperationLogResourceOutcome string
+
+const (
+	OperationLogResourceOutcomeSucceeded OperationLogResourceOutcome = "succeeded"
+	OperationLogResourceOutcomeRejected  OperationLogResourceOutcome = "rejected"
+	OperationLogResourceOutcomeFailed    OperationLogResourceOutcome = "failed"
+)
+
+// AllValues returns all OperationLogResourceOutcome values.
+func (OperationLogResourceOutcome) AllValues() []OperationLogResourceOutcome {
+	return []OperationLogResourceOutcome{
+		OperationLogResourceOutcomeSucceeded,
+		OperationLogResourceOutcomeRejected,
+		OperationLogResourceOutcomeFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s OperationLogResourceOutcome) MarshalText() ([]byte, error) {
+	switch s {
+	case OperationLogResourceOutcomeSucceeded:
+		return []byte(s), nil
+	case OperationLogResourceOutcomeRejected:
+		return []byte(s), nil
+	case OperationLogResourceOutcomeFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *OperationLogResourceOutcome) UnmarshalText(data []byte) error {
+	switch OperationLogResourceOutcome(data) {
+	case OperationLogResourceOutcomeSucceeded:
+		*s = OperationLogResourceOutcomeSucceeded
+		return nil
+	case OperationLogResourceOutcomeRejected:
+		*s = OperationLogResourceOutcomeRejected
+		return nil
+	case OperationLogResourceOutcomeFailed:
+		*s = OperationLogResourceOutcomeFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Path and query parameters of the request. Fields such as passwords are redacted.
@@ -8152,142 +8472,6 @@ func (o OptNewElasticIP) Or(d NewElasticIP) NewElasticIP {
 	return d
 }
 
-// NewOptNilDiskAttachment returns new OptNilDiskAttachment with value set to v.
-func NewOptNilDiskAttachment(v DiskAttachment) OptNilDiskAttachment {
-	return OptNilDiskAttachment{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNilDiskAttachment is optional nullable DiskAttachment.
-type OptNilDiskAttachment struct {
-	Value DiskAttachment
-	Set   bool
-	Null  bool
-}
-
-// IsSet returns true if OptNilDiskAttachment was set.
-func (o OptNilDiskAttachment) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNilDiskAttachment) Reset() {
-	var v DiskAttachment
-	o.Value = v
-	o.Set = false
-	o.Null = false
-}
-
-// SetTo sets value to v.
-func (o *OptNilDiskAttachment) SetTo(v DiskAttachment) {
-	o.Set = true
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o OptNilDiskAttachment) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *OptNilDiskAttachment) SetToNull() {
-	o.Set = true
-	o.Null = true
-	var v DiskAttachment
-	o.Value = v
-}
-
-// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
-func (o OptNilDiskAttachment) IsEmpty() bool {
-	return !o.Set && !o.Null
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNilDiskAttachment) Get() (v DiskAttachment, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNilDiskAttachment) Or(d DiskAttachment) DiskAttachment {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptNilNetworkInterfaceAttachment returns new OptNilNetworkInterfaceAttachment with value set to v.
-func NewOptNilNetworkInterfaceAttachment(v NetworkInterfaceAttachment) OptNilNetworkInterfaceAttachment {
-	return OptNilNetworkInterfaceAttachment{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNilNetworkInterfaceAttachment is optional nullable NetworkInterfaceAttachment.
-type OptNilNetworkInterfaceAttachment struct {
-	Value NetworkInterfaceAttachment
-	Set   bool
-	Null  bool
-}
-
-// IsSet returns true if OptNilNetworkInterfaceAttachment was set.
-func (o OptNilNetworkInterfaceAttachment) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNilNetworkInterfaceAttachment) Reset() {
-	var v NetworkInterfaceAttachment
-	o.Value = v
-	o.Set = false
-	o.Null = false
-}
-
-// SetTo sets value to v.
-func (o *OptNilNetworkInterfaceAttachment) SetTo(v NetworkInterfaceAttachment) {
-	o.Set = true
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o OptNilNetworkInterfaceAttachment) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *OptNilNetworkInterfaceAttachment) SetToNull() {
-	o.Set = true
-	o.Null = true
-	var v NetworkInterfaceAttachment
-	o.Value = v
-}
-
-// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
-func (o OptNilNetworkInterfaceAttachment) IsEmpty() bool {
-	return !o.Set && !o.Null
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNilNetworkInterfaceAttachment) Get() (v NetworkInterfaceAttachment, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNilNetworkInterfaceAttachment) Or(d NetworkInterfaceAttachment) NetworkInterfaceAttachment {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptNilSecurityGroupIDArray returns new OptNilSecurityGroupIDArray with value set to v.
 func NewOptNilSecurityGroupIDArray(v []SecurityGroupID) OptNilSecurityGroupIDArray {
 	return OptNilSecurityGroupIDArray{
@@ -8963,20 +9147,21 @@ func (s *PeeringOperationType) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/PeeringResource
 type PeeringResource struct {
-	ID                 PeeringID             `json:"id"`
-	Name               string                `json:"name"`
-	RegionID           RegionID              `json:"region_id"`
-	RequesterProjectID uuid.UUID             `json:"requester_project_id"`
-	AccepterProjectID  uuid.UUID             `json:"accepter_project_id"`
-	RequesterNetworkID VirtualPrivateCloudID `json:"requester_network_id"`
-	AccepterNetworkID  VirtualPrivateCloudID `json:"accepter_network_id"`
+	ID                             PeeringID             `json:"id"`
+	Name                           string                `json:"name"`
+	RegionID                       RegionID              `json:"region_id"`
+	RequesterProjectID             uuid.UUID             `json:"requester_project_id"`
+	AccepterProjectID              uuid.UUID             `json:"accepter_project_id"`
+	RequesterVirtualPrivateCloudID VirtualPrivateCloudID `json:"requester_virtual_private_cloud_id"`
+	AccepterVirtualPrivateCloudID  VirtualPrivateCloudID `json:"accepter_virtual_private_cloud_id"`
 	// The accepter project's decision. `pending` until it writes one; `accepted` and `rejected` follow the
 	// `acceptance` of `update-peering`, consistent with `status` being `pending_acceptance`, any of the
 	// states after acceptance, or `rejected`.
-	Acceptance  PeeringResourceAcceptance `json:"acceptance"`
-	Status      PeeringResourceStatus     `json:"status"`
-	CreatedAt   time.Time                 `json:"created_at"`
-	FailureCode OptString                 `json:"failure_code"`
+	Acceptance PeeringResourceAcceptance `json:"acceptance"`
+	Status     PeeringResourceStatus     `json:"status"`
+	CreatedAt  time.Time                 `json:"created_at"`
+	// Why provisioning failed; null unless `status` is `failed`.
+	FailureReason NilString `json:"failure_reason"`
 	// The operation in progress on this peering, or null when none is.
 	Operation NilPeeringOperation `json:"operation"`
 }
@@ -9006,14 +9191,14 @@ func (s *PeeringResource) GetAccepterProjectID() uuid.UUID {
 	return s.AccepterProjectID
 }
 
-// GetRequesterNetworkID returns the value of RequesterNetworkID.
-func (s *PeeringResource) GetRequesterNetworkID() VirtualPrivateCloudID {
-	return s.RequesterNetworkID
+// GetRequesterVirtualPrivateCloudID returns the value of RequesterVirtualPrivateCloudID.
+func (s *PeeringResource) GetRequesterVirtualPrivateCloudID() VirtualPrivateCloudID {
+	return s.RequesterVirtualPrivateCloudID
 }
 
-// GetAccepterNetworkID returns the value of AccepterNetworkID.
-func (s *PeeringResource) GetAccepterNetworkID() VirtualPrivateCloudID {
-	return s.AccepterNetworkID
+// GetAccepterVirtualPrivateCloudID returns the value of AccepterVirtualPrivateCloudID.
+func (s *PeeringResource) GetAccepterVirtualPrivateCloudID() VirtualPrivateCloudID {
+	return s.AccepterVirtualPrivateCloudID
 }
 
 // GetAcceptance returns the value of Acceptance.
@@ -9031,9 +9216,9 @@ func (s *PeeringResource) GetCreatedAt() time.Time {
 	return s.CreatedAt
 }
 
-// GetFailureCode returns the value of FailureCode.
-func (s *PeeringResource) GetFailureCode() OptString {
-	return s.FailureCode
+// GetFailureReason returns the value of FailureReason.
+func (s *PeeringResource) GetFailureReason() NilString {
+	return s.FailureReason
 }
 
 // GetOperation returns the value of Operation.
@@ -9066,14 +9251,14 @@ func (s *PeeringResource) SetAccepterProjectID(val uuid.UUID) {
 	s.AccepterProjectID = val
 }
 
-// SetRequesterNetworkID sets the value of RequesterNetworkID.
-func (s *PeeringResource) SetRequesterNetworkID(val VirtualPrivateCloudID) {
-	s.RequesterNetworkID = val
+// SetRequesterVirtualPrivateCloudID sets the value of RequesterVirtualPrivateCloudID.
+func (s *PeeringResource) SetRequesterVirtualPrivateCloudID(val VirtualPrivateCloudID) {
+	s.RequesterVirtualPrivateCloudID = val
 }
 
-// SetAccepterNetworkID sets the value of AccepterNetworkID.
-func (s *PeeringResource) SetAccepterNetworkID(val VirtualPrivateCloudID) {
-	s.AccepterNetworkID = val
+// SetAccepterVirtualPrivateCloudID sets the value of AccepterVirtualPrivateCloudID.
+func (s *PeeringResource) SetAccepterVirtualPrivateCloudID(val VirtualPrivateCloudID) {
+	s.AccepterVirtualPrivateCloudID = val
 }
 
 // SetAcceptance sets the value of Acceptance.
@@ -9091,9 +9276,9 @@ func (s *PeeringResource) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
 }
 
-// SetFailureCode sets the value of FailureCode.
-func (s *PeeringResource) SetFailureCode(val OptString) {
-	s.FailureCode = val
+// SetFailureReason sets the value of FailureReason.
+func (s *PeeringResource) SetFailureReason(val NilString) {
+	s.FailureReason = val
 }
 
 // SetOperation sets the value of Operation.
@@ -9162,7 +9347,7 @@ const (
 	PeeringResourceStatusActive            PeeringResourceStatus = "active"
 	PeeringResourceStatusDeleted           PeeringResourceStatus = "deleted"
 	PeeringResourceStatusRejected          PeeringResourceStatus = "rejected"
-	PeeringResourceStatusError             PeeringResourceStatus = "error"
+	PeeringResourceStatusFailed            PeeringResourceStatus = "failed"
 )
 
 // AllValues returns all PeeringResourceStatus values.
@@ -9173,7 +9358,7 @@ func (PeeringResourceStatus) AllValues() []PeeringResourceStatus {
 		PeeringResourceStatusActive,
 		PeeringResourceStatusDeleted,
 		PeeringResourceStatusRejected,
-		PeeringResourceStatusError,
+		PeeringResourceStatusFailed,
 	}
 }
 
@@ -9190,7 +9375,7 @@ func (s PeeringResourceStatus) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case PeeringResourceStatusRejected:
 		return []byte(s), nil
-	case PeeringResourceStatusError:
+	case PeeringResourceStatusFailed:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -9215,8 +9400,8 @@ func (s *PeeringResourceStatus) UnmarshalText(data []byte) error {
 	case PeeringResourceStatusRejected:
 		*s = PeeringResourceStatusRejected
 		return nil
-	case PeeringResourceStatusError:
-		*s = PeeringResourceStatusError
+	case PeeringResourceStatusFailed:
+		*s = PeeringResourceStatusFailed
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -9385,6 +9570,80 @@ func (s *PrivateImageOperationType) UnmarshalText(data []byte) error {
 	}
 }
 
+// A resource a release set releases.
+// Ref: #/components/schemas/PrivateImageReleaseResource
+type PrivateImageReleaseResource struct {
+	Type PrivateImageReleaseResourceType `json:"type"`
+	// The identifier of the resource selected by type.
+	ID ImageID `json:"id"`
+	// The current display name of the selected resource.
+	Name string `json:"name"`
+}
+
+// GetType returns the value of Type.
+func (s *PrivateImageReleaseResource) GetType() PrivateImageReleaseResourceType {
+	return s.Type
+}
+
+// GetID returns the value of ID.
+func (s *PrivateImageReleaseResource) GetID() ImageID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *PrivateImageReleaseResource) GetName() string {
+	return s.Name
+}
+
+// SetType sets the value of Type.
+func (s *PrivateImageReleaseResource) SetType(val PrivateImageReleaseResourceType) {
+	s.Type = val
+}
+
+// SetID sets the value of ID.
+func (s *PrivateImageReleaseResource) SetID(val ImageID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *PrivateImageReleaseResource) SetName(val string) {
+	s.Name = val
+}
+
+type PrivateImageReleaseResourceType string
+
+const (
+	PrivateImageReleaseResourceTypePrivateImage PrivateImageReleaseResourceType = "private_image"
+)
+
+// AllValues returns all PrivateImageReleaseResourceType values.
+func (PrivateImageReleaseResourceType) AllValues() []PrivateImageReleaseResourceType {
+	return []PrivateImageReleaseResourceType{
+		PrivateImageReleaseResourceTypePrivateImage,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PrivateImageReleaseResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case PrivateImageReleaseResourceTypePrivateImage:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PrivateImageReleaseResourceType) UnmarshalText(data []byte) error {
+	switch PrivateImageReleaseResourceType(data) {
+	case PrivateImageReleaseResourceTypePrivateImage:
+		*s = PrivateImageReleaseResourceTypePrivateImage
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // An image this project captured from one of its virtual machines, used to install virtual machines of
 // this project. Its storage is billed only to this project.
 // Ref: #/components/schemas/PrivateImageResource
@@ -9430,6 +9689,10 @@ type PrivateImageResource struct {
 	OrderItemID NilUUID `json:"order_item_id"`
 	// The subscription for this resource; its presence alone does not imply delivery.
 	SubscriptionID NilUUID `json:"subscription_id"`
+	// The subscription that pays for this private image, with the resource it pays for, so that a
+	// cancellation through Billing can name what it releases. Empty when no subscription pays for it, and
+	// once it is released.
+	ReleaseSet []ReleaseSetItem `json:"release_set"`
 }
 
 // GetID returns the value of ID.
@@ -9537,6 +9800,11 @@ func (s *PrivateImageResource) GetSubscriptionID() NilUUID {
 	return s.SubscriptionID
 }
 
+// GetReleaseSet returns the value of ReleaseSet.
+func (s *PrivateImageResource) GetReleaseSet() []ReleaseSetItem {
+	return s.ReleaseSet
+}
+
 // SetID sets the value of ID.
 func (s *PrivateImageResource) SetID(val ImageID) {
 	s.ID = val
@@ -9640,6 +9908,11 @@ func (s *PrivateImageResource) SetOrderItemID(val NilUUID) {
 // SetSubscriptionID sets the value of SubscriptionID.
 func (s *PrivateImageResource) SetSubscriptionID(val NilUUID) {
 	s.SubscriptionID = val
+}
+
+// SetReleaseSet sets the value of ReleaseSet.
+func (s *PrivateImageResource) SetReleaseSet(val []ReleaseSetItem) {
+	s.ReleaseSet = val
 }
 
 func (*PrivateImageResource) deletePrivateImageRes() {}
@@ -9799,9 +10072,9 @@ func (s *PrivateImageResourceStatus) UnmarshalText(data []byte) error {
 // override exists. This representation contains no aggregated usage counter.
 // Ref: #/components/schemas/ProjectQuota
 type ProjectQuota struct {
-	ProjectID uuid.UUID            `json:"project_id"`
-	Resource  ProjectQuotaResource `json:"resource"`
-	Limit     int64                `json:"limit"`
+	ProjectID uuid.UUID         `json:"project_id"`
+	Resource  QuotaResourceType `json:"resource"`
+	Limit     int64             `json:"limit"`
 }
 
 // GetProjectID returns the value of ProjectID.
@@ -9810,7 +10083,7 @@ func (s *ProjectQuota) GetProjectID() uuid.UUID {
 }
 
 // GetResource returns the value of Resource.
-func (s *ProjectQuota) GetResource() ProjectQuotaResource {
+func (s *ProjectQuota) GetResource() QuotaResourceType {
 	return s.Resource
 }
 
@@ -9825,7 +10098,7 @@ func (s *ProjectQuota) SetProjectID(val uuid.UUID) {
 }
 
 // SetResource sets the value of Resource.
-func (s *ProjectQuota) SetResource(val ProjectQuotaResource) {
+func (s *ProjectQuota) SetResource(val QuotaResourceType) {
 	s.Resource = val
 }
 
@@ -9858,144 +10131,6 @@ func (s *ProjectQuotaListResponseBody) SetItems(val []ProjectQuota) {
 // SetPagination sets the value of Pagination.
 func (s *ProjectQuotaListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
-}
-
-// The resource or capacity constrained by a project quota. Defaults when no override exists:
-// virtual_machines=5; vcpus=16; memory_mib=32768; disks=20; disk_gib=500; virtual_private_clouds=3;
-// subnets=20; network_interfaces=20; elastic_ips=3; nat_gateways=1; security_groups=10;
-// security_group_rules=100; snapshots=20; backups=20; private_images=10. memory_mib is measured in MiB
-// and disk_gib in GiB. A zero limit permits no additional capacity; it is not unlimited.
-// Ref: #/components/schemas/ProjectQuotaResource
-type ProjectQuotaResource string
-
-const (
-	ProjectQuotaResourceVirtualMachines      ProjectQuotaResource = "virtual_machines"
-	ProjectQuotaResourceVcpus                ProjectQuotaResource = "vcpus"
-	ProjectQuotaResourceMemoryMib            ProjectQuotaResource = "memory_mib"
-	ProjectQuotaResourceDisks                ProjectQuotaResource = "disks"
-	ProjectQuotaResourceDiskGib              ProjectQuotaResource = "disk_gib"
-	ProjectQuotaResourceVirtualPrivateClouds ProjectQuotaResource = "virtual_private_clouds"
-	ProjectQuotaResourceSubnets              ProjectQuotaResource = "subnets"
-	ProjectQuotaResourceNetworkInterfaces    ProjectQuotaResource = "network_interfaces"
-	ProjectQuotaResourceElasticIps           ProjectQuotaResource = "elastic_ips"
-	ProjectQuotaResourceNatGateways          ProjectQuotaResource = "nat_gateways"
-	ProjectQuotaResourceSecurityGroups       ProjectQuotaResource = "security_groups"
-	ProjectQuotaResourceSecurityGroupRules   ProjectQuotaResource = "security_group_rules"
-	ProjectQuotaResourceSnapshots            ProjectQuotaResource = "snapshots"
-	ProjectQuotaResourceBackups              ProjectQuotaResource = "backups"
-	ProjectQuotaResourcePrivateImages        ProjectQuotaResource = "private_images"
-)
-
-// AllValues returns all ProjectQuotaResource values.
-func (ProjectQuotaResource) AllValues() []ProjectQuotaResource {
-	return []ProjectQuotaResource{
-		ProjectQuotaResourceVirtualMachines,
-		ProjectQuotaResourceVcpus,
-		ProjectQuotaResourceMemoryMib,
-		ProjectQuotaResourceDisks,
-		ProjectQuotaResourceDiskGib,
-		ProjectQuotaResourceVirtualPrivateClouds,
-		ProjectQuotaResourceSubnets,
-		ProjectQuotaResourceNetworkInterfaces,
-		ProjectQuotaResourceElasticIps,
-		ProjectQuotaResourceNatGateways,
-		ProjectQuotaResourceSecurityGroups,
-		ProjectQuotaResourceSecurityGroupRules,
-		ProjectQuotaResourceSnapshots,
-		ProjectQuotaResourceBackups,
-		ProjectQuotaResourcePrivateImages,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ProjectQuotaResource) MarshalText() ([]byte, error) {
-	switch s {
-	case ProjectQuotaResourceVirtualMachines:
-		return []byte(s), nil
-	case ProjectQuotaResourceVcpus:
-		return []byte(s), nil
-	case ProjectQuotaResourceMemoryMib:
-		return []byte(s), nil
-	case ProjectQuotaResourceDisks:
-		return []byte(s), nil
-	case ProjectQuotaResourceDiskGib:
-		return []byte(s), nil
-	case ProjectQuotaResourceVirtualPrivateClouds:
-		return []byte(s), nil
-	case ProjectQuotaResourceSubnets:
-		return []byte(s), nil
-	case ProjectQuotaResourceNetworkInterfaces:
-		return []byte(s), nil
-	case ProjectQuotaResourceElasticIps:
-		return []byte(s), nil
-	case ProjectQuotaResourceNatGateways:
-		return []byte(s), nil
-	case ProjectQuotaResourceSecurityGroups:
-		return []byte(s), nil
-	case ProjectQuotaResourceSecurityGroupRules:
-		return []byte(s), nil
-	case ProjectQuotaResourceSnapshots:
-		return []byte(s), nil
-	case ProjectQuotaResourceBackups:
-		return []byte(s), nil
-	case ProjectQuotaResourcePrivateImages:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ProjectQuotaResource) UnmarshalText(data []byte) error {
-	switch ProjectQuotaResource(data) {
-	case ProjectQuotaResourceVirtualMachines:
-		*s = ProjectQuotaResourceVirtualMachines
-		return nil
-	case ProjectQuotaResourceVcpus:
-		*s = ProjectQuotaResourceVcpus
-		return nil
-	case ProjectQuotaResourceMemoryMib:
-		*s = ProjectQuotaResourceMemoryMib
-		return nil
-	case ProjectQuotaResourceDisks:
-		*s = ProjectQuotaResourceDisks
-		return nil
-	case ProjectQuotaResourceDiskGib:
-		*s = ProjectQuotaResourceDiskGib
-		return nil
-	case ProjectQuotaResourceVirtualPrivateClouds:
-		*s = ProjectQuotaResourceVirtualPrivateClouds
-		return nil
-	case ProjectQuotaResourceSubnets:
-		*s = ProjectQuotaResourceSubnets
-		return nil
-	case ProjectQuotaResourceNetworkInterfaces:
-		*s = ProjectQuotaResourceNetworkInterfaces
-		return nil
-	case ProjectQuotaResourceElasticIps:
-		*s = ProjectQuotaResourceElasticIps
-		return nil
-	case ProjectQuotaResourceNatGateways:
-		*s = ProjectQuotaResourceNatGateways
-		return nil
-	case ProjectQuotaResourceSecurityGroups:
-		*s = ProjectQuotaResourceSecurityGroups
-		return nil
-	case ProjectQuotaResourceSecurityGroupRules:
-		*s = ProjectQuotaResourceSecurityGroupRules
-		return nil
-	case ProjectQuotaResourceSnapshots:
-		*s = ProjectQuotaResourceSnapshots
-		return nil
-	case ProjectQuotaResourceBackups:
-		*s = ProjectQuotaResourceBackups
-		return nil
-	case ProjectQuotaResourcePrivateImages:
-		*s = ProjectQuotaResourcePrivateImages
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Ref: #/components/schemas/PublicImageListResponseBody
@@ -10376,6 +10511,144 @@ func (s *PutVirtualMachineRescueResponseBody) SetVirtualMachine(val VirtualMachi
 
 func (*PutVirtualMachineRescueResponseBody) putVirtualMachineRescueRes() {}
 
+// The resource or capacity constrained by a project quota. Defaults when no override exists:
+// virtual_machines=5; vcpus=16; memory_mib=32768; disks=20; disk_gib=500; virtual_private_clouds=3;
+// subnets=20; network_interfaces=20; elastic_ips=3; nat_gateways=1; security_groups=10;
+// security_group_rules=100; snapshots=20; backups=20; private_images=10. memory_mib is measured in MiB
+// and disk_gib in GiB. A zero limit permits no additional capacity; it is not unlimited.
+// Ref: #/components/schemas/QuotaResourceType
+type QuotaResourceType string
+
+const (
+	QuotaResourceTypeVirtualMachines      QuotaResourceType = "virtual_machines"
+	QuotaResourceTypeVcpus                QuotaResourceType = "vcpus"
+	QuotaResourceTypeMemoryMib            QuotaResourceType = "memory_mib"
+	QuotaResourceTypeDisks                QuotaResourceType = "disks"
+	QuotaResourceTypeDiskGib              QuotaResourceType = "disk_gib"
+	QuotaResourceTypeVirtualPrivateClouds QuotaResourceType = "virtual_private_clouds"
+	QuotaResourceTypeSubnets              QuotaResourceType = "subnets"
+	QuotaResourceTypeNetworkInterfaces    QuotaResourceType = "network_interfaces"
+	QuotaResourceTypeElasticIps           QuotaResourceType = "elastic_ips"
+	QuotaResourceTypeNatGateways          QuotaResourceType = "nat_gateways"
+	QuotaResourceTypeSecurityGroups       QuotaResourceType = "security_groups"
+	QuotaResourceTypeSecurityGroupRules   QuotaResourceType = "security_group_rules"
+	QuotaResourceTypeSnapshots            QuotaResourceType = "snapshots"
+	QuotaResourceTypeBackups              QuotaResourceType = "backups"
+	QuotaResourceTypePrivateImages        QuotaResourceType = "private_images"
+)
+
+// AllValues returns all QuotaResourceType values.
+func (QuotaResourceType) AllValues() []QuotaResourceType {
+	return []QuotaResourceType{
+		QuotaResourceTypeVirtualMachines,
+		QuotaResourceTypeVcpus,
+		QuotaResourceTypeMemoryMib,
+		QuotaResourceTypeDisks,
+		QuotaResourceTypeDiskGib,
+		QuotaResourceTypeVirtualPrivateClouds,
+		QuotaResourceTypeSubnets,
+		QuotaResourceTypeNetworkInterfaces,
+		QuotaResourceTypeElasticIps,
+		QuotaResourceTypeNatGateways,
+		QuotaResourceTypeSecurityGroups,
+		QuotaResourceTypeSecurityGroupRules,
+		QuotaResourceTypeSnapshots,
+		QuotaResourceTypeBackups,
+		QuotaResourceTypePrivateImages,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s QuotaResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case QuotaResourceTypeVirtualMachines:
+		return []byte(s), nil
+	case QuotaResourceTypeVcpus:
+		return []byte(s), nil
+	case QuotaResourceTypeMemoryMib:
+		return []byte(s), nil
+	case QuotaResourceTypeDisks:
+		return []byte(s), nil
+	case QuotaResourceTypeDiskGib:
+		return []byte(s), nil
+	case QuotaResourceTypeVirtualPrivateClouds:
+		return []byte(s), nil
+	case QuotaResourceTypeSubnets:
+		return []byte(s), nil
+	case QuotaResourceTypeNetworkInterfaces:
+		return []byte(s), nil
+	case QuotaResourceTypeElasticIps:
+		return []byte(s), nil
+	case QuotaResourceTypeNatGateways:
+		return []byte(s), nil
+	case QuotaResourceTypeSecurityGroups:
+		return []byte(s), nil
+	case QuotaResourceTypeSecurityGroupRules:
+		return []byte(s), nil
+	case QuotaResourceTypeSnapshots:
+		return []byte(s), nil
+	case QuotaResourceTypeBackups:
+		return []byte(s), nil
+	case QuotaResourceTypePrivateImages:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *QuotaResourceType) UnmarshalText(data []byte) error {
+	switch QuotaResourceType(data) {
+	case QuotaResourceTypeVirtualMachines:
+		*s = QuotaResourceTypeVirtualMachines
+		return nil
+	case QuotaResourceTypeVcpus:
+		*s = QuotaResourceTypeVcpus
+		return nil
+	case QuotaResourceTypeMemoryMib:
+		*s = QuotaResourceTypeMemoryMib
+		return nil
+	case QuotaResourceTypeDisks:
+		*s = QuotaResourceTypeDisks
+		return nil
+	case QuotaResourceTypeDiskGib:
+		*s = QuotaResourceTypeDiskGib
+		return nil
+	case QuotaResourceTypeVirtualPrivateClouds:
+		*s = QuotaResourceTypeVirtualPrivateClouds
+		return nil
+	case QuotaResourceTypeSubnets:
+		*s = QuotaResourceTypeSubnets
+		return nil
+	case QuotaResourceTypeNetworkInterfaces:
+		*s = QuotaResourceTypeNetworkInterfaces
+		return nil
+	case QuotaResourceTypeElasticIps:
+		*s = QuotaResourceTypeElasticIps
+		return nil
+	case QuotaResourceTypeNatGateways:
+		*s = QuotaResourceTypeNatGateways
+		return nil
+	case QuotaResourceTypeSecurityGroups:
+		*s = QuotaResourceTypeSecurityGroups
+		return nil
+	case QuotaResourceTypeSecurityGroupRules:
+		*s = QuotaResourceTypeSecurityGroupRules
+		return nil
+	case QuotaResourceTypeSnapshots:
+		*s = QuotaResourceTypeSnapshots
+		return nil
+	case QuotaResourceTypeBackups:
+		*s = QuotaResourceTypeBackups
+		return nil
+	case QuotaResourceTypePrivateImages:
+		*s = QuotaResourceTypePrivateImages
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 type RegionID string
 
 // Ref: #/components/schemas/RegionListResponseBody
@@ -10464,7 +10737,10 @@ type ReleaseResource struct {
 	Type                          ReleaseResourceType
 	VirtualMachineReleaseResource VirtualMachineReleaseResource
 	DiskReleaseResource           DiskReleaseResource
-	ElasticIpReleaseResource      ElasticIpReleaseResource
+	ElasticIPReleaseResource      ElasticIPReleaseResource
+	SnapshotReleaseResource       SnapshotReleaseResource
+	DiskBackupReleaseResource     DiskBackupReleaseResource
+	PrivateImageReleaseResource   PrivateImageReleaseResource
 }
 
 // ReleaseResourceType is oneOf type of ReleaseResource.
@@ -10474,7 +10750,10 @@ type ReleaseResourceType string
 const (
 	VirtualMachineReleaseResourceReleaseResource ReleaseResourceType = "virtual_machine"
 	DiskReleaseResourceReleaseResource           ReleaseResourceType = "disk"
-	ElasticIpReleaseResourceReleaseResource      ReleaseResourceType = "elastic_ip"
+	ElasticIPReleaseResourceReleaseResource      ReleaseResourceType = "elastic_ip"
+	SnapshotReleaseResourceReleaseResource       ReleaseResourceType = "snapshot"
+	DiskBackupReleaseResourceReleaseResource     ReleaseResourceType = "disk_backup"
+	PrivateImageReleaseResourceReleaseResource   ReleaseResourceType = "private_image"
 )
 
 // IsVirtualMachineReleaseResource reports whether ReleaseResource is VirtualMachineReleaseResource.
@@ -10487,9 +10766,24 @@ func (s ReleaseResource) IsDiskReleaseResource() bool {
 	return s.Type == DiskReleaseResourceReleaseResource
 }
 
-// IsElasticIpReleaseResource reports whether ReleaseResource is ElasticIpReleaseResource.
-func (s ReleaseResource) IsElasticIpReleaseResource() bool {
-	return s.Type == ElasticIpReleaseResourceReleaseResource
+// IsElasticIPReleaseResource reports whether ReleaseResource is ElasticIPReleaseResource.
+func (s ReleaseResource) IsElasticIPReleaseResource() bool {
+	return s.Type == ElasticIPReleaseResourceReleaseResource
+}
+
+// IsSnapshotReleaseResource reports whether ReleaseResource is SnapshotReleaseResource.
+func (s ReleaseResource) IsSnapshotReleaseResource() bool {
+	return s.Type == SnapshotReleaseResourceReleaseResource
+}
+
+// IsDiskBackupReleaseResource reports whether ReleaseResource is DiskBackupReleaseResource.
+func (s ReleaseResource) IsDiskBackupReleaseResource() bool {
+	return s.Type == DiskBackupReleaseResourceReleaseResource
+}
+
+// IsPrivateImageReleaseResource reports whether ReleaseResource is PrivateImageReleaseResource.
+func (s ReleaseResource) IsPrivateImageReleaseResource() bool {
+	return s.Type == PrivateImageReleaseResourceReleaseResource
 }
 
 // SetVirtualMachineReleaseResource sets ReleaseResource to VirtualMachineReleaseResource.
@@ -10534,24 +10828,87 @@ func NewDiskReleaseResourceReleaseResource(v DiskReleaseResource) ReleaseResourc
 	return s
 }
 
-// SetElasticIpReleaseResource sets ReleaseResource to ElasticIpReleaseResource.
-func (s *ReleaseResource) SetElasticIpReleaseResource(v ElasticIpReleaseResource) {
-	s.Type = ElasticIpReleaseResourceReleaseResource
-	s.ElasticIpReleaseResource = v
+// SetElasticIPReleaseResource sets ReleaseResource to ElasticIPReleaseResource.
+func (s *ReleaseResource) SetElasticIPReleaseResource(v ElasticIPReleaseResource) {
+	s.Type = ElasticIPReleaseResourceReleaseResource
+	s.ElasticIPReleaseResource = v
 }
 
-// GetElasticIpReleaseResource returns ElasticIpReleaseResource and true boolean if ReleaseResource is ElasticIpReleaseResource.
-func (s ReleaseResource) GetElasticIpReleaseResource() (v ElasticIpReleaseResource, ok bool) {
-	if !s.IsElasticIpReleaseResource() {
+// GetElasticIPReleaseResource returns ElasticIPReleaseResource and true boolean if ReleaseResource is ElasticIPReleaseResource.
+func (s ReleaseResource) GetElasticIPReleaseResource() (v ElasticIPReleaseResource, ok bool) {
+	if !s.IsElasticIPReleaseResource() {
 		return v, false
 	}
-	return s.ElasticIpReleaseResource, true
+	return s.ElasticIPReleaseResource, true
 }
 
-// NewElasticIpReleaseResourceReleaseResource returns new ReleaseResource from ElasticIpReleaseResource.
-func NewElasticIpReleaseResourceReleaseResource(v ElasticIpReleaseResource) ReleaseResource {
+// NewElasticIPReleaseResourceReleaseResource returns new ReleaseResource from ElasticIPReleaseResource.
+func NewElasticIPReleaseResourceReleaseResource(v ElasticIPReleaseResource) ReleaseResource {
 	var s ReleaseResource
-	s.SetElasticIpReleaseResource(v)
+	s.SetElasticIPReleaseResource(v)
+	return s
+}
+
+// SetSnapshotReleaseResource sets ReleaseResource to SnapshotReleaseResource.
+func (s *ReleaseResource) SetSnapshotReleaseResource(v SnapshotReleaseResource) {
+	s.Type = SnapshotReleaseResourceReleaseResource
+	s.SnapshotReleaseResource = v
+}
+
+// GetSnapshotReleaseResource returns SnapshotReleaseResource and true boolean if ReleaseResource is SnapshotReleaseResource.
+func (s ReleaseResource) GetSnapshotReleaseResource() (v SnapshotReleaseResource, ok bool) {
+	if !s.IsSnapshotReleaseResource() {
+		return v, false
+	}
+	return s.SnapshotReleaseResource, true
+}
+
+// NewSnapshotReleaseResourceReleaseResource returns new ReleaseResource from SnapshotReleaseResource.
+func NewSnapshotReleaseResourceReleaseResource(v SnapshotReleaseResource) ReleaseResource {
+	var s ReleaseResource
+	s.SetSnapshotReleaseResource(v)
+	return s
+}
+
+// SetDiskBackupReleaseResource sets ReleaseResource to DiskBackupReleaseResource.
+func (s *ReleaseResource) SetDiskBackupReleaseResource(v DiskBackupReleaseResource) {
+	s.Type = DiskBackupReleaseResourceReleaseResource
+	s.DiskBackupReleaseResource = v
+}
+
+// GetDiskBackupReleaseResource returns DiskBackupReleaseResource and true boolean if ReleaseResource is DiskBackupReleaseResource.
+func (s ReleaseResource) GetDiskBackupReleaseResource() (v DiskBackupReleaseResource, ok bool) {
+	if !s.IsDiskBackupReleaseResource() {
+		return v, false
+	}
+	return s.DiskBackupReleaseResource, true
+}
+
+// NewDiskBackupReleaseResourceReleaseResource returns new ReleaseResource from DiskBackupReleaseResource.
+func NewDiskBackupReleaseResourceReleaseResource(v DiskBackupReleaseResource) ReleaseResource {
+	var s ReleaseResource
+	s.SetDiskBackupReleaseResource(v)
+	return s
+}
+
+// SetPrivateImageReleaseResource sets ReleaseResource to PrivateImageReleaseResource.
+func (s *ReleaseResource) SetPrivateImageReleaseResource(v PrivateImageReleaseResource) {
+	s.Type = PrivateImageReleaseResourceReleaseResource
+	s.PrivateImageReleaseResource = v
+}
+
+// GetPrivateImageReleaseResource returns PrivateImageReleaseResource and true boolean if ReleaseResource is PrivateImageReleaseResource.
+func (s ReleaseResource) GetPrivateImageReleaseResource() (v PrivateImageReleaseResource, ok bool) {
+	if !s.IsPrivateImageReleaseResource() {
+		return v, false
+	}
+	return s.PrivateImageReleaseResource, true
+}
+
+// NewPrivateImageReleaseResourceReleaseResource returns new ReleaseResource from PrivateImageReleaseResource.
+func NewPrivateImageReleaseResourceReleaseResource(v PrivateImageReleaseResource) ReleaseResource {
+	var s ReleaseResource
+	s.SetPrivateImageReleaseResource(v)
 	return s
 }
 
@@ -11195,6 +11552,80 @@ func (s *SnapshotOperationType) UnmarshalText(data []byte) error {
 	}
 }
 
+// A resource a release set releases.
+// Ref: #/components/schemas/SnapshotReleaseResource
+type SnapshotReleaseResource struct {
+	Type SnapshotReleaseResourceType `json:"type"`
+	// The identifier of the resource selected by type.
+	ID SnapshotID `json:"id"`
+	// The current display name of the selected resource.
+	Name string `json:"name"`
+}
+
+// GetType returns the value of Type.
+func (s *SnapshotReleaseResource) GetType() SnapshotReleaseResourceType {
+	return s.Type
+}
+
+// GetID returns the value of ID.
+func (s *SnapshotReleaseResource) GetID() SnapshotID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *SnapshotReleaseResource) GetName() string {
+	return s.Name
+}
+
+// SetType sets the value of Type.
+func (s *SnapshotReleaseResource) SetType(val SnapshotReleaseResourceType) {
+	s.Type = val
+}
+
+// SetID sets the value of ID.
+func (s *SnapshotReleaseResource) SetID(val SnapshotID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *SnapshotReleaseResource) SetName(val string) {
+	s.Name = val
+}
+
+type SnapshotReleaseResourceType string
+
+const (
+	SnapshotReleaseResourceTypeSnapshot SnapshotReleaseResourceType = "snapshot"
+)
+
+// AllValues returns all SnapshotReleaseResourceType values.
+func (SnapshotReleaseResourceType) AllValues() []SnapshotReleaseResourceType {
+	return []SnapshotReleaseResourceType{
+		SnapshotReleaseResourceTypeSnapshot,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SnapshotReleaseResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case SnapshotReleaseResourceTypeSnapshot:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SnapshotReleaseResourceType) UnmarshalText(data []byte) error {
+	switch SnapshotReleaseResourceType(data) {
+	case SnapshotReleaseResourceTypeSnapshot:
+		*s = SnapshotReleaseResourceTypeSnapshot
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // A snapshot of a disk. Compute project quotas constrain its count; retained storage is metered
 // independently of that quota.
 // Ref: #/components/schemas/SnapshotResource
@@ -11213,9 +11644,7 @@ type SnapshotResource struct {
 	// remains. `missing` means the snapshot no longer exists in the cloud.
 	Status SnapshotResourceStatus `json:"status"`
 	// The operation in progress on this snapshot, or null when none is.
-	Operation  NilSnapshotOperation `json:"operation"`
-	Generation int64                `json:"generation"`
-	ObservedAt NilDateTime          `json:"observed_at"`
+	Operation NilSnapshotOperation `json:"operation"`
 	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
 	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
 	// order was accepted, and the charge for this snapshot is refunded.
@@ -11229,6 +11658,10 @@ type SnapshotResource struct {
 	OrderItemID NilUUID `json:"order_item_id"`
 	// The subscription for this resource; its presence alone does not imply delivery.
 	SubscriptionID NilUUID `json:"subscription_id"`
+	// The subscription that pays for this snapshot, with the resource it pays for, so that a cancellation
+	// through Billing can name what it releases. Empty when no subscription pays for it, and once it is
+	// released.
+	ReleaseSet []ReleaseSetItem `json:"release_set"`
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
@@ -11276,16 +11709,6 @@ func (s *SnapshotResource) GetOperation() NilSnapshotOperation {
 	return s.Operation
 }
 
-// GetGeneration returns the value of Generation.
-func (s *SnapshotResource) GetGeneration() int64 {
-	return s.Generation
-}
-
-// GetObservedAt returns the value of ObservedAt.
-func (s *SnapshotResource) GetObservedAt() NilDateTime {
-	return s.ObservedAt
-}
-
 // GetFailureReason returns the value of FailureReason.
 func (s *SnapshotResource) GetFailureReason() NilSnapshotResourceFailureReason {
 	return s.FailureReason
@@ -11309,6 +11732,11 @@ func (s *SnapshotResource) GetOrderItemID() NilUUID {
 // GetSubscriptionID returns the value of SubscriptionID.
 func (s *SnapshotResource) GetSubscriptionID() NilUUID {
 	return s.SubscriptionID
+}
+
+// GetReleaseSet returns the value of ReleaseSet.
+func (s *SnapshotResource) GetReleaseSet() []ReleaseSetItem {
+	return s.ReleaseSet
 }
 
 // SetAvailabilityZoneID sets the value of AvailabilityZoneID.
@@ -11356,16 +11784,6 @@ func (s *SnapshotResource) SetOperation(val NilSnapshotOperation) {
 	s.Operation = val
 }
 
-// SetGeneration sets the value of Generation.
-func (s *SnapshotResource) SetGeneration(val int64) {
-	s.Generation = val
-}
-
-// SetObservedAt sets the value of ObservedAt.
-func (s *SnapshotResource) SetObservedAt(val NilDateTime) {
-	s.ObservedAt = val
-}
-
 // SetFailureReason sets the value of FailureReason.
 func (s *SnapshotResource) SetFailureReason(val NilSnapshotResourceFailureReason) {
 	s.FailureReason = val
@@ -11389,6 +11807,11 @@ func (s *SnapshotResource) SetOrderItemID(val NilUUID) {
 // SetSubscriptionID sets the value of SubscriptionID.
 func (s *SnapshotResource) SetSubscriptionID(val NilUUID) {
 	s.SubscriptionID = val
+}
+
+// SetReleaseSet sets the value of ReleaseSet.
+func (s *SnapshotResource) SetReleaseSet(val []ReleaseSetItem) {
+	s.ReleaseSet = val
 }
 
 func (*SnapshotResource) deleteSnapshotRes() {}
@@ -12345,9 +12768,10 @@ type VirtualMachine struct {
 	// Private address of the virtual machine.
 	PrivateIP             NilString                `json:"private_ip"`
 	VirtualPrivateCloudID NilVirtualPrivateCloudID `json:"virtual_private_cloud_id"`
-	// Floating IPv4 addresses bound to the primary network interface; an empty array when none are bound.
-	PublicIps []string `json:"public_ips"`
-	RegionID  RegionID `json:"region_id"`
+	// Elastic IPv4 addresses associated with the primary network interface; an empty array when none are
+	// associated.
+	ElasticIPAddresses []string `json:"elastic_ip_addresses"`
+	RegionID           RegionID `json:"region_id"`
 	// `pending` until the order is accepted: no virtual machine exists and addresses are null.
 	// `provisioning` while the virtual machine is created, then `active`. `failed` means the virtual
 	// machine was not created; `failure_reason` states why. `missing` means the virtual machine no longer
@@ -12356,8 +12780,6 @@ type VirtualMachine struct {
 	Status       VirtualMachineStatus        `json:"status"`
 	SubnetID     NilSubnetID                 `json:"subnet_id"`
 	UpdatedAt    time.Time                   `json:"updated_at"`
-	Generation   int64                       `json:"generation"`
-	ObservedAt   NilDateTime                 `json:"observed_at"`
 	Restrictions []VirtualMachineRestriction `json:"restrictions"`
 	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
 	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
@@ -12374,11 +12796,9 @@ type VirtualMachine struct {
 	// The Billing subscription associated with this resource. It may still be pending; its presence does
 	// not imply delivery or metering. Null when no subscription is associated.
 	SubscriptionID NilUUID `json:"subscription_id"`
-	// Subscriptions required to release this virtual machine and disks deleted with it. Billing determines
-	// cancellation terms. An empty list does not establish refund eligibility.
-	ReleaseSubscriptionIds []uuid.UUID `json:"release_subscription_ids"`
-	// The subscriptions of `release_subscription_ids`, in the same order, each with the resource it pays
-	// for, so that each line of a cancellation can name what it releases.
+	// Subscriptions required to release this virtual machine and disks deleted with it, each with the
+	// resource it pays for, so that each line of a cancellation can name what it releases. Billing
+	// determines cancellation terms. An empty set does not establish refund eligibility.
 	ReleaseSet  []ReleaseSetItem             `json:"release_set"`
 	AccessState NilVirtualMachineAccessState `json:"access_state"`
 	// Non-empty when the virtual machine was created from a disk you already had, instead of from an image.
@@ -12455,9 +12875,9 @@ func (s *VirtualMachine) GetVirtualPrivateCloudID() NilVirtualPrivateCloudID {
 	return s.VirtualPrivateCloudID
 }
 
-// GetPublicIps returns the value of PublicIps.
-func (s *VirtualMachine) GetPublicIps() []string {
-	return s.PublicIps
+// GetElasticIPAddresses returns the value of ElasticIPAddresses.
+func (s *VirtualMachine) GetElasticIPAddresses() []string {
+	return s.ElasticIPAddresses
 }
 
 // GetRegionID returns the value of RegionID.
@@ -12478,16 +12898,6 @@ func (s *VirtualMachine) GetSubnetID() NilSubnetID {
 // GetUpdatedAt returns the value of UpdatedAt.
 func (s *VirtualMachine) GetUpdatedAt() time.Time {
 	return s.UpdatedAt
-}
-
-// GetGeneration returns the value of Generation.
-func (s *VirtualMachine) GetGeneration() int64 {
-	return s.Generation
-}
-
-// GetObservedAt returns the value of ObservedAt.
-func (s *VirtualMachine) GetObservedAt() NilDateTime {
-	return s.ObservedAt
 }
 
 // GetRestrictions returns the value of Restrictions.
@@ -12523,11 +12933,6 @@ func (s *VirtualMachine) GetOrderItemID() NilUUID {
 // GetSubscriptionID returns the value of SubscriptionID.
 func (s *VirtualMachine) GetSubscriptionID() NilUUID {
 	return s.SubscriptionID
-}
-
-// GetReleaseSubscriptionIds returns the value of ReleaseSubscriptionIds.
-func (s *VirtualMachine) GetReleaseSubscriptionIds() []uuid.UUID {
-	return s.ReleaseSubscriptionIds
 }
 
 // GetReleaseSet returns the value of ReleaseSet.
@@ -12615,9 +13020,9 @@ func (s *VirtualMachine) SetVirtualPrivateCloudID(val NilVirtualPrivateCloudID) 
 	s.VirtualPrivateCloudID = val
 }
 
-// SetPublicIps sets the value of PublicIps.
-func (s *VirtualMachine) SetPublicIps(val []string) {
-	s.PublicIps = val
+// SetElasticIPAddresses sets the value of ElasticIPAddresses.
+func (s *VirtualMachine) SetElasticIPAddresses(val []string) {
+	s.ElasticIPAddresses = val
 }
 
 // SetRegionID sets the value of RegionID.
@@ -12638,16 +13043,6 @@ func (s *VirtualMachine) SetSubnetID(val NilSubnetID) {
 // SetUpdatedAt sets the value of UpdatedAt.
 func (s *VirtualMachine) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
-}
-
-// SetGeneration sets the value of Generation.
-func (s *VirtualMachine) SetGeneration(val int64) {
-	s.Generation = val
-}
-
-// SetObservedAt sets the value of ObservedAt.
-func (s *VirtualMachine) SetObservedAt(val NilDateTime) {
-	s.ObservedAt = val
 }
 
 // SetRestrictions sets the value of Restrictions.
@@ -12683,11 +13078,6 @@ func (s *VirtualMachine) SetOrderItemID(val NilUUID) {
 // SetSubscriptionID sets the value of SubscriptionID.
 func (s *VirtualMachine) SetSubscriptionID(val NilUUID) {
 	s.SubscriptionID = val
-}
-
-// SetReleaseSubscriptionIds sets the value of ReleaseSubscriptionIds.
-func (s *VirtualMachine) SetReleaseSubscriptionIds(val []uuid.UUID) {
-	s.ReleaseSubscriptionIds = val
 }
 
 // SetReleaseSet sets the value of ReleaseSet.
@@ -12987,8 +13377,8 @@ const (
 	VirtualMachineOperationTypeDetachDisk             VirtualMachineOperationType = "detach_disk"
 	VirtualMachineOperationTypeAttachNetworkInterface VirtualMachineOperationType = "attach_network_interface"
 	VirtualMachineOperationTypeDetachNetworkInterface VirtualMachineOperationType = "detach_network_interface"
-	VirtualMachineOperationTypeBindElasticIP          VirtualMachineOperationType = "bind_elastic_ip"
-	VirtualMachineOperationTypeUnbindElasticIP        VirtualMachineOperationType = "unbind_elastic_ip"
+	VirtualMachineOperationTypeAssociateElasticIP     VirtualMachineOperationType = "associate_elastic_ip"
+	VirtualMachineOperationTypeDisassociateElasticIP  VirtualMachineOperationType = "disassociate_elastic_ip"
 	VirtualMachineOperationTypeCaptureImage           VirtualMachineOperationType = "capture_image"
 	VirtualMachineOperationTypeSuspend                VirtualMachineOperationType = "suspend"
 	VirtualMachineOperationTypeResume                 VirtualMachineOperationType = "resume"
@@ -13011,8 +13401,8 @@ func (VirtualMachineOperationType) AllValues() []VirtualMachineOperationType {
 		VirtualMachineOperationTypeDetachDisk,
 		VirtualMachineOperationTypeAttachNetworkInterface,
 		VirtualMachineOperationTypeDetachNetworkInterface,
-		VirtualMachineOperationTypeBindElasticIP,
-		VirtualMachineOperationTypeUnbindElasticIP,
+		VirtualMachineOperationTypeAssociateElasticIP,
+		VirtualMachineOperationTypeDisassociateElasticIP,
 		VirtualMachineOperationTypeCaptureImage,
 		VirtualMachineOperationTypeSuspend,
 		VirtualMachineOperationTypeResume,
@@ -13049,9 +13439,9 @@ func (s VirtualMachineOperationType) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case VirtualMachineOperationTypeDetachNetworkInterface:
 		return []byte(s), nil
-	case VirtualMachineOperationTypeBindElasticIP:
+	case VirtualMachineOperationTypeAssociateElasticIP:
 		return []byte(s), nil
-	case VirtualMachineOperationTypeUnbindElasticIP:
+	case VirtualMachineOperationTypeDisassociateElasticIP:
 		return []byte(s), nil
 	case VirtualMachineOperationTypeCaptureImage:
 		return []byte(s), nil
@@ -13108,11 +13498,11 @@ func (s *VirtualMachineOperationType) UnmarshalText(data []byte) error {
 	case VirtualMachineOperationTypeDetachNetworkInterface:
 		*s = VirtualMachineOperationTypeDetachNetworkInterface
 		return nil
-	case VirtualMachineOperationTypeBindElasticIP:
-		*s = VirtualMachineOperationTypeBindElasticIP
+	case VirtualMachineOperationTypeAssociateElasticIP:
+		*s = VirtualMachineOperationTypeAssociateElasticIP
 		return nil
-	case VirtualMachineOperationTypeUnbindElasticIP:
-		*s = VirtualMachineOperationTypeUnbindElasticIP
+	case VirtualMachineOperationTypeDisassociateElasticIP:
+		*s = VirtualMachineOperationTypeDisassociateElasticIP
 		return nil
 	case VirtualMachineOperationTypeCaptureImage:
 		*s = VirtualMachineOperationTypeCaptureImage
@@ -13453,9 +13843,18 @@ type VirtualPrivateCloud struct {
 	Name     string                `json:"name"`
 	Cidr     string                `json:"cidr"`
 	// The /64 prefix routed to the network, null while IPv6 is not enabled.
-	Ipv6Cidr  NilString `json:"ipv6_cidr"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Ipv6Cidr NilString `json:"ipv6_cidr"`
+	// `pending` until the virtual private cloud's network and router exist. `failed` means creation failed
+	// or the backend lost the network; virtual machines cannot be created in it then and are refused with
+	// `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE`. `deleting` from the moment its deletion began until it is gone:
+	// subnets, security groups and routes in it can no longer be created, changed or deleted, and are
+	// refused with `VIRTUAL_PRIVATE_CLOUD_DELETING`. A deletion that stopped before the end leaves it
+	// `deleting` with no operation, and deleting it again resumes from where it stopped.
+	Status VirtualPrivateCloudStatus `json:"status"`
+	// The operation in progress on this virtual private cloud, or null when none is.
+	Operation NilVirtualPrivateCloudOperation `json:"operation"`
+	CreatedAt time.Time                       `json:"created_at"`
+	UpdatedAt time.Time                       `json:"updated_at"`
 }
 
 // GetID returns the value of ID.
@@ -13481,6 +13880,16 @@ func (s *VirtualPrivateCloud) GetCidr() string {
 // GetIpv6Cidr returns the value of Ipv6Cidr.
 func (s *VirtualPrivateCloud) GetIpv6Cidr() NilString {
 	return s.Ipv6Cidr
+}
+
+// GetStatus returns the value of Status.
+func (s *VirtualPrivateCloud) GetStatus() VirtualPrivateCloudStatus {
+	return s.Status
+}
+
+// GetOperation returns the value of Operation.
+func (s *VirtualPrivateCloud) GetOperation() NilVirtualPrivateCloudOperation {
+	return s.Operation
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -13516,6 +13925,16 @@ func (s *VirtualPrivateCloud) SetCidr(val string) {
 // SetIpv6Cidr sets the value of Ipv6Cidr.
 func (s *VirtualPrivateCloud) SetIpv6Cidr(val NilString) {
 	s.Ipv6Cidr = val
+}
+
+// SetStatus sets the value of Status.
+func (s *VirtualPrivateCloud) SetStatus(val VirtualPrivateCloudStatus) {
+	s.Status = val
+}
+
+// SetOperation sets the value of Operation.
+func (s *VirtualPrivateCloud) SetOperation(val NilVirtualPrivateCloudOperation) {
+	s.Operation = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -13588,79 +14007,147 @@ func (s *VirtualPrivateCloudListResponseBody) SetPagination(val OffsetPagination
 	s.Pagination = val
 }
 
-// Ref: #/components/schemas/ZoneListResponseBody
-type ZoneListResponseBody struct {
-	Items      []ZoneResource   `json:"items"`
-	Pagination OffsetPagination `json:"pagination"`
+// An operation still running on this virtual private cloud. It is not a separate resource; once it
+// finishes, the virtual private cloud's `operation` is null again and the virtual private cloud shows
+// the result.
+// Ref: #/components/schemas/VirtualPrivateCloudOperation
+type VirtualPrivateCloudOperation struct {
+	Type      VirtualPrivateCloudOperationType `json:"type"`
+	StartedAt time.Time                        `json:"started_at"`
 }
 
-// GetItems returns the value of Items.
-func (s *ZoneListResponseBody) GetItems() []ZoneResource {
-	return s.Items
+// GetType returns the value of Type.
+func (s *VirtualPrivateCloudOperation) GetType() VirtualPrivateCloudOperationType {
+	return s.Type
 }
 
-// GetPagination returns the value of Pagination.
-func (s *ZoneListResponseBody) GetPagination() OffsetPagination {
-	return s.Pagination
+// GetStartedAt returns the value of StartedAt.
+func (s *VirtualPrivateCloudOperation) GetStartedAt() time.Time {
+	return s.StartedAt
 }
 
-// SetItems sets the value of Items.
-func (s *ZoneListResponseBody) SetItems(val []ZoneResource) {
-	s.Items = val
+// SetType sets the value of Type.
+func (s *VirtualPrivateCloudOperation) SetType(val VirtualPrivateCloudOperationType) {
+	s.Type = val
 }
 
-// SetPagination sets the value of Pagination.
-func (s *ZoneListResponseBody) SetPagination(val OffsetPagination) {
-	s.Pagination = val
+// SetStartedAt sets the value of StartedAt.
+func (s *VirtualPrivateCloudOperation) SetStartedAt(val time.Time) {
+	s.StartedAt = val
 }
 
-// Ref: #/components/schemas/ZoneResource
-type ZoneResource struct {
-	// Display name for this zone, shown to tenants (Hong Kong A). The stable handle is code.
-	Name string `json:"name"`
-	// The zone's code within its region (hk-1-a). Stable and human-written; addressing is by id.
-	Code string             `json:"code"`
-	ID   AvailabilityZoneID `json:"id"`
-	// The region this zone belongs to; the value `region_id` filters the listing by.
-	RegionID RegionID `json:"region_id"`
+type VirtualPrivateCloudOperationType string
+
+const (
+	VirtualPrivateCloudOperationTypeCreate      VirtualPrivateCloudOperationType = "create"
+	VirtualPrivateCloudOperationTypeEnableIpv6  VirtualPrivateCloudOperationType = "enable_ipv6"
+	VirtualPrivateCloudOperationTypeDisableIpv6 VirtualPrivateCloudOperationType = "disable_ipv6"
+	VirtualPrivateCloudOperationTypeDelete      VirtualPrivateCloudOperationType = "delete"
+)
+
+// AllValues returns all VirtualPrivateCloudOperationType values.
+func (VirtualPrivateCloudOperationType) AllValues() []VirtualPrivateCloudOperationType {
+	return []VirtualPrivateCloudOperationType{
+		VirtualPrivateCloudOperationTypeCreate,
+		VirtualPrivateCloudOperationTypeEnableIpv6,
+		VirtualPrivateCloudOperationTypeDisableIpv6,
+		VirtualPrivateCloudOperationTypeDelete,
+	}
 }
 
-// GetName returns the value of Name.
-func (s *ZoneResource) GetName() string {
-	return s.Name
+// MarshalText implements encoding.TextMarshaler.
+func (s VirtualPrivateCloudOperationType) MarshalText() ([]byte, error) {
+	switch s {
+	case VirtualPrivateCloudOperationTypeCreate:
+		return []byte(s), nil
+	case VirtualPrivateCloudOperationTypeEnableIpv6:
+		return []byte(s), nil
+	case VirtualPrivateCloudOperationTypeDisableIpv6:
+		return []byte(s), nil
+	case VirtualPrivateCloudOperationTypeDelete:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
 }
 
-// GetCode returns the value of Code.
-func (s *ZoneResource) GetCode() string {
-	return s.Code
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VirtualPrivateCloudOperationType) UnmarshalText(data []byte) error {
+	switch VirtualPrivateCloudOperationType(data) {
+	case VirtualPrivateCloudOperationTypeCreate:
+		*s = VirtualPrivateCloudOperationTypeCreate
+		return nil
+	case VirtualPrivateCloudOperationTypeEnableIpv6:
+		*s = VirtualPrivateCloudOperationTypeEnableIpv6
+		return nil
+	case VirtualPrivateCloudOperationTypeDisableIpv6:
+		*s = VirtualPrivateCloudOperationTypeDisableIpv6
+		return nil
+	case VirtualPrivateCloudOperationTypeDelete:
+		*s = VirtualPrivateCloudOperationTypeDelete
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
-// GetID returns the value of ID.
-func (s *ZoneResource) GetID() AvailabilityZoneID {
-	return s.ID
+// `pending` until the virtual private cloud's network and router exist. `failed` means creation failed
+// or the backend lost the network; virtual machines cannot be created in it then and are refused with
+// `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE`. `deleting` from the moment its deletion began until it is gone:
+// subnets, security groups and routes in it can no longer be created, changed or deleted, and are
+// refused with `VIRTUAL_PRIVATE_CLOUD_DELETING`. A deletion that stopped before the end leaves it
+// `deleting` with no operation, and deleting it again resumes from where it stopped.
+type VirtualPrivateCloudStatus string
+
+const (
+	VirtualPrivateCloudStatusPending   VirtualPrivateCloudStatus = "pending"
+	VirtualPrivateCloudStatusAvailable VirtualPrivateCloudStatus = "available"
+	VirtualPrivateCloudStatusDeleting  VirtualPrivateCloudStatus = "deleting"
+	VirtualPrivateCloudStatusFailed    VirtualPrivateCloudStatus = "failed"
+)
+
+// AllValues returns all VirtualPrivateCloudStatus values.
+func (VirtualPrivateCloudStatus) AllValues() []VirtualPrivateCloudStatus {
+	return []VirtualPrivateCloudStatus{
+		VirtualPrivateCloudStatusPending,
+		VirtualPrivateCloudStatusAvailable,
+		VirtualPrivateCloudStatusDeleting,
+		VirtualPrivateCloudStatusFailed,
+	}
 }
 
-// GetRegionID returns the value of RegionID.
-func (s *ZoneResource) GetRegionID() RegionID {
-	return s.RegionID
+// MarshalText implements encoding.TextMarshaler.
+func (s VirtualPrivateCloudStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case VirtualPrivateCloudStatusPending:
+		return []byte(s), nil
+	case VirtualPrivateCloudStatusAvailable:
+		return []byte(s), nil
+	case VirtualPrivateCloudStatusDeleting:
+		return []byte(s), nil
+	case VirtualPrivateCloudStatusFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
 }
 
-// SetName sets the value of Name.
-func (s *ZoneResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetCode sets the value of Code.
-func (s *ZoneResource) SetCode(val string) {
-	s.Code = val
-}
-
-// SetID sets the value of ID.
-func (s *ZoneResource) SetID(val AvailabilityZoneID) {
-	s.ID = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *ZoneResource) SetRegionID(val RegionID) {
-	s.RegionID = val
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VirtualPrivateCloudStatus) UnmarshalText(data []byte) error {
+	switch VirtualPrivateCloudStatus(data) {
+	case VirtualPrivateCloudStatusPending:
+		*s = VirtualPrivateCloudStatusPending
+		return nil
+	case VirtualPrivateCloudStatusAvailable:
+		*s = VirtualPrivateCloudStatusAvailable
+		return nil
+	case VirtualPrivateCloudStatusDeleting:
+		*s = VirtualPrivateCloudStatusDeleting
+		return nil
+	case VirtualPrivateCloudStatusFailed:
+		*s = VirtualPrivateCloudStatusFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }

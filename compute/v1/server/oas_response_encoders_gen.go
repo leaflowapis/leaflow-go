@@ -908,7 +908,7 @@ func encodeDetachVirtualMachineNetworkInterfaceResponse(response DetachVirtualMa
 	}
 }
 
-func encodeGetAvailabilityZoneResponse(response *ZoneResource, w http.ResponseWriter, span trace.Span) error {
+func encodeGetAvailabilityZoneResponse(response *AvailabilityZoneResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -973,7 +973,7 @@ func encodeGetElasticIPResponse(response *ElasticIP, w http.ResponseWriter, span
 	return nil
 }
 
-func encodeGetElasticIPAssociationResponse(response *IPv4Binding, w http.ResponseWriter, span trace.Span) error {
+func encodeGetElasticIPAssociationResponse(response *ElasticIPAssociation, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -1233,7 +1233,7 @@ func encodeGetVirtualPrivateCloudIpv6Response(response *VirtualPrivateCloudIPv6,
 	return nil
 }
 
-func encodeListAvailabilityZonesResponse(response *ZoneListResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeListAvailabilityZonesResponse(response *AvailabilityZoneListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

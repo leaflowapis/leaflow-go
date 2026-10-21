@@ -75,6 +75,88 @@ func (s AvailabilityZoneID) Validate() error {
 	return nil
 }
 
+func (s *AvailabilityZoneListResponseBody) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		var failures []validate.FieldError
+		for i, elem := range s.Items {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "items",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.Pagination.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "pagination",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *AvailabilityZoneResource) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.ID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "id",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.RegionID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "region_id",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
 func (s *BillingChoice) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -841,24 +923,24 @@ func (s *CreatePeeringRequestBody) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.RequesterNetworkID.Validate(); err != nil {
+		if err := s.RequesterVirtualPrivateCloudID.Validate(); err != nil {
 			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "requester_network_id",
+			Name:  "requester_virtual_private_cloud_id",
 			Error: err,
 		})
 	}
 	if err := func() error {
-		if err := s.AccepterNetworkID.Validate(); err != nil {
+		if err := s.AccepterVirtualPrivateCloudID.Validate(); err != nil {
 			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "accepter_network_id",
+			Name:  "accepter_virtual_private_cloud_id",
 			Error: err,
 		})
 	}
@@ -2184,6 +2266,49 @@ func (s DiskBackupOperationType) Validate() error {
 	}
 }
 
+func (s *DiskBackupReleaseResource) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Type.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.ID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "id",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s DiskBackupReleaseResourceType) Validate() error {
+	switch s {
+	case "disk_backup":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s *DiskBackupResource) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -2253,27 +2378,6 @@ func (s *DiskBackupResource) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := (validate.Int{
-			MinSet:        true,
-			Min:           1,
-			MaxSet:        false,
-			Max:           0,
-			MinExclusive:  false,
-			MaxExclusive:  false,
-			MultipleOfSet: false,
-			MultipleOf:    0,
-			Pattern:       nil,
-		}).Validate(int64(s.Generation)); err != nil {
-			return errors.Wrap(err, "int")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "generation",
-			Error: err,
-		})
-	}
-	if err := func() error {
 		if err := s.SourceAvailabilityZoneID.Validate(); err != nil {
 			return err
 		}
@@ -2299,6 +2403,34 @@ func (s *DiskBackupResource) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "failure_reason",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.ReleaseSet == nil {
+			return errors.New("nil is invalid value")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.ReleaseSet {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "release_set",
 			Error: err,
 		})
 	}
@@ -2565,17 +2697,6 @@ func (s *DiskResource) Validate() error {
 		})
 	}
 	if err := func() error {
-		if s.ReleaseSubscriptionIds == nil {
-			return errors.New("nil is invalid value")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "release_subscription_ids",
-			Error: err,
-		})
-	}
-	if err := func() error {
 		if s.ReleaseSet == nil {
 			return errors.New("nil is invalid value")
 		}
@@ -2672,27 +2793,6 @@ func (s *DiskResource) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "attachment",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := (validate.Int{
-			MinSet:        true,
-			Min:           1,
-			MaxSet:        false,
-			Max:           0,
-			MinExclusive:  false,
-			MaxExclusive:  false,
-			MultipleOfSet: false,
-			MultipleOf:    0,
-			Pattern:       nil,
-		}).Validate(int64(s.Generation)); err != nil {
-			return errors.Wrap(err, "int")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "generation",
 			Error: err,
 		})
 	}
@@ -2998,17 +3098,6 @@ func (s *ElasticIP) Validate() error {
 		})
 	}
 	if err := func() error {
-		if s.ReleaseSubscriptionIds == nil {
-			return errors.New("nil is invalid value")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "release_subscription_ids",
-			Error: err,
-		})
-	}
-	if err := func() error {
 		if s.ReleaseSet == nil {
 			return errors.New("nil is invalid value")
 		}
@@ -3091,7 +3180,7 @@ func (s *ElasticIP) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.Binding.Get(); ok {
+		if value, ok := s.Association.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
 					return err
@@ -3104,7 +3193,7 @@ func (s *ElasticIP) Validate() error {
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "binding",
+			Name:  "association",
 			Error: err,
 		})
 	}
@@ -3129,6 +3218,84 @@ func (s ElasticIPAccessState) Validate() error {
 	}
 }
 
+func (s *ElasticIPAssociation) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.ID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "id",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.ElasticIPID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "elastic_ip_id",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.NetworkInterfaceAddressID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "network_interface_address_id",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.Address.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "address",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.FixedIP.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "fixed_ip",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.State.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "state",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
 func (s ElasticIPAssociationID) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
@@ -3147,6 +3314,19 @@ func (s ElasticIPAssociationID) Validate() error {
 		return errors.Wrap(err, "string")
 	}
 	return nil
+}
+
+func (s ElasticIPAssociationState) Validate() error {
+	switch s {
+	case "bound":
+		return nil
+	case "released":
+		return nil
+	case "unknown":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s ElasticIPFailureReason) Validate() error {
@@ -3263,17 +3443,60 @@ func (s ElasticIPOperationType) Validate() error {
 	switch s {
 	case "create":
 		return nil
-	case "bind":
+	case "associate":
 		return nil
-	case "unbind":
+	case "disassociate":
 		return nil
-	case "set_bandwidth":
+	case "update_bandwidth":
 		return nil
 	case "suspend":
 		return nil
 	case "resume":
 		return nil
 	case "delete":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s *ElasticIPReleaseResource) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Type.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.ID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "id",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s ElasticIPReleaseResourceType) Validate() error {
+	switch s {
+	case "elastic_ip":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -3499,49 +3722,6 @@ func (s ElasticIPTypeStatus) Validate() error {
 	}
 }
 
-func (s *ElasticIpReleaseResource) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Type.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "type",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.ID.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "id",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s ElasticIpReleaseResourceType) Validate() error {
-	switch s {
-	case "elastic_ip":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
 func (s *ExistingBootDisk) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -3602,97 +3782,6 @@ func (s *ExistingBootDisk) Validate() error {
 func (s ExistingBootDiskType) Validate() error {
 	switch s {
 	case "disk":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s *IPv4Binding) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.ID.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "id",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.ElasticIPID.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "elastic_ip_id",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.NetworkInterfaceAddressID.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "network_interface_address_id",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.Address.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "address",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.FixedIP.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "fixed_ip",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.State.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "state",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s IPv4BindingState) Validate() error {
-	switch s {
-	case "bound":
-		return nil
-	case "released":
-		return nil
-	case "unknown":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -3949,27 +4038,6 @@ func (s *NetworkInterface) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := (validate.Int{
-			MinSet:        true,
-			Min:           1,
-			MaxSet:        false,
-			Max:           0,
-			MinExclusive:  false,
-			MaxExclusive:  false,
-			MultipleOfSet: false,
-			MultipleOf:    0,
-			Pattern:       nil,
-		}).Validate(int64(s.Generation)); err != nil {
-			return errors.Wrap(err, "int")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "generation",
-			Error: err,
-		})
-	}
-	if err := func() error {
 		if value, ok := s.Operation.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
@@ -4045,6 +4113,17 @@ func (s *NetworkInterfaceAddress) Validate() error {
 		})
 	}
 	if err := func() error {
+		if err := s.Role.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "role",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := s.State.Validate(); err != nil {
 			return err
 		}
@@ -4102,6 +4181,17 @@ func (s NetworkInterfaceAddressID) Validate() error {
 		return errors.Wrap(err, "string")
 	}
 	return nil
+}
+
+func (s NetworkInterfaceAddressRole) Validate() error {
+	switch s {
+	case "primary":
+		return nil
+	case "secondary":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s NetworkInterfaceAddressState) Validate() error {
@@ -4241,7 +4331,7 @@ func (s NetworkInterfaceAttachmentRole) Validate() error {
 	switch s {
 	case "primary":
 		return nil
-	case "additional":
+	case "secondary":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -4361,6 +4451,8 @@ func (s NetworkInterfaceOperationType) Validate() error {
 	case "attach":
 		return nil
 	case "detach":
+		return nil
+	case "associate_elastic_ip":
 		return nil
 	case "delete":
 		return nil
@@ -4739,6 +4831,17 @@ func (s *OperationLogResource) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
+		if err := s.ActorType.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "actor_type",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := s.ID.Validate(); err != nil {
 			return err
 		}
@@ -4767,10 +4870,45 @@ func (s *OperationLogResource) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if err := s.Outcome.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "outcome",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s OperationLogResourceActorType) Validate() error {
+	switch s {
+	case "user":
+		return nil
+	case "platform":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s OperationLogResourceOutcome) Validate() error {
+	switch s {
+	case "succeeded":
+		return nil
+	case "rejected":
+		return nil
+	case "failed":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s PeeringID) Validate() error {
@@ -4907,24 +5045,24 @@ func (s *PeeringResource) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.RequesterNetworkID.Validate(); err != nil {
+		if err := s.RequesterVirtualPrivateCloudID.Validate(); err != nil {
 			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "requester_network_id",
+			Name:  "requester_virtual_private_cloud_id",
 			Error: err,
 		})
 	}
 	if err := func() error {
-		if err := s.AccepterNetworkID.Validate(); err != nil {
+		if err := s.AccepterVirtualPrivateCloudID.Validate(); err != nil {
 			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "accepter_network_id",
+			Name:  "accepter_virtual_private_cloud_id",
 			Error: err,
 		})
 	}
@@ -4999,7 +5137,7 @@ func (s PeeringResourceStatus) Validate() error {
 		return nil
 	case "rejected":
 		return nil
-	case "error":
+	case "failed":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -5089,6 +5227,49 @@ func (s PrivateImageOperationType) Validate() error {
 	case "resume":
 		return nil
 	case "delete":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s *PrivateImageReleaseResource) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Type.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.ID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "id",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s PrivateImageReleaseResourceType) Validate() error {
+	switch s {
+	case "private_image":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -5201,6 +5382,34 @@ func (s *PrivateImageResource) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "failure_reason",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.ReleaseSet == nil {
+			return errors.New("nil is invalid value")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.ReleaseSet {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "release_set",
 			Error: err,
 		})
 	}
@@ -5343,43 +5552,6 @@ func (s *ProjectQuotaListResponseBody) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
-}
-
-func (s ProjectQuotaResource) Validate() error {
-	switch s {
-	case "virtual_machines":
-		return nil
-	case "vcpus":
-		return nil
-	case "memory_mib":
-		return nil
-	case "disks":
-		return nil
-	case "disk_gib":
-		return nil
-	case "virtual_private_clouds":
-		return nil
-	case "subnets":
-		return nil
-	case "network_interfaces":
-		return nil
-	case "elastic_ips":
-		return nil
-	case "nat_gateways":
-		return nil
-	case "security_groups":
-		return nil
-	case "security_group_rules":
-		return nil
-	case "snapshots":
-		return nil
-	case "backups":
-		return nil
-	case "private_images":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
 }
 
 func (s *PublicImageListResponseBody) Validate() error {
@@ -5629,6 +5801,43 @@ func (s *PutVirtualMachineRescueResponseBody) Validate() error {
 	return nil
 }
 
+func (s QuotaResourceType) Validate() error {
+	switch s {
+	case "virtual_machines":
+		return nil
+	case "vcpus":
+		return nil
+	case "memory_mib":
+		return nil
+	case "disks":
+		return nil
+	case "disk_gib":
+		return nil
+	case "virtual_private_clouds":
+		return nil
+	case "subnets":
+		return nil
+	case "network_interfaces":
+		return nil
+	case "elastic_ips":
+		return nil
+	case "nat_gateways":
+		return nil
+	case "security_groups":
+		return nil
+	case "security_group_rules":
+		return nil
+	case "snapshots":
+		return nil
+	case "backups":
+		return nil
+	case "private_images":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s RegionID) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
@@ -5732,8 +5941,23 @@ func (s ReleaseResource) Validate() error {
 			return err
 		}
 		return nil
-	case ElasticIpReleaseResourceReleaseResource:
-		if err := s.ElasticIpReleaseResource.Validate(); err != nil {
+	case ElasticIPReleaseResourceReleaseResource:
+		if err := s.ElasticIPReleaseResource.Validate(); err != nil {
+			return err
+		}
+		return nil
+	case SnapshotReleaseResourceReleaseResource:
+		if err := s.SnapshotReleaseResource.Validate(); err != nil {
+			return err
+		}
+		return nil
+	case DiskBackupReleaseResourceReleaseResource:
+		if err := s.DiskBackupReleaseResource.Validate(); err != nil {
+			return err
+		}
+		return nil
+	case PrivateImageReleaseResourceReleaseResource:
+		if err := s.PrivateImageReleaseResource.Validate(); err != nil {
 			return err
 		}
 		return nil
@@ -6268,6 +6492,49 @@ func (s SnapshotOperationType) Validate() error {
 	}
 }
 
+func (s *SnapshotReleaseResource) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Type.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.ID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "id",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s SnapshotReleaseResourceType) Validate() error {
+	switch s {
+	case "snapshot":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s *SnapshotResource) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -6348,27 +6615,6 @@ func (s *SnapshotResource) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := (validate.Int{
-			MinSet:        true,
-			Min:           1,
-			MaxSet:        false,
-			Max:           0,
-			MinExclusive:  false,
-			MaxExclusive:  false,
-			MultipleOfSet: false,
-			MultipleOf:    0,
-			Pattern:       nil,
-		}).Validate(int64(s.Generation)); err != nil {
-			return errors.Wrap(err, "int")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "generation",
-			Error: err,
-		})
-	}
-	if err := func() error {
 		if value, ok := s.FailureReason.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
@@ -6383,6 +6629,34 @@ func (s *SnapshotResource) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "failure_reason",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.ReleaseSet == nil {
+			return errors.New("nil is invalid value")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.ReleaseSet {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "release_set",
 			Error: err,
 		})
 	}
@@ -7578,27 +7852,6 @@ func (s *VirtualMachine) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := (validate.Int{
-			MinSet:        true,
-			Min:           1,
-			MaxSet:        false,
-			Max:           0,
-			MinExclusive:  false,
-			MaxExclusive:  false,
-			MultipleOfSet: false,
-			MultipleOf:    0,
-			Pattern:       nil,
-		}).Validate(int64(s.Generation)); err != nil {
-			return errors.Wrap(err, "int")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "generation",
-			Error: err,
-		})
-	}
-	if err := func() error {
 		if s.Restrictions == nil {
 			return errors.New("nil is invalid value")
 		}
@@ -7659,17 +7912,6 @@ func (s *VirtualMachine) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "operation",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if s.ReleaseSubscriptionIds == nil {
-			return errors.New("nil is invalid value")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "release_subscription_ids",
 			Error: err,
 		})
 	}
@@ -8007,9 +8249,9 @@ func (s VirtualMachineOperationType) Validate() error {
 		return nil
 	case "detach_network_interface":
 		return nil
-	case "bind_elastic_ip":
+	case "associate_elastic_ip":
 		return nil
-	case "unbind_elastic_ip":
+	case "disassociate_elastic_ip":
 		return nil
 	case "capture_image":
 		return nil
@@ -8243,6 +8485,35 @@ func (s *VirtualPrivateCloud) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if err := s.Status.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "status",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Operation.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "operation",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -8343,45 +8614,20 @@ func (s *VirtualPrivateCloudListResponseBody) Validate() error {
 	return nil
 }
 
-func (s *ZoneListResponseBody) Validate() error {
+func (s *VirtualPrivateCloudOperation) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
 
 	var failures []validate.FieldError
 	if err := func() error {
-		var failures []validate.FieldError
-		for i, elem := range s.Items {
-			if err := func() error {
-				if err := elem.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				failures = append(failures, validate.FieldError{
-					Name:  fmt.Sprintf("[%d]", i),
-					Error: err,
-				})
-			}
-		}
-		if len(failures) > 0 {
-			return &validate.Error{Fields: failures}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "items",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.Pagination.Validate(); err != nil {
+		if err := s.Type.Validate(); err != nil {
 			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "pagination",
+			Name:  "type",
 			Error: err,
 		})
 	}
@@ -8391,36 +8637,32 @@ func (s *ZoneListResponseBody) Validate() error {
 	return nil
 }
 
-func (s *ZoneResource) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
+func (s VirtualPrivateCloudOperationType) Validate() error {
+	switch s {
+	case "create":
+		return nil
+	case "enable_ipv6":
+		return nil
+	case "disable_ipv6":
+		return nil
+	case "delete":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
 	}
+}
 
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.ID.Validate(); err != nil {
-			return err
-		}
+func (s VirtualPrivateCloudStatus) Validate() error {
+	switch s {
+	case "pending":
 		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "id",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.RegionID.Validate(); err != nil {
-			return err
-		}
+	case "available":
 		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "region_id",
-			Error: err,
-		})
+	case "deleting":
+		return nil
+	case "failed":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
 	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
 }

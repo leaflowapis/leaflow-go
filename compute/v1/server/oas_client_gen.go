@@ -254,11 +254,11 @@ type Invoker interface {
 	// `order_canceled`. Each virtual machine is named after this request with a number appended.
 	//
 	// The network is checked before the Checkout Session is created, and a request it refuses orders and
-	// charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the virtual private cloud's
-	// `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or
-	// a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs
-	// to another virtual private cloud, and `PORT_UNAVAILABLE` when the port's `status` is not
-	// `available`. `meta` names the resource.
+	// charges nothing. It is refused with `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE` when the virtual private
+	// cloud's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the
+	// subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security
+	// group belongs to another virtual private cloud, and `NETWORK_INTERFACE_UNAVAILABLE` when the port's
+	// `status` is not `available`. `meta` names the resource.
 	//
 	// Each virtual machine shows the `create` operation from the moment the Checkout Session is created
 	// until it is delivered or the checkout or order ends. Every other operation on it is refused with
@@ -342,8 +342,7 @@ type Invoker interface {
 	//
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a
 	// pay-as-you-go subscription. `meta.resource_id` names the disk. It is released by canceling the
-	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-	// `release_subscription_ids`.
+	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_set`.
 	//
 	// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
 	// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
@@ -375,8 +374,7 @@ type Invoker interface {
 	//
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
 	// pay-as-you-go subscription. `meta.resource_id` names the elastic IP. It is released by canceling the
-	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-	// `release_subscription_ids`.
+	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_set`.
 	//
 	// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
 	// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
@@ -387,9 +385,9 @@ type Invoker interface {
 	// DeleteElasticIPAssociation invokes delete-elastic-ip-association operation.
 	//
 	// The address remains held by the project and simply no longer points at any network interface. The
-	// elastic IP shows the `unbind` operation until the change is confirmed, and a virtual machine whose
-	// primary interface it pointed at shows the `unbind_elastic_ip` operation. Removing an association
-	// that does not exist is refused with 404 `ELASTIC_IP_NOT_ASSOCIATED`.
+	// elastic IP shows the `disassociate` operation until the change is confirmed, and a virtual machine
+	// whose primary interface it pointed at shows the `disassociate_elastic_ip` operation. Removing an
+	// association that does not exist is refused with 404 `ELASTIC_IP_NOT_ASSOCIATED`.
 	//
 	// DELETE /api/v1/elastic-ips/{elasticIpId}/association
 	DeleteElasticIPAssociation(ctx context.Context, params DeleteElasticIPAssociationParams) (DeleteElasticIPAssociationRes, error)
@@ -480,7 +478,7 @@ type Invoker interface {
 	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the virtual machine, or for
 	// a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names
 	// that resource. The virtual machine is released by canceling the subscriptions listed in
-	// `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+	// `meta.subscription_ids` through Billing, the same set as its `release_set`.
 	//
 	// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
 	// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
@@ -516,8 +514,8 @@ type Invoker interface {
 	//
 	// The disk the virtual machine boots from cannot be detached, whether it is the system disk bought
 	// with the virtual machine or a disk supplied as the existing boot_disk at launch. Such a request is
-	// refused with `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the virtual machine is what
-	// frees that disk.
+	// refused with `VIRTUAL_MACHINE_BOOT_DISK_LOCKED` and changes nothing; releasing the virtual machine
+	// is what frees that disk.
 	//
 	// Returns the disk; the virtual machine shows the `detach_disk` operation and the disk the `detach`
 	// operation until the disk is detached.
@@ -539,7 +537,7 @@ type Invoker interface {
 	// A disk and a virtual machine must reside in the same availability zone to be attached.
 	//
 	// GET /api/v1/availability-zones/{availabilityZoneId}
-	GetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (*ZoneResource, error)
+	GetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (*AvailabilityZoneResource, error)
 	// GetDisk invokes get-disk operation.
 	//
 	// Returns the stored state of the disk; it does not query the cloud.
@@ -575,7 +573,7 @@ type Invoker interface {
 	// `ELASTIC_IP_NOT_ASSOCIATED`.
 	//
 	// GET /api/v1/elastic-ips/{elasticIpId}/association
-	GetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (*IPv4Binding, error)
+	GetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (*ElasticIPAssociation, error)
 	// GetElasticIPType invokes get-elastic-ip-type operation.
 	//
 	// Includes off-sale or retired products referenced by existing elastic IPs. No inventory or gateway
@@ -712,7 +710,7 @@ type Invoker interface {
 	// zone before creating either. Without `region_id`, the zones of every region are listed.
 	//
 	// GET /api/v1/availability-zones
-	ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*ZoneListResponseBody, error)
+	ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*AvailabilityZoneListResponseBody, error)
 	// ListDiskBackups invokes list-disk-backups operation.
 	//
 	// List disk backups.
@@ -763,12 +761,12 @@ type Invoker interface {
 	ListNetworkInterfaces(ctx context.Context, params ListNetworkInterfacesParams) (*NetworkInterfaceListResponseBody, error)
 	// ListOperationLogs invokes list-operation-logs operation.
 	//
-	// Records every write operation in the project: who performed it, when, on what, and whether it
-	// succeeded. Read operations are not recorded.
+	// Records every write operation in the project: who performed it, when, on what, and its outcome. Read
+	// operations are not recorded.
 	//
 	// Operations performed by the platform are included, but the individual operator is not disclosed and
-	// `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which
-	// a virtual machine was stopped by the platform is needed, whereas the operator is internal
+	// `actor_type` is `platform`. Suspension for non-payment and bans for abuse are examples: the time at
+	// which a virtual machine was stopped by the platform is needed, whereas the operator is internal
 	// information.
 	//
 	// Fields such as passwords are replaced with a placeholder as the record is written and never appear
@@ -892,13 +890,13 @@ type Invoker interface {
 	// points at changes nothing; an elastic IP associated with another target is refused with
 	// `ELASTIC_IP_ALREADY_ASSOCIATED` (409), and is moved by deleting the association first, so that the
 	// moment traffic stops reaching the old target is one the caller chose. The elastic IP shows the
-	// `bind` operation until the association is confirmed, and with a virtual machine as the target that
-	// virtual machine shows the `bind_elastic_ip` operation as well, so the virtual machine must not have
-	// another operation in progress.
+	// `associate` operation until the association is confirmed, and with a virtual machine as the target
+	// that virtual machine shows the `associate_elastic_ip` operation as well, so the virtual machine must
+	// not have another operation in progress.
 	//
 	// The elastic IP must be in the same region as the target. With a virtual machine as the target, the
 	// elastic IP's `bandwidth_mbps` must not exceed the `max_bandwidth_mbps` of that virtual machine's
-	// type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`.
+	// type; a higher limit is refused with `VIRTUAL_MACHINE_BANDWIDTH_CEILING`.
 	//
 	// PUT /api/v1/elastic-ips/{elasticIpId}/association
 	PutElasticIPAssociation(ctx context.Context, request PutElasticIPAssociationRequestBody, params PutElasticIPAssociationParams) (PutElasticIPAssociationRes, error)
@@ -985,7 +983,7 @@ type Invoker interface {
 	//
 	// The change goes through a Checkout Session that keeps the elastic IP's usage type and period; no
 	// separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The
-	// elastic IP shows the `set_bandwidth` operation until the change is applied, its Checkout Session
+	// elastic IP shows the `update_bandwidth` operation until the change is applied, its Checkout Session
 	// expires or its order is canceled, so other operations and a second change are refused with
 	// `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If
 	// checkout is not completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its
@@ -993,8 +991,8 @@ type Invoker interface {
 	//
 	// While the address is associated with a virtual machine, the limit must not exceed the
 	// `max_bandwidth_mbps` of that virtual machine's type; a higher limit is refused with
-	// `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not associated is checked when the
-	// address is associated with a virtual machine.
+	// `VIRTUAL_MACHINE_BANDWIDTH_CEILING`. The limit of an address that is not associated is checked when
+	// the address is associated with a virtual machine.
 	//
 	// PATCH /api/v1/elastic-ips/{elasticIpId}
 	UpdateElasticIP(ctx context.Context, request *UpdateElasticIPRequestBody, params UpdateElasticIPParams) (UpdateElasticIPRes, error)
@@ -3099,11 +3097,11 @@ func (c *Client) sendCreateSubnet(ctx context.Context, request *CreateSubnetRequ
 // `order_canceled`. Each virtual machine is named after this request with a number appended.
 //
 // The network is checked before the Checkout Session is created, and a request it refuses orders and
-// charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the virtual private cloud's
-// `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or
-// a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs
-// to another virtual private cloud, and `PORT_UNAVAILABLE` when the port's `status` is not
-// `available`. `meta` names the resource.
+// charges nothing. It is refused with `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE` when the virtual private
+// cloud's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the
+// subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security
+// group belongs to another virtual private cloud, and `NETWORK_INTERFACE_UNAVAILABLE` when the port's
+// `status` is not `available`. `meta` names the resource.
 //
 // Each virtual machine shows the `create` operation from the moment the Checkout Session is created
 // until it is delivered or the checkout or order ends. Every other operation on it is refused with
@@ -3839,8 +3837,7 @@ func (c *Client) sendCreateVirtualPrivateCloud(ctx context.Context, request *Cre
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a
 // pay-as-you-go subscription. `meta.resource_id` names the disk. It is released by canceling the
-// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-// `release_subscription_ids`.
+// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_set`.
 //
 // Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
@@ -4128,8 +4125,7 @@ func (c *Client) sendDeleteDiskBackup(ctx context.Context, params DeleteDiskBack
 //
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
 // pay-as-you-go subscription. `meta.resource_id` names the elastic IP. It is released by canceling the
-// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-// `release_subscription_ids`.
+// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_set`.
 //
 // Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
@@ -4268,9 +4264,9 @@ func (c *Client) sendDeleteElasticIP(ctx context.Context, params DeleteElasticIP
 // DeleteElasticIPAssociation invokes delete-elastic-ip-association operation.
 //
 // The address remains held by the project and simply no longer points at any network interface. The
-// elastic IP shows the `unbind` operation until the change is confirmed, and a virtual machine whose
-// primary interface it pointed at shows the `unbind_elastic_ip` operation. Removing an association
-// that does not exist is refused with 404 `ELASTIC_IP_NOT_ASSOCIATED`.
+// elastic IP shows the `disassociate` operation until the change is confirmed, and a virtual machine
+// whose primary interface it pointed at shows the `disassociate_elastic_ip` operation. Removing an
+// association that does not exist is refused with 404 `ELASTIC_IP_NOT_ASSOCIATED`.
 //
 // DELETE /api/v1/elastic-ips/{elasticIpId}/association
 func (c *Client) DeleteElasticIPAssociation(ctx context.Context, params DeleteElasticIPAssociationParams) (DeleteElasticIPAssociationRes, error) {
@@ -5514,7 +5510,7 @@ func (c *Client) sendDeleteSubnet(ctx context.Context, params DeleteSubnetParams
 // Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the virtual machine, or for
 // a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names
 // that resource. The virtual machine is released by canceling the subscriptions listed in
-// `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+// `meta.subscription_ids` through Billing, the same set as its `release_set`.
 //
 // Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
@@ -6064,8 +6060,8 @@ func (c *Client) sendDeleteVirtualPrivateCloudIpv6(ctx context.Context, params D
 //
 // The disk the virtual machine boots from cannot be detached, whether it is the system disk bought
 // with the virtual machine or a disk supplied as the existing boot_disk at launch. Such a request is
-// refused with `INSTANCE_BOOT_DISK_LOCKED` and changes nothing; releasing the virtual machine is what
-// frees that disk.
+// refused with `VIRTUAL_MACHINE_BOOT_DISK_LOCKED` and changes nothing; releasing the virtual machine
+// is what frees that disk.
 //
 // Returns the disk; the virtual machine shows the `detach_disk` operation and the disk the `detach`
 // operation until the disk is detached.
@@ -6387,12 +6383,12 @@ func (c *Client) sendDetachVirtualMachineNetworkInterface(ctx context.Context, p
 // A disk and a virtual machine must reside in the same availability zone to be attached.
 //
 // GET /api/v1/availability-zones/{availabilityZoneId}
-func (c *Client) GetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (*ZoneResource, error) {
+func (c *Client) GetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (*AvailabilityZoneResource, error) {
 	res, err := c.sendGetAvailabilityZone(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (res *ZoneResource, err error) {
+func (c *Client) sendGetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (res *AvailabilityZoneResource, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-availability-zone"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -7063,12 +7059,12 @@ func (c *Client) sendGetElasticIP(ctx context.Context, params GetElasticIPParams
 // `ELASTIC_IP_NOT_ASSOCIATED`.
 //
 // GET /api/v1/elastic-ips/{elasticIpId}/association
-func (c *Client) GetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (*IPv4Binding, error) {
+func (c *Client) GetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (*ElasticIPAssociation, error) {
 	res, err := c.sendGetElasticIPAssociation(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (res *IPv4Binding, err error) {
+func (c *Client) sendGetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (res *ElasticIPAssociation, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-elastic-ip-association"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -9782,12 +9778,12 @@ func (c *Client) sendGetVirtualPrivateCloudIpv6(ctx context.Context, params GetV
 // zone before creating either. Without `region_id`, the zones of every region are listed.
 //
 // GET /api/v1/availability-zones
-func (c *Client) ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*ZoneListResponseBody, error) {
+func (c *Client) ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*AvailabilityZoneListResponseBody, error) {
 	res, err := c.sendListAvailabilityZones(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (res *ZoneListResponseBody, err error) {
+func (c *Client) sendListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (res *AvailabilityZoneListResponseBody, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-availability-zones"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -11167,12 +11163,12 @@ func (c *Client) sendListNetworkInterfaces(ctx context.Context, params ListNetwo
 
 // ListOperationLogs invokes list-operation-logs operation.
 //
-// Records every write operation in the project: who performed it, when, on what, and whether it
-// succeeded. Read operations are not recorded.
+// Records every write operation in the project: who performed it, when, on what, and its outcome. Read
+// operations are not recorded.
 //
 // Operations performed by the platform are included, but the individual operator is not disclosed and
-// `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which
-// a virtual machine was stopped by the platform is needed, whereas the operator is internal
+// `actor_type` is `platform`. Suspension for non-payment and bans for abuse are examples: the time at
+// which a virtual machine was stopped by the platform is needed, whereas the operator is internal
 // information.
 //
 // Fields such as passwords are replaced with a placeholder as the record is written and never appear
@@ -13729,13 +13725,13 @@ func (c *Client) sendListVirtualPrivateClouds(ctx context.Context, params ListVi
 // points at changes nothing; an elastic IP associated with another target is refused with
 // `ELASTIC_IP_ALREADY_ASSOCIATED` (409), and is moved by deleting the association first, so that the
 // moment traffic stops reaching the old target is one the caller chose. The elastic IP shows the
-// `bind` operation until the association is confirmed, and with a virtual machine as the target that
-// virtual machine shows the `bind_elastic_ip` operation as well, so the virtual machine must not have
-// another operation in progress.
+// `associate` operation until the association is confirmed, and with a virtual machine as the target
+// that virtual machine shows the `associate_elastic_ip` operation as well, so the virtual machine must
+// not have another operation in progress.
 //
 // The elastic IP must be in the same region as the target. With a virtual machine as the target, the
 // elastic IP's `bandwidth_mbps` must not exceed the `max_bandwidth_mbps` of that virtual machine's
-// type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`.
+// type; a higher limit is refused with `VIRTUAL_MACHINE_BANDWIDTH_CEILING`.
 //
 // PUT /api/v1/elastic-ips/{elasticIpId}/association
 func (c *Client) PutElasticIPAssociation(ctx context.Context, request PutElasticIPAssociationRequestBody, params PutElasticIPAssociationParams) (PutElasticIPAssociationRes, error) {
@@ -14654,7 +14650,7 @@ func (c *Client) sendUpdateDiskBackup(ctx context.Context, request *UpdateDiskBa
 //
 // The change goes through a Checkout Session that keeps the elastic IP's usage type and period; no
 // separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The
-// elastic IP shows the `set_bandwidth` operation until the change is applied, its Checkout Session
+// elastic IP shows the `update_bandwidth` operation until the change is applied, its Checkout Session
 // expires or its order is canceled, so other operations and a second change are refused with
 // `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If
 // checkout is not completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its
@@ -14662,8 +14658,8 @@ func (c *Client) sendUpdateDiskBackup(ctx context.Context, request *UpdateDiskBa
 //
 // While the address is associated with a virtual machine, the limit must not exceed the
 // `max_bandwidth_mbps` of that virtual machine's type; a higher limit is refused with
-// `INSTANCE_BANDWIDTH_CEILING`. The limit of an address that is not associated is checked when the
-// address is associated with a virtual machine.
+// `VIRTUAL_MACHINE_BANDWIDTH_CEILING`. The limit of an address that is not associated is checked when
+// the address is associated with a virtual machine.
 //
 // PATCH /api/v1/elastic-ips/{elasticIpId}
 func (c *Client) UpdateElasticIP(ctx context.Context, request *UpdateElasticIPRequestBody, params UpdateElasticIPParams) (UpdateElasticIPRes, error) {

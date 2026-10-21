@@ -3112,7 +3112,7 @@ func decodeGetPublicImageParams(args [1]string, argsEscaped bool, r *http.Reques
 
 // GetQuotaParams is parameters of get-quota operation.
 type GetQuotaParams struct {
-	Resource ProjectQuotaResource
+	Resource QuotaResourceType
 }
 
 func unpackGetQuotaParams(packed middleware.Parameters) (params GetQuotaParams) {
@@ -3121,7 +3121,7 @@ func unpackGetQuotaParams(packed middleware.Parameters) (params GetQuotaParams) 
 			Name: "resource",
 			In:   "path",
 		}
-		params.Resource = packed[key].(ProjectQuotaResource)
+		params.Resource = packed[key].(QuotaResourceType)
 	}
 	return params
 }
@@ -3156,7 +3156,7 @@ func decodeGetQuotaParams(args [1]string, argsEscaped bool, r *http.Request) (pa
 					return err
 				}
 
-				params.Resource = ProjectQuotaResource(c)
+				params.Resource = QuotaResourceType(c)
 				return nil
 			}(); err != nil {
 				return err

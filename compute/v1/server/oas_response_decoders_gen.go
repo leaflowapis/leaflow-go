@@ -4078,7 +4078,7 @@ func decodeDetachVirtualMachineNetworkInterfaceResponse(resp *http.Response) (re
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeGetAvailabilityZoneResponse(resp *http.Response) (res *ZoneResource, _ error) {
+func decodeGetAvailabilityZoneResponse(resp *http.Response) (res *AvailabilityZoneResource, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -4094,7 +4094,7 @@ func decodeGetAvailabilityZoneResponse(resp *http.Response) (res *ZoneResource, 
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response ZoneResource
+			var response AvailabilityZoneResource
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -4538,7 +4538,7 @@ func decodeGetElasticIPResponse(resp *http.Response) (res *ElasticIP, _ error) {
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeGetElasticIPAssociationResponse(resp *http.Response) (res *IPv4Binding, _ error) {
+func decodeGetElasticIPAssociationResponse(resp *http.Response) (res *ElasticIPAssociation, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -4554,7 +4554,7 @@ func decodeGetElasticIPAssociationResponse(resp *http.Response) (res *IPv4Bindin
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response IPv4Binding
+			var response ElasticIPAssociation
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -6360,7 +6360,7 @@ func decodeGetVirtualPrivateCloudIpv6Response(resp *http.Response) (res *Virtual
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeListAvailabilityZonesResponse(resp *http.Response) (res *ZoneListResponseBody, _ error) {
+func decodeListAvailabilityZonesResponse(resp *http.Response) (res *AvailabilityZoneListResponseBody, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -6376,7 +6376,7 @@ func decodeListAvailabilityZonesResponse(resp *http.Response) (res *ZoneListResp
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response ZoneListResponseBody
+			var response AvailabilityZoneListResponseBody
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
