@@ -434,6 +434,22 @@ func (s *CheckoutOptionsMode) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/ConsoleOutputResponseBody
+type ConsoleOutputResponseBody struct {
+	// The console output as raw text, in the order the virtual machine wrote it.
+	Output string `json:"output"`
+}
+
+// GetOutput returns the value of Output.
+func (s *ConsoleOutputResponseBody) GetOutput() string {
+	return s.Output
+}
+
+// SetOutput sets the value of Output.
+func (s *ConsoleOutputResponseBody) SetOutput(val string) {
+	s.Output = val
+}
+
 // Ref: #/components/schemas/ConsoleResponseBody
 type ConsoleResponseBody struct {
 	// Connection address of the remote console; single-use and expires within minutes.

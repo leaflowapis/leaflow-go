@@ -846,6 +846,20 @@ func (UnimplementedHandler) GetVirtualMachineConsole(ctx context.Context, params
 	return r, ht.ErrNotImplemented
 }
 
+// GetVirtualMachineConsoleOutput implements get-virtual-machine-console-output operation.
+//
+// The raw text the virtual machine wrote to its serial console during boot and from the kernel.
+// Consult it first when login fails or the remote console shows nothing: it shows where boot stopped,
+// whether the system disk was mounted, and whether initialisation reported errors.
+//
+// A virtual machine in `error` and one suspended by the platform can be read as well. Refused with
+// `VIRTUAL_MACHINE_CONSOLE_UNAVAILABLE` while the cloud has no server for it.
+//
+// GET /api/v1/virtual-machines/{virtualMachineId}/console-output
+func (UnimplementedHandler) GetVirtualMachineConsoleOutput(ctx context.Context, params GetVirtualMachineConsoleOutputParams) (r *ConsoleOutputResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetVirtualPrivateCloud implements get-virtual-private-cloud operation.
 //
 // Retrieve a virtual private cloud.

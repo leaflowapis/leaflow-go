@@ -103,6 +103,7 @@ var operationRolesScopedTokenAuth = map[string][]string{
 	GetSubnetOperation:                            []string{},
 	GetVirtualMachineOperation:                    []string{},
 	GetVirtualMachineConsoleOperation:             []string{},
+	GetVirtualMachineConsoleOutputOperation:       []string{},
 	GetVirtualPrivateCloudOperation:               []string{},
 	GetVirtualPrivateCloudFreeSubnetCidrOperation: []string{},
 	GetVirtualPrivateCloudIpv6Operation:           []string{},

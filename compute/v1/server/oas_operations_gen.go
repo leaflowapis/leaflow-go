@@ -65,6 +65,7 @@ const (
 	GetSubnetOperation                            OperationName = "GetSubnet"
 	GetVirtualMachineOperation                    OperationName = "GetVirtualMachine"
 	GetVirtualMachineConsoleOperation             OperationName = "GetVirtualMachineConsole"
+	GetVirtualMachineConsoleOutputOperation       OperationName = "GetVirtualMachineConsoleOutput"
 	GetVirtualPrivateCloudOperation               OperationName = "GetVirtualPrivateCloud"
 	GetVirtualPrivateCloudFreeSubnetCidrOperation OperationName = "GetVirtualPrivateCloudFreeSubnetCidr"
 	GetVirtualPrivateCloudIpv6Operation           OperationName = "GetVirtualPrivateCloudIpv6"
