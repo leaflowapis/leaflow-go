@@ -15173,9 +15173,12 @@ func (s *QuoteRenewalResultInterval) UnmarshalText(data []byte) error {
 // fails with `BILLING_PURCHASE_INVALID` and the field.
 // Ref: #/components/schemas/QuoteRequest
 type QuoteRequest struct {
-	// The billing account to price for; it must be yours, and an access token is required. Renewals must
-	// currently be paid by it.
+	// The billing account to price for; it must be yours or the current billing account of `project_id`,
+	// and an access token is required. Renewals must currently be paid by it.
 	BillingAccountID OptInt64 `json:"billing_account_id"`
+	// A project you are a member of, to price for its current billing account as a member. Needs
+	// `billing_account_id`.
+	ProjectID OptUUID `json:"project_id"`
 	// The ISO 4217 currency to price in without an account.
 	Currency OptString `json:"currency"`
 	// A proposed purchase.
@@ -15189,6 +15192,11 @@ type QuoteRequest struct {
 // GetBillingAccountID returns the value of BillingAccountID.
 func (s *QuoteRequest) GetBillingAccountID() OptInt64 {
 	return s.BillingAccountID
+}
+
+// GetProjectID returns the value of ProjectID.
+func (s *QuoteRequest) GetProjectID() OptUUID {
+	return s.ProjectID
 }
 
 // GetCurrency returns the value of Currency.
@@ -15214,6 +15222,11 @@ func (s *QuoteRequest) GetPromotionCode() OptString {
 // SetBillingAccountID sets the value of BillingAccountID.
 func (s *QuoteRequest) SetBillingAccountID(val OptInt64) {
 	s.BillingAccountID = val
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *QuoteRequest) SetProjectID(val OptUUID) {
+	s.ProjectID = val
 }
 
 // SetCurrency sets the value of Currency.

@@ -27,7 +27,8 @@ var _ Handler = UnimplementedHandler{}
 // twice.
 //
 // An accepted order is canceled by its owning service, and delivered items through subscription
-// cancellation. Refunds are previewed with `preview-order-refund`.
+// cancellation. Refunds are previewed with `preview-order-refund`. Open to the owner of the order's
+// billing account and to members of its project.
 //
 // POST /api/v1/orders/{orderId}/cancel
 func (UnimplementedHandler) CancelOrder(ctx context.Context, req OptOrderCancel, params CancelOrderParams) (r CancelOrderRes, _ error) {
@@ -38,8 +39,8 @@ func (UnimplementedHandler) CancelOrder(ctx context.Context, req OptOrderCancel,
 //
 // Requests cancellation on the purchase's agreed terms, with the same rules as creating a
 // cancellation. Give the refund amount from a quote with this subscription in
-// `cancellation.subscription_ids`. The token must authorize the subscription's current billing
-// account.
+// `cancellation.subscription_ids`. Open to the owner of the subscription's current billing account and
+// to members of its project with the project permission `billing:subscription.write`.
 //
 // Immediate cancellation asks the owning service to release the resources now; period-end cancellation
 // keeps the subscription active or suspended until the paid term ends. The subscription becomes
@@ -82,6 +83,8 @@ func (UnimplementedHandler) CancelTopUp(ctx context.Context, params CancelTopUpP
 // `BILLING_CHECKOUT_SESSION_EXPIRED`. The order is delivered by the service that owns it once paid;
 // confirmation alone does not mean delivery.
 //
+// Open to the owner of the session's billing account and to members of its project.
+//
 // POST /api/v1/checkout-sessions/{checkoutSessionId}/confirm
 func (UnimplementedHandler) ConfirmCheckoutSession(ctx context.Context, req *CheckoutSessionConfirm, params ConfirmCheckoutSessionParams) (r ConfirmCheckoutSessionRes, _ error) {
 	return r, ht.ErrNotImplemented
@@ -101,7 +104,8 @@ func (UnimplementedHandler) CreateBillingAccount(ctx context.Context, req *Billi
 //
 // Ends subscriptions of one service together. Deleting a resource is an `immediate` cancellation of
 // every subscription released with it, such as a server with its disks or an address with its
-// bandwidth.
+// bandwidth. Open to the owner of the subscriptions' current billing account and to members of their
+// project with the project permission `billing:subscription.write`.
 //
 // The owning service releases the resources at once for `immediate`, or at `scheduled_at`, the end of
 // the paid term, for `period_end`. When release is confirmed, the unused value is returned to the
@@ -143,14 +147,15 @@ func (UnimplementedHandler) CreateCancellation(ctx context.Context, req *Cancell
 
 // CreateCheckoutSession implements create-checkout-session operation.
 //
-// Opens a Checkout Session renewing one of your licensed subscriptions, with periods and price chosen
-// as in renewing. Nothing is charged until you complete it, when a promotion code can be applied; it
-// then renews from the subscription's current_term_end at that time. To renew at once from credit
-// grants, balance or a payment method, renew the subscription instead. Purchases and changes of a
-// service's resources are created through that service.
+// Opens a Checkout Session renewing a licensed subscription, with periods and price chosen as in
+// renewing. Nothing is charged until you complete it, when a promotion code can be applied; it then
+// renews from the subscription's current_term_end at that time. To renew at once from credit grants,
+// balance or a payment method, renew the subscription instead. Purchases and changes of a service's
+// resources are created through that service.
 //
-// Keep `checkout_session_id` and read the session after an unknown outcome; creating it again
-// conflicts.
+// Open to the owner of the subscription's current billing account and to members of its project with
+// the project permission `billing:subscription.write`. Keep `checkout_session_id` and read the session
+// after an unknown outcome; creating it again conflicts.
 //
 // POST /api/v1/checkout-sessions
 func (UnimplementedHandler) CreateCheckoutSession(ctx context.Context, req *CheckoutSessionCreate) (r CreateCheckoutSessionRes, _ error) {
@@ -221,8 +226,8 @@ func (UnimplementedHandler) DeletePaymentMethod(ctx context.Context, params Dele
 // DeleteSubscription implements delete-subscription operation.
 //
 // Hides a canceled or terminated subscription from your subscription list and detail by setting
-// deleted_at; its status, ended_at and history are kept. The token must authorize the subscription's
-// current billing account. A subscription that has not ended is refused with 409
+// deleted_at; its status, ended_at and history are kept. Only the owner of the subscription's current
+// billing account can delete it. A subscription that has not ended is refused with 409
 // `BILLING_SUBSCRIPTION_NOT_ENDED` and `status`. Repeating it keeps the original deleted_at. It sends
 // no cleanup command and creates no refund.
 //
@@ -247,7 +252,8 @@ func (UnimplementedHandler) EstimateUsage(ctx context.Context, req *UsageEstimat
 // ExpireCheckoutSession implements expire-checkout-session operation.
 //
 // Ends an open session without an order; the service that created it releases what it was holding for
-// the purchase. An expired session is returned unchanged.
+// the purchase. An expired session is returned unchanged. Open to the owner of the session's billing
+// account and to members of its project.
 //
 // POST /api/v1/checkout-sessions/{checkoutSessionId}/expire
 func (UnimplementedHandler) ExpireCheckoutSession(ctx context.Context, params ExpireCheckoutSessionParams) (r ExpireCheckoutSessionRes, _ error) {
@@ -290,8 +296,8 @@ func (UnimplementedHandler) GetBillingAccount(ctx context.Context, params GetBil
 
 // GetCancellation implements get-cancellation operation.
 //
-// A cancellation of your billing account with its schedule, expected refundable amount and the outcome
-// for each subscription, including partial success.
+// A cancellation paid by your billing account or of a project you are a member of, with its schedule,
+// expected refundable amount and the outcome for each subscription, including partial success.
 //
 // GET /api/v1/cancellations/{cancellationId}
 func (UnimplementedHandler) GetCancellation(ctx context.Context, params GetCancellationParams) (r *Cancellation, _ error) {
@@ -300,9 +306,9 @@ func (UnimplementedHandler) GetCancellation(ctx context.Context, params GetCance
 
 // GetCheckoutSession implements get-checkout-session operation.
 //
-// A Checkout Session of your billing account. Poll it to follow checkout; once it is complete, read
-// its order for payment and delivery. An unknown session returns 404; another account's session
-// returns 403.
+// A Checkout Session of your billing account or of a project you are a member of. Poll it to follow
+// checkout; once it is complete, read its order for payment and delivery. An unknown session returns
+// 404; any other session returns 403.
 //
 // GET /api/v1/checkout-sessions/{checkoutSessionId}
 func (UnimplementedHandler) GetCheckoutSession(ctx context.Context, params GetCheckoutSessionParams) (r *CheckoutSession, _ error) {
@@ -319,6 +325,8 @@ func (UnimplementedHandler) GetCheckoutSession(ctx context.Context, params GetCh
 // for an immediate change, the returned `proration_date`. An expired session is refused with
 // `BILLING_CHECKOUT_SESSION_EXPIRED`, and a complete one with `BILLING_CHECKOUT_SESSION_COMPLETE`;
 // read its order instead.
+//
+// Open to the owner of the session's billing account and to members of its project.
 //
 // GET /api/v1/checkout-sessions/{checkoutSessionId}/quote
 func (UnimplementedHandler) GetCheckoutSessionQuote(ctx context.Context, params GetCheckoutSessionQuoteParams) (r *Quote, _ error) {
@@ -345,8 +353,9 @@ func (UnimplementedHandler) GetCreditNote(ctx context.Context, params GetCreditN
 
 // GetInvoice implements get-invoice operation.
 //
-// An issued invoice of your billing account, with its amounts, tax lines and payment state. A missing
-// or unissued invoice returns 404; an invoice of another user's account returns 403.
+// An issued invoice of your billing account, or the invoice of an order of a project you are a member
+// of, with its amounts, tax lines and payment state. A missing or unissued invoice returns 404; any
+// other invoice returns 403.
 //
 // GET /api/v1/invoices/{invoiceId}
 func (UnimplementedHandler) GetInvoice(ctx context.Context, params GetInvoiceParams) (r *Invoice, _ error) {
@@ -355,8 +364,8 @@ func (UnimplementedHandler) GetInvoice(ctx context.Context, params GetInvoicePar
 
 // GetOrder implements get-order operation.
 //
-// An order of your billing account with its status and invoice. An unknown order returns 404; another
-// user's order returns 403.
+// An order of your billing account or of a project you are a member of, with its status and invoice.
+// An unknown order returns 404; any other order returns 403.
 //
 // GET /api/v1/orders/{orderId}
 func (UnimplementedHandler) GetOrder(ctx context.Context, params GetOrderParams) (r *Order, _ error) {
@@ -393,8 +402,9 @@ func (UnimplementedHandler) GetProduct(ctx context.Context, params GetProductPar
 
 // GetProjectAssignment implements get-project-assignment operation.
 //
-// The project's current assignment. Returns 404 when no billing account is assigned; the project
-// cannot create resources until one is.
+// The project's current assignment, readable by the owner of the assigned account and by members of
+// the project. Returns 404 when no billing account is assigned; the project cannot create resources
+// until one is.
 //
 // GET /api/v1/assignments/{projectId}
 func (UnimplementedHandler) GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (r *ProjectAssignment, _ error) {
@@ -406,10 +416,13 @@ func (UnimplementedHandler) GetProjectAssignment(ctx context.Context, params Get
 // Calculates what a proposed purchase, or the renewal of your subscriptions, would invoice now, and
 // what each purchased line renews at. Nothing is saved, reserved or redeemed.
 //
-// With `billing_account_id`, the quote is for a billing account you own: its currency, account
-// discounts, tax and funds apply, renewals use the account currently paying for each subscription, and
-// an access token is required. Without it, proposed items are priced in `currency` for anyone, signed
-// in or not: no account discount or funds apply, and `tax_status` is `requires_location_inputs`.
+// With `billing_account_id`, the quote is for that billing account: its currency, account discounts,
+// tax and funds apply, renewals use the account currently paying for each subscription, and an access
+// token is required. The account must be yours, or, with `project_id`, the current billing account of
+// a project you are a member of; renewals then must be of the project's subscriptions and need the
+// project permission `billing:subscription.write`. Without it, proposed items are priced in `currency`
+// for anyone, signed in or not: no account discount or funds apply, and `tax_status` is
+// `requires_location_inputs`.
 //
 // A promotion code is evaluated without being applied. It is applied only when a Checkout Session is
 // completed with it; conditions that depend on the account, such as a first purchase, are checked only
@@ -435,7 +448,9 @@ func (UnimplementedHandler) GetStatement(ctx context.Context, params GetStatemen
 //
 // The statement's consumption, grouped by project, product or meter and filtered within the statement.
 // Quantities are given only for meter groups; grouping by meter also splits by the meter's
-// presentation dimensions.
+// presentation dimensions. Open to the owner of the statement's account and to members with the
+// project permission `billing:cost.read` of each project in `project_ids`, which must then be given
+// and currently assigned to that account.
 //
 // GET /api/v1/statements/{statementId}/usage-summary
 func (UnimplementedHandler) GetStatementUsage(ctx context.Context, params GetStatementUsageParams) (r *StatementSummary, _ error) {
@@ -444,7 +459,8 @@ func (UnimplementedHandler) GetStatementUsage(ctx context.Context, params GetSta
 
 // GetSubscription implements get-subscription operation.
 //
-// A subscription of the authorized billing account. Deleted subscriptions are reported as not found.
+// A subscription paid by your billing account or of a project you are a member of. Deleted
+// subscriptions are reported as not found.
 //
 // GET /api/v1/subscriptions/{subscriptionId}
 func (UnimplementedHandler) GetSubscription(ctx context.Context, params GetSubscriptionParams) (r *Subscription, _ error) {
@@ -483,8 +499,8 @@ func (UnimplementedHandler) ListAccountDiscounts(ctx context.Context, params Lis
 
 // ListActiveResources implements list-active-resources operation.
 //
-// Continuous metering registrations paid for by your billing accounts. Their state does not describe
-// the resource's runtime. Project filters only narrow the result.
+// Continuous metering registrations paid for by your billing accounts; members of a project list its
+// registrations with `project_ids`. Their state does not describe the resource's runtime.
 //
 // GET /api/v1/active-resources
 func (UnimplementedHandler) ListActiveResources(ctx context.Context, params ListActiveResourcesParams) (r *ActiveResourceList, _ error) {
@@ -493,11 +509,12 @@ func (UnimplementedHandler) ListActiveResources(ctx context.Context, params List
 
 // ListAllowances implements list-allowances operation.
 //
-// Remaining usage quantities, such as bytes, seconds or tokens. Applicable allowances are consumed
-// before usage is charged: lower priority values first, then earlier expiry, then earlier issuance.
-// Unused quantity expires without refund or carry-over. Promotional allowances apply to usage paid by
-// their holding account; included allowances apply only to their subscription, also after its project
-// moves to another billing account.
+// Remaining usage quantities, such as bytes, seconds or tokens; members of a project list its
+// allowances with `project_ids`. Applicable allowances are consumed before usage is charged: lower
+// priority values first, then earlier expiry, then earlier issuance. Unused quantity expires without
+// refund or carry-over. Promotional allowances apply to usage paid by their holding account; included
+// allowances apply only to their subscription, also after its project moves to another billing
+// account.
 //
 // GET /api/v1/allowances
 func (UnimplementedHandler) ListAllowances(ctx context.Context, params ListAllowancesParams) (r *AllowanceList, _ error) {
@@ -515,8 +532,8 @@ func (UnimplementedHandler) ListBillingAccounts(ctx context.Context, params List
 
 // ListCancellations implements list-cancellations operation.
 //
-// Newest first. Filter by `subscription_id` and `status=open` to find a subscription's cancellation in
-// progress.
+// Newest first; members of a project list its cancellations with `project_ids`. Filter by
+// `subscription_id` and `status=open` to find a subscription's cancellation in progress.
 //
 // GET /api/v1/cancellations
 func (UnimplementedHandler) ListCancellations(ctx context.Context, params ListCancellationsParams) (r *CancellationList, _ error) {
@@ -525,7 +542,8 @@ func (UnimplementedHandler) ListCancellations(ctx context.Context, params ListCa
 
 // ListCheckoutSessionItems implements list-checkout-session-items operation.
 //
-// What the session buys, by position. Prices and amounts are in its quote.
+// What the session buys, by position. Prices and amounts are in its quote. Readable by whoever can
+// read the session.
 //
 // GET /api/v1/checkout-sessions/{checkoutSessionId}/items
 func (UnimplementedHandler) ListCheckoutSessionItems(ctx context.Context, params ListCheckoutSessionItemsParams) (r *CheckoutSessionItemList, _ error) {
@@ -534,8 +552,8 @@ func (UnimplementedHandler) ListCheckoutSessionItems(ctx context.Context, params
 
 // ListCheckoutSessions implements list-checkout-sessions operation.
 //
-// Checkout Sessions of your billing accounts, newest first. An open session is a purchase waiting for
-// you to complete checkout.
+// Checkout Sessions of your billing accounts, newest first; members of a project list its sessions
+// with `project_ids`. An open session is a purchase waiting for checkout to be completed.
 //
 // GET /api/v1/checkout-sessions
 func (UnimplementedHandler) ListCheckoutSessions(ctx context.Context, params ListCheckoutSessionsParams) (r *CheckoutSessionList, _ error) {
@@ -590,8 +608,9 @@ func (UnimplementedHandler) ListCurrencies(ctx context.Context, params ListCurre
 
 // ListEntitlements implements list-entitlements operation.
 //
-// Capabilities granted by live subscriptions and active feature grants. A capability not held is not
-// listed, and one stops being listed when the subscription or grant providing it ends.
+// Capabilities granted by live subscriptions and active feature grants; members of a project list its
+// entitlements with `project_ids`. A capability not held is not listed, and one stops being listed
+// when the subscription or grant providing it ends.
 //
 // GET /api/v1/entitlements
 func (UnimplementedHandler) ListEntitlements(ctx context.Context, params ListEntitlementsParams) (r *EntitlementList, _ error) {
@@ -611,8 +630,8 @@ func (UnimplementedHandler) ListFeatureGrants(ctx context.Context, params ListFe
 
 // ListInvoiceItems implements list-invoice-items operation.
 //
-// Lines of an issued invoice of your billing account, with their service periods and projects. A
-// missing or unissued invoice returns 404; an invoice of another user's account returns 403.
+// Lines of an invoice readable with get-invoice, with their service periods and projects. A missing or
+// unissued invoice returns 404; any other invoice returns 403.
 //
 // GET /api/v1/invoices/{invoiceId}/items
 func (UnimplementedHandler) ListInvoiceItems(ctx context.Context, params ListInvoiceItemsParams) (r *InvoiceItemList, _ error) {
@@ -640,7 +659,8 @@ func (UnimplementedHandler) ListMonthlyStatements(ctx context.Context, params Li
 
 // ListOrderItems implements list-order-items operation.
 //
-// One entry per item bought, with the price charged and the period it covers.
+// One entry per item bought, with the price charged and the period it covers. Readable by whoever can
+// read the order.
 //
 // GET /api/v1/orders/{orderId}/items
 func (UnimplementedHandler) ListOrderItems(ctx context.Context, params ListOrderItemsParams) (r *OrderItemList, _ error) {
@@ -649,8 +669,9 @@ func (UnimplementedHandler) ListOrderItems(ctx context.Context, params ListOrder
 
 // ListOrders implements list-orders operation.
 //
-// Orders with their status and invoice amounts. A pending order is not yet accepted and can expire at
-// expires_at; its invoice shows whether payment is needed. Accepted does not mean delivered.
+// Orders of your billing accounts with their status and invoice amounts; members of a project list its
+// orders with `project_ids`. A pending order is not yet accepted and can expire at expires_at; its
+// invoice shows whether payment is needed. Accepted does not mean delivered.
 //
 // GET /api/v1/orders
 func (UnimplementedHandler) ListOrders(ctx context.Context, params ListOrdersParams) (r *OrderList, _ error) {
@@ -671,7 +692,8 @@ func (UnimplementedHandler) ListPaymentMethods(ctx context.Context, params ListP
 //
 // The payment gateways and methods currently accepting the account's currency, preferred gateway
 // first. Top-ups and invoice payments must use one listed here. An empty result means online payment
-// is unavailable for the account.
+// is unavailable for the account. Open to the owner of the account and, with `project_id`, to members
+// of a project the account is currently assigned to.
 //
 // GET /api/v1/billing-accounts/{accountId}/payment-options
 func (UnimplementedHandler) ListPaymentOptions(ctx context.Context, params ListPaymentOptionsParams) (r *PaymentOptionList, _ error) {
@@ -748,7 +770,8 @@ func (UnimplementedHandler) ListRefunds(ctx context.Context, params ListRefundsP
 //
 // Lists the current renewal agreement and available intervals. The current option preserves
 // recurring_amount; other options use current prices. Amounts cover the whole subscription quantity
-// and exclude tax.
+// and exclude tax. Open to the owner of the subscription's current billing account and to members of
+// its project.
 //
 // GET /api/v1/subscriptions/{subscriptionId}/renewal-prices
 func (UnimplementedHandler) ListRenewalPrices(ctx context.Context, params ListRenewalPricesParams) (r *RenewalPriceList, _ error) {
@@ -762,6 +785,9 @@ func (UnimplementedHandler) ListRenewalPrices(ctx context.Context, params ListRe
 // closing are included. `from` and `to` must fall on UTC day boundaries and span at most 92 days.
 // Project filters use the account recorded on each charge, including charges for projects later
 // assigned to another account. The total covers all matching groups, not just the returned page.
+//
+// Open to the owner of the account and to members with the project permission `billing:cost.read` of
+// each project in `project_ids`, which must then be given and currently assigned to the account.
 //
 // GET /api/v1/spend
 func (UnimplementedHandler) ListSpend(ctx context.Context, params ListSpendParams) (r *SpendRowList, _ error) {
@@ -780,7 +806,8 @@ func (UnimplementedHandler) ListStatements(ctx context.Context, params ListState
 
 // ListSubscriptions implements list-subscriptions operation.
 //
-// Subscriptions of the authorized billing account. Deleted subscriptions are not listed.
+// Subscriptions paid by your billing accounts; members of a project list its subscriptions with
+// `project_ids`. Deleted subscriptions are not listed.
 //
 // GET /api/v1/subscriptions
 func (UnimplementedHandler) ListSubscriptions(ctx context.Context, params ListSubscriptionsParams) (r *SubscriptionList, _ error) {
@@ -808,7 +835,8 @@ func (UnimplementedHandler) ListTransactions(ctx context.Context, params ListTra
 
 // ListUsageCharges implements list-usage-charges operation.
 //
-// Priced usage charges in the requested scope. Usage that had no price when it occurred is never
+// Priced usage charges in the requested scope; members with the project permission `billing:cost.read`
+// list a project's charges with `project_ids`. Usage that had no price when it occurred is never
 // charged later.
 //
 // GET /api/v1/usage-charges
@@ -859,6 +887,9 @@ func (UnimplementedHandler) ListWithdrawals(ctx context.Context, params ListWith
 // minor unit; such an invoice is collected from credit grants and balance automatically, including
 // right after a top-up.
 //
+// Open to the owner of the invoice's billing account and, for the invoice of an order of a project, to
+// members of the project. Only the owner can pay with a saved `payment_method_id`.
+//
 // POST /api/v1/invoices/{invoiceId}/pay
 func (UnimplementedHandler) PayInvoice(ctx context.Context, req OptPayInvoiceRequest, params PayInvoiceParams) (r *PaymentResult, _ error) {
 	return r, ht.ErrNotImplemented
@@ -887,7 +918,8 @@ func (UnimplementedHandler) PayTogether(ctx context.Context, req *PayTogetherReq
 // PreviewCancellation implements preview-cancellation operation.
 //
 // What creating the cancellation now would return, per subscription and in total. Nothing is canceled,
-// ended or refunded. Refused as creating it would be, except that nothing is recorded.
+// ended or refunded. Open to the same callers and refused as creating it would be, except that nothing
+// is recorded.
 //
 // QUERY /api/v1/cancellations/preview
 func (UnimplementedHandler) PreviewCancellation(ctx context.Context, req *CancellationPreviewRequest) (r *CancellationRefundPreview, _ error) {
@@ -902,7 +934,7 @@ func (UnimplementedHandler) PreviewCancellation(ctx context.Context, req *Cancel
 // charged, reserved or created.
 //
 // Refused with the same errors as paying, except that insufficient funds are not an error here: they
-// show as a `gateway_amount` above zero.
+// show as a `gateway_amount` above zero. Open to the same callers as paying.
 //
 // GET /api/v1/invoices/{invoiceId}/payment-preview
 func (UnimplementedHandler) PreviewInvoicePayment(ctx context.Context, params PreviewInvoicePaymentParams) (r *PaymentPreview, _ error) {
@@ -912,7 +944,8 @@ func (UnimplementedHandler) PreviewInvoicePayment(ctx context.Context, params Pr
 // PreviewOrderRefund implements preview-order-refund operation.
 //
 // What canceling the listed items, or the whole order, would refund to the original payment sources.
-// Nothing is canceled or refunded.
+// Nothing is canceled or refunded. Open to the owner of the order's billing account and to members of
+// its project.
 //
 // GET /api/v1/orders/{orderId}/refund-preview
 func (UnimplementedHandler) PreviewOrderRefund(ctx context.Context, params PreviewOrderRefundParams) (r *OrderRefundPreview, _ error) {
@@ -952,6 +985,10 @@ func (UnimplementedHandler) PreviewWithdrawal(ctx context.Context, req *Withdraw
 // `use_balance` allow; when they cannot cover it, the request fails with `BILLING_INSUFFICIENT_FUNDS`
 // and no order is left. To apply a promotion code or pay later, create a renewal Checkout Session.
 //
+// Open to the owner of the subscription's current billing account and to members of its project with
+// the project permission `billing:subscription.write`. Only the owner can pay with
+// `payment_method_id`.
+//
 // Keep order_id and read the order after an unknown outcome; creating it again conflicts.
 //
 // POST /api/v1/subscriptions/{subscriptionId}/renew
@@ -977,7 +1014,8 @@ func (UnimplementedHandler) ResumeBillingAccount(ctx context.Context, params Res
 // `BILLING_SUBSCRIPTION_AUTO_RENEW_FIXED` for a metered subscription, which continues until it is
 // canceled, and 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` with `meta.cancellation_id` while a
 // cancellation is open: creating it turned renewal off, and withdrawing it does not turn renewal back
-// on.
+// on. Open to the owner of the subscription's current billing account and to members of its project
+// with the project permission `billing:subscription.write`.
 //
 // PUT /api/v1/subscriptions/{subscriptionId}/auto-renew
 func (UnimplementedHandler) SetAutoRenew(ctx context.Context, req *AutoRenewSet, params SetAutoRenewParams) (r *Subscription, _ error) {
@@ -996,11 +1034,12 @@ func (UnimplementedHandler) SetDefaultPaymentMethod(ctx context.Context, params 
 
 // SetProjectAssignment implements set-project-assignment operation.
 //
-// Links the project to a billing account. A project without one is linked directly. Moving it to
-// another account has the same requirements as unlinking: you own both accounts, the project has no
-// metered resources, no subscriptions that have not ended and no orders in progress, and the current
-// account has no unpaid invoices. Nothing moves with the project; charges already incurred stay with
-// the account linked when they occurred.
+// Links the project to a billing account you own; you need the project permission
+// `billing:project_assignment.write`. A project without one is linked directly. Moving it to another
+// account has the same requirements as unlinking: you own both accounts, the project has no metered
+// resources, no subscriptions that have not ended and no orders in progress, and the current account
+// has no unpaid invoices. Nothing moves with the project; charges already incurred stay with the
+// account linked when they occurred.
 //
 // Refused once the project no longer accepts purchases because it is being deleted.
 //
@@ -1024,7 +1063,8 @@ func (UnimplementedHandler) SuspendBillingAccount(ctx context.Context, params Su
 
 // UnlinkProjectBillingAccount implements unlink-project-billing-account operation.
 //
-// Ends the project's current assignment; the assignment history is kept. Allowed only when the project
+// Ends the project's current assignment; the assignment history is kept. You need to own the account
+// and hold the project permission `billing:project_assignment.write`. Allowed only when the project
 // has no metered resources, no subscriptions that have not ended and no orders in progress, including
 // period-end changes, and the billing account has no unpaid invoices; invoices of orders awaiting
 // payment do not count. Orders are not modified, so wait for them to complete. Charges already
@@ -1061,7 +1101,8 @@ func (UnimplementedHandler) UpdateContact(ctx context.Context, req *ContactUpdat
 // Withdraws the whole cancellation while no resource has begun to be released; afterwards it is
 // refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions continue, but automatic renewal,
 // turned off when the cancellation was created, stays off until it is turned on again. Withdrawing a
-// withdrawn cancellation returns it unchanged.
+// withdrawn cancellation returns it unchanged. Open to the owner of the subscriptions' current billing
+// account and to members of their project with the project permission `billing:subscription.write`.
 //
 // POST /api/v1/cancellations/{cancellationId}/withdraw
 func (UnimplementedHandler) WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (r *Cancellation, _ error) {
