@@ -282,10 +282,45 @@ func (s *BackupResource) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if value, ok := s.FailureReason.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "failure_reason",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s BackupResourceFailureReason) Validate() error {
+	switch s {
+	case "order_declined":
+		return nil
+	case "order_canceled":
+		return nil
+	case "order_expired":
+		return nil
+	case "checkout_expired":
+		return nil
+	case "provisioning_failed":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s BackupResourceStatus) Validate() error {
@@ -474,6 +509,77 @@ func (s BootDisk) Validate() error {
 	}
 }
 
+func (s *CheckoutOptions) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if value, ok := s.Mode.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "mode",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.ExpectedAmount.Get(); ok {
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     0,
+					MaxLengthSet:  false,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^[0-9]{1,15}([.][0-9]{1,10})?$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(value)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "expected_amount",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s CheckoutOptionsMode) Validate() error {
+	switch s {
+	case "automatic":
+		return nil
+	case "deferred":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s *CreateBackupRequestBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -511,6 +617,24 @@ func (s *CreateBackupRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "name",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Checkout.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "checkout",
 			Error: err,
 		})
 	}
@@ -633,6 +757,24 @@ func (s *CreateDiskRequestBody) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if value, ok := s.Checkout.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "checkout",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -747,6 +889,24 @@ func (s *CreateElasticIPRequestBody) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if value, ok := s.Checkout.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "checkout",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -813,6 +973,24 @@ func (s *CreateImageRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "name",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Checkout.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "checkout",
 			Error: err,
 		})
 	}
@@ -1382,6 +1560,24 @@ func (s *CreateSnapshotRequestBody) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if value, ok := s.Checkout.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "checkout",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -1701,6 +1897,24 @@ func (s *CreateVirtualMachineRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "elastic_ip",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Checkout.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "checkout",
 			Error: err,
 		})
 	}
@@ -2372,6 +2586,8 @@ func (s DiskResourceFailureReason) Validate() error {
 		return nil
 	case "order_expired":
 		return nil
+	case "checkout_expired":
+		return nil
 	case "provisioning_failed":
 		return nil
 	default:
@@ -2801,6 +3017,8 @@ func (s ElasticIPFailureReason) Validate() error {
 	case "order_canceled":
 		return nil
 	case "order_expired":
+		return nil
+	case "checkout_expired":
 		return nil
 	case "provisioning_failed":
 		return nil
@@ -3599,10 +3817,45 @@ func (s *ImageResource) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if value, ok := s.FailureReason.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "failure_reason",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s ImageResourceFailureReason) Validate() error {
+	switch s {
+	case "order_declined":
+		return nil
+	case "order_canceled":
+		return nil
+	case "order_expired":
+		return nil
+	case "checkout_expired":
+		return nil
+	case "provisioning_failed":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s ImageResourceStatus) Validate() error {
@@ -5563,6 +5816,24 @@ func (s *ResizeDiskRequestBody) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if value, ok := s.Checkout.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "checkout",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -5606,6 +5877,24 @@ func (s *ResizeVirtualMachineRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "machine_type_id",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Checkout.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "checkout",
 			Error: err,
 		})
 	}
@@ -5714,6 +6003,24 @@ func (s *RestoreBackupRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "billing",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Checkout.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "checkout",
 			Error: err,
 		})
 	}
@@ -6235,6 +6542,24 @@ func (s *SetElasticIPBandwidthRequestBody) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if value, ok := s.Checkout.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "checkout",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -6560,10 +6885,45 @@ func (s *SnapshotResource) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if value, ok := s.FailureReason.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "failure_reason",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s SnapshotResourceFailureReason) Validate() error {
+	switch s {
+	case "order_declined":
+		return nil
+	case "order_canceled":
+		return nil
+	case "order_expired":
+		return nil
+	case "checkout_expired":
+		return nil
+	case "provisioning_failed":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s SnapshotResourceStatus) Validate() error {
@@ -7263,6 +7623,8 @@ func (s VirtualMachineFailureReason) Validate() error {
 	case "order_canceled":
 		return nil
 	case "order_expired":
+		return nil
+	case "checkout_expired":
 		return nil
 	case "provisioning_failed":
 		return nil

@@ -1105,10 +1105,16 @@ func (s *Server) handleBindElasticIPRequest(args [1]string, argsEscaped bool, w 
 // file-system-inconsistent backup. Pending backups count toward Compute project quotas until cleanup
 // is confirmed.
 //
-// Records the pending resource before creating its deferred postpaid Billing order. Source ownership
-// and Compute project quotas are checked before placement. No storage is allocated until the order is
-// read back, verified and accepted. Unknown placement leaves the resource pending for recovery rather
-// than treating it as rejected.
+// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
+// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
+// backup is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
+// the customer completes checkout in Billing. The source and project quotas are checked before the
+// Checkout Session is created, and a refused request creates nothing.
+//
+// The backup shows the `create` operation from the moment its Checkout Session is created until it is
+// delivered or its checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
 //
 // POST /api/v1/backups
 func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1315,6 +1321,15 @@ func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w h
 // resolves. Types that are off sale do not appear in the disk type listing; disks already bought on
 // one keep working and can still be resized.
 //
+// A disk bought on its own is licensed: `billing.usage_type` `metered` is refused with
+// `DISK_USAGE_TYPE_UNAVAILABLE`. A disk created with a virtual machine follows the machine's terms
+// instead and may be metered.
+//
+// The disk shows the `create` operation from the moment its Checkout Session is created until it is
+// delivered or its checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
+//
 // POST /api/v1/disks
 func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -1513,18 +1528,24 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 
 // handleCreateElasticIPRequest handles create-elastic-ip operation.
 //
-// Select a public elastic IP type. Compute records the pending resource and its deferred order before
-// allocating an address; checkout is performed in Billing.
+// Select a public elastic IP type. The elastic IP is bought through a Billing Checkout Session, and no
+// address is allocated before its order is accepted.
 //
-// Returns the elastic IP as `pending` with its order; `address` is null until the address is allocated
-// after the order is accepted. A requested `address` is not held while pending; if it is no longer
-// available then, the elastic IP ends `failed` with `provisioning_failed` and its charge is refunded.
+// Returns the elastic IP as `pending` with its Checkout Session; `address` is null until the address
+// is allocated after the order is accepted. A requested `address` is not held while pending; if it is
+// no longer available then, the elastic IP ends `failed` with `provisioning_failed` and its charge is
+// refunded.
 //
 // IPv6 is not requested through this endpoint. IPv6 addresses are assigned to virtual machines by the
 // virtual private cloud; enable IPv6 on that network instead.
 //
 // Allocation does not select or create a virtual private cloud. A later association selects an
 // assigned network-interface address; Compute then establishes the required network connectivity.
+//
+// The elastic IP shows the `create` operation from the moment its Checkout Session is created until it
+// is delivered or its checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
 //
 // POST /api/v1/elastic-ips
 func (s *Server) handleCreateElasticIPRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1728,10 +1749,16 @@ func (s *Server) handleCreateElasticIPRequest(args [0]string, argsEscaped bool, 
 // machine first for file-system consistency. The virtual machine cannot be released while its source
 // disk is being captured. Compute project quotas are enforced independently of billing.
 //
-// Records the pending resource before creating its deferred postpaid Billing order. Source ownership
-// and Compute project quotas are checked before placement. No storage is allocated until the order is
-// read back, verified and accepted. Unknown placement leaves the resource pending for recovery rather
-// than treating it as rejected.
+// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
+// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
+// image is captured as soon as the order is accepted; with deferred checkout it stays `pending` until
+// the customer completes checkout in Billing. The source and project quotas are checked before the
+// Checkout Session is created, and a refused request creates nothing.
+//
+// The image shows the `create` operation from the moment its Checkout Session is created until it is
+// delivered or its checkout or order ends. While its purchase awaits checkout or payment its deletion
+// is refused with `COMPUTE_PURCHASE_PENDING`; once the capture runs, deletion is the one operation it
+// accepts.
 //
 // POST /api/v1/images
 func (s *Server) handleCreateImageRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2946,10 +2973,16 @@ func (s *Server) handleCreateSecurityGroupRuleRequest(args [0]string, argsEscape
 // snapshot; flush pending writes first. A system disk cannot be reverted while attached. Pending
 // snapshots count toward Compute project quotas until creation fails and cleanup is confirmed.
 //
-// Records the pending resource before creating its deferred postpaid Billing order. Source ownership
-// and Compute project quotas are checked before placement. No storage is allocated until the order is
-// read back, verified and accepted. Unknown placement leaves the resource pending for recovery rather
-// than treating it as rejected.
+// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
+// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
+// snapshot is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
+// the customer completes checkout in Billing. The source and project quotas are checked before the
+// Checkout Session is created, and a refused request creates nothing.
+//
+// The snapshot shows the `create` operation from the moment its Checkout Session is created until it
+// is delivered or its checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
 //
 // POST /api/v1/snapshots
 func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3351,17 +3384,18 @@ func (s *Server) handleCreateSubnetRequest(args [0]string, argsEscaped bool, w h
 
 // handleCreateVirtualMachineRequest handles create-virtual-machine operation.
 //
-// Records the requested configuration, creates a deferred Billing order, including for metered terms,
-// and returns one `pending` virtual machine per requested virtual machine with the order. Each new
-// component carries its own commercial terms; their billing mode and period must match. A pending
-// virtual machine has no virtual machine, system disk or address, and is not metered.
+// Creates a Billing Checkout Session, including for metered terms, and returns one `pending` virtual
+// machine per requested virtual machine with it. Each new component carries its own commercial terms;
+// their usage type and period must match. A pending virtual machine has no server, system disk or
+// address, and is not metered.
 //
-// Creation starts only after Compute receives `orderAccepted` and verifies the accepted order with
-// Billing: the virtual machine becomes `provisioning`, then `active`. Preview and confirm checkout
-// through Billing using the returned order reference. A zero-total order still requires verified
-// acceptance; a canceled or expired order leaves the virtual machines `failed` with `order_canceled`
-// or `order_expired`. Do not submit another creation request after paying. After an uncertain
-// response, look the order up before submitting again.
+// Creation starts once Billing accepts the order: the virtual machine becomes `provisioning`, then
+// `active`. With automatic checkout, insufficient funds refuse the request and nothing is created.
+// With deferred checkout, the virtual machines stay `pending` until the customer completes checkout in
+// Billing and the order is paid; an expired Checkout Session, or a canceled or expired order, leaves
+// them `failed` with `checkout_expired`, `order_canceled` or `order_expired`. Do not submit another
+// creation request after paying. After an uncertain response, look the Checkout Session up in Billing
+// before submitting again.
 //
 // Choose an image or existing disk through boot_disk, and exactly one of network_interface_id or
 // subnet_id. Existing network interfaces, boot disks or elastic IPs require count=1. They are not held
@@ -3373,15 +3407,22 @@ func (s *Server) handleCreateSubnetRequest(args [0]string, argsEscaped bool, w h
 // Virtual machines of one request succeed or fail individually. Each virtual machine, with its system
 // disk, network interface and elastic IP, is created or fails as a whole. Virtual machines that were
 // created are kept; each failed virtual machine ends `failed` with `provisioning_failed`, its part of
-// the order is refunded, and the order then ends `partially_completed`. Each virtual machine is named
-// after this request with a number appended.
+// the order is refunded, and the order then ends `partially_completed`. A virtual machine is delivered
+// whole or not at all: when the customer cancels any of its order items before the order is accepted,
+// it is not created, its remaining items are canceled and refunded, and it ends `failed` with
+// `order_canceled`. Each virtual machine is named after this request with a number appended.
 //
-// The network is checked before the order is created, and a request it refuses orders and charges
-// nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the virtual private cloud's `status`
-// is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or a
-// security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs to
-// another virtual private cloud, and `PORT_UNAVAILABLE` when the port's `status` is not `available`.
-// `meta` names the resource.
+// The network is checked before the Checkout Session is created, and a request it refuses orders and
+// charges nothing. It is refused with `PRIVATE_NETWORK_UNAVAILABLE` when the virtual private cloud's
+// `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the subnet or
+// a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security group belongs
+// to another virtual private cloud, and `PORT_UNAVAILABLE` when the port's `status` is not
+// `available`. `meta` names the resource.
+//
+// Each virtual machine shows the `create` operation from the moment the Checkout Session is created
+// until it is delivered or the checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its release with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
 //
 // POST /api/v1/virtual-machines
 func (s *Server) handleCreateVirtualMachineRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3788,9 +3829,11 @@ func (s *Server) handleCreateVirtualPrivateCloudRequest(args [0]string, argsEsca
 // Quota capacity and storage metering are released only after cleanup is confirmed. Billing determines
 // whether its commercial subscription must be canceled first.
 //
-// A resource with a pending order must have that order canceled through Billing first. A subscribed
-// resource is released through its subscription cancellation. Cleanup must be confirmed before
-// metering is stopped; unknown cleanup is not proof of release.
+// A resource whose purchase still awaits checkout or payment is refused with
+// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
+// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
+// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
+// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 //
 // DELETE /api/v1/backups/{backupId}
 func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3996,6 +4039,10 @@ func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w h
 // pay-as-you-go subscription. `meta.resource_id` names the disk. It is released by canceling the
 // subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
 // `release_subscription_ids`.
+//
+// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
+// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
+// checkout created one. Expire the session or cancel the order in Billing instead.
 //
 // DELETE /api/v1/disks/{diskId}
 func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4206,9 +4253,11 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 // Quota capacity and storage metering are released only after cleanup is confirmed. Billing determines
 // whether its commercial subscription must be canceled first.
 //
-// A resource with a pending order must have that order canceled through Billing first. A subscribed
-// resource is released through its subscription cancellation. Cleanup must be confirmed before
-// metering is stopped; unknown cleanup is not proof of release.
+// A resource whose purchase still awaits checkout or payment is refused with
+// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
+// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
+// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
+// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 //
 // DELETE /api/v1/images/{imageId}
 func (s *Server) handleDeleteImageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5414,9 +5463,11 @@ func (s *Server) handleDeleteSecurityGroupRuleRequest(args [1]string, argsEscape
 // Deletes this resource. Quota capacity and storage metering are released only after cleanup is
 // confirmed.
 //
-// A resource with a pending order must have that order canceled through Billing first. A subscribed
-// resource is released through its subscription cancellation. Cleanup must be confirmed before
-// metering is stopped; unknown cleanup is not proof of release.
+// A resource whose purchase still awaits checkout or payment is refused with
+// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
+// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
+// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
+// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 //
 // DELETE /api/v1/snapshots/{snapshotId}
 func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5828,6 +5879,10 @@ func (s *Server) handleDeleteSubnetRequest(args [1]string, argsEscaped bool, w h
 // a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names
 // that resource. The virtual machine is released by canceling the subscriptions listed in
 // `meta.subscription_ids` through Billing, the same set as its `release_subscription_ids`.
+//
+// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
+// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
+// checkout created one. Expire the session or cancel the order in Billing instead.
 //
 // DELETE /api/v1/virtual-machines/{virtualMachineId}
 func (s *Server) handleDeleteVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -16336,6 +16391,10 @@ func (s *Server) handleRejectPeeringRequest(args [1]string, argsEscaped bool, w 
 // subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
 // `release_subscription_ids`.
 //
+// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
+// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
+// checkout created one. Expire the session or cancel the order in Billing instead.
+//
 // DELETE /api/v1/elastic-ips/{elasticIpId}
 func (s *Server) handleReleaseElasticIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -18050,13 +18109,13 @@ func (s *Server) handleResetVirtualMachinePasswordRequest(args [1]string, argsEs
 
 // handleResizeDiskRequest handles resize-disk operation.
 //
-// Capacity can only be increased; shrinking is not supported. Returns the disk with the order for the
-// resize, which keeps the disk's billing mode and period. The disk shows the `resize` operation until
-// the resize is applied or its order is canceled, including while the order awaits checkout, so other
-// operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk keeps
-// its current size until the resize is applied; once `size_gb` shows the new size, extend the file
-// system inside the virtual machine. If the order is not accepted or the resize fails, the disk keeps
-// its size and the order shows the outcome.
+// Capacity can only be increased; shrinking is not supported. Returns the disk with the Checkout
+// Session for the resize, which keeps the disk's usage type and period. The disk shows the `resize`
+// operation until the resize is applied, its Checkout Session expires or its order is canceled, so
+// other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The disk
+// keeps its current size until the resize is applied; once `size_gb` shows the new size, extend the
+// file system inside the virtual machine. If checkout is not completed, the order is not accepted or
+// the resize fails, the disk keeps its size and Billing shows the outcome.
 //
 // An attached disk, including a system disk, can be resized. The capacity is usable at once, and the
 // disk's `performance` shows what its type gives the new size. That performance applies from the
@@ -18276,19 +18335,19 @@ func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w htt
 
 // handleResizeVirtualMachineRequest handles resize-virtual-machine operation.
 //
-// Records the requested configuration, creates a deferred Billing change order, including for metered
-// terms, and returns the virtual machine with the order. The virtual machine keeps its billing mode
-// and period; Billing resolves the applicable commercial terms and refuses an unavailable option with
-// 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts only after Compute receives `orderAccepted` and
-// verifies the accepted order with Billing. Do not submit the change again after paying. After an
-// uncertain response, look the order up before submitting again.
+// Creates a Billing Checkout Session for the change, including for metered terms, and returns the
+// virtual machine with it. The virtual machine keeps its usage type and period, priced with the target
+// type's matching option; a target type without that option is refused with 409
+// `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing accepts the order. Do not submit the
+// change again after paying. After an uncertain response, look the Checkout Session up in Billing
+// before submitting again.
 //
-// The virtual machine shows the `resize` operation until the resize is applied or its order is
-// canceled, including while the order awaits checkout, so other operations and a second resize are
-// refused with `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is
-// applied; the new type takes effect, and is billed from then on, when `machine_type_id` shows it. If
-// the order is not accepted or the resize fails, the virtual machine keeps its current type and the
-// order shows the outcome. A completed resize is final and cannot be reverted; to return to the
+// The virtual machine shows the `resize` operation until the resize is applied, its Checkout Session
+// expires or its order is canceled, so other operations and a second resize are refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new
+// type takes effect, and is billed from then on, when `machine_type_id` shows it. If checkout is not
+// completed, the order is not accepted or the resize fails, the virtual machine keeps its current type
+// and Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
 // previous type, submit another resize.
 //
 // POST /api/v1/virtual-machines/{virtualMachineId}/resize
@@ -18508,7 +18567,8 @@ func (s *Server) handleResizeVirtualMachineRequest(args [1]string, argsEscaped b
 //
 // The target disk type may belong to another availability zone of the same region, and its capacity
 // must not be smaller than the backup. Returns the new disk as `pending` with its Checkout Session; it
-// cannot be attached until it is `available`.
+// cannot be attached until it is `available`. The new disk is bought on its own, so it is licensed:
+// `billing.usage_type` `metered` is refused with `DISK_USAGE_TYPE_UNAVAILABLE`.
 //
 // POST /api/v1/backups/{backupId}/restore
 func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -19399,13 +19459,13 @@ func (s *Server) handleSearchElasticIPTypesRequest(args [0]string, argsEscaped b
 
 // handleSetElasticIPBandwidthRequest handles set-elastic-ip-bandwidth operation.
 //
-// Changes the bandwidth of this elastic IP through an order that keeps its billing mode and period; no
-// separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The
-// elastic IP shows the `set_bandwidth` operation until the change is applied or its order is canceled,
-// including while the order awaits checkout, so other operations and a second change are refused with
+// Changes the bandwidth of this elastic IP through a Checkout Session that keeps its usage type and
+// period; no separate bandwidth resource is created. The limit applies to inbound and outbound traffic
+// alike. The elastic IP shows the `set_bandwidth` operation until the change is applied, its Checkout
+// Session expires or its order is canceled, so other operations and a second change are refused with
 // `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If
-// the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and the order shows
-// the outcome.
+// checkout is not completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its
+// value and Billing shows the outcome.
 //
 // While the address is bound to a virtual machine, the limit must not exceed the `max_bandwidth_mbps`
 // of that virtual machine's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The
