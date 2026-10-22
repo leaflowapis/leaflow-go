@@ -13488,7 +13488,8 @@ type Price struct {
 	// For a price that delegates to a rate card, the rates in effect now that it charges at, one for each
 	// meter, dimension values and period; metered rates for a metered price, and rates on its own meter
 	// and period for a licensed one. `search-prices` narrows them with `dimensions`. Null for a price with
-	// its own amounts.
+	// its own amounts. Prices are set per currency, and dimension values a currency does not offer, for
+	// example in a region it does not sell to, have no rate in that currency and cannot be bought with it.
 	Rates     OptNilRateArray `json:"rates"`
 	LookupKey OptString       `json:"lookup_key"`
 	Product   Product         `json:"product"`
@@ -15401,7 +15402,9 @@ type QuoteItemInput struct {
 	Quantity           string                `json:"quantity"`
 	// The dimension values of what is bought, such as region and instance type. Required whenever the
 	// price uses a rate card; prices with their own amounts ignore them. Every key the meter declares must
-	// be given. A combination no rate covers is refused rather than priced at zero.
+	// be given. A combination no rate covers is refused with `BILLING_PRICE_UNAVAILABLE` rather than
+	// priced at zero. Prices are set per currency, and a currency may not offer some combinations at all,
+	// for example in a region it does not sell to.
 	Dimensions OptQuoteItemInputDimensions `json:"dimensions"`
 }
 
@@ -15527,7 +15530,9 @@ func (s *QuoteItemInput) SetDimensions(val OptQuoteItemInputDimensions) {
 
 // The dimension values of what is bought, such as region and instance type. Required whenever the
 // price uses a rate card; prices with their own amounts ignore them. Every key the meter declares must
-// be given. A combination no rate covers is refused rather than priced at zero.
+// be given. A combination no rate covers is refused with `BILLING_PRICE_UNAVAILABLE` rather than
+// priced at zero. Prices are set per currency, and a currency may not offer some combinations at all,
+// for example in a region it does not sell to.
 type QuoteItemInputDimensions map[string]string
 
 func (s *QuoteItemInputDimensions) init() QuoteItemInputDimensions {
