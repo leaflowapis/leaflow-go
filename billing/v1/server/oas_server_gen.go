@@ -320,14 +320,19 @@ type Handler interface {
 	GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (*ProjectAssignment, error)
 	// GetQuote implements get-quote operation.
 	//
-	// Calculates what a proposed purchase, or the renewal of your subscriptions, would invoice now, and
-	// what each purchased line renews at. Nothing is saved, reserved or redeemed.
+	// Calculates what a proposed purchase, a change of your subscriptions or their renewal would invoice
+	// now, and what each purchased or changed line renews at. Nothing is saved, reserved or redeemed.
 	//
 	// With `billing_account_id`, the quote is for that billing account: its currency, account discounts,
-	// tax and funds apply, renewals use the account currently paying for each subscription, and an access
-	// token is required. The account must be yours or currently pay for a project you are a member of.
-	// Without it, proposed items are priced in `currency` for anyone, signed in or not: no account
-	// discount or funds apply, and `tax_status` is `requires_location_inputs`.
+	// tax and funds apply, changes and renewals use the account currently paying for each subscription,
+	// and an access token is required. The account must be yours or currently pay for a project you are a
+	// member of. Without it, proposed items are priced in `currency` for anyone, signed in or not: no
+	// account discount or funds apply, and tax that would be added is included only for the customer's
+	// `address`.
+	//
+	// A change is priced as the service that owns the subscription would order it: pass the returned
+	// `total` as the expected amount and, for an immediate change, `proration_date` to that service when
+	// making the change.
 	//
 	// A promotion code is evaluated without being applied. It is applied only when a Checkout Session is
 	// completed with it; conditions that depend on the account, such as a first purchase, are checked only
@@ -756,6 +761,24 @@ type Handler interface {
 	//
 	// POST /api/v1/billing-accounts/{accountId}/resume
 	ResumeBillingAccount(ctx context.Context, params ResumeBillingAccountParams) (*BillingAccount, error)
+	// SearchPrices implements search-prices operation.
+	//
+	// Lists the active prices in `currency` that meet every condition in the body, as `list-prices` lists
+	// them, for anyone, signed in or not. Use it for conditions a query string cannot hold, such as the
+	// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own; read
+	// its rates with `search-rates`.
+	//
+	// QUERY /api/v1/prices
+	SearchPrices(ctx context.Context, req *PriceSearch) (*PriceList, error)
+	// SearchRates implements search-rates operation.
+	//
+	// Rules of a public rate card that meet every condition in the body, as `list-rates` lists them, for
+	// anyone, signed in or not; contract cards are not readable here. Use it to read the rates at the
+	// dimension values of the items on a page, such as each region and machine type offered, and match
+	// each rate to its price by meter, usage type, interval and dimensions.
+	//
+	// QUERY /api/v1/rate-cards/{rateCardId}/rules
+	SearchRates(ctx context.Context, req *RateSearch, params SearchRatesParams) (*RateList, error)
 	// SetAutoRenew implements set-auto-renew operation.
 	//
 	// Turns automatic renewal of an active or suspended licensed subscription on or off. Turning it off

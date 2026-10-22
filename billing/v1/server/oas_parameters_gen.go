@@ -15292,6 +15292,71 @@ func decodeResumeBillingAccountParams(args [1]string, argsEscaped bool, r *http.
 	return params, nil
 }
 
+// SearchRatesParams is parameters of search-rates operation.
+type SearchRatesParams struct {
+	RateCardId uuid.UUID
+}
+
+func unpackSearchRatesParams(packed middleware.Parameters) (params SearchRatesParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "rateCardId",
+			In:   "path",
+		}
+		params.RateCardId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeSearchRatesParams(args [1]string, argsEscaped bool, r *http.Request) (params SearchRatesParams, _ error) {
+	// Decode path: rateCardId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "rateCardId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.RateCardId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "rateCardId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // SetAutoRenewParams is parameters of set-auto-renew operation.
 type SetAutoRenewParams struct {
 	SubscriptionId uuid.UUID

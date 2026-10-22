@@ -64,6 +64,16 @@ type Invoker interface {
 	//
 	// GET /api/v1/memberships/{membershipId}/periods
 	ListMembershipPeriods(ctx context.Context, params ListMembershipPeriodsParams) (*PeriodList, error)
+	// ListMembershipUpgradeOptions invokes list-membership-upgrade-options operation.
+	//
+	// Lists the higher tiers on sale that the membership's tier has an upgrade path to, lowest rank first,
+	// with the Billing price `upgrade-membership` would order for each. Price an upgrade before making it
+	// with Billing's quote, giving that price with a quantity of 1; a promotion code can be checked there
+	// as well. Returns 409 MEMBERSHIP_NOT_ACTIVE or MEMBERSHIP_CHANGE_PENDING when the membership cannot
+	// be changed.
+	//
+	// GET /api/v1/memberships/{membershipId}/upgrade-options
+	ListMembershipUpgradeOptions(ctx context.Context, params ListMembershipUpgradeOptionsParams) (*UpgradeOptionList, error)
 	// ListMemberships invokes list-memberships operation.
 	//
 	// Lists memberships of the specified account, including ended memberships, newest first.
@@ -816,6 +826,180 @@ func (c *Client) sendListMembershipPeriods(ctx context.Context, params ListMembe
 
 	stage = "DecodeResponse"
 	result, err := decodeListMembershipPeriodsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListMembershipUpgradeOptions invokes list-membership-upgrade-options operation.
+//
+// Lists the higher tiers on sale that the membership's tier has an upgrade path to, lowest rank first,
+// with the Billing price `upgrade-membership` would order for each. Price an upgrade before making it
+// with Billing's quote, giving that price with a quantity of 1; a promotion code can be checked there
+// as well. Returns 409 MEMBERSHIP_NOT_ACTIVE or MEMBERSHIP_CHANGE_PENDING when the membership cannot
+// be changed.
+//
+// GET /api/v1/memberships/{membershipId}/upgrade-options
+func (c *Client) ListMembershipUpgradeOptions(ctx context.Context, params ListMembershipUpgradeOptionsParams) (*UpgradeOptionList, error) {
+	res, err := c.sendListMembershipUpgradeOptions(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListMembershipUpgradeOptions(ctx context.Context, params ListMembershipUpgradeOptionsParams) (res *UpgradeOptionList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-membership-upgrade-options"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/memberships/{membershipId}/upgrade-options"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListMembershipUpgradeOptionsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/memberships/"
+	{
+		// Encode "membershipId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "membershipId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MembershipId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/upgrade-options"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, ListMembershipUpgradeOptionsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListMembershipUpgradeOptionsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

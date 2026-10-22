@@ -25,8 +25,11 @@ var (
 	rn9AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn11AllowedHeaders = map[string]string{
+	rn12AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
+	}
+	rn10AllowedHeaders = map[string]string{
+		"GET": "Authorization",
 	}
 )
 
@@ -221,7 +224,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							}
 
 							if len(elem) == 0 {
-								// Leaf node.
 								switch r.Method {
 								case "POST":
 									s.handleUpgradeMembershipRequest([1]string{
@@ -230,13 +232,42 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn11AllowedHeaders,
+										allowedHeaders: rn12AllowedHeaders,
 										acceptPost:     "application/json",
 										acceptPatch:    "",
 									})
 								}
 
 								return
+							}
+							switch elem[0] {
+							case '-': // Prefix: "-options"
+
+								if l := len("-options"); len(elem) >= l && elem[0:l] == "-options" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "GET":
+										s.handleListMembershipUpgradeOptionsRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "GET",
+											allowedHeaders: rn10AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
 							}
 
 						}
@@ -553,7 +584,6 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							}
 
 							if len(elem) == 0 {
-								// Leaf node.
 								switch method {
 								case "POST":
 									r.name = UpgradeMembershipOperation
@@ -567,6 +597,33 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								default:
 									return
 								}
+							}
+							switch elem[0] {
+							case '-': // Prefix: "-options"
+
+								if l := len("-options"); len(elem) >= l && elem[0:l] == "-options" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "GET":
+										r.name = ListMembershipUpgradeOptionsOperation
+										r.summary = "List upgrade options"
+										r.operationID = "list-membership-upgrade-options"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/memberships/{membershipId}/upgrade-options"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+
 							}
 
 						}
