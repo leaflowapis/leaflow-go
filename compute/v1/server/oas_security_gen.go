@@ -112,6 +112,7 @@ var operationRolesScopedTokenAuth = map[string][]string{
 	ListDiskTypesOperation:                        []string{},
 	ListDisksOperation:                            []string{},
 	ListElasticIPLinesOperation:                   []string{},
+	ListElasticIPTrafficUsageOperation:            []string{},
 	ListElasticIpsOperation:                       []string{},
 	ListMachineTypesOperation:                     []string{},
 	ListNetworkInterfacesOperation:                []string{},

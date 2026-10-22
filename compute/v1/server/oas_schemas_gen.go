@@ -4012,8 +4012,11 @@ type ElasticIPLine struct {
 	// `on_sale` is offered for new elastic IPs; `off_sale` takes none, while the elastic IPs already on it
 	// keep working.
 	SaleStatus ElasticIPLineSaleStatus `json:"sale_status"`
-	CreatedAt  time.Time               `json:"created_at"`
-	UpdatedAt  time.Time               `json:"updated_at"`
+	// Whether an elastic IP of this line can be bought with `internet_charge_type` `traffic`, billed by
+	// the bytes it sends. `off_sale` refuses that with `ELASTIC_IP_TRAFFIC_UNAVAILABLE`.
+	TrafficSaleStatus ElasticIPLineTrafficSaleStatus `json:"traffic_sale_status"`
+	CreatedAt         time.Time                      `json:"created_at"`
+	UpdatedAt         time.Time                      `json:"updated_at"`
 }
 
 // GetID returns the value of ID.
@@ -4064,6 +4067,11 @@ func (s *ElasticIPLine) GetBandwidthStepMbps() int64 {
 // GetSaleStatus returns the value of SaleStatus.
 func (s *ElasticIPLine) GetSaleStatus() ElasticIPLineSaleStatus {
 	return s.SaleStatus
+}
+
+// GetTrafficSaleStatus returns the value of TrafficSaleStatus.
+func (s *ElasticIPLine) GetTrafficSaleStatus() ElasticIPLineTrafficSaleStatus {
+	return s.TrafficSaleStatus
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -4124,6 +4132,11 @@ func (s *ElasticIPLine) SetBandwidthStepMbps(val int64) {
 // SetSaleStatus sets the value of SaleStatus.
 func (s *ElasticIPLine) SetSaleStatus(val ElasticIPLineSaleStatus) {
 	s.SaleStatus = val
+}
+
+// SetTrafficSaleStatus sets the value of TrafficSaleStatus.
+func (s *ElasticIPLine) SetTrafficSaleStatus(val ElasticIPLineTrafficSaleStatus) {
+	s.TrafficSaleStatus = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -4201,6 +4214,49 @@ func (s *ElasticIPLineSaleStatus) UnmarshalText(data []byte) error {
 		return nil
 	case ElasticIPLineSaleStatusOffSale:
 		*s = ElasticIPLineSaleStatusOffSale
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Whether an elastic IP of this line can be bought with `internet_charge_type` `traffic`, billed by
+// the bytes it sends. `off_sale` refuses that with `ELASTIC_IP_TRAFFIC_UNAVAILABLE`.
+type ElasticIPLineTrafficSaleStatus string
+
+const (
+	ElasticIPLineTrafficSaleStatusOnSale  ElasticIPLineTrafficSaleStatus = "on_sale"
+	ElasticIPLineTrafficSaleStatusOffSale ElasticIPLineTrafficSaleStatus = "off_sale"
+)
+
+// AllValues returns all ElasticIPLineTrafficSaleStatus values.
+func (ElasticIPLineTrafficSaleStatus) AllValues() []ElasticIPLineTrafficSaleStatus {
+	return []ElasticIPLineTrafficSaleStatus{
+		ElasticIPLineTrafficSaleStatusOnSale,
+		ElasticIPLineTrafficSaleStatusOffSale,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ElasticIPLineTrafficSaleStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ElasticIPLineTrafficSaleStatusOnSale:
+		return []byte(s), nil
+	case ElasticIPLineTrafficSaleStatusOffSale:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ElasticIPLineTrafficSaleStatus) UnmarshalText(data []byte) error {
+	switch ElasticIPLineTrafficSaleStatus(data) {
+	case ElasticIPLineTrafficSaleStatusOnSale:
+		*s = ElasticIPLineTrafficSaleStatusOnSale
+		return nil
+	case ElasticIPLineTrafficSaleStatusOffSale:
+		*s = ElasticIPLineTrafficSaleStatusOffSale
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -4706,8 +4762,9 @@ type ImageID string
 
 // What the network subscription of an elastic IP charges for. `bandwidth` charges for the bandwidth
 // ceiling, prepaid for a period or by the Mbit/s-second while the address is associated. `traffic`
-// charges for the bytes the address sends; it is reserved and refused with
-// `ELASTIC_IP_TRAFFIC_UNAVAILABLE` until traffic is metered.
+// charges for the bytes the address sends upstream, pay-as-you-go only, while the bandwidth is only a
+// ceiling; it is refused with `ELASTIC_IP_TRAFFIC_UNAVAILABLE` on a line whose `traffic_sale_status`
+// is `off_sale`. Inbound traffic is never charged.
 // Ref: #/components/schemas/InternetChargeType
 type InternetChargeType string
 
@@ -4744,6 +4801,47 @@ func (s *InternetChargeType) UnmarshalText(data []byte) error {
 		return nil
 	case InternetChargeTypeTraffic:
 		*s = InternetChargeTypeTraffic
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type ListElasticIPTrafficUsageInterval string
+
+const (
+	ListElasticIPTrafficUsageIntervalHour ListElasticIPTrafficUsageInterval = "hour"
+	ListElasticIPTrafficUsageIntervalDay  ListElasticIPTrafficUsageInterval = "day"
+)
+
+// AllValues returns all ListElasticIPTrafficUsageInterval values.
+func (ListElasticIPTrafficUsageInterval) AllValues() []ListElasticIPTrafficUsageInterval {
+	return []ListElasticIPTrafficUsageInterval{
+		ListElasticIPTrafficUsageIntervalHour,
+		ListElasticIPTrafficUsageIntervalDay,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ListElasticIPTrafficUsageInterval) MarshalText() ([]byte, error) {
+	switch s {
+	case ListElasticIPTrafficUsageIntervalHour:
+		return []byte(s), nil
+	case ListElasticIPTrafficUsageIntervalDay:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ListElasticIPTrafficUsageInterval) UnmarshalText(data []byte) error {
+	switch ListElasticIPTrafficUsageInterval(data) {
+	case ListElasticIPTrafficUsageIntervalHour:
+		*s = ListElasticIPTrafficUsageIntervalHour
+		return nil
+	case ListElasticIPTrafficUsageIntervalDay:
+		*s = ListElasticIPTrafficUsageIntervalDay
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -8476,6 +8574,52 @@ func (o OptInternetChargeType) Get() (v InternetChargeType, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptInternetChargeType) Or(d InternetChargeType) InternetChargeType {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptListElasticIPTrafficUsageInterval returns new OptListElasticIPTrafficUsageInterval with value set to v.
+func NewOptListElasticIPTrafficUsageInterval(v ListElasticIPTrafficUsageInterval) OptListElasticIPTrafficUsageInterval {
+	return OptListElasticIPTrafficUsageInterval{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptListElasticIPTrafficUsageInterval is optional ListElasticIPTrafficUsageInterval.
+type OptListElasticIPTrafficUsageInterval struct {
+	Value ListElasticIPTrafficUsageInterval
+	Set   bool
+}
+
+// IsSet returns true if OptListElasticIPTrafficUsageInterval was set.
+func (o OptListElasticIPTrafficUsageInterval) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptListElasticIPTrafficUsageInterval) Reset() {
+	var v ListElasticIPTrafficUsageInterval
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptListElasticIPTrafficUsageInterval) SetTo(v ListElasticIPTrafficUsageInterval) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptListElasticIPTrafficUsageInterval) Get() (v ListElasticIPTrafficUsageInterval, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptListElasticIPTrafficUsageInterval) Or(d ListElasticIPTrafficUsageInterval) ListElasticIPTrafficUsageInterval {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -12256,6 +12400,71 @@ func (s *TerminationPolicy) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// The traffic an elastic IP sent in one interval.
+// Ref: #/components/schemas/TrafficUsage
+type TrafficUsage struct {
+	// The start of the interval, in UTC.
+	StartTime     time.Time `json:"start_time"`
+	EgressBytes   int64     `json:"egress_bytes"`
+	EgressPackets int64     `json:"egress_packets"`
+}
+
+// GetStartTime returns the value of StartTime.
+func (s *TrafficUsage) GetStartTime() time.Time {
+	return s.StartTime
+}
+
+// GetEgressBytes returns the value of EgressBytes.
+func (s *TrafficUsage) GetEgressBytes() int64 {
+	return s.EgressBytes
+}
+
+// GetEgressPackets returns the value of EgressPackets.
+func (s *TrafficUsage) GetEgressPackets() int64 {
+	return s.EgressPackets
+}
+
+// SetStartTime sets the value of StartTime.
+func (s *TrafficUsage) SetStartTime(val time.Time) {
+	s.StartTime = val
+}
+
+// SetEgressBytes sets the value of EgressBytes.
+func (s *TrafficUsage) SetEgressBytes(val int64) {
+	s.EgressBytes = val
+}
+
+// SetEgressPackets sets the value of EgressPackets.
+func (s *TrafficUsage) SetEgressPackets(val int64) {
+	s.EgressPackets = val
+}
+
+// Ref: #/components/schemas/TrafficUsageListResponseBody
+type TrafficUsageListResponseBody struct {
+	Items      []TrafficUsage   `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *TrafficUsageListResponseBody) GetItems() []TrafficUsage {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *TrafficUsageListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *TrafficUsageListResponseBody) SetItems(val []TrafficUsage) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *TrafficUsageListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 type UpdateDiskAccepted UpdateDiskResponseBody

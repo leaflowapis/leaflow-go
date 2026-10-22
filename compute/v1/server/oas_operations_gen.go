@@ -74,6 +74,7 @@ const (
 	ListDiskTypesOperation                        OperationName = "ListDiskTypes"
 	ListDisksOperation                            OperationName = "ListDisks"
 	ListElasticIPLinesOperation                   OperationName = "ListElasticIPLines"
+	ListElasticIPTrafficUsageOperation            OperationName = "ListElasticIPTrafficUsage"
 	ListElasticIpsOperation                       OperationName = "ListElasticIps"
 	ListMachineTypesOperation                     OperationName = "ListMachineTypes"
 	ListNetworkInterfacesOperation                OperationName = "ListNetworkInterfaces"

@@ -64,7 +64,10 @@ var (
 		"GET":    "Authorization",
 		"PUT":    "Authorization,Content-Type",
 	}
-	rn89AllowedHeaders = map[string]string{
+	rn90AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
+	rn91AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn71AllowedHeaders = map[string]string{
@@ -79,7 +82,7 @@ var (
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
-	rn90AllowedHeaders = map[string]string{
+	rn92AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn73AllowedHeaders = map[string]string{
@@ -103,19 +106,19 @@ var (
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
-	rn91AllowedHeaders = map[string]string{
+	rn93AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn75AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn93AllowedHeaders = map[string]string{
+	rn95AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn78AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn92AllowedHeaders = map[string]string{
+	rn94AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn80AllowedHeaders = map[string]string{
@@ -196,7 +199,7 @@ var (
 	rn61AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
-	rn94AllowedHeaders = map[string]string{
+	rn96AllowedHeaders = map[string]string{
 		"PUT": "Authorization,Content-Type",
 	}
 	rn27AllowedHeaders = map[string]string{
@@ -746,39 +749,80 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							return
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/association"
+						case '/': // Prefix: "/"
 
-							if l := len("/association"); len(elem) >= l && elem[0:l] == "/association" {
+							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "DELETE":
-									s.handleDeleteElasticIPAssociationRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								case "GET":
-									s.handleGetElasticIPAssociationRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								case "PUT":
-									s.handlePutElasticIPAssociationRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "DELETE,GET,PUT",
-										allowedHeaders: rn36AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
+								break
+							}
+							switch elem[0] {
+							case 'a': // Prefix: "association"
+
+								if l := len("association"); len(elem) >= l && elem[0:l] == "association" {
+									elem = elem[l:]
+								} else {
+									break
 								}
 
-								return
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "DELETE":
+										s.handleDeleteElasticIPAssociationRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									case "GET":
+										s.handleGetElasticIPAssociationRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									case "PUT":
+										s.handlePutElasticIPAssociationRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "DELETE,GET,PUT",
+											allowedHeaders: rn36AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
+							case 't': // Prefix: "traffic-usage"
+
+								if l := len("traffic-usage"); len(elem) >= l && elem[0:l] == "traffic-usage" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "GET":
+										s.handleListElasticIPTrafficUsageRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "GET",
+											allowedHeaders: rn90AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
 							}
 
 						}
@@ -802,7 +846,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn89AllowedHeaders,
+							allowedHeaders: rn91AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -936,7 +980,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn90AllowedHeaders,
+							allowedHeaders: rn92AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -1154,7 +1198,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
-								allowedHeaders: rn91AllowedHeaders,
+								allowedHeaders: rn93AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -1230,7 +1274,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
-								allowedHeaders: rn93AllowedHeaders,
+								allowedHeaders: rn95AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -1291,7 +1335,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "GET",
-										allowedHeaders: rn92AllowedHeaders,
+										allowedHeaders: rn94AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -2070,7 +2114,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PUT",
-											allowedHeaders: rn94AllowedHeaders,
+											allowedHeaders: rn96AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -2953,47 +2997,86 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							}
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/association"
+						case '/': // Prefix: "/"
 
-							if l := len("/association"); len(elem) >= l && elem[0:l] == "/association" {
+							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "DELETE":
-									r.name = DeleteElasticIPAssociationOperation
-									r.summary = "Remove the association of an elastic IP"
-									r.operationID = "delete-elastic-ip-association"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/elastic-ips/{elasticIpId}/association"
-									r.args = args
-									r.count = 1
-									return r, true
-								case "GET":
-									r.name = GetElasticIPAssociationOperation
-									r.summary = "Retrieve the association of an elastic IP"
-									r.operationID = "get-elastic-ip-association"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/elastic-ips/{elasticIpId}/association"
-									r.args = args
-									r.count = 1
-									return r, true
-								case "PUT":
-									r.name = PutElasticIPAssociationOperation
-									r.summary = "Associate an elastic IP with a target"
-									r.operationID = "put-elastic-ip-association"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/elastic-ips/{elasticIpId}/association"
-									r.args = args
-									r.count = 1
-									return r, true
-								default:
-									return
+								break
+							}
+							switch elem[0] {
+							case 'a': // Prefix: "association"
+
+								if l := len("association"); len(elem) >= l && elem[0:l] == "association" {
+									elem = elem[l:]
+								} else {
+									break
 								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "DELETE":
+										r.name = DeleteElasticIPAssociationOperation
+										r.summary = "Remove the association of an elastic IP"
+										r.operationID = "delete-elastic-ip-association"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/elastic-ips/{elasticIpId}/association"
+										r.args = args
+										r.count = 1
+										return r, true
+									case "GET":
+										r.name = GetElasticIPAssociationOperation
+										r.summary = "Retrieve the association of an elastic IP"
+										r.operationID = "get-elastic-ip-association"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/elastic-ips/{elasticIpId}/association"
+										r.args = args
+										r.count = 1
+										return r, true
+									case "PUT":
+										r.name = PutElasticIPAssociationOperation
+										r.summary = "Associate an elastic IP with a target"
+										r.operationID = "put-elastic-ip-association"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/elastic-ips/{elasticIpId}/association"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+
+							case 't': // Prefix: "traffic-usage"
+
+								if l := len("traffic-usage"); len(elem) >= l && elem[0:l] == "traffic-usage" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "GET":
+										r.name = ListElasticIPTrafficUsageOperation
+										r.summary = "List the traffic an elastic IP sent"
+										r.operationID = "list-elastic-ip-traffic-usage"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/elastic-ips/{elasticIpId}/traffic-usage"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+
 							}
 
 						}

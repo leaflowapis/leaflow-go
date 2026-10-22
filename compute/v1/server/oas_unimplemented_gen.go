@@ -965,6 +965,22 @@ func (UnimplementedHandler) ListElasticIPLines(ctx context.Context, params ListE
 	return r, ht.ErrNotImplemented
 }
 
+// ListElasticIPTrafficUsage implements list-elastic-ip-traffic-usage operation.
+//
+// The bytes and packets the elastic IP's address sent upstream while the elastic IP held it, summed by
+// hour or by day in UTC over `[start_time, end_time)`. Only intervals with traffic are listed. Inbound
+// traffic is not measured.
+//
+// Traffic is reported by the region's collectors and appears some minutes after it is sent. Every
+// elastic IP's traffic is shown, whatever it is billed by; only one billed by traffic is charged for
+// it. A span longer than 31 days by hour, or 366 days by day, is refused with
+// `TRAFFIC_USAGE_QUERY_INVALID`.
+//
+// GET /api/v1/elastic-ips/{elasticIpId}/traffic-usage
+func (UnimplementedHandler) ListElasticIPTrafficUsage(ctx context.Context, params ListElasticIPTrafficUsageParams) (r *TrafficUsageListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListElasticIps implements list-elastic-ips operation.
 //
 // List elastic IPs.

@@ -777,6 +777,19 @@ type Invoker interface {
 	//
 	// GET /api/v1/elastic-ip-lines
 	ListElasticIPLines(ctx context.Context, params ListElasticIPLinesParams) (*ElasticIPLineListResponseBody, error)
+	// ListElasticIPTrafficUsage invokes list-elastic-ip-traffic-usage operation.
+	//
+	// The bytes and packets the elastic IP's address sent upstream while the elastic IP held it, summed by
+	// hour or by day in UTC over `[start_time, end_time)`. Only intervals with traffic are listed. Inbound
+	// traffic is not measured.
+	//
+	// Traffic is reported by the region's collectors and appears some minutes after it is sent. Every
+	// elastic IP's traffic is shown, whatever it is billed by; only one billed by traffic is charged for
+	// it. A span longer than 31 days by hour, or 366 days by day, is refused with
+	// `TRAFFIC_USAGE_QUERY_INVALID`.
+	//
+	// GET /api/v1/elastic-ips/{elasticIpId}/traffic-usage
+	ListElasticIPTrafficUsage(ctx context.Context, params ListElasticIPTrafficUsageParams) (*TrafficUsageListResponseBody, error)
 	// ListElasticIps invokes list-elastic-ips operation.
 	//
 	// List elastic IPs.
@@ -10972,6 +10985,231 @@ func (c *Client) sendListElasticIPLines(ctx context.Context, params ListElasticI
 
 	stage = "DecodeResponse"
 	result, err := decodeListElasticIPLinesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListElasticIPTrafficUsage invokes list-elastic-ip-traffic-usage operation.
+//
+// The bytes and packets the elastic IP's address sent upstream while the elastic IP held it, summed by
+// hour or by day in UTC over `[start_time, end_time)`. Only intervals with traffic are listed. Inbound
+// traffic is not measured.
+//
+// Traffic is reported by the region's collectors and appears some minutes after it is sent. Every
+// elastic IP's traffic is shown, whatever it is billed by; only one billed by traffic is charged for
+// it. A span longer than 31 days by hour, or 366 days by day, is refused with
+// `TRAFFIC_USAGE_QUERY_INVALID`.
+//
+// GET /api/v1/elastic-ips/{elasticIpId}/traffic-usage
+func (c *Client) ListElasticIPTrafficUsage(ctx context.Context, params ListElasticIPTrafficUsageParams) (*TrafficUsageListResponseBody, error) {
+	res, err := c.sendListElasticIPTrafficUsage(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListElasticIPTrafficUsage(ctx context.Context, params ListElasticIPTrafficUsageParams) (res *TrafficUsageListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-elastic-ip-traffic-usage"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/elastic-ips/{elasticIpId}/traffic-usage"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListElasticIPTrafficUsageOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/elastic-ips/"
+	{
+		// Encode "elasticIpId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "elasticIpId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.ElasticIpId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/traffic-usage"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "interval" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "interval",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Interval.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "start_time" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "start_time",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.DateTimeToString(params.StartTime))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "end_time" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "end_time",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.DateTimeToString(params.EndTime))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListElasticIPTrafficUsageOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListElasticIPTrafficUsageResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

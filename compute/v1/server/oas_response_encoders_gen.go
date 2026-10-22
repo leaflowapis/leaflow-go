@@ -1311,6 +1311,19 @@ func encodeListElasticIPLinesResponse(response *ElasticIPLineListResponseBody, w
 	return nil
 }
 
+func encodeListElasticIPTrafficUsageResponse(response *TrafficUsageListResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeListElasticIpsResponse(response *ElasticIPListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
