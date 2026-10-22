@@ -6564,6 +6564,8 @@ func (s *DiskOperationType) Decode(d *jx.Decoder) error {
 		*s = DiskOperationTypeCreate
 	case DiskOperationTypeResize:
 		*s = DiskOperationTypeResize
+	case DiskOperationTypeRetype:
+		*s = DiskOperationTypeRetype
 	case DiskOperationTypeRevert:
 		*s = DiskOperationTypeRevert
 	case DiskOperationTypeAttach:
@@ -15393,6 +15395,39 @@ func (s *OptDiskID) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes DiskTypeID as json.
+func (o OptDiskTypeID) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes DiskTypeID from json.
+func (o *OptDiskTypeID) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptDiskTypeID to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptDiskTypeID) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptDiskTypeID) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes ElasticIPID as json.
 func (o OptElasticIPID) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -22546,6 +22581,12 @@ func (s *UpdateDiskRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.DiskTypeID.Set {
+			e.FieldStart("disk_type_id")
+			s.DiskTypeID.Encode(e)
+		}
+	}
+	{
 		if s.ProrationDate.Set {
 			e.FieldStart("proration_date")
 			s.ProrationDate.Encode(e, json.EncodeDateTime)
@@ -22559,11 +22600,12 @@ func (s *UpdateDiskRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfUpdateDiskRequestBody = [4]string{
+var jsonFieldsNameOfUpdateDiskRequestBody = [5]string{
 	0: "name",
 	1: "size_gb",
-	2: "proration_date",
-	3: "checkout",
+	2: "disk_type_id",
+	3: "proration_date",
+	4: "checkout",
 }
 
 // Decode decodes UpdateDiskRequestBody from json.
@@ -22595,6 +22637,16 @@ func (s *UpdateDiskRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"size_gb\"")
+			}
+		case "disk_type_id":
+			if err := func() error {
+				s.DiskTypeID.Reset()
+				if err := s.DiskTypeID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"disk_type_id\"")
 			}
 		case "proration_date":
 			if err := func() error {

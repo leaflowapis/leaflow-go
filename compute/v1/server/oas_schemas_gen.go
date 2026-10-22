@@ -2613,6 +2613,7 @@ type DiskOperationType string
 const (
 	DiskOperationTypeCreate  DiskOperationType = "create"
 	DiskOperationTypeResize  DiskOperationType = "resize"
+	DiskOperationTypeRetype  DiskOperationType = "retype"
 	DiskOperationTypeRevert  DiskOperationType = "revert"
 	DiskOperationTypeAttach  DiskOperationType = "attach"
 	DiskOperationTypeDetach  DiskOperationType = "detach"
@@ -2626,6 +2627,7 @@ func (DiskOperationType) AllValues() []DiskOperationType {
 	return []DiskOperationType{
 		DiskOperationTypeCreate,
 		DiskOperationTypeResize,
+		DiskOperationTypeRetype,
 		DiskOperationTypeRevert,
 		DiskOperationTypeAttach,
 		DiskOperationTypeDetach,
@@ -2641,6 +2643,8 @@ func (s DiskOperationType) MarshalText() ([]byte, error) {
 	case DiskOperationTypeCreate:
 		return []byte(s), nil
 	case DiskOperationTypeResize:
+		return []byte(s), nil
+	case DiskOperationTypeRetype:
 		return []byte(s), nil
 	case DiskOperationTypeRevert:
 		return []byte(s), nil
@@ -2667,6 +2671,9 @@ func (s *DiskOperationType) UnmarshalText(data []byte) error {
 		return nil
 	case DiskOperationTypeResize:
 		*s = DiskOperationTypeResize
+		return nil
+	case DiskOperationTypeRetype:
+		*s = DiskOperationTypeRetype
 		return nil
 	case DiskOperationTypeRevert:
 		*s = DiskOperationTypeRevert
@@ -8152,6 +8159,52 @@ func (o OptDiskID) Or(d DiskID) DiskID {
 	return d
 }
 
+// NewOptDiskTypeID returns new OptDiskTypeID with value set to v.
+func NewOptDiskTypeID(v DiskTypeID) OptDiskTypeID {
+	return OptDiskTypeID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptDiskTypeID is optional DiskTypeID.
+type OptDiskTypeID struct {
+	Value DiskTypeID
+	Set   bool
+}
+
+// IsSet returns true if OptDiskTypeID was set.
+func (o OptDiskTypeID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptDiskTypeID) Reset() {
+	var v DiskTypeID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptDiskTypeID) SetTo(v DiskTypeID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptDiskTypeID) Get() (v DiskTypeID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptDiskTypeID) Or(d DiskTypeID) DiskTypeID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptElasticIPID returns new OptElasticIPID with value set to v.
 func NewOptElasticIPID(v ElasticIPID) OptElasticIPID {
 	return OptElasticIPID{
@@ -12228,19 +12281,23 @@ type UpdateDiskOK UpdateDiskResponseBody
 
 func (*UpdateDiskOK) updateDiskRes() {}
 
-// The mutable fields of a disk, all optional, at least one required. `size_gb` is an operational field
-// and cannot be combined with `name`; such a request is refused with 422 `UPDATE_FIELDS_COMBINED`.
+// The mutable fields of a disk, all optional, at least one required. `size_gb` and `disk_type_id` are
+// operational fields and cannot be combined with each other or with `name`; such a request is refused
+// with 422 `UPDATE_FIELDS_COMBINED`.
 // Ref: #/components/schemas/UpdateDiskRequestBody
 type UpdateDiskRequestBody struct {
 	Name OptString `json:"name"`
 	// The new capacity. Must be larger than the current capacity.
 	SizeGB OptInt64 `json:"size_gb"`
+	// The disk type to move the detached disk to, at its current capacity.
+	DiskTypeID OptDiskTypeID `json:"disk_type_id"`
 	// The `proration_date` of the Billing quote for this change, so that the order is priced from the same
-	// instant. Only with `size_gb`, and only for automatic checkout; deferred checkout is priced when the
-	// customer completes it. Defaults to the time of the request; it must be a whole second, not in the
-	// future and at most 10 minutes old, otherwise the request is refused with `BILLING_CHANGE_INVALID`.
+	// instant. Only with `size_gb` or `disk_type_id`, and only for automatic checkout; deferred checkout
+	// is priced when the customer completes it. Defaults to the time of the request; it must be a whole
+	// second, not in the future and at most 10 minutes old, otherwise the request is refused with
+	// `BILLING_CHANGE_INVALID`.
 	ProrationDate OptDateTime `json:"proration_date"`
-	// How the purchase of the `size_gb` change is checked out. Only with `size_gb`.
+	// How the purchase of the `size_gb` or `disk_type_id` change is checked out. Only with one of them.
 	Checkout OptCheckoutOptions `json:"checkout"`
 }
 
@@ -12252,6 +12309,11 @@ func (s *UpdateDiskRequestBody) GetName() OptString {
 // GetSizeGB returns the value of SizeGB.
 func (s *UpdateDiskRequestBody) GetSizeGB() OptInt64 {
 	return s.SizeGB
+}
+
+// GetDiskTypeID returns the value of DiskTypeID.
+func (s *UpdateDiskRequestBody) GetDiskTypeID() OptDiskTypeID {
+	return s.DiskTypeID
 }
 
 // GetProrationDate returns the value of ProrationDate.
@@ -12272,6 +12334,11 @@ func (s *UpdateDiskRequestBody) SetName(val OptString) {
 // SetSizeGB sets the value of SizeGB.
 func (s *UpdateDiskRequestBody) SetSizeGB(val OptInt64) {
 	s.SizeGB = val
+}
+
+// SetDiskTypeID sets the value of DiskTypeID.
+func (s *UpdateDiskRequestBody) SetDiskTypeID(val OptDiskTypeID) {
+	s.DiskTypeID = val
 }
 
 // SetProrationDate sets the value of ProrationDate.

@@ -955,13 +955,13 @@ type Handler interface {
 	PutVirtualPrivateCloudIpv6(ctx context.Context, params PutVirtualPrivateCloudIpv6Params) (PutVirtualPrivateCloudIpv6Res, error)
 	// UpdateDisk implements update-disk operation.
 	//
-	// Changes the name, or the capacity. Type and availability zone are immutable.
+	// Changes the name, the capacity or the disk type. The availability zone is immutable.
 	//
-	// `size_gb` is an operational field: it starts a resize and cannot be combined with any other field in
-	// the same request. Such a request is refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that
-	// committed beside a change that was then refused would leave the request half applied. `checkout` and
-	// `proration_date` belong to the purchase of the `size_gb` change and are accepted only together with
-	// it.
+	// `size_gb` and `disk_type_id` are operational fields: each starts a change and cannot be combined
+	// with any other field in the same request, including the other one. Such a request is refused with
+	// 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside a change that was then refused
+	// would leave the request half applied. `checkout` and `proration_date` belong to the purchase of the
+	// change and are accepted only together with one of them.
 	//
 	// Renaming is not an operation and is accepted at any time. It returns 200 with `checkout_session_id`
 	// and `order_id` null.
@@ -974,6 +974,20 @@ type Handler interface {
 	// meanwhile. The disk keeps its current size until the resize is applied; once `size_gb` shows the new
 	// size, extend the file system inside the virtual machine. If checkout is not completed, the order is
 	// not accepted or the resize fails, the disk keeps its size and Billing shows the outcome.
+	//
+	// Changing the type moves the disk to another disk type at the same capacity, priced as that type, and
+	// returns 202 with the disk and the Checkout Session for the change, which keeps the disk's usage type
+	// and period. The disk has to be detached (409 `DISK_RETYPE_ATTACHED`), so a system disk cannot change
+	// its type. The target has to be on sale (`DISK_TYPE_OFF_SALE`), in the disk's region (422
+	// `DISK_RETYPE_OTHER_REGION`), sold in the disk's availability zone (404
+	// `DISK_TYPE_AVAILABILITY_ZONE_NOT_FOUND`) with room there for the disk (409 `DISK_TYPE_SOLD_OUT`,
+	// `DISK_TYPE_CAPACITY_REACHED`, `DISK_TYPE_NO_POOL_ROOM`), admit the disk's capacity (422
+	// `DISK_SIZE_OUT_OF_RANGE`, `DISK_SIZE_NOT_ON_STEP`) and differ from the current one (422
+	// `DISK_RETYPE_SAME_TYPE`). The disk shows the `retype` operation until the change is applied, its
+	// Checkout Session expires or its order is canceled. A target on the same storage backend takes effect
+	// at once; one on another backend copies the disk's data there first, which takes longer the larger
+	// the disk is. The disk keeps its type until `disk_type_id` shows the new one, and its `performance`
+	// follows from then on; a change that did not take effect leaves the disk as it was and is refunded.
 	//
 	// An attached disk, including a system disk, can be resized. The capacity is usable at once, and the
 	// disk's `performance` shows what its type gives the new size. That performance applies from the
