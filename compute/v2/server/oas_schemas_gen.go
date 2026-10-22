@@ -4963,13 +4963,14 @@ func (s *ElasticIPOperation) SetStartedAt(val time.Time) {
 type ElasticIPOperationType string
 
 const (
-	ElasticIPOperationTypeCreate          ElasticIPOperationType = "create"
-	ElasticIPOperationTypeAssociate       ElasticIPOperationType = "associate"
-	ElasticIPOperationTypeDisassociate    ElasticIPOperationType = "disassociate"
-	ElasticIPOperationTypeUpdateBandwidth ElasticIPOperationType = "update_bandwidth"
-	ElasticIPOperationTypeSuspend         ElasticIPOperationType = "suspend"
-	ElasticIPOperationTypeResume          ElasticIPOperationType = "resume"
-	ElasticIPOperationTypeDelete          ElasticIPOperationType = "delete"
+	ElasticIPOperationTypeCreate                   ElasticIPOperationType = "create"
+	ElasticIPOperationTypeAssociate                ElasticIPOperationType = "associate"
+	ElasticIPOperationTypeDisassociate             ElasticIPOperationType = "disassociate"
+	ElasticIPOperationTypeUpdateBandwidth          ElasticIPOperationType = "update_bandwidth"
+	ElasticIPOperationTypeUpdateInternetChargeType ElasticIPOperationType = "update_internet_charge_type"
+	ElasticIPOperationTypeSuspend                  ElasticIPOperationType = "suspend"
+	ElasticIPOperationTypeResume                   ElasticIPOperationType = "resume"
+	ElasticIPOperationTypeDelete                   ElasticIPOperationType = "delete"
 )
 
 // AllValues returns all ElasticIPOperationType values.
@@ -4979,6 +4980,7 @@ func (ElasticIPOperationType) AllValues() []ElasticIPOperationType {
 		ElasticIPOperationTypeAssociate,
 		ElasticIPOperationTypeDisassociate,
 		ElasticIPOperationTypeUpdateBandwidth,
+		ElasticIPOperationTypeUpdateInternetChargeType,
 		ElasticIPOperationTypeSuspend,
 		ElasticIPOperationTypeResume,
 		ElasticIPOperationTypeDelete,
@@ -4995,6 +4997,8 @@ func (s ElasticIPOperationType) MarshalText() ([]byte, error) {
 	case ElasticIPOperationTypeDisassociate:
 		return []byte(s), nil
 	case ElasticIPOperationTypeUpdateBandwidth:
+		return []byte(s), nil
+	case ElasticIPOperationTypeUpdateInternetChargeType:
 		return []byte(s), nil
 	case ElasticIPOperationTypeSuspend:
 		return []byte(s), nil
@@ -5021,6 +5025,9 @@ func (s *ElasticIPOperationType) UnmarshalText(data []byte) error {
 		return nil
 	case ElasticIPOperationTypeUpdateBandwidth:
 		*s = ElasticIPOperationTypeUpdateBandwidth
+		return nil
+	case ElasticIPOperationTypeUpdateInternetChargeType:
+		*s = ElasticIPOperationTypeUpdateInternetChargeType
 		return nil
 	case ElasticIPOperationTypeSuspend:
 		*s = ElasticIPOperationTypeSuspend
@@ -5580,7 +5587,8 @@ type ImageID string
 // ceiling, prepaid for a period or by the Mbit/s-second while the address is associated. `traffic`
 // charges for the bytes the address sends upstream, pay-as-you-go only, while the bandwidth is only a
 // ceiling; it is refused with `ELASTIC_IP_TRAFFIC_UNAVAILABLE` on a line whose `traffic_sale_status`
-// is `off_sale`. Inbound traffic is never charged.
+// is `off_sale`. Inbound traffic is never charged. A pay-as-you-go elastic IP can move between the two
+// with `update-elastic-ip`.
 // Ref: #/components/schemas/InternetChargeType
 type InternetChargeType string
 
@@ -15512,11 +15520,23 @@ type UpdateElasticIPOK UpdateElasticIPResponseBody
 func (*UpdateElasticIPOK) updateElasticIPRes() {}
 
 // The mutable fields of the elastic IP identified by the path, all optional, at least one required.
-// `bandwidth_mbps` is an operational field and cannot be combined with any other field; such a request
-// is refused with 422 `UPDATE_FIELDS_COMBINED`. This is a configuration change of that resource, not
-// an independent bandwidth resource. Checkout is handled by Billing.
+// `bandwidth_mbps` and `internet_charge_type` are operational fields and cannot be combined with any
+// other field; such a request is refused with 422 `UPDATE_FIELDS_COMBINED`. This is a configuration
+// change of that resource, not an independent bandwidth resource. Checkout is handled by Billing.
 // Ref: #/components/schemas/UpdateElasticIPRequestBody
 type UpdateElasticIPRequestBody struct {
+	// Moves a pay-as-you-go elastic IP between charging for its bandwidth and charging for its traffic,
+	// within the same network subscription and without checkout. A prepaid network subscription has paid
+	// for its bandwidth and is refused with `ELASTIC_IP_CHARGE_TYPE_PREPAID`; `traffic` on a line whose
+	// `traffic_sale_status` is `off_sale` is refused with `ELASTIC_IP_TRAFFIC_UNAVAILABLE`, and the type
+	// already in effect with `ELASTIC_IP_CHARGE_TYPE_UNCHANGED`.
+	//
+	// The change takes effect at the instant it is applied: bandwidth stops being metered then and traffic
+	// starts being, or the other way round. Traffic is counted in windows, and a window is charged the way
+	// the elastic IP was charged for most of it, so a report that arrives late is still charged as it was
+	// at the time and a window the change falls in is never charged both ways. `bandwidth_mbps` stays the
+	// ceiling either way.
+	InternetChargeType OptInternetChargeType `json:"internet_charge_type"`
 	// Applied to both directions.
 	BandwidthMbps OptInt64 `json:"bandwidth_mbps"`
 	// The `proration_date` of the Billing quote for this change, so that the order is priced from the same
@@ -15529,6 +15549,11 @@ type UpdateElasticIPRequestBody struct {
 	// prepaid network subscription; a pay-as-you-go one has nothing to check out and refuses it with
 	// `ELASTIC_IP_CHECKOUT_UNUSED`.
 	Checkout OptCheckoutOptions `json:"checkout"`
+}
+
+// GetInternetChargeType returns the value of InternetChargeType.
+func (s *UpdateElasticIPRequestBody) GetInternetChargeType() OptInternetChargeType {
+	return s.InternetChargeType
 }
 
 // GetBandwidthMbps returns the value of BandwidthMbps.
@@ -15544,6 +15569,11 @@ func (s *UpdateElasticIPRequestBody) GetProrationDate() OptDateTime {
 // GetCheckout returns the value of Checkout.
 func (s *UpdateElasticIPRequestBody) GetCheckout() OptCheckoutOptions {
 	return s.Checkout
+}
+
+// SetInternetChargeType sets the value of InternetChargeType.
+func (s *UpdateElasticIPRequestBody) SetInternetChargeType(val OptInternetChargeType) {
+	s.InternetChargeType = val
 }
 
 // SetBandwidthMbps sets the value of BandwidthMbps.

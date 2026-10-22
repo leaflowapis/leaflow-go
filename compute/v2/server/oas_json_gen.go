@@ -11207,6 +11207,8 @@ func (s *ElasticIPOperationType) Decode(d *jx.Decoder) error {
 		*s = ElasticIPOperationTypeDisassociate
 	case ElasticIPOperationTypeUpdateBandwidth:
 		*s = ElasticIPOperationTypeUpdateBandwidth
+	case ElasticIPOperationTypeUpdateInternetChargeType:
+		*s = ElasticIPOperationTypeUpdateInternetChargeType
 	case ElasticIPOperationTypeSuspend:
 		*s = ElasticIPOperationTypeSuspend
 	case ElasticIPOperationTypeResume:
@@ -28631,6 +28633,12 @@ func (s *UpdateElasticIPRequestBody) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *UpdateElasticIPRequestBody) encodeFields(e *jx.Encoder) {
 	{
+		if s.InternetChargeType.Set {
+			e.FieldStart("internet_charge_type")
+			s.InternetChargeType.Encode(e)
+		}
+	}
+	{
 		if s.BandwidthMbps.Set {
 			e.FieldStart("bandwidth_mbps")
 			s.BandwidthMbps.Encode(e)
@@ -28650,10 +28658,11 @@ func (s *UpdateElasticIPRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfUpdateElasticIPRequestBody = [3]string{
-	0: "bandwidth_mbps",
-	1: "proration_date",
-	2: "checkout",
+var jsonFieldsNameOfUpdateElasticIPRequestBody = [4]string{
+	0: "internet_charge_type",
+	1: "bandwidth_mbps",
+	2: "proration_date",
+	3: "checkout",
 }
 
 // Decode decodes UpdateElasticIPRequestBody from json.
@@ -28666,6 +28675,16 @@ func (s *UpdateElasticIPRequestBody) Decode(d *jx.Decoder) error {
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		propertiesCount++
 		switch string(k) {
+		case "internet_charge_type":
+			if err := func() error {
+				s.InternetChargeType.Reset()
+				if err := s.InternetChargeType.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"internet_charge_type\"")
+			}
 		case "bandwidth_mbps":
 			if err := func() error {
 				s.BandwidthMbps.Reset()

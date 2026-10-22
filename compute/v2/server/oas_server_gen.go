@@ -1125,12 +1125,13 @@ type Handler interface {
 	UpdateDiskBackup(ctx context.Context, req *UpdateDiskBackupRequestBody, params UpdateDiskBackupParams) (*DiskBackupResource, error)
 	// UpdateElasticIP implements update-elastic-ip operation.
 	//
-	// Changes the bandwidth of this elastic IP. `bandwidth_mbps` is an operational field: it starts a
-	// change and cannot be combined with any other field in the same request. Such a request is refused
-	// with 422 `UPDATE_FIELDS_COMBINED`, because a change that committed beside another that was then
-	// refused would leave the request half applied. An elastic IP has no descriptive field today, so 200
-	// is reserved for the fields that may be added to it and every accepted update answers 202. `checkout`
-	// and `proration_date` belong to the purchase of the `bandwidth_mbps` change and are accepted only
+	// Changes the bandwidth of this elastic IP, or what its pay-as-you-go network subscription charges
+	// for. `bandwidth_mbps` and `internet_charge_type` are operational fields: each starts a change and
+	// cannot be combined with any other field in the same request. Such a request is refused with 422
+	// `UPDATE_FIELDS_COMBINED`, because a change that committed beside another that was then refused would
+	// leave the request half applied. An elastic IP has no descriptive field today, so 200 is reserved for
+	// the fields that may be added to it and every accepted update answers 202. `checkout` and
+	// `proration_date` belong to the purchase of the `bandwidth_mbps` change and are accepted only
 	// together with it.
 	//
 	// No separate bandwidth resource is created, and the limit applies to inbound and outbound traffic
@@ -1146,6 +1147,9 @@ type Handler interface {
 	//    `order_id` are null, and the new limit is metered from the instant it is applied; if it fails,
 	//    the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
 	//    `ELASTIC_IP_CHECKOUT_UNUSED`.
+	//
+	// A change of `internet_charge_type` needs no checkout and shows the `update_internet_charge_type`
+	// operation until it is applied; see the field.
 	//
 	// The elastic IP shows the `update_bandwidth` operation until the change is applied or ends, so other
 	// operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit
