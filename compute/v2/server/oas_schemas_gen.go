@@ -15580,8 +15580,10 @@ type UpdateElasticIPRequestBody struct {
 	// Moves a pay-as-you-go elastic IP between charging for its bandwidth and charging for its traffic,
 	// within the same network subscription and without checkout. A prepaid network subscription has paid
 	// for its bandwidth and is refused with `ELASTIC_IP_CHARGE_TYPE_PREPAID`; `traffic` on a line whose
-	// `traffic_sale_status` is `off_sale` is refused with `ELASTIC_IP_TRAFFIC_UNAVAILABLE`, and the type
-	// already in effect with `ELASTIC_IP_CHARGE_TYPE_UNCHANGED`.
+	// `traffic_sale_status` is `off_sale` is refused with `ELASTIC_IP_TRAFFIC_UNAVAILABLE`, the type
+	// already in effect with `ELASTIC_IP_CHARGE_TYPE_UNCHANGED`, and a type the currency of the network
+	// subscription does not offer on the line with HTTP 403 `ELASTIC_IP_CHARGE_TYPE_NOT_OFFERED`: prices
+	// are set per currency, and a currency without one there does not sell that type.
 	//
 	// The change takes effect at the instant it is applied: bandwidth stops being metered then and traffic
 	// starts being, or the other way round. Traffic is counted in windows, and a window is charged the way
