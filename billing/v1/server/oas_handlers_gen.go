@@ -6050,14 +6050,19 @@ func (s *Server) handleGetProjectAssignmentRequest(args [1]string, argsEscaped b
 
 // handleGetQuoteRequest handles get-quote operation.
 //
-// Calculates what a proposed purchase, or the renewal of your subscriptions, would invoice now, and
-// what each purchased line renews at. Nothing is saved, reserved or redeemed.
+// Calculates what a proposed purchase, a change of your subscriptions or their renewal would invoice
+// now, and what each purchased or changed line renews at. Nothing is saved, reserved or redeemed.
 //
 // With `billing_account_id`, the quote is for that billing account: its currency, account discounts,
-// tax and funds apply, renewals use the account currently paying for each subscription, and an access
-// token is required. The account must be yours or currently pay for a project you are a member of.
-// Without it, proposed items are priced in `currency` for anyone, signed in or not: no account
-// discount or funds apply, and `tax_status` is `requires_location_inputs`.
+// tax and funds apply, changes and renewals use the account currently paying for each subscription,
+// and an access token is required. The account must be yours or currently pay for a project you are a
+// member of. Without it, proposed items are priced in `currency` for anyone, signed in or not: no
+// account discount or funds apply, and tax that would be added is included only for the customer's
+// `address`.
+//
+// A change is priced as the service that owns the subscription would order it: pass the returned
+// `total` as the expected amount and, for an immediate change, `proration_date` to that service when
+// making the change.
 //
 // A promotion code is evaluated without being applied. It is applied only when a Checkout Session is
 // completed with it; conditions that depend on the account, such as a first purchase, are checked only
@@ -9654,7 +9659,8 @@ func (s *Server) handleListCreditNotesRequest(args [0]string, argsEscaped bool, 
 
 // handleListCurrenciesRequest handles list-currencies operation.
 //
-// Currencies a new billing account can be opened in; retired currencies are not listed.
+// Currencies a new billing account can be opened in, and prices and quotes without an account can be
+// given in, for anyone, signed in or not. Retired currencies are not listed.
 //
 // GET /api/v1/currencies
 func (s *Server) handleListCurrenciesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9728,52 +9734,6 @@ func (s *Server) handleListCurrenciesRequest(args [0]string, argsEscaped bool, w
 			ID:   "list-currencies",
 		}
 	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, ListCurrenciesOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
 	params, err := decodeListCurrenciesParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
@@ -16942,6 +16902,335 @@ func (s *Server) handleResumeBillingAccountRequest(args [1]string, argsEscaped b
 	}
 
 	if err := encodeResumeBillingAccountResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleSearchPricesRequest handles search-prices operation.
+//
+// Lists the active prices in `currency` that meet every condition in the body, as `list-prices` lists
+// them, for anyone, signed in or not. Use it for conditions a query string cannot hold, such as the
+// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own; read
+// its rates with `search-rates`.
+//
+// QUERY /api/v1/prices
+func (s *Server) handleSearchPricesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("search-prices"),
+		semconv.HTTPRequestMethodKey.String("QUERY"),
+		semconv.HTTPRouteKey.String("/api/v1/prices"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), SearchPricesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: SearchPricesOperation,
+			ID:   "search-prices",
+		}
+	)
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeSearchPricesRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *PriceList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    SearchPricesOperation,
+			OperationSummary: "Search what is on sale, with prices",
+			OperationID:      "search-prices",
+			Body:             request,
+			RawBody:          rawBody,
+			Params:           middleware.Parameters{},
+			Raw:              r,
+		}
+
+		type (
+			Request  = *PriceSearch
+			Params   = struct{}
+			Response = *PriceList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			nil,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.SearchPrices(ctx, request)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.SearchPrices(ctx, request)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeSearchPricesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleSearchRatesRequest handles search-rates operation.
+//
+// Rules of a public rate card that meet every condition in the body, as `list-rates` lists them, for
+// anyone, signed in or not; contract cards are not readable here. Use it to read the rates at the
+// dimension values of the items on a page, such as each region and machine type offered, and match
+// each rate to its price by meter, usage type, interval and dimensions.
+//
+// QUERY /api/v1/rate-cards/{rateCardId}/rules
+func (s *Server) handleSearchRatesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("search-rates"),
+		semconv.HTTPRequestMethodKey.String("QUERY"),
+		semconv.HTTPRouteKey.String("/api/v1/rate-cards/{rateCardId}/rules"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), SearchRatesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: SearchRatesOperation,
+			ID:   "search-rates",
+		}
+	)
+	params, err := decodeSearchRatesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeSearchRatesRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *RateList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    SearchRatesOperation,
+			OperationSummary: "Search catalog rates",
+			OperationID:      "search-rates",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "rateCardId",
+					In:   "path",
+				}: params.RateCardId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *RateSearch
+			Params   = SearchRatesParams
+			Response = *RateList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackSearchRatesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.SearchRates(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.SearchRates(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeSearchRatesResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)

@@ -6,13 +6,14 @@ package membershipv1server
 type OperationName = string
 
 const (
-	CancelMembershipDowngradeOperation   OperationName = "CancelMembershipDowngrade"
-	CreateMembershipOperation            OperationName = "CreateMembership"
-	GetMembershipOperation               OperationName = "GetMembership"
-	GetPlanOperation                     OperationName = "GetPlan"
-	ListMembershipPeriodsOperation       OperationName = "ListMembershipPeriods"
-	ListMembershipsOperation             OperationName = "ListMemberships"
-	ListPlansOperation                   OperationName = "ListPlans"
-	ScheduleMembershipDowngradeOperation OperationName = "ScheduleMembershipDowngrade"
-	UpgradeMembershipOperation           OperationName = "UpgradeMembership"
+	CancelMembershipDowngradeOperation    OperationName = "CancelMembershipDowngrade"
+	CreateMembershipOperation             OperationName = "CreateMembership"
+	GetMembershipOperation                OperationName = "GetMembership"
+	GetPlanOperation                      OperationName = "GetPlan"
+	ListMembershipPeriodsOperation        OperationName = "ListMembershipPeriods"
+	ListMembershipUpgradeOptionsOperation OperationName = "ListMembershipUpgradeOptions"
+	ListMembershipsOperation              OperationName = "ListMemberships"
+	ListPlansOperation                    OperationName = "ListPlans"
+	ScheduleMembershipDowngradeOperation  OperationName = "ScheduleMembershipDowngrade"
+	UpgradeMembershipOperation            OperationName = "UpgradeMembership"
 )

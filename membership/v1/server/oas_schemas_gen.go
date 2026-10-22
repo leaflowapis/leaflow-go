@@ -2605,3 +2605,59 @@ func (s *ProductIdentity) SetID(val string) {
 func (s *ProductIdentity) SetName(val string) {
 	s.Name = val
 }
+
+// A tier the membership can be upgraded to.
+// Ref: #/components/schemas/UpgradeOption
+type UpgradeOption struct {
+	Plan PlanSummary `json:"plan"`
+	// The Billing price the upgrade is ordered at, in the membership's currency. Null when the tier cannot
+	// be upgraded to now, because it has no price for the membership's currency and billing interval;
+	// `upgrade-membership` then returns 422 MEMBERSHIP_UPGRADE_UNAVAILABLE.
+	PriceID NilUUID `json:"price_id"`
+}
+
+// GetPlan returns the value of Plan.
+func (s *UpgradeOption) GetPlan() PlanSummary {
+	return s.Plan
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *UpgradeOption) GetPriceID() NilUUID {
+	return s.PriceID
+}
+
+// SetPlan sets the value of Plan.
+func (s *UpgradeOption) SetPlan(val PlanSummary) {
+	s.Plan = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *UpgradeOption) SetPriceID(val NilUUID) {
+	s.PriceID = val
+}
+
+// Ref: #/components/schemas/UpgradeOptionList
+type UpgradeOptionList struct {
+	Items      []UpgradeOption  `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *UpgradeOptionList) GetItems() []UpgradeOption {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *UpgradeOptionList) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *UpgradeOptionList) SetItems(val []UpgradeOption) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *UpgradeOptionList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}

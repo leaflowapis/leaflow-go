@@ -12,7 +12,6 @@ const (
 	CreateMessageOperation         OperationName = "CreateMessage"
 	CreateResponseOperation        OperationName = "CreateResponse"
 	CreateServiceOperation         OperationName = "CreateService"
-	CreateServiceQuoteOperation    OperationName = "CreateServiceQuote"
 	DeleteResponseOperation        OperationName = "DeleteResponse"
 	DisableAPIKeyOperation         OperationName = "DisableAPIKey"
 	EnableAPIKeyOperation          OperationName = "EnableAPIKey"

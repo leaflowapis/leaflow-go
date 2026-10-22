@@ -50,7 +50,6 @@ var operationRolesBearerAuth = map[string][]string{
 	CreateMessageOperation:         []string{},
 	CreateResponseOperation:        []string{},
 	CreateServiceOperation:         []string{},
-	CreateServiceQuoteOperation:    []string{},
 	DeleteResponseOperation:        []string{},
 	DisableAPIKeyOperation:         []string{},
 	EnableAPIKeyOperation:          []string{},

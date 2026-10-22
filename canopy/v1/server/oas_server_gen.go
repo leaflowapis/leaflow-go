@@ -63,19 +63,6 @@ type Handler interface {
 	//
 	// POST /api/v1/service
 	CreateService(ctx context.Context, req *CreateServiceRequestBody) (CreateServiceRes, error)
-	// CreateServiceQuote implements create-service-quote operation.
-	//
-	// Prices what `create-service` would order, without ordering or creating anything; nothing is reserved
-	// or recorded. Billing evaluates applicable account discounts and tax as for automatic checkout.
-	// `total` is what automatic checkout would collect before credit grants and balance; give it as
-	// `checkout.expected_amount` to be refused rather than charged a different amount.
-	//
-	// Token usage is priced per model, as each model's `pricing` states, and is neither part of `total`
-	// nor projected: `estimated_usage_amount` is null. A request the purchase would refuse is refused the
-	// same way.
-	//
-	// POST /api/v1/service/quote
-	CreateServiceQuote(ctx context.Context) (CreateServiceQuoteRes, error)
 	// DeleteResponse implements delete-response operation.
 	//
 	// Delete a stored response.

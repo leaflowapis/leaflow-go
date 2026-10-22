@@ -341,14 +341,19 @@ type Invoker interface {
 	GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (*ProjectAssignment, error)
 	// GetQuote invokes get-quote operation.
 	//
-	// Calculates what a proposed purchase, or the renewal of your subscriptions, would invoice now, and
-	// what each purchased line renews at. Nothing is saved, reserved or redeemed.
+	// Calculates what a proposed purchase, a change of your subscriptions or their renewal would invoice
+	// now, and what each purchased or changed line renews at. Nothing is saved, reserved or redeemed.
 	//
 	// With `billing_account_id`, the quote is for that billing account: its currency, account discounts,
-	// tax and funds apply, renewals use the account currently paying for each subscription, and an access
-	// token is required. The account must be yours or currently pay for a project you are a member of.
-	// Without it, proposed items are priced in `currency` for anyone, signed in or not: no account
-	// discount or funds apply, and `tax_status` is `requires_location_inputs`.
+	// tax and funds apply, changes and renewals use the account currently paying for each subscription,
+	// and an access token is required. The account must be yours or currently pay for a project you are a
+	// member of. Without it, proposed items are priced in `currency` for anyone, signed in or not: no
+	// account discount or funds apply, and tax that would be added is included only for the customer's
+	// `address`.
+	//
+	// A change is priced as the service that owns the subscription would order it: pass the returned
+	// `total` as the expected amount and, for an immediate change, `proration_date` to that service when
+	// making the change.
 	//
 	// A promotion code is evaluated without being applied. It is applied only when a Checkout Session is
 	// completed with it; conditions that depend on the account, such as a first purchase, are checked only
@@ -474,7 +479,8 @@ type Invoker interface {
 	ListCreditNotes(ctx context.Context, params ListCreditNotesParams) (*CreditNoteList, error)
 	// ListCurrencies invokes list-currencies operation.
 	//
-	// Currencies a new billing account can be opened in; retired currencies are not listed.
+	// Currencies a new billing account can be opened in, and prices and quotes without an account can be
+	// given in, for anyone, signed in or not. Retired currencies are not listed.
 	//
 	// GET /api/v1/currencies
 	ListCurrencies(ctx context.Context, params ListCurrenciesParams) (*CurrencyList, error)
@@ -776,6 +782,24 @@ type Invoker interface {
 	//
 	// POST /api/v1/billing-accounts/{accountId}/resume
 	ResumeBillingAccount(ctx context.Context, params ResumeBillingAccountParams) (*BillingAccount, error)
+	// SearchPrices invokes search-prices operation.
+	//
+	// Lists the active prices in `currency` that meet every condition in the body, as `list-prices` lists
+	// them, for anyone, signed in or not. Use it for conditions a query string cannot hold, such as the
+	// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own; read
+	// its rates with `search-rates`.
+	//
+	// QUERY /api/v1/prices
+	SearchPrices(ctx context.Context, request *PriceSearch) (*PriceList, error)
+	// SearchRates invokes search-rates operation.
+	//
+	// Rules of a public rate card that meet every condition in the body, as `list-rates` lists them, for
+	// anyone, signed in or not; contract cards are not readable here. Use it to read the rates at the
+	// dimension values of the items on a page, such as each region and machine type offered, and match
+	// each rate to its price by meter, usage type, interval and dimensions.
+	//
+	// QUERY /api/v1/rate-cards/{rateCardId}/rules
+	SearchRates(ctx context.Context, request *RateSearch, params SearchRatesParams) (*RateList, error)
 	// SetAutoRenew invokes set-auto-renew operation.
 	//
 	// Turns automatic renewal of an active or suspended licensed subscription on or off. Turning it off
@@ -4944,14 +4968,19 @@ func (c *Client) sendGetProjectAssignment(ctx context.Context, params GetProject
 
 // GetQuote invokes get-quote operation.
 //
-// Calculates what a proposed purchase, or the renewal of your subscriptions, would invoice now, and
-// what each purchased line renews at. Nothing is saved, reserved or redeemed.
+// Calculates what a proposed purchase, a change of your subscriptions or their renewal would invoice
+// now, and what each purchased or changed line renews at. Nothing is saved, reserved or redeemed.
 //
 // With `billing_account_id`, the quote is for that billing account: its currency, account discounts,
-// tax and funds apply, renewals use the account currently paying for each subscription, and an access
-// token is required. The account must be yours or currently pay for a project you are a member of.
-// Without it, proposed items are priced in `currency` for anyone, signed in or not: no account
-// discount or funds apply, and `tax_status` is `requires_location_inputs`.
+// tax and funds apply, changes and renewals use the account currently paying for each subscription,
+// and an access token is required. The account must be yours or currently pay for a project you are a
+// member of. Without it, proposed items are priced in `currency` for anyone, signed in or not: no
+// account discount or funds apply, and tax that would be added is included only for the customer's
+// `address`.
+//
+// A change is priced as the service that owns the subscription would order it: pass the returned
+// `total` as the expected amount and, for an immediate change, `proration_date` to that service when
+// making the change.
 //
 // A promotion code is evaluated without being applied. It is applied only when a Checkout Session is
 // completed with it; conditions that depend on the account, such as a first purchase, are checked only
@@ -8023,7 +8052,8 @@ func (c *Client) sendListCreditNotes(ctx context.Context, params ListCreditNotes
 
 // ListCurrencies invokes list-currencies operation.
 //
-// Currencies a new billing account can be opened in; retired currencies are not listed.
+// Currencies a new billing account can be opened in, and prices and quotes without an account can be
+// given in, for anyone, signed in or not. Retired currencies are not listed.
 //
 // GET /api/v1/currencies
 func (c *Client) ListCurrencies(ctx context.Context, params ListCurrenciesParams) (*CurrencyList, error) {
@@ -8114,39 +8144,6 @@ func (c *Client) sendListCurrencies(ctx context.Context, params ListCurrenciesPa
 	r, err := ht.NewRequest(ctx, "GET", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, ListCurrenciesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
 	}
 
 	stage = "SendRequest"
@@ -14423,6 +14420,215 @@ func (c *Client) sendResumeBillingAccount(ctx context.Context, params ResumeBill
 
 	stage = "DecodeResponse"
 	result, err := decodeResumeBillingAccountResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// SearchPrices invokes search-prices operation.
+//
+// Lists the active prices in `currency` that meet every condition in the body, as `list-prices` lists
+// them, for anyone, signed in or not. Use it for conditions a query string cannot hold, such as the
+// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own; read
+// its rates with `search-rates`.
+//
+// QUERY /api/v1/prices
+func (c *Client) SearchPrices(ctx context.Context, request *PriceSearch) (*PriceList, error) {
+	res, err := c.sendSearchPrices(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendSearchPrices(ctx context.Context, request *PriceSearch) (res *PriceList, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("search-prices"),
+		semconv.HTTPRequestMethodKey.String("QUERY"),
+		semconv.URLTemplateKey.String("/api/v1/prices"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SearchPricesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/prices"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "QUERY", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSearchPricesRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSearchPricesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// SearchRates invokes search-rates operation.
+//
+// Rules of a public rate card that meet every condition in the body, as `list-rates` lists them, for
+// anyone, signed in or not; contract cards are not readable here. Use it to read the rates at the
+// dimension values of the items on a page, such as each region and machine type offered, and match
+// each rate to its price by meter, usage type, interval and dimensions.
+//
+// QUERY /api/v1/rate-cards/{rateCardId}/rules
+func (c *Client) SearchRates(ctx context.Context, request *RateSearch, params SearchRatesParams) (*RateList, error) {
+	res, err := c.sendSearchRates(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendSearchRates(ctx context.Context, request *RateSearch, params SearchRatesParams) (res *RateList, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("search-rates"),
+		semconv.HTTPRequestMethodKey.String("QUERY"),
+		semconv.URLTemplateKey.String("/api/v1/rate-cards/{rateCardId}/rules"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SearchRatesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/rate-cards/"
+	{
+		// Encode "rateCardId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "rateCardId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.RateCardId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/rules"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "QUERY", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSearchRatesRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSearchRatesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

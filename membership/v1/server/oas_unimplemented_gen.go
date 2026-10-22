@@ -63,6 +63,19 @@ func (UnimplementedHandler) ListMembershipPeriods(ctx context.Context, params Li
 	return r, ht.ErrNotImplemented
 }
 
+// ListMembershipUpgradeOptions implements list-membership-upgrade-options operation.
+//
+// Lists the higher tiers on sale that the membership's tier has an upgrade path to, lowest rank first,
+// with the Billing price `upgrade-membership` would order for each. Price an upgrade before making it
+// with Billing's quote, giving that price with a quantity of 1; a promotion code can be checked there
+// as well. Returns 409 MEMBERSHIP_NOT_ACTIVE or MEMBERSHIP_CHANGE_PENDING when the membership cannot
+// be changed.
+//
+// GET /api/v1/memberships/{membershipId}/upgrade-options
+func (UnimplementedHandler) ListMembershipUpgradeOptions(ctx context.Context, params ListMembershipUpgradeOptionsParams) (r *UpgradeOptionList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListMemberships implements list-memberships operation.
 //
 // Lists memberships of the specified account, including ended memberships, newest first.

@@ -88,6 +88,8 @@ const (
 	PreviewWithdrawalOperation           OperationName = "PreviewWithdrawal"
 	RenewSubscriptionOperation           OperationName = "RenewSubscription"
 	ResumeBillingAccountOperation        OperationName = "ResumeBillingAccount"
+	SearchPricesOperation                OperationName = "SearchPrices"
+	SearchRatesOperation                 OperationName = "SearchRates"
 	SetAutoRenewOperation                OperationName = "SetAutoRenew"
 	SetDefaultPaymentMethodOperation     OperationName = "SetDefaultPaymentMethod"
 	SetProjectAssignmentOperation        OperationName = "SetProjectAssignment"

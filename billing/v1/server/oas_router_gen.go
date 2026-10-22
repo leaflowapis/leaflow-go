@@ -101,9 +101,6 @@ var (
 	rn66AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn68AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
 	rn59AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
@@ -174,7 +171,8 @@ var (
 		"GET": "If-None-Match",
 	}
 	rn80AllowedHeaders = map[string]string{
-		"GET": "If-None-Match",
+		"GET":   "If-None-Match",
+		"QUERY": "Content-Type",
 	}
 	rn45AllowedHeaders = map[string]string{
 		"GET": "If-None-Match",
@@ -189,7 +187,8 @@ var (
 		"QUERY": "Authorization,Content-Type",
 	}
 	rn86AllowedHeaders = map[string]string{
-		"GET": "If-None-Match",
+		"GET":   "If-None-Match",
+		"QUERY": "Content-Type",
 	}
 	rn88AllowedHeaders = map[string]string{
 		"GET": "Authorization",
@@ -1220,7 +1219,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
-								allowedHeaders: rn68AllowedHeaders,
+								allowedHeaders: nil,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -1960,9 +1959,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							switch r.Method {
 							case "GET":
 								s.handleListPricesRequest([0]string{}, elemIsEscaped, w, r)
+							case "QUERY":
+								s.handleSearchPricesRequest([0]string{}, elemIsEscaped, w, r)
 							default:
 								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "GET",
+									allowedMethods: "GET,QUERY",
 									allowedHeaders: rn80AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
@@ -2149,9 +2150,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								s.handleListRatesRequest([1]string{
 									args[0],
 								}, elemIsEscaped, w, r)
+							case "QUERY":
+								s.handleSearchRatesRequest([1]string{
+									args[0],
+								}, elemIsEscaped, w, r)
 							default:
 								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "GET",
+									allowedMethods: "GET,QUERY",
 									allowedHeaders: rn86AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
@@ -4574,6 +4579,15 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								r.args = args
 								r.count = 0
 								return r, true
+							case "QUERY":
+								r.name = SearchPricesOperation
+								r.summary = "Search what is on sale, with prices"
+								r.operationID = "search-prices"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/prices"
+								r.args = args
+								r.count = 0
+								return r, true
 							default:
 								return
 							}
@@ -4752,6 +4766,15 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								r.name = ListRatesOperation
 								r.summary = "List catalog rates"
 								r.operationID = "list-rates"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/rate-cards/{rateCardId}/rules"
+								r.args = args
+								r.count = 1
+								return r, true
+							case "QUERY":
+								r.name = SearchRatesOperation
+								r.summary = "Search catalog rates"
+								r.operationID = "search-rates"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/rate-cards/{rateCardId}/rules"
 								r.args = args

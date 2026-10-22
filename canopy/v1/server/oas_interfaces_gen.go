@@ -21,10 +21,6 @@ type CreateResponseRes interface {
 	createResponseRes()
 }
 
-type CreateServiceQuoteRes interface {
-	createServiceQuoteRes()
-}
-
 type CreateServiceRes interface {
 	createServiceRes()
 }

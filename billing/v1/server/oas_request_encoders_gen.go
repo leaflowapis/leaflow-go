@@ -274,6 +274,34 @@ func encodeRenewSubscriptionRequest(
 	return nil
 }
 
+func encodeSearchPricesRequest(
+	req *PriceSearch,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeSearchRatesRequest(
+	req *RateSearch,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeSetAutoRenewRequest(
 	req *AutoRenewSet,
 	r *http.Request,

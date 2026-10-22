@@ -7361,6 +7361,51 @@ func (o NilNamedIdentity) Or(d NamedIdentity) NamedIdentity {
 	return d
 }
 
+// NewNilQuoteDowngradeRefund returns new NilQuoteDowngradeRefund with value set to v.
+func NewNilQuoteDowngradeRefund(v QuoteDowngradeRefund) NilQuoteDowngradeRefund {
+	return NilQuoteDowngradeRefund{
+		Value: v,
+	}
+}
+
+// NilQuoteDowngradeRefund is nullable QuoteDowngradeRefund.
+type NilQuoteDowngradeRefund struct {
+	Value QuoteDowngradeRefund
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilQuoteDowngradeRefund) SetTo(v QuoteDowngradeRefund) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilQuoteDowngradeRefund) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilQuoteDowngradeRefund) SetToNull() {
+	o.Null = true
+	var v QuoteDowngradeRefund
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilQuoteDowngradeRefund) Get() (v QuoteDowngradeRefund, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilQuoteDowngradeRefund) Or(d QuoteDowngradeRefund) QuoteDowngradeRefund {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilQuotedDiscount returns new NilQuotedDiscount with value set to v.
 func NewNilQuotedDiscount(v QuotedDiscount) NilQuotedDiscount {
 	return NilQuotedDiscount{
@@ -9817,6 +9862,144 @@ func (o OptProductID) Or(d ProductID) ProductID {
 	return d
 }
 
+// NewOptQuoteAddress returns new OptQuoteAddress with value set to v.
+func NewOptQuoteAddress(v QuoteAddress) OptQuoteAddress {
+	return OptQuoteAddress{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptQuoteAddress is optional QuoteAddress.
+type OptQuoteAddress struct {
+	Value QuoteAddress
+	Set   bool
+}
+
+// IsSet returns true if OptQuoteAddress was set.
+func (o OptQuoteAddress) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptQuoteAddress) Reset() {
+	var v QuoteAddress
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptQuoteAddress) SetTo(v QuoteAddress) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptQuoteAddress) Get() (v QuoteAddress, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptQuoteAddress) Or(d QuoteAddress) QuoteAddress {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptQuoteChangeInputDimensions returns new OptQuoteChangeInputDimensions with value set to v.
+func NewOptQuoteChangeInputDimensions(v QuoteChangeInputDimensions) OptQuoteChangeInputDimensions {
+	return OptQuoteChangeInputDimensions{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptQuoteChangeInputDimensions is optional QuoteChangeInputDimensions.
+type OptQuoteChangeInputDimensions struct {
+	Value QuoteChangeInputDimensions
+	Set   bool
+}
+
+// IsSet returns true if OptQuoteChangeInputDimensions was set.
+func (o OptQuoteChangeInputDimensions) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptQuoteChangeInputDimensions) Reset() {
+	var v QuoteChangeInputDimensions
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptQuoteChangeInputDimensions) SetTo(v QuoteChangeInputDimensions) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptQuoteChangeInputDimensions) Get() (v QuoteChangeInputDimensions, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptQuoteChangeInputDimensions) Or(d QuoteChangeInputDimensions) QuoteChangeInputDimensions {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptQuoteChangeInputInterval returns new OptQuoteChangeInputInterval with value set to v.
+func NewOptQuoteChangeInputInterval(v QuoteChangeInputInterval) OptQuoteChangeInputInterval {
+	return OptQuoteChangeInputInterval{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptQuoteChangeInputInterval is optional QuoteChangeInputInterval.
+type OptQuoteChangeInputInterval struct {
+	Value QuoteChangeInputInterval
+	Set   bool
+}
+
+// IsSet returns true if OptQuoteChangeInputInterval was set.
+func (o OptQuoteChangeInputInterval) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptQuoteChangeInputInterval) Reset() {
+	var v QuoteChangeInputInterval
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptQuoteChangeInputInterval) SetTo(v QuoteChangeInputInterval) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptQuoteChangeInputInterval) Get() (v QuoteChangeInputInterval, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptQuoteChangeInputInterval) Or(d QuoteChangeInputInterval) QuoteChangeInputInterval {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptQuoteItemInputDimensions returns new OptQuoteItemInputDimensions with value set to v.
 func NewOptQuoteItemInputDimensions(v QuoteItemInputDimensions) OptQuoteItemInputDimensions {
 	return OptQuoteItemInputDimensions{
@@ -9949,6 +10132,52 @@ func (o OptQuoteRenewalInterval) Get() (v QuoteRenewalInterval, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptQuoteRenewalInterval) Or(d QuoteRenewalInterval) QuoteRenewalInterval {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptQuoteRequestChangeEffective returns new OptQuoteRequestChangeEffective with value set to v.
+func NewOptQuoteRequestChangeEffective(v QuoteRequestChangeEffective) OptQuoteRequestChangeEffective {
+	return OptQuoteRequestChangeEffective{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptQuoteRequestChangeEffective is optional QuoteRequestChangeEffective.
+type OptQuoteRequestChangeEffective struct {
+	Value QuoteRequestChangeEffective
+	Set   bool
+}
+
+// IsSet returns true if OptQuoteRequestChangeEffective was set.
+func (o OptQuoteRequestChangeEffective) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptQuoteRequestChangeEffective) Reset() {
+	var v QuoteRequestChangeEffective
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptQuoteRequestChangeEffective) SetTo(v QuoteRequestChangeEffective) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptQuoteRequestChangeEffective) Get() (v QuoteRequestChangeEffective, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptQuoteRequestChangeEffective) Or(d QuoteRequestChangeEffective) QuoteRequestChangeEffective {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -13814,6 +14043,94 @@ func (s *PriceOptionInterval) UnmarshalText(data []byte) error {
 	}
 }
 
+// Conditions combined with AND.
+// Ref: #/components/schemas/PriceSearch
+type PriceSearch struct {
+	// ISO 4217, three uppercase letters.
+	Currency string `json:"currency"`
+	// Only prices of these plans.
+	PlanIds   []uuid.UUID  `json:"plan_ids"`
+	ProductID OptProductID `json:"product_id"`
+	// Narrows to one price type.
+	Type OptPriceType `json:"type"`
+	// Narrows to one usage type.
+	UsageType OptUsageType `json:"usage_type"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:"page"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize OptInt64 `json:"page_size"`
+}
+
+// GetCurrency returns the value of Currency.
+func (s *PriceSearch) GetCurrency() string {
+	return s.Currency
+}
+
+// GetPlanIds returns the value of PlanIds.
+func (s *PriceSearch) GetPlanIds() []uuid.UUID {
+	return s.PlanIds
+}
+
+// GetProductID returns the value of ProductID.
+func (s *PriceSearch) GetProductID() OptProductID {
+	return s.ProductID
+}
+
+// GetType returns the value of Type.
+func (s *PriceSearch) GetType() OptPriceType {
+	return s.Type
+}
+
+// GetUsageType returns the value of UsageType.
+func (s *PriceSearch) GetUsageType() OptUsageType {
+	return s.UsageType
+}
+
+// GetPage returns the value of Page.
+func (s *PriceSearch) GetPage() OptInt64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *PriceSearch) GetPageSize() OptInt64 {
+	return s.PageSize
+}
+
+// SetCurrency sets the value of Currency.
+func (s *PriceSearch) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetPlanIds sets the value of PlanIds.
+func (s *PriceSearch) SetPlanIds(val []uuid.UUID) {
+	s.PlanIds = val
+}
+
+// SetProductID sets the value of ProductID.
+func (s *PriceSearch) SetProductID(val OptProductID) {
+	s.ProductID = val
+}
+
+// SetType sets the value of Type.
+func (s *PriceSearch) SetType(val OptPriceType) {
+	s.Type = val
+}
+
+// SetUsageType sets the value of UsageType.
+func (s *PriceSearch) SetUsageType(val OptUsageType) {
+	s.UsageType = val
+}
+
+// SetPage sets the value of Page.
+func (s *PriceSearch) SetPage(val OptInt64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *PriceSearch) SetPageSize(val OptInt64) {
+	s.PageSize = val
+}
+
 // How a ladder is walked: `graduated` charges each band at its own rate, `volume` charges everything
 // at the rate of the band the total falls in. `none` when not tiered.
 type PriceTiersMode string
@@ -14216,9 +14533,9 @@ type Quote struct {
 	// Immediate changes only; null otherwise. The instant the change is priced from; pass it when
 	// confirming the Checkout Session so it is priced from the same instant.
 	ProrationDate NilDateTime `json:"proration_date"`
-	// `complete`: tax is calculated for the billing account's invoice contact. `requires_location_inputs`:
-	// a quote without an account, which leaves out tax that would be added; tax already contained in a
-	// price is included.
+	// `complete`: tax is calculated for the billing account's invoice contact, or for `address` without an
+	// account. `requires_location_inputs`: a quote without an account or `address`, which leaves out tax
+	// that would be added; tax already contained in a price is included.
 	TaxStatus QuoteTaxStatus `json:"tax_status"`
 }
 
@@ -14332,6 +14649,287 @@ func (s *Quote) SetTaxStatus(val QuoteTaxStatus) {
 	s.TaxStatus = val
 }
 
+// Ref: #/components/schemas/QuoteAddress
+type QuoteAddress struct {
+	// ISO 3166-1 alpha-2, two uppercase letters.
+	Country string `json:"country"`
+	// The state or province, as the tax rates name it.
+	State OptString `json:"state"`
+}
+
+// GetCountry returns the value of Country.
+func (s *QuoteAddress) GetCountry() string {
+	return s.Country
+}
+
+// GetState returns the value of State.
+func (s *QuoteAddress) GetState() OptString {
+	return s.State
+}
+
+// SetCountry sets the value of Country.
+func (s *QuoteAddress) SetCountry(val string) {
+	s.Country = val
+}
+
+// SetState sets the value of State.
+func (s *QuoteAddress) SetState(val OptString) {
+	s.State = val
+}
+
+// The new terms of one subscription. Identify the price, or the plan to select one from, as for a
+// proposed item. Without a price or billing terms, the plan's price with the subscription's price
+// type, usage type, interval, interval count and cancellation policy is selected. Omitted dimensions
+// keep the subscription's.
+// Ref: #/components/schemas/QuoteChangeInput
+type QuoteChangeInput struct {
+	SubscriptionID uuid.UUID    `json:"subscription_id"`
+	PriceLookupKey OptString    `json:"price_lookup_key"`
+	PlanLookupKey  OptString    `json:"plan_lookup_key"`
+	PriceID        OptUUID      `json:"price_id"`
+	ProductID      OptProductID `json:"product_id"`
+	PlanID         OptUUID      `json:"plan_id"`
+	// Selects the price type instead of keeping the subscription's.
+	PriceType OptPriceType `json:"price_type"`
+	// Selects the usage type instead of keeping the subscription's.
+	UsageType     OptUsageType                `json:"usage_type"`
+	Interval      OptQuoteChangeInputInterval `json:"interval"`
+	IntervalCount OptInt                      `json:"interval_count"`
+	// Selects among licensed prices with otherwise identical billing terms.
+	CancellationPolicy OptCancellationPolicy `json:"cancellation_policy"`
+	// The quantity after the change.
+	Quantity string `json:"quantity"`
+	// The dimension values after the change, given in full; omit to keep the subscription's.
+	Dimensions OptQuoteChangeInputDimensions `json:"dimensions"`
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *QuoteChangeInput) GetSubscriptionID() uuid.UUID {
+	return s.SubscriptionID
+}
+
+// GetPriceLookupKey returns the value of PriceLookupKey.
+func (s *QuoteChangeInput) GetPriceLookupKey() OptString {
+	return s.PriceLookupKey
+}
+
+// GetPlanLookupKey returns the value of PlanLookupKey.
+func (s *QuoteChangeInput) GetPlanLookupKey() OptString {
+	return s.PlanLookupKey
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *QuoteChangeInput) GetPriceID() OptUUID {
+	return s.PriceID
+}
+
+// GetProductID returns the value of ProductID.
+func (s *QuoteChangeInput) GetProductID() OptProductID {
+	return s.ProductID
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *QuoteChangeInput) GetPlanID() OptUUID {
+	return s.PlanID
+}
+
+// GetPriceType returns the value of PriceType.
+func (s *QuoteChangeInput) GetPriceType() OptPriceType {
+	return s.PriceType
+}
+
+// GetUsageType returns the value of UsageType.
+func (s *QuoteChangeInput) GetUsageType() OptUsageType {
+	return s.UsageType
+}
+
+// GetInterval returns the value of Interval.
+func (s *QuoteChangeInput) GetInterval() OptQuoteChangeInputInterval {
+	return s.Interval
+}
+
+// GetIntervalCount returns the value of IntervalCount.
+func (s *QuoteChangeInput) GetIntervalCount() OptInt {
+	return s.IntervalCount
+}
+
+// GetCancellationPolicy returns the value of CancellationPolicy.
+func (s *QuoteChangeInput) GetCancellationPolicy() OptCancellationPolicy {
+	return s.CancellationPolicy
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *QuoteChangeInput) GetQuantity() string {
+	return s.Quantity
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *QuoteChangeInput) GetDimensions() OptQuoteChangeInputDimensions {
+	return s.Dimensions
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *QuoteChangeInput) SetSubscriptionID(val uuid.UUID) {
+	s.SubscriptionID = val
+}
+
+// SetPriceLookupKey sets the value of PriceLookupKey.
+func (s *QuoteChangeInput) SetPriceLookupKey(val OptString) {
+	s.PriceLookupKey = val
+}
+
+// SetPlanLookupKey sets the value of PlanLookupKey.
+func (s *QuoteChangeInput) SetPlanLookupKey(val OptString) {
+	s.PlanLookupKey = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *QuoteChangeInput) SetPriceID(val OptUUID) {
+	s.PriceID = val
+}
+
+// SetProductID sets the value of ProductID.
+func (s *QuoteChangeInput) SetProductID(val OptProductID) {
+	s.ProductID = val
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *QuoteChangeInput) SetPlanID(val OptUUID) {
+	s.PlanID = val
+}
+
+// SetPriceType sets the value of PriceType.
+func (s *QuoteChangeInput) SetPriceType(val OptPriceType) {
+	s.PriceType = val
+}
+
+// SetUsageType sets the value of UsageType.
+func (s *QuoteChangeInput) SetUsageType(val OptUsageType) {
+	s.UsageType = val
+}
+
+// SetInterval sets the value of Interval.
+func (s *QuoteChangeInput) SetInterval(val OptQuoteChangeInputInterval) {
+	s.Interval = val
+}
+
+// SetIntervalCount sets the value of IntervalCount.
+func (s *QuoteChangeInput) SetIntervalCount(val OptInt) {
+	s.IntervalCount = val
+}
+
+// SetCancellationPolicy sets the value of CancellationPolicy.
+func (s *QuoteChangeInput) SetCancellationPolicy(val OptCancellationPolicy) {
+	s.CancellationPolicy = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *QuoteChangeInput) SetQuantity(val string) {
+	s.Quantity = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *QuoteChangeInput) SetDimensions(val OptQuoteChangeInputDimensions) {
+	s.Dimensions = val
+}
+
+// The dimension values after the change, given in full; omit to keep the subscription's.
+type QuoteChangeInputDimensions map[string]string
+
+func (s *QuoteChangeInputDimensions) init() QuoteChangeInputDimensions {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+type QuoteChangeInputInterval string
+
+const (
+	QuoteChangeInputIntervalNone  QuoteChangeInputInterval = "none"
+	QuoteChangeInputIntervalDay   QuoteChangeInputInterval = "day"
+	QuoteChangeInputIntervalMonth QuoteChangeInputInterval = "month"
+	QuoteChangeInputIntervalYear  QuoteChangeInputInterval = "year"
+)
+
+// AllValues returns all QuoteChangeInputInterval values.
+func (QuoteChangeInputInterval) AllValues() []QuoteChangeInputInterval {
+	return []QuoteChangeInputInterval{
+		QuoteChangeInputIntervalNone,
+		QuoteChangeInputIntervalDay,
+		QuoteChangeInputIntervalMonth,
+		QuoteChangeInputIntervalYear,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s QuoteChangeInputInterval) MarshalText() ([]byte, error) {
+	switch s {
+	case QuoteChangeInputIntervalNone:
+		return []byte(s), nil
+	case QuoteChangeInputIntervalDay:
+		return []byte(s), nil
+	case QuoteChangeInputIntervalMonth:
+		return []byte(s), nil
+	case QuoteChangeInputIntervalYear:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *QuoteChangeInputInterval) UnmarshalText(data []byte) error {
+	switch QuoteChangeInputInterval(data) {
+	case QuoteChangeInputIntervalNone:
+		*s = QuoteChangeInputIntervalNone
+		return nil
+	case QuoteChangeInputIntervalDay:
+		*s = QuoteChangeInputIntervalDay
+		return nil
+	case QuoteChangeInputIntervalMonth:
+		*s = QuoteChangeInputIntervalMonth
+		return nil
+	case QuoteChangeInputIntervalYear:
+		*s = QuoteChangeInputIntervalYear
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// What an immediate downgrade would refund, estimated as of `proration_date`. The refund itself is
+// determined when the change takes effect.
+// Ref: #/components/schemas/QuoteDowngradeRefund
+type QuoteDowngradeRefund struct {
+	// Returned to the original payment sources, tax paid on it included.
+	RefundableAmount Money `json:"refundable_amount"`
+	// Before tax, the part of the excess that the subscription's refund terms do not return.
+	ForfeitedAmount Money `json:"forfeited_amount"`
+}
+
+// GetRefundableAmount returns the value of RefundableAmount.
+func (s *QuoteDowngradeRefund) GetRefundableAmount() Money {
+	return s.RefundableAmount
+}
+
+// GetForfeitedAmount returns the value of ForfeitedAmount.
+func (s *QuoteDowngradeRefund) GetForfeitedAmount() Money {
+	return s.ForfeitedAmount
+}
+
+// SetRefundableAmount sets the value of RefundableAmount.
+func (s *QuoteDowngradeRefund) SetRefundableAmount(val Money) {
+	s.RefundableAmount = val
+}
+
+// SetForfeitedAmount sets the value of ForfeitedAmount.
+func (s *QuoteDowngradeRefund) SetForfeitedAmount(val Money) {
+	s.ForfeitedAmount = val
+}
+
 // One fully calculated purchase line. An item with no immediate charge, such as a metered purchase,
 // has zero checkout amounts.
 // Ref: #/components/schemas/QuoteItem
@@ -14340,10 +14938,13 @@ type QuoteItem struct {
 	TaxAmount Money `json:"tax_amount"`
 	// The part of tax_amount already contained in amount minus discount_amount.
 	TaxIncludedAmount Money `json:"tax_included_amount"`
-	// The zero-based request line index, or the item's position for a Checkout Session quote.
-	Index     int       `json:"index"`
-	ProductID ProductID `json:"product_id"`
-	PlanID    uuid.UUID `json:"plan_id"`
+	// The zero-based index of the item or change in the request, or the item's position for a Checkout
+	// Session quote.
+	Index int `json:"index"`
+	// The subscription changed; null for a new purchase.
+	SubscriptionID NilUUID   `json:"subscription_id"`
+	ProductID      ProductID `json:"product_id"`
+	PlanID         uuid.UUID `json:"plan_id"`
 	// The selected price, also when the request identified it indirectly.
 	PriceID   uuid.UUID `json:"price_id"`
 	PlanName  string    `json:"plan_name"`
@@ -14370,6 +14971,15 @@ type QuoteItem struct {
 	Amount Money `json:"amount"`
 	// Total reduction on this line, including any continuing renewal discount.
 	DiscountAmount Money `json:"discount_amount"`
+	// Immediate changes only; null otherwise. Before tax, the new terms for the time from `proration_date`
+	// to the end of the paid period. An upgrade invoices `remaining_amount` minus `unused_amount`.
+	RemainingAmount NilMoney `json:"remaining_amount"`
+	// Immediate changes only; null otherwise. Before tax, for an upgrade or an unchanged period price, the
+	// amount paid for that time, up to the new terms' value for the same time; for a downgrade, the
+	// remaining value of what was paid, under the refund terms of each paid period.
+	UnusedAmount NilMoney `json:"unused_amount"`
+	// Immediate downgrades only, when `unused_amount` exceeds `remaining_amount`; null otherwise.
+	DowngradeRefund NilQuoteDowngradeRefund `json:"downgrade_refund"`
 	// Amount minus discount_amount plus tax_amount minus tax_included_amount.
 	Total    Money  `json:"total"`
 	Currency string `json:"currency"`
@@ -14388,6 +14998,11 @@ func (s *QuoteItem) GetTaxIncludedAmount() Money {
 // GetIndex returns the value of Index.
 func (s *QuoteItem) GetIndex() int {
 	return s.Index
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *QuoteItem) GetSubscriptionID() NilUUID {
+	return s.SubscriptionID
 }
 
 // GetProductID returns the value of ProductID.
@@ -14465,6 +15080,21 @@ func (s *QuoteItem) GetDiscountAmount() Money {
 	return s.DiscountAmount
 }
 
+// GetRemainingAmount returns the value of RemainingAmount.
+func (s *QuoteItem) GetRemainingAmount() NilMoney {
+	return s.RemainingAmount
+}
+
+// GetUnusedAmount returns the value of UnusedAmount.
+func (s *QuoteItem) GetUnusedAmount() NilMoney {
+	return s.UnusedAmount
+}
+
+// GetDowngradeRefund returns the value of DowngradeRefund.
+func (s *QuoteItem) GetDowngradeRefund() NilQuoteDowngradeRefund {
+	return s.DowngradeRefund
+}
+
 // GetTotal returns the value of Total.
 func (s *QuoteItem) GetTotal() Money {
 	return s.Total
@@ -14488,6 +15118,11 @@ func (s *QuoteItem) SetTaxIncludedAmount(val Money) {
 // SetIndex sets the value of Index.
 func (s *QuoteItem) SetIndex(val int) {
 	s.Index = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *QuoteItem) SetSubscriptionID(val NilUUID) {
+	s.SubscriptionID = val
 }
 
 // SetProductID sets the value of ProductID.
@@ -14563,6 +15198,21 @@ func (s *QuoteItem) SetAmount(val Money) {
 // SetDiscountAmount sets the value of DiscountAmount.
 func (s *QuoteItem) SetDiscountAmount(val Money) {
 	s.DiscountAmount = val
+}
+
+// SetRemainingAmount sets the value of RemainingAmount.
+func (s *QuoteItem) SetRemainingAmount(val NilMoney) {
+	s.RemainingAmount = val
+}
+
+// SetUnusedAmount sets the value of UnusedAmount.
+func (s *QuoteItem) SetUnusedAmount(val NilMoney) {
+	s.UnusedAmount = val
+}
+
+// SetDowngradeRefund sets the value of DowngradeRefund.
+func (s *QuoteItem) SetDowngradeRefund(val NilQuoteDowngradeRefund) {
+	s.DowngradeRefund = val
 }
 
 // SetTotal sets the value of Total.
@@ -15168,9 +15818,10 @@ func (s *QuoteRenewalResultInterval) UnmarshalText(data []byte) error {
 	}
 }
 
-// Quote proposed items or renewals, not both. Give exactly one of `billing_account_id` and `currency`;
-// renewals need the account. Promotion codes apply only to proposed items. An invalid combination
-// fails with `BILLING_PURCHASE_INVALID` and the field.
+// Quote proposed items, changes or renewals: exactly one of them. Give exactly one of
+// `billing_account_id` and `currency`; changes and renewals need the account. Promotion codes apply to
+// proposed items and changes. An invalid combination fails with `BILLING_PURCHASE_INVALID` and the
+// field.
 // Ref: #/components/schemas/QuoteRequest
 type QuoteRequest struct {
 	// The billing account to price for; it must be yours or currently pay for a project you are a member
@@ -15182,8 +15833,21 @@ type QuoteRequest struct {
 	Items []QuoteItemInput `json:"items"`
 	// Preview renewing these subscriptions, each at most once; each entry is a separate renewal order. To
 	// apply a promotion code, create a renewal Checkout Session and quote it.
-	Renewals      []QuoteRenewal `json:"renewals"`
-	PromotionCode OptString      `json:"promotion_code"`
+	Renewals []QuoteRenewal `json:"renewals"`
+	// Preview changing these subscriptions in one order, each at most once. Each must currently be paid by
+	// `billing_account_id` and be yours to read, as the owner of that account or a member of the
+	// subscription's project; all must belong to the same project, or all to no project.
+	Changes []QuoteChangeInput `json:"changes"`
+	// When the changes take effect; defaults to `immediate`. `immediate` prices the rest of the paid
+	// period from `proration_date`, charging an upgrade the difference and showing what a downgrade
+	// refunds. `period_end` prices the first period at the new terms, which replaces the renewal when the
+	// paid period ends.
+	ChangeEffective OptQuoteRequestChangeEffective `json:"change_effective"`
+	// Only with `currency`. Where the customer is, to include the tax that would be added there for a
+	// customer who is not tax exempt; `tax_status` is then `complete`. Refused with `billing_account_id`,
+	// whose invoice contact decides tax.
+	Address       OptQuoteAddress `json:"address"`
+	PromotionCode OptString       `json:"promotion_code"`
 }
 
 // GetBillingAccountID returns the value of BillingAccountID.
@@ -15204,6 +15868,21 @@ func (s *QuoteRequest) GetItems() []QuoteItemInput {
 // GetRenewals returns the value of Renewals.
 func (s *QuoteRequest) GetRenewals() []QuoteRenewal {
 	return s.Renewals
+}
+
+// GetChanges returns the value of Changes.
+func (s *QuoteRequest) GetChanges() []QuoteChangeInput {
+	return s.Changes
+}
+
+// GetChangeEffective returns the value of ChangeEffective.
+func (s *QuoteRequest) GetChangeEffective() OptQuoteRequestChangeEffective {
+	return s.ChangeEffective
+}
+
+// GetAddress returns the value of Address.
+func (s *QuoteRequest) GetAddress() OptQuoteAddress {
+	return s.Address
 }
 
 // GetPromotionCode returns the value of PromotionCode.
@@ -15231,14 +15910,74 @@ func (s *QuoteRequest) SetRenewals(val []QuoteRenewal) {
 	s.Renewals = val
 }
 
+// SetChanges sets the value of Changes.
+func (s *QuoteRequest) SetChanges(val []QuoteChangeInput) {
+	s.Changes = val
+}
+
+// SetChangeEffective sets the value of ChangeEffective.
+func (s *QuoteRequest) SetChangeEffective(val OptQuoteRequestChangeEffective) {
+	s.ChangeEffective = val
+}
+
+// SetAddress sets the value of Address.
+func (s *QuoteRequest) SetAddress(val OptQuoteAddress) {
+	s.Address = val
+}
+
 // SetPromotionCode sets the value of PromotionCode.
 func (s *QuoteRequest) SetPromotionCode(val OptString) {
 	s.PromotionCode = val
 }
 
-// `complete`: tax is calculated for the billing account's invoice contact. `requires_location_inputs`:
-// a quote without an account, which leaves out tax that would be added; tax already contained in a
-// price is included.
+// When the changes take effect; defaults to `immediate`. `immediate` prices the rest of the paid
+// period from `proration_date`, charging an upgrade the difference and showing what a downgrade
+// refunds. `period_end` prices the first period at the new terms, which replaces the renewal when the
+// paid period ends.
+type QuoteRequestChangeEffective string
+
+const (
+	QuoteRequestChangeEffectiveImmediate QuoteRequestChangeEffective = "immediate"
+	QuoteRequestChangeEffectivePeriodEnd QuoteRequestChangeEffective = "period_end"
+)
+
+// AllValues returns all QuoteRequestChangeEffective values.
+func (QuoteRequestChangeEffective) AllValues() []QuoteRequestChangeEffective {
+	return []QuoteRequestChangeEffective{
+		QuoteRequestChangeEffectiveImmediate,
+		QuoteRequestChangeEffectivePeriodEnd,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s QuoteRequestChangeEffective) MarshalText() ([]byte, error) {
+	switch s {
+	case QuoteRequestChangeEffectiveImmediate:
+		return []byte(s), nil
+	case QuoteRequestChangeEffectivePeriodEnd:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *QuoteRequestChangeEffective) UnmarshalText(data []byte) error {
+	switch QuoteRequestChangeEffective(data) {
+	case QuoteRequestChangeEffectiveImmediate:
+		*s = QuoteRequestChangeEffectiveImmediate
+		return nil
+	case QuoteRequestChangeEffectivePeriodEnd:
+		*s = QuoteRequestChangeEffectivePeriodEnd
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `complete`: tax is calculated for the billing account's invoice contact, or for `address` without an
+// account. `requires_location_inputs`: a quote without an account or `address`, which leaves out tax
+// that would be added; tax already contained in a price is included.
 type QuoteTaxStatus string
 
 const (
@@ -15782,6 +16521,83 @@ func (s *RateListHeaders) SetResponse(val RateList) {
 }
 
 func (*RateListHeaders) listRatesRes() {}
+
+// Conditions combined with AND.
+// Ref: #/components/schemas/RateSearch
+type RateSearch struct {
+	// Only rates on this meter.
+	MeterID OptUUID `json:"meter_id"`
+	// Rates in effect at this moment; defaults to now.
+	At OptDateTime `json:"at"`
+	// Only rates whose dimension values are exactly one of these sets, given as on order lines and usage.
+	// A set no rate has matches nothing.
+	Dimensions []RateSearchDimensionsItem `json:"dimensions"`
+	// 1-based page number. Defaults to 1.
+	Page OptInt64 `json:"page"`
+	// Items per page. Defaults to 50; at most 200.
+	PageSize OptInt64 `json:"page_size"`
+}
+
+// GetMeterID returns the value of MeterID.
+func (s *RateSearch) GetMeterID() OptUUID {
+	return s.MeterID
+}
+
+// GetAt returns the value of At.
+func (s *RateSearch) GetAt() OptDateTime {
+	return s.At
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *RateSearch) GetDimensions() []RateSearchDimensionsItem {
+	return s.Dimensions
+}
+
+// GetPage returns the value of Page.
+func (s *RateSearch) GetPage() OptInt64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *RateSearch) GetPageSize() OptInt64 {
+	return s.PageSize
+}
+
+// SetMeterID sets the value of MeterID.
+func (s *RateSearch) SetMeterID(val OptUUID) {
+	s.MeterID = val
+}
+
+// SetAt sets the value of At.
+func (s *RateSearch) SetAt(val OptDateTime) {
+	s.At = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *RateSearch) SetDimensions(val []RateSearchDimensionsItem) {
+	s.Dimensions = val
+}
+
+// SetPage sets the value of Page.
+func (s *RateSearch) SetPage(val OptInt64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *RateSearch) SetPageSize(val OptInt64) {
+	s.PageSize = val
+}
+
+type RateSearchDimensionsItem map[string]string
+
+func (s *RateSearchDimensionsItem) init() RateSearchDimensionsItem {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
 
 // `graduated` charges each band at its own rate; `volume` charges everything at the rate of the band
 // the total lands in. `none` for a `per_unit` rate.

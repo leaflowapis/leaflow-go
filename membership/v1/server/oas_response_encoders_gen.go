@@ -77,6 +77,19 @@ func encodeListMembershipPeriodsResponse(response *PeriodList, w http.ResponseWr
 	return nil
 }
 
+func encodeListMembershipUpgradeOptionsResponse(response *UpgradeOptionList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeListMembershipsResponse(response *MembershipList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
