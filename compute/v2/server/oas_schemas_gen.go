@@ -17259,12 +17259,13 @@ type VirtualPrivateCloud struct {
 	Cidr     string                `json:"cidr"`
 	// The /64 prefix routed to the network, null while IPv6 is not enabled.
 	Ipv6Cidr NilString `json:"ipv6_cidr"`
-	// `pending` until the virtual private cloud's network and router exist. `failed` means creation failed
-	// or the cloud reports the network broken; virtual machines cannot be created in it then and are
-	// refused with `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE`. `deleting` from the moment its deletion began
-	// until it is gone: subnets, security groups and routes in it can no longer be created, changed or
-	// deleted, and are refused with `VIRTUAL_PRIVATE_CLOUD_DELETING`. A deletion that stopped before the
-	// end leaves it `deleting` with no operation, and deleting it again resumes from where it stopped.
+	// `available` from creation: the network and router are created in the backend by the first member
+	// that needs them, so a virtual private cloud nothing uses holds no capacity there. `failed` means the
+	// cloud reports the network broken; virtual machines cannot be created in it then and are refused with
+	// `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE`. `deleting` from the moment its deletion began until it is gone:
+	// subnets, security groups and routes in it can no longer be created, changed or deleted, and are
+	// refused with `VIRTUAL_PRIVATE_CLOUD_DELETING`. A deletion that stopped before the end leaves it
+	// `deleting` with no operation, and deleting it again resumes from where it stopped.
 	Status VirtualPrivateCloudStatus `json:"status"`
 	// The operation in progress on this virtual private cloud, or null when none is.
 	Operation NilVirtualPrivateCloudOperation `json:"operation"`
@@ -17506,16 +17507,16 @@ func (s *VirtualPrivateCloudOperationType) UnmarshalText(data []byte) error {
 	}
 }
 
-// `pending` until the virtual private cloud's network and router exist. `failed` means creation failed
-// or the cloud reports the network broken; virtual machines cannot be created in it then and are
-// refused with `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE`. `deleting` from the moment its deletion began
-// until it is gone: subnets, security groups and routes in it can no longer be created, changed or
-// deleted, and are refused with `VIRTUAL_PRIVATE_CLOUD_DELETING`. A deletion that stopped before the
-// end leaves it `deleting` with no operation, and deleting it again resumes from where it stopped.
+// `available` from creation: the network and router are created in the backend by the first member
+// that needs them, so a virtual private cloud nothing uses holds no capacity there. `failed` means the
+// cloud reports the network broken; virtual machines cannot be created in it then and are refused with
+// `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE`. `deleting` from the moment its deletion began until it is gone:
+// subnets, security groups and routes in it can no longer be created, changed or deleted, and are
+// refused with `VIRTUAL_PRIVATE_CLOUD_DELETING`. A deletion that stopped before the end leaves it
+// `deleting` with no operation, and deleting it again resumes from where it stopped.
 type VirtualPrivateCloudStatus string
 
 const (
-	VirtualPrivateCloudStatusPending   VirtualPrivateCloudStatus = "pending"
 	VirtualPrivateCloudStatusAvailable VirtualPrivateCloudStatus = "available"
 	VirtualPrivateCloudStatusDeleting  VirtualPrivateCloudStatus = "deleting"
 	VirtualPrivateCloudStatusFailed    VirtualPrivateCloudStatus = "failed"
@@ -17524,7 +17525,6 @@ const (
 // AllValues returns all VirtualPrivateCloudStatus values.
 func (VirtualPrivateCloudStatus) AllValues() []VirtualPrivateCloudStatus {
 	return []VirtualPrivateCloudStatus{
-		VirtualPrivateCloudStatusPending,
 		VirtualPrivateCloudStatusAvailable,
 		VirtualPrivateCloudStatusDeleting,
 		VirtualPrivateCloudStatusFailed,
@@ -17534,8 +17534,6 @@ func (VirtualPrivateCloudStatus) AllValues() []VirtualPrivateCloudStatus {
 // MarshalText implements encoding.TextMarshaler.
 func (s VirtualPrivateCloudStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case VirtualPrivateCloudStatusPending:
-		return []byte(s), nil
 	case VirtualPrivateCloudStatusAvailable:
 		return []byte(s), nil
 	case VirtualPrivateCloudStatusDeleting:
@@ -17550,9 +17548,6 @@ func (s VirtualPrivateCloudStatus) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *VirtualPrivateCloudStatus) UnmarshalText(data []byte) error {
 	switch VirtualPrivateCloudStatus(data) {
-	case VirtualPrivateCloudStatusPending:
-		*s = VirtualPrivateCloudStatusPending
-		return nil
 	case VirtualPrivateCloudStatusAvailable:
 		*s = VirtualPrivateCloudStatusAvailable
 		return nil

@@ -11120,8 +11120,6 @@ func (s VirtualPrivateCloudOperationType) Validate() error {
 
 func (s VirtualPrivateCloudStatus) Validate() error {
 	switch s {
-	case "pending":
-		return nil
 	case "available":
 		return nil
 	case "deleting":

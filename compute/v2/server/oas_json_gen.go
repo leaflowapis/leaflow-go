@@ -32783,8 +32783,6 @@ func (s *VirtualPrivateCloudStatus) Decode(d *jx.Decoder) error {
 	}
 	// Try to use constant string.
 	switch VirtualPrivateCloudStatus(v) {
-	case VirtualPrivateCloudStatusPending:
-		*s = VirtualPrivateCloudStatusPending
 	case VirtualPrivateCloudStatusAvailable:
 		*s = VirtualPrivateCloudStatusAvailable
 	case VirtualPrivateCloudStatusDeleting:
