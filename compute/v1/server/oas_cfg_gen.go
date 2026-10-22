@@ -29,6 +29,7 @@ var regexMap = map[string]ogenregex.Regexp{
 	"^eni_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":      ogenregex.MustCompile("^eni_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^eniaddr_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":  ogenregex.MustCompile("^eniaddr_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^image_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":    ogenregex.MustCompile("^image_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^lt_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":       ogenregex.MustCompile("^lt_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^mtype_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":    ogenregex.MustCompile("^mtype_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^oplog_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":    ogenregex.MustCompile("^oplog_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^peering_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":  ogenregex.MustCompile("^peering_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),

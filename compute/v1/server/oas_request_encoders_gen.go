@@ -94,6 +94,34 @@ func encodeCreateElasticIPRequest(
 	return nil
 }
 
+func encodeCreateLaunchTemplateRequest(
+	req *CreateLaunchTemplateRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateLaunchTemplateVersionRequest(
+	req *NewLaunchTemplateVersion,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCreateNetworkInterfaceRequest(
 	req *CreateNetworkInterfaceRequestBody,
 	r *http.Request,
@@ -348,6 +376,20 @@ func encodeUpdateDiskBackupRequest(
 
 func encodeUpdateElasticIPRequest(
 	req *UpdateElasticIPRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateLaunchTemplateRequest(
+	req *UpdateLaunchTemplateRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

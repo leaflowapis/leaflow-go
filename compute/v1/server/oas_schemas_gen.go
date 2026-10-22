@@ -836,6 +836,80 @@ func (s *CreateElasticIPResponseBody) SetOrderID(val NilUUID) {
 
 func (*CreateElasticIPResponseBody) createElasticIPRes() {}
 
+// Ref: #/components/schemas/CreateLaunchTemplateRequestBody
+type CreateLaunchTemplateRequestBody struct {
+	RegionID    RegionID                 `json:"region_id"`
+	Name        string                   `json:"name"`
+	Description OptString                `json:"description"`
+	Version     NewLaunchTemplateVersion `json:"version"`
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *CreateLaunchTemplateRequestBody) GetRegionID() RegionID {
+	return s.RegionID
+}
+
+// GetName returns the value of Name.
+func (s *CreateLaunchTemplateRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *CreateLaunchTemplateRequestBody) GetDescription() OptString {
+	return s.Description
+}
+
+// GetVersion returns the value of Version.
+func (s *CreateLaunchTemplateRequestBody) GetVersion() NewLaunchTemplateVersion {
+	return s.Version
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *CreateLaunchTemplateRequestBody) SetRegionID(val RegionID) {
+	s.RegionID = val
+}
+
+// SetName sets the value of Name.
+func (s *CreateLaunchTemplateRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *CreateLaunchTemplateRequestBody) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetVersion sets the value of Version.
+func (s *CreateLaunchTemplateRequestBody) SetVersion(val NewLaunchTemplateVersion) {
+	s.Version = val
+}
+
+// Ref: #/components/schemas/CreateLaunchTemplateResponseBody
+type CreateLaunchTemplateResponseBody struct {
+	LaunchTemplate LaunchTemplate        `json:"launch_template"`
+	Version        LaunchTemplateVersion `json:"version"`
+}
+
+// GetLaunchTemplate returns the value of LaunchTemplate.
+func (s *CreateLaunchTemplateResponseBody) GetLaunchTemplate() LaunchTemplate {
+	return s.LaunchTemplate
+}
+
+// GetVersion returns the value of Version.
+func (s *CreateLaunchTemplateResponseBody) GetVersion() LaunchTemplateVersion {
+	return s.Version
+}
+
+// SetLaunchTemplate sets the value of LaunchTemplate.
+func (s *CreateLaunchTemplateResponseBody) SetLaunchTemplate(val LaunchTemplate) {
+	s.LaunchTemplate = val
+}
+
+// SetVersion sets the value of Version.
+func (s *CreateLaunchTemplateResponseBody) SetVersion(val LaunchTemplateVersion) {
+	s.Version = val
+}
+
 // Ref: #/components/schemas/CreateNetworkInterfaceRequestBody
 type CreateNetworkInterfaceRequestBody struct {
 	Name OptString `json:"name"`
@@ -1505,28 +1579,47 @@ func (s *CreateVirtualMachineRebuildResponseBody) SetPassword(val NilString) {
 
 func (*CreateVirtualMachineRebuildResponseBody) createVirtualMachineRebuildRes() {}
 
+// Every part a launch template can describe may come from `launch_template` instead: a part given here
+// overrides the template's, and `data_disks`, when given, replaces the template's list. After that the
+// machine type, the availability zone, the boot disk and the network interface are required, each
+// refused with 422 `VIRTUAL_MACHINE_CREATE_INVALID` naming the field when neither gives it.
+//
+// Every component bought with the virtual machine (its system disk, data disks and elastic IP) shares
+// the usage type and period of `compute.billing`; a component's own `billing` exists to choose a
+// different termination policy, and when omitted it is `compute.billing`.
 // Ref: #/components/schemas/CreateVirtualMachineRequestBody
 type CreateVirtualMachineRequestBody struct {
-	Name string `json:"name"`
+	LaunchTemplate OptLaunchTemplateReference `json:"launch_template"`
+	Name           string                     `json:"name"`
 	// Number of virtual machines to create; 1 when omitted. Names are numbered automatically for several.
 	Count OptInt64 `json:"count"`
 	// The availability zone of the machine type's region the virtual machines are created in. An existing
 	// boot disk has to be in it already.
-	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
-	Compute            NewCompute         `json:"compute"`
-	BootDisk           BootDisk           `json:"boot_disk"`
+	AvailabilityZoneID OptAvailabilityZoneID `json:"availability_zone_id"`
+	Compute            NewCompute            `json:"compute"`
+	BootDisk           OptBootDisk           `json:"boot_disk"`
 	// Data disks created with each virtual machine in its order and attached to it at boot, after the boot
 	// disk in the order given. A virtual machine and its disks are delivered together or not at all.
-	DataDisks        []NewDataDisk           `json:"data_disks"`
-	NetworkInterface PrimaryNetworkInterface `json:"network_interface"`
+	DataDisks        []NewDataDisk              `json:"data_disks"`
+	NetworkInterface OptPrimaryNetworkInterface `json:"network_interface"`
 	// An elastic IP associated with the primary network interface inside the creation: if association
 	// fails, no virtual machine is created. Associating afterwards is still possible
 	// (`put-elastic-ip-association`), but then it is two operations and a failure in between leaves a
 	// virtual machine you cannot reach. Omitted, the virtual machine has no public address.
 	ElasticIP OptVirtualMachineElasticIP `json:"elastic_ip"`
 	// The login account's password. Omitted, only the SSH public keys of the project log in.
-	Password OptPasswordChoice  `json:"password"`
+	Password OptPasswordChoice `json:"password"`
+	// Your own classification of each virtual machine, as key-value pairs. A key may not contain a colon,
+	// whitespace or control characters.
+	Labels OptCreateVirtualMachineRequestBodyLabels `json:"labels"`
+	// A free-text note about each virtual machine. Do not put credentials here.
+	Notes    OptString          `json:"notes"`
 	Checkout OptCheckoutOptions `json:"checkout"`
+}
+
+// GetLaunchTemplate returns the value of LaunchTemplate.
+func (s *CreateVirtualMachineRequestBody) GetLaunchTemplate() OptLaunchTemplateReference {
+	return s.LaunchTemplate
 }
 
 // GetName returns the value of Name.
@@ -1540,7 +1633,7 @@ func (s *CreateVirtualMachineRequestBody) GetCount() OptInt64 {
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *CreateVirtualMachineRequestBody) GetAvailabilityZoneID() AvailabilityZoneID {
+func (s *CreateVirtualMachineRequestBody) GetAvailabilityZoneID() OptAvailabilityZoneID {
 	return s.AvailabilityZoneID
 }
 
@@ -1550,7 +1643,7 @@ func (s *CreateVirtualMachineRequestBody) GetCompute() NewCompute {
 }
 
 // GetBootDisk returns the value of BootDisk.
-func (s *CreateVirtualMachineRequestBody) GetBootDisk() BootDisk {
+func (s *CreateVirtualMachineRequestBody) GetBootDisk() OptBootDisk {
 	return s.BootDisk
 }
 
@@ -1560,7 +1653,7 @@ func (s *CreateVirtualMachineRequestBody) GetDataDisks() []NewDataDisk {
 }
 
 // GetNetworkInterface returns the value of NetworkInterface.
-func (s *CreateVirtualMachineRequestBody) GetNetworkInterface() PrimaryNetworkInterface {
+func (s *CreateVirtualMachineRequestBody) GetNetworkInterface() OptPrimaryNetworkInterface {
 	return s.NetworkInterface
 }
 
@@ -1574,9 +1667,24 @@ func (s *CreateVirtualMachineRequestBody) GetPassword() OptPasswordChoice {
 	return s.Password
 }
 
+// GetLabels returns the value of Labels.
+func (s *CreateVirtualMachineRequestBody) GetLabels() OptCreateVirtualMachineRequestBodyLabels {
+	return s.Labels
+}
+
+// GetNotes returns the value of Notes.
+func (s *CreateVirtualMachineRequestBody) GetNotes() OptString {
+	return s.Notes
+}
+
 // GetCheckout returns the value of Checkout.
 func (s *CreateVirtualMachineRequestBody) GetCheckout() OptCheckoutOptions {
 	return s.Checkout
+}
+
+// SetLaunchTemplate sets the value of LaunchTemplate.
+func (s *CreateVirtualMachineRequestBody) SetLaunchTemplate(val OptLaunchTemplateReference) {
+	s.LaunchTemplate = val
 }
 
 // SetName sets the value of Name.
@@ -1590,7 +1698,7 @@ func (s *CreateVirtualMachineRequestBody) SetCount(val OptInt64) {
 }
 
 // SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *CreateVirtualMachineRequestBody) SetAvailabilityZoneID(val AvailabilityZoneID) {
+func (s *CreateVirtualMachineRequestBody) SetAvailabilityZoneID(val OptAvailabilityZoneID) {
 	s.AvailabilityZoneID = val
 }
 
@@ -1600,7 +1708,7 @@ func (s *CreateVirtualMachineRequestBody) SetCompute(val NewCompute) {
 }
 
 // SetBootDisk sets the value of BootDisk.
-func (s *CreateVirtualMachineRequestBody) SetBootDisk(val BootDisk) {
+func (s *CreateVirtualMachineRequestBody) SetBootDisk(val OptBootDisk) {
 	s.BootDisk = val
 }
 
@@ -1610,7 +1718,7 @@ func (s *CreateVirtualMachineRequestBody) SetDataDisks(val []NewDataDisk) {
 }
 
 // SetNetworkInterface sets the value of NetworkInterface.
-func (s *CreateVirtualMachineRequestBody) SetNetworkInterface(val PrimaryNetworkInterface) {
+func (s *CreateVirtualMachineRequestBody) SetNetworkInterface(val OptPrimaryNetworkInterface) {
 	s.NetworkInterface = val
 }
 
@@ -1624,9 +1732,32 @@ func (s *CreateVirtualMachineRequestBody) SetPassword(val OptPasswordChoice) {
 	s.Password = val
 }
 
+// SetLabels sets the value of Labels.
+func (s *CreateVirtualMachineRequestBody) SetLabels(val OptCreateVirtualMachineRequestBodyLabels) {
+	s.Labels = val
+}
+
+// SetNotes sets the value of Notes.
+func (s *CreateVirtualMachineRequestBody) SetNotes(val OptString) {
+	s.Notes = val
+}
+
 // SetCheckout sets the value of Checkout.
 func (s *CreateVirtualMachineRequestBody) SetCheckout(val OptCheckoutOptions) {
 	s.Checkout = val
+}
+
+// Your own classification of each virtual machine, as key-value pairs. A key may not contain a colon,
+// whitespace or control characters.
+type CreateVirtualMachineRequestBodyLabels map[string]string
+
+func (s *CreateVirtualMachineRequestBodyLabels) init() CreateVirtualMachineRequestBodyLabels {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
 }
 
 // The new virtual machines, `pending` until their order is accepted, and the Checkout Session they
@@ -1724,6 +1855,12 @@ func (s *CreateVirtualPrivateCloudRequestBody) SetName(val string) {
 func (s *CreateVirtualPrivateCloudRequestBody) SetCidr(val string) {
 	s.Cidr = val
 }
+
+// DeleteLaunchTemplateNoContent is response for DeleteLaunchTemplate operation.
+type DeleteLaunchTemplateNoContent struct{}
+
+// DeleteLaunchTemplateVersionNoContent is response for DeleteLaunchTemplateVersion operation.
+type DeleteLaunchTemplateVersionNoContent struct{}
 
 // DeleteRouteNoContent is response for DeleteRoute operation.
 type DeleteRouteNoContent struct{}
@@ -4974,6 +5111,569 @@ func (s *InternetChargeType) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/LaunchTemplate
+type LaunchTemplate struct {
+	ID          LaunchTemplateID `json:"id"`
+	RegionID    RegionID         `json:"region_id"`
+	Name        string           `json:"name"`
+	Description string           `json:"description"`
+	// The version a creation naming no version uses.
+	DefaultVersion int64 `json:"default_version"`
+	// The highest version number the template ever had.
+	LatestVersion int64     `json:"latest_version"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+// GetID returns the value of ID.
+func (s *LaunchTemplate) GetID() LaunchTemplateID {
+	return s.ID
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *LaunchTemplate) GetRegionID() RegionID {
+	return s.RegionID
+}
+
+// GetName returns the value of Name.
+func (s *LaunchTemplate) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *LaunchTemplate) GetDescription() string {
+	return s.Description
+}
+
+// GetDefaultVersion returns the value of DefaultVersion.
+func (s *LaunchTemplate) GetDefaultVersion() int64 {
+	return s.DefaultVersion
+}
+
+// GetLatestVersion returns the value of LatestVersion.
+func (s *LaunchTemplate) GetLatestVersion() int64 {
+	return s.LatestVersion
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *LaunchTemplate) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *LaunchTemplate) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetID sets the value of ID.
+func (s *LaunchTemplate) SetID(val LaunchTemplateID) {
+	s.ID = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *LaunchTemplate) SetRegionID(val RegionID) {
+	s.RegionID = val
+}
+
+// SetName sets the value of Name.
+func (s *LaunchTemplate) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *LaunchTemplate) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetDefaultVersion sets the value of DefaultVersion.
+func (s *LaunchTemplate) SetDefaultVersion(val int64) {
+	s.DefaultVersion = val
+}
+
+// SetLatestVersion sets the value of LatestVersion.
+func (s *LaunchTemplate) SetLatestVersion(val int64) {
+	s.LatestVersion = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *LaunchTemplate) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *LaunchTemplate) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+// A system disk created from an image for each virtual machine.
+// Ref: #/components/schemas/LaunchTemplateBootDisk
+type LaunchTemplateBootDisk struct {
+	ImageID                 ImageID                                          `json:"image_id"`
+	DiskTypeID              DiskTypeID                                       `json:"disk_type_id"`
+	SizeGB                  int64                                            `json:"size_gb"`
+	OnVirtualMachineRelease OptLaunchTemplateBootDiskOnVirtualMachineRelease `json:"on_virtual_machine_release"`
+}
+
+// GetImageID returns the value of ImageID.
+func (s *LaunchTemplateBootDisk) GetImageID() ImageID {
+	return s.ImageID
+}
+
+// GetDiskTypeID returns the value of DiskTypeID.
+func (s *LaunchTemplateBootDisk) GetDiskTypeID() DiskTypeID {
+	return s.DiskTypeID
+}
+
+// GetSizeGB returns the value of SizeGB.
+func (s *LaunchTemplateBootDisk) GetSizeGB() int64 {
+	return s.SizeGB
+}
+
+// GetOnVirtualMachineRelease returns the value of OnVirtualMachineRelease.
+func (s *LaunchTemplateBootDisk) GetOnVirtualMachineRelease() OptLaunchTemplateBootDiskOnVirtualMachineRelease {
+	return s.OnVirtualMachineRelease
+}
+
+// SetImageID sets the value of ImageID.
+func (s *LaunchTemplateBootDisk) SetImageID(val ImageID) {
+	s.ImageID = val
+}
+
+// SetDiskTypeID sets the value of DiskTypeID.
+func (s *LaunchTemplateBootDisk) SetDiskTypeID(val DiskTypeID) {
+	s.DiskTypeID = val
+}
+
+// SetSizeGB sets the value of SizeGB.
+func (s *LaunchTemplateBootDisk) SetSizeGB(val int64) {
+	s.SizeGB = val
+}
+
+// SetOnVirtualMachineRelease sets the value of OnVirtualMachineRelease.
+func (s *LaunchTemplateBootDisk) SetOnVirtualMachineRelease(val OptLaunchTemplateBootDiskOnVirtualMachineRelease) {
+	s.OnVirtualMachineRelease = val
+}
+
+type LaunchTemplateBootDiskOnVirtualMachineRelease string
+
+const (
+	LaunchTemplateBootDiskOnVirtualMachineReleaseDelete LaunchTemplateBootDiskOnVirtualMachineRelease = "delete"
+	LaunchTemplateBootDiskOnVirtualMachineReleaseDetach LaunchTemplateBootDiskOnVirtualMachineRelease = "detach"
+)
+
+// AllValues returns all LaunchTemplateBootDiskOnVirtualMachineRelease values.
+func (LaunchTemplateBootDiskOnVirtualMachineRelease) AllValues() []LaunchTemplateBootDiskOnVirtualMachineRelease {
+	return []LaunchTemplateBootDiskOnVirtualMachineRelease{
+		LaunchTemplateBootDiskOnVirtualMachineReleaseDelete,
+		LaunchTemplateBootDiskOnVirtualMachineReleaseDetach,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s LaunchTemplateBootDiskOnVirtualMachineRelease) MarshalText() ([]byte, error) {
+	switch s {
+	case LaunchTemplateBootDiskOnVirtualMachineReleaseDelete:
+		return []byte(s), nil
+	case LaunchTemplateBootDiskOnVirtualMachineReleaseDetach:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *LaunchTemplateBootDiskOnVirtualMachineRelease) UnmarshalText(data []byte) error {
+	switch LaunchTemplateBootDiskOnVirtualMachineRelease(data) {
+	case LaunchTemplateBootDiskOnVirtualMachineReleaseDelete:
+		*s = LaunchTemplateBootDiskOnVirtualMachineReleaseDelete
+		return nil
+	case LaunchTemplateBootDiskOnVirtualMachineReleaseDetach:
+		*s = LaunchTemplateBootDiskOnVirtualMachineReleaseDetach
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// An empty data disk created with each virtual machine.
+// Ref: #/components/schemas/LaunchTemplateDataDisk
+type LaunchTemplateDataDisk struct {
+	DiskTypeID              DiskTypeID                                       `json:"disk_type_id"`
+	SizeGB                  int64                                            `json:"size_gb"`
+	OnVirtualMachineRelease OptLaunchTemplateDataDiskOnVirtualMachineRelease `json:"on_virtual_machine_release"`
+}
+
+// GetDiskTypeID returns the value of DiskTypeID.
+func (s *LaunchTemplateDataDisk) GetDiskTypeID() DiskTypeID {
+	return s.DiskTypeID
+}
+
+// GetSizeGB returns the value of SizeGB.
+func (s *LaunchTemplateDataDisk) GetSizeGB() int64 {
+	return s.SizeGB
+}
+
+// GetOnVirtualMachineRelease returns the value of OnVirtualMachineRelease.
+func (s *LaunchTemplateDataDisk) GetOnVirtualMachineRelease() OptLaunchTemplateDataDiskOnVirtualMachineRelease {
+	return s.OnVirtualMachineRelease
+}
+
+// SetDiskTypeID sets the value of DiskTypeID.
+func (s *LaunchTemplateDataDisk) SetDiskTypeID(val DiskTypeID) {
+	s.DiskTypeID = val
+}
+
+// SetSizeGB sets the value of SizeGB.
+func (s *LaunchTemplateDataDisk) SetSizeGB(val int64) {
+	s.SizeGB = val
+}
+
+// SetOnVirtualMachineRelease sets the value of OnVirtualMachineRelease.
+func (s *LaunchTemplateDataDisk) SetOnVirtualMachineRelease(val OptLaunchTemplateDataDiskOnVirtualMachineRelease) {
+	s.OnVirtualMachineRelease = val
+}
+
+type LaunchTemplateDataDiskOnVirtualMachineRelease string
+
+const (
+	LaunchTemplateDataDiskOnVirtualMachineReleaseDelete LaunchTemplateDataDiskOnVirtualMachineRelease = "delete"
+	LaunchTemplateDataDiskOnVirtualMachineReleaseDetach LaunchTemplateDataDiskOnVirtualMachineRelease = "detach"
+)
+
+// AllValues returns all LaunchTemplateDataDiskOnVirtualMachineRelease values.
+func (LaunchTemplateDataDiskOnVirtualMachineRelease) AllValues() []LaunchTemplateDataDiskOnVirtualMachineRelease {
+	return []LaunchTemplateDataDiskOnVirtualMachineRelease{
+		LaunchTemplateDataDiskOnVirtualMachineReleaseDelete,
+		LaunchTemplateDataDiskOnVirtualMachineReleaseDetach,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s LaunchTemplateDataDiskOnVirtualMachineRelease) MarshalText() ([]byte, error) {
+	switch s {
+	case LaunchTemplateDataDiskOnVirtualMachineReleaseDelete:
+		return []byte(s), nil
+	case LaunchTemplateDataDiskOnVirtualMachineReleaseDetach:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *LaunchTemplateDataDiskOnVirtualMachineRelease) UnmarshalText(data []byte) error {
+	switch LaunchTemplateDataDiskOnVirtualMachineRelease(data) {
+	case LaunchTemplateDataDiskOnVirtualMachineReleaseDelete:
+		*s = LaunchTemplateDataDiskOnVirtualMachineReleaseDelete
+		return nil
+	case LaunchTemplateDataDiskOnVirtualMachineReleaseDetach:
+		*s = LaunchTemplateDataDiskOnVirtualMachineReleaseDetach
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A new elastic IP bought with each virtual machine. An address you already hold serves one virtual
+// machine, so a template cannot name one.
+// Ref: #/components/schemas/LaunchTemplateElasticIP
+type LaunchTemplateElasticIP struct {
+	LineID             ElasticIPLineID       `json:"line_id"`
+	BandwidthMbps      int64                 `json:"bandwidth_mbps"`
+	InternetChargeType OptInternetChargeType `json:"internet_charge_type"`
+}
+
+// GetLineID returns the value of LineID.
+func (s *LaunchTemplateElasticIP) GetLineID() ElasticIPLineID {
+	return s.LineID
+}
+
+// GetBandwidthMbps returns the value of BandwidthMbps.
+func (s *LaunchTemplateElasticIP) GetBandwidthMbps() int64 {
+	return s.BandwidthMbps
+}
+
+// GetInternetChargeType returns the value of InternetChargeType.
+func (s *LaunchTemplateElasticIP) GetInternetChargeType() OptInternetChargeType {
+	return s.InternetChargeType
+}
+
+// SetLineID sets the value of LineID.
+func (s *LaunchTemplateElasticIP) SetLineID(val ElasticIPLineID) {
+	s.LineID = val
+}
+
+// SetBandwidthMbps sets the value of BandwidthMbps.
+func (s *LaunchTemplateElasticIP) SetBandwidthMbps(val int64) {
+	s.BandwidthMbps = val
+}
+
+// SetInternetChargeType sets the value of InternetChargeType.
+func (s *LaunchTemplateElasticIP) SetInternetChargeType(val OptInternetChargeType) {
+	s.InternetChargeType = val
+}
+
+type LaunchTemplateID string
+
+// Ref: #/components/schemas/LaunchTemplateListResponseBody
+type LaunchTemplateListResponseBody struct {
+	Items      []LaunchTemplate `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *LaunchTemplateListResponseBody) GetItems() []LaunchTemplate {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *LaunchTemplateListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *LaunchTemplateListResponseBody) SetItems(val []LaunchTemplate) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *LaunchTemplateListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// A new primary network interface for each virtual machine. An interface you already hold serves one
+// virtual machine, so a template cannot name one.
+// Ref: #/components/schemas/LaunchTemplateNetworkInterface
+type LaunchTemplateNetworkInterface struct {
+	SubnetID         SubnetID          `json:"subnet_id"`
+	SecurityGroupIds []SecurityGroupID `json:"security_group_ids"`
+}
+
+// GetSubnetID returns the value of SubnetID.
+func (s *LaunchTemplateNetworkInterface) GetSubnetID() SubnetID {
+	return s.SubnetID
+}
+
+// GetSecurityGroupIds returns the value of SecurityGroupIds.
+func (s *LaunchTemplateNetworkInterface) GetSecurityGroupIds() []SecurityGroupID {
+	return s.SecurityGroupIds
+}
+
+// SetSubnetID sets the value of SubnetID.
+func (s *LaunchTemplateNetworkInterface) SetSubnetID(val SubnetID) {
+	s.SubnetID = val
+}
+
+// SetSecurityGroupIds sets the value of SecurityGroupIds.
+func (s *LaunchTemplateNetworkInterface) SetSecurityGroupIds(val []SecurityGroupID) {
+	s.SecurityGroupIds = val
+}
+
+// The launch template a creation starts from.
+// Ref: #/components/schemas/LaunchTemplateReference
+type LaunchTemplateReference struct {
+	// A launch template of this project in the machine type's region.
+	LaunchTemplateID LaunchTemplateID `json:"launch_template_id"`
+	// A live version of it; the template's `default_version` when omitted.
+	Version OptInt64 `json:"version"`
+}
+
+// GetLaunchTemplateID returns the value of LaunchTemplateID.
+func (s *LaunchTemplateReference) GetLaunchTemplateID() LaunchTemplateID {
+	return s.LaunchTemplateID
+}
+
+// GetVersion returns the value of Version.
+func (s *LaunchTemplateReference) GetVersion() OptInt64 {
+	return s.Version
+}
+
+// SetLaunchTemplateID sets the value of LaunchTemplateID.
+func (s *LaunchTemplateReference) SetLaunchTemplateID(val LaunchTemplateID) {
+	s.LaunchTemplateID = val
+}
+
+// SetVersion sets the value of Version.
+func (s *LaunchTemplateReference) SetVersion(val OptInt64) {
+	s.Version = val
+}
+
+// Ref: #/components/schemas/LaunchTemplateVersion
+type LaunchTemplateVersion struct {
+	LaunchTemplateID   LaunchTemplateID                  `json:"launch_template_id"`
+	Version            int64                             `json:"version"`
+	Description        string                            `json:"description"`
+	MachineTypeID      NilMachineTypeID                  `json:"machine_type_id"`
+	AvailabilityZoneID NilAvailabilityZoneID             `json:"availability_zone_id"`
+	BootDisk           NilLaunchTemplateBootDisk         `json:"boot_disk"`
+	DataDisks          []LaunchTemplateDataDisk          `json:"data_disks"`
+	NetworkInterface   NilLaunchTemplateNetworkInterface `json:"network_interface"`
+	ElasticIP          NilLaunchTemplateElasticIP        `json:"elastic_ip"`
+	// Null when the version describes no labels.
+	Labels NilLaunchTemplateVersionLabels `json:"labels"`
+	// Null when the version describes no note.
+	Notes     NilString `json:"notes"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// GetLaunchTemplateID returns the value of LaunchTemplateID.
+func (s *LaunchTemplateVersion) GetLaunchTemplateID() LaunchTemplateID {
+	return s.LaunchTemplateID
+}
+
+// GetVersion returns the value of Version.
+func (s *LaunchTemplateVersion) GetVersion() int64 {
+	return s.Version
+}
+
+// GetDescription returns the value of Description.
+func (s *LaunchTemplateVersion) GetDescription() string {
+	return s.Description
+}
+
+// GetMachineTypeID returns the value of MachineTypeID.
+func (s *LaunchTemplateVersion) GetMachineTypeID() NilMachineTypeID {
+	return s.MachineTypeID
+}
+
+// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
+func (s *LaunchTemplateVersion) GetAvailabilityZoneID() NilAvailabilityZoneID {
+	return s.AvailabilityZoneID
+}
+
+// GetBootDisk returns the value of BootDisk.
+func (s *LaunchTemplateVersion) GetBootDisk() NilLaunchTemplateBootDisk {
+	return s.BootDisk
+}
+
+// GetDataDisks returns the value of DataDisks.
+func (s *LaunchTemplateVersion) GetDataDisks() []LaunchTemplateDataDisk {
+	return s.DataDisks
+}
+
+// GetNetworkInterface returns the value of NetworkInterface.
+func (s *LaunchTemplateVersion) GetNetworkInterface() NilLaunchTemplateNetworkInterface {
+	return s.NetworkInterface
+}
+
+// GetElasticIP returns the value of ElasticIP.
+func (s *LaunchTemplateVersion) GetElasticIP() NilLaunchTemplateElasticIP {
+	return s.ElasticIP
+}
+
+// GetLabels returns the value of Labels.
+func (s *LaunchTemplateVersion) GetLabels() NilLaunchTemplateVersionLabels {
+	return s.Labels
+}
+
+// GetNotes returns the value of Notes.
+func (s *LaunchTemplateVersion) GetNotes() NilString {
+	return s.Notes
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *LaunchTemplateVersion) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetLaunchTemplateID sets the value of LaunchTemplateID.
+func (s *LaunchTemplateVersion) SetLaunchTemplateID(val LaunchTemplateID) {
+	s.LaunchTemplateID = val
+}
+
+// SetVersion sets the value of Version.
+func (s *LaunchTemplateVersion) SetVersion(val int64) {
+	s.Version = val
+}
+
+// SetDescription sets the value of Description.
+func (s *LaunchTemplateVersion) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetMachineTypeID sets the value of MachineTypeID.
+func (s *LaunchTemplateVersion) SetMachineTypeID(val NilMachineTypeID) {
+	s.MachineTypeID = val
+}
+
+// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
+func (s *LaunchTemplateVersion) SetAvailabilityZoneID(val NilAvailabilityZoneID) {
+	s.AvailabilityZoneID = val
+}
+
+// SetBootDisk sets the value of BootDisk.
+func (s *LaunchTemplateVersion) SetBootDisk(val NilLaunchTemplateBootDisk) {
+	s.BootDisk = val
+}
+
+// SetDataDisks sets the value of DataDisks.
+func (s *LaunchTemplateVersion) SetDataDisks(val []LaunchTemplateDataDisk) {
+	s.DataDisks = val
+}
+
+// SetNetworkInterface sets the value of NetworkInterface.
+func (s *LaunchTemplateVersion) SetNetworkInterface(val NilLaunchTemplateNetworkInterface) {
+	s.NetworkInterface = val
+}
+
+// SetElasticIP sets the value of ElasticIP.
+func (s *LaunchTemplateVersion) SetElasticIP(val NilLaunchTemplateElasticIP) {
+	s.ElasticIP = val
+}
+
+// SetLabels sets the value of Labels.
+func (s *LaunchTemplateVersion) SetLabels(val NilLaunchTemplateVersionLabels) {
+	s.Labels = val
+}
+
+// SetNotes sets the value of Notes.
+func (s *LaunchTemplateVersion) SetNotes(val NilString) {
+	s.Notes = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *LaunchTemplateVersion) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// Null when the version describes no labels.
+type LaunchTemplateVersionLabels map[string]string
+
+func (s *LaunchTemplateVersionLabels) init() LaunchTemplateVersionLabels {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/LaunchTemplateVersionListResponseBody
+type LaunchTemplateVersionListResponseBody struct {
+	Items      []LaunchTemplateVersion `json:"items"`
+	Pagination OffsetPagination        `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *LaunchTemplateVersionListResponseBody) GetItems() []LaunchTemplateVersion {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *LaunchTemplateVersionListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *LaunchTemplateVersionListResponseBody) SetItems(val []LaunchTemplateVersion) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *LaunchTemplateVersionListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
 type ListElasticIPTrafficUsageInterval string
 
 const (
@@ -6049,7 +6749,8 @@ type NewBootDisk struct {
 	// What releasing the virtual machine does to this disk. `delete` deletes it with the virtual machine;
 	// `detach` keeps it, still billed on its own terms, for you to attach elsewhere or delete.
 	OnVirtualMachineRelease OptNewBootDiskOnVirtualMachineRelease `json:"on_virtual_machine_release"`
-	Billing                 BillingChoice                         `json:"billing"`
+	// Its own terms, to choose a different termination policy; `compute.billing` when omitted.
+	Billing OptBillingChoice `json:"billing"`
 }
 
 // GetType returns the value of Type.
@@ -6078,7 +6779,7 @@ func (s *NewBootDisk) GetOnVirtualMachineRelease() OptNewBootDiskOnVirtualMachin
 }
 
 // GetBilling returns the value of Billing.
-func (s *NewBootDisk) GetBilling() BillingChoice {
+func (s *NewBootDisk) GetBilling() OptBillingChoice {
 	return s.Billing
 }
 
@@ -6108,7 +6809,7 @@ func (s *NewBootDisk) SetOnVirtualMachineRelease(val OptNewBootDiskOnVirtualMach
 }
 
 // SetBilling sets the value of Billing.
-func (s *NewBootDisk) SetBilling(val BillingChoice) {
+func (s *NewBootDisk) SetBilling(val OptBillingChoice) {
 	s.Billing = val
 }
 
@@ -6192,13 +6893,15 @@ func (s *NewBootDiskType) UnmarshalText(data []byte) error {
 // The compute capacity requested for each virtual machine in this order.
 // Ref: #/components/schemas/NewCompute
 type NewCompute struct {
-	// A machine type currently on sale.
-	MachineTypeID MachineTypeID `json:"machine_type_id"`
-	Billing       BillingChoice `json:"billing"`
+	// A machine type currently on sale. Required unless the launch template names one.
+	MachineTypeID OptMachineTypeID `json:"machine_type_id"`
+	// The terms of each virtual machine, and the usage type and period every component bought with it
+	// shares.
+	Billing BillingChoice `json:"billing"`
 }
 
 // GetMachineTypeID returns the value of MachineTypeID.
-func (s *NewCompute) GetMachineTypeID() MachineTypeID {
+func (s *NewCompute) GetMachineTypeID() OptMachineTypeID {
 	return s.MachineTypeID
 }
 
@@ -6208,7 +6911,7 @@ func (s *NewCompute) GetBilling() BillingChoice {
 }
 
 // SetMachineTypeID sets the value of MachineTypeID.
-func (s *NewCompute) SetMachineTypeID(val MachineTypeID) {
+func (s *NewCompute) SetMachineTypeID(val OptMachineTypeID) {
 	s.MachineTypeID = val
 }
 
@@ -6229,7 +6932,8 @@ type NewDataDisk struct {
 	// What releasing the virtual machine does to this disk. `delete` deletes it with the virtual machine;
 	// `detach` keeps it, still billed on its own terms, for you to attach elsewhere or delete.
 	OnVirtualMachineRelease OptNewDataDiskOnVirtualMachineRelease `json:"on_virtual_machine_release"`
-	Billing                 BillingChoice                         `json:"billing"`
+	// Its own terms, to choose a different termination policy; `compute.billing` when omitted.
+	Billing OptBillingChoice `json:"billing"`
 }
 
 // GetDiskTypeID returns the value of DiskTypeID.
@@ -6248,7 +6952,7 @@ func (s *NewDataDisk) GetOnVirtualMachineRelease() OptNewDataDiskOnVirtualMachin
 }
 
 // GetBilling returns the value of Billing.
-func (s *NewDataDisk) GetBilling() BillingChoice {
+func (s *NewDataDisk) GetBilling() OptBillingChoice {
 	return s.Billing
 }
 
@@ -6268,7 +6972,7 @@ func (s *NewDataDisk) SetOnVirtualMachineRelease(val OptNewDataDiskOnVirtualMach
 }
 
 // SetBilling sets the value of Billing.
-func (s *NewDataDisk) SetBilling(val BillingChoice) {
+func (s *NewDataDisk) SetBilling(val OptBillingChoice) {
 	s.Billing = val
 }
 
@@ -6324,9 +7028,10 @@ type NewElasticIP struct {
 	// `bandwidth_step_mbps`, otherwise refused with `ELASTIC_IP_BANDWIDTH_RANGE`.
 	BandwidthMbps      int64                 `json:"bandwidth_mbps"`
 	InternetChargeType OptInternetChargeType `json:"internet_charge_type"`
-	// The terms of the elastic IP's network subscription, which follow the rule shared by every component
-	// of the purchase. Its address subscription is always pay-as-you-go and is exempt from that rule.
-	Billing BillingChoice `json:"billing"`
+	// The terms of the elastic IP's network subscription, `compute.billing` when omitted; they follow the
+	// rule shared by every component of the purchase. Its address subscription is always pay-as-you-go and
+	// is exempt from that rule.
+	Billing OptBillingChoice `json:"billing"`
 }
 
 // GetType returns the value of Type.
@@ -6350,7 +7055,7 @@ func (s *NewElasticIP) GetInternetChargeType() OptInternetChargeType {
 }
 
 // GetBilling returns the value of Billing.
-func (s *NewElasticIP) GetBilling() BillingChoice {
+func (s *NewElasticIP) GetBilling() OptBillingChoice {
 	return s.Billing
 }
 
@@ -6375,7 +7080,7 @@ func (s *NewElasticIP) SetInternetChargeType(val OptInternetChargeType) {
 }
 
 // SetBilling sets the value of Billing.
-func (s *NewElasticIP) SetBilling(val BillingChoice) {
+func (s *NewElasticIP) SetBilling(val OptBillingChoice) {
 	s.Billing = val
 }
 
@@ -6411,6 +7116,124 @@ func (s *NewElasticIPType) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// What a version describes. Every part is optional; a virtual machine created from the version
+// supplies what is left out and may override what is given.
+// Ref: #/components/schemas/NewLaunchTemplateVersion
+type NewLaunchTemplateVersion struct {
+	Description        OptString                         `json:"description"`
+	MachineTypeID      OptMachineTypeID                  `json:"machine_type_id"`
+	AvailabilityZoneID OptAvailabilityZoneID             `json:"availability_zone_id"`
+	BootDisk           OptLaunchTemplateBootDisk         `json:"boot_disk"`
+	DataDisks          []LaunchTemplateDataDisk          `json:"data_disks"`
+	NetworkInterface   OptLaunchTemplateNetworkInterface `json:"network_interface"`
+	ElasticIP          OptLaunchTemplateElasticIP        `json:"elastic_ip"`
+	// A key may not contain a colon, whitespace or control characters.
+	Labels OptNewLaunchTemplateVersionLabels `json:"labels"`
+	Notes  OptString                         `json:"notes"`
+}
+
+// GetDescription returns the value of Description.
+func (s *NewLaunchTemplateVersion) GetDescription() OptString {
+	return s.Description
+}
+
+// GetMachineTypeID returns the value of MachineTypeID.
+func (s *NewLaunchTemplateVersion) GetMachineTypeID() OptMachineTypeID {
+	return s.MachineTypeID
+}
+
+// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
+func (s *NewLaunchTemplateVersion) GetAvailabilityZoneID() OptAvailabilityZoneID {
+	return s.AvailabilityZoneID
+}
+
+// GetBootDisk returns the value of BootDisk.
+func (s *NewLaunchTemplateVersion) GetBootDisk() OptLaunchTemplateBootDisk {
+	return s.BootDisk
+}
+
+// GetDataDisks returns the value of DataDisks.
+func (s *NewLaunchTemplateVersion) GetDataDisks() []LaunchTemplateDataDisk {
+	return s.DataDisks
+}
+
+// GetNetworkInterface returns the value of NetworkInterface.
+func (s *NewLaunchTemplateVersion) GetNetworkInterface() OptLaunchTemplateNetworkInterface {
+	return s.NetworkInterface
+}
+
+// GetElasticIP returns the value of ElasticIP.
+func (s *NewLaunchTemplateVersion) GetElasticIP() OptLaunchTemplateElasticIP {
+	return s.ElasticIP
+}
+
+// GetLabels returns the value of Labels.
+func (s *NewLaunchTemplateVersion) GetLabels() OptNewLaunchTemplateVersionLabels {
+	return s.Labels
+}
+
+// GetNotes returns the value of Notes.
+func (s *NewLaunchTemplateVersion) GetNotes() OptString {
+	return s.Notes
+}
+
+// SetDescription sets the value of Description.
+func (s *NewLaunchTemplateVersion) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetMachineTypeID sets the value of MachineTypeID.
+func (s *NewLaunchTemplateVersion) SetMachineTypeID(val OptMachineTypeID) {
+	s.MachineTypeID = val
+}
+
+// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
+func (s *NewLaunchTemplateVersion) SetAvailabilityZoneID(val OptAvailabilityZoneID) {
+	s.AvailabilityZoneID = val
+}
+
+// SetBootDisk sets the value of BootDisk.
+func (s *NewLaunchTemplateVersion) SetBootDisk(val OptLaunchTemplateBootDisk) {
+	s.BootDisk = val
+}
+
+// SetDataDisks sets the value of DataDisks.
+func (s *NewLaunchTemplateVersion) SetDataDisks(val []LaunchTemplateDataDisk) {
+	s.DataDisks = val
+}
+
+// SetNetworkInterface sets the value of NetworkInterface.
+func (s *NewLaunchTemplateVersion) SetNetworkInterface(val OptLaunchTemplateNetworkInterface) {
+	s.NetworkInterface = val
+}
+
+// SetElasticIP sets the value of ElasticIP.
+func (s *NewLaunchTemplateVersion) SetElasticIP(val OptLaunchTemplateElasticIP) {
+	s.ElasticIP = val
+}
+
+// SetLabels sets the value of Labels.
+func (s *NewLaunchTemplateVersion) SetLabels(val OptNewLaunchTemplateVersionLabels) {
+	s.Labels = val
+}
+
+// SetNotes sets the value of Notes.
+func (s *NewLaunchTemplateVersion) SetNotes(val OptString) {
+	s.Notes = val
+}
+
+// A key may not contain a colon, whitespace or control characters.
+type NewLaunchTemplateVersionLabels map[string]string
+
+func (s *NewLaunchTemplateVersionLabels) init() NewLaunchTemplateVersionLabels {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
 }
 
 // Ref: #/components/schemas/NewPrimaryNetworkInterface
@@ -6485,6 +7308,51 @@ func (s *NewPrimaryNetworkInterfaceType) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// NewNilAvailabilityZoneID returns new NilAvailabilityZoneID with value set to v.
+func NewNilAvailabilityZoneID(v AvailabilityZoneID) NilAvailabilityZoneID {
+	return NilAvailabilityZoneID{
+		Value: v,
+	}
+}
+
+// NilAvailabilityZoneID is nullable AvailabilityZoneID.
+type NilAvailabilityZoneID struct {
+	Value AvailabilityZoneID
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilAvailabilityZoneID) SetTo(v AvailabilityZoneID) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilAvailabilityZoneID) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilAvailabilityZoneID) SetToNull() {
+	o.Null = true
+	var v AvailabilityZoneID
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilAvailabilityZoneID) Get() (v AvailabilityZoneID, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilAvailabilityZoneID) Or(d AvailabilityZoneID) AvailabilityZoneID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
 }
 
 // NewNilDateTime returns new NilDateTime with value set to v.
@@ -7201,6 +8069,276 @@ func (o NilInt64) Get() (v int64, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilInt64) Or(d int64) int64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilLaunchTemplateBootDisk returns new NilLaunchTemplateBootDisk with value set to v.
+func NewNilLaunchTemplateBootDisk(v LaunchTemplateBootDisk) NilLaunchTemplateBootDisk {
+	return NilLaunchTemplateBootDisk{
+		Value: v,
+	}
+}
+
+// NilLaunchTemplateBootDisk is nullable LaunchTemplateBootDisk.
+type NilLaunchTemplateBootDisk struct {
+	Value LaunchTemplateBootDisk
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilLaunchTemplateBootDisk) SetTo(v LaunchTemplateBootDisk) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilLaunchTemplateBootDisk) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilLaunchTemplateBootDisk) SetToNull() {
+	o.Null = true
+	var v LaunchTemplateBootDisk
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilLaunchTemplateBootDisk) Get() (v LaunchTemplateBootDisk, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilLaunchTemplateBootDisk) Or(d LaunchTemplateBootDisk) LaunchTemplateBootDisk {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilLaunchTemplateElasticIP returns new NilLaunchTemplateElasticIP with value set to v.
+func NewNilLaunchTemplateElasticIP(v LaunchTemplateElasticIP) NilLaunchTemplateElasticIP {
+	return NilLaunchTemplateElasticIP{
+		Value: v,
+	}
+}
+
+// NilLaunchTemplateElasticIP is nullable LaunchTemplateElasticIP.
+type NilLaunchTemplateElasticIP struct {
+	Value LaunchTemplateElasticIP
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilLaunchTemplateElasticIP) SetTo(v LaunchTemplateElasticIP) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilLaunchTemplateElasticIP) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilLaunchTemplateElasticIP) SetToNull() {
+	o.Null = true
+	var v LaunchTemplateElasticIP
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilLaunchTemplateElasticIP) Get() (v LaunchTemplateElasticIP, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilLaunchTemplateElasticIP) Or(d LaunchTemplateElasticIP) LaunchTemplateElasticIP {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilLaunchTemplateID returns new NilLaunchTemplateID with value set to v.
+func NewNilLaunchTemplateID(v LaunchTemplateID) NilLaunchTemplateID {
+	return NilLaunchTemplateID{
+		Value: v,
+	}
+}
+
+// NilLaunchTemplateID is nullable LaunchTemplateID.
+type NilLaunchTemplateID struct {
+	Value LaunchTemplateID
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilLaunchTemplateID) SetTo(v LaunchTemplateID) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilLaunchTemplateID) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilLaunchTemplateID) SetToNull() {
+	o.Null = true
+	var v LaunchTemplateID
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilLaunchTemplateID) Get() (v LaunchTemplateID, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilLaunchTemplateID) Or(d LaunchTemplateID) LaunchTemplateID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilLaunchTemplateNetworkInterface returns new NilLaunchTemplateNetworkInterface with value set to v.
+func NewNilLaunchTemplateNetworkInterface(v LaunchTemplateNetworkInterface) NilLaunchTemplateNetworkInterface {
+	return NilLaunchTemplateNetworkInterface{
+		Value: v,
+	}
+}
+
+// NilLaunchTemplateNetworkInterface is nullable LaunchTemplateNetworkInterface.
+type NilLaunchTemplateNetworkInterface struct {
+	Value LaunchTemplateNetworkInterface
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilLaunchTemplateNetworkInterface) SetTo(v LaunchTemplateNetworkInterface) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilLaunchTemplateNetworkInterface) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilLaunchTemplateNetworkInterface) SetToNull() {
+	o.Null = true
+	var v LaunchTemplateNetworkInterface
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilLaunchTemplateNetworkInterface) Get() (v LaunchTemplateNetworkInterface, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilLaunchTemplateNetworkInterface) Or(d LaunchTemplateNetworkInterface) LaunchTemplateNetworkInterface {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilLaunchTemplateVersionLabels returns new NilLaunchTemplateVersionLabels with value set to v.
+func NewNilLaunchTemplateVersionLabels(v LaunchTemplateVersionLabels) NilLaunchTemplateVersionLabels {
+	return NilLaunchTemplateVersionLabels{
+		Value: v,
+	}
+}
+
+// NilLaunchTemplateVersionLabels is nullable LaunchTemplateVersionLabels.
+type NilLaunchTemplateVersionLabels struct {
+	Value LaunchTemplateVersionLabels
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilLaunchTemplateVersionLabels) SetTo(v LaunchTemplateVersionLabels) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilLaunchTemplateVersionLabels) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilLaunchTemplateVersionLabels) SetToNull() {
+	o.Null = true
+	var v LaunchTemplateVersionLabels
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilLaunchTemplateVersionLabels) Get() (v LaunchTemplateVersionLabels, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilLaunchTemplateVersionLabels) Or(d LaunchTemplateVersionLabels) LaunchTemplateVersionLabels {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilMachineTypeID returns new NilMachineTypeID with value set to v.
+func NewNilMachineTypeID(v MachineTypeID) NilMachineTypeID {
+	return NilMachineTypeID{
+		Value: v,
+	}
+}
+
+// NilMachineTypeID is nullable MachineTypeID.
+type NilMachineTypeID struct {
+	Value MachineTypeID
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilMachineTypeID) SetTo(v MachineTypeID) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilMachineTypeID) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilMachineTypeID) SetToNull() {
+	o.Null = true
+	var v MachineTypeID
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilMachineTypeID) Get() (v MachineTypeID, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilMachineTypeID) Or(d MachineTypeID) MachineTypeID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -8457,6 +9595,52 @@ func (o OptAvailabilityZoneID) Or(d AvailabilityZoneID) AvailabilityZoneID {
 	return d
 }
 
+// NewOptBillingChoice returns new OptBillingChoice with value set to v.
+func NewOptBillingChoice(v BillingChoice) OptBillingChoice {
+	return OptBillingChoice{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptBillingChoice is optional BillingChoice.
+type OptBillingChoice struct {
+	Value BillingChoice
+	Set   bool
+}
+
+// IsSet returns true if OptBillingChoice was set.
+func (o OptBillingChoice) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptBillingChoice) Reset() {
+	var v BillingChoice
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptBillingChoice) SetTo(v BillingChoice) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptBillingChoice) Get() (v BillingChoice, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptBillingChoice) Or(d BillingChoice) BillingChoice {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptBillingPeriod returns new OptBillingPeriod with value set to v.
 func NewOptBillingPeriod(v BillingPeriod) OptBillingPeriod {
 	return OptBillingPeriod{
@@ -8549,6 +9733,52 @@ func (o OptBool) Or(d bool) bool {
 	return d
 }
 
+// NewOptBootDisk returns new OptBootDisk with value set to v.
+func NewOptBootDisk(v BootDisk) OptBootDisk {
+	return OptBootDisk{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptBootDisk is optional BootDisk.
+type OptBootDisk struct {
+	Value BootDisk
+	Set   bool
+}
+
+// IsSet returns true if OptBootDisk was set.
+func (o OptBootDisk) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptBootDisk) Reset() {
+	var v BootDisk
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptBootDisk) SetTo(v BootDisk) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptBootDisk) Get() (v BootDisk, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptBootDisk) Or(d BootDisk) BootDisk {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptCheckoutOptions returns new OptCheckoutOptions with value set to v.
 func NewOptCheckoutOptions(v CheckoutOptions) OptCheckoutOptions {
 	return OptCheckoutOptions{
@@ -8635,6 +9865,52 @@ func (o OptCheckoutOptionsMode) Get() (v CheckoutOptionsMode, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptCheckoutOptionsMode) Or(d CheckoutOptionsMode) CheckoutOptionsMode {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptCreateVirtualMachineRequestBodyLabels returns new OptCreateVirtualMachineRequestBodyLabels with value set to v.
+func NewOptCreateVirtualMachineRequestBodyLabels(v CreateVirtualMachineRequestBodyLabels) OptCreateVirtualMachineRequestBodyLabels {
+	return OptCreateVirtualMachineRequestBodyLabels{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCreateVirtualMachineRequestBodyLabels is optional CreateVirtualMachineRequestBodyLabels.
+type OptCreateVirtualMachineRequestBodyLabels struct {
+	Value CreateVirtualMachineRequestBodyLabels
+	Set   bool
+}
+
+// IsSet returns true if OptCreateVirtualMachineRequestBodyLabels was set.
+func (o OptCreateVirtualMachineRequestBodyLabels) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCreateVirtualMachineRequestBodyLabels) Reset() {
+	var v CreateVirtualMachineRequestBodyLabels
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCreateVirtualMachineRequestBodyLabels) SetTo(v CreateVirtualMachineRequestBodyLabels) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCreateVirtualMachineRequestBodyLabels) Get() (v CreateVirtualMachineRequestBodyLabels, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCreateVirtualMachineRequestBodyLabels) Or(d CreateVirtualMachineRequestBodyLabels) CreateVirtualMachineRequestBodyLabels {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9009,6 +10285,282 @@ func (o OptInternetChargeType) Or(d InternetChargeType) InternetChargeType {
 	return d
 }
 
+// NewOptLaunchTemplateBootDisk returns new OptLaunchTemplateBootDisk with value set to v.
+func NewOptLaunchTemplateBootDisk(v LaunchTemplateBootDisk) OptLaunchTemplateBootDisk {
+	return OptLaunchTemplateBootDisk{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptLaunchTemplateBootDisk is optional LaunchTemplateBootDisk.
+type OptLaunchTemplateBootDisk struct {
+	Value LaunchTemplateBootDisk
+	Set   bool
+}
+
+// IsSet returns true if OptLaunchTemplateBootDisk was set.
+func (o OptLaunchTemplateBootDisk) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptLaunchTemplateBootDisk) Reset() {
+	var v LaunchTemplateBootDisk
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptLaunchTemplateBootDisk) SetTo(v LaunchTemplateBootDisk) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptLaunchTemplateBootDisk) Get() (v LaunchTemplateBootDisk, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptLaunchTemplateBootDisk) Or(d LaunchTemplateBootDisk) LaunchTemplateBootDisk {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptLaunchTemplateBootDiskOnVirtualMachineRelease returns new OptLaunchTemplateBootDiskOnVirtualMachineRelease with value set to v.
+func NewOptLaunchTemplateBootDiskOnVirtualMachineRelease(v LaunchTemplateBootDiskOnVirtualMachineRelease) OptLaunchTemplateBootDiskOnVirtualMachineRelease {
+	return OptLaunchTemplateBootDiskOnVirtualMachineRelease{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptLaunchTemplateBootDiskOnVirtualMachineRelease is optional LaunchTemplateBootDiskOnVirtualMachineRelease.
+type OptLaunchTemplateBootDiskOnVirtualMachineRelease struct {
+	Value LaunchTemplateBootDiskOnVirtualMachineRelease
+	Set   bool
+}
+
+// IsSet returns true if OptLaunchTemplateBootDiskOnVirtualMachineRelease was set.
+func (o OptLaunchTemplateBootDiskOnVirtualMachineRelease) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptLaunchTemplateBootDiskOnVirtualMachineRelease) Reset() {
+	var v LaunchTemplateBootDiskOnVirtualMachineRelease
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptLaunchTemplateBootDiskOnVirtualMachineRelease) SetTo(v LaunchTemplateBootDiskOnVirtualMachineRelease) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptLaunchTemplateBootDiskOnVirtualMachineRelease) Get() (v LaunchTemplateBootDiskOnVirtualMachineRelease, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptLaunchTemplateBootDiskOnVirtualMachineRelease) Or(d LaunchTemplateBootDiskOnVirtualMachineRelease) LaunchTemplateBootDiskOnVirtualMachineRelease {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptLaunchTemplateDataDiskOnVirtualMachineRelease returns new OptLaunchTemplateDataDiskOnVirtualMachineRelease with value set to v.
+func NewOptLaunchTemplateDataDiskOnVirtualMachineRelease(v LaunchTemplateDataDiskOnVirtualMachineRelease) OptLaunchTemplateDataDiskOnVirtualMachineRelease {
+	return OptLaunchTemplateDataDiskOnVirtualMachineRelease{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptLaunchTemplateDataDiskOnVirtualMachineRelease is optional LaunchTemplateDataDiskOnVirtualMachineRelease.
+type OptLaunchTemplateDataDiskOnVirtualMachineRelease struct {
+	Value LaunchTemplateDataDiskOnVirtualMachineRelease
+	Set   bool
+}
+
+// IsSet returns true if OptLaunchTemplateDataDiskOnVirtualMachineRelease was set.
+func (o OptLaunchTemplateDataDiskOnVirtualMachineRelease) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptLaunchTemplateDataDiskOnVirtualMachineRelease) Reset() {
+	var v LaunchTemplateDataDiskOnVirtualMachineRelease
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptLaunchTemplateDataDiskOnVirtualMachineRelease) SetTo(v LaunchTemplateDataDiskOnVirtualMachineRelease) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptLaunchTemplateDataDiskOnVirtualMachineRelease) Get() (v LaunchTemplateDataDiskOnVirtualMachineRelease, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptLaunchTemplateDataDiskOnVirtualMachineRelease) Or(d LaunchTemplateDataDiskOnVirtualMachineRelease) LaunchTemplateDataDiskOnVirtualMachineRelease {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptLaunchTemplateElasticIP returns new OptLaunchTemplateElasticIP with value set to v.
+func NewOptLaunchTemplateElasticIP(v LaunchTemplateElasticIP) OptLaunchTemplateElasticIP {
+	return OptLaunchTemplateElasticIP{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptLaunchTemplateElasticIP is optional LaunchTemplateElasticIP.
+type OptLaunchTemplateElasticIP struct {
+	Value LaunchTemplateElasticIP
+	Set   bool
+}
+
+// IsSet returns true if OptLaunchTemplateElasticIP was set.
+func (o OptLaunchTemplateElasticIP) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptLaunchTemplateElasticIP) Reset() {
+	var v LaunchTemplateElasticIP
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptLaunchTemplateElasticIP) SetTo(v LaunchTemplateElasticIP) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptLaunchTemplateElasticIP) Get() (v LaunchTemplateElasticIP, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptLaunchTemplateElasticIP) Or(d LaunchTemplateElasticIP) LaunchTemplateElasticIP {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptLaunchTemplateNetworkInterface returns new OptLaunchTemplateNetworkInterface with value set to v.
+func NewOptLaunchTemplateNetworkInterface(v LaunchTemplateNetworkInterface) OptLaunchTemplateNetworkInterface {
+	return OptLaunchTemplateNetworkInterface{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptLaunchTemplateNetworkInterface is optional LaunchTemplateNetworkInterface.
+type OptLaunchTemplateNetworkInterface struct {
+	Value LaunchTemplateNetworkInterface
+	Set   bool
+}
+
+// IsSet returns true if OptLaunchTemplateNetworkInterface was set.
+func (o OptLaunchTemplateNetworkInterface) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptLaunchTemplateNetworkInterface) Reset() {
+	var v LaunchTemplateNetworkInterface
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptLaunchTemplateNetworkInterface) SetTo(v LaunchTemplateNetworkInterface) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptLaunchTemplateNetworkInterface) Get() (v LaunchTemplateNetworkInterface, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptLaunchTemplateNetworkInterface) Or(d LaunchTemplateNetworkInterface) LaunchTemplateNetworkInterface {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptLaunchTemplateReference returns new OptLaunchTemplateReference with value set to v.
+func NewOptLaunchTemplateReference(v LaunchTemplateReference) OptLaunchTemplateReference {
+	return OptLaunchTemplateReference{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptLaunchTemplateReference is optional LaunchTemplateReference.
+type OptLaunchTemplateReference struct {
+	Value LaunchTemplateReference
+	Set   bool
+}
+
+// IsSet returns true if OptLaunchTemplateReference was set.
+func (o OptLaunchTemplateReference) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptLaunchTemplateReference) Reset() {
+	var v LaunchTemplateReference
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptLaunchTemplateReference) SetTo(v LaunchTemplateReference) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptLaunchTemplateReference) Get() (v LaunchTemplateReference, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptLaunchTemplateReference) Or(d LaunchTemplateReference) LaunchTemplateReference {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptListElasticIPTrafficUsageInterval returns new OptListElasticIPTrafficUsageInterval with value set to v.
 func NewOptListElasticIPTrafficUsageInterval(v ListElasticIPTrafficUsageInterval) OptListElasticIPTrafficUsageInterval {
 	return OptListElasticIPTrafficUsageInterval{
@@ -9193,6 +10745,52 @@ func (o OptNewDataDiskOnVirtualMachineRelease) Or(d NewDataDiskOnVirtualMachineR
 	return d
 }
 
+// NewOptNewLaunchTemplateVersionLabels returns new OptNewLaunchTemplateVersionLabels with value set to v.
+func NewOptNewLaunchTemplateVersionLabels(v NewLaunchTemplateVersionLabels) OptNewLaunchTemplateVersionLabels {
+	return OptNewLaunchTemplateVersionLabels{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNewLaunchTemplateVersionLabels is optional NewLaunchTemplateVersionLabels.
+type OptNewLaunchTemplateVersionLabels struct {
+	Value NewLaunchTemplateVersionLabels
+	Set   bool
+}
+
+// IsSet returns true if OptNewLaunchTemplateVersionLabels was set.
+func (o OptNewLaunchTemplateVersionLabels) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNewLaunchTemplateVersionLabels) Reset() {
+	var v NewLaunchTemplateVersionLabels
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNewLaunchTemplateVersionLabels) SetTo(v NewLaunchTemplateVersionLabels) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNewLaunchTemplateVersionLabels) Get() (v NewLaunchTemplateVersionLabels, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNewLaunchTemplateVersionLabels) Or(d NewLaunchTemplateVersionLabels) NewLaunchTemplateVersionLabels {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptPasswordChoice returns new OptPasswordChoice with value set to v.
 func NewOptPasswordChoice(v PasswordChoice) OptPasswordChoice {
 	return OptPasswordChoice{
@@ -9233,6 +10831,52 @@ func (o OptPasswordChoice) Get() (v PasswordChoice, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptPasswordChoice) Or(d PasswordChoice) PasswordChoice {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptPrimaryNetworkInterface returns new OptPrimaryNetworkInterface with value set to v.
+func NewOptPrimaryNetworkInterface(v PrimaryNetworkInterface) OptPrimaryNetworkInterface {
+	return OptPrimaryNetworkInterface{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPrimaryNetworkInterface is optional PrimaryNetworkInterface.
+type OptPrimaryNetworkInterface struct {
+	Value PrimaryNetworkInterface
+	Set   bool
+}
+
+// IsSet returns true if OptPrimaryNetworkInterface was set.
+func (o OptPrimaryNetworkInterface) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPrimaryNetworkInterface) Reset() {
+	var v PrimaryNetworkInterface
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPrimaryNetworkInterface) SetTo(v PrimaryNetworkInterface) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPrimaryNetworkInterface) Get() (v PrimaryNetworkInterface, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPrimaryNetworkInterface) Or(d PrimaryNetworkInterface) PrimaryNetworkInterface {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -13291,6 +14935,45 @@ func (s *UpdateElasticIPResponseBody) SetOrderID(val NilUUID) {
 	s.OrderID = val
 }
 
+// The fields to change, at least one.
+// Ref: #/components/schemas/UpdateLaunchTemplateRequestBody
+type UpdateLaunchTemplateRequestBody struct {
+	Name        OptString `json:"name"`
+	Description OptString `json:"description"`
+	// A live version of this template.
+	DefaultVersion OptInt64 `json:"default_version"`
+}
+
+// GetName returns the value of Name.
+func (s *UpdateLaunchTemplateRequestBody) GetName() OptString {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *UpdateLaunchTemplateRequestBody) GetDescription() OptString {
+	return s.Description
+}
+
+// GetDefaultVersion returns the value of DefaultVersion.
+func (s *UpdateLaunchTemplateRequestBody) GetDefaultVersion() OptInt64 {
+	return s.DefaultVersion
+}
+
+// SetName sets the value of Name.
+func (s *UpdateLaunchTemplateRequestBody) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *UpdateLaunchTemplateRequestBody) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetDefaultVersion sets the value of DefaultVersion.
+func (s *UpdateLaunchTemplateRequestBody) SetDefaultVersion(val OptInt64) {
+	s.DefaultVersion = val
+}
+
 // The mutable fields of a network interface, all optional, at least one required.
 // Ref: #/components/schemas/UpdateNetworkInterfaceRequestBody
 type UpdateNetworkInterfaceRequestBody struct {
@@ -13732,6 +15415,11 @@ type VirtualMachine struct {
 	AccessState NilVirtualMachineAccessState `json:"access_state"`
 	// Non-empty when the virtual machine was created from a disk you already had, instead of from an image.
 	SourceDiskID NilDiskID `json:"source_disk_id"`
+	// The launch template the virtual machine was created from; null when none was named. Changing or
+	// deleting the template afterwards changes nothing about the virtual machine.
+	LaunchTemplateID NilLaunchTemplateID `json:"launch_template_id"`
+	// The version of that launch template it was created from; null when none was named.
+	LaunchTemplateVersion NilInt64 `json:"launch_template_version"`
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
@@ -13879,6 +15567,16 @@ func (s *VirtualMachine) GetSourceDiskID() NilDiskID {
 	return s.SourceDiskID
 }
 
+// GetLaunchTemplateID returns the value of LaunchTemplateID.
+func (s *VirtualMachine) GetLaunchTemplateID() NilLaunchTemplateID {
+	return s.LaunchTemplateID
+}
+
+// GetLaunchTemplateVersion returns the value of LaunchTemplateVersion.
+func (s *VirtualMachine) GetLaunchTemplateVersion() NilInt64 {
+	return s.LaunchTemplateVersion
+}
+
 // SetAvailabilityZoneID sets the value of AvailabilityZoneID.
 func (s *VirtualMachine) SetAvailabilityZoneID(val AvailabilityZoneID) {
 	s.AvailabilityZoneID = val
@@ -14022,6 +15720,16 @@ func (s *VirtualMachine) SetAccessState(val NilVirtualMachineAccessState) {
 // SetSourceDiskID sets the value of SourceDiskID.
 func (s *VirtualMachine) SetSourceDiskID(val NilDiskID) {
 	s.SourceDiskID = val
+}
+
+// SetLaunchTemplateID sets the value of LaunchTemplateID.
+func (s *VirtualMachine) SetLaunchTemplateID(val NilLaunchTemplateID) {
+	s.LaunchTemplateID = val
+}
+
+// SetLaunchTemplateVersion sets the value of LaunchTemplateVersion.
+func (s *VirtualMachine) SetLaunchTemplateVersion(val NilInt64) {
+	s.LaunchTemplateVersion = val
 }
 
 func (*VirtualMachine) createVirtualMachineRebootRes() {}

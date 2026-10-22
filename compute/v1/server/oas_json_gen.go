@@ -869,8 +869,10 @@ func (s BootDisk) encodeFields(e *jx.Encoder) {
 				}
 			}
 			{
-				e.FieldStart("billing")
-				s.Billing.Encode(e)
+				if s.Billing.Set {
+					e.FieldStart("billing")
+					s.Billing.Encode(e)
+				}
 			}
 		}
 	case ExistingBootDiskBootDisk:
@@ -2273,6 +2275,258 @@ func (s *CreateElasticIPResponseBody) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *CreateElasticIPResponseBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *CreateLaunchTemplateRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *CreateLaunchTemplateRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("region_id")
+		s.RegionID.Encode(e)
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		if s.Description.Set {
+			e.FieldStart("description")
+			s.Description.Encode(e)
+		}
+	}
+	{
+		e.FieldStart("version")
+		s.Version.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfCreateLaunchTemplateRequestBody = [4]string{
+	0: "region_id",
+	1: "name",
+	2: "description",
+	3: "version",
+}
+
+// Decode decodes CreateLaunchTemplateRequestBody from json.
+func (s *CreateLaunchTemplateRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode CreateLaunchTemplateRequestBody to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "region_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.RegionID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"region_id\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "description":
+			if err := func() error {
+				s.Description.Reset()
+				if err := s.Description.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"description\"")
+			}
+		case "version":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.Version.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"version\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode CreateLaunchTemplateRequestBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00001011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfCreateLaunchTemplateRequestBody) {
+					name = jsonFieldsNameOfCreateLaunchTemplateRequestBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *CreateLaunchTemplateRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *CreateLaunchTemplateRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *CreateLaunchTemplateResponseBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *CreateLaunchTemplateResponseBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("launch_template")
+		s.LaunchTemplate.Encode(e)
+	}
+	{
+		e.FieldStart("version")
+		s.Version.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfCreateLaunchTemplateResponseBody = [2]string{
+	0: "launch_template",
+	1: "version",
+}
+
+// Decode decodes CreateLaunchTemplateResponseBody from json.
+func (s *CreateLaunchTemplateResponseBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode CreateLaunchTemplateResponseBody to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "launch_template":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.LaunchTemplate.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"launch_template\"")
+			}
+		case "version":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.Version.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"version\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode CreateLaunchTemplateResponseBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfCreateLaunchTemplateResponseBody) {
+					name = jsonFieldsNameOfCreateLaunchTemplateResponseBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *CreateLaunchTemplateResponseBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *CreateLaunchTemplateResponseBody) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -4304,6 +4558,12 @@ func (s *CreateVirtualMachineRequestBody) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *CreateVirtualMachineRequestBody) encodeFields(e *jx.Encoder) {
 	{
+		if s.LaunchTemplate.Set {
+			e.FieldStart("launch_template")
+			s.LaunchTemplate.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("name")
 		e.Str(s.Name)
 	}
@@ -4314,16 +4574,20 @@ func (s *CreateVirtualMachineRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		e.FieldStart("availability_zone_id")
-		s.AvailabilityZoneID.Encode(e)
+		if s.AvailabilityZoneID.Set {
+			e.FieldStart("availability_zone_id")
+			s.AvailabilityZoneID.Encode(e)
+		}
 	}
 	{
 		e.FieldStart("compute")
 		s.Compute.Encode(e)
 	}
 	{
-		e.FieldStart("boot_disk")
-		s.BootDisk.Encode(e)
+		if s.BootDisk.Set {
+			e.FieldStart("boot_disk")
+			s.BootDisk.Encode(e)
+		}
 	}
 	{
 		if s.DataDisks != nil {
@@ -4336,8 +4600,10 @@ func (s *CreateVirtualMachineRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		e.FieldStart("network_interface")
-		s.NetworkInterface.Encode(e)
+		if s.NetworkInterface.Set {
+			e.FieldStart("network_interface")
+			s.NetworkInterface.Encode(e)
+		}
 	}
 	{
 		if s.ElasticIP.Set {
@@ -4352,6 +4618,18 @@ func (s *CreateVirtualMachineRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.Labels.Set {
+			e.FieldStart("labels")
+			s.Labels.Encode(e)
+		}
+	}
+	{
+		if s.Notes.Set {
+			e.FieldStart("notes")
+			s.Notes.Encode(e)
+		}
+	}
+	{
 		if s.Checkout.Set {
 			e.FieldStart("checkout")
 			s.Checkout.Encode(e)
@@ -4359,17 +4637,20 @@ func (s *CreateVirtualMachineRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateVirtualMachineRequestBody = [10]string{
-	0: "name",
-	1: "count",
-	2: "availability_zone_id",
-	3: "compute",
-	4: "boot_disk",
-	5: "data_disks",
-	6: "network_interface",
-	7: "elastic_ip",
-	8: "password",
-	9: "checkout",
+var jsonFieldsNameOfCreateVirtualMachineRequestBody = [13]string{
+	0:  "launch_template",
+	1:  "name",
+	2:  "count",
+	3:  "availability_zone_id",
+	4:  "compute",
+	5:  "boot_disk",
+	6:  "data_disks",
+	7:  "network_interface",
+	8:  "elastic_ip",
+	9:  "password",
+	10: "labels",
+	11: "notes",
+	12: "checkout",
 }
 
 // Decode decodes CreateVirtualMachineRequestBody from json.
@@ -4382,8 +4663,18 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "launch_template":
+			if err := func() error {
+				s.LaunchTemplate.Reset()
+				if err := s.LaunchTemplate.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"launch_template\"")
+			}
 		case "name":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -4405,8 +4696,8 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"count\"")
 			}
 		case "availability_zone_id":
-			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
+				s.AvailabilityZoneID.Reset()
 				if err := s.AvailabilityZoneID.Decode(d); err != nil {
 					return err
 				}
@@ -4415,7 +4706,7 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"availability_zone_id\"")
 			}
 		case "compute":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				if err := s.Compute.Decode(d); err != nil {
 					return err
@@ -4425,8 +4716,8 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"compute\"")
 			}
 		case "boot_disk":
-			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
+				s.BootDisk.Reset()
 				if err := s.BootDisk.Decode(d); err != nil {
 					return err
 				}
@@ -4452,8 +4743,8 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"data_disks\"")
 			}
 		case "network_interface":
-			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
+				s.NetworkInterface.Reset()
 				if err := s.NetworkInterface.Decode(d); err != nil {
 					return err
 				}
@@ -4481,6 +4772,26 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"password\"")
 			}
+		case "labels":
+			if err := func() error {
+				s.Labels.Reset()
+				if err := s.Labels.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"labels\"")
+			}
+		case "notes":
+			if err := func() error {
+				s.Notes.Reset()
+				if err := s.Notes.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"notes\"")
+			}
 		case "checkout":
 			if err := func() error {
 				s.Checkout.Reset()
@@ -4501,7 +4812,7 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b01011101,
+		0b00010010,
 		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
@@ -4544,6 +4855,73 @@ func (s *CreateVirtualMachineRequestBody) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *CreateVirtualMachineRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s CreateVirtualMachineRequestBodyLabels) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields implements json.Marshaler.
+func (s CreateVirtualMachineRequestBodyLabels) encodeFields(e *jx.Encoder) {
+	for k, elem := range s {
+		e.FieldStart(k)
+
+		e.Str(elem)
+	}
+}
+
+// Decode decodes CreateVirtualMachineRequestBodyLabels from json.
+func (s *CreateVirtualMachineRequestBodyLabels) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode CreateVirtualMachineRequestBodyLabels to nil")
+	}
+	m := s.init()
+	var propertiesCount int
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		propertiesCount++
+		var elem string
+		if err := func() error {
+			v, err := d.Str()
+			elem = string(v)
+			if err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return errors.Wrapf(err, "decode field %q", k)
+		}
+		m[string(k)] = elem
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode CreateVirtualMachineRequestBodyLabels")
+	}
+	// Validate properties count.
+	if err := (validate.Object{
+		MinProperties:    0,
+		MinPropertiesSet: false,
+		MaxProperties:    20,
+		MaxPropertiesSet: true,
+	}).ValidateProperties(propertiesCount); err != nil {
+		return errors.Wrap(err, "object")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s CreateVirtualMachineRequestBodyLabels) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *CreateVirtualMachineRequestBodyLabels) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -10823,6 +11201,1547 @@ func (s *InternetChargeType) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *LaunchTemplate) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *LaunchTemplate) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("id")
+		s.ID.Encode(e)
+	}
+	{
+		e.FieldStart("region_id")
+		s.RegionID.Encode(e)
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		e.FieldStart("description")
+		e.Str(s.Description)
+	}
+	{
+		e.FieldStart("default_version")
+		e.Int64(s.DefaultVersion)
+	}
+	{
+		e.FieldStart("latest_version")
+		e.Int64(s.LatestVersion)
+	}
+	{
+		e.FieldStart("created_at")
+		json.EncodeDateTime(e, s.CreatedAt)
+	}
+	{
+		e.FieldStart("updated_at")
+		json.EncodeDateTime(e, s.UpdatedAt)
+	}
+}
+
+var jsonFieldsNameOfLaunchTemplate = [8]string{
+	0: "id",
+	1: "region_id",
+	2: "name",
+	3: "description",
+	4: "default_version",
+	5: "latest_version",
+	6: "created_at",
+	7: "updated_at",
+}
+
+// Decode decodes LaunchTemplate from json.
+func (s *LaunchTemplate) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LaunchTemplate to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.ID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"id\"")
+			}
+		case "region_id":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.RegionID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"region_id\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "description":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Str()
+				s.Description = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"description\"")
+			}
+		case "default_version":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Int64()
+				s.DefaultVersion = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"default_version\"")
+			}
+		case "latest_version":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Int64()
+				s.LatestVersion = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"latest_version\"")
+			}
+		case "created_at":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.CreatedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"created_at\"")
+			}
+		case "updated_at":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.UpdatedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"updated_at\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode LaunchTemplate")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b11111111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfLaunchTemplate) {
+					name = jsonFieldsNameOfLaunchTemplate[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *LaunchTemplate) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LaunchTemplate) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *LaunchTemplateBootDisk) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *LaunchTemplateBootDisk) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("image_id")
+		s.ImageID.Encode(e)
+	}
+	{
+		e.FieldStart("disk_type_id")
+		s.DiskTypeID.Encode(e)
+	}
+	{
+		e.FieldStart("size_gb")
+		e.Int64(s.SizeGB)
+	}
+	{
+		if s.OnVirtualMachineRelease.Set {
+			e.FieldStart("on_virtual_machine_release")
+			s.OnVirtualMachineRelease.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfLaunchTemplateBootDisk = [4]string{
+	0: "image_id",
+	1: "disk_type_id",
+	2: "size_gb",
+	3: "on_virtual_machine_release",
+}
+
+// Decode decodes LaunchTemplateBootDisk from json.
+func (s *LaunchTemplateBootDisk) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LaunchTemplateBootDisk to nil")
+	}
+	var requiredBitSet [1]uint8
+	s.setDefaults()
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "image_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.ImageID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"image_id\"")
+			}
+		case "disk_type_id":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.DiskTypeID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"disk_type_id\"")
+			}
+		case "size_gb":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Int64()
+				s.SizeGB = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"size_gb\"")
+			}
+		case "on_virtual_machine_release":
+			if err := func() error {
+				s.OnVirtualMachineRelease.Reset()
+				if err := s.OnVirtualMachineRelease.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"on_virtual_machine_release\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode LaunchTemplateBootDisk")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfLaunchTemplateBootDisk) {
+					name = jsonFieldsNameOfLaunchTemplateBootDisk[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *LaunchTemplateBootDisk) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LaunchTemplateBootDisk) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LaunchTemplateBootDiskOnVirtualMachineRelease as json.
+func (s LaunchTemplateBootDiskOnVirtualMachineRelease) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes LaunchTemplateBootDiskOnVirtualMachineRelease from json.
+func (s *LaunchTemplateBootDiskOnVirtualMachineRelease) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LaunchTemplateBootDiskOnVirtualMachineRelease to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch LaunchTemplateBootDiskOnVirtualMachineRelease(v) {
+	case LaunchTemplateBootDiskOnVirtualMachineReleaseDelete:
+		*s = LaunchTemplateBootDiskOnVirtualMachineReleaseDelete
+	case LaunchTemplateBootDiskOnVirtualMachineReleaseDetach:
+		*s = LaunchTemplateBootDiskOnVirtualMachineReleaseDetach
+	default:
+		*s = LaunchTemplateBootDiskOnVirtualMachineRelease(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s LaunchTemplateBootDiskOnVirtualMachineRelease) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LaunchTemplateBootDiskOnVirtualMachineRelease) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *LaunchTemplateDataDisk) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *LaunchTemplateDataDisk) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("disk_type_id")
+		s.DiskTypeID.Encode(e)
+	}
+	{
+		e.FieldStart("size_gb")
+		e.Int64(s.SizeGB)
+	}
+	{
+		if s.OnVirtualMachineRelease.Set {
+			e.FieldStart("on_virtual_machine_release")
+			s.OnVirtualMachineRelease.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfLaunchTemplateDataDisk = [3]string{
+	0: "disk_type_id",
+	1: "size_gb",
+	2: "on_virtual_machine_release",
+}
+
+// Decode decodes LaunchTemplateDataDisk from json.
+func (s *LaunchTemplateDataDisk) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LaunchTemplateDataDisk to nil")
+	}
+	var requiredBitSet [1]uint8
+	s.setDefaults()
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "disk_type_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.DiskTypeID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"disk_type_id\"")
+			}
+		case "size_gb":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int64()
+				s.SizeGB = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"size_gb\"")
+			}
+		case "on_virtual_machine_release":
+			if err := func() error {
+				s.OnVirtualMachineRelease.Reset()
+				if err := s.OnVirtualMachineRelease.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"on_virtual_machine_release\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode LaunchTemplateDataDisk")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfLaunchTemplateDataDisk) {
+					name = jsonFieldsNameOfLaunchTemplateDataDisk[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *LaunchTemplateDataDisk) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LaunchTemplateDataDisk) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LaunchTemplateDataDiskOnVirtualMachineRelease as json.
+func (s LaunchTemplateDataDiskOnVirtualMachineRelease) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes LaunchTemplateDataDiskOnVirtualMachineRelease from json.
+func (s *LaunchTemplateDataDiskOnVirtualMachineRelease) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LaunchTemplateDataDiskOnVirtualMachineRelease to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch LaunchTemplateDataDiskOnVirtualMachineRelease(v) {
+	case LaunchTemplateDataDiskOnVirtualMachineReleaseDelete:
+		*s = LaunchTemplateDataDiskOnVirtualMachineReleaseDelete
+	case LaunchTemplateDataDiskOnVirtualMachineReleaseDetach:
+		*s = LaunchTemplateDataDiskOnVirtualMachineReleaseDetach
+	default:
+		*s = LaunchTemplateDataDiskOnVirtualMachineRelease(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s LaunchTemplateDataDiskOnVirtualMachineRelease) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LaunchTemplateDataDiskOnVirtualMachineRelease) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *LaunchTemplateElasticIP) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *LaunchTemplateElasticIP) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("line_id")
+		s.LineID.Encode(e)
+	}
+	{
+		e.FieldStart("bandwidth_mbps")
+		e.Int64(s.BandwidthMbps)
+	}
+	{
+		if s.InternetChargeType.Set {
+			e.FieldStart("internet_charge_type")
+			s.InternetChargeType.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfLaunchTemplateElasticIP = [3]string{
+	0: "line_id",
+	1: "bandwidth_mbps",
+	2: "internet_charge_type",
+}
+
+// Decode decodes LaunchTemplateElasticIP from json.
+func (s *LaunchTemplateElasticIP) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LaunchTemplateElasticIP to nil")
+	}
+	var requiredBitSet [1]uint8
+	s.setDefaults()
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "line_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.LineID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"line_id\"")
+			}
+		case "bandwidth_mbps":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int64()
+				s.BandwidthMbps = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"bandwidth_mbps\"")
+			}
+		case "internet_charge_type":
+			if err := func() error {
+				s.InternetChargeType.Reset()
+				if err := s.InternetChargeType.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"internet_charge_type\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode LaunchTemplateElasticIP")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfLaunchTemplateElasticIP) {
+					name = jsonFieldsNameOfLaunchTemplateElasticIP[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *LaunchTemplateElasticIP) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LaunchTemplateElasticIP) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LaunchTemplateID as json.
+func (s LaunchTemplateID) Encode(e *jx.Encoder) {
+	unwrapped := string(s)
+
+	e.Str(unwrapped)
+}
+
+// Decode decodes LaunchTemplateID from json.
+func (s *LaunchTemplateID) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LaunchTemplateID to nil")
+	}
+	var unwrapped string
+	if err := func() error {
+		v, err := d.Str()
+		unwrapped = string(v)
+		if err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return errors.Wrap(err, "alias")
+	}
+	*s = LaunchTemplateID(unwrapped)
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s LaunchTemplateID) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LaunchTemplateID) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *LaunchTemplateListResponseBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *LaunchTemplateListResponseBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("items")
+		e.ArrStart()
+		for _, elem := range s.Items {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("pagination")
+		s.Pagination.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfLaunchTemplateListResponseBody = [2]string{
+	0: "items",
+	1: "pagination",
+}
+
+// Decode decodes LaunchTemplateListResponseBody from json.
+func (s *LaunchTemplateListResponseBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LaunchTemplateListResponseBody to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "items":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				s.Items = make([]LaunchTemplate, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem LaunchTemplate
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Items = append(s.Items, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"items\"")
+			}
+		case "pagination":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.Pagination.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"pagination\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode LaunchTemplateListResponseBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfLaunchTemplateListResponseBody) {
+					name = jsonFieldsNameOfLaunchTemplateListResponseBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *LaunchTemplateListResponseBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LaunchTemplateListResponseBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *LaunchTemplateNetworkInterface) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *LaunchTemplateNetworkInterface) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("subnet_id")
+		s.SubnetID.Encode(e)
+	}
+	{
+		e.FieldStart("security_group_ids")
+		e.ArrStart()
+		for _, elem := range s.SecurityGroupIds {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+}
+
+var jsonFieldsNameOfLaunchTemplateNetworkInterface = [2]string{
+	0: "subnet_id",
+	1: "security_group_ids",
+}
+
+// Decode decodes LaunchTemplateNetworkInterface from json.
+func (s *LaunchTemplateNetworkInterface) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LaunchTemplateNetworkInterface to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "subnet_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.SubnetID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"subnet_id\"")
+			}
+		case "security_group_ids":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				s.SecurityGroupIds = make([]SecurityGroupID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem SecurityGroupID
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.SecurityGroupIds = append(s.SecurityGroupIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"security_group_ids\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode LaunchTemplateNetworkInterface")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfLaunchTemplateNetworkInterface) {
+					name = jsonFieldsNameOfLaunchTemplateNetworkInterface[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *LaunchTemplateNetworkInterface) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LaunchTemplateNetworkInterface) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *LaunchTemplateReference) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *LaunchTemplateReference) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("launch_template_id")
+		s.LaunchTemplateID.Encode(e)
+	}
+	{
+		if s.Version.Set {
+			e.FieldStart("version")
+			s.Version.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfLaunchTemplateReference = [2]string{
+	0: "launch_template_id",
+	1: "version",
+}
+
+// Decode decodes LaunchTemplateReference from json.
+func (s *LaunchTemplateReference) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LaunchTemplateReference to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "launch_template_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.LaunchTemplateID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"launch_template_id\"")
+			}
+		case "version":
+			if err := func() error {
+				s.Version.Reset()
+				if err := s.Version.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"version\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode LaunchTemplateReference")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfLaunchTemplateReference) {
+					name = jsonFieldsNameOfLaunchTemplateReference[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *LaunchTemplateReference) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LaunchTemplateReference) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *LaunchTemplateVersion) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *LaunchTemplateVersion) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("launch_template_id")
+		s.LaunchTemplateID.Encode(e)
+	}
+	{
+		e.FieldStart("version")
+		e.Int64(s.Version)
+	}
+	{
+		e.FieldStart("description")
+		e.Str(s.Description)
+	}
+	{
+		e.FieldStart("machine_type_id")
+		s.MachineTypeID.Encode(e)
+	}
+	{
+		e.FieldStart("availability_zone_id")
+		s.AvailabilityZoneID.Encode(e)
+	}
+	{
+		e.FieldStart("boot_disk")
+		s.BootDisk.Encode(e)
+	}
+	{
+		e.FieldStart("data_disks")
+		e.ArrStart()
+		for _, elem := range s.DataDisks {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("network_interface")
+		s.NetworkInterface.Encode(e)
+	}
+	{
+		e.FieldStart("elastic_ip")
+		s.ElasticIP.Encode(e)
+	}
+	{
+		e.FieldStart("labels")
+		s.Labels.Encode(e)
+	}
+	{
+		e.FieldStart("notes")
+		s.Notes.Encode(e)
+	}
+	{
+		e.FieldStart("created_at")
+		json.EncodeDateTime(e, s.CreatedAt)
+	}
+}
+
+var jsonFieldsNameOfLaunchTemplateVersion = [12]string{
+	0:  "launch_template_id",
+	1:  "version",
+	2:  "description",
+	3:  "machine_type_id",
+	4:  "availability_zone_id",
+	5:  "boot_disk",
+	6:  "data_disks",
+	7:  "network_interface",
+	8:  "elastic_ip",
+	9:  "labels",
+	10: "notes",
+	11: "created_at",
+}
+
+// Decode decodes LaunchTemplateVersion from json.
+func (s *LaunchTemplateVersion) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LaunchTemplateVersion to nil")
+	}
+	var requiredBitSet [2]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "launch_template_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.LaunchTemplateID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"launch_template_id\"")
+			}
+		case "version":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int64()
+				s.Version = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"version\"")
+			}
+		case "description":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.Description = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"description\"")
+			}
+		case "machine_type_id":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.MachineTypeID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"machine_type_id\"")
+			}
+		case "availability_zone_id":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.AvailabilityZoneID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"availability_zone_id\"")
+			}
+		case "boot_disk":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.BootDisk.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"boot_disk\"")
+			}
+		case "data_disks":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				s.DataDisks = make([]LaunchTemplateDataDisk, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem LaunchTemplateDataDisk
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.DataDisks = append(s.DataDisks, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"data_disks\"")
+			}
+		case "network_interface":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				if err := s.NetworkInterface.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"network_interface\"")
+			}
+		case "elastic_ip":
+			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				if err := s.ElasticIP.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"elastic_ip\"")
+			}
+		case "labels":
+			requiredBitSet[1] |= 1 << 1
+			if err := func() error {
+				if err := s.Labels.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"labels\"")
+			}
+		case "notes":
+			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				if err := s.Notes.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"notes\"")
+			}
+		case "created_at":
+			requiredBitSet[1] |= 1 << 3
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.CreatedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"created_at\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode LaunchTemplateVersion")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [2]uint8{
+		0b11111111,
+		0b00001111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfLaunchTemplateVersion) {
+					name = jsonFieldsNameOfLaunchTemplateVersion[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *LaunchTemplateVersion) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LaunchTemplateVersion) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s LaunchTemplateVersionLabels) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields implements json.Marshaler.
+func (s LaunchTemplateVersionLabels) encodeFields(e *jx.Encoder) {
+	for k, elem := range s {
+		e.FieldStart(k)
+
+		e.Str(elem)
+	}
+}
+
+// Decode decodes LaunchTemplateVersionLabels from json.
+func (s *LaunchTemplateVersionLabels) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LaunchTemplateVersionLabels to nil")
+	}
+	m := s.init()
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		var elem string
+		if err := func() error {
+			v, err := d.Str()
+			elem = string(v)
+			if err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return errors.Wrapf(err, "decode field %q", k)
+		}
+		m[string(k)] = elem
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode LaunchTemplateVersionLabels")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s LaunchTemplateVersionLabels) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LaunchTemplateVersionLabels) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *LaunchTemplateVersionListResponseBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *LaunchTemplateVersionListResponseBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("items")
+		e.ArrStart()
+		for _, elem := range s.Items {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("pagination")
+		s.Pagination.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfLaunchTemplateVersionListResponseBody = [2]string{
+	0: "items",
+	1: "pagination",
+}
+
+// Decode decodes LaunchTemplateVersionListResponseBody from json.
+func (s *LaunchTemplateVersionListResponseBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LaunchTemplateVersionListResponseBody to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "items":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				s.Items = make([]LaunchTemplateVersion, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem LaunchTemplateVersion
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Items = append(s.Items, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"items\"")
+			}
+		case "pagination":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.Pagination.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"pagination\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode LaunchTemplateVersionListResponseBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfLaunchTemplateVersionListResponseBody) {
+					name = jsonFieldsNameOfLaunchTemplateVersionListResponseBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *LaunchTemplateVersionListResponseBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LaunchTemplateVersionListResponseBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *MachineType) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -12884,8 +14803,10 @@ func (s *NewBootDisk) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		e.FieldStart("billing")
-		s.Billing.Encode(e)
+		if s.Billing.Set {
+			e.FieldStart("billing")
+			s.Billing.Encode(e)
+		}
 	}
 }
 
@@ -12961,8 +14882,8 @@ func (s *NewBootDisk) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"on_virtual_machine_release\"")
 			}
 		case "billing":
-			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
+				s.Billing.Reset()
 				if err := s.Billing.Decode(d); err != nil {
 					return err
 				}
@@ -12980,7 +14901,7 @@ func (s *NewBootDisk) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00101111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -13114,8 +15035,10 @@ func (s *NewCompute) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *NewCompute) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("machine_type_id")
-		s.MachineTypeID.Encode(e)
+		if s.MachineTypeID.Set {
+			e.FieldStart("machine_type_id")
+			s.MachineTypeID.Encode(e)
+		}
 	}
 	{
 		e.FieldStart("billing")
@@ -13138,8 +15061,8 @@ func (s *NewCompute) Decode(d *jx.Decoder) error {
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
 		case "machine_type_id":
-			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
+				s.MachineTypeID.Reset()
 				if err := s.MachineTypeID.Decode(d); err != nil {
 					return err
 				}
@@ -13167,7 +15090,7 @@ func (s *NewCompute) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00000010,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -13237,8 +15160,10 @@ func (s *NewDataDisk) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		e.FieldStart("billing")
-		s.Billing.Encode(e)
+		if s.Billing.Set {
+			e.FieldStart("billing")
+			s.Billing.Encode(e)
+		}
 	}
 }
 
@@ -13292,8 +15217,8 @@ func (s *NewDataDisk) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"on_virtual_machine_release\"")
 			}
 		case "billing":
-			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
+				s.Billing.Reset()
 				if err := s.Billing.Decode(d); err != nil {
 					return err
 				}
@@ -13311,7 +15236,7 @@ func (s *NewDataDisk) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00001011,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -13425,8 +15350,10 @@ func (s *NewElasticIP) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		e.FieldStart("billing")
-		s.Billing.Encode(e)
+		if s.Billing.Set {
+			e.FieldStart("billing")
+			s.Billing.Encode(e)
+		}
 	}
 }
 
@@ -13491,8 +15418,8 @@ func (s *NewElasticIP) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"internet_charge_type\"")
 			}
 		case "billing":
-			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
+				s.Billing.Reset()
 				if err := s.Billing.Decode(d); err != nil {
 					return err
 				}
@@ -13510,7 +15437,7 @@ func (s *NewElasticIP) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00010111,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -13590,6 +15517,283 @@ func (s NewElasticIPType) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NewElasticIPType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *NewLaunchTemplateVersion) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *NewLaunchTemplateVersion) encodeFields(e *jx.Encoder) {
+	{
+		if s.Description.Set {
+			e.FieldStart("description")
+			s.Description.Encode(e)
+		}
+	}
+	{
+		if s.MachineTypeID.Set {
+			e.FieldStart("machine_type_id")
+			s.MachineTypeID.Encode(e)
+		}
+	}
+	{
+		if s.AvailabilityZoneID.Set {
+			e.FieldStart("availability_zone_id")
+			s.AvailabilityZoneID.Encode(e)
+		}
+	}
+	{
+		if s.BootDisk.Set {
+			e.FieldStart("boot_disk")
+			s.BootDisk.Encode(e)
+		}
+	}
+	{
+		if s.DataDisks != nil {
+			e.FieldStart("data_disks")
+			e.ArrStart()
+			for _, elem := range s.DataDisks {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
+		if s.NetworkInterface.Set {
+			e.FieldStart("network_interface")
+			s.NetworkInterface.Encode(e)
+		}
+	}
+	{
+		if s.ElasticIP.Set {
+			e.FieldStart("elastic_ip")
+			s.ElasticIP.Encode(e)
+		}
+	}
+	{
+		if s.Labels.Set {
+			e.FieldStart("labels")
+			s.Labels.Encode(e)
+		}
+	}
+	{
+		if s.Notes.Set {
+			e.FieldStart("notes")
+			s.Notes.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfNewLaunchTemplateVersion = [9]string{
+	0: "description",
+	1: "machine_type_id",
+	2: "availability_zone_id",
+	3: "boot_disk",
+	4: "data_disks",
+	5: "network_interface",
+	6: "elastic_ip",
+	7: "labels",
+	8: "notes",
+}
+
+// Decode decodes NewLaunchTemplateVersion from json.
+func (s *NewLaunchTemplateVersion) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode NewLaunchTemplateVersion to nil")
+	}
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "description":
+			if err := func() error {
+				s.Description.Reset()
+				if err := s.Description.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"description\"")
+			}
+		case "machine_type_id":
+			if err := func() error {
+				s.MachineTypeID.Reset()
+				if err := s.MachineTypeID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"machine_type_id\"")
+			}
+		case "availability_zone_id":
+			if err := func() error {
+				s.AvailabilityZoneID.Reset()
+				if err := s.AvailabilityZoneID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"availability_zone_id\"")
+			}
+		case "boot_disk":
+			if err := func() error {
+				s.BootDisk.Reset()
+				if err := s.BootDisk.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"boot_disk\"")
+			}
+		case "data_disks":
+			if err := func() error {
+				s.DataDisks = make([]LaunchTemplateDataDisk, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem LaunchTemplateDataDisk
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.DataDisks = append(s.DataDisks, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"data_disks\"")
+			}
+		case "network_interface":
+			if err := func() error {
+				s.NetworkInterface.Reset()
+				if err := s.NetworkInterface.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"network_interface\"")
+			}
+		case "elastic_ip":
+			if err := func() error {
+				s.ElasticIP.Reset()
+				if err := s.ElasticIP.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"elastic_ip\"")
+			}
+		case "labels":
+			if err := func() error {
+				s.Labels.Reset()
+				if err := s.Labels.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"labels\"")
+			}
+		case "notes":
+			if err := func() error {
+				s.Notes.Reset()
+				if err := s.Notes.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"notes\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode NewLaunchTemplateVersion")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *NewLaunchTemplateVersion) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NewLaunchTemplateVersion) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s NewLaunchTemplateVersionLabels) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields implements json.Marshaler.
+func (s NewLaunchTemplateVersionLabels) encodeFields(e *jx.Encoder) {
+	for k, elem := range s {
+		e.FieldStart(k)
+
+		e.Str(elem)
+	}
+}
+
+// Decode decodes NewLaunchTemplateVersionLabels from json.
+func (s *NewLaunchTemplateVersionLabels) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode NewLaunchTemplateVersionLabels to nil")
+	}
+	m := s.init()
+	var propertiesCount int
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		propertiesCount++
+		var elem string
+		if err := func() error {
+			v, err := d.Str()
+			elem = string(v)
+			if err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return errors.Wrapf(err, "decode field %q", k)
+		}
+		m[string(k)] = elem
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode NewLaunchTemplateVersionLabels")
+	}
+	// Validate properties count.
+	if err := (validate.Object{
+		MinProperties:    0,
+		MinPropertiesSet: false,
+		MaxProperties:    20,
+		MaxPropertiesSet: true,
+	}).ValidateProperties(propertiesCount); err != nil {
+		return errors.Wrap(err, "object")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NewLaunchTemplateVersionLabels) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NewLaunchTemplateVersionLabels) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -13764,6 +15968,50 @@ func (s NewPrimaryNetworkInterfaceType) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NewPrimaryNetworkInterfaceType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes AvailabilityZoneID as json.
+func (o NilAvailabilityZoneID) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes AvailabilityZoneID from json.
+func (o *NilAvailabilityZoneID) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilAvailabilityZoneID to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v AvailabilityZoneID
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilAvailabilityZoneID) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilAvailabilityZoneID) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -14472,6 +16720,271 @@ func (s NilInt64) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NilInt64) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LaunchTemplateBootDisk as json.
+func (o NilLaunchTemplateBootDisk) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes LaunchTemplateBootDisk from json.
+func (o *NilLaunchTemplateBootDisk) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilLaunchTemplateBootDisk to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v LaunchTemplateBootDisk
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilLaunchTemplateBootDisk) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilLaunchTemplateBootDisk) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LaunchTemplateElasticIP as json.
+func (o NilLaunchTemplateElasticIP) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes LaunchTemplateElasticIP from json.
+func (o *NilLaunchTemplateElasticIP) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilLaunchTemplateElasticIP to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v LaunchTemplateElasticIP
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilLaunchTemplateElasticIP) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilLaunchTemplateElasticIP) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LaunchTemplateID as json.
+func (o NilLaunchTemplateID) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes LaunchTemplateID from json.
+func (o *NilLaunchTemplateID) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilLaunchTemplateID to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v LaunchTemplateID
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilLaunchTemplateID) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilLaunchTemplateID) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LaunchTemplateNetworkInterface as json.
+func (o NilLaunchTemplateNetworkInterface) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes LaunchTemplateNetworkInterface from json.
+func (o *NilLaunchTemplateNetworkInterface) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilLaunchTemplateNetworkInterface to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v LaunchTemplateNetworkInterface
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilLaunchTemplateNetworkInterface) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilLaunchTemplateNetworkInterface) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LaunchTemplateVersionLabels as json.
+func (o NilLaunchTemplateVersionLabels) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes LaunchTemplateVersionLabels from json.
+func (o *NilLaunchTemplateVersionLabels) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilLaunchTemplateVersionLabels to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v LaunchTemplateVersionLabels
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	o.Value = make(LaunchTemplateVersionLabels)
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilLaunchTemplateVersionLabels) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilLaunchTemplateVersionLabels) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes MachineTypeID as json.
+func (o NilMachineTypeID) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes MachineTypeID from json.
+func (o *NilMachineTypeID) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilMachineTypeID to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v MachineTypeID
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilMachineTypeID) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilMachineTypeID) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -16153,6 +18666,39 @@ func (s *OptAvailabilityZoneID) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes BillingChoice as json.
+func (o OptBillingChoice) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes BillingChoice from json.
+func (o *OptBillingChoice) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptBillingChoice to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptBillingChoice) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptBillingChoice) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes BillingPeriod as json.
 func (o OptBillingPeriod) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -16221,6 +18767,39 @@ func (s *OptBool) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes BootDisk as json.
+func (o OptBootDisk) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes BootDisk from json.
+func (o *OptBootDisk) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptBootDisk to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptBootDisk) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptBootDisk) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes CheckoutOptions as json.
 func (o OptCheckoutOptions) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -16283,6 +18862,40 @@ func (s OptCheckoutOptionsMode) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptCheckoutOptionsMode) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes CreateVirtualMachineRequestBodyLabels as json.
+func (o OptCreateVirtualMachineRequestBodyLabels) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes CreateVirtualMachineRequestBodyLabels from json.
+func (o *OptCreateVirtualMachineRequestBodyLabels) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptCreateVirtualMachineRequestBodyLabels to nil")
+	}
+	o.Set = true
+	o.Value = make(CreateVirtualMachineRequestBodyLabels)
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptCreateVirtualMachineRequestBodyLabels) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptCreateVirtualMachineRequestBodyLabels) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -16556,6 +19169,204 @@ func (s *OptInternetChargeType) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes LaunchTemplateBootDisk as json.
+func (o OptLaunchTemplateBootDisk) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes LaunchTemplateBootDisk from json.
+func (o *OptLaunchTemplateBootDisk) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptLaunchTemplateBootDisk to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptLaunchTemplateBootDisk) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptLaunchTemplateBootDisk) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LaunchTemplateBootDiskOnVirtualMachineRelease as json.
+func (o OptLaunchTemplateBootDiskOnVirtualMachineRelease) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes LaunchTemplateBootDiskOnVirtualMachineRelease from json.
+func (o *OptLaunchTemplateBootDiskOnVirtualMachineRelease) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptLaunchTemplateBootDiskOnVirtualMachineRelease to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptLaunchTemplateBootDiskOnVirtualMachineRelease) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptLaunchTemplateBootDiskOnVirtualMachineRelease) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LaunchTemplateDataDiskOnVirtualMachineRelease as json.
+func (o OptLaunchTemplateDataDiskOnVirtualMachineRelease) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes LaunchTemplateDataDiskOnVirtualMachineRelease from json.
+func (o *OptLaunchTemplateDataDiskOnVirtualMachineRelease) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptLaunchTemplateDataDiskOnVirtualMachineRelease to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptLaunchTemplateDataDiskOnVirtualMachineRelease) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptLaunchTemplateDataDiskOnVirtualMachineRelease) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LaunchTemplateElasticIP as json.
+func (o OptLaunchTemplateElasticIP) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes LaunchTemplateElasticIP from json.
+func (o *OptLaunchTemplateElasticIP) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptLaunchTemplateElasticIP to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptLaunchTemplateElasticIP) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptLaunchTemplateElasticIP) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LaunchTemplateNetworkInterface as json.
+func (o OptLaunchTemplateNetworkInterface) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes LaunchTemplateNetworkInterface from json.
+func (o *OptLaunchTemplateNetworkInterface) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptLaunchTemplateNetworkInterface to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptLaunchTemplateNetworkInterface) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptLaunchTemplateNetworkInterface) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LaunchTemplateReference as json.
+func (o OptLaunchTemplateReference) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes LaunchTemplateReference from json.
+func (o *OptLaunchTemplateReference) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptLaunchTemplateReference to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptLaunchTemplateReference) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptLaunchTemplateReference) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes MachineTypeID as json.
 func (o OptMachineTypeID) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -16655,6 +19466,40 @@ func (s *OptNewDataDiskOnVirtualMachineRelease) UnmarshalJSON(data []byte) error
 	return s.Decode(d)
 }
 
+// Encode encodes NewLaunchTemplateVersionLabels as json.
+func (o OptNewLaunchTemplateVersionLabels) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes NewLaunchTemplateVersionLabels from json.
+func (o *OptNewLaunchTemplateVersionLabels) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptNewLaunchTemplateVersionLabels to nil")
+	}
+	o.Set = true
+	o.Value = make(NewLaunchTemplateVersionLabels)
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptNewLaunchTemplateVersionLabels) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptNewLaunchTemplateVersionLabels) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes PasswordChoice as json.
 func (o OptPasswordChoice) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -16684,6 +19529,39 @@ func (s OptPasswordChoice) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptPasswordChoice) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes PrimaryNetworkInterface as json.
+func (o OptPrimaryNetworkInterface) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes PrimaryNetworkInterface from json.
+func (o *OptPrimaryNetworkInterface) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptPrimaryNetworkInterface to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptPrimaryNetworkInterface) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptPrimaryNetworkInterface) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -24554,6 +27432,114 @@ func (s *UpdateElasticIPResponseBody) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *UpdateLaunchTemplateRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *UpdateLaunchTemplateRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		if s.Name.Set {
+			e.FieldStart("name")
+			s.Name.Encode(e)
+		}
+	}
+	{
+		if s.Description.Set {
+			e.FieldStart("description")
+			s.Description.Encode(e)
+		}
+	}
+	{
+		if s.DefaultVersion.Set {
+			e.FieldStart("default_version")
+			s.DefaultVersion.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfUpdateLaunchTemplateRequestBody = [3]string{
+	0: "name",
+	1: "description",
+	2: "default_version",
+}
+
+// Decode decodes UpdateLaunchTemplateRequestBody from json.
+func (s *UpdateLaunchTemplateRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode UpdateLaunchTemplateRequestBody to nil")
+	}
+	var propertiesCount int
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		propertiesCount++
+		switch string(k) {
+		case "name":
+			if err := func() error {
+				s.Name.Reset()
+				if err := s.Name.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "description":
+			if err := func() error {
+				s.Description.Reset()
+				if err := s.Description.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"description\"")
+			}
+		case "default_version":
+			if err := func() error {
+				s.DefaultVersion.Reset()
+				if err := s.DefaultVersion.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"default_version\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode UpdateLaunchTemplateRequestBody")
+	}
+	// Validate properties count.
+	if err := (validate.Object{
+		MinProperties:    1,
+		MinPropertiesSet: true,
+		MaxProperties:    0,
+		MaxPropertiesSet: false,
+	}).ValidateProperties(propertiesCount); err != nil {
+		return errors.Wrap(err, "object")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *UpdateLaunchTemplateRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *UpdateLaunchTemplateRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *UpdateNetworkInterfaceRequestBody) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -25881,9 +28867,17 @@ func (s *VirtualMachine) encodeFields(e *jx.Encoder) {
 		e.FieldStart("source_disk_id")
 		s.SourceDiskID.Encode(e)
 	}
+	{
+		e.FieldStart("launch_template_id")
+		s.LaunchTemplateID.Encode(e)
+	}
+	{
+		e.FieldStart("launch_template_version")
+		s.LaunchTemplateVersion.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfVirtualMachine = [29]string{
+var jsonFieldsNameOfVirtualMachine = [31]string{
 	0:  "availability_zone_id",
 	1:  "created_at",
 	2:  "hostname",
@@ -25913,6 +28907,8 @@ var jsonFieldsNameOfVirtualMachine = [29]string{
 	26: "release_set",
 	27: "access_state",
 	28: "source_disk_id",
+	29: "launch_template_id",
+	30: "launch_template_version",
 }
 
 // Decode decodes VirtualMachine from json.
@@ -26259,6 +29255,26 @@ func (s *VirtualMachine) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"source_disk_id\"")
 			}
+		case "launch_template_id":
+			requiredBitSet[3] |= 1 << 5
+			if err := func() error {
+				if err := s.LaunchTemplateID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"launch_template_id\"")
+			}
+		case "launch_template_version":
+			requiredBitSet[3] |= 1 << 6
+			if err := func() error {
+				if err := s.LaunchTemplateVersion.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"launch_template_version\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -26272,7 +29288,7 @@ func (s *VirtualMachine) Decode(d *jx.Decoder) error {
 		0b11111111,
 		0b11111111,
 		0b11111111,
-		0b00011111,
+		0b01111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -26525,8 +29541,10 @@ func (s VirtualMachineElasticIP) encodeFields(e *jx.Encoder) {
 				}
 			}
 			{
-				e.FieldStart("billing")
-				s.Billing.Encode(e)
+				if s.Billing.Set {
+					e.FieldStart("billing")
+					s.Billing.Encode(e)
+				}
 			}
 		}
 	case ExistingElasticIPVirtualMachineElasticIP:

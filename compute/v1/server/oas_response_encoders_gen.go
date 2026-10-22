@@ -198,6 +198,32 @@ func encodeCreateElasticIPResponse(response CreateElasticIPRes, w http.ResponseW
 	}
 }
 
+func encodeCreateLaunchTemplateResponse(response *CreateLaunchTemplateResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeCreateLaunchTemplateVersionResponse(response *LaunchTemplateVersion, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeCreateNetworkInterfaceResponse(response *NetworkInterface, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(202)
@@ -579,6 +605,18 @@ func encodeDeleteElasticIPAssociationResponse(response DeleteElasticIPAssociatio
 	default:
 		return errors.Errorf("unexpected response type: %T", response)
 	}
+}
+
+func encodeDeleteLaunchTemplateResponse(response *DeleteLaunchTemplateNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
+}
+
+func encodeDeleteLaunchTemplateVersionResponse(response *DeleteLaunchTemplateVersionNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
 }
 
 func encodeDeleteNetworkInterfaceResponse(response DeleteNetworkInterfaceRes, w http.ResponseWriter, span trace.Span) error {
@@ -999,6 +1037,32 @@ func encodeGetElasticIPLineResponse(response *ElasticIPLine, w http.ResponseWrit
 	return nil
 }
 
+func encodeGetLaunchTemplateResponse(response *LaunchTemplate, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetLaunchTemplateVersionResponse(response *LaunchTemplateVersion, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeGetMachineTypeResponse(response *MachineType, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -1325,6 +1389,32 @@ func encodeListElasticIPTrafficUsageResponse(response *TrafficUsageListResponseB
 }
 
 func encodeListElasticIpsResponse(response *ElasticIPListResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListLaunchTemplateVersionsResponse(response *LaunchTemplateVersionListResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListLaunchTemplatesResponse(response *LaunchTemplateListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -1779,6 +1869,19 @@ func encodeUpdateElasticIPResponse(response UpdateElasticIPRes, w http.ResponseW
 	default:
 		return errors.Errorf("unexpected response type: %T", response)
 	}
+}
+
+func encodeUpdateLaunchTemplateResponse(response *LaunchTemplate, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
 }
 
 func encodeUpdateNetworkInterfaceResponse(response *NetworkInterface, w http.ResponseWriter, span trace.Span) error {

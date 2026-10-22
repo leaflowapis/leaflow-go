@@ -123,6 +123,30 @@ type Handler interface {
 	//
 	// POST /api/v1/elastic-ips
 	CreateElasticIP(ctx context.Context, req *CreateElasticIPRequestBody) (CreateElasticIPRes, error)
+	// CreateLaunchTemplate implements create-launch-template operation.
+	//
+	// Creates a launch template with its first version, which becomes its default. A launch template
+	// describes how to create virtual machines in one region, and creating a virtual machine can name it
+	// (`launch_template`) instead of repeating every part. It costs nothing.
+	//
+	// A template holds no billing terms, checkout options or password: those belong to each purchase. What
+	// a version names is checked when a virtual machine is created from it, against the catalog as it is
+	// then, so a version naming an image retired since is refused at that creation as any creation would
+	// be.
+	//
+	// A project holds at most 100 launch templates in a region (`LAUNCH_TEMPLATE_LIMIT`), and names are
+	// unique among them (`LAUNCH_TEMPLATE_EXISTS`).
+	//
+	// POST /api/v1/launch-templates
+	CreateLaunchTemplate(ctx context.Context, req *CreateLaunchTemplateRequestBody) (*CreateLaunchTemplateResponseBody, error)
+	// CreateLaunchTemplateVersion implements create-launch-template-version operation.
+	//
+	// Adds a version, numbered after every version the template ever had, so a deleted version's number is
+	// never reused. It does not become the default by itself; set `default_version` on the template for
+	// that. A template holds at most 100 live versions (`LAUNCH_TEMPLATE_VERSION_LIMIT`).
+	//
+	// POST /api/v1/launch-templates/{launchTemplateId}/versions
+	CreateLaunchTemplateVersion(ctx context.Context, req *NewLaunchTemplateVersion, params CreateLaunchTemplateVersionParams) (*LaunchTemplateVersion, error)
 	// CreateNetworkInterface implements create-network-interface operation.
 	//
 	// The new network interface is not attached to any virtual machine. Primary network interfaces are not
@@ -394,6 +418,20 @@ type Handler interface {
 	//
 	// DELETE /api/v1/elastic-ips/{elasticIpId}/association
 	DeleteElasticIPAssociation(ctx context.Context, params DeleteElasticIPAssociationParams) (DeleteElasticIPAssociationRes, error)
+	// DeleteLaunchTemplate implements delete-launch-template operation.
+	//
+	// Deletes the template with every version. Virtual machines created from it are not affected and keep
+	// naming the version they were created from.
+	//
+	// DELETE /api/v1/launch-templates/{launchTemplateId}
+	DeleteLaunchTemplate(ctx context.Context, params DeleteLaunchTemplateParams) error
+	// DeleteLaunchTemplateVersion implements delete-launch-template-version operation.
+	//
+	// The default version cannot be deleted (`LAUNCH_TEMPLATE_VERSION_DEFAULT`); make another version the
+	// default first.
+	//
+	// DELETE /api/v1/launch-templates/{launchTemplateId}/versions/{version}
+	DeleteLaunchTemplateVersion(ctx context.Context, params DeleteLaunchTemplateVersionParams) error
 	// DeleteNetworkInterface implements delete-network-interface operation.
 	//
 	// The primary network interface cannot be deleted on its own, as it is released with the virtual
@@ -585,6 +623,18 @@ type Handler interface {
 	//
 	// GET /api/v1/elastic-ip-lines/{elasticIpLineId}
 	GetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (*ElasticIPLine, error)
+	// GetLaunchTemplate implements get-launch-template operation.
+	//
+	// Get a launch template.
+	//
+	// GET /api/v1/launch-templates/{launchTemplateId}
+	GetLaunchTemplate(ctx context.Context, params GetLaunchTemplateParams) (*LaunchTemplate, error)
+	// GetLaunchTemplateVersion implements get-launch-template-version operation.
+	//
+	// Get a launch template version.
+	//
+	// GET /api/v1/launch-templates/{launchTemplateId}/versions/{version}
+	GetLaunchTemplateVersion(ctx context.Context, params GetLaunchTemplateVersionParams) (*LaunchTemplateVersion, error)
 	// GetMachineType implements get-machine-type operation.
 	//
 	// Returns only an on-sale machine type, under the same access rules as listing. Off-sale, retired or
@@ -775,6 +825,18 @@ type Handler interface {
 	//
 	// GET /api/v1/elastic-ips
 	ListElasticIps(ctx context.Context, params ListElasticIpsParams) (*ElasticIPListResponseBody, error)
+	// ListLaunchTemplateVersions implements list-launch-template-versions operation.
+	//
+	// Newest first.
+	//
+	// GET /api/v1/launch-templates/{launchTemplateId}/versions
+	ListLaunchTemplateVersions(ctx context.Context, params ListLaunchTemplateVersionsParams) (*LaunchTemplateVersionListResponseBody, error)
+	// ListLaunchTemplates implements list-launch-templates operation.
+	//
+	// List launch templates.
+	//
+	// GET /api/v1/launch-templates
+	ListLaunchTemplates(ctx context.Context, params ListLaunchTemplatesParams) (*LaunchTemplateListResponseBody, error)
 	// ListMachineTypes implements list-machine-types operation.
 	//
 	// Only machine types currently on sale are listed. A withdrawn one disappears from here and can no
@@ -1053,6 +1115,14 @@ type Handler interface {
 	//
 	// PATCH /api/v1/elastic-ips/{elasticIpId}
 	UpdateElasticIP(ctx context.Context, req *UpdateElasticIPRequestBody, params UpdateElasticIPParams) (UpdateElasticIPRes, error)
+	// UpdateLaunchTemplate implements update-launch-template operation.
+	//
+	// Changes the name or description, or makes another live version the default, the one a creation
+	// naming no version uses. Versions themselves never change; describe something else by creating a
+	// version.
+	//
+	// PATCH /api/v1/launch-templates/{launchTemplateId}
+	UpdateLaunchTemplate(ctx context.Context, req *UpdateLaunchTemplateRequestBody, params UpdateLaunchTemplateParams) (*LaunchTemplate, error)
 	// UpdateNetworkInterface implements update-network-interface operation.
 	//
 	// Changes the name only. Renaming is not an operation and is accepted at any time. The security groups

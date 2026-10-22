@@ -146,6 +146,36 @@ func (UnimplementedHandler) CreateElasticIP(ctx context.Context, req *CreateElas
 	return r, ht.ErrNotImplemented
 }
 
+// CreateLaunchTemplate implements create-launch-template operation.
+//
+// Creates a launch template with its first version, which becomes its default. A launch template
+// describes how to create virtual machines in one region, and creating a virtual machine can name it
+// (`launch_template`) instead of repeating every part. It costs nothing.
+//
+// A template holds no billing terms, checkout options or password: those belong to each purchase. What
+// a version names is checked when a virtual machine is created from it, against the catalog as it is
+// then, so a version naming an image retired since is refused at that creation as any creation would
+// be.
+//
+// A project holds at most 100 launch templates in a region (`LAUNCH_TEMPLATE_LIMIT`), and names are
+// unique among them (`LAUNCH_TEMPLATE_EXISTS`).
+//
+// POST /api/v1/launch-templates
+func (UnimplementedHandler) CreateLaunchTemplate(ctx context.Context, req *CreateLaunchTemplateRequestBody) (r *CreateLaunchTemplateResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateLaunchTemplateVersion implements create-launch-template-version operation.
+//
+// Adds a version, numbered after every version the template ever had, so a deleted version's number is
+// never reused. It does not become the default by itself; set `default_version` on the template for
+// that. A template holds at most 100 live versions (`LAUNCH_TEMPLATE_VERSION_LIMIT`).
+//
+// POST /api/v1/launch-templates/{launchTemplateId}/versions
+func (UnimplementedHandler) CreateLaunchTemplateVersion(ctx context.Context, req *NewLaunchTemplateVersion, params CreateLaunchTemplateVersionParams) (r *LaunchTemplateVersion, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CreateNetworkInterface implements create-network-interface operation.
 //
 // The new network interface is not attached to any virtual machine. Primary network interfaces are not
@@ -468,6 +498,26 @@ func (UnimplementedHandler) DeleteElasticIPAssociation(ctx context.Context, para
 	return r, ht.ErrNotImplemented
 }
 
+// DeleteLaunchTemplate implements delete-launch-template operation.
+//
+// Deletes the template with every version. Virtual machines created from it are not affected and keep
+// naming the version they were created from.
+//
+// DELETE /api/v1/launch-templates/{launchTemplateId}
+func (UnimplementedHandler) DeleteLaunchTemplate(ctx context.Context, params DeleteLaunchTemplateParams) error {
+	return ht.ErrNotImplemented
+}
+
+// DeleteLaunchTemplateVersion implements delete-launch-template-version operation.
+//
+// The default version cannot be deleted (`LAUNCH_TEMPLATE_VERSION_DEFAULT`); make another version the
+// default first.
+//
+// DELETE /api/v1/launch-templates/{launchTemplateId}/versions/{version}
+func (UnimplementedHandler) DeleteLaunchTemplateVersion(ctx context.Context, params DeleteLaunchTemplateVersionParams) error {
+	return ht.ErrNotImplemented
+}
+
 // DeleteNetworkInterface implements delete-network-interface operation.
 //
 // The primary network interface cannot be deleted on its own, as it is released with the virtual
@@ -719,6 +769,24 @@ func (UnimplementedHandler) GetElasticIPAssociation(ctx context.Context, params 
 //
 // GET /api/v1/elastic-ip-lines/{elasticIpLineId}
 func (UnimplementedHandler) GetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (r *ElasticIPLine, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetLaunchTemplate implements get-launch-template operation.
+//
+// Get a launch template.
+//
+// GET /api/v1/launch-templates/{launchTemplateId}
+func (UnimplementedHandler) GetLaunchTemplate(ctx context.Context, params GetLaunchTemplateParams) (r *LaunchTemplate, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetLaunchTemplateVersion implements get-launch-template-version operation.
+//
+// Get a launch template version.
+//
+// GET /api/v1/launch-templates/{launchTemplateId}/versions/{version}
+func (UnimplementedHandler) GetLaunchTemplateVersion(ctx context.Context, params GetLaunchTemplateVersionParams) (r *LaunchTemplateVersion, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -987,6 +1055,24 @@ func (UnimplementedHandler) ListElasticIPTrafficUsage(ctx context.Context, param
 //
 // GET /api/v1/elastic-ips
 func (UnimplementedHandler) ListElasticIps(ctx context.Context, params ListElasticIpsParams) (r *ElasticIPListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListLaunchTemplateVersions implements list-launch-template-versions operation.
+//
+// Newest first.
+//
+// GET /api/v1/launch-templates/{launchTemplateId}/versions
+func (UnimplementedHandler) ListLaunchTemplateVersions(ctx context.Context, params ListLaunchTemplateVersionsParams) (r *LaunchTemplateVersionListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListLaunchTemplates implements list-launch-templates operation.
+//
+// List launch templates.
+//
+// GET /api/v1/launch-templates
+func (UnimplementedHandler) ListLaunchTemplates(ctx context.Context, params ListLaunchTemplatesParams) (r *LaunchTemplateListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1337,6 +1423,17 @@ func (UnimplementedHandler) UpdateDiskBackup(ctx context.Context, req *UpdateDis
 //
 // PATCH /api/v1/elastic-ips/{elasticIpId}
 func (UnimplementedHandler) UpdateElasticIP(ctx context.Context, req *UpdateElasticIPRequestBody, params UpdateElasticIPParams) (r UpdateElasticIPRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateLaunchTemplate implements update-launch-template operation.
+//
+// Changes the name or description, or makes another live version the default, the one a creation
+// naming no version uses. Versions themselves never change; describe something else by creating a
+// version.
+//
+// PATCH /api/v1/launch-templates/{launchTemplateId}
+func (UnimplementedHandler) UpdateLaunchTemplate(ctx context.Context, req *UpdateLaunchTemplateRequestBody, params UpdateLaunchTemplateParams) (r *LaunchTemplate, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

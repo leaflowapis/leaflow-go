@@ -35,6 +35,30 @@ func (s *ElasticIP) setDefaults() {
 }
 
 // setDefaults set default value of fields.
+func (s *LaunchTemplateBootDisk) setDefaults() {
+	{
+		val := LaunchTemplateBootDiskOnVirtualMachineRelease("delete")
+		s.OnVirtualMachineRelease.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
+func (s *LaunchTemplateDataDisk) setDefaults() {
+	{
+		val := LaunchTemplateDataDiskOnVirtualMachineRelease("delete")
+		s.OnVirtualMachineRelease.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
+func (s *LaunchTemplateElasticIP) setDefaults() {
+	{
+		val := InternetChargeType("bandwidth")
+		s.InternetChargeType.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
 func (s *NewBootDisk) setDefaults() {
 	{
 		val := NewBootDiskOnVirtualMachineRelease("delete")
