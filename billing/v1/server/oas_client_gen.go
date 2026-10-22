@@ -474,7 +474,8 @@ type Invoker interface {
 	ListCreditNotes(ctx context.Context, params ListCreditNotesParams) (*CreditNoteList, error)
 	// ListCurrencies invokes list-currencies operation.
 	//
-	// Currencies a new billing account can be opened in; retired currencies are not listed.
+	// Currencies a new billing account can be opened in, and prices and quotes without an account can be
+	// given in, for anyone, signed in or not. Retired currencies are not listed.
 	//
 	// GET /api/v1/currencies
 	ListCurrencies(ctx context.Context, params ListCurrenciesParams) (*CurrencyList, error)
@@ -8023,7 +8024,8 @@ func (c *Client) sendListCreditNotes(ctx context.Context, params ListCreditNotes
 
 // ListCurrencies invokes list-currencies operation.
 //
-// Currencies a new billing account can be opened in; retired currencies are not listed.
+// Currencies a new billing account can be opened in, and prices and quotes without an account can be
+// given in, for anyone, signed in or not. Retired currencies are not listed.
 //
 // GET /api/v1/currencies
 func (c *Client) ListCurrencies(ctx context.Context, params ListCurrenciesParams) (*CurrencyList, error) {
@@ -8114,39 +8116,6 @@ func (c *Client) sendListCurrencies(ctx context.Context, params ListCurrenciesPa
 	r, err := ht.NewRequest(ctx, "GET", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, ListCurrenciesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
 	}
 
 	stage = "SendRequest"

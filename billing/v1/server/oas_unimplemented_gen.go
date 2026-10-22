@@ -599,7 +599,8 @@ func (UnimplementedHandler) ListCreditNotes(ctx context.Context, params ListCred
 
 // ListCurrencies implements list-currencies operation.
 //
-// Currencies a new billing account can be opened in; retired currencies are not listed.
+// Currencies a new billing account can be opened in, and prices and quotes without an account can be
+// given in, for anyone, signed in or not. Retired currencies are not listed.
 //
 // GET /api/v1/currencies
 func (UnimplementedHandler) ListCurrencies(ctx context.Context, params ListCurrenciesParams) (r *CurrencyList, _ error) {

@@ -453,7 +453,8 @@ type Handler interface {
 	ListCreditNotes(ctx context.Context, params ListCreditNotesParams) (*CreditNoteList, error)
 	// ListCurrencies implements list-currencies operation.
 	//
-	// Currencies a new billing account can be opened in; retired currencies are not listed.
+	// Currencies a new billing account can be opened in, and prices and quotes without an account can be
+	// given in, for anyone, signed in or not. Retired currencies are not listed.
 	//
 	// GET /api/v1/currencies
 	ListCurrencies(ctx context.Context, params ListCurrenciesParams) (*CurrencyList, error)

@@ -9654,7 +9654,8 @@ func (s *Server) handleListCreditNotesRequest(args [0]string, argsEscaped bool, 
 
 // handleListCurrenciesRequest handles list-currencies operation.
 //
-// Currencies a new billing account can be opened in; retired currencies are not listed.
+// Currencies a new billing account can be opened in, and prices and quotes without an account can be
+// given in, for anyone, signed in or not. Retired currencies are not listed.
 //
 // GET /api/v1/currencies
 func (s *Server) handleListCurrenciesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9728,52 +9729,6 @@ func (s *Server) handleListCurrenciesRequest(args [0]string, argsEscaped bool, w
 			ID:   "list-currencies",
 		}
 	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, ListCurrenciesOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
 	params, err := decodeListCurrenciesParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{

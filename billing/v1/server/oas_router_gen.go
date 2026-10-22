@@ -101,9 +101,6 @@ var (
 	rn66AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn68AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
 	rn59AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
@@ -1220,7 +1217,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
-								allowedHeaders: rn68AllowedHeaders,
+								allowedHeaders: nil,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
