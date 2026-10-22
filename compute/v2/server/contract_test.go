@@ -1,4 +1,4 @@
-package computev1server
+package computev2server
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ import (
 
 // 通过真实 ogen 解码与校验检查批准的 oneOf，不将服务端所有权判断伪装成 SDK 校验。
 func TestNativeBootDiskDecoder(t *testing.T) {
-	image := `{"type":"image","image_id":"image_00000000000000000000000001","disk_type_id":"disktype_00000000000000000000000001","size_gb":20,"billing":{"mode":"prepaid","period":{"unit":"month","count":1},"termination_policy":"immediate"}}`
+	image := `{"type":"image","image_id":"image_00000000000000000000000001","disk_type_id":"disktype_00000000000000000000000001","size_gb":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":1},"termination_policy":"immediate"}}`
 	disk := `{"type":"disk","disk_id":"disk_00000000000000000000000001","login_username":"ubuntu"}`
 	for _, row := range []struct {
 		name, body string
@@ -63,7 +63,7 @@ func TestNativeBillingPeriodInt32(t *testing.T) {
 }
 
 func TestNativeTerminationPolicyPresence(t *testing.T) {
-	prefix := `{"mode":"prepaid","period":{"unit":"month","count":1}`
+	prefix := `{"usage_type":"licensed","period":{"unit":"month","count":1}`
 	for _, row := range []struct {
 		name, suffix   string
 		valid, present bool
@@ -102,7 +102,7 @@ func TestNativeTerminationPolicyPresence(t *testing.T) {
 
 // 商业条件的文字描述不会自动成为 SDK 校验。
 func TestNativeDocumentsSDKValidationBoundaries(t *testing.T) {
-	for _, body := range []string{`{"mode":"postpaid","period":{"unit":"month","count":1}}`, `{"mode":"prepaid"}`} {
+	for _, body := range []string{`{"usage_type":"metered","period":{"unit":"month","count":1}}`, `{"usage_type":"licensed"}`} {
 		var value BillingChoice
 		if err := value.Decode(jx.DecodeBytes([]byte(body))); err != nil {
 			t.Fatal(err)
@@ -113,38 +113,14 @@ func TestNativeDocumentsSDKValidationBoundaries(t *testing.T) {
 	}
 }
 
-// 创建盘请求不再接受 checkout，周期仍须完整校验。
-func TestNativeCreateDiskRejectsCheckoutAndPreservesPeriod(t *testing.T) {
-	for _, row := range []struct {
-		name, amount   string
-		valid, present bool
-	}{
-		{"omitted", "", false, false}, {"zero", `"0"`, false, true}, {"zero decimals", `"0.00"`, false, true},
-		{"exponent", `"1e3"`, false, true}, {"empty", `""`, false, true}, {"precision", `"1.12345678901"`, false, true},
-		{"null", `null`, false, true}, {"JSON number", `0`, false, true},
-	} {
-		t.Run(row.name, func(t *testing.T) {
-			checkout := `"mode":"automatic"`
-			if row.present {
-				checkout += `,"expected_amount":` + row.amount
-			}
-			raw := `{"disk_type_id":"disktype_00000000000000000000000001","name":"disk","size_gb":20,"billing":{"mode":"postpaid"},"checkout":{` + checkout + `}}`
-			var value CreateDiskRequestBody
-			err := value.Decode(jx.DecodeBytes([]byte(raw)))
-			if err == nil {
-				err = value.Validate()
-			}
-			if (err == nil) != row.valid {
-				t.Fatalf("inline decode/validate=%v valid=%v", err, row.valid)
-			}
-		})
-	}
+// 创建盘请求的周期须完整校验，计数不得被截断。
+func TestNativeCreateDiskPreservesPeriod(t *testing.T) {
 	for _, row := range []struct {
 		count string
 		valid bool
 	}{{"1", true}, {"2147483647", true}, {"2147483648", false}, {"0", false}, {"-1", false}} {
 		t.Run("period "+row.count, func(t *testing.T) {
-			raw := `{"disk_type_id":"disktype_00000000000000000000000001","name":"disk","size_gb":20,"billing":{"mode":"prepaid","period":{"unit":"month","count":` + row.count + `},"termination_policy":"immediate"}}`
+			raw := `{"disk_type_id":"disktype_00000000000000000000000001","availability_zone_id":"zone_00000000000000000000000001","name":"disk","size_gb":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":` + row.count + `},"termination_policy":"immediate"}}`
 			var value CreateDiskRequestBody
 			err := value.Decode(jx.DecodeBytes([]byte(raw)))
 			if err == nil {
@@ -166,8 +142,8 @@ func TestNativeCreateDiskRejectsCheckoutAndPreservesPeriod(t *testing.T) {
 // 对比 JSON 字段形状，防 nominal 类型变化引入 Value/Set 或额外包装层。
 func TestNativeRequestSerdePreservesWireFields(t *testing.T) {
 	for _, raw := range []string{
-		`{"disk_type_id":"disktype_00000000000000000000000001","name":"disk","size_gb":20,"billing":{"mode":"postpaid"}}`,
-		`{"disk_type_id":"disktype_00000000000000000000000001","name":"disk","size_gb":20,"billing":{"mode":"prepaid","period":{"unit":"month","count":1},"termination_policy":"period_end"}}`,
+		`{"disk_type_id":"disktype_00000000000000000000000001","availability_zone_id":"zone_00000000000000000000000001","name":"disk","size_gb":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":1}}}`,
+		`{"disk_type_id":"disktype_00000000000000000000000001","availability_zone_id":"zone_00000000000000000000000001","name":"disk","size_gb":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":1},"termination_policy":"period_end"},"checkout":{"mode":"deferred"}}`,
 	} {
 		var value CreateDiskRequestBody
 		if err := value.Decode(jx.DecodeBytes([]byte(raw))); err != nil {
