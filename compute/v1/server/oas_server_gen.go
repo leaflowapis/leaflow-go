@@ -235,9 +235,9 @@ type Handler interface {
 	// The network is checked before the Checkout Session is created, and a request it refuses orders and
 	// charges nothing. It is refused with `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE` when the virtual private
 	// cloud's `status` is not `available`, `SUBNET_UNAVAILABLE` or `SECURITY_GROUP_UNAVAILABLE` when the
-	// subnet or a security group is not ready, `SECURITY_GROUP_OTHER_PRIVATE_NETWORK` when a security
-	// group belongs to another virtual private cloud, and `NETWORK_INTERFACE_UNAVAILABLE` when the port's
-	// `status` is not `available`. `meta` names the resource.
+	// subnet or a security group is not ready, `SECURITY_GROUP_OTHER_VIRTUAL_PRIVATE_CLOUD` when a
+	// security group belongs to another virtual private cloud, and `NETWORK_INTERFACE_UNAVAILABLE` when
+	// the port's `status` is not `available`. `meta` names the resource.
 	//
 	// Each virtual machine shows the `create` operation from the moment the Checkout Session is created
 	// until it is delivered or the checkout or order ends. Every other operation on it is refused with
