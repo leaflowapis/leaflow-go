@@ -4803,10 +4803,10 @@ func (s *Server) handleCreateVirtualPrivateCloudRequest(args [0]string, argsEsca
 //
 // While subscriptions pay for the disk (those in its `release_set`), deleting it cancels them rather
 // than being refused: Compute creates one Billing cancellation for the whole set and answers with it
-// in `cancellation`. The cancellation is `immediate` when every subscription in the set allows that, a
-// licensed one being refunded under its terms, and `period_end` when any of them ends only with its
-// paid period; the disk then keeps working until `scheduled_at` and is released then. Asking again
-// while that cancellation is pending answers with it again.
+// in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a licensed
+// subscription being refunded under its terms, and `period_end` keeps the disk working until
+// `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
+// again, whatever mode is asked for.
 //
 // DELETE /api/v2/disks/{diskId}
 func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4953,6 +4953,10 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 					Name: "diskId",
 					In:   "path",
 				}: params.DiskId,
+				{
+					Name: "cancellation_mode",
+					In:   "query",
+				}: params.CancellationMode,
 			},
 			Raw: r,
 		}
@@ -5019,10 +5023,10 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 //
 // While subscriptions pay for the disk backup (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
-// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
-// with its paid period; the disk backup then keeps working until `scheduled_at` and is released then.
-// Asking again while that cancellation is pending answers with it again.
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the disk backup working
+// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+// with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/disk-backups/{diskBackupId}
 func (s *Server) handleDeleteDiskBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5169,6 +5173,10 @@ func (s *Server) handleDeleteDiskBackupRequest(args [1]string, argsEscaped bool,
 					Name: "diskBackupId",
 					In:   "path",
 				}: params.DiskBackupId,
+				{
+					Name: "cancellation_mode",
+					In:   "query",
+				}: params.CancellationMode,
 			},
 			Raw: r,
 		}
@@ -5232,10 +5240,10 @@ func (s *Server) handleDeleteDiskBackupRequest(args [1]string, argsEscaped bool,
 //
 // While subscriptions pay for the elastic IP (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
-// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
-// with its paid period; the elastic IP then keeps working until `scheduled_at` and is released then.
-// Asking again while that cancellation is pending answers with it again.
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the elastic IP working
+// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+// with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/elastic-ips/{elasticIpId}
 func (s *Server) handleDeleteElasticIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5382,6 +5390,10 @@ func (s *Server) handleDeleteElasticIPRequest(args [1]string, argsEscaped bool, 
 					Name: "elasticIpId",
 					In:   "path",
 				}: params.ElasticIpId,
+				{
+					Name: "cancellation_mode",
+					In:   "query",
+				}: params.CancellationMode,
 			},
 			Raw: r,
 		}
@@ -6671,10 +6683,10 @@ func (s *Server) handleDeletePeeringRequest(args [1]string, argsEscaped bool, w 
 //
 // While subscriptions pay for the private image (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
-// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
-// with its paid period; the private image then keeps working until `scheduled_at` and is released
-// then. Asking again while that cancellation is pending answers with it again.
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the private image
+// working until `scheduled_at` and releases it then. Asking again while that cancellation is pending
+// answers with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/private-images/{privateImageId}
 func (s *Server) handleDeletePrivateImageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6821,6 +6833,10 @@ func (s *Server) handleDeletePrivateImageRequest(args [1]string, argsEscaped boo
 					Name: "privateImageId",
 					In:   "path",
 				}: params.PrivateImageId,
+				{
+					Name: "cancellation_mode",
+					In:   "query",
+				}: params.CancellationMode,
 			},
 			Raw: r,
 		}
@@ -7487,10 +7503,10 @@ func (s *Server) handleDeleteSecurityGroupRuleRequest(args [1]string, argsEscape
 //
 // While subscriptions pay for the snapshot (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
-// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
-// with its paid period; the snapshot then keeps working until `scheduled_at` and is released then.
-// Asking again while that cancellation is pending answers with it again.
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the snapshot working
+// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+// with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/snapshots/{snapshotId}
 func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -7637,6 +7653,10 @@ func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w
 					Name: "snapshotId",
 					In:   "path",
 				}: params.SnapshotId,
+				{
+					Name: "cancellation_mode",
+					In:   "query",
+				}: params.CancellationMode,
 			},
 			Raw: r,
 		}
@@ -7904,10 +7924,10 @@ func (s *Server) handleDeleteSubnetRequest(args [1]string, argsEscaped bool, w h
 //
 // While subscriptions pay for the virtual machine (those in its `release_set`), deleting it cancels
 // them rather than being refused: Compute creates one Billing cancellation for the whole set and
-// answers with it in `cancellation`. The cancellation is `immediate` when every subscription in the
-// set allows that, a licensed one being refunded under its terms, and `period_end` when any of them
-// ends only with its paid period; the virtual machine then keeps working until `scheduled_at` and is
-// released then. Asking again while that cancellation is pending answers with it again.
+// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
+// now, a licensed subscription being refunded under its terms, and `period_end` keeps the virtual
+// machine working until `scheduled_at` and releases it then. Asking again while that cancellation is
+// pending answers with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/virtual-machines/{virtualMachineId}
 func (s *Server) handleDeleteVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8054,6 +8074,10 @@ func (s *Server) handleDeleteVirtualMachineRequest(args [1]string, argsEscaped b
 					Name: "virtualMachineId",
 					In:   "path",
 				}: params.VirtualMachineId,
+				{
+					Name: "cancellation_mode",
+					In:   "query",
+				}: params.CancellationMode,
 			},
 			Raw: r,
 		}

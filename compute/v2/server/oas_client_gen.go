@@ -411,10 +411,10 @@ type Invoker interface {
 	//
 	// While subscriptions pay for the disk (those in its `release_set`), deleting it cancels them rather
 	// than being refused: Compute creates one Billing cancellation for the whole set and answers with it
-	// in `cancellation`. The cancellation is `immediate` when every subscription in the set allows that, a
-	// licensed one being refunded under its terms, and `period_end` when any of them ends only with its
-	// paid period; the disk then keeps working until `scheduled_at` and is released then. Asking again
-	// while that cancellation is pending answers with it again.
+	// in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a licensed
+	// subscription being refunded under its terms, and `period_end` keeps the disk working until
+	// `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
+	// again, whatever mode is asked for.
 	//
 	// DELETE /api/v2/disks/{diskId}
 	DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error)
@@ -433,10 +433,10 @@ type Invoker interface {
 	//
 	// While subscriptions pay for the disk backup (those in its `release_set`), deleting it cancels them
 	// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-	// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
-	// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
-	// with its paid period; the disk backup then keeps working until `scheduled_at` and is released then.
-	// Asking again while that cancellation is pending answers with it again.
+	// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+	// licensed subscription being refunded under its terms, and `period_end` keeps the disk backup working
+	// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+	// with it again, whatever mode is asked for.
 	//
 	// DELETE /api/v2/disk-backups/{diskBackupId}
 	DeleteDiskBackup(ctx context.Context, params DeleteDiskBackupParams) (DeleteDiskBackupRes, error)
@@ -452,10 +452,10 @@ type Invoker interface {
 	//
 	// While subscriptions pay for the elastic IP (those in its `release_set`), deleting it cancels them
 	// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-	// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
-	// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
-	// with its paid period; the elastic IP then keeps working until `scheduled_at` and is released then.
-	// Asking again while that cancellation is pending answers with it again.
+	// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+	// licensed subscription being refunded under its terms, and `period_end` keeps the elastic IP working
+	// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+	// with it again, whatever mode is asked for.
 	//
 	// DELETE /api/v2/elastic-ips/{elasticIpId}
 	DeleteElasticIP(ctx context.Context, params DeleteElasticIPParams) (DeleteElasticIPRes, error)
@@ -525,10 +525,10 @@ type Invoker interface {
 	//
 	// While subscriptions pay for the private image (those in its `release_set`), deleting it cancels them
 	// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-	// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
-	// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
-	// with its paid period; the private image then keeps working until `scheduled_at` and is released
-	// then. Asking again while that cancellation is pending answers with it again.
+	// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+	// licensed subscription being refunded under its terms, and `period_end` keeps the private image
+	// working until `scheduled_at` and releases it then. Asking again while that cancellation is pending
+	// answers with it again, whatever mode is asked for.
 	//
 	// DELETE /api/v2/private-images/{privateImageId}
 	DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (DeletePrivateImageRes, error)
@@ -565,10 +565,10 @@ type Invoker interface {
 	//
 	// While subscriptions pay for the snapshot (those in its `release_set`), deleting it cancels them
 	// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-	// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
-	// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
-	// with its paid period; the snapshot then keeps working until `scheduled_at` and is released then.
-	// Asking again while that cancellation is pending answers with it again.
+	// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+	// licensed subscription being refunded under its terms, and `period_end` keeps the snapshot working
+	// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+	// with it again, whatever mode is asked for.
 	//
 	// DELETE /api/v2/snapshots/{snapshotId}
 	DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (DeleteSnapshotRes, error)
@@ -594,10 +594,10 @@ type Invoker interface {
 	//
 	// While subscriptions pay for the virtual machine (those in its `release_set`), deleting it cancels
 	// them rather than being refused: Compute creates one Billing cancellation for the whole set and
-	// answers with it in `cancellation`. The cancellation is `immediate` when every subscription in the
-	// set allows that, a licensed one being refunded under its terms, and `period_end` when any of them
-	// ends only with its paid period; the virtual machine then keeps working until `scheduled_at` and is
-	// released then. Asking again while that cancellation is pending answers with it again.
+	// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
+	// now, a licensed subscription being refunded under its terms, and `period_end` keeps the virtual
+	// machine working until `scheduled_at` and releases it then. Asking again while that cancellation is
+	// pending answers with it again, whatever mode is asked for.
 	//
 	// DELETE /api/v2/virtual-machines/{virtualMachineId}
 	DeleteVirtualMachine(ctx context.Context, params DeleteVirtualMachineParams) (DeleteVirtualMachineRes, error)
@@ -4527,10 +4527,10 @@ func (c *Client) sendCreateVirtualPrivateCloud(ctx context.Context, request *Cre
 //
 // While subscriptions pay for the disk (those in its `release_set`), deleting it cancels them rather
 // than being refused: Compute creates one Billing cancellation for the whole set and answers with it
-// in `cancellation`. The cancellation is `immediate` when every subscription in the set allows that, a
-// licensed one being refunded under its terms, and `period_end` when any of them ends only with its
-// paid period; the disk then keeps working until `scheduled_at` and is released then. Asking again
-// while that cancellation is pending answers with it again.
+// in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a licensed
+// subscription being refunded under its terms, and `period_end` keeps the disk working until
+// `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
+// again, whatever mode is asked for.
 //
 // DELETE /api/v2/disks/{diskId}
 func (c *Client) DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error) {
@@ -4599,6 +4599,27 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 		pathParts[1] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "cancellation_mode" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "cancellation_mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.CancellationMode.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "DELETE", u)
@@ -4677,10 +4698,10 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 //
 // While subscriptions pay for the disk backup (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
-// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
-// with its paid period; the disk backup then keeps working until `scheduled_at` and is released then.
-// Asking again while that cancellation is pending answers with it again.
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the disk backup working
+// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+// with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/disk-backups/{diskBackupId}
 func (c *Client) DeleteDiskBackup(ctx context.Context, params DeleteDiskBackupParams) (DeleteDiskBackupRes, error) {
@@ -4749,6 +4770,27 @@ func (c *Client) sendDeleteDiskBackup(ctx context.Context, params DeleteDiskBack
 		pathParts[1] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "cancellation_mode" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "cancellation_mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.CancellationMode.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "DELETE", u)
@@ -4824,10 +4866,10 @@ func (c *Client) sendDeleteDiskBackup(ctx context.Context, params DeleteDiskBack
 //
 // While subscriptions pay for the elastic IP (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
-// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
-// with its paid period; the elastic IP then keeps working until `scheduled_at` and is released then.
-// Asking again while that cancellation is pending answers with it again.
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the elastic IP working
+// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+// with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/elastic-ips/{elasticIpId}
 func (c *Client) DeleteElasticIP(ctx context.Context, params DeleteElasticIPParams) (DeleteElasticIPRes, error) {
@@ -4896,6 +4938,27 @@ func (c *Client) sendDeleteElasticIP(ctx context.Context, params DeleteElasticIP
 		pathParts[1] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "cancellation_mode" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "cancellation_mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.CancellationMode.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "DELETE", u)
@@ -5835,10 +5898,10 @@ func (c *Client) sendDeletePeering(ctx context.Context, params DeletePeeringPara
 //
 // While subscriptions pay for the private image (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
-// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
-// with its paid period; the private image then keeps working until `scheduled_at` and is released
-// then. Asking again while that cancellation is pending answers with it again.
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the private image
+// working until `scheduled_at` and releases it then. Asking again while that cancellation is pending
+// answers with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/private-images/{privateImageId}
 func (c *Client) DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (DeletePrivateImageRes, error) {
@@ -5907,6 +5970,27 @@ func (c *Client) sendDeletePrivateImage(ctx context.Context, params DeletePrivat
 		pathParts[1] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "cancellation_mode" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "cancellation_mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.CancellationMode.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "DELETE", u)
@@ -6387,10 +6471,10 @@ func (c *Client) sendDeleteSecurityGroupRule(ctx context.Context, params DeleteS
 //
 // While subscriptions pay for the snapshot (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
-// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
-// with its paid period; the snapshot then keeps working until `scheduled_at` and is released then.
-// Asking again while that cancellation is pending answers with it again.
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the snapshot working
+// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+// with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/snapshots/{snapshotId}
 func (c *Client) DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (DeleteSnapshotRes, error) {
@@ -6459,6 +6543,27 @@ func (c *Client) sendDeleteSnapshot(ctx context.Context, params DeleteSnapshotPa
 		pathParts[1] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "cancellation_mode" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "cancellation_mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.CancellationMode.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "DELETE", u)
@@ -6672,10 +6777,10 @@ func (c *Client) sendDeleteSubnet(ctx context.Context, params DeleteSubnetParams
 //
 // While subscriptions pay for the virtual machine (those in its `release_set`), deleting it cancels
 // them rather than being refused: Compute creates one Billing cancellation for the whole set and
-// answers with it in `cancellation`. The cancellation is `immediate` when every subscription in the
-// set allows that, a licensed one being refunded under its terms, and `period_end` when any of them
-// ends only with its paid period; the virtual machine then keeps working until `scheduled_at` and is
-// released then. Asking again while that cancellation is pending answers with it again.
+// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
+// now, a licensed subscription being refunded under its terms, and `period_end` keeps the virtual
+// machine working until `scheduled_at` and releases it then. Asking again while that cancellation is
+// pending answers with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/virtual-machines/{virtualMachineId}
 func (c *Client) DeleteVirtualMachine(ctx context.Context, params DeleteVirtualMachineParams) (DeleteVirtualMachineRes, error) {
@@ -6744,6 +6849,27 @@ func (c *Client) sendDeleteVirtualMachine(ctx context.Context, params DeleteVirt
 		pathParts[1] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "cancellation_mode" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "cancellation_mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.CancellationMode.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "DELETE", u)

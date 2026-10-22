@@ -658,6 +658,19 @@ func decodeCreateVirtualMachineRebuildParams(args [1]string, argsEscaped bool, r
 // DeleteDiskParams is parameters of delete-disk operation.
 type DeleteDiskParams struct {
 	DiskId DiskID
+	// When the subscriptions that pay for what is deleted end. `immediate` cancels them now and refunds a
+	// licensed one under its terms; `period_end` cancels them at the end of their paid period and keeps
+	// what is deleted working until then. Omitted, they are canceled now where the terms of every one of
+	// them allow it, and otherwise all at the end of the paid period, since one cancellation releases the
+	// whole set at one instant.
+	//
+	// Billing alone judges the mode against the terms each subscription was bought with. It refuses with
+	// 422 `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go subscription
+	// ends only now, and a prepaid one whose terms allow only the end of its period only then. It refuses
+	// `period_end` with 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when the paid periods end at different
+	// times. Ignored when nothing is subscribed, and when a cancellation is already open: deleting again
+	// answers with that one as it is.
+	CancellationMode OptCancellationMode `json:",omitempty,omitzero"`
 }
 
 func unpackDeleteDiskParams(packed middleware.Parameters) (params DeleteDiskParams) {
@@ -668,10 +681,20 @@ func unpackDeleteDiskParams(packed middleware.Parameters) (params DeleteDiskPara
 		}
 		params.DiskId = packed[key].(DiskID)
 	}
+	{
+		key := middleware.ParameterKey{
+			Name: "cancellation_mode",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.CancellationMode = v.(OptCancellationMode)
+		}
+	}
 	return params
 }
 
 func decodeDeleteDiskParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteDiskParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
 	// Decode path: diskId.
 	if err := func() error {
 		param := args[0]
@@ -732,12 +755,81 @@ func decodeDeleteDiskParams(args [1]string, argsEscaped bool, r *http.Request) (
 			Err:  err,
 		}
 	}
+	// Decode query: cancellation_mode.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "cancellation_mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotCancellationModeVal CancellationMode
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCancellationModeVal = CancellationMode(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CancellationMode.SetTo(paramsDotCancellationModeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.CancellationMode.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "cancellation_mode",
+			In:   "query",
+			Err:  err,
+		}
+	}
 	return params, nil
 }
 
 // DeleteDiskBackupParams is parameters of delete-disk-backup operation.
 type DeleteDiskBackupParams struct {
 	DiskBackupId DiskBackupID
+	// When the subscriptions that pay for what is deleted end. `immediate` cancels them now and refunds a
+	// licensed one under its terms; `period_end` cancels them at the end of their paid period and keeps
+	// what is deleted working until then. Omitted, they are canceled now where the terms of every one of
+	// them allow it, and otherwise all at the end of the paid period, since one cancellation releases the
+	// whole set at one instant.
+	//
+	// Billing alone judges the mode against the terms each subscription was bought with. It refuses with
+	// 422 `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go subscription
+	// ends only now, and a prepaid one whose terms allow only the end of its period only then. It refuses
+	// `period_end` with 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when the paid periods end at different
+	// times. Ignored when nothing is subscribed, and when a cancellation is already open: deleting again
+	// answers with that one as it is.
+	CancellationMode OptCancellationMode `json:",omitempty,omitzero"`
 }
 
 func unpackDeleteDiskBackupParams(packed middleware.Parameters) (params DeleteDiskBackupParams) {
@@ -748,10 +840,20 @@ func unpackDeleteDiskBackupParams(packed middleware.Parameters) (params DeleteDi
 		}
 		params.DiskBackupId = packed[key].(DiskBackupID)
 	}
+	{
+		key := middleware.ParameterKey{
+			Name: "cancellation_mode",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.CancellationMode = v.(OptCancellationMode)
+		}
+	}
 	return params
 }
 
 func decodeDeleteDiskBackupParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteDiskBackupParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
 	// Decode path: diskBackupId.
 	if err := func() error {
 		param := args[0]
@@ -812,12 +914,81 @@ func decodeDeleteDiskBackupParams(args [1]string, argsEscaped bool, r *http.Requ
 			Err:  err,
 		}
 	}
+	// Decode query: cancellation_mode.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "cancellation_mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotCancellationModeVal CancellationMode
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCancellationModeVal = CancellationMode(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CancellationMode.SetTo(paramsDotCancellationModeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.CancellationMode.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "cancellation_mode",
+			In:   "query",
+			Err:  err,
+		}
+	}
 	return params, nil
 }
 
 // DeleteElasticIPParams is parameters of delete-elastic-ip operation.
 type DeleteElasticIPParams struct {
 	ElasticIpId ElasticIPID
+	// When the subscriptions that pay for what is deleted end. `immediate` cancels them now and refunds a
+	// licensed one under its terms; `period_end` cancels them at the end of their paid period and keeps
+	// what is deleted working until then. Omitted, they are canceled now where the terms of every one of
+	// them allow it, and otherwise all at the end of the paid period, since one cancellation releases the
+	// whole set at one instant.
+	//
+	// Billing alone judges the mode against the terms each subscription was bought with. It refuses with
+	// 422 `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go subscription
+	// ends only now, and a prepaid one whose terms allow only the end of its period only then. It refuses
+	// `period_end` with 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when the paid periods end at different
+	// times. Ignored when nothing is subscribed, and when a cancellation is already open: deleting again
+	// answers with that one as it is.
+	CancellationMode OptCancellationMode `json:",omitempty,omitzero"`
 }
 
 func unpackDeleteElasticIPParams(packed middleware.Parameters) (params DeleteElasticIPParams) {
@@ -828,10 +999,20 @@ func unpackDeleteElasticIPParams(packed middleware.Parameters) (params DeleteEla
 		}
 		params.ElasticIpId = packed[key].(ElasticIPID)
 	}
+	{
+		key := middleware.ParameterKey{
+			Name: "cancellation_mode",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.CancellationMode = v.(OptCancellationMode)
+		}
+	}
 	return params
 }
 
 func decodeDeleteElasticIPParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteElasticIPParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
 	// Decode path: elasticIpId.
 	if err := func() error {
 		param := args[0]
@@ -889,6 +1070,62 @@ func decodeDeleteElasticIPParams(args [1]string, argsEscaped bool, r *http.Reque
 		return params, &ogenerrors.DecodeParamError{
 			Name: "elasticIpId",
 			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: cancellation_mode.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "cancellation_mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotCancellationModeVal CancellationMode
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCancellationModeVal = CancellationMode(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CancellationMode.SetTo(paramsDotCancellationModeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.CancellationMode.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "cancellation_mode",
+			In:   "query",
 			Err:  err,
 		}
 	}
@@ -1517,6 +1754,19 @@ func decodeDeletePeeringParams(args [1]string, argsEscaped bool, r *http.Request
 // DeletePrivateImageParams is parameters of delete-private-image operation.
 type DeletePrivateImageParams struct {
 	PrivateImageId ImageID
+	// When the subscriptions that pay for what is deleted end. `immediate` cancels them now and refunds a
+	// licensed one under its terms; `period_end` cancels them at the end of their paid period and keeps
+	// what is deleted working until then. Omitted, they are canceled now where the terms of every one of
+	// them allow it, and otherwise all at the end of the paid period, since one cancellation releases the
+	// whole set at one instant.
+	//
+	// Billing alone judges the mode against the terms each subscription was bought with. It refuses with
+	// 422 `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go subscription
+	// ends only now, and a prepaid one whose terms allow only the end of its period only then. It refuses
+	// `period_end` with 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when the paid periods end at different
+	// times. Ignored when nothing is subscribed, and when a cancellation is already open: deleting again
+	// answers with that one as it is.
+	CancellationMode OptCancellationMode `json:",omitempty,omitzero"`
 }
 
 func unpackDeletePrivateImageParams(packed middleware.Parameters) (params DeletePrivateImageParams) {
@@ -1527,10 +1777,20 @@ func unpackDeletePrivateImageParams(packed middleware.Parameters) (params Delete
 		}
 		params.PrivateImageId = packed[key].(ImageID)
 	}
+	{
+		key := middleware.ParameterKey{
+			Name: "cancellation_mode",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.CancellationMode = v.(OptCancellationMode)
+		}
+	}
 	return params
 }
 
 func decodeDeletePrivateImageParams(args [1]string, argsEscaped bool, r *http.Request) (params DeletePrivateImageParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
 	// Decode path: privateImageId.
 	if err := func() error {
 		param := args[0]
@@ -1588,6 +1848,62 @@ func decodeDeletePrivateImageParams(args [1]string, argsEscaped bool, r *http.Re
 		return params, &ogenerrors.DecodeParamError{
 			Name: "privateImageId",
 			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: cancellation_mode.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "cancellation_mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotCancellationModeVal CancellationMode
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCancellationModeVal = CancellationMode(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CancellationMode.SetTo(paramsDotCancellationModeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.CancellationMode.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "cancellation_mode",
+			In:   "query",
 			Err:  err,
 		}
 	}
@@ -1837,6 +2153,19 @@ func decodeDeleteSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *ht
 // DeleteSnapshotParams is parameters of delete-snapshot operation.
 type DeleteSnapshotParams struct {
 	SnapshotId SnapshotID
+	// When the subscriptions that pay for what is deleted end. `immediate` cancels them now and refunds a
+	// licensed one under its terms; `period_end` cancels them at the end of their paid period and keeps
+	// what is deleted working until then. Omitted, they are canceled now where the terms of every one of
+	// them allow it, and otherwise all at the end of the paid period, since one cancellation releases the
+	// whole set at one instant.
+	//
+	// Billing alone judges the mode against the terms each subscription was bought with. It refuses with
+	// 422 `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go subscription
+	// ends only now, and a prepaid one whose terms allow only the end of its period only then. It refuses
+	// `period_end` with 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when the paid periods end at different
+	// times. Ignored when nothing is subscribed, and when a cancellation is already open: deleting again
+	// answers with that one as it is.
+	CancellationMode OptCancellationMode `json:",omitempty,omitzero"`
 }
 
 func unpackDeleteSnapshotParams(packed middleware.Parameters) (params DeleteSnapshotParams) {
@@ -1847,10 +2176,20 @@ func unpackDeleteSnapshotParams(packed middleware.Parameters) (params DeleteSnap
 		}
 		params.SnapshotId = packed[key].(SnapshotID)
 	}
+	{
+		key := middleware.ParameterKey{
+			Name: "cancellation_mode",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.CancellationMode = v.(OptCancellationMode)
+		}
+	}
 	return params
 }
 
 func decodeDeleteSnapshotParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteSnapshotParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
 	// Decode path: snapshotId.
 	if err := func() error {
 		param := args[0]
@@ -1908,6 +2247,62 @@ func decodeDeleteSnapshotParams(args [1]string, argsEscaped bool, r *http.Reques
 		return params, &ogenerrors.DecodeParamError{
 			Name: "snapshotId",
 			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: cancellation_mode.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "cancellation_mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotCancellationModeVal CancellationMode
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCancellationModeVal = CancellationMode(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CancellationMode.SetTo(paramsDotCancellationModeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.CancellationMode.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "cancellation_mode",
+			In:   "query",
 			Err:  err,
 		}
 	}
@@ -1997,6 +2392,19 @@ func decodeDeleteSubnetParams(args [1]string, argsEscaped bool, r *http.Request)
 // DeleteVirtualMachineParams is parameters of delete-virtual-machine operation.
 type DeleteVirtualMachineParams struct {
 	VirtualMachineId VirtualMachineID
+	// When the subscriptions that pay for what is deleted end. `immediate` cancels them now and refunds a
+	// licensed one under its terms; `period_end` cancels them at the end of their paid period and keeps
+	// what is deleted working until then. Omitted, they are canceled now where the terms of every one of
+	// them allow it, and otherwise all at the end of the paid period, since one cancellation releases the
+	// whole set at one instant.
+	//
+	// Billing alone judges the mode against the terms each subscription was bought with. It refuses with
+	// 422 `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go subscription
+	// ends only now, and a prepaid one whose terms allow only the end of its period only then. It refuses
+	// `period_end` with 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when the paid periods end at different
+	// times. Ignored when nothing is subscribed, and when a cancellation is already open: deleting again
+	// answers with that one as it is.
+	CancellationMode OptCancellationMode `json:",omitempty,omitzero"`
 }
 
 func unpackDeleteVirtualMachineParams(packed middleware.Parameters) (params DeleteVirtualMachineParams) {
@@ -2007,10 +2415,20 @@ func unpackDeleteVirtualMachineParams(packed middleware.Parameters) (params Dele
 		}
 		params.VirtualMachineId = packed[key].(VirtualMachineID)
 	}
+	{
+		key := middleware.ParameterKey{
+			Name: "cancellation_mode",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.CancellationMode = v.(OptCancellationMode)
+		}
+	}
 	return params
 }
 
 func decodeDeleteVirtualMachineParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteVirtualMachineParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
 	// Decode path: virtualMachineId.
 	if err := func() error {
 		param := args[0]
@@ -2068,6 +2486,62 @@ func decodeDeleteVirtualMachineParams(args [1]string, argsEscaped bool, r *http.
 		return params, &ogenerrors.DecodeParamError{
 			Name: "virtualMachineId",
 			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: cancellation_mode.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "cancellation_mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotCancellationModeVal CancellationMode
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCancellationModeVal = CancellationMode(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CancellationMode.SetTo(paramsDotCancellationModeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.CancellationMode.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "cancellation_mode",
+			In:   "query",
 			Err:  err,
 		}
 	}

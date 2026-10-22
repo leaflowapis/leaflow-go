@@ -132,7 +132,7 @@ type BillingCancellation struct {
 	ID uuid.UUID `json:"id"`
 	// `immediate` releases the resources once Billing has canceled the subscriptions, refunding a licensed
 	// one under its terms; `period_end` keeps them working until the paid period ends.
-	Mode BillingCancellationMode `json:"mode"`
+	Mode CancellationMode `json:"mode"`
 	// When the subscriptions end and the resources are released; null while Billing has not fixed it.
 	ScheduledAt NilDateTime `json:"scheduled_at"`
 }
@@ -143,7 +143,7 @@ func (s *BillingCancellation) GetID() uuid.UUID {
 }
 
 // GetMode returns the value of Mode.
-func (s *BillingCancellation) GetMode() BillingCancellationMode {
+func (s *BillingCancellation) GetMode() CancellationMode {
 	return s.Mode
 }
 
@@ -158,56 +158,13 @@ func (s *BillingCancellation) SetID(val uuid.UUID) {
 }
 
 // SetMode sets the value of Mode.
-func (s *BillingCancellation) SetMode(val BillingCancellationMode) {
+func (s *BillingCancellation) SetMode(val CancellationMode) {
 	s.Mode = val
 }
 
 // SetScheduledAt sets the value of ScheduledAt.
 func (s *BillingCancellation) SetScheduledAt(val NilDateTime) {
 	s.ScheduledAt = val
-}
-
-// `immediate` releases the resources once Billing has canceled the subscriptions, refunding a licensed
-// one under its terms; `period_end` keeps them working until the paid period ends.
-type BillingCancellationMode string
-
-const (
-	BillingCancellationModeImmediate BillingCancellationMode = "immediate"
-	BillingCancellationModePeriodEnd BillingCancellationMode = "period_end"
-)
-
-// AllValues returns all BillingCancellationMode values.
-func (BillingCancellationMode) AllValues() []BillingCancellationMode {
-	return []BillingCancellationMode{
-		BillingCancellationModeImmediate,
-		BillingCancellationModePeriodEnd,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s BillingCancellationMode) MarshalText() ([]byte, error) {
-	switch s {
-	case BillingCancellationModeImmediate:
-		return []byte(s), nil
-	case BillingCancellationModePeriodEnd:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *BillingCancellationMode) UnmarshalText(data []byte) error {
-	switch BillingCancellationMode(data) {
-	case BillingCancellationModeImmediate:
-		*s = BillingCancellationModeImmediate
-		return nil
-	case BillingCancellationModePeriodEnd:
-		*s = BillingCancellationModePeriodEnd
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // The commercial terms for one newly purchased component. Licensed requires period and
@@ -669,6 +626,53 @@ func NewExistingBootDiskBootDisk(v ExistingBootDisk) BootDisk {
 	var s BootDisk
 	s.SetExistingBootDisk(v)
 	return s
+}
+
+// When subscriptions end. immediate ends them now and refunds the unused value under their refund
+// terms; period_end ends them at the end of their paid period. The cancellation terms fixed when a
+// subscription was bought decide which modes it allows: a pay-as-you-go subscription ends only
+// immediately, and a prepaid one whose terms allow only the end of its paid period ends only then.
+// Billing refuses a mode the terms do not allow with HTTP 422 BILLING_CANCELLATION_MODE_FIXED.
+// Ref: #/components/schemas/CancellationMode
+type CancellationMode string
+
+const (
+	CancellationModeImmediate CancellationMode = "immediate"
+	CancellationModePeriodEnd CancellationMode = "period_end"
+)
+
+// AllValues returns all CancellationMode values.
+func (CancellationMode) AllValues() []CancellationMode {
+	return []CancellationMode{
+		CancellationModeImmediate,
+		CancellationModePeriodEnd,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CancellationMode) MarshalText() ([]byte, error) {
+	switch s {
+	case CancellationModeImmediate:
+		return []byte(s), nil
+	case CancellationModePeriodEnd:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CancellationMode) UnmarshalText(data []byte) error {
+	switch CancellationMode(data) {
+	case CancellationModeImmediate:
+		*s = CancellationModeImmediate
+		return nil
+	case CancellationModePeriodEnd:
+		*s = CancellationModePeriodEnd
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Shared checkout choices for a product purchase. The service may set them or forward its client's
@@ -10419,6 +10423,52 @@ func (o OptBootDisk) Get() (v BootDisk, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptBootDisk) Or(d BootDisk) BootDisk {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptCancellationMode returns new OptCancellationMode with value set to v.
+func NewOptCancellationMode(v CancellationMode) OptCancellationMode {
+	return OptCancellationMode{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCancellationMode is optional CancellationMode.
+type OptCancellationMode struct {
+	Value CancellationMode
+	Set   bool
+}
+
+// IsSet returns true if OptCancellationMode was set.
+func (o OptCancellationMode) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCancellationMode) Reset() {
+	var v CancellationMode
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCancellationMode) SetTo(v CancellationMode) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCancellationMode) Get() (v CancellationMode, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCancellationMode) Or(d CancellationMode) CancellationMode {
 	if v, ok := o.Get(); ok {
 		return v
 	}

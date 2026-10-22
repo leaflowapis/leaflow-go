@@ -180,17 +180,6 @@ func (s *BillingCancellation) Validate() error {
 	return nil
 }
 
-func (s BillingCancellationMode) Validate() error {
-	switch s {
-	case "immediate":
-		return nil
-	case "period_end":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
 func (s *BillingChoice) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -482,6 +471,17 @@ func (s BootDisk) Validate() error {
 		return nil
 	default:
 		return errors.Errorf("invalid type %q", s.Type)
+	}
+}
+
+func (s CancellationMode) Validate() error {
+	switch s {
+	case "immediate":
+		return nil
+	case "period_end":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
 	}
 }
 

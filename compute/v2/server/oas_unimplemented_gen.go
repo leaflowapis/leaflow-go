@@ -461,10 +461,10 @@ func (UnimplementedHandler) CreateVirtualPrivateCloud(ctx context.Context, req *
 //
 // While subscriptions pay for the disk (those in its `release_set`), deleting it cancels them rather
 // than being refused: Compute creates one Billing cancellation for the whole set and answers with it
-// in `cancellation`. The cancellation is `immediate` when every subscription in the set allows that, a
-// licensed one being refunded under its terms, and `period_end` when any of them ends only with its
-// paid period; the disk then keeps working until `scheduled_at` and is released then. Asking again
-// while that cancellation is pending answers with it again.
+// in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a licensed
+// subscription being refunded under its terms, and `period_end` keeps the disk working until
+// `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
+// again, whatever mode is asked for.
 //
 // DELETE /api/v2/disks/{diskId}
 func (UnimplementedHandler) DeleteDisk(ctx context.Context, params DeleteDiskParams) (r DeleteDiskRes, _ error) {
@@ -486,10 +486,10 @@ func (UnimplementedHandler) DeleteDisk(ctx context.Context, params DeleteDiskPar
 //
 // While subscriptions pay for the disk backup (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
-// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
-// with its paid period; the disk backup then keeps working until `scheduled_at` and is released then.
-// Asking again while that cancellation is pending answers with it again.
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the disk backup working
+// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+// with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/disk-backups/{diskBackupId}
 func (UnimplementedHandler) DeleteDiskBackup(ctx context.Context, params DeleteDiskBackupParams) (r DeleteDiskBackupRes, _ error) {
@@ -508,10 +508,10 @@ func (UnimplementedHandler) DeleteDiskBackup(ctx context.Context, params DeleteD
 //
 // While subscriptions pay for the elastic IP (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
-// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
-// with its paid period; the elastic IP then keeps working until `scheduled_at` and is released then.
-// Asking again while that cancellation is pending answers with it again.
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the elastic IP working
+// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+// with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/elastic-ips/{elasticIpId}
 func (UnimplementedHandler) DeleteElasticIP(ctx context.Context, params DeleteElasticIPParams) (r DeleteElasticIPRes, _ error) {
@@ -602,10 +602,10 @@ func (UnimplementedHandler) DeletePeering(ctx context.Context, params DeletePeer
 //
 // While subscriptions pay for the private image (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
-// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
-// with its paid period; the private image then keeps working until `scheduled_at` and is released
-// then. Asking again while that cancellation is pending answers with it again.
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the private image
+// working until `scheduled_at` and releases it then. Asking again while that cancellation is pending
+// answers with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/private-images/{privateImageId}
 func (UnimplementedHandler) DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) (r DeletePrivateImageRes, _ error) {
@@ -654,10 +654,10 @@ func (UnimplementedHandler) DeleteSecurityGroupRule(ctx context.Context, params 
 //
 // While subscriptions pay for the snapshot (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
-// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
-// with its paid period; the snapshot then keeps working until `scheduled_at` and is released then.
-// Asking again while that cancellation is pending answers with it again.
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the snapshot working
+// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+// with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/snapshots/{snapshotId}
 func (UnimplementedHandler) DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (r DeleteSnapshotRes, _ error) {
@@ -689,10 +689,10 @@ func (UnimplementedHandler) DeleteSubnet(ctx context.Context, params DeleteSubne
 //
 // While subscriptions pay for the virtual machine (those in its `release_set`), deleting it cancels
 // them rather than being refused: Compute creates one Billing cancellation for the whole set and
-// answers with it in `cancellation`. The cancellation is `immediate` when every subscription in the
-// set allows that, a licensed one being refunded under its terms, and `period_end` when any of them
-// ends only with its paid period; the virtual machine then keeps working until `scheduled_at` and is
-// released then. Asking again while that cancellation is pending answers with it again.
+// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
+// now, a licensed subscription being refunded under its terms, and `period_end` keeps the virtual
+// machine working until `scheduled_at` and releases it then. Asking again while that cancellation is
+// pending answers with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/virtual-machines/{virtualMachineId}
 func (UnimplementedHandler) DeleteVirtualMachine(ctx context.Context, params DeleteVirtualMachineParams) (r DeleteVirtualMachineRes, _ error) {
