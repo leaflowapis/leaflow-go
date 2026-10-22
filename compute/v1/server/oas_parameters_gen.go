@@ -4877,8 +4877,8 @@ func decodeListDiskBackupsParams(args [0]string, argsEscaped bool, r *http.Reque
 // ListDiskTypesParams is parameters of list-disk-types operation.
 type ListDiskTypesParams struct {
 	RegionID OptRegionID `json:",omitempty,omitzero"`
-	// Filter by intended creation use. Omit to include both system and data disk types.
-	Purpose OptDiskTypePurpose `json:",omitempty,omitzero"`
+	// Return only the types sold in this availability zone, sold out there or not.
+	AvailabilityZoneID OptAvailabilityZoneID `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -4897,11 +4897,11 @@ func unpackListDiskTypesParams(packed middleware.Parameters) (params ListDiskTyp
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "purpose",
+			Name: "availability_zone_id",
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.Purpose = v.(OptDiskTypePurpose)
+			params.AvailabilityZoneID = v.(OptAvailabilityZoneID)
 		}
 	}
 	{
@@ -4990,40 +4990,47 @@ func decodeListDiskTypesParams(args [0]string, argsEscaped bool, r *http.Request
 			Err:  err,
 		}
 	}
-	// Decode query: purpose.
+	// Decode query: availability_zone_id.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "purpose",
+			Name:    "availability_zone_id",
 			Style:   uri.QueryStyleForm,
-			Explode: true,
+			Explode: false,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotPurposeVal DiskTypePurpose
+				var paramsDotAvailabilityZoneIDVal AvailabilityZoneID
 				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
+					var paramsDotAvailabilityZoneIDValVal string
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotAvailabilityZoneIDValVal = c
+						return nil
+					}(); err != nil {
 						return err
 					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotPurposeVal = DiskTypePurpose(c)
+					paramsDotAvailabilityZoneIDVal = AvailabilityZoneID(paramsDotAvailabilityZoneIDValVal)
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.Purpose.SetTo(paramsDotPurposeVal)
+				params.AvailabilityZoneID.SetTo(paramsDotAvailabilityZoneIDVal)
 				return nil
 			}); err != nil {
 				return err
 			}
 			if err := func() error {
-				if value, ok := params.Purpose.Get(); ok {
+				if value, ok := params.AvailabilityZoneID.Get(); ok {
 					if err := func() error {
 						if err := value.Validate(); err != nil {
 							return err
@@ -5041,7 +5048,7 @@ func decodeListDiskTypesParams(args [0]string, argsEscaped bool, r *http.Request
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "purpose",
+			Name: "availability_zone_id",
 			In:   "query",
 			Err:  err,
 		}
@@ -6025,6 +6032,8 @@ func decodeListElasticIpsParams(args [0]string, argsEscaped bool, r *http.Reques
 // ListMachineTypesParams is parameters of list-machine-types operation.
 type ListMachineTypesParams struct {
 	RegionID OptRegionID `json:",omitempty,omitzero"`
+	// Return only the types sold in this availability zone, sold out there or not.
+	AvailabilityZoneID OptAvailabilityZoneID `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -6039,6 +6048,15 @@ func unpackListMachineTypesParams(packed middleware.Parameters) (params ListMach
 		}
 		if v, ok := packed[key]; ok {
 			params.RegionID = v.(OptRegionID)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "availability_zone_id",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.AvailabilityZoneID = v.(OptAvailabilityZoneID)
 		}
 	}
 	{
@@ -6123,6 +6141,69 @@ func decodeListMachineTypesParams(args [0]string, argsEscaped bool, r *http.Requ
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "region_id",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: availability_zone_id.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "availability_zone_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotAvailabilityZoneIDVal AvailabilityZoneID
+				if err := func() error {
+					var paramsDotAvailabilityZoneIDValVal string
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotAvailabilityZoneIDValVal = c
+						return nil
+					}(); err != nil {
+						return err
+					}
+					paramsDotAvailabilityZoneIDVal = AvailabilityZoneID(paramsDotAvailabilityZoneIDValVal)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.AvailabilityZoneID.SetTo(paramsDotAvailabilityZoneIDVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.AvailabilityZoneID.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "availability_zone_id",
 			In:   "query",
 			Err:  err,
 		}

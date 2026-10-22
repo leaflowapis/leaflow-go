@@ -548,20 +548,22 @@ func (*CreateDiskBackupResponseBody) createDiskBackupRes() {}
 
 // Ref: #/components/schemas/CreateDiskRequestBody
 type CreateDiskRequestBody struct {
-	// A data disk type currently on sale, one whose `purpose` is `data`; a system disk type is rejected
-	// here too. A withdrawn one is rejected even though its identifier still resolves.
+	// A disk type currently on sale and sold in `availability_zone_id`. A withdrawn one is rejected even
+	// though its identifier still resolves.
 	DiskTypeID DiskTypeID `json:"disk_type_id"`
-	Name       string     `json:"name"`
+	// The availability zone the disk is created in. Only a virtual machine in this zone can attach it.
+	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
+	Name               string             `json:"name"`
 	// Required unless `disk_backup_id` is given. With `snapshot_id` it need only be no smaller than the
 	// snapshot; with `disk_backup_id` it defaults to the size of the backup and must not be smaller than
 	// it.
 	SizeGB OptInt64 `json:"size_gb"`
-	// Restore from this snapshot. The disk type must be in the snapshot's availability zone. Mutually
-	// exclusive with `disk_backup_id`, otherwise refused with 422 `DISK_SOURCE_CONFLICT`.
+	// Restore from this snapshot. `availability_zone_id` must be the snapshot's availability zone.
+	// Mutually exclusive with `disk_backup_id`, otherwise refused with 422 `DISK_SOURCE_CONFLICT`.
 	SnapshotID OptSnapshotID `json:"snapshot_id"`
-	// Restore from this disk backup, which need not still have its source disk. The disk type may be in
-	// another availability zone of the backup's region. Mutually exclusive with `snapshot_id`, otherwise
-	// refused with 422 `DISK_SOURCE_CONFLICT`.
+	// Restore from this disk backup, which need not still have its source disk. `availability_zone_id` may
+	// be any zone of the backup's region. Mutually exclusive with `snapshot_id`, otherwise refused with
+	// 422 `DISK_SOURCE_CONFLICT`.
 	DiskBackupID OptDiskBackupID    `json:"disk_backup_id"`
 	Billing      BillingChoice      `json:"billing"`
 	Checkout     OptCheckoutOptions `json:"checkout"`
@@ -570,6 +572,11 @@ type CreateDiskRequestBody struct {
 // GetDiskTypeID returns the value of DiskTypeID.
 func (s *CreateDiskRequestBody) GetDiskTypeID() DiskTypeID {
 	return s.DiskTypeID
+}
+
+// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
+func (s *CreateDiskRequestBody) GetAvailabilityZoneID() AvailabilityZoneID {
+	return s.AvailabilityZoneID
 }
 
 // GetName returns the value of Name.
@@ -605,6 +612,11 @@ func (s *CreateDiskRequestBody) GetCheckout() OptCheckoutOptions {
 // SetDiskTypeID sets the value of DiskTypeID.
 func (s *CreateDiskRequestBody) SetDiskTypeID(val DiskTypeID) {
 	s.DiskTypeID = val
+}
+
+// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
+func (s *CreateDiskRequestBody) SetAvailabilityZoneID(val AvailabilityZoneID) {
+	s.AvailabilityZoneID = val
 }
 
 // SetName sets the value of Name.
@@ -1518,7 +1530,10 @@ type CreateVirtualMachineRequestBody struct {
 	// Have the platform generate a random password, returned only in this response.
 	GeneratePassword OptBool    `json:"generate_password"`
 	Compute          NewCompute `json:"compute"`
-	Name             string     `json:"name"`
+	// The availability zone of the machine type's region the virtual machines are created in. An existing
+	// boot disk has to be in it already.
+	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
+	Name               string             `json:"name"`
 	// The password to set, on the login account and on root. Only the SSH public keys of the project are
 	// used when omitted.
 	Password OptString `json:"password"`
@@ -1554,6 +1569,11 @@ func (s *CreateVirtualMachineRequestBody) GetGeneratePassword() OptBool {
 // GetCompute returns the value of Compute.
 func (s *CreateVirtualMachineRequestBody) GetCompute() NewCompute {
 	return s.Compute
+}
+
+// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
+func (s *CreateVirtualMachineRequestBody) GetAvailabilityZoneID() AvailabilityZoneID {
+	return s.AvailabilityZoneID
 }
 
 // GetName returns the value of Name.
@@ -1614,6 +1634,11 @@ func (s *CreateVirtualMachineRequestBody) SetGeneratePassword(val OptBool) {
 // SetCompute sets the value of Compute.
 func (s *CreateVirtualMachineRequestBody) SetCompute(val NewCompute) {
 	s.Compute = val
+}
+
+// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
+func (s *CreateVirtualMachineRequestBody) SetAvailabilityZoneID(val AvailabilityZoneID) {
+	s.AvailabilityZoneID = val
 }
 
 // SetName sets the value of Name.
@@ -3268,80 +3293,32 @@ func (s *DiskTypePerformance) SetThroughputBytesPerSecond(val PerformanceFormula
 	s.ThroughputBytesPerSecond = val
 }
 
-// The intended creation use of a disk type, not the current boot role or deletion policy of an
-// individual disk.
-// Ref: #/components/schemas/DiskTypePurpose
-type DiskTypePurpose string
-
-const (
-	DiskTypePurposeSystem DiskTypePurpose = "system"
-	DiskTypePurposeData   DiskTypePurpose = "data"
-)
-
-// AllValues returns all DiskTypePurpose values.
-func (DiskTypePurpose) AllValues() []DiskTypePurpose {
-	return []DiskTypePurpose{
-		DiskTypePurposeSystem,
-		DiskTypePurposeData,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskTypePurpose) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskTypePurposeSystem:
-		return []byte(s), nil
-	case DiskTypePurposeData:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskTypePurpose) UnmarshalText(data []byte) error {
-	switch DiskTypePurpose(data) {
-	case DiskTypePurposeSystem:
-		*s = DiskTypePurposeSystem
-		return nil
-	case DiskTypePurposeData:
-		*s = DiskTypePurposeData
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/DiskTypeResource
 type DiskTypeResource struct {
-	AvailabilityZoneID AvailabilityZoneID    `json:"availability_zone_id"`
-	ID                 DiskTypeID            `json:"id"`
-	Purpose            DiskTypePurpose       `json:"purpose"`
-	MaxSizeGB          int64                 `json:"max_size_gb"`
-	Media              DiskTypeResourceMedia `json:"media"`
-	MinSizeGB          int64                 `json:"min_size_gb"`
-	Name               string                `json:"name"`
-	RegionID           RegionID              `json:"region_id"`
-	StepGB             int64                 `json:"step_gb"`
-	Performance        DiskTypePerformance   `json:"performance"`
+	// The availability zones of its region the type is sold in. A disk is created in one of them, and only
+	// a virtual machine in the same zone can attach it.
+	AvailabilityZones []OfferedAvailabilityZone `json:"availability_zones"`
+	ID                DiskTypeID                `json:"id"`
+	MaxSizeGB         int64                     `json:"max_size_gb"`
+	Media             DiskTypeResourceMedia     `json:"media"`
+	MinSizeGB         int64                     `json:"min_size_gb"`
+	Name              string                    `json:"name"`
+	RegionID          RegionID                  `json:"region_id"`
+	StepGB            int64                     `json:"step_gb"`
+	Performance       DiskTypePerformance       `json:"performance"`
 	// The actual Billing Plan associated with this resource. Read prices and commercial terms directly
 	// from Billing using this identifier.
 	PlanID uuid.UUID `json:"plan_id"`
 }
 
-// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *DiskTypeResource) GetAvailabilityZoneID() AvailabilityZoneID {
-	return s.AvailabilityZoneID
+// GetAvailabilityZones returns the value of AvailabilityZones.
+func (s *DiskTypeResource) GetAvailabilityZones() []OfferedAvailabilityZone {
+	return s.AvailabilityZones
 }
 
 // GetID returns the value of ID.
 func (s *DiskTypeResource) GetID() DiskTypeID {
 	return s.ID
-}
-
-// GetPurpose returns the value of Purpose.
-func (s *DiskTypeResource) GetPurpose() DiskTypePurpose {
-	return s.Purpose
 }
 
 // GetMaxSizeGB returns the value of MaxSizeGB.
@@ -3384,19 +3361,14 @@ func (s *DiskTypeResource) GetPlanID() uuid.UUID {
 	return s.PlanID
 }
 
-// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *DiskTypeResource) SetAvailabilityZoneID(val AvailabilityZoneID) {
-	s.AvailabilityZoneID = val
+// SetAvailabilityZones sets the value of AvailabilityZones.
+func (s *DiskTypeResource) SetAvailabilityZones(val []OfferedAvailabilityZone) {
+	s.AvailabilityZones = val
 }
 
 // SetID sets the value of ID.
 func (s *DiskTypeResource) SetID(val DiskTypeID) {
 	s.ID = val
-}
-
-// SetPurpose sets the value of Purpose.
-func (s *DiskTypeResource) SetPurpose(val DiskTypePurpose) {
-	s.Purpose = val
 }
 
 // SetMaxSizeGB sets the value of MaxSizeGB.
@@ -4582,8 +4554,8 @@ func (s *ErrorStatusCode) SetResponse(val Error) {
 // Ref: #/components/schemas/ExistingBootDisk
 type ExistingBootDisk struct {
 	Type ExistingBootDiskType `json:"type"`
-	// A prepared boot disk owned by this project, available and unattached in the same availability zone
-	// as the machine type. Only one virtual machine may be created when used.
+	// A prepared boot disk owned by this project, available, unattached and in `availability_zone_id`.
+	// Only one virtual machine may be created when used.
 	DiskID DiskID `json:"disk_id"`
 	// The existing account used to log in to this disk's operating system.
 	LoginUsername string `json:"login_username"`
@@ -4730,8 +4702,17 @@ func (s *InternetChargeType) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/MachineType
 type MachineType struct {
-	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
-	ID                 MachineTypeID      `json:"id"`
+	// The availability zones of its region the type is sold in. A virtual machine is created in one of
+	// them, and a resize stays in the virtual machine's zone, so the target type has to be sold there.
+	AvailabilityZones []OfferedAvailabilityZone `json:"availability_zones"`
+	// Who makes the CPU the type runs on.
+	CPUVendor MachineTypeCPUVendor `json:"cpu_vendor"`
+	// The CPU model, such as `EPYC 9654`; empty when none is stated.
+	CPUModel string `json:"cpu_model"`
+	// `dedicated` gives each vCPU a host thread of its own; `shared` lets the vCPUs of several machines
+	// share host threads.
+	CPUTier MachineTypeCPUTier `json:"cpu_tier"`
+	ID      MachineTypeID      `json:"id"`
 	// The machine's network rate, in Mbps. Each network interface of the machine is limited to it in both
 	// directions — per interface rather than shared, so a machine with two interfaces has this rate on
 	// each of them; `max_network_interfaces` says how many it may have. Zero is no limit.
@@ -4750,9 +4731,24 @@ type MachineType struct {
 	PlanID uuid.UUID `json:"plan_id"`
 }
 
-// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *MachineType) GetAvailabilityZoneID() AvailabilityZoneID {
-	return s.AvailabilityZoneID
+// GetAvailabilityZones returns the value of AvailabilityZones.
+func (s *MachineType) GetAvailabilityZones() []OfferedAvailabilityZone {
+	return s.AvailabilityZones
+}
+
+// GetCPUVendor returns the value of CPUVendor.
+func (s *MachineType) GetCPUVendor() MachineTypeCPUVendor {
+	return s.CPUVendor
+}
+
+// GetCPUModel returns the value of CPUModel.
+func (s *MachineType) GetCPUModel() string {
+	return s.CPUModel
+}
+
+// GetCPUTier returns the value of CPUTier.
+func (s *MachineType) GetCPUTier() MachineTypeCPUTier {
+	return s.CPUTier
 }
 
 // GetID returns the value of ID.
@@ -4800,9 +4796,24 @@ func (s *MachineType) GetPlanID() uuid.UUID {
 	return s.PlanID
 }
 
-// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *MachineType) SetAvailabilityZoneID(val AvailabilityZoneID) {
-	s.AvailabilityZoneID = val
+// SetAvailabilityZones sets the value of AvailabilityZones.
+func (s *MachineType) SetAvailabilityZones(val []OfferedAvailabilityZone) {
+	s.AvailabilityZones = val
+}
+
+// SetCPUVendor sets the value of CPUVendor.
+func (s *MachineType) SetCPUVendor(val MachineTypeCPUVendor) {
+	s.CPUVendor = val
+}
+
+// SetCPUModel sets the value of CPUModel.
+func (s *MachineType) SetCPUModel(val string) {
+	s.CPUModel = val
+}
+
+// SetCPUTier sets the value of CPUTier.
+func (s *MachineType) SetCPUTier(val MachineTypeCPUTier) {
+	s.CPUTier = val
 }
 
 // SetID sets the value of ID.
@@ -4848,6 +4859,91 @@ func (s *MachineType) SetVcpus(val int64) {
 // SetPlanID sets the value of PlanID.
 func (s *MachineType) SetPlanID(val uuid.UUID) {
 	s.PlanID = val
+}
+
+// `dedicated` gives each vCPU a host thread of its own; `shared` lets the vCPUs of several machines
+// share host threads.
+type MachineTypeCPUTier string
+
+const (
+	MachineTypeCPUTierDedicated MachineTypeCPUTier = "dedicated"
+	MachineTypeCPUTierShared    MachineTypeCPUTier = "shared"
+)
+
+// AllValues returns all MachineTypeCPUTier values.
+func (MachineTypeCPUTier) AllValues() []MachineTypeCPUTier {
+	return []MachineTypeCPUTier{
+		MachineTypeCPUTierDedicated,
+		MachineTypeCPUTierShared,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s MachineTypeCPUTier) MarshalText() ([]byte, error) {
+	switch s {
+	case MachineTypeCPUTierDedicated:
+		return []byte(s), nil
+	case MachineTypeCPUTierShared:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *MachineTypeCPUTier) UnmarshalText(data []byte) error {
+	switch MachineTypeCPUTier(data) {
+	case MachineTypeCPUTierDedicated:
+		*s = MachineTypeCPUTierDedicated
+		return nil
+	case MachineTypeCPUTierShared:
+		*s = MachineTypeCPUTierShared
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Who makes the CPU the type runs on.
+type MachineTypeCPUVendor string
+
+const (
+	MachineTypeCPUVendorIntel MachineTypeCPUVendor = "intel"
+	MachineTypeCPUVendorAmd   MachineTypeCPUVendor = "amd"
+)
+
+// AllValues returns all MachineTypeCPUVendor values.
+func (MachineTypeCPUVendor) AllValues() []MachineTypeCPUVendor {
+	return []MachineTypeCPUVendor{
+		MachineTypeCPUVendorIntel,
+		MachineTypeCPUVendorAmd,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s MachineTypeCPUVendor) MarshalText() ([]byte, error) {
+	switch s {
+	case MachineTypeCPUVendorIntel:
+		return []byte(s), nil
+	case MachineTypeCPUVendorAmd:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *MachineTypeCPUVendor) UnmarshalText(data []byte) error {
+	switch MachineTypeCPUVendor(data) {
+	case MachineTypeCPUVendorIntel:
+		*s = MachineTypeCPUVendorIntel
+		return nil
+	case MachineTypeCPUVendorAmd:
+		*s = MachineTypeCPUVendorAmd
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 type MachineTypeID string
@@ -5584,8 +5680,8 @@ type NewBootDisk struct {
 	// A public image on sale (`/public-images`), or an available private image of this project
 	// (`/private-images`).
 	ImageID ImageID `json:"image_id"`
-	// A system disk type on sale in the availability zone of the virtual machine, one whose `purpose` is
-	// `system`.
+	// A disk type on sale and sold in the virtual machine's availability zone; any disk type boots a
+	// virtual machine.
 	DiskTypeID               DiskTypeID    `json:"disk_type_id"`
 	SizeGB                   int64         `json:"size_gb"`
 	DeleteWithVirtualMachine OptBool       `json:"delete_with_virtual_machine"`
@@ -7294,6 +7390,75 @@ func (o NilVirtualPrivateCloudOperation) Or(d VirtualPrivateCloudOperation) Virt
 	return d
 }
 
+// An availability zone a catalog type is sold in. `sold_out` takes no new orders there for now; the
+// resources already there keep working.
+// Ref: #/components/schemas/OfferedAvailabilityZone
+type OfferedAvailabilityZone struct {
+	AvailabilityZoneID AvailabilityZoneID            `json:"availability_zone_id"`
+	Status             OfferedAvailabilityZoneStatus `json:"status"`
+}
+
+// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
+func (s *OfferedAvailabilityZone) GetAvailabilityZoneID() AvailabilityZoneID {
+	return s.AvailabilityZoneID
+}
+
+// GetStatus returns the value of Status.
+func (s *OfferedAvailabilityZone) GetStatus() OfferedAvailabilityZoneStatus {
+	return s.Status
+}
+
+// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
+func (s *OfferedAvailabilityZone) SetAvailabilityZoneID(val AvailabilityZoneID) {
+	s.AvailabilityZoneID = val
+}
+
+// SetStatus sets the value of Status.
+func (s *OfferedAvailabilityZone) SetStatus(val OfferedAvailabilityZoneStatus) {
+	s.Status = val
+}
+
+type OfferedAvailabilityZoneStatus string
+
+const (
+	OfferedAvailabilityZoneStatusAvailable OfferedAvailabilityZoneStatus = "available"
+	OfferedAvailabilityZoneStatusSoldOut   OfferedAvailabilityZoneStatus = "sold_out"
+)
+
+// AllValues returns all OfferedAvailabilityZoneStatus values.
+func (OfferedAvailabilityZoneStatus) AllValues() []OfferedAvailabilityZoneStatus {
+	return []OfferedAvailabilityZoneStatus{
+		OfferedAvailabilityZoneStatusAvailable,
+		OfferedAvailabilityZoneStatusSoldOut,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s OfferedAvailabilityZoneStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case OfferedAvailabilityZoneStatusAvailable:
+		return []byte(s), nil
+	case OfferedAvailabilityZoneStatusSoldOut:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *OfferedAvailabilityZoneStatus) UnmarshalText(data []byte) error {
+	switch OfferedAvailabilityZoneStatus(data) {
+	case OfferedAvailabilityZoneStatusAvailable:
+		*s = OfferedAvailabilityZoneStatusAvailable
+		return nil
+	case OfferedAvailabilityZoneStatusSoldOut:
+		*s = OfferedAvailabilityZoneStatusSoldOut
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Pagination metadata for stable numbered pages. total_count is returned only when the operation can
 // determine it without an unbounded scan.
 // Ref: #/components/schemas/OffsetPagination
@@ -7981,52 +8146,6 @@ func (o OptDiskID) Get() (v DiskID, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptDiskID) Or(d DiskID) DiskID {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptDiskTypePurpose returns new OptDiskTypePurpose with value set to v.
-func NewOptDiskTypePurpose(v DiskTypePurpose) OptDiskTypePurpose {
-	return OptDiskTypePurpose{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptDiskTypePurpose is optional DiskTypePurpose.
-type OptDiskTypePurpose struct {
-	Value DiskTypePurpose
-	Set   bool
-}
-
-// IsSet returns true if OptDiskTypePurpose was set.
-func (o OptDiskTypePurpose) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptDiskTypePurpose) Reset() {
-	var v DiskTypePurpose
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptDiskTypePurpose) SetTo(v DiskTypePurpose) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptDiskTypePurpose) Get() (v DiskTypePurpose, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptDiskTypePurpose) Or(d DiskTypePurpose) DiskTypePurpose {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -12486,8 +12605,10 @@ type UpdateVirtualMachineRequestBody struct {
 	// The state the virtual machine should be in. `running` starts it and `stopped` stops it. Operational
 	// field.
 	PowerState OptUpdateVirtualMachineRequestBodyPowerState `json:"power_state"`
-	// The machine type to resize to; must be in the same region and availability zone as the current
-	// machine type. Operational field; the change is purchased through Billing.
+	// The machine type to resize to. It has to be on sale, in the virtual machine's region and sold in its
+	// availability zone (404 `MACHINE_TYPE_AVAILABILITY_ZONE_NOT_FOUND`), and the zone has to have room
+	// for one more machine of it (409 `MACHINE_TYPE_SOLD_OUT`, `MACHINE_TYPE_CAPACITY_REACHED` or
+	// `MACHINE_TYPE_NO_HOST_ROOM`). Operational field; the change is purchased through Billing.
 	MachineTypeID OptMachineTypeID `json:"machine_type_id"`
 	// The `proration_date` of the Billing quote for this change, so that the order is priced from the same
 	// instant. Only with `machine_type_id`, and only for automatic checkout; deferred checkout is priced

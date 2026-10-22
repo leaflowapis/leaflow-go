@@ -1558,6 +1558,10 @@ func (s *CreateDiskRequestBody) encodeFields(e *jx.Encoder) {
 		s.DiskTypeID.Encode(e)
 	}
 	{
+		e.FieldStart("availability_zone_id")
+		s.AvailabilityZoneID.Encode(e)
+	}
+	{
 		e.FieldStart("name")
 		e.Str(s.Name)
 	}
@@ -1591,14 +1595,15 @@ func (s *CreateDiskRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateDiskRequestBody = [7]string{
+var jsonFieldsNameOfCreateDiskRequestBody = [8]string{
 	0: "disk_type_id",
-	1: "name",
-	2: "size_gb",
-	3: "snapshot_id",
-	4: "disk_backup_id",
-	5: "billing",
-	6: "checkout",
+	1: "availability_zone_id",
+	2: "name",
+	3: "size_gb",
+	4: "snapshot_id",
+	5: "disk_backup_id",
+	6: "billing",
+	7: "checkout",
 }
 
 // Decode decodes CreateDiskRequestBody from json.
@@ -1620,8 +1625,18 @@ func (s *CreateDiskRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"disk_type_id\"")
 			}
-		case "name":
+		case "availability_zone_id":
 			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.AvailabilityZoneID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"availability_zone_id\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -1663,7 +1678,7 @@ func (s *CreateDiskRequestBody) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"disk_backup_id\"")
 			}
 		case "billing":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.Billing.Decode(d); err != nil {
 					return err
@@ -1692,7 +1707,7 @@ func (s *CreateDiskRequestBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00100011,
+		0b01000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4330,6 +4345,10 @@ func (s *CreateVirtualMachineRequestBody) encodeFields(e *jx.Encoder) {
 		s.Compute.Encode(e)
 	}
 	{
+		e.FieldStart("availability_zone_id")
+		s.AvailabilityZoneID.Encode(e)
+	}
+	{
 		e.FieldStart("name")
 		e.Str(s.Name)
 	}
@@ -4375,19 +4394,20 @@ func (s *CreateVirtualMachineRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateVirtualMachineRequestBody = [12]string{
+var jsonFieldsNameOfCreateVirtualMachineRequestBody = [13]string{
 	0:  "elastic_ip_id",
 	1:  "count",
 	2:  "generate_password",
 	3:  "compute",
-	4:  "name",
-	5:  "password",
-	6:  "network_interface_id",
-	7:  "security_group_ids",
-	8:  "subnet_id",
-	9:  "boot_disk",
-	10: "elastic_ip",
-	11: "checkout",
+	4:  "availability_zone_id",
+	5:  "name",
+	6:  "password",
+	7:  "network_interface_id",
+	8:  "security_group_ids",
+	9:  "subnet_id",
+	10: "boot_disk",
+	11: "elastic_ip",
+	12: "checkout",
 }
 
 // Decode decodes CreateVirtualMachineRequestBody from json.
@@ -4440,8 +4460,18 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"compute\"")
 			}
-		case "name":
+		case "availability_zone_id":
 			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.AvailabilityZoneID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"availability_zone_id\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -4493,7 +4523,7 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"subnet_id\"")
 			}
 		case "boot_disk":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				if err := s.BootDisk.Decode(d); err != nil {
 					return err
@@ -4532,8 +4562,8 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b00011000,
-		0b00000010,
+		0b00111000,
+		0b00000100,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -7417,15 +7447,11 @@ func (s *DiskTypeListResponseBody) Encode(e *jx.Encoder) {
 func (s *DiskTypeListResponseBody) encodeFields(e *jx.Encoder) {
 	{
 		e.FieldStart("items")
-		if s.Items == nil {
-			e.Null()
-		} else {
-			e.ArrStart()
-			for _, elem := range s.Items {
-				elem.Encode(e)
-			}
-			e.ArrEnd()
+		e.ArrStart()
+		for _, elem := range s.Items {
+			elem.Encode(e)
 		}
+		e.ArrEnd()
 	}
 	{
 		e.FieldStart("pagination")
@@ -7450,23 +7476,16 @@ func (s *DiskTypeListResponseBody) Decode(d *jx.Decoder) error {
 		case "items":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				switch tt := d.Next(); tt {
-				case jx.Null:
-					if err := d.Skip(); err != nil {
+				s.Items = make([]DiskTypeResource, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem DiskTypeResource
+					if err := elem.Decode(d); err != nil {
 						return err
 					}
-				default:
-					s.Items = make([]DiskTypeResource, 0)
-					if err := d.Arr(func(d *jx.Decoder) error {
-						var elem DiskTypeResource
-						if err := elem.Decode(d); err != nil {
-							return err
-						}
-						s.Items = append(s.Items, elem)
-						return nil
-					}); err != nil {
-						return err
-					}
+					s.Items = append(s.Items, elem)
+					return nil
+				}); err != nil {
+					return err
 				}
 				return nil
 			}(); err != nil {
@@ -7647,46 +7666,6 @@ func (s *DiskTypePerformance) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes DiskTypePurpose as json.
-func (s DiskTypePurpose) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes DiskTypePurpose from json.
-func (s *DiskTypePurpose) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode DiskTypePurpose to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch DiskTypePurpose(v) {
-	case DiskTypePurposeSystem:
-		*s = DiskTypePurposeSystem
-	case DiskTypePurposeData:
-		*s = DiskTypePurposeData
-	default:
-		*s = DiskTypePurpose(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s DiskTypePurpose) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *DiskTypePurpose) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
 // Encode implements json.Marshaler.
 func (s *DiskTypeResource) Encode(e *jx.Encoder) {
 	e.ObjStart()
@@ -7697,16 +7676,16 @@ func (s *DiskTypeResource) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *DiskTypeResource) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("availability_zone_id")
-		s.AvailabilityZoneID.Encode(e)
+		e.FieldStart("availability_zones")
+		e.ArrStart()
+		for _, elem := range s.AvailabilityZones {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
 	}
 	{
 		e.FieldStart("id")
 		s.ID.Encode(e)
-	}
-	{
-		e.FieldStart("purpose")
-		s.Purpose.Encode(e)
 	}
 	{
 		e.FieldStart("max_size_gb")
@@ -7742,18 +7721,17 @@ func (s *DiskTypeResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfDiskTypeResource = [11]string{
-	0:  "availability_zone_id",
-	1:  "id",
-	2:  "purpose",
-	3:  "max_size_gb",
-	4:  "media",
-	5:  "min_size_gb",
-	6:  "name",
-	7:  "region_id",
-	8:  "step_gb",
-	9:  "performance",
-	10: "plan_id",
+var jsonFieldsNameOfDiskTypeResource = [10]string{
+	0: "availability_zones",
+	1: "id",
+	2: "max_size_gb",
+	3: "media",
+	4: "min_size_gb",
+	5: "name",
+	6: "region_id",
+	7: "step_gb",
+	8: "performance",
+	9: "plan_id",
 }
 
 // Decode decodes DiskTypeResource from json.
@@ -7765,15 +7743,23 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "availability_zone_id":
+		case "availability_zones":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				if err := s.AvailabilityZoneID.Decode(d); err != nil {
+				s.AvailabilityZones = make([]OfferedAvailabilityZone, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem OfferedAvailabilityZone
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.AvailabilityZones = append(s.AvailabilityZones, elem)
+					return nil
+				}); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"availability_zone_id\"")
+				return errors.Wrap(err, "decode field \"availability_zones\"")
 			}
 		case "id":
 			requiredBitSet[0] |= 1 << 1
@@ -7785,18 +7771,8 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
-		case "purpose":
-			requiredBitSet[0] |= 1 << 2
-			if err := func() error {
-				if err := s.Purpose.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"purpose\"")
-			}
 		case "max_size_gb":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Int64()
 				s.MaxSizeGB = int64(v)
@@ -7808,7 +7784,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"max_size_gb\"")
 			}
 		case "media":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				if err := s.Media.Decode(d); err != nil {
 					return err
@@ -7818,7 +7794,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"media\"")
 			}
 		case "min_size_gb":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Int64()
 				s.MinSizeGB = int64(v)
@@ -7830,7 +7806,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"min_size_gb\"")
 			}
 		case "name":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -7842,7 +7818,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "region_id":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.RegionID.Decode(d); err != nil {
 					return err
@@ -7852,7 +7828,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"region_id\"")
 			}
 		case "step_gb":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Int64()
 				s.StepGB = int64(v)
@@ -7864,7 +7840,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"step_gb\"")
 			}
 		case "performance":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.Performance.Decode(d); err != nil {
 					return err
@@ -7874,7 +7850,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"performance\"")
 			}
 		case "plan_id":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.PlanID = v
@@ -7896,7 +7872,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000111,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -10350,8 +10326,24 @@ func (s *MachineType) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *MachineType) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("availability_zone_id")
-		s.AvailabilityZoneID.Encode(e)
+		e.FieldStart("availability_zones")
+		e.ArrStart()
+		for _, elem := range s.AvailabilityZones {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("cpu_vendor")
+		s.CPUVendor.Encode(e)
+	}
+	{
+		e.FieldStart("cpu_model")
+		e.Str(s.CPUModel)
+	}
+	{
+		e.FieldStart("cpu_tier")
+		s.CPUTier.Encode(e)
 	}
 	{
 		e.FieldStart("id")
@@ -10391,17 +10383,20 @@ func (s *MachineType) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfMachineType = [10]string{
-	0: "availability_zone_id",
-	1: "id",
-	2: "max_bandwidth_mbps",
-	3: "max_elastic_ips",
-	4: "max_network_interfaces",
-	5: "name",
-	6: "ram_mb",
-	7: "region_id",
-	8: "vcpus",
-	9: "plan_id",
+var jsonFieldsNameOfMachineType = [13]string{
+	0:  "availability_zones",
+	1:  "cpu_vendor",
+	2:  "cpu_model",
+	3:  "cpu_tier",
+	4:  "id",
+	5:  "max_bandwidth_mbps",
+	6:  "max_elastic_ips",
+	7:  "max_network_interfaces",
+	8:  "name",
+	9:  "ram_mb",
+	10: "region_id",
+	11: "vcpus",
+	12: "plan_id",
 }
 
 // Decode decodes MachineType from json.
@@ -10413,18 +10408,58 @@ func (s *MachineType) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "availability_zone_id":
+		case "availability_zones":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				if err := s.AvailabilityZoneID.Decode(d); err != nil {
+				s.AvailabilityZones = make([]OfferedAvailabilityZone, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem OfferedAvailabilityZone
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.AvailabilityZones = append(s.AvailabilityZones, elem)
+					return nil
+				}); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"availability_zone_id\"")
+				return errors.Wrap(err, "decode field \"availability_zones\"")
+			}
+		case "cpu_vendor":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.CPUVendor.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"cpu_vendor\"")
+			}
+		case "cpu_model":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.CPUModel = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"cpu_model\"")
+			}
+		case "cpu_tier":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.CPUTier.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"cpu_tier\"")
 			}
 		case "id":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				if err := s.ID.Decode(d); err != nil {
 					return err
@@ -10434,7 +10469,7 @@ func (s *MachineType) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "max_bandwidth_mbps":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := d.Int64()
 				s.MaxBandwidthMbps = int64(v)
@@ -10446,7 +10481,7 @@ func (s *MachineType) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"max_bandwidth_mbps\"")
 			}
 		case "max_elastic_ips":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := d.Int64()
 				s.MaxElasticIps = int64(v)
@@ -10458,7 +10493,7 @@ func (s *MachineType) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"max_elastic_ips\"")
 			}
 		case "max_network_interfaces":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Int64()
 				s.MaxNetworkInterfaces = int64(v)
@@ -10470,7 +10505,7 @@ func (s *MachineType) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"max_network_interfaces\"")
 			}
 		case "name":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -10482,7 +10517,7 @@ func (s *MachineType) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "ram_mb":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Int64()
 				s.RAMMB = int64(v)
@@ -10494,7 +10529,7 @@ func (s *MachineType) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"ram_mb\"")
 			}
 		case "region_id":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				if err := s.RegionID.Decode(d); err != nil {
 					return err
@@ -10504,7 +10539,7 @@ func (s *MachineType) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"region_id\"")
 			}
 		case "vcpus":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				v, err := d.Int64()
 				s.Vcpus = int64(v)
@@ -10516,7 +10551,7 @@ func (s *MachineType) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"vcpus\"")
 			}
 		case "plan_id":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.PlanID = v
@@ -10538,7 +10573,7 @@ func (s *MachineType) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000011,
+		0b00011111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -10580,6 +10615,86 @@ func (s *MachineType) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *MachineType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes MachineTypeCPUTier as json.
+func (s MachineTypeCPUTier) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes MachineTypeCPUTier from json.
+func (s *MachineTypeCPUTier) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode MachineTypeCPUTier to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch MachineTypeCPUTier(v) {
+	case MachineTypeCPUTierDedicated:
+		*s = MachineTypeCPUTierDedicated
+	case MachineTypeCPUTierShared:
+		*s = MachineTypeCPUTierShared
+	default:
+		*s = MachineTypeCPUTier(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s MachineTypeCPUTier) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *MachineTypeCPUTier) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes MachineTypeCPUVendor as json.
+func (s MachineTypeCPUVendor) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes MachineTypeCPUVendor from json.
+func (s *MachineTypeCPUVendor) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode MachineTypeCPUVendor to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch MachineTypeCPUVendor(v) {
+	case MachineTypeCPUVendorIntel:
+		*s = MachineTypeCPUVendorIntel
+	case MachineTypeCPUVendorAmd:
+		*s = MachineTypeCPUVendorAmd
+	default:
+		*s = MachineTypeCPUVendor(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s MachineTypeCPUVendor) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *MachineTypeCPUVendor) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -14158,6 +14273,155 @@ func (s NilVirtualPrivateCloudOperation) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NilVirtualPrivateCloudOperation) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *OfferedAvailabilityZone) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *OfferedAvailabilityZone) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("availability_zone_id")
+		s.AvailabilityZoneID.Encode(e)
+	}
+	{
+		e.FieldStart("status")
+		s.Status.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfOfferedAvailabilityZone = [2]string{
+	0: "availability_zone_id",
+	1: "status",
+}
+
+// Decode decodes OfferedAvailabilityZone from json.
+func (s *OfferedAvailabilityZone) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode OfferedAvailabilityZone to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "availability_zone_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.AvailabilityZoneID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"availability_zone_id\"")
+			}
+		case "status":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.Status.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"status\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode OfferedAvailabilityZone")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfOfferedAvailabilityZone) {
+					name = jsonFieldsNameOfOfferedAvailabilityZone[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *OfferedAvailabilityZone) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OfferedAvailabilityZone) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes OfferedAvailabilityZoneStatus as json.
+func (s OfferedAvailabilityZoneStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes OfferedAvailabilityZoneStatus from json.
+func (s *OfferedAvailabilityZoneStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode OfferedAvailabilityZoneStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch OfferedAvailabilityZoneStatus(v) {
+	case OfferedAvailabilityZoneStatusAvailable:
+		*s = OfferedAvailabilityZoneStatusAvailable
+	case OfferedAvailabilityZoneStatusSoldOut:
+		*s = OfferedAvailabilityZoneStatusSoldOut
+	default:
+		*s = OfferedAvailabilityZoneStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OfferedAvailabilityZoneStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OfferedAvailabilityZoneStatus) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

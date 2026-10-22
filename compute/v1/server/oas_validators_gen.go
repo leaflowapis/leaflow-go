@@ -475,6 +475,17 @@ func (s *CreateDiskRequestBody) Validate() error {
 		})
 	}
 	if err := func() error {
+		if err := s.AvailabilityZoneID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "availability_zone_id",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := (validate.String{
 			MinLength:     1,
 			MinLengthSet:  true,
@@ -1717,6 +1728,17 @@ func (s *CreateVirtualMachineRequestBody) Validate() error {
 		})
 	}
 	if err := func() error {
+		if err := s.AvailabilityZoneID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "availability_zone_id",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := (validate.String{
 			MinLength:     1,
 			MinLengthSet:  true,
@@ -2876,6 +2898,9 @@ func (s *DiskTypeListResponseBody) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
+		if s.Items == nil {
+			return errors.New("nil is invalid value")
+		}
 		var failures []validate.FieldError
 		for i, elem := range s.Items {
 			if err := func() error {
@@ -2917,17 +2942,6 @@ func (s *DiskTypeListResponseBody) Validate() error {
 	return nil
 }
 
-func (s DiskTypePurpose) Validate() error {
-	switch s {
-	case "system":
-		return nil
-	case "data":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
 func (s *DiskTypeResource) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -2935,13 +2949,30 @@ func (s *DiskTypeResource) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if err := s.AvailabilityZoneID.Validate(); err != nil {
-			return err
+		if s.AvailabilityZones == nil {
+			return errors.New("nil is invalid value")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.AvailabilityZones {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "availability_zone_id",
+			Name:  "availability_zones",
 			Error: err,
 		})
 	}
@@ -2953,17 +2984,6 @@ func (s *DiskTypeResource) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "id",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.Purpose.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "purpose",
 			Error: err,
 		})
 	}
@@ -3828,13 +3848,52 @@ func (s *MachineType) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if err := s.AvailabilityZoneID.Validate(); err != nil {
+		if s.AvailabilityZones == nil {
+			return errors.New("nil is invalid value")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.AvailabilityZones {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "availability_zones",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.CPUVendor.Validate(); err != nil {
 			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "availability_zone_id",
+			Name:  "cpu_vendor",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.CPUTier.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "cpu_tier",
 			Error: err,
 		})
 	}
@@ -3864,6 +3923,28 @@ func (s *MachineType) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s MachineTypeCPUTier) Validate() error {
+	switch s {
+	case "dedicated":
+		return nil
+	case "shared":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s MachineTypeCPUVendor) Validate() error {
+	switch s {
+	case "intel":
+		return nil
+	case "amd":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s MachineTypeID) Validate() error {
@@ -4643,6 +4724,51 @@ func (s *NewElasticIP) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s *OfferedAvailabilityZone) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.AvailabilityZoneID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "availability_zone_id",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.Status.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "status",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s OfferedAvailabilityZoneStatus) Validate() error {
+	switch s {
+	case "available":
+		return nil
+	case "sold_out":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s *OffsetPagination) Validate() error {

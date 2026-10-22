@@ -47,21 +47,28 @@ type Invoker interface {
 	AttachVirtualMachineNetworkInterface(ctx context.Context, request *AttachNetworkInterfaceRequestBody, params AttachVirtualMachineNetworkInterfaceParams) (AttachVirtualMachineNetworkInterfaceRes, error)
 	// CreateDisk invokes create-disk operation.
 	//
-	// The disk is created in the availability zone of the selected disk type, and a virtual machine must
-	// reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
+	// The disk is created in `availability_zone_id`, which the disk type has to be sold in
+	// (`availability_zones` of the disk type; otherwise 404 `DISK_TYPE_AVAILABILITY_ZONE_NOT_FOUND`), and
+	// only a virtual machine in the same zone can attach it.
+	//
+	// The zone has to have room for it, checked before anything is ordered: refused with 409
+	// `DISK_TYPE_SOLD_OUT` when the type takes no new disks there for now, `DISK_TYPE_CAPACITY_REACHED`
+	// when what is sold there is used up, and `DISK_TYPE_NO_POOL_ROOM` when the storage there cannot take
+	// the disk. Two orders placed at the same moment can both pass; the one that finds the zone full when
+	// its order is accepted is not created and is refunded, ending `failed` with `provisioning_failed`.
 	//
 	// The disk is empty, or is restored from exactly one source: `snapshot_id` or `disk_backup_id`. Giving
 	// both is refused with 422 `DISK_SOURCE_CONFLICT`. A restore is a purchase of a new disk; the source
 	// disk is unaffected and need not still exist.
 	//
-	//  - From a snapshot, the disk type must be in the availability zone of the snapshot
-	//    (`availability_zone_id` of the snapshot), because a snapshot lives in the same storage pool as
-	//    its source and restores only into its own zone. `size_gb` is required and must be no smaller than
-	//    the snapshot.
-	//  - From a disk backup, the disk type may belong to another availability zone of the same region,
-	//    because a backup is an independent copy in different storage. `size_gb` matches the size of the
-	//    backup when omitted, and when given it must not be smaller than the backup. The disk cannot be
-	//    attached until it is `available`.
+	//  - From a snapshot, `availability_zone_id` must be the snapshot's own (422
+	//    `SNAPSHOT_OTHER_AVAILABILITY_ZONE`), because a snapshot lives in the same storage pool as its
+	//    source and restores only into its own zone. `size_gb` is required and must be no smaller than the
+	//    snapshot.
+	//  - From a disk backup, `availability_zone_id` may be any zone of the backup's region the disk type
+	//    is sold in, because a backup is an independent copy in different storage. `size_gb` matches the
+	//    size of the backup when omitted, and when given it must not be smaller than the backup. The disk
+	//    cannot be attached until it is `available`.
 	//
 	// A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still
 	// resolves. Types that are off sale do not appear in the disk type listing; disks already bought on
@@ -237,6 +244,17 @@ type Invoker interface {
 	// Checkout Session, or a canceled or expired order, leaves them `failed` with `checkout_expired`,
 	// `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an
 	// uncertain response, look the Checkout Session up in Billing before submitting again.
+	//
+	// The virtual machines are created in `availability_zone_id`, which the machine type has to be sold in
+	// (`availability_zones` of the machine type; otherwise 404
+	// `MACHINE_TYPE_AVAILABILITY_ZONE_NOT_FOUND`), and so does the disk type of a new system disk (404
+	// `DISK_TYPE_AVAILABILITY_ZONE_NOT_FOUND`). The zone has to have room for all of them, checked before
+	// anything is ordered: refused with 409 `MACHINE_TYPE_SOLD_OUT` or `DISK_TYPE_SOLD_OUT` when the type
+	// takes no new orders there for now, `MACHINE_TYPE_CAPACITY_REACHED` or `DISK_TYPE_CAPACITY_REACHED`
+	// when what is sold there is used up, `MACHINE_TYPE_NO_HOST_ROOM` when no host there can take the
+	// machine, and `DISK_TYPE_NO_POOL_ROOM` when the storage there cannot take the system disk. Two orders
+	// placed at the same moment can both pass; a virtual machine that finds the zone full when its order
+	// is accepted is not created and is refunded, ending `failed` with `provisioning_failed`.
 	//
 	// Choose an image or existing disk through boot_disk, and exactly one of network_interface_id or
 	// subnet_id. Existing network interfaces, boot disks or elastic IPs require count=1. They are not held
@@ -553,8 +571,8 @@ type Invoker interface {
 	GetDiskBackup(ctx context.Context, params GetDiskBackupParams) (*DiskBackupResource, error)
 	// GetDiskType invokes get-disk-type operation.
 	//
-	// Retrieve capacity and performance constraints for an existing disk, including system disk types and
-	// types withdrawn from sale.
+	// Retrieve capacity and performance constraints for an existing disk, including types withdrawn from
+	// sale.
 	//
 	// GET /api/v1/disk-types/{diskTypeId}
 	GetDiskType(ctx context.Context, params GetDiskTypeParams) (*DiskTypeResource, error)
@@ -730,9 +748,9 @@ type Invoker interface {
 	ListDiskBackups(ctx context.Context, params ListDiskBackupsParams) (*DiskBackupListResponseBody, error)
 	// ListDiskTypes invokes list-disk-types operation.
 	//
-	// Only disk types currently on sale are listed, both system disk types and data disk types; `purpose`
-	// narrows the list to one of the two. A withdrawn one disappears from here and can no longer be
-	// bought, while the disks already on it keep working and can still be resized.
+	// Only disk types currently on sale are listed. Any of them boots a virtual machine, holds data or
+	// takes a restore. A withdrawn one disappears from here and can no longer be bought, while the disks
+	// already on it keep working and can still be resized.
 	//
 	// GET /api/v1/disk-types
 	ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeListResponseBody, error)
@@ -1454,21 +1472,28 @@ func (c *Client) sendAttachVirtualMachineNetworkInterface(ctx context.Context, r
 
 // CreateDisk invokes create-disk operation.
 //
-// The disk is created in the availability zone of the selected disk type, and a virtual machine must
-// reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
+// The disk is created in `availability_zone_id`, which the disk type has to be sold in
+// (`availability_zones` of the disk type; otherwise 404 `DISK_TYPE_AVAILABILITY_ZONE_NOT_FOUND`), and
+// only a virtual machine in the same zone can attach it.
+//
+// The zone has to have room for it, checked before anything is ordered: refused with 409
+// `DISK_TYPE_SOLD_OUT` when the type takes no new disks there for now, `DISK_TYPE_CAPACITY_REACHED`
+// when what is sold there is used up, and `DISK_TYPE_NO_POOL_ROOM` when the storage there cannot take
+// the disk. Two orders placed at the same moment can both pass; the one that finds the zone full when
+// its order is accepted is not created and is refunded, ending `failed` with `provisioning_failed`.
 //
 // The disk is empty, or is restored from exactly one source: `snapshot_id` or `disk_backup_id`. Giving
 // both is refused with 422 `DISK_SOURCE_CONFLICT`. A restore is a purchase of a new disk; the source
 // disk is unaffected and need not still exist.
 //
-//   - From a snapshot, the disk type must be in the availability zone of the snapshot
-//     (`availability_zone_id` of the snapshot), because a snapshot lives in the same storage pool as
-//     its source and restores only into its own zone. `size_gb` is required and must be no smaller than
-//     the snapshot.
-//   - From a disk backup, the disk type may belong to another availability zone of the same region,
-//     because a backup is an independent copy in different storage. `size_gb` matches the size of the
-//     backup when omitted, and when given it must not be smaller than the backup. The disk cannot be
-//     attached until it is `available`.
+//   - From a snapshot, `availability_zone_id` must be the snapshot's own (422
+//     `SNAPSHOT_OTHER_AVAILABILITY_ZONE`), because a snapshot lives in the same storage pool as its
+//     source and restores only into its own zone. `size_gb` is required and must be no smaller than the
+//     snapshot.
+//   - From a disk backup, `availability_zone_id` may be any zone of the backup's region the disk type
+//     is sold in, because a backup is an independent copy in different storage. `size_gb` matches the
+//     size of the backup when omitted, and when given it must not be smaller than the backup. The disk
+//     cannot be attached until it is `available`.
 //
 // A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still
 // resolves. Types that are off sale do not appear in the disk type listing; disks already bought on
@@ -3094,6 +3119,17 @@ func (c *Client) sendCreateSubnet(ctx context.Context, request *CreateSubnetRequ
 // Checkout Session, or a canceled or expired order, leaves them `failed` with `checkout_expired`,
 // `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an
 // uncertain response, look the Checkout Session up in Billing before submitting again.
+//
+// The virtual machines are created in `availability_zone_id`, which the machine type has to be sold in
+// (`availability_zones` of the machine type; otherwise 404
+// `MACHINE_TYPE_AVAILABILITY_ZONE_NOT_FOUND`), and so does the disk type of a new system disk (404
+// `DISK_TYPE_AVAILABILITY_ZONE_NOT_FOUND`). The zone has to have room for all of them, checked before
+// anything is ordered: refused with 409 `MACHINE_TYPE_SOLD_OUT` or `DISK_TYPE_SOLD_OUT` when the type
+// takes no new orders there for now, `MACHINE_TYPE_CAPACITY_REACHED` or `DISK_TYPE_CAPACITY_REACHED`
+// when what is sold there is used up, `MACHINE_TYPE_NO_HOST_ROOM` when no host there can take the
+// machine, and `DISK_TYPE_NO_POOL_ROOM` when the storage there cannot take the system disk. Two orders
+// placed at the same moment can both pass; a virtual machine that finds the zone full when its order
+// is accepted is not created and is refunded, ending `failed` with `provisioning_failed`.
 //
 // Choose an image or existing disk through boot_disk, and exactly one of network_interface_id or
 // subnet_id. Existing network interfaces, boot disks or elastic IPs require count=1. They are not held
@@ -6797,8 +6833,8 @@ func (c *Client) sendGetDiskBackup(ctx context.Context, params GetDiskBackupPara
 
 // GetDiskType invokes get-disk-type operation.
 //
-// Retrieve capacity and performance constraints for an existing disk, including system disk types and
-// types withdrawn from sale.
+// Retrieve capacity and performance constraints for an existing disk, including types withdrawn from
+// sale.
 //
 // GET /api/v1/disk-types/{diskTypeId}
 func (c *Client) GetDiskType(ctx context.Context, params GetDiskTypeParams) (*DiskTypeResource, error) {
@@ -10314,9 +10350,9 @@ func (c *Client) sendListDiskBackups(ctx context.Context, params ListDiskBackups
 
 // ListDiskTypes invokes list-disk-types operation.
 //
-// Only disk types currently on sale are listed, both system disk types and data disk types; `purpose`
-// narrows the list to one of the two. A withdrawn one disappears from here and can no longer be
-// bought, while the disks already on it keep working and can still be resized.
+// Only disk types currently on sale are listed. Any of them boots a virtual machine, holds data or
+// takes a restore. A withdrawn one disappears from here and can no longer be bought, while the disks
+// already on it keep working and can still be resized.
 //
 // GET /api/v1/disk-types
 func (c *Client) ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeListResponseBody, error) {
@@ -10388,16 +10424,19 @@ func (c *Client) sendListDiskTypes(ctx context.Context, params ListDiskTypesPara
 		}
 	}
 	{
-		// Encode "purpose" parameter.
+		// Encode "availability_zone_id" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "purpose",
+			Name:    "availability_zone_id",
 			Style:   uri.QueryStyleForm,
-			Explode: true,
+			Explode: false,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Purpose.Get(); ok {
-				return e.EncodeValue(conv.StringToString(string(val)))
+			if val, ok := params.AvailabilityZoneID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
 			}
 			return nil
 		}); err != nil {
@@ -11099,6 +11138,26 @@ func (c *Client) sendListMachineTypes(ctx context.Context, params ListMachineTyp
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.RegionID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "availability_zone_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "availability_zone_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.AvailabilityZoneID.Get(); ok {
 				if unwrapped := string(val); true {
 					return e.EncodeValue(conv.StringToString(unwrapped))
 				}
