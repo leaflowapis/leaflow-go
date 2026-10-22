@@ -1161,6 +1161,17 @@ func (s *CancellationList) Validate() error {
 	return nil
 }
 
+func (s CancellationMode) Validate() error {
+	switch s {
+	case "immediate":
+		return nil
+	case "period_end":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s CancellationOrigin) Validate() error {
 	switch s {
 	case "customer":
@@ -8818,17 +8829,6 @@ func (s *SubscriptionCancellation) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
-}
-
-func (s SubscriptionCancellationMode) Validate() error {
-	switch s {
-	case "immediate":
-		return nil
-	case "period_end":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
 }
 
 func (s SubscriptionCancellationStatus) Validate() error {

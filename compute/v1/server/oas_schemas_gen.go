@@ -1548,6 +1548,53 @@ func NewExistingBootDiskBootDisk(v ExistingBootDisk) BootDisk {
 	return s
 }
 
+// When subscriptions end. immediate ends them now and refunds the unused value under their refund
+// terms; period_end ends them at the end of their paid period. The cancellation terms fixed when a
+// subscription was bought decide which modes it allows: a pay-as-you-go subscription ends only
+// immediately, and a prepaid one whose terms allow only the end of its paid period ends only then.
+// Billing refuses a mode the terms do not allow with HTTP 422 BILLING_CANCELLATION_MODE_FIXED.
+// Ref: #/components/schemas/CancellationMode
+type CancellationMode string
+
+const (
+	CancellationModeImmediate CancellationMode = "immediate"
+	CancellationModePeriodEnd CancellationMode = "period_end"
+)
+
+// AllValues returns all CancellationMode values.
+func (CancellationMode) AllValues() []CancellationMode {
+	return []CancellationMode{
+		CancellationModeImmediate,
+		CancellationModePeriodEnd,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CancellationMode) MarshalText() ([]byte, error) {
+	switch s {
+	case CancellationModeImmediate:
+		return []byte(s), nil
+	case CancellationModePeriodEnd:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CancellationMode) UnmarshalText(data []byte) error {
+	switch CancellationMode(data) {
+	case CancellationModeImmediate:
+		*s = CancellationModeImmediate
+		return nil
+	case CancellationModePeriodEnd:
+		*s = CancellationModePeriodEnd
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Shared checkout choices for a product purchase. The service may set them or forward its client's
 // choices unchanged; it does not need to read them, and Billing validates them. Omitting this object
 // or mode selects automatic checkout. Each purchase creates its own Checkout Session. Promotion codes
@@ -8719,6 +8766,52 @@ func (o OptBool) Or(d bool) bool {
 	return d
 }
 
+// NewOptCancellationMode returns new OptCancellationMode with value set to v.
+func NewOptCancellationMode(v CancellationMode) OptCancellationMode {
+	return OptCancellationMode{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCancellationMode is optional CancellationMode.
+type OptCancellationMode struct {
+	Value CancellationMode
+	Set   bool
+}
+
+// IsSet returns true if OptCancellationMode was set.
+func (o OptCancellationMode) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCancellationMode) Reset() {
+	var v CancellationMode
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCancellationMode) SetTo(v CancellationMode) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCancellationMode) Get() (v CancellationMode, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCancellationMode) Or(d CancellationMode) CancellationMode {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptCheckoutOptions returns new OptCheckoutOptions with value set to v.
 func NewOptCheckoutOptions(v CheckoutOptions) OptCheckoutOptions {
 	return OptCheckoutOptions{
@@ -11331,9 +11424,8 @@ func (*ResizeInstanceResponseBody) resizeInstanceRes() {}
 // Ref: #/components/schemas/ResourceCancellation
 type ResourceCancellation struct {
 	ID uuid.UUID `json:"id"`
-	// `immediate` releases the resource now and refunds under the subscriptions' terms; `period_end` keeps
-	// it until `scheduled_at`.
-	Mode ResourceCancellationMode `json:"mode"`
+	// `immediate` releases the resource now; `period_end` keeps it until `scheduled_at`.
+	Mode CancellationMode `json:"mode"`
 	// `requested` and `scheduled` have not begun release; `releasing` is releasing the resource.
 	Status ResourceCancellationStatus `json:"status"`
 	// For `period_end`, when release begins; null otherwise.
@@ -11347,7 +11439,7 @@ func (s *ResourceCancellation) GetID() uuid.UUID {
 }
 
 // GetMode returns the value of Mode.
-func (s *ResourceCancellation) GetMode() ResourceCancellationMode {
+func (s *ResourceCancellation) GetMode() CancellationMode {
 	return s.Mode
 }
 
@@ -11372,7 +11464,7 @@ func (s *ResourceCancellation) SetID(val uuid.UUID) {
 }
 
 // SetMode sets the value of Mode.
-func (s *ResourceCancellation) SetMode(val ResourceCancellationMode) {
+func (s *ResourceCancellation) SetMode(val CancellationMode) {
 	s.Mode = val
 }
 
@@ -11394,49 +11486,6 @@ func (s *ResourceCancellation) SetSubscriptionIds(val []uuid.UUID) {
 func (*ResourceCancellation) deleteBackupCapacityPackRes() {}
 func (*ResourceCancellation) deleteBackupServiceRes()      {}
 func (*ResourceCancellation) deleteSnapshotQuotaRes()      {}
-
-// `immediate` releases the resource now and refunds under the subscriptions' terms; `period_end` keeps
-// it until `scheduled_at`.
-type ResourceCancellationMode string
-
-const (
-	ResourceCancellationModeImmediate ResourceCancellationMode = "immediate"
-	ResourceCancellationModePeriodEnd ResourceCancellationMode = "period_end"
-)
-
-// AllValues returns all ResourceCancellationMode values.
-func (ResourceCancellationMode) AllValues() []ResourceCancellationMode {
-	return []ResourceCancellationMode{
-		ResourceCancellationModeImmediate,
-		ResourceCancellationModePeriodEnd,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ResourceCancellationMode) MarshalText() ([]byte, error) {
-	switch s {
-	case ResourceCancellationModeImmediate:
-		return []byte(s), nil
-	case ResourceCancellationModePeriodEnd:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ResourceCancellationMode) UnmarshalText(data []byte) error {
-	switch ResourceCancellationMode(data) {
-	case ResourceCancellationModeImmediate:
-		*s = ResourceCancellationModeImmediate
-		return nil
-	case ResourceCancellationModePeriodEnd:
-		*s = ResourceCancellationModePeriodEnd
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
 
 // `requested` and `scheduled` have not begun release; `releasing` is releasing the resource.
 type ResourceCancellationStatus string

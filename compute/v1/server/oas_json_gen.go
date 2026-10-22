@@ -3112,6 +3112,46 @@ func (s *BootDisk) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes CancellationMode as json.
+func (s CancellationMode) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes CancellationMode from json.
+func (s *CancellationMode) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode CancellationMode to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch CancellationMode(v) {
+	case CancellationModeImmediate:
+		*s = CancellationModeImmediate
+	case CancellationModePeriodEnd:
+		*s = CancellationModePeriodEnd
+	default:
+		*s = CancellationMode(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s CancellationMode) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *CancellationMode) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode implements json.Marshaler.
 func (s *CheckoutOptions) Encode(e *jx.Encoder) {
 	e.ObjStart()
@@ -21038,46 +21078,6 @@ func (s *ResourceCancellation) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *ResourceCancellation) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes ResourceCancellationMode as json.
-func (s ResourceCancellationMode) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes ResourceCancellationMode from json.
-func (s *ResourceCancellationMode) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode ResourceCancellationMode to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch ResourceCancellationMode(v) {
-	case ResourceCancellationModeImmediate:
-		*s = ResourceCancellationModeImmediate
-	case ResourceCancellationModePeriodEnd:
-		*s = ResourceCancellationModePeriodEnd
-	default:
-		*s = ResourceCancellationMode(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s ResourceCancellationMode) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *ResourceCancellationMode) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

@@ -227,28 +227,24 @@ type Handler interface {
 	DeleteBackup(ctx context.Context, params DeleteBackupParams) (DeleteBackupRes, error)
 	// DeleteBackupCapacityPack implements delete-backup-capacity-pack operation.
 	//
-	// Cancels the pack's subscription in Billing and returns the cancellation. Refused with 404
-	// `BACKUP_CAPACITY_PACK_NOT_FOUND` when the project has no pack of this ID in the region, and with 409
-	// `BACKUP_CAPACITY_PACK_ENDED` when the pack has ended.
+	// Cancels the pack's subscription in Billing as `cancellation_mode` says and returns the cancellation.
+	// Refused with 404 `BACKUP_CAPACITY_PACK_NOT_FOUND` when the project has no pack of this ID in the
+	// region, and with 409 `BACKUP_CAPACITY_PACK_ENDED` when the pack has ended.
 	//
-	// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
-	// refunded under those terms. When the subscription can only be canceled at the end of its paid
-	// period, it is canceled then, and its coverage stays in force until `scheduled_at`. Deleting again
-	// while the cancellation is open returns it.
+	// Canceled now, it is refunded under its terms; canceled at the end of its paid period, its coverage
+	// stays in force until `scheduled_at`. Deleting again while the cancellation is open returns it.
 	//
 	// DELETE /api/v1/regions/{regionId}/backup-capacity-packs/{packId}
 	DeleteBackupCapacityPack(ctx context.Context, params DeleteBackupCapacityPackParams) (DeleteBackupCapacityPackRes, error)
 	// DeleteBackupService implements delete-backup-service operation.
 	//
-	// Cancels the service's subscription in Billing and returns the cancellation. Refused with 409
-	// `BACKUP_SERVICE_IN_USE` while any backup is retained in the region; delete the backups first.
-	// Capacity packs are deleted separately. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` when no
-	// subscription pays for a service in the region.
+	// Cancels the service's subscription in Billing as `cancellation_mode` says and returns the
+	// cancellation. Refused with 409 `BACKUP_SERVICE_IN_USE` while any backup is retained in the region;
+	// delete the backups first. Capacity packs are deleted separately. Refused with 409
+	// `BACKUP_SERVICE_NOT_ACTIVE` when no subscription pays for a service in the region.
 	//
-	// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
-	// refunded under those terms. When the subscription can only be canceled at the end of its paid
-	// period, it is canceled then, and the service stays in force until `scheduled_at`. Deleting again
-	// while the cancellation is open returns it.
+	// Canceled now, it is refunded under its terms; canceled at the end of its paid period, the service
+	// stays in force until `scheduled_at`. Deleting again while the cancellation is open returns it.
 	//
 	// DELETE /api/v1/regions/{regionId}/backup-service
 	DeleteBackupService(ctx context.Context, params DeleteBackupServiceParams) (DeleteBackupServiceRes, error)
@@ -257,12 +253,11 @@ type Handler interface {
 	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 	//
 	// When subscriptions pay for the disk, its `release_subscription_ids`, this request cancels them in
-	// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
-	// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
-	// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
-	// period, all of them are canceled then, and the disk is kept until `scheduled_at`. Deleting again
-	// while the cancellation is open returns it. Without subscriptions, deletion begins at once and
-	// `cancellation` is null.
+	// Billing as `cancellation_mode` says, and the response carries that cancellation. Canceled now, they
+	// are refunded under their terms and release begins when Billing begins the cancellation; canceled at
+	// the end of their paid period, the disk is kept until `scheduled_at`. Deleting again while the
+	// cancellation is open returns it. Without subscriptions, deletion begins at once and `cancellation`
+	// is null.
 	//
 	// DELETE /api/v1/disks/{diskId}
 	DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error)
@@ -277,12 +272,11 @@ type Handler interface {
 	// operation accepted while the `create` operation is in progress.
 	//
 	// When subscriptions pay for the image, its `release_subscription_ids`, this request cancels them in
-	// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
-	// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
-	// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
-	// period, all of them are canceled then, and the image is kept until `scheduled_at`. Deleting again
-	// while the cancellation is open returns it. Without subscriptions, deletion begins at once and
-	// `cancellation` is null.
+	// Billing as `cancellation_mode` says, and the response carries that cancellation. Canceled now, they
+	// are refunded under their terms and release begins when Billing begins the cancellation; canceled at
+	// the end of their paid period, the image is kept until `scheduled_at`. Deleting again while the
+	// cancellation is open returns it. Without subscriptions, deletion begins at once and `cancellation`
+	// is null.
 	//
 	// DELETE /api/v1/images/{imageId}
 	DeleteImage(ctx context.Context, params DeleteImageParams) (DeleteImageRes, error)
@@ -296,11 +290,10 @@ type Handler interface {
 	// delete that image first.
 	//
 	// When subscriptions pay for the instance, or for a disk deleted with it, its
-	// `release_subscription_ids`, this request cancels them in Billing, and the response carries that
-	// cancellation. Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at
-	// once and refunded under those terms, and release begins when Billing begins the cancellation. When
-	// any of them can only be canceled at the end of its paid period, all of them are canceled then, and
-	// the instance is kept until `scheduled_at`. Deleting again while the cancellation is open returns it.
+	// `release_subscription_ids`, this request cancels them in Billing as `cancellation_mode` says, and
+	// the response carries that cancellation. Canceled now, they are refunded under their terms and
+	// release begins when Billing begins the cancellation; canceled at the end of their paid period, the
+	// instance is kept until `scheduled_at`. Deleting again while the cancellation is open returns it.
 	// Without subscriptions, release begins at once and `cancellation` is null.
 	//
 	// DELETE /api/v1/instances/{instanceId}
@@ -353,14 +346,13 @@ type Handler interface {
 	DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (DeleteSnapshotRes, error)
 	// DeleteSnapshotQuota implements delete-snapshot-quota operation.
 	//
-	// Cancels the quota's subscription in Billing and returns the cancellation. Refused with 409
-	// `SNAPSHOT_QUOTA_IN_USE` while any snapshot exists in the region; delete the snapshots first. Refused
-	// with 409 `SNAPSHOT_QUOTA_NOT_ACTIVE` when no subscription pays for a quota in the region.
+	// Cancels the quota's subscription in Billing as `cancellation_mode` says and returns the
+	// cancellation. Refused with 409 `SNAPSHOT_QUOTA_IN_USE` while any snapshot exists in the region;
+	// delete the snapshots first. Refused with 409 `SNAPSHOT_QUOTA_NOT_ACTIVE` when no subscription pays
+	// for a quota in the region.
 	//
-	// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
-	// refunded under those terms. When the subscription can only be canceled at the end of its paid
-	// period, it is canceled then, and the quota stays in force until `scheduled_at`. Deleting again while
-	// the cancellation is open returns it.
+	// Canceled now, it is refunded under its terms; canceled at the end of its paid period, the quota
+	// stays in force until `scheduled_at`. Deleting again while the cancellation is open returns it.
 	//
 	// DELETE /api/v1/regions/{regionId}/snapshot-quota
 	DeleteSnapshotQuota(ctx context.Context, params DeleteSnapshotQuotaParams) (DeleteSnapshotQuotaRes, error)
@@ -772,12 +764,11 @@ type Handler interface {
 	// is released.
 	//
 	// When subscriptions pay for the address, its `release_subscription_ids`, this request cancels them in
-	// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
-	// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
-	// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
-	// period, all of them are canceled then, and the floating IP is kept until `scheduled_at`. Deleting
-	// again while the cancellation is open returns it. Without subscriptions, release begins at once and
-	// `cancellation` is null.
+	// Billing as `cancellation_mode` says, and the response carries that cancellation. Canceled now, they
+	// are refunded under their terms and release begins when Billing begins the cancellation; canceled at
+	// the end of their paid period, the floating IP is kept until `scheduled_at`. Deleting again while the
+	// cancellation is open returns it. Without subscriptions, release begins at once and `cancellation` is
+	// null.
 	//
 	// DELETE /api/v1/floating-ips/{floatingIpId}
 	ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (ReleaseFloatingIPRes, error)

@@ -1546,7 +1546,7 @@ func (s *BillingScheme) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/CancelSubscriptionRequest
 type CancelSubscriptionRequest struct {
-	Mode CancellationPolicy `json:"mode"`
+	Mode CancellationMode `json:"mode"`
 	// For immediate cancellation, the quoted whole-second refund basis. Now when omitted.
 	ProrationDate OptDateTime `json:"proration_date"`
 	// The cancellation quote's refundable amount, including an explicit zero.
@@ -1555,7 +1555,7 @@ type CancelSubscriptionRequest struct {
 }
 
 // GetMode returns the value of Mode.
-func (s *CancelSubscriptionRequest) GetMode() CancellationPolicy {
+func (s *CancelSubscriptionRequest) GetMode() CancellationMode {
 	return s.Mode
 }
 
@@ -1575,7 +1575,7 @@ func (s *CancelSubscriptionRequest) GetReason() OptString {
 }
 
 // SetMode sets the value of Mode.
-func (s *CancelSubscriptionRequest) SetMode(val CancellationPolicy) {
+func (s *CancelSubscriptionRequest) SetMode(val CancellationMode) {
 	s.Mode = val
 }
 
@@ -1608,7 +1608,7 @@ func (s *CancelSubscriptionRequest) SetReason(val OptString) {
 type Cancellation struct {
 	ID          uuid.UUID          `json:"id"`
 	Status      CancellationStatus `json:"status"`
-	Mode        CancellationPolicy `json:"mode"`
+	Mode        CancellationMode   `json:"mode"`
 	ScheduledAt OptDateTime        `json:"scheduled_at"`
 	// For `immediate`, the second the refund is computed as of.
 	ProrationDate OptDateTime `json:"proration_date"`
@@ -1640,7 +1640,7 @@ func (s *Cancellation) GetStatus() CancellationStatus {
 }
 
 // GetMode returns the value of Mode.
-func (s *Cancellation) GetMode() CancellationPolicy {
+func (s *Cancellation) GetMode() CancellationMode {
 	return s.Mode
 }
 
@@ -1710,7 +1710,7 @@ func (s *Cancellation) SetStatus(val CancellationStatus) {
 }
 
 // SetMode sets the value of Mode.
-func (s *Cancellation) SetMode(val CancellationPolicy) {
+func (s *Cancellation) SetMode(val CancellationMode) {
 	s.Mode = val
 }
 
@@ -1772,8 +1772,8 @@ func (s *Cancellation) SetItems(val []CancellationItem) {
 // Ref: #/components/schemas/CancellationCreate
 type CancellationCreate struct {
 	// As in the quote.
-	SubscriptionIds []uuid.UUID        `json:"subscription_ids"`
-	Mode            CancellationPolicy `json:"mode"`
+	SubscriptionIds []uuid.UUID      `json:"subscription_ids"`
+	Mode            CancellationMode `json:"mode"`
 	// For `immediate`, the quote's `proration_date`: a whole second, not in the future and at most ten
 	// minutes old; the refund is computed as of it. Now when omitted.
 	ProrationDate OptDateTime `json:"proration_date"`
@@ -1789,7 +1789,7 @@ func (s *CancellationCreate) GetSubscriptionIds() []uuid.UUID {
 }
 
 // GetMode returns the value of Mode.
-func (s *CancellationCreate) GetMode() CancellationPolicy {
+func (s *CancellationCreate) GetMode() CancellationMode {
 	return s.Mode
 }
 
@@ -1814,7 +1814,7 @@ func (s *CancellationCreate) SetSubscriptionIds(val []uuid.UUID) {
 }
 
 // SetMode sets the value of Mode.
-func (s *CancellationCreate) SetMode(val CancellationPolicy) {
+func (s *CancellationCreate) SetMode(val CancellationMode) {
 	s.Mode = val
 }
 
@@ -2084,6 +2084,53 @@ func (s *CancellationList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
+// When subscriptions end. immediate ends them now and refunds the unused value under their refund
+// terms; period_end ends them at the end of their paid period. The cancellation terms fixed when a
+// subscription was bought decide which modes it allows: a pay-as-you-go subscription ends only
+// immediately, and a prepaid one whose terms allow only the end of its paid period ends only then.
+// Billing refuses a mode the terms do not allow with HTTP 422 BILLING_CANCELLATION_MODE_FIXED.
+// Ref: #/components/schemas/CancellationMode
+type CancellationMode string
+
+const (
+	CancellationModeImmediate CancellationMode = "immediate"
+	CancellationModePeriodEnd CancellationMode = "period_end"
+)
+
+// AllValues returns all CancellationMode values.
+func (CancellationMode) AllValues() []CancellationMode {
+	return []CancellationMode{
+		CancellationModeImmediate,
+		CancellationModePeriodEnd,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CancellationMode) MarshalText() ([]byte, error) {
+	switch s {
+	case CancellationModeImmediate:
+		return []byte(s), nil
+	case CancellationModePeriodEnd:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CancellationMode) UnmarshalText(data []byte) error {
+	switch CancellationMode(data) {
+	case CancellationModeImmediate:
+		*s = CancellationModeImmediate
+		return nil
+	case CancellationModePeriodEnd:
+		*s = CancellationModePeriodEnd
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Who requested it; `project_deletion` means the project was deleted.
 type CancellationOrigin string
 
@@ -2187,8 +2234,8 @@ type CancellationPreviewRequest struct {
 	BillingAccountID int64 `json:"billing_account_id"`
 	// The subscriptions to end together, all of one service, including every subscription released with a
 	// resource.
-	SubscriptionIds []uuid.UUID        `json:"subscription_ids"`
-	Mode            CancellationPolicy `json:"mode"`
+	SubscriptionIds []uuid.UUID      `json:"subscription_ids"`
+	Mode            CancellationMode `json:"mode"`
 }
 
 // GetBillingAccountID returns the value of BillingAccountID.
@@ -2202,7 +2249,7 @@ func (s *CancellationPreviewRequest) GetSubscriptionIds() []uuid.UUID {
 }
 
 // GetMode returns the value of Mode.
-func (s *CancellationPreviewRequest) GetMode() CancellationPolicy {
+func (s *CancellationPreviewRequest) GetMode() CancellationMode {
 	return s.Mode
 }
 
@@ -2217,7 +2264,7 @@ func (s *CancellationPreviewRequest) SetSubscriptionIds(val []uuid.UUID) {
 }
 
 // SetMode sets the value of Mode.
-func (s *CancellationPreviewRequest) SetMode(val CancellationPolicy) {
+func (s *CancellationPreviewRequest) SetMode(val CancellationMode) {
 	s.Mode = val
 }
 
@@ -2238,7 +2285,7 @@ func (s *CancellationPreviewRequest) SetMode(val CancellationPolicy) {
 // Metered and one-time subscriptions show zero; their usage until release is charged as usual.
 // Ref: #/components/schemas/CancellationRefundPreview
 type CancellationRefundPreview struct {
-	Mode CancellationPolicy `json:"mode"`
+	Mode CancellationMode `json:"mode"`
 	// For `period_end`, when release begins, the end of the paid terms.
 	ScheduledAt OptDateTime `json:"scheduled_at"`
 	// For `immediate`, the second the refund is computed as of. Give it when creating the cancellation.
@@ -2255,7 +2302,7 @@ type CancellationRefundPreview struct {
 }
 
 // GetMode returns the value of Mode.
-func (s *CancellationRefundPreview) GetMode() CancellationPolicy {
+func (s *CancellationRefundPreview) GetMode() CancellationMode {
 	return s.Mode
 }
 
@@ -2315,7 +2362,7 @@ func (s *CancellationRefundPreview) GetItems() []CancellationRefundPreviewItem {
 }
 
 // SetMode sets the value of Mode.
-func (s *CancellationRefundPreview) SetMode(val CancellationPolicy) {
+func (s *CancellationRefundPreview) SetMode(val CancellationMode) {
 	s.Mode = val
 }
 
@@ -19066,7 +19113,7 @@ type SubscriptionCancellation struct {
 	ID                    uuid.UUID                      `json:"id"`
 	SubscriptionID        uuid.UUID                      `json:"subscription_id"`
 	Status                SubscriptionCancellationStatus `json:"status"`
-	Mode                  SubscriptionCancellationMode   `json:"mode"`
+	Mode                  CancellationMode               `json:"mode"`
 	RequestedAt           time.Time                      `json:"requested_at"`
 	ScheduledAt           OptDateTime                    `json:"scheduled_at"`
 	EffectiveAt           OptDateTime                    `json:"effective_at"`
@@ -19104,7 +19151,7 @@ func (s *SubscriptionCancellation) GetStatus() SubscriptionCancellationStatus {
 }
 
 // GetMode returns the value of Mode.
-func (s *SubscriptionCancellation) GetMode() SubscriptionCancellationMode {
+func (s *SubscriptionCancellation) GetMode() CancellationMode {
 	return s.Mode
 }
 
@@ -19179,7 +19226,7 @@ func (s *SubscriptionCancellation) SetStatus(val SubscriptionCancellationStatus)
 }
 
 // SetMode sets the value of Mode.
-func (s *SubscriptionCancellation) SetMode(val SubscriptionCancellationMode) {
+func (s *SubscriptionCancellation) SetMode(val CancellationMode) {
 	s.Mode = val
 }
 
@@ -19226,47 +19273,6 @@ func (s *SubscriptionCancellation) SetFailureCode(val OptString) {
 // SetFailureReason sets the value of FailureReason.
 func (s *SubscriptionCancellation) SetFailureReason(val OptString) {
 	s.FailureReason = val
-}
-
-type SubscriptionCancellationMode string
-
-const (
-	SubscriptionCancellationModeImmediate SubscriptionCancellationMode = "immediate"
-	SubscriptionCancellationModePeriodEnd SubscriptionCancellationMode = "period_end"
-)
-
-// AllValues returns all SubscriptionCancellationMode values.
-func (SubscriptionCancellationMode) AllValues() []SubscriptionCancellationMode {
-	return []SubscriptionCancellationMode{
-		SubscriptionCancellationModeImmediate,
-		SubscriptionCancellationModePeriodEnd,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s SubscriptionCancellationMode) MarshalText() ([]byte, error) {
-	switch s {
-	case SubscriptionCancellationModeImmediate:
-		return []byte(s), nil
-	case SubscriptionCancellationModePeriodEnd:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *SubscriptionCancellationMode) UnmarshalText(data []byte) error {
-	switch SubscriptionCancellationMode(data) {
-	case SubscriptionCancellationModeImmediate:
-		*s = SubscriptionCancellationModeImmediate
-		return nil
-	case SubscriptionCancellationModePeriodEnd:
-		*s = SubscriptionCancellationModePeriodEnd
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 type SubscriptionCancellationStatus string

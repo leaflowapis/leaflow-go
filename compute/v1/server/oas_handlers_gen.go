@@ -4267,14 +4267,12 @@ func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w h
 
 // handleDeleteBackupCapacityPackRequest handles delete-backup-capacity-pack operation.
 //
-// Cancels the pack's subscription in Billing and returns the cancellation. Refused with 404
-// `BACKUP_CAPACITY_PACK_NOT_FOUND` when the project has no pack of this ID in the region, and with 409
-// `BACKUP_CAPACITY_PACK_ENDED` when the pack has ended.
+// Cancels the pack's subscription in Billing as `cancellation_mode` says and returns the cancellation.
+// Refused with 404 `BACKUP_CAPACITY_PACK_NOT_FOUND` when the project has no pack of this ID in the
+// region, and with 409 `BACKUP_CAPACITY_PACK_ENDED` when the pack has ended.
 //
-// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
-// refunded under those terms. When the subscription can only be canceled at the end of its paid
-// period, it is canceled then, and its coverage stays in force until `scheduled_at`. Deleting again
-// while the cancellation is open returns it.
+// Canceled now, it is refunded under its terms; canceled at the end of its paid period, its coverage
+// stays in force until `scheduled_at`. Deleting again while the cancellation is open returns it.
 //
 // DELETE /api/v1/regions/{regionId}/backup-capacity-packs/{packId}
 func (s *Server) handleDeleteBackupCapacityPackRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4418,6 +4416,10 @@ func (s *Server) handleDeleteBackupCapacityPackRequest(args [2]string, argsEscap
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
+					Name: "cancellation_mode",
+					In:   "query",
+				}: params.CancellationMode,
+				{
 					Name: "regionId",
 					In:   "path",
 				}: params.RegionId,
@@ -4478,15 +4480,13 @@ func (s *Server) handleDeleteBackupCapacityPackRequest(args [2]string, argsEscap
 
 // handleDeleteBackupServiceRequest handles delete-backup-service operation.
 //
-// Cancels the service's subscription in Billing and returns the cancellation. Refused with 409
-// `BACKUP_SERVICE_IN_USE` while any backup is retained in the region; delete the backups first.
-// Capacity packs are deleted separately. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` when no
-// subscription pays for a service in the region.
+// Cancels the service's subscription in Billing as `cancellation_mode` says and returns the
+// cancellation. Refused with 409 `BACKUP_SERVICE_IN_USE` while any backup is retained in the region;
+// delete the backups first. Capacity packs are deleted separately. Refused with 409
+// `BACKUP_SERVICE_NOT_ACTIVE` when no subscription pays for a service in the region.
 //
-// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
-// refunded under those terms. When the subscription can only be canceled at the end of its paid
-// period, it is canceled then, and the service stays in force until `scheduled_at`. Deleting again
-// while the cancellation is open returns it.
+// Canceled now, it is refunded under its terms; canceled at the end of its paid period, the service
+// stays in force until `scheduled_at`. Deleting again while the cancellation is open returns it.
 //
 // DELETE /api/v1/regions/{regionId}/backup-service
 func (s *Server) handleDeleteBackupServiceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4630,6 +4630,10 @@ func (s *Server) handleDeleteBackupServiceRequest(args [1]string, argsEscaped bo
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
+					Name: "cancellation_mode",
+					In:   "query",
+				}: params.CancellationMode,
+				{
 					Name: "regionId",
 					In:   "path",
 				}: params.RegionId,
@@ -4689,12 +4693,11 @@ func (s *Server) handleDeleteBackupServiceRequest(args [1]string, argsEscaped bo
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 //
 // When subscriptions pay for the disk, its `release_subscription_ids`, this request cancels them in
-// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
-// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
-// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
-// period, all of them are canceled then, and the disk is kept until `scheduled_at`. Deleting again
-// while the cancellation is open returns it. Without subscriptions, deletion begins at once and
-// `cancellation` is null.
+// Billing as `cancellation_mode` says, and the response carries that cancellation. Canceled now, they
+// are refunded under their terms and release begins when Billing begins the cancellation; canceled at
+// the end of their paid period, the disk is kept until `scheduled_at`. Deleting again while the
+// cancellation is open returns it. Without subscriptions, deletion begins at once and `cancellation`
+// is null.
 //
 // DELETE /api/v1/disks/{diskId}
 func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4841,6 +4844,10 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 					Name: "diskId",
 					In:   "path",
 				}: params.DiskId,
+				{
+					Name: "cancellation_mode",
+					In:   "query",
+				}: params.CancellationMode,
 			},
 			Raw: r,
 		}
@@ -4903,12 +4910,11 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 // operation accepted while the `create` operation is in progress.
 //
 // When subscriptions pay for the image, its `release_subscription_ids`, this request cancels them in
-// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
-// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
-// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
-// period, all of them are canceled then, and the image is kept until `scheduled_at`. Deleting again
-// while the cancellation is open returns it. Without subscriptions, deletion begins at once and
-// `cancellation` is null.
+// Billing as `cancellation_mode` says, and the response carries that cancellation. Canceled now, they
+// are refunded under their terms and release begins when Billing begins the cancellation; canceled at
+// the end of their paid period, the image is kept until `scheduled_at`. Deleting again while the
+// cancellation is open returns it. Without subscriptions, deletion begins at once and `cancellation`
+// is null.
 //
 // DELETE /api/v1/images/{imageId}
 func (s *Server) handleDeleteImageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5055,6 +5061,10 @@ func (s *Server) handleDeleteImageRequest(args [1]string, argsEscaped bool, w ht
 					Name: "imageId",
 					In:   "path",
 				}: params.ImageId,
+				{
+					Name: "cancellation_mode",
+					In:   "query",
+				}: params.CancellationMode,
 			},
 			Raw: r,
 		}
@@ -5116,11 +5126,10 @@ func (s *Server) handleDeleteImageRequest(args [1]string, argsEscaped bool, w ht
 // delete that image first.
 //
 // When subscriptions pay for the instance, or for a disk deleted with it, its
-// `release_subscription_ids`, this request cancels them in Billing, and the response carries that
-// cancellation. Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at
-// once and refunded under those terms, and release begins when Billing begins the cancellation. When
-// any of them can only be canceled at the end of its paid period, all of them are canceled then, and
-// the instance is kept until `scheduled_at`. Deleting again while the cancellation is open returns it.
+// `release_subscription_ids`, this request cancels them in Billing as `cancellation_mode` says, and
+// the response carries that cancellation. Canceled now, they are refunded under their terms and
+// release begins when Billing begins the cancellation; canceled at the end of their paid period, the
+// instance is kept until `scheduled_at`. Deleting again while the cancellation is open returns it.
 // Without subscriptions, release begins at once and `cancellation` is null.
 //
 // DELETE /api/v1/instances/{instanceId}
@@ -5268,6 +5277,10 @@ func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w
 					Name: "instanceId",
 					In:   "path",
 				}: params.InstanceId,
+				{
+					Name: "cancellation_mode",
+					In:   "query",
+				}: params.CancellationMode,
 			},
 			Raw: r,
 		}
@@ -6733,14 +6746,13 @@ func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w
 
 // handleDeleteSnapshotQuotaRequest handles delete-snapshot-quota operation.
 //
-// Cancels the quota's subscription in Billing and returns the cancellation. Refused with 409
-// `SNAPSHOT_QUOTA_IN_USE` while any snapshot exists in the region; delete the snapshots first. Refused
-// with 409 `SNAPSHOT_QUOTA_NOT_ACTIVE` when no subscription pays for a quota in the region.
+// Cancels the quota's subscription in Billing as `cancellation_mode` says and returns the
+// cancellation. Refused with 409 `SNAPSHOT_QUOTA_IN_USE` while any snapshot exists in the region;
+// delete the snapshots first. Refused with 409 `SNAPSHOT_QUOTA_NOT_ACTIVE` when no subscription pays
+// for a quota in the region.
 //
-// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
-// refunded under those terms. When the subscription can only be canceled at the end of its paid
-// period, it is canceled then, and the quota stays in force until `scheduled_at`. Deleting again while
-// the cancellation is open returns it.
+// Canceled now, it is refunded under its terms; canceled at the end of its paid period, the quota
+// stays in force until `scheduled_at`. Deleting again while the cancellation is open returns it.
 //
 // DELETE /api/v1/regions/{regionId}/snapshot-quota
 func (s *Server) handleDeleteSnapshotQuotaRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6883,6 +6895,10 @@ func (s *Server) handleDeleteSnapshotQuotaRequest(args [1]string, argsEscaped bo
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
+				{
+					Name: "cancellation_mode",
+					In:   "query",
+				}: params.CancellationMode,
 				{
 					Name: "regionId",
 					In:   "path",
@@ -16690,12 +16706,11 @@ func (s *Server) handleRejectPeeringRequest(args [1]string, argsEscaped bool, w 
 // is released.
 //
 // When subscriptions pay for the address, its `release_subscription_ids`, this request cancels them in
-// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
-// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
-// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
-// period, all of them are canceled then, and the floating IP is kept until `scheduled_at`. Deleting
-// again while the cancellation is open returns it. Without subscriptions, release begins at once and
-// `cancellation` is null.
+// Billing as `cancellation_mode` says, and the response carries that cancellation. Canceled now, they
+// are refunded under their terms and release begins when Billing begins the cancellation; canceled at
+// the end of their paid period, the floating IP is kept until `scheduled_at`. Deleting again while the
+// cancellation is open returns it. Without subscriptions, release begins at once and `cancellation` is
+// null.
 //
 // DELETE /api/v1/floating-ips/{floatingIpId}
 func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -16842,6 +16857,10 @@ func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool
 					Name: "floatingIpId",
 					In:   "path",
 				}: params.FloatingIpId,
+				{
+					Name: "cancellation_mode",
+					In:   "query",
+				}: params.CancellationMode,
 			},
 			Raw: r,
 		}
