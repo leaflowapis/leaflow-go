@@ -321,7 +321,8 @@ type Handler interface {
 	// GetQuote implements get-quote operation.
 	//
 	// Calculates what a proposed purchase, a change of your subscriptions or their renewal would invoice
-	// now, and what each purchased or changed line renews at. Nothing is saved, reserved or redeemed.
+	// now, and what each purchased or changed line renews at, or what ending subscriptions would return.
+	// Nothing is saved, reserved, redeemed or canceled.
 	//
 	// With `billing_account_id`, the quote is for that billing account: its currency, account discounts,
 	// tax and funds apply, changes and renewals use the account currently paying for each subscription,
@@ -685,14 +686,6 @@ type Handler interface {
 	//
 	// POST /api/v1/payments
 	PayTogether(ctx context.Context, req *PayTogetherRequest) (*PaymentResult, error)
-	// PreviewCancellation implements preview-cancellation operation.
-	//
-	// What creating the cancellation now would return, per subscription and in total. Nothing is canceled,
-	// ended or refunded. Open to the owner of the subscriptions' current billing account and to members of
-	// their project; refused for the same states as creating it.
-	//
-	// QUERY /api/v1/cancellations/preview
-	PreviewCancellation(ctx context.Context, req *CancellationPreviewRequest) (*CancellationRefundPreview, error)
 	// PreviewInvoicePayment implements preview-invoice-payment operation.
 	//
 	// What paying this invoice now would take from credit grants, from the balance and, for the rest, from

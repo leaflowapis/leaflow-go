@@ -2058,6 +2058,11 @@ func (*Model) getInferenceModelRes() {}
 // Each token kind is priced on its own. `input` excludes cached input, which is `cache_read`, and
 // `output` excludes reasoning the provider reports separately, which is `reasoning`; a request is
 // billed for each kind it used.
+//
+// Rates are set per currency, and a currency may not offer a model at all. A model is offered in the
+// currency of the project's billing account when at least one of its token kinds has a rate there; a
+// token kind without a rate in that currency is not charged. Requests to a model with no rate in that
+// currency are refused with 403 `BILLING_MODEL_NOT_OFFERED`.
 // Ref: #/components/schemas/ModelBilling
 type ModelBilling struct {
 	// The Billing plan of the service; null where the service is not sold.

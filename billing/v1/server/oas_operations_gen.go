@@ -80,7 +80,6 @@ const (
 	ListWithdrawalsOperation             OperationName = "ListWithdrawals"
 	PayInvoiceOperation                  OperationName = "PayInvoice"
 	PayTogetherOperation                 OperationName = "PayTogether"
-	PreviewCancellationOperation         OperationName = "PreviewCancellation"
 	PreviewInvoicePaymentOperation       OperationName = "PreviewInvoicePayment"
 	PreviewOrderRefundOperation          OperationName = "PreviewOrderRefund"
 	PreviewPayTogetherOperation          OperationName = "PreviewPayTogether"
