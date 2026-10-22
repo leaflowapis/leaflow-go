@@ -686,6 +686,414 @@ func (s *BillingChoiceUsageType) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *BillingComponent) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *BillingComponent) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("plan_id")
+		json.EncodeUUID(e, s.PlanID)
+	}
+	{
+		e.FieldStart("dimensions")
+		s.Dimensions.Encode(e)
+	}
+	{
+		e.FieldStart("quantity")
+		s.Quantity.Encode(e)
+	}
+	{
+		e.FieldStart("meters")
+		e.ArrStart()
+		for _, elem := range s.Meters {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+}
+
+var jsonFieldsNameOfBillingComponent = [4]string{
+	0: "plan_id",
+	1: "dimensions",
+	2: "quantity",
+	3: "meters",
+}
+
+// Decode decodes BillingComponent from json.
+func (s *BillingComponent) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode BillingComponent to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "plan_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.PlanID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"plan_id\"")
+			}
+		case "dimensions":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.Dimensions.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"dimensions\"")
+			}
+		case "quantity":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.Quantity.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"quantity\"")
+			}
+		case "meters":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				s.Meters = make([]BillingMeter, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem BillingMeter
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Meters = append(s.Meters, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"meters\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode BillingComponent")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00001111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfBillingComponent) {
+					name = jsonFieldsNameOfBillingComponent[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *BillingComponent) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *BillingComponent) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s BillingComponentDimensions) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields implements json.Marshaler.
+func (s BillingComponentDimensions) encodeFields(e *jx.Encoder) {
+	for k, elem := range s {
+		e.FieldStart(k)
+
+		e.Str(elem)
+	}
+}
+
+// Decode decodes BillingComponentDimensions from json.
+func (s *BillingComponentDimensions) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode BillingComponentDimensions to nil")
+	}
+	m := s.init()
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		var elem string
+		if err := func() error {
+			v, err := d.Str()
+			elem = string(v)
+			if err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return errors.Wrapf(err, "decode field %q", k)
+		}
+		m[string(k)] = elem
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode BillingComponentDimensions")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s BillingComponentDimensions) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *BillingComponentDimensions) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes BillingLineQuantity as json.
+func (s BillingLineQuantity) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes BillingLineQuantity from json.
+func (s *BillingLineQuantity) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode BillingLineQuantity to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch BillingLineQuantity(v) {
+	case BillingLineQuantityOne:
+		*s = BillingLineQuantityOne
+	case BillingLineQuantitySizeGib:
+		*s = BillingLineQuantitySizeGib
+	case BillingLineQuantityBandwidthMbps:
+		*s = BillingLineQuantityBandwidthMbps
+	default:
+		*s = BillingLineQuantity(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s BillingLineQuantity) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *BillingLineQuantity) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *BillingMeter) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *BillingMeter) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("meter_lookup_key")
+		e.Str(s.MeterLookupKey)
+	}
+	{
+		e.FieldStart("quantity")
+		s.Quantity.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfBillingMeter = [2]string{
+	0: "meter_lookup_key",
+	1: "quantity",
+}
+
+// Decode decodes BillingMeter from json.
+func (s *BillingMeter) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode BillingMeter to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "meter_lookup_key":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.MeterLookupKey = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"meter_lookup_key\"")
+			}
+		case "quantity":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.Quantity.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"quantity\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode BillingMeter")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfBillingMeter) {
+					name = jsonFieldsNameOfBillingMeter[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *BillingMeter) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *BillingMeter) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes BillingMeterQuantity as json.
+func (s BillingMeterQuantity) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes BillingMeterQuantity from json.
+func (s *BillingMeterQuantity) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode BillingMeterQuantity to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch BillingMeterQuantity(v) {
+	case BillingMeterQuantityOne:
+		*s = BillingMeterQuantityOne
+	case BillingMeterQuantitySizeGib:
+		*s = BillingMeterQuantitySizeGib
+	case BillingMeterQuantityStoredGib:
+		*s = BillingMeterQuantityStoredGib
+	case BillingMeterQuantityBandwidthMbps:
+		*s = BillingMeterQuantityBandwidthMbps
+	case BillingMeterQuantityEgressBytes:
+		*s = BillingMeterQuantityEgressBytes
+	default:
+		*s = BillingMeterQuantity(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s BillingMeterQuantity) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *BillingMeterQuantity) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *BillingPeriod) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -832,6 +1240,86 @@ func (s BillingPeriodUnit) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *BillingPeriodUnit) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *BillingQuantity) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *BillingQuantity) encodeFields(e *jx.Encoder) {
+	{
+		if s.Licensed.Set {
+			e.FieldStart("licensed")
+			s.Licensed.Encode(e)
+		}
+	}
+	{
+		if s.Metered.Set {
+			e.FieldStart("metered")
+			s.Metered.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfBillingQuantity = [2]string{
+	0: "licensed",
+	1: "metered",
+}
+
+// Decode decodes BillingQuantity from json.
+func (s *BillingQuantity) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode BillingQuantity to nil")
+	}
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "licensed":
+			if err := func() error {
+				s.Licensed.Reset()
+				if err := s.Licensed.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"licensed\"")
+			}
+		case "metered":
+			if err := func() error {
+				s.Metered.Reset()
+				if err := s.Metered.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"metered\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode BillingQuantity")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *BillingQuantity) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *BillingQuantity) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -8024,8 +8512,8 @@ func (s *DiskTypeResource) encodeFields(e *jx.Encoder) {
 		s.Performance.Encode(e)
 	}
 	{
-		e.FieldStart("plan_id")
-		json.EncodeUUID(e, s.PlanID)
+		e.FieldStart("billing")
+		s.Billing.Encode(e)
 	}
 }
 
@@ -8039,7 +8527,7 @@ var jsonFieldsNameOfDiskTypeResource = [10]string{
 	6: "region_id",
 	7: "step_gb",
 	8: "performance",
-	9: "plan_id",
+	9: "billing",
 }
 
 // Decode decodes DiskTypeResource from json.
@@ -8157,17 +8645,15 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"performance\"")
 			}
-		case "plan_id":
+		case "billing":
 			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
-				v, err := json.DecodeUUID(d)
-				s.PlanID = v
-				if err != nil {
+				if err := s.Billing.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"plan_id\"")
+				return errors.Wrap(err, "decode field \"billing\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -9130,12 +9616,12 @@ func (s *ElasticIPLine) encodeFields(e *jx.Encoder) {
 		e.Str(s.Description)
 	}
 	{
-		e.FieldStart("address_plan_id")
-		json.EncodeUUID(e, s.AddressPlanID)
+		e.FieldStart("address_billing")
+		s.AddressBilling.Encode(e)
 	}
 	{
-		e.FieldStart("network_plan_id")
-		json.EncodeUUID(e, s.NetworkPlanID)
+		e.FieldStart("network_billing")
+		s.NetworkBilling.Encode(e)
 	}
 	{
 		e.FieldStart("min_bandwidth_mbps")
@@ -9172,8 +9658,8 @@ var jsonFieldsNameOfElasticIPLine = [13]string{
 	1:  "region_id",
 	2:  "name",
 	3:  "description",
-	4:  "address_plan_id",
-	5:  "network_plan_id",
+	4:  "address_billing",
+	5:  "network_billing",
 	6:  "min_bandwidth_mbps",
 	7:  "max_bandwidth_mbps",
 	8:  "bandwidth_step_mbps",
@@ -9236,29 +9722,25 @@ func (s *ElasticIPLine) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"description\"")
 			}
-		case "address_plan_id":
+		case "address_billing":
 			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
-				v, err := json.DecodeUUID(d)
-				s.AddressPlanID = v
-				if err != nil {
+				if err := s.AddressBilling.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"address_plan_id\"")
+				return errors.Wrap(err, "decode field \"address_billing\"")
 			}
-		case "network_plan_id":
+		case "network_billing":
 			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
-				v, err := json.DecodeUUID(d)
-				s.NetworkPlanID = v
-				if err != nil {
+				if err := s.NetworkBilling.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"network_plan_id\"")
+				return errors.Wrap(err, "decode field \"network_billing\"")
 			}
 		case "min_bandwidth_mbps":
 			requiredBitSet[0] |= 1 << 6
@@ -12770,8 +13252,8 @@ func (s *MachineType) encodeFields(e *jx.Encoder) {
 		e.Int64(s.Vcpus)
 	}
 	{
-		e.FieldStart("plan_id")
-		json.EncodeUUID(e, s.PlanID)
+		e.FieldStart("billing")
+		s.Billing.Encode(e)
 	}
 }
 
@@ -12788,7 +13270,7 @@ var jsonFieldsNameOfMachineType = [13]string{
 	9:  "ram_mb",
 	10: "region_id",
 	11: "vcpus",
-	12: "plan_id",
+	12: "billing",
 }
 
 // Decode decodes MachineType from json.
@@ -12942,17 +13424,15 @@ func (s *MachineType) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"vcpus\"")
 			}
-		case "plan_id":
+		case "billing":
 			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
-				v, err := json.DecodeUUID(d)
-				s.PlanID = v
-				if err != nil {
+				if err := s.Billing.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"plan_id\"")
+				return errors.Wrap(err, "decode field \"billing\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -18699,6 +19179,39 @@ func (s *OptBillingChoice) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes BillingLineQuantity as json.
+func (o OptBillingLineQuantity) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes BillingLineQuantity from json.
+func (o *OptBillingLineQuantity) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptBillingLineQuantity to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptBillingLineQuantity) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptBillingLineQuantity) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes BillingPeriod as json.
 func (o OptBillingPeriod) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -23310,13 +23823,28 @@ func (s *RegionResource) encodeFields(e *jx.Encoder) {
 		e.FieldStart("id")
 		s.ID.Encode(e)
 	}
+	{
+		e.FieldStart("snapshot_billing")
+		s.SnapshotBilling.Encode(e)
+	}
+	{
+		e.FieldStart("disk_backup_billing")
+		s.DiskBackupBilling.Encode(e)
+	}
+	{
+		e.FieldStart("private_image_billing")
+		s.PrivateImageBilling.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfRegionResource = [4]string{
+var jsonFieldsNameOfRegionResource = [7]string{
 	0: "country_code",
 	1: "name",
 	2: "code",
 	3: "id",
+	4: "snapshot_billing",
+	5: "disk_backup_billing",
+	6: "private_image_billing",
 }
 
 // Decode decodes RegionResource from json.
@@ -23374,6 +23902,36 @@ func (s *RegionResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
+		case "snapshot_billing":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.SnapshotBilling.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"snapshot_billing\"")
+			}
+		case "disk_backup_billing":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.DiskBackupBilling.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"disk_backup_billing\"")
+			}
+		case "private_image_billing":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				if err := s.PrivateImageBilling.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"private_image_billing\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -23384,7 +23942,7 @@ func (s *RegionResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00001111,
+		0b01111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

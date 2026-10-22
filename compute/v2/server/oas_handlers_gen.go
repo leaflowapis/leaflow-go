@@ -9205,6 +9205,7 @@ func (s *Server) handleGetAvailabilityZoneRequest(args [1]string, argsEscaped bo
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -9807,6 +9808,7 @@ func (s *Server) handleGetDiskTypeRequest(args [1]string, argsEscaped bool, w ht
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -10412,6 +10414,7 @@ func (s *Server) handleGetElasticIPLineRequest(args [1]string, argsEscaped bool,
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -11017,6 +11020,7 @@ func (s *Server) handleGetMachineTypeRequest(args [1]string, argsEscaped bool, w
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -12023,6 +12027,7 @@ func (s *Server) handleGetPublicImageRequest(args [1]string, argsEscaped bool, w
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -12429,6 +12434,7 @@ func (s *Server) handleGetRegionRequest(args [1]string, argsEscaped bool, w http
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -14641,6 +14647,7 @@ func (s *Server) handleListAvailabilityZonesRequest(args [0]string, argsEscaped 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -15059,6 +15066,7 @@ func (s *Server) handleListDiskTypesRequest(args [0]string, argsEscaped bool, w 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -15487,6 +15495,7 @@ func (s *Server) handleListElasticIPLinesRequest(args [0]string, argsEscaped boo
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -16547,6 +16556,7 @@ func (s *Server) handleListMachineTypesRequest(args [0]string, argsEscaped bool,
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -17608,6 +17618,7 @@ func (s *Server) handleListPublicImagesRequest(args [0]string, argsEscaped bool,
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -18028,6 +18039,7 @@ func (s *Server) handleListRegionsRequest(args [0]string, argsEscaped bool, w ht
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {

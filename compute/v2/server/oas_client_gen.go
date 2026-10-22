@@ -7580,6 +7580,7 @@ func (c *Client) sendGetAvailabilityZone(ctx context.Context, params GetAvailabi
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -7984,6 +7985,7 @@ func (c *Client) sendGetDiskType(ctx context.Context, params GetDiskTypeParams) 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -8392,6 +8394,7 @@ func (c *Client) sendGetElasticIPLine(ctx context.Context, params GetElasticIPLi
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -8814,6 +8817,7 @@ func (c *Client) sendGetMachineType(ctx context.Context, params GetMachineTypePa
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -9490,6 +9494,7 @@ func (c *Client) sendGetPublicImage(ctx context.Context, params GetPublicImagePa
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -9779,6 +9784,7 @@ func (c *Client) sendGetRegion(ctx context.Context, params GetRegionParams) (res
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -11322,6 +11328,7 @@ func (c *Client) sendListAvailabilityZones(ctx context.Context, params ListAvail
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -11686,6 +11693,7 @@ func (c *Client) sendListDiskTypes(ctx context.Context, params ListDiskTypesPara
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -12069,6 +12077,7 @@ func (c *Client) sendListElasticIPLines(ctx context.Context, params ListElasticI
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -12981,6 +12990,7 @@ func (c *Client) sendListMachineTypes(ctx context.Context, params ListMachineTyp
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -13818,6 +13828,7 @@ func (c *Client) sendListPublicImages(ctx context.Context, params ListPublicImag
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -14146,6 +14157,7 @@ func (c *Client) sendListRegions(ctx context.Context, params ListRegionsParams) 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {

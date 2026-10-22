@@ -208,6 +208,221 @@ func (s *BillingChoiceUsageType) UnmarshalText(data []byte) error {
 	}
 }
 
+// How one order line of a catalog item is sold in Billing. To price a purchase with Billing's quote,
+// give the line `plan_id`, `dimensions` unchanged, and the quantity `quantity` names for the usage
+// type chosen; to estimate a metered line, give each of `meters` the same dimensions and the quantity
+// it names. Prices and amounts are Billing's alone.
+// Ref: #/components/schemas/BillingComponent
+type BillingComponent struct {
+	// The Billing Plan the line is sold under.
+	PlanID uuid.UUID `json:"plan_id"`
+	// The line's dimensions, keyed as Billing's rate rules match them; every meter of the line reads under
+	// the same ones. They are coordinates for Billing and name nothing a client needs to read.
+	Dimensions BillingComponentDimensions `json:"dimensions"`
+	Quantity   BillingQuantity            `json:"quantity"`
+	// What a metered price of the line reads; empty when the line is never metered.
+	Meters []BillingMeter `json:"meters"`
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *BillingComponent) GetPlanID() uuid.UUID {
+	return s.PlanID
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *BillingComponent) GetDimensions() BillingComponentDimensions {
+	return s.Dimensions
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *BillingComponent) GetQuantity() BillingQuantity {
+	return s.Quantity
+}
+
+// GetMeters returns the value of Meters.
+func (s *BillingComponent) GetMeters() []BillingMeter {
+	return s.Meters
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *BillingComponent) SetPlanID(val uuid.UUID) {
+	s.PlanID = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *BillingComponent) SetDimensions(val BillingComponentDimensions) {
+	s.Dimensions = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *BillingComponent) SetQuantity(val BillingQuantity) {
+	s.Quantity = val
+}
+
+// SetMeters sets the value of Meters.
+func (s *BillingComponent) SetMeters(val []BillingMeter) {
+	s.Meters = val
+}
+
+// The line's dimensions, keyed as Billing's rate rules match them; every meter of the line reads under
+// the same ones. They are coordinates for Billing and name nothing a client needs to read.
+type BillingComponentDimensions map[string]string
+
+func (s *BillingComponentDimensions) init() BillingComponentDimensions {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+// `one` is 1 for each item bought; `size_gib` is the disk's size in GiB; `bandwidth_mbps` is the
+// elastic IP's bandwidth in Mbps.
+// Ref: #/components/schemas/BillingLineQuantity
+type BillingLineQuantity string
+
+const (
+	BillingLineQuantityOne           BillingLineQuantity = "one"
+	BillingLineQuantitySizeGib       BillingLineQuantity = "size_gib"
+	BillingLineQuantityBandwidthMbps BillingLineQuantity = "bandwidth_mbps"
+)
+
+// AllValues returns all BillingLineQuantity values.
+func (BillingLineQuantity) AllValues() []BillingLineQuantity {
+	return []BillingLineQuantity{
+		BillingLineQuantityOne,
+		BillingLineQuantitySizeGib,
+		BillingLineQuantityBandwidthMbps,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s BillingLineQuantity) MarshalText() ([]byte, error) {
+	switch s {
+	case BillingLineQuantityOne:
+		return []byte(s), nil
+	case BillingLineQuantitySizeGib:
+		return []byte(s), nil
+	case BillingLineQuantityBandwidthMbps:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *BillingLineQuantity) UnmarshalText(data []byte) error {
+	switch BillingLineQuantity(data) {
+	case BillingLineQuantityOne:
+		*s = BillingLineQuantityOne
+		return nil
+	case BillingLineQuantitySizeGib:
+		*s = BillingLineQuantitySizeGib
+		return nil
+	case BillingLineQuantityBandwidthMbps:
+		*s = BillingLineQuantityBandwidthMbps
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// One meter a metered line reads.
+// Ref: #/components/schemas/BillingMeter
+type BillingMeter struct {
+	MeterLookupKey string `json:"meter_lookup_key"`
+	// What the meter measures. `one` counts each second the item is metered; `size_gib` the disk's size in
+	// GiB each second; `stored_gib` the GiB stored each second; `bandwidth_mbps` the bandwidth in Mbps
+	// each second; `egress_bytes` the bytes sent.
+	Quantity BillingMeterQuantity `json:"quantity"`
+}
+
+// GetMeterLookupKey returns the value of MeterLookupKey.
+func (s *BillingMeter) GetMeterLookupKey() string {
+	return s.MeterLookupKey
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *BillingMeter) GetQuantity() BillingMeterQuantity {
+	return s.Quantity
+}
+
+// SetMeterLookupKey sets the value of MeterLookupKey.
+func (s *BillingMeter) SetMeterLookupKey(val string) {
+	s.MeterLookupKey = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *BillingMeter) SetQuantity(val BillingMeterQuantity) {
+	s.Quantity = val
+}
+
+// What the meter measures. `one` counts each second the item is metered; `size_gib` the disk's size in
+// GiB each second; `stored_gib` the GiB stored each second; `bandwidth_mbps` the bandwidth in Mbps
+// each second; `egress_bytes` the bytes sent.
+type BillingMeterQuantity string
+
+const (
+	BillingMeterQuantityOne           BillingMeterQuantity = "one"
+	BillingMeterQuantitySizeGib       BillingMeterQuantity = "size_gib"
+	BillingMeterQuantityStoredGib     BillingMeterQuantity = "stored_gib"
+	BillingMeterQuantityBandwidthMbps BillingMeterQuantity = "bandwidth_mbps"
+	BillingMeterQuantityEgressBytes   BillingMeterQuantity = "egress_bytes"
+)
+
+// AllValues returns all BillingMeterQuantity values.
+func (BillingMeterQuantity) AllValues() []BillingMeterQuantity {
+	return []BillingMeterQuantity{
+		BillingMeterQuantityOne,
+		BillingMeterQuantitySizeGib,
+		BillingMeterQuantityStoredGib,
+		BillingMeterQuantityBandwidthMbps,
+		BillingMeterQuantityEgressBytes,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s BillingMeterQuantity) MarshalText() ([]byte, error) {
+	switch s {
+	case BillingMeterQuantityOne:
+		return []byte(s), nil
+	case BillingMeterQuantitySizeGib:
+		return []byte(s), nil
+	case BillingMeterQuantityStoredGib:
+		return []byte(s), nil
+	case BillingMeterQuantityBandwidthMbps:
+		return []byte(s), nil
+	case BillingMeterQuantityEgressBytes:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *BillingMeterQuantity) UnmarshalText(data []byte) error {
+	switch BillingMeterQuantity(data) {
+	case BillingMeterQuantityOne:
+		*s = BillingMeterQuantityOne
+		return nil
+	case BillingMeterQuantitySizeGib:
+		*s = BillingMeterQuantitySizeGib
+		return nil
+	case BillingMeterQuantityStoredGib:
+		*s = BillingMeterQuantityStoredGib
+		return nil
+	case BillingMeterQuantityBandwidthMbps:
+		*s = BillingMeterQuantityBandwidthMbps
+		return nil
+	case BillingMeterQuantityEgressBytes:
+		*s = BillingMeterQuantityEgressBytes
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/BillingPeriod
 type BillingPeriod struct {
 	Unit  BillingPeriodUnit `json:"unit"`
@@ -273,6 +488,34 @@ func (s *BillingPeriodUnit) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// What the line's quantity counts under each usage type it is sold on; a usage type it is not sold on
+// is absent.
+// Ref: #/components/schemas/BillingQuantity
+type BillingQuantity struct {
+	Licensed OptBillingLineQuantity `json:"licensed"`
+	Metered  OptBillingLineQuantity `json:"metered"`
+}
+
+// GetLicensed returns the value of Licensed.
+func (s *BillingQuantity) GetLicensed() OptBillingLineQuantity {
+	return s.Licensed
+}
+
+// GetMetered returns the value of Metered.
+func (s *BillingQuantity) GetMetered() OptBillingLineQuantity {
+	return s.Metered
+}
+
+// SetLicensed sets the value of Licensed.
+func (s *BillingQuantity) SetLicensed(val OptBillingLineQuantity) {
+	s.Licensed = val
+}
+
+// SetMetered sets the value of Metered.
+func (s *BillingQuantity) SetMetered(val OptBillingLineQuantity) {
+	s.Metered = val
 }
 
 // Create a boot disk from an image, or use a prepared disk already held by this project. Using an
@@ -3427,9 +3670,9 @@ type DiskTypeResource struct {
 	RegionID          RegionID                  `json:"region_id"`
 	StepGB            int64                     `json:"step_gb"`
 	Performance       DiskTypePerformance       `json:"performance"`
-	// The actual Billing Plan associated with this resource. Read prices and commercial terms directly
-	// from Billing using this identifier.
-	PlanID uuid.UUID `json:"plan_id"`
+	// The line a disk of this type is, whether bought on its own or as the system disk or a data disk of a
+	// virtual machine. A disk bought on its own is licensed only.
+	Billing BillingComponent `json:"billing"`
 }
 
 // GetAvailabilityZones returns the value of AvailabilityZones.
@@ -3477,9 +3720,9 @@ func (s *DiskTypeResource) GetPerformance() DiskTypePerformance {
 	return s.Performance
 }
 
-// GetPlanID returns the value of PlanID.
-func (s *DiskTypeResource) GetPlanID() uuid.UUID {
-	return s.PlanID
+// GetBilling returns the value of Billing.
+func (s *DiskTypeResource) GetBilling() BillingComponent {
+	return s.Billing
 }
 
 // SetAvailabilityZones sets the value of AvailabilityZones.
@@ -3527,9 +3770,9 @@ func (s *DiskTypeResource) SetPerformance(val DiskTypePerformance) {
 	s.Performance = val
 }
 
-// SetPlanID sets the value of PlanID.
-func (s *DiskTypeResource) SetPlanID(val uuid.UUID) {
-	s.PlanID = val
+// SetBilling sets the value of Billing.
+func (s *DiskTypeResource) SetBilling(val BillingComponent) {
+	s.Billing = val
 }
 
 type DiskTypeResourceMedia string
@@ -4126,12 +4369,13 @@ type ElasticIPLine struct {
 	RegionID    RegionID        `json:"region_id"`
 	Name        string          `json:"name"`
 	Description string          `json:"description"`
-	// The Billing Plan of the address subscription every elastic IP of this line has. It is always used,
-	// and meters the address while no network interface holds it. Read its prices from Billing.
-	AddressPlanID uuid.UUID `json:"address_plan_id"`
-	// The Billing Plan of the network subscription every elastic IP of this line has, which pays its
-	// bandwidth, prepaid or used while associated, or its traffic. Read its prices from Billing.
-	NetworkPlanID uuid.UUID `json:"network_plan_id"`
+	// The address line every elastic IP of this line has. It is always metered, and meters the address
+	// while no network interface holds it.
+	AddressBilling BillingComponent `json:"address_billing"`
+	// The network line every elastic IP of this line has, which pays its bandwidth, prepaid or used while
+	// associated, or its traffic. Metered, the line's quantity is 1 and the bandwidth or the traffic is
+	// what its meters read, by the elastic IP's `internet_charge_type`.
+	NetworkBilling BillingComponent `json:"network_billing"`
 	// The least bandwidth an elastic IP of this line can be bought with, in Mbps.
 	MinBandwidthMbps int64 `json:"min_bandwidth_mbps"`
 	// The most bandwidth an elastic IP of this line can be bought with, in Mbps, at most 1000. An elastic
@@ -4170,14 +4414,14 @@ func (s *ElasticIPLine) GetDescription() string {
 	return s.Description
 }
 
-// GetAddressPlanID returns the value of AddressPlanID.
-func (s *ElasticIPLine) GetAddressPlanID() uuid.UUID {
-	return s.AddressPlanID
+// GetAddressBilling returns the value of AddressBilling.
+func (s *ElasticIPLine) GetAddressBilling() BillingComponent {
+	return s.AddressBilling
 }
 
-// GetNetworkPlanID returns the value of NetworkPlanID.
-func (s *ElasticIPLine) GetNetworkPlanID() uuid.UUID {
-	return s.NetworkPlanID
+// GetNetworkBilling returns the value of NetworkBilling.
+func (s *ElasticIPLine) GetNetworkBilling() BillingComponent {
+	return s.NetworkBilling
 }
 
 // GetMinBandwidthMbps returns the value of MinBandwidthMbps.
@@ -4235,14 +4479,14 @@ func (s *ElasticIPLine) SetDescription(val string) {
 	s.Description = val
 }
 
-// SetAddressPlanID sets the value of AddressPlanID.
-func (s *ElasticIPLine) SetAddressPlanID(val uuid.UUID) {
-	s.AddressPlanID = val
+// SetAddressBilling sets the value of AddressBilling.
+func (s *ElasticIPLine) SetAddressBilling(val BillingComponent) {
+	s.AddressBilling = val
 }
 
-// SetNetworkPlanID sets the value of NetworkPlanID.
-func (s *ElasticIPLine) SetNetworkPlanID(val uuid.UUID) {
-	s.NetworkPlanID = val
+// SetNetworkBilling sets the value of NetworkBilling.
+func (s *ElasticIPLine) SetNetworkBilling(val BillingComponent) {
+	s.NetworkBilling = val
 }
 
 // SetMinBandwidthMbps sets the value of MinBandwidthMbps.
@@ -5741,9 +5985,9 @@ type MachineType struct {
 	RAMMB                int64    `json:"ram_mb"`
 	RegionID             RegionID `json:"region_id"`
 	Vcpus                int64    `json:"vcpus"`
-	// The actual Billing Plan associated with this resource. Read prices and commercial terms directly
-	// from Billing using this identifier.
-	PlanID uuid.UUID `json:"plan_id"`
+	// The line a virtual machine of this type is. The system disk and data disks bought with it are lines
+	// of their disk types, and a new elastic IP the two lines of its elastic IP line.
+	Billing BillingComponent `json:"billing"`
 }
 
 // GetAvailabilityZones returns the value of AvailabilityZones.
@@ -5806,9 +6050,9 @@ func (s *MachineType) GetVcpus() int64 {
 	return s.Vcpus
 }
 
-// GetPlanID returns the value of PlanID.
-func (s *MachineType) GetPlanID() uuid.UUID {
-	return s.PlanID
+// GetBilling returns the value of Billing.
+func (s *MachineType) GetBilling() BillingComponent {
+	return s.Billing
 }
 
 // SetAvailabilityZones sets the value of AvailabilityZones.
@@ -5871,9 +6115,9 @@ func (s *MachineType) SetVcpus(val int64) {
 	s.Vcpus = val
 }
 
-// SetPlanID sets the value of PlanID.
-func (s *MachineType) SetPlanID(val uuid.UUID) {
-	s.PlanID = val
+// SetBilling sets the value of Billing.
+func (s *MachineType) SetBilling(val BillingComponent) {
+	s.Billing = val
 }
 
 // `dedicated` gives each vCPU a host thread of its own; `shared` lets the vCPUs of several machines
@@ -9676,6 +9920,52 @@ func (o OptBillingChoice) Or(d BillingChoice) BillingChoice {
 	return d
 }
 
+// NewOptBillingLineQuantity returns new OptBillingLineQuantity with value set to v.
+func NewOptBillingLineQuantity(v BillingLineQuantity) OptBillingLineQuantity {
+	return OptBillingLineQuantity{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptBillingLineQuantity is optional BillingLineQuantity.
+type OptBillingLineQuantity struct {
+	Value BillingLineQuantity
+	Set   bool
+}
+
+// IsSet returns true if OptBillingLineQuantity was set.
+func (o OptBillingLineQuantity) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptBillingLineQuantity) Reset() {
+	var v BillingLineQuantity
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptBillingLineQuantity) SetTo(v BillingLineQuantity) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptBillingLineQuantity) Get() (v BillingLineQuantity, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptBillingLineQuantity) Or(d BillingLineQuantity) BillingLineQuantity {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptBillingPeriod returns new OptBillingPeriod with value set to v.
 func NewOptBillingPeriod(v BillingPeriod) OptBillingPeriod {
 	return OptBillingPeriod{
@@ -13164,6 +13454,12 @@ type RegionResource struct {
 	// addressing is by id.
 	Code string   `json:"code"`
 	ID   RegionID `json:"id"`
+	// The line every snapshot in this region is, metered on the size it stores.
+	SnapshotBilling BillingComponent `json:"snapshot_billing"`
+	// The line every disk backup in this region is, metered on the size it stores.
+	DiskBackupBilling BillingComponent `json:"disk_backup_billing"`
+	// The line every private image in this region is, metered on the size it stores.
+	PrivateImageBilling BillingComponent `json:"private_image_billing"`
 }
 
 // GetCountryCode returns the value of CountryCode.
@@ -13186,6 +13482,21 @@ func (s *RegionResource) GetID() RegionID {
 	return s.ID
 }
 
+// GetSnapshotBilling returns the value of SnapshotBilling.
+func (s *RegionResource) GetSnapshotBilling() BillingComponent {
+	return s.SnapshotBilling
+}
+
+// GetDiskBackupBilling returns the value of DiskBackupBilling.
+func (s *RegionResource) GetDiskBackupBilling() BillingComponent {
+	return s.DiskBackupBilling
+}
+
+// GetPrivateImageBilling returns the value of PrivateImageBilling.
+func (s *RegionResource) GetPrivateImageBilling() BillingComponent {
+	return s.PrivateImageBilling
+}
+
 // SetCountryCode sets the value of CountryCode.
 func (s *RegionResource) SetCountryCode(val string) {
 	s.CountryCode = val
@@ -13204,6 +13515,21 @@ func (s *RegionResource) SetCode(val string) {
 // SetID sets the value of ID.
 func (s *RegionResource) SetID(val RegionID) {
 	s.ID = val
+}
+
+// SetSnapshotBilling sets the value of SnapshotBilling.
+func (s *RegionResource) SetSnapshotBilling(val BillingComponent) {
+	s.SnapshotBilling = val
+}
+
+// SetDiskBackupBilling sets the value of DiskBackupBilling.
+func (s *RegionResource) SetDiskBackupBilling(val BillingComponent) {
+	s.DiskBackupBilling = val
+}
+
+// SetPrivateImageBilling sets the value of PrivateImageBilling.
+func (s *RegionResource) SetPrivateImageBilling(val BillingComponent) {
+	s.PrivateImageBilling = val
 }
 
 // A resource a release set releases.

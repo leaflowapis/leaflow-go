@@ -227,6 +227,110 @@ func (s BillingChoiceUsageType) Validate() error {
 	}
 }
 
+func (s *BillingComponent) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Quantity.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "quantity",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.Meters == nil {
+			return errors.New("nil is invalid value")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.Meters {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "meters",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s BillingLineQuantity) Validate() error {
+	switch s {
+	case "one":
+		return nil
+	case "size_gib":
+		return nil
+	case "bandwidth_mbps":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s *BillingMeter) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Quantity.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "quantity",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s BillingMeterQuantity) Validate() error {
+	switch s {
+	case "one":
+		return nil
+	case "size_gib":
+		return nil
+	case "stored_gib":
+		return nil
+	case "bandwidth_mbps":
+		return nil
+	case "egress_bytes":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s *BillingPeriod) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -280,6 +384,54 @@ func (s BillingPeriodUnit) Validate() error {
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}
+}
+
+func (s *BillingQuantity) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if value, ok := s.Licensed.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "licensed",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Metered.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "metered",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
 }
 
 func (s BootDisk) Validate() error {
@@ -3241,6 +3393,17 @@ func (s *DiskTypeResource) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if err := s.Billing.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "billing",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -3677,6 +3840,28 @@ func (s *ElasticIPLine) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "description",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.AddressBilling.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "address_billing",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.NetworkBilling.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "network_billing",
 			Error: err,
 		})
 	}
@@ -4900,6 +5085,17 @@ func (s *MachineType) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "region_id",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.Billing.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "billing",
 			Error: err,
 		})
 	}
@@ -7563,6 +7759,39 @@ func (s *RegionResource) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "id",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.SnapshotBilling.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "snapshot_billing",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.DiskBackupBilling.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "disk_backup_billing",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.PrivateImageBilling.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "private_image_billing",
 			Error: err,
 		})
 	}
