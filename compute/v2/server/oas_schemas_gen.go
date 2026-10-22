@@ -250,16 +250,18 @@ func (s *BillingChoiceUsageType) UnmarshalText(data []byte) error {
 	}
 }
 
-// How one order line of a catalog item is sold in Billing. To price a purchase with Billing's quote,
-// give the line `plan_id`, `dimensions` unchanged, and the quantity `quantity` names for the usage
-// type chosen; to estimate a metered line, give each of `meters` the same dimensions and the quantity
-// it names. Prices and amounts are Billing's alone.
+// How one order line of a catalog item is sold in Billing. Read its prices with Billing's
+// `search-prices` by `plan_id`, giving `dimensions` to narrow each price's `rates` to this line. Quote
+// a purchase with Billing's `get-quote`, giving the line `plan_id`, `dimensions` unchanged, and the
+// quantity `quantity` names for the usage type chosen; estimate a metered line with `estimate-usage`,
+// giving each of `meters` the same dimensions and the quantity it names. Prices and amounts are
+// Billing's alone.
 // Ref: #/components/schemas/BillingComponent
 type BillingComponent struct {
 	// The Billing Plan the line is sold under.
 	PlanID uuid.UUID `json:"plan_id"`
-	// The line's dimensions, keyed as Billing's rate rules match them; every meter of the line reads under
-	// the same ones. They are coordinates for Billing and name nothing a client needs to read.
+	// The line's dimensions, the coordinates Billing prices it at; every meter of the line reads under the
+	// same ones. Pass them to Billing unchanged; they name nothing a client needs to read.
 	Dimensions BillingComponentDimensions `json:"dimensions"`
 	Quantity   BillingQuantity            `json:"quantity"`
 	// What a metered price of the line reads; empty when the line is never metered.
@@ -306,8 +308,8 @@ func (s *BillingComponent) SetMeters(val []BillingMeter) {
 	s.Meters = val
 }
 
-// The line's dimensions, keyed as Billing's rate rules match them; every meter of the line reads under
-// the same ones. They are coordinates for Billing and name nothing a client needs to read.
+// The line's dimensions, the coordinates Billing prices it at; every meter of the line reads under the
+// same ones. Pass them to Billing unchanged; they name nothing a client needs to read.
 type BillingComponentDimensions map[string]string
 
 func (s *BillingComponentDimensions) init() BillingComponentDimensions {
