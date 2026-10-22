@@ -5593,8 +5593,11 @@ type ImageID string
 // ceiling, prepaid for a period or by the Mbit/s-second while the address is associated. `traffic`
 // charges for the bytes the address sends upstream, pay-as-you-go only, while the bandwidth is only a
 // ceiling; it is refused with `ELASTIC_IP_TRAFFIC_UNAVAILABLE` on a line whose `traffic_sale_status`
-// is `off_sale`. Inbound traffic is never charged. A pay-as-you-go elastic IP can move between the two
-// with `update-elastic-ip`.
+// is `off_sale`. Inbound traffic is never charged. Prices are set per currency, so a pay-as-you-go
+// purchase whose account currency has no rate on the line for the chosen type is refused before any
+// order with HTTP 403 `ELASTIC_IP_CHARGE_TYPE_NOT_OFFERED`, whether the elastic IP is bought alone or
+// with a virtual machine. A pay-as-you-go elastic IP can move between the two with
+// `update-elastic-ip`.
 // Ref: #/components/schemas/InternetChargeType
 type InternetChargeType string
 
