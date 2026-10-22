@@ -25,10 +25,6 @@ type BindFloatingIPRes interface {
 	bindFloatingIPRes()
 }
 
-type CreateBackupCapacityPackQuoteRes interface {
-	createBackupCapacityPackQuoteRes()
-}
-
 type CreateBackupCapacityPackRes interface {
 	createBackupCapacityPackRes()
 }
@@ -37,60 +33,28 @@ type CreateBackupRes interface {
 	createBackupRes()
 }
 
-type CreateBackupRestoreQuoteRes interface {
-	createBackupRestoreQuoteRes()
-}
-
-type CreateBackupServiceQuoteRes interface {
-	createBackupServiceQuoteRes()
-}
-
 type CreateBackupServiceRes interface {
 	createBackupServiceRes()
-}
-
-type CreateDiskQuoteRes interface {
-	createDiskQuoteRes()
 }
 
 type CreateDiskRes interface {
 	createDiskRes()
 }
 
-type CreateDiskResizeQuoteRes interface {
-	createDiskResizeQuoteRes()
-}
-
-type CreateFloatingIPBandwidthQuoteRes interface {
-	createFloatingIPBandwidthQuoteRes()
-}
-
-type CreateFloatingIPQuoteRes interface {
-	createFloatingIPQuoteRes()
-}
-
-type CreateImageQuoteRes interface {
-	createImageQuoteRes()
-}
-
 type CreateImageRes interface {
 	createImageRes()
 }
 
-type CreateInstanceQuoteRes interface {
-	createInstanceQuoteRes()
-}
-
-type CreateInstanceResizeQuoteRes interface {
-	createInstanceResizeQuoteRes()
-}
-
-type CreateSnapshotQuotaQuoteRes interface {
-	createSnapshotQuotaQuoteRes()
+type DeleteBackupCapacityPackRes interface {
+	deleteBackupCapacityPackRes()
 }
 
 type DeleteBackupRes interface {
 	deleteBackupRes()
+}
+
+type DeleteBackupServiceRes interface {
+	deleteBackupServiceRes()
 }
 
 type DeleteDiskRes interface {
@@ -115,6 +79,10 @@ type DeletePortRes interface {
 
 type DeletePrivateNetworkRes interface {
 	deletePrivateNetworkRes()
+}
+
+type DeleteSnapshotQuotaRes interface {
+	deleteSnapshotQuotaRes()
 }
 
 type DeleteSnapshotRes interface {

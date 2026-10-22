@@ -81,8 +81,8 @@ type Handler interface {
 	// CreateBackupCapacityPack implements create-backup-capacity-pack operation.
 	//
 	// Purchases a capacity pack, backup capacity for this project and region bought in advance by month or
-	// year: `billing` must be licensed with a period, as offered in the backup service's
-	// `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the
+	// year: `billing` must be licensed with a period, as Billing offers for the region's
+	// `capacity_pack_billing`. Compute applies the coverage: each hour, retained backup capacity up to the
 	// total `capacity_gib` of the packs active in the region is covered, and Compute meters only the
 	// excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing
 	// takes its order and payment and handles its renewal and cancellation through the pack's
@@ -94,30 +94,6 @@ type Handler interface {
 	//
 	// POST /api/v1/regions/{regionId}/backup-capacity-packs
 	CreateBackupCapacityPack(ctx context.Context, req *CreateBackupCapacityPackRequestBody, params CreateBackupCapacityPackParams) (CreateBackupCapacityPackRes, error)
-	// CreateBackupCapacityPackQuote implements create-backup-capacity-pack-quote operation.
-	//
-	// Prices what `create-backup-capacity-pack` would order for the same request, without ordering or
-	// creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts
-	// and tax as for automatic checkout. `total` is what automatic checkout would collect before credit
-	// grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
-	// different amount. `estimated_usage_amount` projects metered usage over one month of 730 hours and is
-	// not collected at checkout. A request the purchase would refuse is refused the same way. Prices may
-	// change, so quote again before final confirmation.
-	//
-	// POST /api/v1/regions/{regionId}/backup-capacity-packs/quote
-	CreateBackupCapacityPackQuote(ctx context.Context, req *CreateBackupCapacityPackQuoteRequestBody, params CreateBackupCapacityPackQuoteParams) (CreateBackupCapacityPackQuoteRes, error)
-	// CreateBackupRestoreQuote implements create-backup-restore-quote operation.
-	//
-	// Prices what `restore-backup` would order for the same request, without ordering or creating
-	// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-	// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-	// again before final confirmation.
-	//
-	// POST /api/v1/backups/{backupId}/restore/quote
-	CreateBackupRestoreQuote(ctx context.Context, req *RestoreBackupQuoteRequestBody, params CreateBackupRestoreQuoteParams) (CreateBackupRestoreQuoteRes, error)
 	// CreateBackupService implements create-backup-service operation.
 	//
 	// Purchases the backup service for this project and region. The service itself has no charge; backups
@@ -129,18 +105,6 @@ type Handler interface {
 	//
 	// POST /api/v1/regions/{regionId}/backup-service
 	CreateBackupService(ctx context.Context, req *CreateBackupServiceRequestBody, params CreateBackupServiceParams) (CreateBackupServiceRes, error)
-	// CreateBackupServiceQuote implements create-backup-service-quote operation.
-	//
-	// Prices what `create-backup-service` would order for the same request, without ordering or creating
-	// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-	// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-	// again before final confirmation.
-	//
-	// POST /api/v1/regions/{regionId}/backup-service/quote
-	CreateBackupServiceQuote(ctx context.Context, params CreateBackupServiceQuoteParams) (CreateBackupServiceQuoteRes, error)
 	// CreateDisk implements create-disk operation.
 	//
 	// The disk is created in the availability zone of the selected disk type, and an instance must reside
@@ -152,52 +116,6 @@ type Handler interface {
 	//
 	// POST /api/v1/disks
 	CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (CreateDiskRes, error)
-	// CreateDiskQuote implements create-disk-quote operation.
-	//
-	// Prices what `create-disk` would order for the same request, without ordering or creating anything;
-	// nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for
-	// automatic checkout. `total` is what automatic checkout would collect before credit grants and
-	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-	// again before final confirmation.
-	//
-	// POST /api/v1/disks/quote
-	CreateDiskQuote(ctx context.Context, req *CreateDiskQuoteRequestBody) (CreateDiskQuoteRes, error)
-	// CreateDiskResizeQuote implements create-disk-resize-quote operation.
-	//
-	// Prices the change `resize-disk` would order, as of now, without ordering or changing anything. A
-	// change that raises the price has the charge for the rest of the paid period as `total`; one that
-	// lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-	// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-	// A request the change would refuse is refused the same way. Prices may change, so quote again before
-	// final confirmation.
-	//
-	// POST /api/v1/disks/{diskId}/resize/quote
-	CreateDiskResizeQuote(ctx context.Context, req *ResizeDiskQuoteRequestBody, params CreateDiskResizeQuoteParams) (CreateDiskResizeQuoteRes, error)
-	// CreateFloatingIPBandwidthQuote implements create-floating-ip-bandwidth-quote operation.
-	//
-	// Prices the change `set-floating-ip-bandwidth` would order, as of now, without ordering or changing
-	// anything. A change that raises the price has the charge for the rest of the paid period as `total`;
-	// one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-	// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-	// A request the change would refuse is refused the same way. Prices may change, so quote again before
-	// final confirmation.
-	//
-	// POST /api/v1/floating-ips/{floatingIpId}/bandwidth/quote
-	CreateFloatingIPBandwidthQuote(ctx context.Context, req *SetFloatingIPBandwidthQuoteRequestBody, params CreateFloatingIPBandwidthQuoteParams) (CreateFloatingIPBandwidthQuoteRes, error)
-	// CreateFloatingIPQuote implements create-floating-ip-quote operation.
-	//
-	// Prices what `allocate-floating-ip` would order for the same request, without ordering or creating
-	// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-	// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-	// again before final confirmation.
-	//
-	// POST /api/v1/floating-ips/quote
-	CreateFloatingIPQuote(ctx context.Context, req *AllocateFloatingIPQuoteRequestBody) (CreateFloatingIPQuoteRes, error)
 	// CreateImage implements create-image operation.
 	//
 	// Creates a private image of this project from the system disk of the instance; data disks are not
@@ -222,45 +140,11 @@ type Handler interface {
 	//
 	// The instance can be started, stopped and used normally during the capture, but cannot be released.
 	//
-	// The image is billed for the storage it occupies, as the region's `private_image_pricing` shows.
-	// Obtain a quote with `create-image-quote` first.
+	// The image is billed for the storage it occupies, under the region's `private_image_billing`. Quote
+	// it with Billing first.
 	//
 	// POST /api/v1/images
 	CreateImage(ctx context.Context, req *CreateImageRequestBody) (CreateImageRes, error)
-	// CreateImageQuote implements create-image-quote operation.
-	//
-	// Prices the capture `create-image` would order for the same instance, without ordering anything;
-	// nothing is reserved or recorded. The quantity priced is the size of the system disk, which is the
-	// most the image can occupy, with the option chosen in `billing`. Billing evaluates applicable account
-	// discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before
-	// credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
-	// different amount. Prices may change, so quote again before final confirmation.
-	//
-	// POST /api/v1/images/quote
-	CreateImageQuote(ctx context.Context, req *CreateImageQuoteRequestBody) (CreateImageQuoteRes, error)
-	// CreateInstanceQuote implements create-instance-quote operation.
-	//
-	// Prices what `launch-instance` would order for the same request, without ordering or creating
-	// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-	// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-	// again before final confirmation.
-	//
-	// POST /api/v1/instances/quote
-	CreateInstanceQuote(ctx context.Context, req *LaunchInstanceQuoteRequestBody) (CreateInstanceQuoteRes, error)
-	// CreateInstanceResizeQuote implements create-instance-resize-quote operation.
-	//
-	// Prices the change `resize-instance` would order, as of now, without ordering or changing anything. A
-	// change that raises the price has the charge for the rest of the paid period as `total`; one that
-	// lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-	// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-	// A request the change would refuse is refused the same way. Prices may change, so quote again before
-	// final confirmation.
-	//
-	// POST /api/v1/instances/{instanceId}/resize/quote
-	CreateInstanceResizeQuote(ctx context.Context, req *ResizeInstanceQuoteRequestBody, params CreateInstanceResizeQuoteParams) (CreateInstanceResizeQuoteRes, error)
 	// CreatePeering implements create-peering operation.
 	//
 	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
@@ -328,19 +212,6 @@ type Handler interface {
 	//
 	// POST /api/v1/snapshots
 	CreateSnapshot(ctx context.Context, req *CreateSnapshotRequestBody) (*SnapshotResource, error)
-	// CreateSnapshotQuotaQuote implements create-snapshot-quota-quote operation.
-	//
-	// Prices what `set-snapshot-quota` would order, including a change of an existing purchase as of now,
-	// for the same request, without ordering or creating anything; nothing is reserved or recorded.
-	// Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what
-	// automatic checkout would collect before credit grants and balance; give it as
-	// `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-	// again before final confirmation.
-	//
-	// POST /api/v1/regions/{regionId}/snapshot-quota/quote
-	CreateSnapshotQuotaQuote(ctx context.Context, req *SetSnapshotQuotaQuoteRequestBody, params CreateSnapshotQuotaQuoteParams) (CreateSnapshotQuotaQuoteRes, error)
 	// CreateSubnet implements create-subnet operation.
 	//
 	// Create a subnet.
@@ -354,14 +225,44 @@ type Handler interface {
 	//
 	// DELETE /api/v1/backups/{backupId}
 	DeleteBackup(ctx context.Context, params DeleteBackupParams) (DeleteBackupRes, error)
+	// DeleteBackupCapacityPack implements delete-backup-capacity-pack operation.
+	//
+	// Cancels the pack's subscription in Billing and returns the cancellation. Refused with 404
+	// `BACKUP_CAPACITY_PACK_NOT_FOUND` when the project has no pack of this ID in the region, and with 409
+	// `BACKUP_CAPACITY_PACK_ENDED` when the pack has ended.
+	//
+	// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
+	// refunded under those terms. When the subscription can only be canceled at the end of its paid
+	// period, it is canceled then, and its coverage stays in force until `scheduled_at`. Deleting again
+	// while the cancellation is open returns it.
+	//
+	// DELETE /api/v1/regions/{regionId}/backup-capacity-packs/{packId}
+	DeleteBackupCapacityPack(ctx context.Context, params DeleteBackupCapacityPackParams) (DeleteBackupCapacityPackRes, error)
+	// DeleteBackupService implements delete-backup-service operation.
+	//
+	// Cancels the service's subscription in Billing and returns the cancellation. Refused with 409
+	// `BACKUP_SERVICE_IN_USE` while any backup is retained in the region; delete the backups first.
+	// Capacity packs are deleted separately. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` when no
+	// subscription pays for a service in the region.
+	//
+	// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
+	// refunded under those terms. When the subscription can only be canceled at the end of its paid
+	// period, it is canceled then, and the service stays in force until `scheduled_at`. Deleting again
+	// while the cancellation is open returns it.
+	//
+	// DELETE /api/v1/regions/{regionId}/backup-service
+	DeleteBackupService(ctx context.Context, params DeleteBackupServiceParams) (DeleteBackupServiceRes, error)
 	// DeleteDisk implements delete-disk operation.
 	//
 	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the disk. It is released by canceling the
-	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-	// `release_subscription_ids`.
+	// When subscriptions pay for the disk, its `release_subscription_ids`, this request cancels them in
+	// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
+	// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
+	// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
+	// period, all of them are canceled then, and the disk is kept until `scheduled_at`. Deleting again
+	// while the cancellation is open returns it. Without subscriptions, deletion begins at once and
+	// `cancellation` is null.
 	//
 	// DELETE /api/v1/disks/{diskId}
 	DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error)
@@ -375,10 +276,13 @@ type Handler interface {
 	// An image whose capture has not finished can be deleted; the capture is aborted. This is the one
 	// operation accepted while the `create` operation is in progress.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
-	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-	// `release_subscription_ids`.
+	// When subscriptions pay for the image, its `release_subscription_ids`, this request cancels them in
+	// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
+	// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
+	// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
+	// period, all of them are canceled then, and the image is kept until `scheduled_at`. Deleting again
+	// while the cancellation is open returns it. Without subscriptions, deletion begins at once and
+	// `cancellation` is null.
 	//
 	// DELETE /api/v1/images/{imageId}
 	DeleteImage(ctx context.Context, params DeleteImageParams) (DeleteImageRes, error)
@@ -391,10 +295,13 @@ type Handler interface {
 	// An instance being captured as a private image cannot be released. Wait for the capture to finish, or
 	// delete that image first.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk
-	// that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that
-	// resource. The instance is released by canceling the subscriptions listed in `meta.subscription_ids`
-	// through Billing, the same set as its `release_subscription_ids`.
+	// When subscriptions pay for the instance, or for a disk deleted with it, its
+	// `release_subscription_ids`, this request cancels them in Billing, and the response carries that
+	// cancellation. Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at
+	// once and refunded under those terms, and release begins when Billing begins the cancellation. When
+	// any of them can only be canceled at the end of its paid period, all of them are canceled then, and
+	// the instance is kept until `scheduled_at`. Deleting again while the cancellation is open returns it.
+	// Without subscriptions, release begins at once and `cancellation` is null.
 	//
 	// DELETE /api/v1/instances/{instanceId}
 	DeleteInstance(ctx context.Context, params DeleteInstanceParams) (DeleteInstanceRes, error)
@@ -444,6 +351,19 @@ type Handler interface {
 	//
 	// DELETE /api/v1/snapshots/{snapshotId}
 	DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (DeleteSnapshotRes, error)
+	// DeleteSnapshotQuota implements delete-snapshot-quota operation.
+	//
+	// Cancels the quota's subscription in Billing and returns the cancellation. Refused with 409
+	// `SNAPSHOT_QUOTA_IN_USE` while any snapshot exists in the region; delete the snapshots first. Refused
+	// with 409 `SNAPSHOT_QUOTA_NOT_ACTIVE` when no subscription pays for a quota in the region.
+	//
+	// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
+	// refunded under those terms. When the subscription can only be canceled at the end of its paid
+	// period, it is canceled then, and the quota stays in force until `scheduled_at`. Deleting again while
+	// the cancellation is open returns it.
+	//
+	// DELETE /api/v1/regions/{regionId}/snapshot-quota
+	DeleteSnapshotQuota(ctx context.Context, params DeleteSnapshotQuotaParams) (DeleteSnapshotQuotaRes, error)
 	// DeleteSubnet implements delete-subnet operation.
 	//
 	// Deletion is rejected while network interfaces remain in the subnet, or while a static route has a
@@ -511,10 +431,10 @@ type Handler interface {
 	// the capacity packs active in the region and meters only the excess on this service's subscription,
 	// per GiB-hour.
 	//
-	// Canceling the service's subscription through Billing is refused while any backup is retained in the
-	// region: the cancellation fails with `BACKUP_SERVICE_IN_USE`. Delete the backups first. Capacity
-	// packs are canceled separately, under their own refund terms. Reclaiming the service for non-payment
-	// deletes its backups.
+	// Deleting the service, which cancels its subscription, is refused while any backup is retained in the
+	// region with `BACKUP_SERVICE_IN_USE`. Delete the backups first. Capacity packs are deleted
+	// separately, under their own refund terms. Reclaiming the service for non-payment deletes its
+	// backups.
 	//
 	// GET /api/v1/regions/{regionId}/backup-service
 	GetBackupService(ctx context.Context, params GetBackupServiceParams) (*BackupService, error)
@@ -603,9 +523,9 @@ type Handler interface {
 	// 0) while active, and zero when creation is not permitted; additional creation is refused while the
 	// quota is inactive, suspended or exhausted.
 	//
-	// Canceling the quota's subscription through Billing is refused while any snapshot exists in the
-	// region: the cancellation fails with SNAPSHOT_QUOTA_IN_USE. Reclaiming the quota for non-payment
-	// deletes its snapshots, as for other reclaimed resources.
+	// Deleting the quota, which cancels its subscription, is refused while any snapshot exists in the
+	// region with SNAPSHOT_QUOTA_IN_USE. Reclaiming the quota for non-payment deletes its snapshots, as
+	// for other reclaimed resources.
 	//
 	// GET /api/v1/regions/{regionId}/snapshot-quota
 	GetSnapshotQuota(ctx context.Context, params GetSnapshotQuotaParams) (*SnapshotQuota, error)
@@ -851,10 +771,13 @@ type Handler interface {
 	// Releases the floating IP after unbinding it. The floating IP shows the `delete` operation until it
 	// is released.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling
-	// the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-	// `release_subscription_ids`.
+	// When subscriptions pay for the address, its `release_subscription_ids`, this request cancels them in
+	// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
+	// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
+	// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
+	// period, all of them are canceled then, and the floating IP is kept until `scheduled_at`. Deleting
+	// again while the cancellation is open returns it. Without subscriptions, release begins at once and
+	// `cancellation` is null.
 	//
 	// DELETE /api/v1/floating-ips/{floatingIpId}
 	ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (ReleaseFloatingIPRes, error)
@@ -1054,8 +977,9 @@ type Handler interface {
 	//
 	// Purchases or changes the maximum number of snapshots this project may hold in this region. limit is
 	// the target total, not an additional number of slots or a consumable create allowance. billing
-	// chooses one of the quota's pricing options; a change of an existing purchase keeps its usage type
-	// and period, and billing must name that option. The purchased quantity is this count.
+	// chooses how the quota is bought, among the prices Billing offers for the region's
+	// `snapshot_quota_billing`; a change of an existing purchase keeps its usage type and period, and
+	// billing must name them. The purchased quantity is this count.
 	//
 	// Returns the quota with the Checkout Session. pending_limit records the target while the current
 	// limit stays in force; the new limit applies once the order is accepted and the quota is activated.

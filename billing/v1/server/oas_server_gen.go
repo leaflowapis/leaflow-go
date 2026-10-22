@@ -32,7 +32,7 @@ type Handler interface {
 	// Requests cancellation on the purchase's agreed terms, with the same rules as creating a
 	// cancellation. Give the refund amount from a quote with this subscription in
 	// `cancellation.subscription_ids`. Open to the owner of the subscription's current billing account and
-	// to members of its project with the project permission `billing:subscription.write`.
+	// to members of its project with the project permission `billing:finance.manage`.
 	//
 	// Immediate cancellation asks the owning service to release the resources now; period-end cancellation
 	// keeps the subscription active or suspended until the paid term ends. The subscription becomes
@@ -85,7 +85,7 @@ type Handler interface {
 	// Ends subscriptions of one service together. Deleting a resource is an `immediate` cancellation of
 	// every subscription released with it, such as a server with its disks or an address with its
 	// bandwidth. Open to the owner of the subscriptions' current billing account and to members of their
-	// project with the project permission `billing:subscription.write`.
+	// project with the project permission `billing:finance.manage`.
 	//
 	// The owning service releases the resources at once for `immediate`, or at `scheduled_at`, the end of
 	// the paid term, for `period_end`. When release is confirmed, the unused value is returned to the
@@ -131,7 +131,7 @@ type Handler interface {
 	// resources are created through that service.
 	//
 	// Open to the owner of the subscription's current billing account and to members of its project with
-	// the project permission `billing:subscription.write`. Keep `checkout_session_id` and read the session
+	// the project permission `billing:finance.manage`. Keep `checkout_session_id` and read the session
 	// after an unknown outcome; creating it again conflicts.
 	//
 	// POST /api/v1/checkout-sessions
@@ -353,8 +353,8 @@ type Handler interface {
 	// The statement's consumption, grouped by project, product or meter and filtered within the statement.
 	// Quantities are given only for meter groups; grouping by meter also splits by the meter's
 	// presentation dimensions. Open to the owner of the statement's account and to members with the
-	// project permission `billing:cost.read` of each project in `project_ids`, which must then be given
-	// and currently assigned to that account.
+	// project permission `billing:finance.manage` of each project in `project_ids`, which must then be
+	// given and currently assigned to that account.
 	//
 	// GET /api/v1/statements/{statementId}/usage-summary
 	GetStatementUsage(ctx context.Context, params GetStatementUsageParams) (*StatementSummary, error)
@@ -592,8 +592,8 @@ type Handler interface {
 	// Project filters use the account recorded on each charge, including charges for projects later
 	// assigned to another account. The total covers all matching groups, not just the returned page.
 	//
-	// Open to the owner of the account and to members with the project permission `billing:cost.read` of
-	// each project in `project_ids`, which must then be given and currently assigned to the account.
+	// Open to the owner of the account and to members with the project permission `billing:finance.manage`
+	// of each project in `project_ids`, which must then be given and currently assigned to the account.
 	//
 	// GET /api/v1/spend
 	ListSpend(ctx context.Context, params ListSpendParams) (*SpendRowList, error)
@@ -626,9 +626,9 @@ type Handler interface {
 	ListTransactions(ctx context.Context, params ListTransactionsParams) (*TransactionList, error)
 	// ListUsageCharges implements list-usage-charges operation.
 	//
-	// Priced usage charges in the requested scope; members with the project permission `billing:cost.read`
-	// list a project's charges with `project_ids`. Usage that had no price when it occurred is never
-	// charged later.
+	// Priced usage charges in the requested scope; members with the project permission
+	// `billing:finance.manage` list a project's charges with `project_ids`. Usage that had no price when
+	// it occurred is never charged later.
 	//
 	// GET /api/v1/usage-charges
 	ListUsageCharges(ctx context.Context, params ListUsageChargesParams) (*UsageChargeList, error)
@@ -694,8 +694,8 @@ type Handler interface {
 	// PreviewCancellation implements preview-cancellation operation.
 	//
 	// What creating the cancellation now would return, per subscription and in total. Nothing is canceled,
-	// ended or refunded. Open to the same callers and refused as creating it would be, except that nothing
-	// is recorded.
+	// ended or refunded. Open to the owner of the subscriptions' current billing account and to members of
+	// their project; refused for the same states as creating it.
 	//
 	// QUERY /api/v1/cancellations/preview
 	PreviewCancellation(ctx context.Context, req *CancellationPreviewRequest) (*CancellationRefundPreview, error)
@@ -747,8 +747,7 @@ type Handler interface {
 	// and no order is left. To apply a promotion code or pay later, create a renewal Checkout Session.
 	//
 	// Open to the owner of the subscription's current billing account and to members of its project with
-	// the project permission `billing:subscription.write`. Only the owner can pay with
-	// `payment_method_id`.
+	// the project permission `billing:finance.manage`. Only the owner can pay with `payment_method_id`.
 	//
 	// Keep order_id and read the order after an unknown outcome; creating it again conflicts.
 	//
@@ -788,7 +787,7 @@ type Handler interface {
 	// canceled, and 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` with `meta.cancellation_id` while a
 	// cancellation is open: creating it turned renewal off, and withdrawing it does not turn renewal back
 	// on. Open to the owner of the subscription's current billing account and to members of its project
-	// with the project permission `billing:subscription.write`.
+	// with the project permission `billing:finance.manage`.
 	//
 	// PUT /api/v1/subscriptions/{subscriptionId}/auto-renew
 	SetAutoRenew(ctx context.Context, req *AutoRenewSet, params SetAutoRenewParams) (*Subscription, error)
@@ -802,11 +801,11 @@ type Handler interface {
 	// SetProjectAssignment implements set-project-assignment operation.
 	//
 	// Links the project to a billing account you own; you need the project permission
-	// `billing:project_assignment.write`. A project without one is linked directly. Moving it to another
-	// account has the same requirements as unlinking: you own both accounts, the project has no metered
-	// resources, no subscriptions that have not ended and no orders in progress, and the current account
-	// has no unpaid invoices. Nothing moves with the project; charges already incurred stay with the
-	// account linked when they occurred.
+	// `billing:finance.manage`. A project without one is linked directly. Moving it to another account has
+	// the same requirements as unlinking: you own both accounts, the project has no metered resources, no
+	// subscriptions that have not ended and no orders in progress, and the current account has no unpaid
+	// invoices. Nothing moves with the project; charges already incurred stay with the account linked when
+	// they occurred.
 	//
 	// Refused once the project no longer accepts purchases because it is being deleted.
 	//
@@ -825,8 +824,8 @@ type Handler interface {
 	// UnlinkProjectBillingAccount implements unlink-project-billing-account operation.
 	//
 	// Ends the project's current assignment; the assignment history is kept. You need to own the account
-	// and hold the project permission `billing:project_assignment.write`. Allowed only when the project
-	// has no metered resources, no subscriptions that have not ended and no orders in progress, including
+	// and hold the project permission `billing:finance.manage`. Allowed only when the project has no
+	// metered resources, no subscriptions that have not ended and no orders in progress, including
 	// period-end changes, and the billing account has no unpaid invoices; invoices of orders awaiting
 	// payment do not count. Orders are not modified, so wait for them to complete. Charges already
 	// incurred stay with the billing account and are invoiced as usual. The project cannot make purchases
@@ -854,7 +853,7 @@ type Handler interface {
 	// refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions continue, but automatic renewal,
 	// turned off when the cancellation was created, stays off until it is turned on again. Withdrawing a
 	// withdrawn cancellation returns it unchanged. Open to the owner of the subscriptions' current billing
-	// account and to members of their project with the project permission `billing:subscription.write`.
+	// account and to members of their project with the project permission `billing:finance.manage`.
 	//
 	// POST /api/v1/cancellations/{cancellationId}/withdraw
 	WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (*Cancellation, error)

@@ -102,8 +102,8 @@ type Invoker interface {
 	// CreateBackupCapacityPack invokes create-backup-capacity-pack operation.
 	//
 	// Purchases a capacity pack, backup capacity for this project and region bought in advance by month or
-	// year: `billing` must be licensed with a period, as offered in the backup service's
-	// `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the
+	// year: `billing` must be licensed with a period, as Billing offers for the region's
+	// `capacity_pack_billing`. Compute applies the coverage: each hour, retained backup capacity up to the
 	// total `capacity_gib` of the packs active in the region is covered, and Compute meters only the
 	// excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing
 	// takes its order and payment and handles its renewal and cancellation through the pack's
@@ -115,30 +115,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/regions/{regionId}/backup-capacity-packs
 	CreateBackupCapacityPack(ctx context.Context, request *CreateBackupCapacityPackRequestBody, params CreateBackupCapacityPackParams) (CreateBackupCapacityPackRes, error)
-	// CreateBackupCapacityPackQuote invokes create-backup-capacity-pack-quote operation.
-	//
-	// Prices what `create-backup-capacity-pack` would order for the same request, without ordering or
-	// creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts
-	// and tax as for automatic checkout. `total` is what automatic checkout would collect before credit
-	// grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
-	// different amount. `estimated_usage_amount` projects metered usage over one month of 730 hours and is
-	// not collected at checkout. A request the purchase would refuse is refused the same way. Prices may
-	// change, so quote again before final confirmation.
-	//
-	// POST /api/v1/regions/{regionId}/backup-capacity-packs/quote
-	CreateBackupCapacityPackQuote(ctx context.Context, request *CreateBackupCapacityPackQuoteRequestBody, params CreateBackupCapacityPackQuoteParams) (CreateBackupCapacityPackQuoteRes, error)
-	// CreateBackupRestoreQuote invokes create-backup-restore-quote operation.
-	//
-	// Prices what `restore-backup` would order for the same request, without ordering or creating
-	// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-	// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-	// again before final confirmation.
-	//
-	// POST /api/v1/backups/{backupId}/restore/quote
-	CreateBackupRestoreQuote(ctx context.Context, request *RestoreBackupQuoteRequestBody, params CreateBackupRestoreQuoteParams) (CreateBackupRestoreQuoteRes, error)
 	// CreateBackupService invokes create-backup-service operation.
 	//
 	// Purchases the backup service for this project and region. The service itself has no charge; backups
@@ -150,18 +126,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/regions/{regionId}/backup-service
 	CreateBackupService(ctx context.Context, request *CreateBackupServiceRequestBody, params CreateBackupServiceParams) (CreateBackupServiceRes, error)
-	// CreateBackupServiceQuote invokes create-backup-service-quote operation.
-	//
-	// Prices what `create-backup-service` would order for the same request, without ordering or creating
-	// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-	// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-	// again before final confirmation.
-	//
-	// POST /api/v1/regions/{regionId}/backup-service/quote
-	CreateBackupServiceQuote(ctx context.Context, params CreateBackupServiceQuoteParams) (CreateBackupServiceQuoteRes, error)
 	// CreateDisk invokes create-disk operation.
 	//
 	// The disk is created in the availability zone of the selected disk type, and an instance must reside
@@ -173,52 +137,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/disks
 	CreateDisk(ctx context.Context, request *CreateDiskRequestBody) (CreateDiskRes, error)
-	// CreateDiskQuote invokes create-disk-quote operation.
-	//
-	// Prices what `create-disk` would order for the same request, without ordering or creating anything;
-	// nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for
-	// automatic checkout. `total` is what automatic checkout would collect before credit grants and
-	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-	// again before final confirmation.
-	//
-	// POST /api/v1/disks/quote
-	CreateDiskQuote(ctx context.Context, request *CreateDiskQuoteRequestBody) (CreateDiskQuoteRes, error)
-	// CreateDiskResizeQuote invokes create-disk-resize-quote operation.
-	//
-	// Prices the change `resize-disk` would order, as of now, without ordering or changing anything. A
-	// change that raises the price has the charge for the rest of the paid period as `total`; one that
-	// lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-	// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-	// A request the change would refuse is refused the same way. Prices may change, so quote again before
-	// final confirmation.
-	//
-	// POST /api/v1/disks/{diskId}/resize/quote
-	CreateDiskResizeQuote(ctx context.Context, request *ResizeDiskQuoteRequestBody, params CreateDiskResizeQuoteParams) (CreateDiskResizeQuoteRes, error)
-	// CreateFloatingIPBandwidthQuote invokes create-floating-ip-bandwidth-quote operation.
-	//
-	// Prices the change `set-floating-ip-bandwidth` would order, as of now, without ordering or changing
-	// anything. A change that raises the price has the charge for the rest of the paid period as `total`;
-	// one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-	// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-	// A request the change would refuse is refused the same way. Prices may change, so quote again before
-	// final confirmation.
-	//
-	// POST /api/v1/floating-ips/{floatingIpId}/bandwidth/quote
-	CreateFloatingIPBandwidthQuote(ctx context.Context, request *SetFloatingIPBandwidthQuoteRequestBody, params CreateFloatingIPBandwidthQuoteParams) (CreateFloatingIPBandwidthQuoteRes, error)
-	// CreateFloatingIPQuote invokes create-floating-ip-quote operation.
-	//
-	// Prices what `allocate-floating-ip` would order for the same request, without ordering or creating
-	// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-	// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-	// again before final confirmation.
-	//
-	// POST /api/v1/floating-ips/quote
-	CreateFloatingIPQuote(ctx context.Context, request *AllocateFloatingIPQuoteRequestBody) (CreateFloatingIPQuoteRes, error)
 	// CreateImage invokes create-image operation.
 	//
 	// Creates a private image of this project from the system disk of the instance; data disks are not
@@ -243,45 +161,11 @@ type Invoker interface {
 	//
 	// The instance can be started, stopped and used normally during the capture, but cannot be released.
 	//
-	// The image is billed for the storage it occupies, as the region's `private_image_pricing` shows.
-	// Obtain a quote with `create-image-quote` first.
+	// The image is billed for the storage it occupies, under the region's `private_image_billing`. Quote
+	// it with Billing first.
 	//
 	// POST /api/v1/images
 	CreateImage(ctx context.Context, request *CreateImageRequestBody) (CreateImageRes, error)
-	// CreateImageQuote invokes create-image-quote operation.
-	//
-	// Prices the capture `create-image` would order for the same instance, without ordering anything;
-	// nothing is reserved or recorded. The quantity priced is the size of the system disk, which is the
-	// most the image can occupy, with the option chosen in `billing`. Billing evaluates applicable account
-	// discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before
-	// credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
-	// different amount. Prices may change, so quote again before final confirmation.
-	//
-	// POST /api/v1/images/quote
-	CreateImageQuote(ctx context.Context, request *CreateImageQuoteRequestBody) (CreateImageQuoteRes, error)
-	// CreateInstanceQuote invokes create-instance-quote operation.
-	//
-	// Prices what `launch-instance` would order for the same request, without ordering or creating
-	// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-	// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-	// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-	// again before final confirmation.
-	//
-	// POST /api/v1/instances/quote
-	CreateInstanceQuote(ctx context.Context, request *LaunchInstanceQuoteRequestBody) (CreateInstanceQuoteRes, error)
-	// CreateInstanceResizeQuote invokes create-instance-resize-quote operation.
-	//
-	// Prices the change `resize-instance` would order, as of now, without ordering or changing anything. A
-	// change that raises the price has the charge for the rest of the paid period as `total`; one that
-	// lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-	// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-	// A request the change would refuse is refused the same way. Prices may change, so quote again before
-	// final confirmation.
-	//
-	// POST /api/v1/instances/{instanceId}/resize/quote
-	CreateInstanceResizeQuote(ctx context.Context, request *ResizeInstanceQuoteRequestBody, params CreateInstanceResizeQuoteParams) (CreateInstanceResizeQuoteRes, error)
 	// CreatePeering invokes create-peering operation.
 	//
 	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
@@ -349,19 +233,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/snapshots
 	CreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (*SnapshotResource, error)
-	// CreateSnapshotQuotaQuote invokes create-snapshot-quota-quote operation.
-	//
-	// Prices what `set-snapshot-quota` would order, including a change of an existing purchase as of now,
-	// for the same request, without ordering or creating anything; nothing is reserved or recorded.
-	// Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what
-	// automatic checkout would collect before credit grants and balance; give it as
-	// `checkout.expected_amount` to be refused rather than charged a different amount.
-	// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-	// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-	// again before final confirmation.
-	//
-	// POST /api/v1/regions/{regionId}/snapshot-quota/quote
-	CreateSnapshotQuotaQuote(ctx context.Context, request *SetSnapshotQuotaQuoteRequestBody, params CreateSnapshotQuotaQuoteParams) (CreateSnapshotQuotaQuoteRes, error)
 	// CreateSubnet invokes create-subnet operation.
 	//
 	// Create a subnet.
@@ -375,14 +246,44 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/backups/{backupId}
 	DeleteBackup(ctx context.Context, params DeleteBackupParams) (DeleteBackupRes, error)
+	// DeleteBackupCapacityPack invokes delete-backup-capacity-pack operation.
+	//
+	// Cancels the pack's subscription in Billing and returns the cancellation. Refused with 404
+	// `BACKUP_CAPACITY_PACK_NOT_FOUND` when the project has no pack of this ID in the region, and with 409
+	// `BACKUP_CAPACITY_PACK_ENDED` when the pack has ended.
+	//
+	// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
+	// refunded under those terms. When the subscription can only be canceled at the end of its paid
+	// period, it is canceled then, and its coverage stays in force until `scheduled_at`. Deleting again
+	// while the cancellation is open returns it.
+	//
+	// DELETE /api/v1/regions/{regionId}/backup-capacity-packs/{packId}
+	DeleteBackupCapacityPack(ctx context.Context, params DeleteBackupCapacityPackParams) (DeleteBackupCapacityPackRes, error)
+	// DeleteBackupService invokes delete-backup-service operation.
+	//
+	// Cancels the service's subscription in Billing and returns the cancellation. Refused with 409
+	// `BACKUP_SERVICE_IN_USE` while any backup is retained in the region; delete the backups first.
+	// Capacity packs are deleted separately. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` when no
+	// subscription pays for a service in the region.
+	//
+	// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
+	// refunded under those terms. When the subscription can only be canceled at the end of its paid
+	// period, it is canceled then, and the service stays in force until `scheduled_at`. Deleting again
+	// while the cancellation is open returns it.
+	//
+	// DELETE /api/v1/regions/{regionId}/backup-service
+	DeleteBackupService(ctx context.Context, params DeleteBackupServiceParams) (DeleteBackupServiceRes, error)
 	// DeleteDisk invokes delete-disk operation.
 	//
 	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the disk. It is released by canceling the
-	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-	// `release_subscription_ids`.
+	// When subscriptions pay for the disk, its `release_subscription_ids`, this request cancels them in
+	// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
+	// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
+	// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
+	// period, all of them are canceled then, and the disk is kept until `scheduled_at`. Deleting again
+	// while the cancellation is open returns it. Without subscriptions, deletion begins at once and
+	// `cancellation` is null.
 	//
 	// DELETE /api/v1/disks/{diskId}
 	DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error)
@@ -396,10 +297,13 @@ type Invoker interface {
 	// An image whose capture has not finished can be deleted; the capture is aborted. This is the one
 	// operation accepted while the `create` operation is in progress.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
-	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-	// `release_subscription_ids`.
+	// When subscriptions pay for the image, its `release_subscription_ids`, this request cancels them in
+	// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
+	// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
+	// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
+	// period, all of them are canceled then, and the image is kept until `scheduled_at`. Deleting again
+	// while the cancellation is open returns it. Without subscriptions, deletion begins at once and
+	// `cancellation` is null.
 	//
 	// DELETE /api/v1/images/{imageId}
 	DeleteImage(ctx context.Context, params DeleteImageParams) (DeleteImageRes, error)
@@ -412,10 +316,13 @@ type Invoker interface {
 	// An instance being captured as a private image cannot be released. Wait for the capture to finish, or
 	// delete that image first.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk
-	// that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that
-	// resource. The instance is released by canceling the subscriptions listed in `meta.subscription_ids`
-	// through Billing, the same set as its `release_subscription_ids`.
+	// When subscriptions pay for the instance, or for a disk deleted with it, its
+	// `release_subscription_ids`, this request cancels them in Billing, and the response carries that
+	// cancellation. Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at
+	// once and refunded under those terms, and release begins when Billing begins the cancellation. When
+	// any of them can only be canceled at the end of its paid period, all of them are canceled then, and
+	// the instance is kept until `scheduled_at`. Deleting again while the cancellation is open returns it.
+	// Without subscriptions, release begins at once and `cancellation` is null.
 	//
 	// DELETE /api/v1/instances/{instanceId}
 	DeleteInstance(ctx context.Context, params DeleteInstanceParams) (DeleteInstanceRes, error)
@@ -465,6 +372,19 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/snapshots/{snapshotId}
 	DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (DeleteSnapshotRes, error)
+	// DeleteSnapshotQuota invokes delete-snapshot-quota operation.
+	//
+	// Cancels the quota's subscription in Billing and returns the cancellation. Refused with 409
+	// `SNAPSHOT_QUOTA_IN_USE` while any snapshot exists in the region; delete the snapshots first. Refused
+	// with 409 `SNAPSHOT_QUOTA_NOT_ACTIVE` when no subscription pays for a quota in the region.
+	//
+	// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
+	// refunded under those terms. When the subscription can only be canceled at the end of its paid
+	// period, it is canceled then, and the quota stays in force until `scheduled_at`. Deleting again while
+	// the cancellation is open returns it.
+	//
+	// DELETE /api/v1/regions/{regionId}/snapshot-quota
+	DeleteSnapshotQuota(ctx context.Context, params DeleteSnapshotQuotaParams) (DeleteSnapshotQuotaRes, error)
 	// DeleteSubnet invokes delete-subnet operation.
 	//
 	// Deletion is rejected while network interfaces remain in the subnet, or while a static route has a
@@ -532,10 +452,10 @@ type Invoker interface {
 	// the capacity packs active in the region and meters only the excess on this service's subscription,
 	// per GiB-hour.
 	//
-	// Canceling the service's subscription through Billing is refused while any backup is retained in the
-	// region: the cancellation fails with `BACKUP_SERVICE_IN_USE`. Delete the backups first. Capacity
-	// packs are canceled separately, under their own refund terms. Reclaiming the service for non-payment
-	// deletes its backups.
+	// Deleting the service, which cancels its subscription, is refused while any backup is retained in the
+	// region with `BACKUP_SERVICE_IN_USE`. Delete the backups first. Capacity packs are deleted
+	// separately, under their own refund terms. Reclaiming the service for non-payment deletes its
+	// backups.
 	//
 	// GET /api/v1/regions/{regionId}/backup-service
 	GetBackupService(ctx context.Context, params GetBackupServiceParams) (*BackupService, error)
@@ -624,9 +544,9 @@ type Invoker interface {
 	// 0) while active, and zero when creation is not permitted; additional creation is refused while the
 	// quota is inactive, suspended or exhausted.
 	//
-	// Canceling the quota's subscription through Billing is refused while any snapshot exists in the
-	// region: the cancellation fails with SNAPSHOT_QUOTA_IN_USE. Reclaiming the quota for non-payment
-	// deletes its snapshots, as for other reclaimed resources.
+	// Deleting the quota, which cancels its subscription, is refused while any snapshot exists in the
+	// region with SNAPSHOT_QUOTA_IN_USE. Reclaiming the quota for non-payment deletes its snapshots, as
+	// for other reclaimed resources.
 	//
 	// GET /api/v1/regions/{regionId}/snapshot-quota
 	GetSnapshotQuota(ctx context.Context, params GetSnapshotQuotaParams) (*SnapshotQuota, error)
@@ -872,10 +792,13 @@ type Invoker interface {
 	// Releases the floating IP after unbinding it. The floating IP shows the `delete` operation until it
 	// is released.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling
-	// the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-	// `release_subscription_ids`.
+	// When subscriptions pay for the address, its `release_subscription_ids`, this request cancels them in
+	// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
+	// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
+	// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
+	// period, all of them are canceled then, and the floating IP is kept until `scheduled_at`. Deleting
+	// again while the cancellation is open returns it. Without subscriptions, release begins at once and
+	// `cancellation` is null.
 	//
 	// DELETE /api/v1/floating-ips/{floatingIpId}
 	ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (ReleaseFloatingIPRes, error)
@@ -1075,8 +998,9 @@ type Invoker interface {
 	//
 	// Purchases or changes the maximum number of snapshots this project may hold in this region. limit is
 	// the target total, not an additional number of slots or a consumable create allowance. billing
-	// chooses one of the quota's pricing options; a change of an existing purchase keeps its usage type
-	// and period, and billing must name that option. The purchased quantity is this count.
+	// chooses how the quota is bought, among the prices Billing offers for the region's
+	// `snapshot_quota_billing`; a change of an existing purchase keeps its usage type and period, and
+	// billing must name them. The purchased quantity is this count.
 	//
 	// Returns the quota with the Checkout Session. pending_limit records the target while the current
 	// limit stays in force; the new limit applies once the order is accepted and the quota is activated.
@@ -2115,8 +2039,8 @@ func (c *Client) sendCreateBackup(ctx context.Context, request *CreateBackupRequ
 // CreateBackupCapacityPack invokes create-backup-capacity-pack operation.
 //
 // Purchases a capacity pack, backup capacity for this project and region bought in advance by month or
-// year: `billing` must be licensed with a period, as offered in the backup service's
-// `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the
+// year: `billing` must be licensed with a period, as Billing offers for the region's
+// `capacity_pack_billing`. Compute applies the coverage: each hour, retained backup capacity up to the
 // total `capacity_gib` of the packs active in the region is covered, and Compute meters only the
 // excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing
 // takes its order and payment and handles its renewal and cancellation through the pack's
@@ -2259,306 +2183,6 @@ func (c *Client) sendCreateBackupCapacityPack(ctx context.Context, request *Crea
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateBackupCapacityPackResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateBackupCapacityPackQuote invokes create-backup-capacity-pack-quote operation.
-//
-// Prices what `create-backup-capacity-pack` would order for the same request, without ordering or
-// creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts
-// and tax as for automatic checkout. `total` is what automatic checkout would collect before credit
-// grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
-// different amount. `estimated_usage_amount` projects metered usage over one month of 730 hours and is
-// not collected at checkout. A request the purchase would refuse is refused the same way. Prices may
-// change, so quote again before final confirmation.
-//
-// POST /api/v1/regions/{regionId}/backup-capacity-packs/quote
-func (c *Client) CreateBackupCapacityPackQuote(ctx context.Context, request *CreateBackupCapacityPackQuoteRequestBody, params CreateBackupCapacityPackQuoteParams) (CreateBackupCapacityPackQuoteRes, error) {
-	res, err := c.sendCreateBackupCapacityPackQuote(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendCreateBackupCapacityPackQuote(ctx context.Context, request *CreateBackupCapacityPackQuoteRequestBody, params CreateBackupCapacityPackQuoteParams) (res CreateBackupCapacityPackQuoteRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-backup-capacity-pack-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/regions/{regionId}/backup-capacity-packs/quote"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateBackupCapacityPackQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/regions/"
-	{
-		// Encode "regionId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "regionId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.RegionId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/backup-capacity-packs/quote"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateBackupCapacityPackQuoteRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateBackupCapacityPackQuoteOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateBackupCapacityPackQuoteResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateBackupRestoreQuote invokes create-backup-restore-quote operation.
-//
-// Prices what `restore-backup` would order for the same request, without ordering or creating
-// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/backups/{backupId}/restore/quote
-func (c *Client) CreateBackupRestoreQuote(ctx context.Context, request *RestoreBackupQuoteRequestBody, params CreateBackupRestoreQuoteParams) (CreateBackupRestoreQuoteRes, error) {
-	res, err := c.sendCreateBackupRestoreQuote(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendCreateBackupRestoreQuote(ctx context.Context, request *RestoreBackupQuoteRequestBody, params CreateBackupRestoreQuoteParams) (res CreateBackupRestoreQuoteRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-backup-restore-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/backups/{backupId}/restore/quote"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateBackupRestoreQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/backups/"
-	{
-		// Encode "backupId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "backupId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.BackupId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/restore/quote"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateBackupRestoreQuoteRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateBackupRestoreQuoteOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateBackupRestoreQuoteResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2715,144 +2339,6 @@ func (c *Client) sendCreateBackupService(ctx context.Context, request *CreateBac
 	return result, nil
 }
 
-// CreateBackupServiceQuote invokes create-backup-service-quote operation.
-//
-// Prices what `create-backup-service` would order for the same request, without ordering or creating
-// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/regions/{regionId}/backup-service/quote
-func (c *Client) CreateBackupServiceQuote(ctx context.Context, params CreateBackupServiceQuoteParams) (CreateBackupServiceQuoteRes, error) {
-	res, err := c.sendCreateBackupServiceQuote(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendCreateBackupServiceQuote(ctx context.Context, params CreateBackupServiceQuoteParams) (res CreateBackupServiceQuoteRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-backup-service-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/regions/{regionId}/backup-service/quote"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateBackupServiceQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/regions/"
-	{
-		// Encode "regionId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "regionId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.RegionId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/backup-service/quote"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateBackupServiceQuoteOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateBackupServiceQuoteResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // CreateDisk invokes create-disk operation.
 //
 // The disk is created in the availability zone of the selected disk type, and an instance must reside
@@ -2983,566 +2469,6 @@ func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestB
 	return result, nil
 }
 
-// CreateDiskQuote invokes create-disk-quote operation.
-//
-// Prices what `create-disk` would order for the same request, without ordering or creating anything;
-// nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for
-// automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/disks/quote
-func (c *Client) CreateDiskQuote(ctx context.Context, request *CreateDiskQuoteRequestBody) (CreateDiskQuoteRes, error) {
-	res, err := c.sendCreateDiskQuote(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendCreateDiskQuote(ctx context.Context, request *CreateDiskQuoteRequestBody) (res CreateDiskQuoteRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-disk-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/disks/quote"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateDiskQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/disks/quote"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateDiskQuoteRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateDiskQuoteOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateDiskQuoteResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateDiskResizeQuote invokes create-disk-resize-quote operation.
-//
-// Prices the change `resize-disk` would order, as of now, without ordering or changing anything. A
-// change that raises the price has the charge for the rest of the paid period as `total`; one that
-// lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-// A request the change would refuse is refused the same way. Prices may change, so quote again before
-// final confirmation.
-//
-// POST /api/v1/disks/{diskId}/resize/quote
-func (c *Client) CreateDiskResizeQuote(ctx context.Context, request *ResizeDiskQuoteRequestBody, params CreateDiskResizeQuoteParams) (CreateDiskResizeQuoteRes, error) {
-	res, err := c.sendCreateDiskResizeQuote(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendCreateDiskResizeQuote(ctx context.Context, request *ResizeDiskQuoteRequestBody, params CreateDiskResizeQuoteParams) (res CreateDiskResizeQuoteRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-disk-resize-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/disks/{diskId}/resize/quote"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateDiskResizeQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/disks/"
-	{
-		// Encode "diskId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.DiskId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/resize/quote"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateDiskResizeQuoteRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateDiskResizeQuoteOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateDiskResizeQuoteResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateFloatingIPBandwidthQuote invokes create-floating-ip-bandwidth-quote operation.
-//
-// Prices the change `set-floating-ip-bandwidth` would order, as of now, without ordering or changing
-// anything. A change that raises the price has the charge for the rest of the paid period as `total`;
-// one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-// A request the change would refuse is refused the same way. Prices may change, so quote again before
-// final confirmation.
-//
-// POST /api/v1/floating-ips/{floatingIpId}/bandwidth/quote
-func (c *Client) CreateFloatingIPBandwidthQuote(ctx context.Context, request *SetFloatingIPBandwidthQuoteRequestBody, params CreateFloatingIPBandwidthQuoteParams) (CreateFloatingIPBandwidthQuoteRes, error) {
-	res, err := c.sendCreateFloatingIPBandwidthQuote(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendCreateFloatingIPBandwidthQuote(ctx context.Context, request *SetFloatingIPBandwidthQuoteRequestBody, params CreateFloatingIPBandwidthQuoteParams) (res CreateFloatingIPBandwidthQuoteRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-floating-ip-bandwidth-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/floating-ips/{floatingIpId}/bandwidth/quote"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateFloatingIPBandwidthQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/floating-ips/"
-	{
-		// Encode "floatingIpId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "floatingIpId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.FloatingIpId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/bandwidth/quote"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateFloatingIPBandwidthQuoteRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateFloatingIPBandwidthQuoteOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateFloatingIPBandwidthQuoteResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateFloatingIPQuote invokes create-floating-ip-quote operation.
-//
-// Prices what `allocate-floating-ip` would order for the same request, without ordering or creating
-// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/floating-ips/quote
-func (c *Client) CreateFloatingIPQuote(ctx context.Context, request *AllocateFloatingIPQuoteRequestBody) (CreateFloatingIPQuoteRes, error) {
-	res, err := c.sendCreateFloatingIPQuote(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendCreateFloatingIPQuote(ctx context.Context, request *AllocateFloatingIPQuoteRequestBody) (res CreateFloatingIPQuoteRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-floating-ip-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/floating-ips/quote"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateFloatingIPQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/floating-ips/quote"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateFloatingIPQuoteRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateFloatingIPQuoteOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateFloatingIPQuoteResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // CreateImage invokes create-image operation.
 //
 // Creates a private image of this project from the system disk of the instance; data disks are not
@@ -3567,8 +2493,8 @@ func (c *Client) sendCreateFloatingIPQuote(ctx context.Context, request *Allocat
 //
 // The instance can be started, stopped and used normally during the capture, but cannot be released.
 //
-// The image is billed for the storage it occupies, as the region's `private_image_pricing` shows.
-// Obtain a quote with `create-image-quote` first.
+// The image is billed for the storage it occupies, under the region's `private_image_billing`. Quote
+// it with Billing first.
 //
 // POST /api/v1/images
 func (c *Client) CreateImage(ctx context.Context, request *CreateImageRequestBody) (CreateImageRes, error) {
@@ -3684,407 +2610,6 @@ func (c *Client) sendCreateImage(ctx context.Context, request *CreateImageReques
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateImageResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateImageQuote invokes create-image-quote operation.
-//
-// Prices the capture `create-image` would order for the same instance, without ordering anything;
-// nothing is reserved or recorded. The quantity priced is the size of the system disk, which is the
-// most the image can occupy, with the option chosen in `billing`. Billing evaluates applicable account
-// discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before
-// credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
-// different amount. Prices may change, so quote again before final confirmation.
-//
-// POST /api/v1/images/quote
-func (c *Client) CreateImageQuote(ctx context.Context, request *CreateImageQuoteRequestBody) (CreateImageQuoteRes, error) {
-	res, err := c.sendCreateImageQuote(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendCreateImageQuote(ctx context.Context, request *CreateImageQuoteRequestBody) (res CreateImageQuoteRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-image-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/images/quote"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateImageQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/images/quote"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateImageQuoteRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateImageQuoteOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateImageQuoteResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateInstanceQuote invokes create-instance-quote operation.
-//
-// Prices what `launch-instance` would order for the same request, without ordering or creating
-// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/instances/quote
-func (c *Client) CreateInstanceQuote(ctx context.Context, request *LaunchInstanceQuoteRequestBody) (CreateInstanceQuoteRes, error) {
-	res, err := c.sendCreateInstanceQuote(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendCreateInstanceQuote(ctx context.Context, request *LaunchInstanceQuoteRequestBody) (res CreateInstanceQuoteRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-instance-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/instances/quote"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateInstanceQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/instances/quote"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateInstanceQuoteRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateInstanceQuoteOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateInstanceQuoteResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateInstanceResizeQuote invokes create-instance-resize-quote operation.
-//
-// Prices the change `resize-instance` would order, as of now, without ordering or changing anything. A
-// change that raises the price has the charge for the rest of the paid period as `total`; one that
-// lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-// A request the change would refuse is refused the same way. Prices may change, so quote again before
-// final confirmation.
-//
-// POST /api/v1/instances/{instanceId}/resize/quote
-func (c *Client) CreateInstanceResizeQuote(ctx context.Context, request *ResizeInstanceQuoteRequestBody, params CreateInstanceResizeQuoteParams) (CreateInstanceResizeQuoteRes, error) {
-	res, err := c.sendCreateInstanceResizeQuote(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendCreateInstanceResizeQuote(ctx context.Context, request *ResizeInstanceQuoteRequestBody, params CreateInstanceResizeQuoteParams) (res CreateInstanceResizeQuoteRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-instance-resize-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}/resize/quote"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateInstanceResizeQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/instances/"
-	{
-		// Encode "instanceId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "instanceId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.InstanceId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/resize/quote"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateInstanceResizeQuoteRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateInstanceResizeQuoteOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateInstanceResizeQuoteResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5030,157 +3555,6 @@ func (c *Client) sendCreateSnapshot(ctx context.Context, request *CreateSnapshot
 	return result, nil
 }
 
-// CreateSnapshotQuotaQuote invokes create-snapshot-quota-quote operation.
-//
-// Prices what `set-snapshot-quota` would order, including a change of an existing purchase as of now,
-// for the same request, without ordering or creating anything; nothing is reserved or recorded.
-// Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what
-// automatic checkout would collect before credit grants and balance; give it as
-// `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/regions/{regionId}/snapshot-quota/quote
-func (c *Client) CreateSnapshotQuotaQuote(ctx context.Context, request *SetSnapshotQuotaQuoteRequestBody, params CreateSnapshotQuotaQuoteParams) (CreateSnapshotQuotaQuoteRes, error) {
-	res, err := c.sendCreateSnapshotQuotaQuote(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendCreateSnapshotQuotaQuote(ctx context.Context, request *SetSnapshotQuotaQuoteRequestBody, params CreateSnapshotQuotaQuoteParams) (res CreateSnapshotQuotaQuoteRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-snapshot-quota-quote"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/regions/{regionId}/snapshot-quota/quote"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateSnapshotQuotaQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/regions/"
-	{
-		// Encode "regionId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "regionId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.RegionId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/snapshot-quota/quote"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateSnapshotQuotaQuoteRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateSnapshotQuotaQuoteOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateSnapshotQuotaQuoteResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // CreateSubnet invokes create-subnet operation.
 //
 // Create a subnet.
@@ -5457,14 +3831,314 @@ func (c *Client) sendDeleteBackup(ctx context.Context, params DeleteBackupParams
 	return result, nil
 }
 
+// DeleteBackupCapacityPack invokes delete-backup-capacity-pack operation.
+//
+// Cancels the pack's subscription in Billing and returns the cancellation. Refused with 404
+// `BACKUP_CAPACITY_PACK_NOT_FOUND` when the project has no pack of this ID in the region, and with 409
+// `BACKUP_CAPACITY_PACK_ENDED` when the pack has ended.
+//
+// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
+// refunded under those terms. When the subscription can only be canceled at the end of its paid
+// period, it is canceled then, and its coverage stays in force until `scheduled_at`. Deleting again
+// while the cancellation is open returns it.
+//
+// DELETE /api/v1/regions/{regionId}/backup-capacity-packs/{packId}
+func (c *Client) DeleteBackupCapacityPack(ctx context.Context, params DeleteBackupCapacityPackParams) (DeleteBackupCapacityPackRes, error) {
+	res, err := c.sendDeleteBackupCapacityPack(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeleteBackupCapacityPack(ctx context.Context, params DeleteBackupCapacityPackParams) (res DeleteBackupCapacityPackRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-backup-capacity-pack"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/regions/{regionId}/backup-capacity-packs/{packId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteBackupCapacityPackOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/regions/"
+	{
+		// Encode "regionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "regionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.RegionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/backup-capacity-packs/"
+	{
+		// Encode "packId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "packId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.PackId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteBackupCapacityPackOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteBackupCapacityPackResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeleteBackupService invokes delete-backup-service operation.
+//
+// Cancels the service's subscription in Billing and returns the cancellation. Refused with 409
+// `BACKUP_SERVICE_IN_USE` while any backup is retained in the region; delete the backups first.
+// Capacity packs are deleted separately. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` when no
+// subscription pays for a service in the region.
+//
+// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
+// refunded under those terms. When the subscription can only be canceled at the end of its paid
+// period, it is canceled then, and the service stays in force until `scheduled_at`. Deleting again
+// while the cancellation is open returns it.
+//
+// DELETE /api/v1/regions/{regionId}/backup-service
+func (c *Client) DeleteBackupService(ctx context.Context, params DeleteBackupServiceParams) (DeleteBackupServiceRes, error) {
+	res, err := c.sendDeleteBackupService(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeleteBackupService(ctx context.Context, params DeleteBackupServiceParams) (res DeleteBackupServiceRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-backup-service"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/regions/{regionId}/backup-service"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteBackupServiceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/regions/"
+	{
+		// Encode "regionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "regionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.RegionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/backup-service"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteBackupServiceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteBackupServiceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // DeleteDisk invokes delete-disk operation.
 //
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a
-// pay-as-you-go subscription. `meta.resource_id` names the disk. It is released by canceling the
-// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-// `release_subscription_ids`.
+// When subscriptions pay for the disk, its `release_subscription_ids`, this request cancels them in
+// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
+// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
+// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
+// period, all of them are canceled then, and the disk is kept until `scheduled_at`. Deleting again
+// while the cancellation is open returns it. Without subscriptions, deletion begins at once and
+// `cancellation` is null.
 //
 // DELETE /api/v1/disks/{diskId}
 func (c *Client) DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error) {
@@ -5603,10 +4277,13 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 // An image whose capture has not finished can be deleted; the capture is aborted. This is the one
 // operation accepted while the `create` operation is in progress.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
-// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
-// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-// `release_subscription_ids`.
+// When subscriptions pay for the image, its `release_subscription_ids`, this request cancels them in
+// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
+// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
+// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
+// period, all of them are canceled then, and the image is kept until `scheduled_at`. Deleting again
+// while the cancellation is open returns it. Without subscriptions, deletion begins at once and
+// `cancellation` is null.
 //
 // DELETE /api/v1/images/{imageId}
 func (c *Client) DeleteImage(ctx context.Context, params DeleteImageParams) (DeleteImageRes, error) {
@@ -5744,10 +4421,13 @@ func (c *Client) sendDeleteImage(ctx context.Context, params DeleteImageParams) 
 // An instance being captured as a private image cannot be released. Wait for the capture to finish, or
 // delete that image first.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk
-// that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that
-// resource. The instance is released by canceling the subscriptions listed in `meta.subscription_ids`
-// through Billing, the same set as its `release_subscription_ids`.
+// When subscriptions pay for the instance, or for a disk deleted with it, its
+// `release_subscription_ids`, this request cancels them in Billing, and the response carries that
+// cancellation. Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at
+// once and refunded under those terms, and release begins when Billing begins the cancellation. When
+// any of them can only be canceled at the end of its paid period, all of them are canceled then, and
+// the instance is kept until `scheduled_at`. Deleting again while the cancellation is open returns it.
+// Without subscriptions, release begins at once and `cancellation` is null.
 //
 // DELETE /api/v1/instances/{instanceId}
 func (c *Client) DeleteInstance(ctx context.Context, params DeleteInstanceParams) (DeleteInstanceRes, error) {
@@ -6835,6 +5515,145 @@ func (c *Client) sendDeleteSnapshot(ctx context.Context, params DeleteSnapshotPa
 	return result, nil
 }
 
+// DeleteSnapshotQuota invokes delete-snapshot-quota operation.
+//
+// Cancels the quota's subscription in Billing and returns the cancellation. Refused with 409
+// `SNAPSHOT_QUOTA_IN_USE` while any snapshot exists in the region; delete the snapshots first. Refused
+// with 409 `SNAPSHOT_QUOTA_NOT_ACTIVE` when no subscription pays for a quota in the region.
+//
+// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
+// refunded under those terms. When the subscription can only be canceled at the end of its paid
+// period, it is canceled then, and the quota stays in force until `scheduled_at`. Deleting again while
+// the cancellation is open returns it.
+//
+// DELETE /api/v1/regions/{regionId}/snapshot-quota
+func (c *Client) DeleteSnapshotQuota(ctx context.Context, params DeleteSnapshotQuotaParams) (DeleteSnapshotQuotaRes, error) {
+	res, err := c.sendDeleteSnapshotQuota(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeleteSnapshotQuota(ctx context.Context, params DeleteSnapshotQuotaParams) (res DeleteSnapshotQuotaRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-snapshot-quota"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/regions/{regionId}/snapshot-quota"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteSnapshotQuotaOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/regions/"
+	{
+		// Encode "regionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "regionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.RegionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/snapshot-quota"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteSnapshotQuotaOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteSnapshotQuotaResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // DeleteSubnet invokes delete-subnet operation.
 //
 // Deletion is rejected while network interfaces remain in the subnet, or while a static route has a
@@ -7855,10 +6674,10 @@ func (c *Client) sendGetBackup(ctx context.Context, params GetBackupParams) (res
 // the capacity packs active in the region and meters only the excess on this service's subscription,
 // per GiB-hour.
 //
-// Canceling the service's subscription through Billing is refused while any backup is retained in the
-// region: the cancellation fails with `BACKUP_SERVICE_IN_USE`. Delete the backups first. Capacity
-// packs are canceled separately, under their own refund terms. Reclaiming the service for non-payment
-// deletes its backups.
+// Deleting the service, which cancels its subscription, is refused while any backup is retained in the
+// region with `BACKUP_SERVICE_IN_USE`. Delete the backups first. Capacity packs are deleted
+// separately, under their own refund terms. Reclaiming the service for non-payment deletes its
+// backups.
 //
 // GET /api/v1/regions/{regionId}/backup-service
 func (c *Client) GetBackupService(ctx context.Context, params GetBackupServiceParams) (*BackupService, error) {
@@ -9471,9 +8290,9 @@ func (c *Client) sendGetSnapshot(ctx context.Context, params GetSnapshotParams) 
 // 0) while active, and zero when creation is not permitted; additional creation is refused while the
 // quota is inactive, suspended or exhausted.
 //
-// Canceling the quota's subscription through Billing is refused while any snapshot exists in the
-// region: the cancellation fails with SNAPSHOT_QUOTA_IN_USE. Reclaiming the quota for non-payment
-// deletes its snapshots, as for other reclaimed resources.
+// Deleting the quota, which cancels its subscription, is refused while any snapshot exists in the
+// region with SNAPSHOT_QUOTA_IN_USE. Reclaiming the quota for non-payment deletes its snapshots, as
+// for other reclaimed resources.
 //
 // GET /api/v1/regions/{regionId}/snapshot-quota
 func (c *Client) GetSnapshotQuota(ctx context.Context, params GetSnapshotQuotaParams) (*SnapshotQuota, error) {
@@ -14061,10 +12880,13 @@ func (c *Client) sendRejectPeering(ctx context.Context, params RejectPeeringPara
 // Releases the floating IP after unbinding it. The floating IP shows the `delete` operation until it
 // is released.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
-// pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling
-// the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-// `release_subscription_ids`.
+// When subscriptions pay for the address, its `release_subscription_ids`, this request cancels them in
+// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
+// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
+// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
+// period, all of them are canceled then, and the floating IP is kept until `scheduled_at`. Deleting
+// again while the cancellation is open returns it. Without subscriptions, release begins at once and
+// `cancellation` is null.
 //
 // DELETE /api/v1/floating-ips/{floatingIpId}
 func (c *Client) ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (ReleaseFloatingIPRes, error) {
@@ -16581,8 +15403,9 @@ func (c *Client) sendSetInstanceNotes(ctx context.Context, request *SetInstanceN
 //
 // Purchases or changes the maximum number of snapshots this project may hold in this region. limit is
 // the target total, not an additional number of slots or a consumable create allowance. billing
-// chooses one of the quota's pricing options; a change of an existing purchase keeps its usage type
-// and period, and billing must name that option. The purchased quantity is this count.
+// chooses how the quota is bought, among the prices Billing offers for the region's
+// `snapshot_quota_billing`; a change of an existing purchase keeps its usage type and period, and
+// billing must name them. The purchased quantity is this count.
 //
 // Returns the quota with the Checkout Session. pending_limit records the target while the current
 // limit stays in force; the new limit applies once the order is accepted and the quota is activated.

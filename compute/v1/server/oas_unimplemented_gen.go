@@ -107,8 +107,8 @@ func (UnimplementedHandler) CreateBackup(ctx context.Context, req *CreateBackupR
 // CreateBackupCapacityPack implements create-backup-capacity-pack operation.
 //
 // Purchases a capacity pack, backup capacity for this project and region bought in advance by month or
-// year: `billing` must be licensed with a period, as offered in the backup service's
-// `capacity_pack_pricing`. Compute applies the coverage: each hour, retained backup capacity up to the
+// year: `billing` must be licensed with a period, as Billing offers for the region's
+// `capacity_pack_billing`. Compute applies the coverage: each hour, retained backup capacity up to the
 // total `capacity_gib` of the packs active in the region is covered, and Compute meters only the
 // excess on the backup service's subscription. A pack is not a Billing allowance or credit; Billing
 // takes its order and payment and handles its renewal and cancellation through the pack's
@@ -120,36 +120,6 @@ func (UnimplementedHandler) CreateBackup(ctx context.Context, req *CreateBackupR
 //
 // POST /api/v1/regions/{regionId}/backup-capacity-packs
 func (UnimplementedHandler) CreateBackupCapacityPack(ctx context.Context, req *CreateBackupCapacityPackRequestBody, params CreateBackupCapacityPackParams) (r CreateBackupCapacityPackRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateBackupCapacityPackQuote implements create-backup-capacity-pack-quote operation.
-//
-// Prices what `create-backup-capacity-pack` would order for the same request, without ordering or
-// creating anything; nothing is reserved or recorded. Billing evaluates applicable account discounts
-// and tax as for automatic checkout. `total` is what automatic checkout would collect before credit
-// grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
-// different amount. `estimated_usage_amount` projects metered usage over one month of 730 hours and is
-// not collected at checkout. A request the purchase would refuse is refused the same way. Prices may
-// change, so quote again before final confirmation.
-//
-// POST /api/v1/regions/{regionId}/backup-capacity-packs/quote
-func (UnimplementedHandler) CreateBackupCapacityPackQuote(ctx context.Context, req *CreateBackupCapacityPackQuoteRequestBody, params CreateBackupCapacityPackQuoteParams) (r CreateBackupCapacityPackQuoteRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateBackupRestoreQuote implements create-backup-restore-quote operation.
-//
-// Prices what `restore-backup` would order for the same request, without ordering or creating
-// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/backups/{backupId}/restore/quote
-func (UnimplementedHandler) CreateBackupRestoreQuote(ctx context.Context, req *RestoreBackupQuoteRequestBody, params CreateBackupRestoreQuoteParams) (r CreateBackupRestoreQuoteRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -167,21 +137,6 @@ func (UnimplementedHandler) CreateBackupService(ctx context.Context, req *Create
 	return r, ht.ErrNotImplemented
 }
 
-// CreateBackupServiceQuote implements create-backup-service-quote operation.
-//
-// Prices what `create-backup-service` would order for the same request, without ordering or creating
-// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/regions/{regionId}/backup-service/quote
-func (UnimplementedHandler) CreateBackupServiceQuote(ctx context.Context, params CreateBackupServiceQuoteParams) (r CreateBackupServiceQuoteRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // CreateDisk implements create-disk operation.
 //
 // The disk is created in the availability zone of the selected disk type, and an instance must reside
@@ -193,64 +148,6 @@ func (UnimplementedHandler) CreateBackupServiceQuote(ctx context.Context, params
 //
 // POST /api/v1/disks
 func (UnimplementedHandler) CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (r CreateDiskRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateDiskQuote implements create-disk-quote operation.
-//
-// Prices what `create-disk` would order for the same request, without ordering or creating anything;
-// nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as for
-// automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/disks/quote
-func (UnimplementedHandler) CreateDiskQuote(ctx context.Context, req *CreateDiskQuoteRequestBody) (r CreateDiskQuoteRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateDiskResizeQuote implements create-disk-resize-quote operation.
-//
-// Prices the change `resize-disk` would order, as of now, without ordering or changing anything. A
-// change that raises the price has the charge for the rest of the paid period as `total`; one that
-// lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-// A request the change would refuse is refused the same way. Prices may change, so quote again before
-// final confirmation.
-//
-// POST /api/v1/disks/{diskId}/resize/quote
-func (UnimplementedHandler) CreateDiskResizeQuote(ctx context.Context, req *ResizeDiskQuoteRequestBody, params CreateDiskResizeQuoteParams) (r CreateDiskResizeQuoteRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateFloatingIPBandwidthQuote implements create-floating-ip-bandwidth-quote operation.
-//
-// Prices the change `set-floating-ip-bandwidth` would order, as of now, without ordering or changing
-// anything. A change that raises the price has the charge for the rest of the paid period as `total`;
-// one that lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-// A request the change would refuse is refused the same way. Prices may change, so quote again before
-// final confirmation.
-//
-// POST /api/v1/floating-ips/{floatingIpId}/bandwidth/quote
-func (UnimplementedHandler) CreateFloatingIPBandwidthQuote(ctx context.Context, req *SetFloatingIPBandwidthQuoteRequestBody, params CreateFloatingIPBandwidthQuoteParams) (r CreateFloatingIPBandwidthQuoteRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateFloatingIPQuote implements create-floating-ip-quote operation.
-//
-// Prices what `allocate-floating-ip` would order for the same request, without ordering or creating
-// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/floating-ips/quote
-func (UnimplementedHandler) CreateFloatingIPQuote(ctx context.Context, req *AllocateFloatingIPQuoteRequestBody) (r CreateFloatingIPQuoteRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -278,54 +175,11 @@ func (UnimplementedHandler) CreateFloatingIPQuote(ctx context.Context, req *Allo
 //
 // The instance can be started, stopped and used normally during the capture, but cannot be released.
 //
-// The image is billed for the storage it occupies, as the region's `private_image_pricing` shows.
-// Obtain a quote with `create-image-quote` first.
+// The image is billed for the storage it occupies, under the region's `private_image_billing`. Quote
+// it with Billing first.
 //
 // POST /api/v1/images
 func (UnimplementedHandler) CreateImage(ctx context.Context, req *CreateImageRequestBody) (r CreateImageRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateImageQuote implements create-image-quote operation.
-//
-// Prices the capture `create-image` would order for the same instance, without ordering anything;
-// nothing is reserved or recorded. The quantity priced is the size of the system disk, which is the
-// most the image can occupy, with the option chosen in `billing`. Billing evaluates applicable account
-// discounts and tax as for automatic checkout. `total` is what automatic checkout would collect before
-// credit grants and balance; give it as `checkout.expected_amount` to be refused rather than charged a
-// different amount. Prices may change, so quote again before final confirmation.
-//
-// POST /api/v1/images/quote
-func (UnimplementedHandler) CreateImageQuote(ctx context.Context, req *CreateImageQuoteRequestBody) (r CreateImageQuoteRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateInstanceQuote implements create-instance-quote operation.
-//
-// Prices what `launch-instance` would order for the same request, without ordering or creating
-// anything; nothing is reserved or recorded. Billing evaluates applicable account discounts and tax as
-// for automatic checkout. `total` is what automatic checkout would collect before credit grants and
-// balance; give it as `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/instances/quote
-func (UnimplementedHandler) CreateInstanceQuote(ctx context.Context, req *LaunchInstanceQuoteRequestBody) (r CreateInstanceQuoteRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateInstanceResizeQuote implements create-instance-resize-quote operation.
-//
-// Prices the change `resize-instance` would order, as of now, without ordering or changing anything. A
-// change that raises the price has the charge for the rest of the paid period as `total`; one that
-// lowers it has a zero `total` and the refund as `refundable_amount`. Give the returned
-// `proration_date` with the change, and for automatic checkout `total` as `checkout.expected_amount`.
-// A request the change would refuse is refused the same way. Prices may change, so quote again before
-// final confirmation.
-//
-// POST /api/v1/instances/{instanceId}/resize/quote
-func (UnimplementedHandler) CreateInstanceResizeQuote(ctx context.Context, req *ResizeInstanceQuoteRequestBody, params CreateInstanceResizeQuoteParams) (r CreateInstanceResizeQuoteRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -417,22 +271,6 @@ func (UnimplementedHandler) CreateSnapshot(ctx context.Context, req *CreateSnaps
 	return r, ht.ErrNotImplemented
 }
 
-// CreateSnapshotQuotaQuote implements create-snapshot-quota-quote operation.
-//
-// Prices what `set-snapshot-quota` would order, including a change of an existing purchase as of now,
-// for the same request, without ordering or creating anything; nothing is reserved or recorded.
-// Billing evaluates applicable account discounts and tax as for automatic checkout. `total` is what
-// automatic checkout would collect before credit grants and balance; give it as
-// `checkout.expected_amount` to be refused rather than charged a different amount.
-// `estimated_usage_amount` projects metered usage over one month of 730 hours and is not collected at
-// checkout. A request the purchase would refuse is refused the same way. Prices may change, so quote
-// again before final confirmation.
-//
-// POST /api/v1/regions/{regionId}/snapshot-quota/quote
-func (UnimplementedHandler) CreateSnapshotQuotaQuote(ctx context.Context, req *SetSnapshotQuotaQuoteRequestBody, params CreateSnapshotQuotaQuoteParams) (r CreateSnapshotQuotaQuoteRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // CreateSubnet implements create-subnet operation.
 //
 // Create a subnet.
@@ -452,14 +290,50 @@ func (UnimplementedHandler) DeleteBackup(ctx context.Context, params DeleteBacku
 	return r, ht.ErrNotImplemented
 }
 
+// DeleteBackupCapacityPack implements delete-backup-capacity-pack operation.
+//
+// Cancels the pack's subscription in Billing and returns the cancellation. Refused with 404
+// `BACKUP_CAPACITY_PACK_NOT_FOUND` when the project has no pack of this ID in the region, and with 409
+// `BACKUP_CAPACITY_PACK_ENDED` when the pack has ended.
+//
+// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
+// refunded under those terms. When the subscription can only be canceled at the end of its paid
+// period, it is canceled then, and its coverage stays in force until `scheduled_at`. Deleting again
+// while the cancellation is open returns it.
+//
+// DELETE /api/v1/regions/{regionId}/backup-capacity-packs/{packId}
+func (UnimplementedHandler) DeleteBackupCapacityPack(ctx context.Context, params DeleteBackupCapacityPackParams) (r DeleteBackupCapacityPackRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// DeleteBackupService implements delete-backup-service operation.
+//
+// Cancels the service's subscription in Billing and returns the cancellation. Refused with 409
+// `BACKUP_SERVICE_IN_USE` while any backup is retained in the region; delete the backups first.
+// Capacity packs are deleted separately. Refused with 409 `BACKUP_SERVICE_NOT_ACTIVE` when no
+// subscription pays for a service in the region.
+//
+// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
+// refunded under those terms. When the subscription can only be canceled at the end of its paid
+// period, it is canceled then, and the service stays in force until `scheduled_at`. Deleting again
+// while the cancellation is open returns it.
+//
+// DELETE /api/v1/regions/{regionId}/backup-service
+func (UnimplementedHandler) DeleteBackupService(ctx context.Context, params DeleteBackupServiceParams) (r DeleteBackupServiceRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // DeleteDisk implements delete-disk operation.
 //
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a
-// pay-as-you-go subscription. `meta.resource_id` names the disk. It is released by canceling the
-// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-// `release_subscription_ids`.
+// When subscriptions pay for the disk, its `release_subscription_ids`, this request cancels them in
+// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
+// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
+// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
+// period, all of them are canceled then, and the disk is kept until `scheduled_at`. Deleting again
+// while the cancellation is open returns it. Without subscriptions, deletion begins at once and
+// `cancellation` is null.
 //
 // DELETE /api/v1/disks/{diskId}
 func (UnimplementedHandler) DeleteDisk(ctx context.Context, params DeleteDiskParams) (r DeleteDiskRes, _ error) {
@@ -476,10 +350,13 @@ func (UnimplementedHandler) DeleteDisk(ctx context.Context, params DeleteDiskPar
 // An image whose capture has not finished can be deleted; the capture is aborted. This is the one
 // operation accepted while the `create` operation is in progress.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the image, including a
-// pay-as-you-go subscription. `meta.resource_id` names the image. It is released by canceling the
-// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-// `release_subscription_ids`.
+// When subscriptions pay for the image, its `release_subscription_ids`, this request cancels them in
+// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
+// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
+// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
+// period, all of them are canceled then, and the image is kept until `scheduled_at`. Deleting again
+// while the cancellation is open returns it. Without subscriptions, deletion begins at once and
+// `cancellation` is null.
 //
 // DELETE /api/v1/images/{imageId}
 func (UnimplementedHandler) DeleteImage(ctx context.Context, params DeleteImageParams) (r DeleteImageRes, _ error) {
@@ -495,10 +372,13 @@ func (UnimplementedHandler) DeleteImage(ctx context.Context, params DeleteImageP
 // An instance being captured as a private image cannot be released. Wait for the capture to finish, or
 // delete that image first.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the instance, or for a disk
-// that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names that
-// resource. The instance is released by canceling the subscriptions listed in `meta.subscription_ids`
-// through Billing, the same set as its `release_subscription_ids`.
+// When subscriptions pay for the instance, or for a disk deleted with it, its
+// `release_subscription_ids`, this request cancels them in Billing, and the response carries that
+// cancellation. Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at
+// once and refunded under those terms, and release begins when Billing begins the cancellation. When
+// any of them can only be canceled at the end of its paid period, all of them are canceled then, and
+// the instance is kept until `scheduled_at`. Deleting again while the cancellation is open returns it.
+// Without subscriptions, release begins at once and `cancellation` is null.
 //
 // DELETE /api/v1/instances/{instanceId}
 func (UnimplementedHandler) DeleteInstance(ctx context.Context, params DeleteInstanceParams) (r DeleteInstanceRes, _ error) {
@@ -569,6 +449,22 @@ func (UnimplementedHandler) DeleteSecurityGroupRule(ctx context.Context, params 
 //
 // DELETE /api/v1/snapshots/{snapshotId}
 func (UnimplementedHandler) DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (r DeleteSnapshotRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// DeleteSnapshotQuota implements delete-snapshot-quota operation.
+//
+// Cancels the quota's subscription in Billing and returns the cancellation. Refused with 409
+// `SNAPSHOT_QUOTA_IN_USE` while any snapshot exists in the region; delete the snapshots first. Refused
+// with 409 `SNAPSHOT_QUOTA_NOT_ACTIVE` when no subscription pays for a quota in the region.
+//
+// Pay-as-you-go subscriptions, and prepaid ones whose terms allow it, are canceled at once and
+// refunded under those terms. When the subscription can only be canceled at the end of its paid
+// period, it is canceled then, and the quota stays in force until `scheduled_at`. Deleting again while
+// the cancellation is open returns it.
+//
+// DELETE /api/v1/regions/{regionId}/snapshot-quota
+func (UnimplementedHandler) DeleteSnapshotQuota(ctx context.Context, params DeleteSnapshotQuotaParams) (r DeleteSnapshotQuotaRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -660,10 +556,10 @@ func (UnimplementedHandler) GetBackup(ctx context.Context, params GetBackupParam
 // the capacity packs active in the region and meters only the excess on this service's subscription,
 // per GiB-hour.
 //
-// Canceling the service's subscription through Billing is refused while any backup is retained in the
-// region: the cancellation fails with `BACKUP_SERVICE_IN_USE`. Delete the backups first. Capacity
-// packs are canceled separately, under their own refund terms. Reclaiming the service for non-payment
-// deletes its backups.
+// Deleting the service, which cancels its subscription, is refused while any backup is retained in the
+// region with `BACKUP_SERVICE_IN_USE`. Delete the backups first. Capacity packs are deleted
+// separately, under their own refund terms. Reclaiming the service for non-payment deletes its
+// backups.
 //
 // GET /api/v1/regions/{regionId}/backup-service
 func (UnimplementedHandler) GetBackupService(ctx context.Context, params GetBackupServiceParams) (r *BackupService, _ error) {
@@ -788,9 +684,9 @@ func (UnimplementedHandler) GetSnapshot(ctx context.Context, params GetSnapshotP
 // 0) while active, and zero when creation is not permitted; additional creation is refused while the
 // quota is inactive, suspended or exhausted.
 //
-// Canceling the quota's subscription through Billing is refused while any snapshot exists in the
-// region: the cancellation fails with SNAPSHOT_QUOTA_IN_USE. Reclaiming the quota for non-payment
-// deletes its snapshots, as for other reclaimed resources.
+// Deleting the quota, which cancels its subscription, is refused while any snapshot exists in the
+// region with SNAPSHOT_QUOTA_IN_USE. Reclaiming the quota for non-payment deletes its snapshots, as
+// for other reclaimed resources.
 //
 // GET /api/v1/regions/{regionId}/snapshot-quota
 func (UnimplementedHandler) GetSnapshotQuota(ctx context.Context, params GetSnapshotQuotaParams) (r *SnapshotQuota, _ error) {
@@ -1120,10 +1016,13 @@ func (UnimplementedHandler) RejectPeering(ctx context.Context, params RejectPeer
 // Releases the floating IP after unbinding it. The floating IP shows the `delete` operation until it
 // is released.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
-// pay-as-you-go subscription. `meta.resource_id` names the floating IP. It is released by canceling
-// the subscriptions listed in `meta.subscription_ids` through Billing, the same set as its
-// `release_subscription_ids`.
+// When subscriptions pay for the address, its `release_subscription_ids`, this request cancels them in
+// Billing, and the response carries that cancellation. Pay-as-you-go subscriptions, and prepaid ones
+// whose terms allow it, are canceled at once and refunded under those terms, and release begins when
+// Billing begins the cancellation. When any of them can only be canceled at the end of its paid
+// period, all of them are canceled then, and the floating IP is kept until `scheduled_at`. Deleting
+// again while the cancellation is open returns it. Without subscriptions, release begins at once and
+// `cancellation` is null.
 //
 // DELETE /api/v1/floating-ips/{floatingIpId}
 func (UnimplementedHandler) ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (r ReleaseFloatingIPRes, _ error) {
@@ -1374,8 +1273,9 @@ func (UnimplementedHandler) SetInstanceNotes(ctx context.Context, req *SetInstan
 //
 // Purchases or changes the maximum number of snapshots this project may hold in this region. limit is
 // the target total, not an additional number of slots or a consumable create allowance. billing
-// chooses one of the quota's pricing options; a change of an existing purchase keeps its usage type
-// and period, and billing must name that option. The purchased quantity is this count.
+// chooses how the quota is bought, among the prices Billing offers for the region's
+// `snapshot_quota_billing`; a change of an existing purchase keeps its usage type and period, and
+// billing must name them. The purchased quantity is this count.
 //
 // Returns the quota with the Checkout Session. pending_limit records the target while the current
 // limit stays in force; the new limit applies once the order is accepted and the quota is activated.

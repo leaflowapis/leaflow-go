@@ -4315,10 +4315,6 @@ func (s *PlanPrice) encodeFields(e *jx.Encoder) {
 		s.Currency.Encode(e)
 	}
 	{
-		e.FieldStart("unit_amount")
-		s.UnitAmount.Encode(e)
-	}
-	{
 		e.FieldStart("interval")
 		s.Interval.Encode(e)
 	}
@@ -4328,12 +4324,11 @@ func (s *PlanPrice) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPlanPrice = [5]string{
+var jsonFieldsNameOfPlanPrice = [4]string{
 	0: "price_id",
 	1: "currency",
-	2: "unit_amount",
-	3: "interval",
-	4: "interval_count",
+	2: "interval",
+	3: "interval_count",
 }
 
 // Decode decodes PlanPrice from json.
@@ -4367,18 +4362,8 @@ func (s *PlanPrice) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"currency\"")
 			}
-		case "unit_amount":
-			requiredBitSet[0] |= 1 << 2
-			if err := func() error {
-				if err := s.UnitAmount.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"unit_amount\"")
-			}
 		case "interval":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				if err := s.Interval.Decode(d); err != nil {
 					return err
@@ -4388,7 +4373,7 @@ func (s *PlanPrice) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"interval\"")
 			}
 		case "interval_count":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := d.Int()
 				s.IntervalCount = int(v)
@@ -4409,7 +4394,7 @@ func (s *PlanPrice) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00011111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

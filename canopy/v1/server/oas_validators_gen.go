@@ -892,6 +892,46 @@ func (s *Model) Validate() error {
 	return nil
 }
 
+func (s *ModelBilling) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if s.Meters == nil {
+			return errors.New("nil is invalid value")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.Meters {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "meters",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
 func (s ModelCapabilities) Validate() error {
 	var failures []validate.FieldError
 	for key, elem := range s {
@@ -1023,37 +1063,20 @@ func (s *ModelListResponseBody) Validate() error {
 	return nil
 }
 
-func (s *ModelPricing) Validate() error {
+func (s *ModelMeter) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if s.TokenKinds == nil {
-			return errors.New("nil is invalid value")
-		}
-		var failures []validate.FieldError
-		for i, elem := range s.TokenKinds {
-			if err := func() error {
-				if err := elem.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				failures = append(failures, validate.FieldError{
-					Name:  fmt.Sprintf("[%d]", i),
-					Error: err,
-				})
-			}
-		}
-		if len(failures) > 0 {
-			return &validate.Error{Fields: failures}
+		if err := s.TokenKind.Validate(); err != nil {
+			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "token_kinds",
+			Name:  "token_kind",
 			Error: err,
 		})
 	}
@@ -1063,6 +1086,23 @@ func (s *ModelPricing) Validate() error {
 	return nil
 }
 
+func (s ModelMeterTokenKind) Validate() error {
+	switch s {
+	case "input":
+		return nil
+	case "output":
+		return nil
+	case "cache_read":
+		return nil
+	case "cache_write":
+		return nil
+	case "reasoning":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s *ModelResource) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -1070,20 +1110,13 @@ func (s *ModelResource) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if value, ok := s.Pricing.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
+		if err := s.Billing.Validate(); err != nil {
+			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "pricing",
+			Name:  "billing",
 			Error: err,
 		})
 	}
@@ -1532,46 +1565,6 @@ func (s ServiceResourceStatus) Validate() error {
 func (s StreamGenerateContentAlt) Validate() error {
 	switch s {
 	case "sse":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s *TokenPrice) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.TokenKind.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "token_kind",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s TokenPriceTokenKind) Validate() error {
-	switch s {
-	case "input":
-		return nil
-	case "output":
-		return nil
-	case "cache_read":
-		return nil
-	case "cache_write":
-		return nil
-	case "reasoning":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

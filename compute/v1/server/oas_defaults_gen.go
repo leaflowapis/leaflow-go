@@ -11,14 +11,6 @@ func (s *CheckoutOptions) setDefaults() {
 }
 
 // setDefaults set default value of fields.
-func (s *LaunchInstanceQuoteRequestBody) setDefaults() {
-	{
-		val := int64(1)
-		s.Count.SetTo(val)
-	}
-}
-
-// setDefaults set default value of fields.
 func (s *LaunchInstanceRequestBody) setDefaults() {
 	{
 		val := int64(1)

@@ -2051,6 +2051,42 @@ func (s *Model) SetSupportedEndpoints(val []ModelEndpoint) {
 
 func (*Model) getInferenceModelRes() {}
 
+// How requests to a model are billed: under the service's subscription, on the Billing plan `plan_id`,
+// one rate for each token kind. Read the rates from Billing with `search-prices` for the plan and then
+// `search-rates` with each meter's `dimensions`.
+//
+// Each token kind is priced on its own. `input` excludes cached input, which is `cache_read`, and
+// `output` excludes reasoning the provider reports separately, which is `reasoning`; a request is
+// billed for each kind it used.
+// Ref: #/components/schemas/ModelBilling
+type ModelBilling struct {
+	// The Billing plan of the service; null where the service is not sold.
+	PlanID NilUUID `json:"plan_id"`
+	// One entry for each of the five token kinds, in the order input, output, cache_read, cache_write,
+	// reasoning.
+	Meters []ModelMeter `json:"meters"`
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *ModelBilling) GetPlanID() NilUUID {
+	return s.PlanID
+}
+
+// GetMeters returns the value of Meters.
+func (s *ModelBilling) GetMeters() []ModelMeter {
+	return s.Meters
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *ModelBilling) SetPlanID(val NilUUID) {
+	s.PlanID = val
+}
+
+// SetMeters sets the value of Meters.
+func (s *ModelBilling) SetMeters(val []ModelMeter) {
+	s.Meters = val
+}
+
 // Verified capabilities keyed by API endpoint, for example /v1/chat/completions or /v1/responses.
 // Missing keys and null values mean unknown. Current route availability is separate.
 // Ref: #/components/schemas/ModelCapabilities
@@ -2215,39 +2251,116 @@ func (s *ModelListResponseBody) SetItems(val []ModelResource) {
 
 func (*ModelListResponseBody) listModelsRes() {}
 
-// What requests to a model cost, as Billing prices them in the currency of the project's current
-// billing account. These are list amounts before promotion codes, not a checkout guarantee; usage is
-// billed afterwards under the service's subscription.
-//
-// Each token kind is priced on its own. `input` excludes cached input, which is `cache_read`, and
-// `output` excludes reasoning the provider reports separately, which is `reasoning`; a request is
-// billed for each kind it used.
-// Ref: #/components/schemas/ModelPricing
-type ModelPricing struct {
-	Currency string `json:"currency"`
-	// One entry for each of the five token kinds, in the order input, output, cache_read, cache_write,
-	// reasoning.
-	TokenKinds []TokenPrice `json:"token_kinds"`
+// Ref: #/components/schemas/ModelMeter
+type ModelMeter struct {
+	TokenKind      ModelMeterTokenKind `json:"token_kind"`
+	MeterLookupKey string              `json:"meter_lookup_key"`
+	// The dimension values the usage of this token kind carries, and the rate is matched at.
+	Dimensions ModelMeterDimensions `json:"dimensions"`
 }
 
-// GetCurrency returns the value of Currency.
-func (s *ModelPricing) GetCurrency() string {
-	return s.Currency
+// GetTokenKind returns the value of TokenKind.
+func (s *ModelMeter) GetTokenKind() ModelMeterTokenKind {
+	return s.TokenKind
 }
 
-// GetTokenKinds returns the value of TokenKinds.
-func (s *ModelPricing) GetTokenKinds() []TokenPrice {
-	return s.TokenKinds
+// GetMeterLookupKey returns the value of MeterLookupKey.
+func (s *ModelMeter) GetMeterLookupKey() string {
+	return s.MeterLookupKey
 }
 
-// SetCurrency sets the value of Currency.
-func (s *ModelPricing) SetCurrency(val string) {
-	s.Currency = val
+// GetDimensions returns the value of Dimensions.
+func (s *ModelMeter) GetDimensions() ModelMeterDimensions {
+	return s.Dimensions
 }
 
-// SetTokenKinds sets the value of TokenKinds.
-func (s *ModelPricing) SetTokenKinds(val []TokenPrice) {
-	s.TokenKinds = val
+// SetTokenKind sets the value of TokenKind.
+func (s *ModelMeter) SetTokenKind(val ModelMeterTokenKind) {
+	s.TokenKind = val
+}
+
+// SetMeterLookupKey sets the value of MeterLookupKey.
+func (s *ModelMeter) SetMeterLookupKey(val string) {
+	s.MeterLookupKey = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *ModelMeter) SetDimensions(val ModelMeterDimensions) {
+	s.Dimensions = val
+}
+
+// The dimension values the usage of this token kind carries, and the rate is matched at.
+type ModelMeterDimensions map[string]string
+
+func (s *ModelMeterDimensions) init() ModelMeterDimensions {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+type ModelMeterTokenKind string
+
+const (
+	ModelMeterTokenKindInput      ModelMeterTokenKind = "input"
+	ModelMeterTokenKindOutput     ModelMeterTokenKind = "output"
+	ModelMeterTokenKindCacheRead  ModelMeterTokenKind = "cache_read"
+	ModelMeterTokenKindCacheWrite ModelMeterTokenKind = "cache_write"
+	ModelMeterTokenKindReasoning  ModelMeterTokenKind = "reasoning"
+)
+
+// AllValues returns all ModelMeterTokenKind values.
+func (ModelMeterTokenKind) AllValues() []ModelMeterTokenKind {
+	return []ModelMeterTokenKind{
+		ModelMeterTokenKindInput,
+		ModelMeterTokenKindOutput,
+		ModelMeterTokenKindCacheRead,
+		ModelMeterTokenKindCacheWrite,
+		ModelMeterTokenKindReasoning,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ModelMeterTokenKind) MarshalText() ([]byte, error) {
+	switch s {
+	case ModelMeterTokenKindInput:
+		return []byte(s), nil
+	case ModelMeterTokenKindOutput:
+		return []byte(s), nil
+	case ModelMeterTokenKindCacheRead:
+		return []byte(s), nil
+	case ModelMeterTokenKindCacheWrite:
+		return []byte(s), nil
+	case ModelMeterTokenKindReasoning:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ModelMeterTokenKind) UnmarshalText(data []byte) error {
+	switch ModelMeterTokenKind(data) {
+	case ModelMeterTokenKindInput:
+		*s = ModelMeterTokenKindInput
+		return nil
+	case ModelMeterTokenKindOutput:
+		*s = ModelMeterTokenKindOutput
+		return nil
+	case ModelMeterTokenKindCacheRead:
+		*s = ModelMeterTokenKindCacheRead
+		return nil
+	case ModelMeterTokenKindCacheWrite:
+		*s = ModelMeterTokenKindCacheWrite
+		return nil
+	case ModelMeterTokenKindReasoning:
+		*s = ModelMeterTokenKindReasoning
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/ModelResource
@@ -2260,10 +2373,9 @@ type ModelResource struct {
 	// The string to send in the `model` field of the request body.
 	ID string `json:"id"`
 	// The maximum output length. Advisory only.
-	MaxOutputTokens int64 `json:"max_output_tokens"`
-	// What requests to this model cost. Null when the project has no billing account.
-	Pricing NilModelPricing     `json:"pricing"`
-	Status  ModelResourceStatus `json:"status"`
+	MaxOutputTokens int64               `json:"max_output_tokens"`
+	Billing         ModelBilling        `json:"billing"`
+	Status          ModelResourceStatus `json:"status"`
 	// The model developer; not the upstream provider or model family.
 	Developer   string `json:"developer"`
 	Description string `json:"description"`
@@ -2302,9 +2414,9 @@ func (s *ModelResource) GetMaxOutputTokens() int64 {
 	return s.MaxOutputTokens
 }
 
-// GetPricing returns the value of Pricing.
-func (s *ModelResource) GetPricing() NilModelPricing {
-	return s.Pricing
+// GetBilling returns the value of Billing.
+func (s *ModelResource) GetBilling() ModelBilling {
+	return s.Billing
 }
 
 // GetStatus returns the value of Status.
@@ -2367,9 +2479,9 @@ func (s *ModelResource) SetMaxOutputTokens(val int64) {
 	s.MaxOutputTokens = val
 }
 
-// SetPricing sets the value of Pricing.
-func (s *ModelResource) SetPricing(val NilModelPricing) {
-	s.Pricing = val
+// SetBilling sets the value of Billing.
+func (s *ModelResource) SetBilling(val ModelBilling) {
+	s.Billing = val
 }
 
 // SetStatus sets the value of Status.
@@ -2555,8 +2667,6 @@ func (s *ModelUsageResource) SetRequests(val int64) {
 	s.Requests = val
 }
 
-type Money string
-
 // A request body in the endpoint's own protocol. Canopy reads only the model name and forwards the
 // rest unchanged.
 // Ref: #/components/schemas/NativeRequest
@@ -2671,96 +2781,6 @@ func (o NilDateTime) Get() (v time.Time, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilDateTime) Or(d time.Time) time.Time {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilModelPricing returns new NilModelPricing with value set to v.
-func NewNilModelPricing(v ModelPricing) NilModelPricing {
-	return NilModelPricing{
-		Value: v,
-	}
-}
-
-// NilModelPricing is nullable ModelPricing.
-type NilModelPricing struct {
-	Value ModelPricing
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilModelPricing) SetTo(v ModelPricing) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilModelPricing) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilModelPricing) SetToNull() {
-	o.Null = true
-	var v ModelPricing
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilModelPricing) Get() (v ModelPricing, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilModelPricing) Or(d ModelPricing) ModelPricing {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilMoney returns new NilMoney with value set to v.
-func NewNilMoney(v Money) NilMoney {
-	return NilMoney{
-		Value: v,
-	}
-}
-
-// NilMoney is nullable Money.
-type NilMoney struct {
-	Value Money
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilMoney) SetTo(v Money) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilMoney) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilMoney) SetToNull() {
-	o.Null = true
-	var v Money
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilMoney) Get() (v Money, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilMoney) Or(d Money) Money {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4789,7 +4809,8 @@ type ServiceResource struct {
 	OrderID NilUUID `json:"order_id"`
 	// The Billing plan the service is sold under; null where the service is not sold. Price enabling it
 	// with Billing's quote, giving this plan with the `recurring` price type, the `metered` usage type and
-	// a quantity of 1; token usage is priced per model, as each model's `pricing` states.
+	// a quantity of 1; token usage is priced per model, at the rates Billing holds for each model's
+	// `billing`.
 	PlanID NilUUID `json:"plan_id"`
 	// The Billing subscription that requests are billed under; null until an enablement's checkout
 	// completes.
@@ -5050,108 +5071,6 @@ func (s StreamGenerateContentOK) Read(p []byte) (n int, err error) {
 }
 
 func (*StreamGenerateContentOK) streamGenerateContentRes() {}
-
-// Ref: #/components/schemas/TokenPrice
-type TokenPrice struct {
-	TokenKind TokenPriceTokenKind `json:"token_kind"`
-	// The charge for `unit_quantity` tokens of this kind. Null when the kind has no rate in the currency,
-	// in which case the model cannot be billed for it.
-	UnitAmount NilMoney `json:"unit_amount"`
-	// How many tokens `unit_amount` is for, such as `1000000`. Null when `unit_amount` is null.
-	UnitQuantity NilString `json:"unit_quantity"`
-}
-
-// GetTokenKind returns the value of TokenKind.
-func (s *TokenPrice) GetTokenKind() TokenPriceTokenKind {
-	return s.TokenKind
-}
-
-// GetUnitAmount returns the value of UnitAmount.
-func (s *TokenPrice) GetUnitAmount() NilMoney {
-	return s.UnitAmount
-}
-
-// GetUnitQuantity returns the value of UnitQuantity.
-func (s *TokenPrice) GetUnitQuantity() NilString {
-	return s.UnitQuantity
-}
-
-// SetTokenKind sets the value of TokenKind.
-func (s *TokenPrice) SetTokenKind(val TokenPriceTokenKind) {
-	s.TokenKind = val
-}
-
-// SetUnitAmount sets the value of UnitAmount.
-func (s *TokenPrice) SetUnitAmount(val NilMoney) {
-	s.UnitAmount = val
-}
-
-// SetUnitQuantity sets the value of UnitQuantity.
-func (s *TokenPrice) SetUnitQuantity(val NilString) {
-	s.UnitQuantity = val
-}
-
-type TokenPriceTokenKind string
-
-const (
-	TokenPriceTokenKindInput      TokenPriceTokenKind = "input"
-	TokenPriceTokenKindOutput     TokenPriceTokenKind = "output"
-	TokenPriceTokenKindCacheRead  TokenPriceTokenKind = "cache_read"
-	TokenPriceTokenKindCacheWrite TokenPriceTokenKind = "cache_write"
-	TokenPriceTokenKindReasoning  TokenPriceTokenKind = "reasoning"
-)
-
-// AllValues returns all TokenPriceTokenKind values.
-func (TokenPriceTokenKind) AllValues() []TokenPriceTokenKind {
-	return []TokenPriceTokenKind{
-		TokenPriceTokenKindInput,
-		TokenPriceTokenKindOutput,
-		TokenPriceTokenKindCacheRead,
-		TokenPriceTokenKindCacheWrite,
-		TokenPriceTokenKindReasoning,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s TokenPriceTokenKind) MarshalText() ([]byte, error) {
-	switch s {
-	case TokenPriceTokenKindInput:
-		return []byte(s), nil
-	case TokenPriceTokenKindOutput:
-		return []byte(s), nil
-	case TokenPriceTokenKindCacheRead:
-		return []byte(s), nil
-	case TokenPriceTokenKindCacheWrite:
-		return []byte(s), nil
-	case TokenPriceTokenKindReasoning:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *TokenPriceTokenKind) UnmarshalText(data []byte) error {
-	switch TokenPriceTokenKind(data) {
-	case TokenPriceTokenKindInput:
-		*s = TokenPriceTokenKindInput
-		return nil
-	case TokenPriceTokenKindOutput:
-		*s = TokenPriceTokenKindOutput
-		return nil
-	case TokenPriceTokenKindCacheRead:
-		*s = TokenPriceTokenKindCacheRead
-		return nil
-	case TokenPriceTokenKindCacheWrite:
-		*s = TokenPriceTokenKindCacheWrite
-		return nil
-	case TokenPriceTokenKindReasoning:
-		*s = TokenPriceTokenKindReasoning
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
 
 // Ref: #/components/schemas/TotalsResource
 type TotalsResource struct {

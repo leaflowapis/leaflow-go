@@ -14048,6 +14048,8 @@ func (s *PriceOptionInterval) UnmarshalText(data []byte) error {
 type PriceSearch struct {
 	// ISO 4217, three uppercase letters.
 	Currency string `json:"currency"`
+	// Only these prices, such as the prices another service names.
+	Ids []uuid.UUID `json:"ids"`
 	// Only prices of these plans.
 	PlanIds   []uuid.UUID  `json:"plan_ids"`
 	ProductID OptProductID `json:"product_id"`
@@ -14064,6 +14066,11 @@ type PriceSearch struct {
 // GetCurrency returns the value of Currency.
 func (s *PriceSearch) GetCurrency() string {
 	return s.Currency
+}
+
+// GetIds returns the value of Ids.
+func (s *PriceSearch) GetIds() []uuid.UUID {
+	return s.Ids
 }
 
 // GetPlanIds returns the value of PlanIds.
@@ -14099,6 +14106,11 @@ func (s *PriceSearch) GetPageSize() OptInt64 {
 // SetCurrency sets the value of Currency.
 func (s *PriceSearch) SetCurrency(val string) {
 	s.Currency = val
+}
+
+// SetIds sets the value of Ids.
+func (s *PriceSearch) SetIds(val []uuid.UUID) {
+	s.Ids = val
 }
 
 // SetPlanIds sets the value of PlanIds.
@@ -15831,8 +15843,10 @@ type QuoteRequest struct {
 	Currency OptString `json:"currency"`
 	// A proposed purchase.
 	Items []QuoteItemInput `json:"items"`
-	// Preview renewing these subscriptions, each at most once; each entry is a separate renewal order. To
-	// apply a promotion code, create a renewal Checkout Session and quote it.
+	// Preview renewing these subscriptions, each at most once; each entry is a separate renewal order.
+	// Each must currently be paid by `billing_account_id` and be yours to read, as the owner of that
+	// account or a member of the subscription's project. To apply a promotion code, create a renewal
+	// Checkout Session and quote it.
 	Renewals []QuoteRenewal `json:"renewals"`
 	// Preview changing these subscriptions in one order, each at most once. Each must currently be paid by
 	// `billing_account_id` and be yours to read, as the owner of that account or a member of the

@@ -3585,6 +3585,127 @@ func (s *Model) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *ModelBilling) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *ModelBilling) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("plan_id")
+		s.PlanID.Encode(e)
+	}
+	{
+		e.FieldStart("meters")
+		e.ArrStart()
+		for _, elem := range s.Meters {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+}
+
+var jsonFieldsNameOfModelBilling = [2]string{
+	0: "plan_id",
+	1: "meters",
+}
+
+// Decode decodes ModelBilling from json.
+func (s *ModelBilling) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ModelBilling to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "plan_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.PlanID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"plan_id\"")
+			}
+		case "meters":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				s.Meters = make([]ModelMeter, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem ModelMeter
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Meters = append(s.Meters, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"meters\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode ModelBilling")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfModelBilling) {
+					name = jsonFieldsNameOfModelBilling[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *ModelBilling) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ModelBilling) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s ModelCapabilities) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -3926,83 +4047,86 @@ func (s *ModelListResponseBody) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
-func (s *ModelPricing) Encode(e *jx.Encoder) {
+func (s *ModelMeter) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
 	e.ObjEnd()
 }
 
 // encodeFields encodes fields.
-func (s *ModelPricing) encodeFields(e *jx.Encoder) {
+func (s *ModelMeter) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("currency")
-		e.Str(s.Currency)
+		e.FieldStart("token_kind")
+		s.TokenKind.Encode(e)
 	}
 	{
-		e.FieldStart("token_kinds")
-		e.ArrStart()
-		for _, elem := range s.TokenKinds {
-			elem.Encode(e)
-		}
-		e.ArrEnd()
+		e.FieldStart("meter_lookup_key")
+		e.Str(s.MeterLookupKey)
+	}
+	{
+		e.FieldStart("dimensions")
+		s.Dimensions.Encode(e)
 	}
 }
 
-var jsonFieldsNameOfModelPricing = [2]string{
-	0: "currency",
-	1: "token_kinds",
+var jsonFieldsNameOfModelMeter = [3]string{
+	0: "token_kind",
+	1: "meter_lookup_key",
+	2: "dimensions",
 }
 
-// Decode decodes ModelPricing from json.
-func (s *ModelPricing) Decode(d *jx.Decoder) error {
+// Decode decodes ModelMeter from json.
+func (s *ModelMeter) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode ModelPricing to nil")
+		return errors.New("invalid: unable to decode ModelMeter to nil")
 	}
 	var requiredBitSet [1]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "currency":
+		case "token_kind":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
+				if err := s.TokenKind.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"token_kind\"")
+			}
+		case "meter_lookup_key":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
 				v, err := d.Str()
-				s.Currency = string(v)
+				s.MeterLookupKey = string(v)
 				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"currency\"")
+				return errors.Wrap(err, "decode field \"meter_lookup_key\"")
 			}
-		case "token_kinds":
-			requiredBitSet[0] |= 1 << 1
+		case "dimensions":
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				s.TokenKinds = make([]TokenPrice, 0)
-				if err := d.Arr(func(d *jx.Decoder) error {
-					var elem TokenPrice
-					if err := elem.Decode(d); err != nil {
-						return err
-					}
-					s.TokenKinds = append(s.TokenKinds, elem)
-					return nil
-				}); err != nil {
+				if err := s.Dimensions.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"token_kinds\"")
+				return errors.Wrap(err, "decode field \"dimensions\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
 		return nil
 	}); err != nil {
-		return errors.Wrap(err, "decode ModelPricing")
+		return errors.Wrap(err, "decode ModelMeter")
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4014,8 +4138,8 @@ func (s *ModelPricing) Decode(d *jx.Decoder) error {
 				bitIdx := bits.TrailingZeros8(result)
 				fieldIdx := i*8 + bitIdx
 				var name string
-				if fieldIdx < len(jsonFieldsNameOfModelPricing) {
-					name = jsonFieldsNameOfModelPricing[fieldIdx]
+				if fieldIdx < len(jsonFieldsNameOfModelMeter) {
+					name = jsonFieldsNameOfModelMeter[fieldIdx]
 				} else {
 					name = strconv.Itoa(fieldIdx)
 				}
@@ -4036,14 +4160,116 @@ func (s *ModelPricing) Decode(d *jx.Decoder) error {
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s *ModelPricing) MarshalJSON() ([]byte, error) {
+func (s *ModelMeter) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *ModelPricing) UnmarshalJSON(data []byte) error {
+func (s *ModelMeter) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s ModelMeterDimensions) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields implements json.Marshaler.
+func (s ModelMeterDimensions) encodeFields(e *jx.Encoder) {
+	for k, elem := range s {
+		e.FieldStart(k)
+
+		e.Str(elem)
+	}
+}
+
+// Decode decodes ModelMeterDimensions from json.
+func (s *ModelMeterDimensions) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ModelMeterDimensions to nil")
+	}
+	m := s.init()
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		var elem string
+		if err := func() error {
+			v, err := d.Str()
+			elem = string(v)
+			if err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return errors.Wrapf(err, "decode field %q", k)
+		}
+		m[string(k)] = elem
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode ModelMeterDimensions")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s ModelMeterDimensions) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ModelMeterDimensions) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes ModelMeterTokenKind as json.
+func (s ModelMeterTokenKind) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes ModelMeterTokenKind from json.
+func (s *ModelMeterTokenKind) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ModelMeterTokenKind to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch ModelMeterTokenKind(v) {
+	case ModelMeterTokenKindInput:
+		*s = ModelMeterTokenKindInput
+	case ModelMeterTokenKindOutput:
+		*s = ModelMeterTokenKindOutput
+	case ModelMeterTokenKindCacheRead:
+		*s = ModelMeterTokenKindCacheRead
+	case ModelMeterTokenKindCacheWrite:
+		*s = ModelMeterTokenKindCacheWrite
+	case ModelMeterTokenKindReasoning:
+		*s = ModelMeterTokenKindReasoning
+	default:
+		*s = ModelMeterTokenKind(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s ModelMeterTokenKind) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ModelMeterTokenKind) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -4078,8 +4304,8 @@ func (s *ModelResource) encodeFields(e *jx.Encoder) {
 		e.Int64(s.MaxOutputTokens)
 	}
 	{
-		e.FieldStart("pricing")
-		s.Pricing.Encode(e)
+		e.FieldStart("billing")
+		s.Billing.Encode(e)
 	}
 	{
 		e.FieldStart("status")
@@ -4137,7 +4363,7 @@ var jsonFieldsNameOfModelResource = [13]string{
 	2:  "family",
 	3:  "id",
 	4:  "max_output_tokens",
-	5:  "pricing",
+	5:  "billing",
 	6:  "status",
 	7:  "developer",
 	8:  "description",
@@ -4216,15 +4442,15 @@ func (s *ModelResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"max_output_tokens\"")
 			}
-		case "pricing":
+		case "billing":
 			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
-				if err := s.Pricing.Decode(d); err != nil {
+				if err := s.Billing.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"pricing\"")
+				return errors.Wrap(err, "decode field \"billing\"")
 			}
 		case "status":
 			requiredBitSet[0] |= 1 << 6
@@ -4741,46 +4967,6 @@ func (s *ModelUsageResource) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes Money as json.
-func (s Money) Encode(e *jx.Encoder) {
-	unwrapped := string(s)
-
-	e.Str(unwrapped)
-}
-
-// Decode decodes Money from json.
-func (s *Money) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode Money to nil")
-	}
-	var unwrapped string
-	if err := func() error {
-		v, err := d.Str()
-		unwrapped = string(v)
-		if err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return errors.Wrap(err, "alias")
-	}
-	*s = Money(unwrapped)
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s Money) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *Money) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
 // Encode implements json.Marshaler.
 func (s NativeRequest) Encode(e *jx.Encoder) {
 	e.ObjStart()
@@ -4987,94 +5173,6 @@ func (s NilDateTime) MarshalJSON() ([]byte, error) {
 func (s *NilDateTime) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d, json.DecodeDateTime)
-}
-
-// Encode encodes ModelPricing as json.
-func (o NilModelPricing) Encode(e *jx.Encoder) {
-	if o.Null {
-		e.Null()
-		return
-	}
-	o.Value.Encode(e)
-}
-
-// Decode decodes ModelPricing from json.
-func (o *NilModelPricing) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode NilModelPricing to nil")
-	}
-	if d.Next() == jx.Null {
-		if err := d.Null(); err != nil {
-			return err
-		}
-
-		var v ModelPricing
-		o.Value = v
-		o.Null = true
-		return nil
-	}
-	o.Null = false
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s NilModelPricing) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *NilModelPricing) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes Money as json.
-func (o NilMoney) Encode(e *jx.Encoder) {
-	if o.Null {
-		e.Null()
-		return
-	}
-	o.Value.Encode(e)
-}
-
-// Decode decodes Money from json.
-func (o *NilMoney) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode NilMoney to nil")
-	}
-	if d.Next() == jx.Null {
-		if err := d.Null(); err != nil {
-			return err
-		}
-
-		var v Money
-		o.Value = v
-		o.Null = true
-		return nil
-	}
-	o.Null = false
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s NilMoney) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *NilMoney) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
 }
 
 // Encode encodes ReasoningCapabilities as json.
@@ -7750,176 +7848,6 @@ func (s ServiceResourceStatus) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *ServiceResourceStatus) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode implements json.Marshaler.
-func (s *TokenPrice) Encode(e *jx.Encoder) {
-	e.ObjStart()
-	s.encodeFields(e)
-	e.ObjEnd()
-}
-
-// encodeFields encodes fields.
-func (s *TokenPrice) encodeFields(e *jx.Encoder) {
-	{
-		e.FieldStart("token_kind")
-		s.TokenKind.Encode(e)
-	}
-	{
-		e.FieldStart("unit_amount")
-		s.UnitAmount.Encode(e)
-	}
-	{
-		e.FieldStart("unit_quantity")
-		s.UnitQuantity.Encode(e)
-	}
-}
-
-var jsonFieldsNameOfTokenPrice = [3]string{
-	0: "token_kind",
-	1: "unit_amount",
-	2: "unit_quantity",
-}
-
-// Decode decodes TokenPrice from json.
-func (s *TokenPrice) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode TokenPrice to nil")
-	}
-	var requiredBitSet [1]uint8
-
-	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
-		switch string(k) {
-		case "token_kind":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				if err := s.TokenKind.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"token_kind\"")
-			}
-		case "unit_amount":
-			requiredBitSet[0] |= 1 << 1
-			if err := func() error {
-				if err := s.UnitAmount.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"unit_amount\"")
-			}
-		case "unit_quantity":
-			requiredBitSet[0] |= 1 << 2
-			if err := func() error {
-				if err := s.UnitQuantity.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"unit_quantity\"")
-			}
-		default:
-			return errors.Errorf("unexpected field %q", k)
-		}
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "decode TokenPrice")
-	}
-	// Validate required fields.
-	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b00000111,
-	} {
-		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
-			// Mask only required fields and check equality to mask using XOR.
-			//
-			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
-			// Bits of fields which would be set are actually bits of missed fields.
-			missed := bits.OnesCount8(result)
-			for bitN := 0; bitN < missed; bitN++ {
-				bitIdx := bits.TrailingZeros8(result)
-				fieldIdx := i*8 + bitIdx
-				var name string
-				if fieldIdx < len(jsonFieldsNameOfTokenPrice) {
-					name = jsonFieldsNameOfTokenPrice[fieldIdx]
-				} else {
-					name = strconv.Itoa(fieldIdx)
-				}
-				failures = append(failures, validate.FieldError{
-					Name:  name,
-					Error: validate.ErrFieldRequired,
-				})
-				// Reset bit.
-				result &^= 1 << bitIdx
-			}
-		}
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s *TokenPrice) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *TokenPrice) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes TokenPriceTokenKind as json.
-func (s TokenPriceTokenKind) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes TokenPriceTokenKind from json.
-func (s *TokenPriceTokenKind) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode TokenPriceTokenKind to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch TokenPriceTokenKind(v) {
-	case TokenPriceTokenKindInput:
-		*s = TokenPriceTokenKindInput
-	case TokenPriceTokenKindOutput:
-		*s = TokenPriceTokenKindOutput
-	case TokenPriceTokenKindCacheRead:
-		*s = TokenPriceTokenKindCacheRead
-	case TokenPriceTokenKindCacheWrite:
-		*s = TokenPriceTokenKindCacheWrite
-	case TokenPriceTokenKindReasoning:
-		*s = TokenPriceTokenKindReasoning
-	default:
-		*s = TokenPriceTokenKind(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s TokenPriceTokenKind) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *TokenPriceTokenKind) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
