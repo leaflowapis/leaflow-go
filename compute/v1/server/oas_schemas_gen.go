@@ -1512,10 +1512,13 @@ type CreateVirtualMachineRequestBody struct {
 	Count OptInt64 `json:"count"`
 	// The availability zone of the machine type's region the virtual machines are created in. An existing
 	// boot disk has to be in it already.
-	AvailabilityZoneID AvailabilityZoneID      `json:"availability_zone_id"`
-	Compute            NewCompute              `json:"compute"`
-	BootDisk           BootDisk                `json:"boot_disk"`
-	NetworkInterface   PrimaryNetworkInterface `json:"network_interface"`
+	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
+	Compute            NewCompute         `json:"compute"`
+	BootDisk           BootDisk           `json:"boot_disk"`
+	// Data disks created with each virtual machine in its order and attached to it at boot, after the boot
+	// disk in the order given. A virtual machine and its disks are delivered together or not at all.
+	DataDisks        []NewDataDisk           `json:"data_disks"`
+	NetworkInterface PrimaryNetworkInterface `json:"network_interface"`
 	// An elastic IP associated with the primary network interface inside the creation: if association
 	// fails, no virtual machine is created. Associating afterwards is still possible
 	// (`put-elastic-ip-association`), but then it is two operations and a failure in between leaves a
@@ -1549,6 +1552,11 @@ func (s *CreateVirtualMachineRequestBody) GetCompute() NewCompute {
 // GetBootDisk returns the value of BootDisk.
 func (s *CreateVirtualMachineRequestBody) GetBootDisk() BootDisk {
 	return s.BootDisk
+}
+
+// GetDataDisks returns the value of DataDisks.
+func (s *CreateVirtualMachineRequestBody) GetDataDisks() []NewDataDisk {
+	return s.DataDisks
 }
 
 // GetNetworkInterface returns the value of NetworkInterface.
@@ -1594,6 +1602,11 @@ func (s *CreateVirtualMachineRequestBody) SetCompute(val NewCompute) {
 // SetBootDisk sets the value of BootDisk.
 func (s *CreateVirtualMachineRequestBody) SetBootDisk(val BootDisk) {
 	s.BootDisk = val
+}
+
+// SetDataDisks sets the value of DataDisks.
+func (s *CreateVirtualMachineRequestBody) SetDataDisks(val []NewDataDisk) {
+	s.DataDisks = val
 }
 
 // SetNetworkInterface sets the value of NetworkInterface.
@@ -6204,6 +6217,104 @@ func (s *NewCompute) SetBilling(val BillingChoice) {
 	s.Billing = val
 }
 
+// An empty data disk created in the virtual machine's availability zone. Its terms follow the rule
+// shared by every component of the purchase, so a pay-as-you-go virtual machine gets pay-as-you-go
+// data disks, which stay pay-as-you-go once detached.
+// Ref: #/components/schemas/NewDataDisk
+type NewDataDisk struct {
+	// A disk type on sale and sold in the virtual machine's availability zone.
+	DiskTypeID DiskTypeID `json:"disk_type_id"`
+	// Within the disk type's `min_size_gb` and `max_size_gb` and a multiple of its `step_gb`.
+	SizeGB int64 `json:"size_gb"`
+	// What releasing the virtual machine does to this disk. `delete` deletes it with the virtual machine;
+	// `detach` keeps it, still billed on its own terms, for you to attach elsewhere or delete.
+	OnVirtualMachineRelease OptNewDataDiskOnVirtualMachineRelease `json:"on_virtual_machine_release"`
+	Billing                 BillingChoice                         `json:"billing"`
+}
+
+// GetDiskTypeID returns the value of DiskTypeID.
+func (s *NewDataDisk) GetDiskTypeID() DiskTypeID {
+	return s.DiskTypeID
+}
+
+// GetSizeGB returns the value of SizeGB.
+func (s *NewDataDisk) GetSizeGB() int64 {
+	return s.SizeGB
+}
+
+// GetOnVirtualMachineRelease returns the value of OnVirtualMachineRelease.
+func (s *NewDataDisk) GetOnVirtualMachineRelease() OptNewDataDiskOnVirtualMachineRelease {
+	return s.OnVirtualMachineRelease
+}
+
+// GetBilling returns the value of Billing.
+func (s *NewDataDisk) GetBilling() BillingChoice {
+	return s.Billing
+}
+
+// SetDiskTypeID sets the value of DiskTypeID.
+func (s *NewDataDisk) SetDiskTypeID(val DiskTypeID) {
+	s.DiskTypeID = val
+}
+
+// SetSizeGB sets the value of SizeGB.
+func (s *NewDataDisk) SetSizeGB(val int64) {
+	s.SizeGB = val
+}
+
+// SetOnVirtualMachineRelease sets the value of OnVirtualMachineRelease.
+func (s *NewDataDisk) SetOnVirtualMachineRelease(val OptNewDataDiskOnVirtualMachineRelease) {
+	s.OnVirtualMachineRelease = val
+}
+
+// SetBilling sets the value of Billing.
+func (s *NewDataDisk) SetBilling(val BillingChoice) {
+	s.Billing = val
+}
+
+// What releasing the virtual machine does to this disk. `delete` deletes it with the virtual machine;
+// `detach` keeps it, still billed on its own terms, for you to attach elsewhere or delete.
+type NewDataDiskOnVirtualMachineRelease string
+
+const (
+	NewDataDiskOnVirtualMachineReleaseDelete NewDataDiskOnVirtualMachineRelease = "delete"
+	NewDataDiskOnVirtualMachineReleaseDetach NewDataDiskOnVirtualMachineRelease = "detach"
+)
+
+// AllValues returns all NewDataDiskOnVirtualMachineRelease values.
+func (NewDataDiskOnVirtualMachineRelease) AllValues() []NewDataDiskOnVirtualMachineRelease {
+	return []NewDataDiskOnVirtualMachineRelease{
+		NewDataDiskOnVirtualMachineReleaseDelete,
+		NewDataDiskOnVirtualMachineReleaseDetach,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NewDataDiskOnVirtualMachineRelease) MarshalText() ([]byte, error) {
+	switch s {
+	case NewDataDiskOnVirtualMachineReleaseDelete:
+		return []byte(s), nil
+	case NewDataDiskOnVirtualMachineReleaseDetach:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NewDataDiskOnVirtualMachineRelease) UnmarshalText(data []byte) error {
+	switch NewDataDiskOnVirtualMachineRelease(data) {
+	case NewDataDiskOnVirtualMachineReleaseDelete:
+		*s = NewDataDiskOnVirtualMachineReleaseDelete
+		return nil
+	case NewDataDiskOnVirtualMachineReleaseDetach:
+		*s = NewDataDiskOnVirtualMachineReleaseDetach
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // One IPv4 elastic IP created with this bandwidth configuration in the virtual machine's order.
 // Ref: #/components/schemas/NewElasticIP
 type NewElasticIP struct {
@@ -9030,6 +9141,52 @@ func (o OptNewBootDiskOnVirtualMachineRelease) Get() (v NewBootDiskOnVirtualMach
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNewBootDiskOnVirtualMachineRelease) Or(d NewBootDiskOnVirtualMachineRelease) NewBootDiskOnVirtualMachineRelease {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNewDataDiskOnVirtualMachineRelease returns new OptNewDataDiskOnVirtualMachineRelease with value set to v.
+func NewOptNewDataDiskOnVirtualMachineRelease(v NewDataDiskOnVirtualMachineRelease) OptNewDataDiskOnVirtualMachineRelease {
+	return OptNewDataDiskOnVirtualMachineRelease{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNewDataDiskOnVirtualMachineRelease is optional NewDataDiskOnVirtualMachineRelease.
+type OptNewDataDiskOnVirtualMachineRelease struct {
+	Value NewDataDiskOnVirtualMachineRelease
+	Set   bool
+}
+
+// IsSet returns true if OptNewDataDiskOnVirtualMachineRelease was set.
+func (o OptNewDataDiskOnVirtualMachineRelease) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNewDataDiskOnVirtualMachineRelease) Reset() {
+	var v NewDataDiskOnVirtualMachineRelease
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNewDataDiskOnVirtualMachineRelease) SetTo(v NewDataDiskOnVirtualMachineRelease) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNewDataDiskOnVirtualMachineRelease) Get() (v NewDataDiskOnVirtualMachineRelease, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNewDataDiskOnVirtualMachineRelease) Or(d NewDataDiskOnVirtualMachineRelease) NewDataDiskOnVirtualMachineRelease {
 	if v, ok := o.Get(); ok {
 		return v
 	}

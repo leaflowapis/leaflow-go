@@ -43,6 +43,14 @@ func (s *NewBootDisk) setDefaults() {
 }
 
 // setDefaults set default value of fields.
+func (s *NewDataDisk) setDefaults() {
+	{
+		val := NewDataDiskOnVirtualMachineRelease("delete")
+		s.OnVirtualMachineRelease.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
 func (s *NewElasticIP) setDefaults() {
 	{
 		val := InternetChargeType("bandwidth")

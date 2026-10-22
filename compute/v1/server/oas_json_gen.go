@@ -4326,6 +4326,16 @@ func (s *CreateVirtualMachineRequestBody) encodeFields(e *jx.Encoder) {
 		s.BootDisk.Encode(e)
 	}
 	{
+		if s.DataDisks != nil {
+			e.FieldStart("data_disks")
+			e.ArrStart()
+			for _, elem := range s.DataDisks {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
 		e.FieldStart("network_interface")
 		s.NetworkInterface.Encode(e)
 	}
@@ -4349,16 +4359,17 @@ func (s *CreateVirtualMachineRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateVirtualMachineRequestBody = [9]string{
+var jsonFieldsNameOfCreateVirtualMachineRequestBody = [10]string{
 	0: "name",
 	1: "count",
 	2: "availability_zone_id",
 	3: "compute",
 	4: "boot_disk",
-	5: "network_interface",
-	6: "elastic_ip",
-	7: "password",
-	8: "checkout",
+	5: "data_disks",
+	6: "network_interface",
+	7: "elastic_ip",
+	8: "password",
+	9: "checkout",
 }
 
 // Decode decodes CreateVirtualMachineRequestBody from json.
@@ -4423,8 +4434,25 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"boot_disk\"")
 			}
+		case "data_disks":
+			if err := func() error {
+				s.DataDisks = make([]NewDataDisk, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem NewDataDisk
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.DataDisks = append(s.DataDisks, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"data_disks\"")
+			}
 		case "network_interface":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.NetworkInterface.Decode(d); err != nil {
 					return err
@@ -4473,7 +4501,7 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b00111101,
+		0b01011101,
 		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
@@ -13186,6 +13214,190 @@ func (s *NewCompute) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *NewDataDisk) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *NewDataDisk) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("disk_type_id")
+		s.DiskTypeID.Encode(e)
+	}
+	{
+		e.FieldStart("size_gb")
+		e.Int64(s.SizeGB)
+	}
+	{
+		if s.OnVirtualMachineRelease.Set {
+			e.FieldStart("on_virtual_machine_release")
+			s.OnVirtualMachineRelease.Encode(e)
+		}
+	}
+	{
+		e.FieldStart("billing")
+		s.Billing.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfNewDataDisk = [4]string{
+	0: "disk_type_id",
+	1: "size_gb",
+	2: "on_virtual_machine_release",
+	3: "billing",
+}
+
+// Decode decodes NewDataDisk from json.
+func (s *NewDataDisk) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode NewDataDisk to nil")
+	}
+	var requiredBitSet [1]uint8
+	s.setDefaults()
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "disk_type_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.DiskTypeID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"disk_type_id\"")
+			}
+		case "size_gb":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int64()
+				s.SizeGB = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"size_gb\"")
+			}
+		case "on_virtual_machine_release":
+			if err := func() error {
+				s.OnVirtualMachineRelease.Reset()
+				if err := s.OnVirtualMachineRelease.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"on_virtual_machine_release\"")
+			}
+		case "billing":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.Billing.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"billing\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode NewDataDisk")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00001011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfNewDataDisk) {
+					name = jsonFieldsNameOfNewDataDisk[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *NewDataDisk) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NewDataDisk) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes NewDataDiskOnVirtualMachineRelease as json.
+func (s NewDataDiskOnVirtualMachineRelease) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes NewDataDiskOnVirtualMachineRelease from json.
+func (s *NewDataDiskOnVirtualMachineRelease) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode NewDataDiskOnVirtualMachineRelease to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch NewDataDiskOnVirtualMachineRelease(v) {
+	case NewDataDiskOnVirtualMachineReleaseDelete:
+		*s = NewDataDiskOnVirtualMachineReleaseDelete
+	case NewDataDiskOnVirtualMachineReleaseDetach:
+		*s = NewDataDiskOnVirtualMachineReleaseDetach
+	default:
+		*s = NewDataDiskOnVirtualMachineRelease(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NewDataDiskOnVirtualMachineRelease) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NewDataDiskOnVirtualMachineRelease) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *NewElasticIP) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -16406,6 +16618,39 @@ func (s OptNewBootDiskOnVirtualMachineRelease) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptNewBootDiskOnVirtualMachineRelease) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes NewDataDiskOnVirtualMachineRelease as json.
+func (o OptNewDataDiskOnVirtualMachineRelease) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes NewDataDiskOnVirtualMachineRelease from json.
+func (o *OptNewDataDiskOnVirtualMachineRelease) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptNewDataDiskOnVirtualMachineRelease to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptNewDataDiskOnVirtualMachineRelease) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptNewDataDiskOnVirtualMachineRelease) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
