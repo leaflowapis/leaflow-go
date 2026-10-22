@@ -933,7 +933,8 @@ type Handler interface {
 	PutElasticIPAssociation(ctx context.Context, req PutElasticIPAssociationRequestBody, params PutElasticIPAssociationParams) (PutElasticIPAssociationRes, error)
 	// PutVirtualMachinePassword implements put-virtual-machine-password operation.
 	//
-	// Sets the root password without a reboot. The virtual machine must be running.
+	// Sets the password of the login account (`login_username`) without a reboot; root is never given one.
+	// The virtual machine must be running.
 	//
 	// Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
 	// password can then only be set by rebuilding the virtual machine, which erases all data on the system
@@ -943,7 +944,7 @@ type Handler interface {
 	// has been removed or stopped inside the virtual machine.
 	//
 	// PUT /api/v1/virtual-machines/{virtualMachineId}/password
-	PutVirtualMachinePassword(ctx context.Context, req *PutVirtualMachinePasswordRequestBody, params PutVirtualMachinePasswordParams) (PutVirtualMachinePasswordRes, error)
+	PutVirtualMachinePassword(ctx context.Context, req PasswordChoice, params PutVirtualMachinePasswordParams) (PutVirtualMachinePasswordRes, error)
 	// PutVirtualMachineRescue implements put-virtual-machine-rescue operation.
 	//
 	// Boots a temporary rescue environment while retaining the original system disk. Changing

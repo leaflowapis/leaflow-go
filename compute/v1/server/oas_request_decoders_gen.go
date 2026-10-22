@@ -1587,7 +1587,7 @@ func (s *Server) decodePutElasticIPAssociationRequest(r *http.Request) (
 }
 
 func (s *Server) decodePutVirtualMachinePasswordRequest(r *http.Request) (
-	req *PutVirtualMachinePasswordRequestBody,
+	req PasswordChoice,
 	rawBody []byte,
 	close func() error,
 	rerr error,
@@ -1634,7 +1634,7 @@ func (s *Server) decodePutVirtualMachinePasswordRequest(r *http.Request) (
 		rawBody = append(rawBody, buf...)
 		d := jx.DecodeBytes(buf)
 
-		var request PutVirtualMachinePasswordRequestBody
+		var request PasswordChoice
 		if err := func() error {
 			if err := request.Decode(d); err != nil {
 				return err
@@ -1659,7 +1659,7 @@ func (s *Server) decodePutVirtualMachinePasswordRequest(r *http.Request) (
 		}(); err != nil {
 			return req, rawBody, close, errors.Wrap(err, "validate")
 		}
-		return &request, rawBody, close, nil
+		return request, rawBody, close, nil
 	default:
 		return req, rawBody, close, validate.InvalidContentType(ct)
 	}

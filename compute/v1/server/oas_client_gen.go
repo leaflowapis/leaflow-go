@@ -954,7 +954,8 @@ type Invoker interface {
 	PutElasticIPAssociation(ctx context.Context, request PutElasticIPAssociationRequestBody, params PutElasticIPAssociationParams) (PutElasticIPAssociationRes, error)
 	// PutVirtualMachinePassword invokes put-virtual-machine-password operation.
 	//
-	// Sets the root password without a reboot. The virtual machine must be running.
+	// Sets the password of the login account (`login_username`) without a reboot; root is never given one.
+	// The virtual machine must be running.
 	//
 	// Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
 	// password can then only be set by rebuilding the virtual machine, which erases all data on the system
@@ -964,7 +965,7 @@ type Invoker interface {
 	// has been removed or stopped inside the virtual machine.
 	//
 	// PUT /api/v1/virtual-machines/{virtualMachineId}/password
-	PutVirtualMachinePassword(ctx context.Context, request *PutVirtualMachinePasswordRequestBody, params PutVirtualMachinePasswordParams) (PutVirtualMachinePasswordRes, error)
+	PutVirtualMachinePassword(ctx context.Context, request PasswordChoice, params PutVirtualMachinePasswordParams) (PutVirtualMachinePasswordRes, error)
 	// PutVirtualMachineRescue invokes put-virtual-machine-rescue operation.
 	//
 	// Boots a temporary rescue environment while retaining the original system disk. Changing
@@ -14452,7 +14453,8 @@ func (c *Client) sendPutElasticIPAssociation(ctx context.Context, request PutEla
 
 // PutVirtualMachinePassword invokes put-virtual-machine-password operation.
 //
-// Sets the root password without a reboot. The virtual machine must be running.
+// Sets the password of the login account (`login_username`) without a reboot; root is never given one.
+// The virtual machine must be running.
 //
 // Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
 // password can then only be set by rebuilding the virtual machine, which erases all data on the system
@@ -14462,12 +14464,12 @@ func (c *Client) sendPutElasticIPAssociation(ctx context.Context, request PutEla
 // has been removed or stopped inside the virtual machine.
 //
 // PUT /api/v1/virtual-machines/{virtualMachineId}/password
-func (c *Client) PutVirtualMachinePassword(ctx context.Context, request *PutVirtualMachinePasswordRequestBody, params PutVirtualMachinePasswordParams) (PutVirtualMachinePasswordRes, error) {
+func (c *Client) PutVirtualMachinePassword(ctx context.Context, request PasswordChoice, params PutVirtualMachinePasswordParams) (PutVirtualMachinePasswordRes, error) {
 	res, err := c.sendPutVirtualMachinePassword(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendPutVirtualMachinePassword(ctx context.Context, request *PutVirtualMachinePasswordRequestBody, params PutVirtualMachinePasswordParams) (res PutVirtualMachinePasswordRes, err error) {
+func (c *Client) sendPutVirtualMachinePassword(ctx context.Context, request PasswordChoice, params PutVirtualMachinePasswordParams) (res PutVirtualMachinePasswordRes, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {

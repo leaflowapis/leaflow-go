@@ -18363,7 +18363,8 @@ func (s *Server) handlePutElasticIPAssociationRequest(args [1]string, argsEscape
 
 // handlePutVirtualMachinePasswordRequest handles put-virtual-machine-password operation.
 //
-// Sets the root password without a reboot. The virtual machine must be running.
+// Sets the password of the login account (`login_username`) without a reboot; root is never given one.
+// The virtual machine must be running.
 //
 // Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
 // password can then only be set by rebuilding the virtual machine, which erases all data on the system
@@ -18537,7 +18538,7 @@ func (s *Server) handlePutVirtualMachinePasswordRequest(args [1]string, argsEsca
 		}
 
 		type (
-			Request  = *PutVirtualMachinePasswordRequestBody
+			Request  = PasswordChoice
 			Params   = PutVirtualMachinePasswordParams
 			Response = PutVirtualMachinePasswordRes
 		)

@@ -1202,7 +1202,8 @@ func (UnimplementedHandler) PutElasticIPAssociation(ctx context.Context, req Put
 
 // PutVirtualMachinePassword implements put-virtual-machine-password operation.
 //
-// Sets the root password without a reboot. The virtual machine must be running.
+// Sets the password of the login account (`login_username`) without a reboot; root is never given one.
+// The virtual machine must be running.
 //
 // Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
 // password can then only be set by rebuilding the virtual machine, which erases all data on the system
@@ -1212,7 +1213,7 @@ func (UnimplementedHandler) PutElasticIPAssociation(ctx context.Context, req Put
 // has been removed or stopped inside the virtual machine.
 //
 // PUT /api/v1/virtual-machines/{virtualMachineId}/password
-func (UnimplementedHandler) PutVirtualMachinePassword(ctx context.Context, req *PutVirtualMachinePasswordRequestBody, params PutVirtualMachinePasswordParams) (r PutVirtualMachinePasswordRes, _ error) {
+func (UnimplementedHandler) PutVirtualMachinePassword(ctx context.Context, req PasswordChoice, params PutVirtualMachinePasswordParams) (r PutVirtualMachinePasswordRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

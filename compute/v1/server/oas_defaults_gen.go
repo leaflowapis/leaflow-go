@@ -37,8 +37,8 @@ func (s *ElasticIP) setDefaults() {
 // setDefaults set default value of fields.
 func (s *NewBootDisk) setDefaults() {
 	{
-		val := bool(true)
-		s.DeleteWithVirtualMachine.SetTo(val)
+		val := NewBootDiskOnVirtualMachineRelease("delete")
+		s.OnVirtualMachineRelease.SetTo(val)
 	}
 }
 

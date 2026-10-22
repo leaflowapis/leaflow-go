@@ -1447,16 +1447,12 @@ func (s *CreateVirtualMachineRebootRequestBody) SetForce(val OptBool) {
 
 // Ref: #/components/schemas/CreateVirtualMachineRebuildRequestBody
 type CreateVirtualMachineRebuildRequestBody struct {
-	GeneratePassword OptBool `json:"generate_password"`
 	// A public image (`/public-images`), which must be on sale unless it is the one this virtual machine
 	// already runs, or an available private image of this project (`/private-images`).
-	ImageID  ImageID   `json:"image_id"`
-	Password OptString `json:"password"`
-}
-
-// GetGeneratePassword returns the value of GeneratePassword.
-func (s *CreateVirtualMachineRebuildRequestBody) GetGeneratePassword() OptBool {
-	return s.GeneratePassword
+	ImageID ImageID `json:"image_id"`
+	// The login account's password on the reinstalled system. Omitted, only the SSH public keys of the
+	// project log in.
+	Password OptPasswordChoice `json:"password"`
 }
 
 // GetImageID returns the value of ImageID.
@@ -1465,13 +1461,8 @@ func (s *CreateVirtualMachineRebuildRequestBody) GetImageID() ImageID {
 }
 
 // GetPassword returns the value of Password.
-func (s *CreateVirtualMachineRebuildRequestBody) GetPassword() OptString {
+func (s *CreateVirtualMachineRebuildRequestBody) GetPassword() OptPasswordChoice {
 	return s.Password
-}
-
-// SetGeneratePassword sets the value of GeneratePassword.
-func (s *CreateVirtualMachineRebuildRequestBody) SetGeneratePassword(val OptBool) {
-	s.GeneratePassword = val
 }
 
 // SetImageID sets the value of ImageID.
@@ -1480,15 +1471,16 @@ func (s *CreateVirtualMachineRebuildRequestBody) SetImageID(val ImageID) {
 }
 
 // SetPassword sets the value of Password.
-func (s *CreateVirtualMachineRebuildRequestBody) SetPassword(val OptString) {
+func (s *CreateVirtualMachineRebuildRequestBody) SetPassword(val OptPasswordChoice) {
 	s.Password = val
 }
 
 // Ref: #/components/schemas/CreateVirtualMachineRebuildResponseBody
 type CreateVirtualMachineRebuildResponseBody struct {
 	VirtualMachine VirtualMachine `json:"virtual_machine"`
-	// Returned only in this response; store it immediately.
-	Password string `json:"password"`
+	// The password the platform generated, returned only in this response; store it immediately. Null when
+	// the password was supplied or none was asked for.
+	Password NilString `json:"password"`
 }
 
 // GetVirtualMachine returns the value of VirtualMachine.
@@ -1497,7 +1489,7 @@ func (s *CreateVirtualMachineRebuildResponseBody) GetVirtualMachine() VirtualMac
 }
 
 // GetPassword returns the value of Password.
-func (s *CreateVirtualMachineRebuildResponseBody) GetPassword() string {
+func (s *CreateVirtualMachineRebuildResponseBody) GetPassword() NilString {
 	return s.Password
 }
 
@@ -1507,7 +1499,7 @@ func (s *CreateVirtualMachineRebuildResponseBody) SetVirtualMachine(val VirtualM
 }
 
 // SetPassword sets the value of Password.
-func (s *CreateVirtualMachineRebuildResponseBody) SetPassword(val string) {
+func (s *CreateVirtualMachineRebuildResponseBody) SetPassword(val NilString) {
 	s.Password = val
 }
 
@@ -1515,68 +1507,23 @@ func (*CreateVirtualMachineRebuildResponseBody) createVirtualMachineRebuildRes()
 
 // Ref: #/components/schemas/CreateVirtualMachineRequestBody
 type CreateVirtualMachineRequestBody struct {
-	// Associate an elastic IP you already hold, instead of allocating a new one. It must be idle and in
-	// the same region.
-	//
-	// Mutually exclusive with `bandwidth_mbps`: an address you already hold has its own bandwidth ceiling,
-	// set when it was allocated, and changing it is a separate operation.
-	//
-	// Like `bandwidth_mbps`, this happens inside the creation: if association fails, no virtual machine is
-	// created. Associating afterwards is still possible (`put-elastic-ip-association`), but then it is two
-	// operations and a failure in between leaves a virtual machine you cannot reach.
-	//
-	// Only one virtual machine can be created when it is used — one address is associated with one
-	// interface.
-	ElasticIPID OptElasticIPID `json:"elastic_ip_id"`
+	Name string `json:"name"`
 	// Number of virtual machines to create; 1 when omitted. Names are numbered automatically for several.
 	Count OptInt64 `json:"count"`
-	// Have the platform generate a random password, returned only in this response.
-	GeneratePassword OptBool    `json:"generate_password"`
-	Compute          NewCompute `json:"compute"`
 	// The availability zone of the machine type's region the virtual machines are created in. An existing
 	// boot disk has to be in it already.
-	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
-	Name               string             `json:"name"`
-	// The password to set, on the login account and on root. Only the SSH public keys of the project are
-	// used when omitted.
-	Password OptString `json:"password"`
-	// Use an existing network interface, which may already have an elastic IP associated. Exactly one of
-	// this and `subnet_id`; only one virtual machine can be created when it is used.
-	NetworkInterfaceID OptNetworkInterfaceID `json:"network_interface_id"`
-	// Required when a primary network interface is created, at least one; the default security group is
-	// not applied automatically. Ignored together with `network_interface_id`, as the security groups of
-	// that interface were fixed when it was created.
-	SecurityGroupIds OptNilSecurityGroupIDArray `json:"security_group_ids"`
-	// Create the primary network interface in this subnet. Exactly one of this and `network_interface_id`.
-	SubnetID  OptSubnetID        `json:"subnet_id"`
-	BootDisk  BootDisk           `json:"boot_disk"`
-	ElasticIP OptNewElasticIP    `json:"elastic_ip"`
-	Checkout  OptCheckoutOptions `json:"checkout"`
-}
-
-// GetElasticIPID returns the value of ElasticIPID.
-func (s *CreateVirtualMachineRequestBody) GetElasticIPID() OptElasticIPID {
-	return s.ElasticIPID
-}
-
-// GetCount returns the value of Count.
-func (s *CreateVirtualMachineRequestBody) GetCount() OptInt64 {
-	return s.Count
-}
-
-// GetGeneratePassword returns the value of GeneratePassword.
-func (s *CreateVirtualMachineRequestBody) GetGeneratePassword() OptBool {
-	return s.GeneratePassword
-}
-
-// GetCompute returns the value of Compute.
-func (s *CreateVirtualMachineRequestBody) GetCompute() NewCompute {
-	return s.Compute
-}
-
-// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *CreateVirtualMachineRequestBody) GetAvailabilityZoneID() AvailabilityZoneID {
-	return s.AvailabilityZoneID
+	AvailabilityZoneID AvailabilityZoneID      `json:"availability_zone_id"`
+	Compute            NewCompute              `json:"compute"`
+	BootDisk           BootDisk                `json:"boot_disk"`
+	NetworkInterface   PrimaryNetworkInterface `json:"network_interface"`
+	// An elastic IP associated with the primary network interface inside the creation: if association
+	// fails, no virtual machine is created. Associating afterwards is still possible
+	// (`put-elastic-ip-association`), but then it is two operations and a failure in between leaves a
+	// virtual machine you cannot reach. Omitted, the virtual machine has no public address.
+	ElasticIP OptVirtualMachineElasticIP `json:"elastic_ip"`
+	// The login account's password. Omitted, only the SSH public keys of the project log in.
+	Password OptPasswordChoice  `json:"password"`
+	Checkout OptCheckoutOptions `json:"checkout"`
 }
 
 // GetName returns the value of Name.
@@ -1584,24 +1531,19 @@ func (s *CreateVirtualMachineRequestBody) GetName() string {
 	return s.Name
 }
 
-// GetPassword returns the value of Password.
-func (s *CreateVirtualMachineRequestBody) GetPassword() OptString {
-	return s.Password
+// GetCount returns the value of Count.
+func (s *CreateVirtualMachineRequestBody) GetCount() OptInt64 {
+	return s.Count
 }
 
-// GetNetworkInterfaceID returns the value of NetworkInterfaceID.
-func (s *CreateVirtualMachineRequestBody) GetNetworkInterfaceID() OptNetworkInterfaceID {
-	return s.NetworkInterfaceID
+// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
+func (s *CreateVirtualMachineRequestBody) GetAvailabilityZoneID() AvailabilityZoneID {
+	return s.AvailabilityZoneID
 }
 
-// GetSecurityGroupIds returns the value of SecurityGroupIds.
-func (s *CreateVirtualMachineRequestBody) GetSecurityGroupIds() OptNilSecurityGroupIDArray {
-	return s.SecurityGroupIds
-}
-
-// GetSubnetID returns the value of SubnetID.
-func (s *CreateVirtualMachineRequestBody) GetSubnetID() OptSubnetID {
-	return s.SubnetID
+// GetCompute returns the value of Compute.
+func (s *CreateVirtualMachineRequestBody) GetCompute() NewCompute {
+	return s.Compute
 }
 
 // GetBootDisk returns the value of BootDisk.
@@ -1609,9 +1551,19 @@ func (s *CreateVirtualMachineRequestBody) GetBootDisk() BootDisk {
 	return s.BootDisk
 }
 
+// GetNetworkInterface returns the value of NetworkInterface.
+func (s *CreateVirtualMachineRequestBody) GetNetworkInterface() PrimaryNetworkInterface {
+	return s.NetworkInterface
+}
+
 // GetElasticIP returns the value of ElasticIP.
-func (s *CreateVirtualMachineRequestBody) GetElasticIP() OptNewElasticIP {
+func (s *CreateVirtualMachineRequestBody) GetElasticIP() OptVirtualMachineElasticIP {
 	return s.ElasticIP
+}
+
+// GetPassword returns the value of Password.
+func (s *CreateVirtualMachineRequestBody) GetPassword() OptPasswordChoice {
+	return s.Password
 }
 
 // GetCheckout returns the value of Checkout.
@@ -1619,9 +1571,9 @@ func (s *CreateVirtualMachineRequestBody) GetCheckout() OptCheckoutOptions {
 	return s.Checkout
 }
 
-// SetElasticIPID sets the value of ElasticIPID.
-func (s *CreateVirtualMachineRequestBody) SetElasticIPID(val OptElasticIPID) {
-	s.ElasticIPID = val
+// SetName sets the value of Name.
+func (s *CreateVirtualMachineRequestBody) SetName(val string) {
+	s.Name = val
 }
 
 // SetCount sets the value of Count.
@@ -1629,9 +1581,9 @@ func (s *CreateVirtualMachineRequestBody) SetCount(val OptInt64) {
 	s.Count = val
 }
 
-// SetGeneratePassword sets the value of GeneratePassword.
-func (s *CreateVirtualMachineRequestBody) SetGeneratePassword(val OptBool) {
-	s.GeneratePassword = val
+// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
+func (s *CreateVirtualMachineRequestBody) SetAvailabilityZoneID(val AvailabilityZoneID) {
+	s.AvailabilityZoneID = val
 }
 
 // SetCompute sets the value of Compute.
@@ -1639,44 +1591,24 @@ func (s *CreateVirtualMachineRequestBody) SetCompute(val NewCompute) {
 	s.Compute = val
 }
 
-// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *CreateVirtualMachineRequestBody) SetAvailabilityZoneID(val AvailabilityZoneID) {
-	s.AvailabilityZoneID = val
-}
-
-// SetName sets the value of Name.
-func (s *CreateVirtualMachineRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetPassword sets the value of Password.
-func (s *CreateVirtualMachineRequestBody) SetPassword(val OptString) {
-	s.Password = val
-}
-
-// SetNetworkInterfaceID sets the value of NetworkInterfaceID.
-func (s *CreateVirtualMachineRequestBody) SetNetworkInterfaceID(val OptNetworkInterfaceID) {
-	s.NetworkInterfaceID = val
-}
-
-// SetSecurityGroupIds sets the value of SecurityGroupIds.
-func (s *CreateVirtualMachineRequestBody) SetSecurityGroupIds(val OptNilSecurityGroupIDArray) {
-	s.SecurityGroupIds = val
-}
-
-// SetSubnetID sets the value of SubnetID.
-func (s *CreateVirtualMachineRequestBody) SetSubnetID(val OptSubnetID) {
-	s.SubnetID = val
-}
-
 // SetBootDisk sets the value of BootDisk.
 func (s *CreateVirtualMachineRequestBody) SetBootDisk(val BootDisk) {
 	s.BootDisk = val
 }
 
+// SetNetworkInterface sets the value of NetworkInterface.
+func (s *CreateVirtualMachineRequestBody) SetNetworkInterface(val PrimaryNetworkInterface) {
+	s.NetworkInterface = val
+}
+
 // SetElasticIP sets the value of ElasticIP.
-func (s *CreateVirtualMachineRequestBody) SetElasticIP(val OptNewElasticIP) {
+func (s *CreateVirtualMachineRequestBody) SetElasticIP(val OptVirtualMachineElasticIP) {
 	s.ElasticIP = val
+}
+
+// SetPassword sets the value of Password.
+func (s *CreateVirtualMachineRequestBody) SetPassword(val OptPasswordChoice) {
+	s.Password = val
 }
 
 // SetCheckout sets the value of Checkout.
@@ -1799,16 +1731,20 @@ func (*DeleteVirtualPrivateCloudIpv6Accepted) deleteVirtualPrivateCloudIpv6Res()
 
 // Ref: #/components/schemas/DiskAttachment
 type DiskAttachment struct {
-	ID                       VirtualMachineDiskID `json:"id"`
-	VirtualMachineID         VirtualMachineID     `json:"virtual_machine_id"`
-	DiskID                   DiskID               `json:"disk_id"`
-	Role                     DiskAttachmentRole   `json:"role"`
-	DeleteWithVirtualMachine bool                 `json:"delete_with_virtual_machine"`
-	State                    DiskAttachmentState  `json:"state"`
-	AttachedAt               NilDateTime          `json:"attached_at"`
-	DetachedAt               NilDateTime          `json:"detached_at"`
-	ReleasedAt               NilDateTime          `json:"released_at"`
-	Device                   NilString            `json:"device"`
+	ID               VirtualMachineDiskID `json:"id"`
+	VirtualMachineID VirtualMachineID     `json:"virtual_machine_id"`
+	DiskID           DiskID               `json:"disk_id"`
+	Role             DiskAttachmentRole   `json:"role"`
+	// What releasing the virtual machine does to this disk. `delete` deletes it together with the virtual
+	// machine; `detach` detaches it and leaves it to you. A disk you attached, or booted the virtual
+	// machine from, is `detach`; a disk bought with the virtual machine follows the choice made when it
+	// was bought.
+	OnVirtualMachineRelease DiskAttachmentOnVirtualMachineRelease `json:"on_virtual_machine_release"`
+	State                   DiskAttachmentState                   `json:"state"`
+	AttachedAt              NilDateTime                           `json:"attached_at"`
+	DetachedAt              NilDateTime                           `json:"detached_at"`
+	ReleasedAt              NilDateTime                           `json:"released_at"`
+	Device                  NilString                             `json:"device"`
 	// The disk's performance in effect on this attachment, as it was when the attachment was made. Null
 	// until the attachment is made.
 	Performance NilDiskPerformance `json:"performance"`
@@ -1834,9 +1770,9 @@ func (s *DiskAttachment) GetRole() DiskAttachmentRole {
 	return s.Role
 }
 
-// GetDeleteWithVirtualMachine returns the value of DeleteWithVirtualMachine.
-func (s *DiskAttachment) GetDeleteWithVirtualMachine() bool {
-	return s.DeleteWithVirtualMachine
+// GetOnVirtualMachineRelease returns the value of OnVirtualMachineRelease.
+func (s *DiskAttachment) GetOnVirtualMachineRelease() DiskAttachmentOnVirtualMachineRelease {
+	return s.OnVirtualMachineRelease
 }
 
 // GetState returns the value of State.
@@ -1889,9 +1825,9 @@ func (s *DiskAttachment) SetRole(val DiskAttachmentRole) {
 	s.Role = val
 }
 
-// SetDeleteWithVirtualMachine sets the value of DeleteWithVirtualMachine.
-func (s *DiskAttachment) SetDeleteWithVirtualMachine(val bool) {
-	s.DeleteWithVirtualMachine = val
+// SetOnVirtualMachineRelease sets the value of OnVirtualMachineRelease.
+func (s *DiskAttachment) SetOnVirtualMachineRelease(val DiskAttachmentOnVirtualMachineRelease) {
+	s.OnVirtualMachineRelease = val
 }
 
 // SetState sets the value of State.
@@ -1948,6 +1884,51 @@ func (s *DiskAttachmentList) SetItems(val []DiskAttachment) {
 // SetPagination sets the value of Pagination.
 func (s *DiskAttachmentList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
+}
+
+// What releasing the virtual machine does to this disk. `delete` deletes it together with the virtual
+// machine; `detach` detaches it and leaves it to you. A disk you attached, or booted the virtual
+// machine from, is `detach`; a disk bought with the virtual machine follows the choice made when it
+// was bought.
+type DiskAttachmentOnVirtualMachineRelease string
+
+const (
+	DiskAttachmentOnVirtualMachineReleaseDelete DiskAttachmentOnVirtualMachineRelease = "delete"
+	DiskAttachmentOnVirtualMachineReleaseDetach DiskAttachmentOnVirtualMachineRelease = "detach"
+)
+
+// AllValues returns all DiskAttachmentOnVirtualMachineRelease values.
+func (DiskAttachmentOnVirtualMachineRelease) AllValues() []DiskAttachmentOnVirtualMachineRelease {
+	return []DiskAttachmentOnVirtualMachineRelease{
+		DiskAttachmentOnVirtualMachineReleaseDelete,
+		DiskAttachmentOnVirtualMachineReleaseDetach,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s DiskAttachmentOnVirtualMachineRelease) MarshalText() ([]byte, error) {
+	switch s {
+	case DiskAttachmentOnVirtualMachineReleaseDelete:
+		return []byte(s), nil
+	case DiskAttachmentOnVirtualMachineReleaseDetach:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *DiskAttachmentOnVirtualMachineRelease) UnmarshalText(data []byte) error {
+	switch DiskAttachmentOnVirtualMachineRelease(data) {
+	case DiskAttachmentOnVirtualMachineReleaseDelete:
+		*s = DiskAttachmentOnVirtualMachineReleaseDelete
+		return nil
+	case DiskAttachmentOnVirtualMachineReleaseDetach:
+		*s = DiskAttachmentOnVirtualMachineReleaseDetach
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 type DiskAttachmentRole string
@@ -4729,6 +4710,130 @@ func (s *ExistingBootDiskType) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/ExistingElasticIP
+type ExistingElasticIP struct {
+	Type ExistingElasticIPType `json:"type"`
+	// An idle elastic IP of this project in the same region. It keeps its own bandwidth and subscriptions;
+	// changing its bandwidth is a separate operation.
+	ElasticIPID ElasticIPID `json:"elastic_ip_id"`
+}
+
+// GetType returns the value of Type.
+func (s *ExistingElasticIP) GetType() ExistingElasticIPType {
+	return s.Type
+}
+
+// GetElasticIPID returns the value of ElasticIPID.
+func (s *ExistingElasticIP) GetElasticIPID() ElasticIPID {
+	return s.ElasticIPID
+}
+
+// SetType sets the value of Type.
+func (s *ExistingElasticIP) SetType(val ExistingElasticIPType) {
+	s.Type = val
+}
+
+// SetElasticIPID sets the value of ElasticIPID.
+func (s *ExistingElasticIP) SetElasticIPID(val ElasticIPID) {
+	s.ElasticIPID = val
+}
+
+type ExistingElasticIPType string
+
+const (
+	ExistingElasticIPTypeExisting ExistingElasticIPType = "existing"
+)
+
+// AllValues returns all ExistingElasticIPType values.
+func (ExistingElasticIPType) AllValues() []ExistingElasticIPType {
+	return []ExistingElasticIPType{
+		ExistingElasticIPTypeExisting,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ExistingElasticIPType) MarshalText() ([]byte, error) {
+	switch s {
+	case ExistingElasticIPTypeExisting:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ExistingElasticIPType) UnmarshalText(data []byte) error {
+	switch ExistingElasticIPType(data) {
+	case ExistingElasticIPTypeExisting:
+		*s = ExistingElasticIPTypeExisting
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/ExistingPrimaryNetworkInterface
+type ExistingPrimaryNetworkInterface struct {
+	Type ExistingPrimaryNetworkInterfaceType `json:"type"`
+	// An unattached network interface of this project in the machine type's region. It keeps its security
+	// groups and any elastic IP associated with it. Only one virtual machine may be created when used.
+	NetworkInterfaceID NetworkInterfaceID `json:"network_interface_id"`
+}
+
+// GetType returns the value of Type.
+func (s *ExistingPrimaryNetworkInterface) GetType() ExistingPrimaryNetworkInterfaceType {
+	return s.Type
+}
+
+// GetNetworkInterfaceID returns the value of NetworkInterfaceID.
+func (s *ExistingPrimaryNetworkInterface) GetNetworkInterfaceID() NetworkInterfaceID {
+	return s.NetworkInterfaceID
+}
+
+// SetType sets the value of Type.
+func (s *ExistingPrimaryNetworkInterface) SetType(val ExistingPrimaryNetworkInterfaceType) {
+	s.Type = val
+}
+
+// SetNetworkInterfaceID sets the value of NetworkInterfaceID.
+func (s *ExistingPrimaryNetworkInterface) SetNetworkInterfaceID(val NetworkInterfaceID) {
+	s.NetworkInterfaceID = val
+}
+
+type ExistingPrimaryNetworkInterfaceType string
+
+const (
+	ExistingPrimaryNetworkInterfaceTypeExisting ExistingPrimaryNetworkInterfaceType = "existing"
+)
+
+// AllValues returns all ExistingPrimaryNetworkInterfaceType values.
+func (ExistingPrimaryNetworkInterfaceType) AllValues() []ExistingPrimaryNetworkInterfaceType {
+	return []ExistingPrimaryNetworkInterfaceType{
+		ExistingPrimaryNetworkInterfaceTypeExisting,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ExistingPrimaryNetworkInterfaceType) MarshalText() ([]byte, error) {
+	switch s {
+	case ExistingPrimaryNetworkInterfaceTypeExisting:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ExistingPrimaryNetworkInterfaceType) UnmarshalText(data []byte) error {
+	switch ExistingPrimaryNetworkInterfaceType(data) {
+	case ExistingPrimaryNetworkInterfaceTypeExisting:
+		*s = ExistingPrimaryNetworkInterfaceTypeExisting
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/FreeSubnetCidr
 type FreeSubnetCidr struct {
 	PrefixLength int64 `json:"prefix_length"`
@@ -4754,6 +4859,55 @@ func (s *FreeSubnetCidr) SetPrefixLength(val int64) {
 // SetCidr sets the value of Cidr.
 func (s *FreeSubnetCidr) SetCidr(val NilString) {
 	s.Cidr = val
+}
+
+// Ref: #/components/schemas/GeneratedPassword
+type GeneratedPassword struct {
+	Type GeneratedPasswordType `json:"type"`
+}
+
+// GetType returns the value of Type.
+func (s *GeneratedPassword) GetType() GeneratedPasswordType {
+	return s.Type
+}
+
+// SetType sets the value of Type.
+func (s *GeneratedPassword) SetType(val GeneratedPasswordType) {
+	s.Type = val
+}
+
+type GeneratedPasswordType string
+
+const (
+	GeneratedPasswordTypeGenerated GeneratedPasswordType = "generated"
+)
+
+// AllValues returns all GeneratedPasswordType values.
+func (GeneratedPasswordType) AllValues() []GeneratedPasswordType {
+	return []GeneratedPasswordType{
+		GeneratedPasswordTypeGenerated,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s GeneratedPasswordType) MarshalText() ([]byte, error) {
+	switch s {
+	case GeneratedPasswordTypeGenerated:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *GeneratedPasswordType) UnmarshalText(data []byte) error {
+	switch GeneratedPasswordType(data) {
+	case GeneratedPasswordTypeGenerated:
+		*s = GeneratedPasswordTypeGenerated
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 type IPv4HostAddress string
@@ -5431,15 +5585,18 @@ func (s *NetworkInterfaceAddressState) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/NetworkInterfaceAttachment
 type NetworkInterfaceAttachment struct {
-	ID                       VirtualMachineNetworkInterfaceID `json:"id"`
-	VirtualMachineID         VirtualMachineID                 `json:"virtual_machine_id"`
-	NetworkInterfaceID       NetworkInterfaceID               `json:"network_interface_id"`
-	Role                     NetworkInterfaceAttachmentRole   `json:"role"`
-	DeleteWithVirtualMachine bool                             `json:"delete_with_virtual_machine"`
-	State                    NetworkInterfaceAttachmentState  `json:"state"`
-	AttachedAt               NilDateTime                      `json:"attached_at"`
-	DetachedAt               NilDateTime                      `json:"detached_at"`
-	ReleasedAt               NilDateTime                      `json:"released_at"`
+	ID                 VirtualMachineNetworkInterfaceID `json:"id"`
+	VirtualMachineID   VirtualMachineID                 `json:"virtual_machine_id"`
+	NetworkInterfaceID NetworkInterfaceID               `json:"network_interface_id"`
+	Role               NetworkInterfaceAttachmentRole   `json:"role"`
+	// What releasing the virtual machine does to this interface. `delete` deletes it together with the
+	// virtual machine; `detach` detaches it and leaves it to you. The primary interface created with the
+	// virtual machine is `delete`; an interface you created yourself is `detach`.
+	OnVirtualMachineRelease NetworkInterfaceAttachmentOnVirtualMachineRelease `json:"on_virtual_machine_release"`
+	State                   NetworkInterfaceAttachmentState                   `json:"state"`
+	AttachedAt              NilDateTime                                       `json:"attached_at"`
+	DetachedAt              NilDateTime                                       `json:"detached_at"`
+	ReleasedAt              NilDateTime                                       `json:"released_at"`
 }
 
 // GetID returns the value of ID.
@@ -5462,9 +5619,9 @@ func (s *NetworkInterfaceAttachment) GetRole() NetworkInterfaceAttachmentRole {
 	return s.Role
 }
 
-// GetDeleteWithVirtualMachine returns the value of DeleteWithVirtualMachine.
-func (s *NetworkInterfaceAttachment) GetDeleteWithVirtualMachine() bool {
-	return s.DeleteWithVirtualMachine
+// GetOnVirtualMachineRelease returns the value of OnVirtualMachineRelease.
+func (s *NetworkInterfaceAttachment) GetOnVirtualMachineRelease() NetworkInterfaceAttachmentOnVirtualMachineRelease {
+	return s.OnVirtualMachineRelease
 }
 
 // GetState returns the value of State.
@@ -5507,9 +5664,9 @@ func (s *NetworkInterfaceAttachment) SetRole(val NetworkInterfaceAttachmentRole)
 	s.Role = val
 }
 
-// SetDeleteWithVirtualMachine sets the value of DeleteWithVirtualMachine.
-func (s *NetworkInterfaceAttachment) SetDeleteWithVirtualMachine(val bool) {
-	s.DeleteWithVirtualMachine = val
+// SetOnVirtualMachineRelease sets the value of OnVirtualMachineRelease.
+func (s *NetworkInterfaceAttachment) SetOnVirtualMachineRelease(val NetworkInterfaceAttachmentOnVirtualMachineRelease) {
+	s.OnVirtualMachineRelease = val
 }
 
 // SetState sets the value of State.
@@ -5556,6 +5713,50 @@ func (s *NetworkInterfaceAttachmentList) SetItems(val []NetworkInterfaceAttachme
 // SetPagination sets the value of Pagination.
 func (s *NetworkInterfaceAttachmentList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
+}
+
+// What releasing the virtual machine does to this interface. `delete` deletes it together with the
+// virtual machine; `detach` detaches it and leaves it to you. The primary interface created with the
+// virtual machine is `delete`; an interface you created yourself is `detach`.
+type NetworkInterfaceAttachmentOnVirtualMachineRelease string
+
+const (
+	NetworkInterfaceAttachmentOnVirtualMachineReleaseDelete NetworkInterfaceAttachmentOnVirtualMachineRelease = "delete"
+	NetworkInterfaceAttachmentOnVirtualMachineReleaseDetach NetworkInterfaceAttachmentOnVirtualMachineRelease = "detach"
+)
+
+// AllValues returns all NetworkInterfaceAttachmentOnVirtualMachineRelease values.
+func (NetworkInterfaceAttachmentOnVirtualMachineRelease) AllValues() []NetworkInterfaceAttachmentOnVirtualMachineRelease {
+	return []NetworkInterfaceAttachmentOnVirtualMachineRelease{
+		NetworkInterfaceAttachmentOnVirtualMachineReleaseDelete,
+		NetworkInterfaceAttachmentOnVirtualMachineReleaseDetach,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NetworkInterfaceAttachmentOnVirtualMachineRelease) MarshalText() ([]byte, error) {
+	switch s {
+	case NetworkInterfaceAttachmentOnVirtualMachineReleaseDelete:
+		return []byte(s), nil
+	case NetworkInterfaceAttachmentOnVirtualMachineReleaseDetach:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NetworkInterfaceAttachmentOnVirtualMachineRelease) UnmarshalText(data []byte) error {
+	switch NetworkInterfaceAttachmentOnVirtualMachineRelease(data) {
+	case NetworkInterfaceAttachmentOnVirtualMachineReleaseDelete:
+		*s = NetworkInterfaceAttachmentOnVirtualMachineReleaseDelete
+		return nil
+	case NetworkInterfaceAttachmentOnVirtualMachineReleaseDetach:
+		*s = NetworkInterfaceAttachmentOnVirtualMachineReleaseDetach
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 type NetworkInterfaceAttachmentRole string
@@ -5830,10 +6031,12 @@ type NewBootDisk struct {
 	ImageID ImageID `json:"image_id"`
 	// A disk type on sale and sold in the virtual machine's availability zone; any disk type boots a
 	// virtual machine.
-	DiskTypeID               DiskTypeID    `json:"disk_type_id"`
-	SizeGB                   int64         `json:"size_gb"`
-	DeleteWithVirtualMachine OptBool       `json:"delete_with_virtual_machine"`
-	Billing                  BillingChoice `json:"billing"`
+	DiskTypeID DiskTypeID `json:"disk_type_id"`
+	SizeGB     int64      `json:"size_gb"`
+	// What releasing the virtual machine does to this disk. `delete` deletes it with the virtual machine;
+	// `detach` keeps it, still billed on its own terms, for you to attach elsewhere or delete.
+	OnVirtualMachineRelease OptNewBootDiskOnVirtualMachineRelease `json:"on_virtual_machine_release"`
+	Billing                 BillingChoice                         `json:"billing"`
 }
 
 // GetType returns the value of Type.
@@ -5856,9 +6059,9 @@ func (s *NewBootDisk) GetSizeGB() int64 {
 	return s.SizeGB
 }
 
-// GetDeleteWithVirtualMachine returns the value of DeleteWithVirtualMachine.
-func (s *NewBootDisk) GetDeleteWithVirtualMachine() OptBool {
-	return s.DeleteWithVirtualMachine
+// GetOnVirtualMachineRelease returns the value of OnVirtualMachineRelease.
+func (s *NewBootDisk) GetOnVirtualMachineRelease() OptNewBootDiskOnVirtualMachineRelease {
+	return s.OnVirtualMachineRelease
 }
 
 // GetBilling returns the value of Billing.
@@ -5886,14 +6089,57 @@ func (s *NewBootDisk) SetSizeGB(val int64) {
 	s.SizeGB = val
 }
 
-// SetDeleteWithVirtualMachine sets the value of DeleteWithVirtualMachine.
-func (s *NewBootDisk) SetDeleteWithVirtualMachine(val OptBool) {
-	s.DeleteWithVirtualMachine = val
+// SetOnVirtualMachineRelease sets the value of OnVirtualMachineRelease.
+func (s *NewBootDisk) SetOnVirtualMachineRelease(val OptNewBootDiskOnVirtualMachineRelease) {
+	s.OnVirtualMachineRelease = val
 }
 
 // SetBilling sets the value of Billing.
 func (s *NewBootDisk) SetBilling(val BillingChoice) {
 	s.Billing = val
+}
+
+// What releasing the virtual machine does to this disk. `delete` deletes it with the virtual machine;
+// `detach` keeps it, still billed on its own terms, for you to attach elsewhere or delete.
+type NewBootDiskOnVirtualMachineRelease string
+
+const (
+	NewBootDiskOnVirtualMachineReleaseDelete NewBootDiskOnVirtualMachineRelease = "delete"
+	NewBootDiskOnVirtualMachineReleaseDetach NewBootDiskOnVirtualMachineRelease = "detach"
+)
+
+// AllValues returns all NewBootDiskOnVirtualMachineRelease values.
+func (NewBootDiskOnVirtualMachineRelease) AllValues() []NewBootDiskOnVirtualMachineRelease {
+	return []NewBootDiskOnVirtualMachineRelease{
+		NewBootDiskOnVirtualMachineReleaseDelete,
+		NewBootDiskOnVirtualMachineReleaseDetach,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NewBootDiskOnVirtualMachineRelease) MarshalText() ([]byte, error) {
+	switch s {
+	case NewBootDiskOnVirtualMachineReleaseDelete:
+		return []byte(s), nil
+	case NewBootDiskOnVirtualMachineReleaseDetach:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NewBootDiskOnVirtualMachineRelease) UnmarshalText(data []byte) error {
+	switch NewBootDiskOnVirtualMachineRelease(data) {
+	case NewBootDiskOnVirtualMachineReleaseDelete:
+		*s = NewBootDiskOnVirtualMachineReleaseDelete
+		return nil
+	case NewBootDiskOnVirtualMachineReleaseDetach:
+		*s = NewBootDiskOnVirtualMachineReleaseDetach
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 type NewBootDiskType string
@@ -5959,27 +6205,22 @@ func (s *NewCompute) SetBilling(val BillingChoice) {
 }
 
 // One IPv4 elastic IP created with this bandwidth configuration in the virtual machine's order.
-// Mutually exclusive with elastic_ip_id.
 // Ref: #/components/schemas/NewElasticIP
 type NewElasticIP struct {
-	InternetChargeType OptInternetChargeType `json:"internet_charge_type"`
+	Type   NewElasticIPType `json:"type"`
+	LineID ElasticIPLineID  `json:"line_id"`
 	// Within the line's `min_bandwidth_mbps` and `max_bandwidth_mbps` and a multiple of its
 	// `bandwidth_step_mbps`, otherwise refused with `ELASTIC_IP_BANDWIDTH_RANGE`.
-	BandwidthMbps int64           `json:"bandwidth_mbps"`
-	LineID        ElasticIPLineID `json:"line_id"`
+	BandwidthMbps      int64                 `json:"bandwidth_mbps"`
+	InternetChargeType OptInternetChargeType `json:"internet_charge_type"`
 	// The terms of the elastic IP's network subscription, which follow the rule shared by every component
 	// of the purchase. Its address subscription is always pay-as-you-go and is exempt from that rule.
 	Billing BillingChoice `json:"billing"`
 }
 
-// GetInternetChargeType returns the value of InternetChargeType.
-func (s *NewElasticIP) GetInternetChargeType() OptInternetChargeType {
-	return s.InternetChargeType
-}
-
-// GetBandwidthMbps returns the value of BandwidthMbps.
-func (s *NewElasticIP) GetBandwidthMbps() int64 {
-	return s.BandwidthMbps
+// GetType returns the value of Type.
+func (s *NewElasticIP) GetType() NewElasticIPType {
+	return s.Type
 }
 
 // GetLineID returns the value of LineID.
@@ -5987,19 +6228,24 @@ func (s *NewElasticIP) GetLineID() ElasticIPLineID {
 	return s.LineID
 }
 
+// GetBandwidthMbps returns the value of BandwidthMbps.
+func (s *NewElasticIP) GetBandwidthMbps() int64 {
+	return s.BandwidthMbps
+}
+
+// GetInternetChargeType returns the value of InternetChargeType.
+func (s *NewElasticIP) GetInternetChargeType() OptInternetChargeType {
+	return s.InternetChargeType
+}
+
 // GetBilling returns the value of Billing.
 func (s *NewElasticIP) GetBilling() BillingChoice {
 	return s.Billing
 }
 
-// SetInternetChargeType sets the value of InternetChargeType.
-func (s *NewElasticIP) SetInternetChargeType(val OptInternetChargeType) {
-	s.InternetChargeType = val
-}
-
-// SetBandwidthMbps sets the value of BandwidthMbps.
-func (s *NewElasticIP) SetBandwidthMbps(val int64) {
-	s.BandwidthMbps = val
+// SetType sets the value of Type.
+func (s *NewElasticIP) SetType(val NewElasticIPType) {
+	s.Type = val
 }
 
 // SetLineID sets the value of LineID.
@@ -6007,9 +6253,127 @@ func (s *NewElasticIP) SetLineID(val ElasticIPLineID) {
 	s.LineID = val
 }
 
+// SetBandwidthMbps sets the value of BandwidthMbps.
+func (s *NewElasticIP) SetBandwidthMbps(val int64) {
+	s.BandwidthMbps = val
+}
+
+// SetInternetChargeType sets the value of InternetChargeType.
+func (s *NewElasticIP) SetInternetChargeType(val OptInternetChargeType) {
+	s.InternetChargeType = val
+}
+
 // SetBilling sets the value of Billing.
 func (s *NewElasticIP) SetBilling(val BillingChoice) {
 	s.Billing = val
+}
+
+type NewElasticIPType string
+
+const (
+	NewElasticIPTypeNew NewElasticIPType = "new"
+)
+
+// AllValues returns all NewElasticIPType values.
+func (NewElasticIPType) AllValues() []NewElasticIPType {
+	return []NewElasticIPType{
+		NewElasticIPTypeNew,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NewElasticIPType) MarshalText() ([]byte, error) {
+	switch s {
+	case NewElasticIPTypeNew:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NewElasticIPType) UnmarshalText(data []byte) error {
+	switch NewElasticIPType(data) {
+	case NewElasticIPTypeNew:
+		*s = NewElasticIPTypeNew
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/NewPrimaryNetworkInterface
+type NewPrimaryNetworkInterface struct {
+	Type NewPrimaryNetworkInterfaceType `json:"type"`
+	// The subnet the interface is created in, in the machine type's region.
+	SubnetID SubnetID `json:"subnet_id"`
+	// The security groups of the interface, of the subnet's virtual private cloud. The default security
+	// group is not applied automatically.
+	SecurityGroupIds []SecurityGroupID `json:"security_group_ids"`
+}
+
+// GetType returns the value of Type.
+func (s *NewPrimaryNetworkInterface) GetType() NewPrimaryNetworkInterfaceType {
+	return s.Type
+}
+
+// GetSubnetID returns the value of SubnetID.
+func (s *NewPrimaryNetworkInterface) GetSubnetID() SubnetID {
+	return s.SubnetID
+}
+
+// GetSecurityGroupIds returns the value of SecurityGroupIds.
+func (s *NewPrimaryNetworkInterface) GetSecurityGroupIds() []SecurityGroupID {
+	return s.SecurityGroupIds
+}
+
+// SetType sets the value of Type.
+func (s *NewPrimaryNetworkInterface) SetType(val NewPrimaryNetworkInterfaceType) {
+	s.Type = val
+}
+
+// SetSubnetID sets the value of SubnetID.
+func (s *NewPrimaryNetworkInterface) SetSubnetID(val SubnetID) {
+	s.SubnetID = val
+}
+
+// SetSecurityGroupIds sets the value of SecurityGroupIds.
+func (s *NewPrimaryNetworkInterface) SetSecurityGroupIds(val []SecurityGroupID) {
+	s.SecurityGroupIds = val
+}
+
+type NewPrimaryNetworkInterfaceType string
+
+const (
+	NewPrimaryNetworkInterfaceTypeNew NewPrimaryNetworkInterfaceType = "new"
+)
+
+// AllValues returns all NewPrimaryNetworkInterfaceType values.
+func (NewPrimaryNetworkInterfaceType) AllValues() []NewPrimaryNetworkInterfaceType {
+	return []NewPrimaryNetworkInterfaceType{
+		NewPrimaryNetworkInterfaceTypeNew,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NewPrimaryNetworkInterfaceType) MarshalText() ([]byte, error) {
+	switch s {
+	case NewPrimaryNetworkInterfaceTypeNew:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NewPrimaryNetworkInterfaceType) UnmarshalText(data []byte) error {
+	switch NewPrimaryNetworkInterfaceType(data) {
+	case NewPrimaryNetworkInterfaceTypeNew:
+		*s = NewPrimaryNetworkInterfaceTypeNew
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // NewNilDateTime returns new NilDateTime with value set to v.
@@ -8350,52 +8714,6 @@ func (o OptDiskTypeID) Or(d DiskTypeID) DiskTypeID {
 	return d
 }
 
-// NewOptElasticIPID returns new OptElasticIPID with value set to v.
-func NewOptElasticIPID(v ElasticIPID) OptElasticIPID {
-	return OptElasticIPID{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptElasticIPID is optional ElasticIPID.
-type OptElasticIPID struct {
-	Value ElasticIPID
-	Set   bool
-}
-
-// IsSet returns true if OptElasticIPID was set.
-func (o OptElasticIPID) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptElasticIPID) Reset() {
-	var v ElasticIPID
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptElasticIPID) SetTo(v ElasticIPID) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptElasticIPID) Get() (v ElasticIPID, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptElasticIPID) Or(d ElasticIPID) ElasticIPID {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptErrorMeta returns new OptErrorMeta with value set to v.
 func NewOptErrorMeta(v ErrorMeta) OptErrorMeta {
 	return OptErrorMeta{
@@ -8672,38 +8990,38 @@ func (o OptMachineTypeID) Or(d MachineTypeID) MachineTypeID {
 	return d
 }
 
-// NewOptNetworkInterfaceID returns new OptNetworkInterfaceID with value set to v.
-func NewOptNetworkInterfaceID(v NetworkInterfaceID) OptNetworkInterfaceID {
-	return OptNetworkInterfaceID{
+// NewOptNewBootDiskOnVirtualMachineRelease returns new OptNewBootDiskOnVirtualMachineRelease with value set to v.
+func NewOptNewBootDiskOnVirtualMachineRelease(v NewBootDiskOnVirtualMachineRelease) OptNewBootDiskOnVirtualMachineRelease {
+	return OptNewBootDiskOnVirtualMachineRelease{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptNetworkInterfaceID is optional NetworkInterfaceID.
-type OptNetworkInterfaceID struct {
-	Value NetworkInterfaceID
+// OptNewBootDiskOnVirtualMachineRelease is optional NewBootDiskOnVirtualMachineRelease.
+type OptNewBootDiskOnVirtualMachineRelease struct {
+	Value NewBootDiskOnVirtualMachineRelease
 	Set   bool
 }
 
-// IsSet returns true if OptNetworkInterfaceID was set.
-func (o OptNetworkInterfaceID) IsSet() bool { return o.Set }
+// IsSet returns true if OptNewBootDiskOnVirtualMachineRelease was set.
+func (o OptNewBootDiskOnVirtualMachineRelease) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptNetworkInterfaceID) Reset() {
-	var v NetworkInterfaceID
+func (o *OptNewBootDiskOnVirtualMachineRelease) Reset() {
+	var v NewBootDiskOnVirtualMachineRelease
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptNetworkInterfaceID) SetTo(v NetworkInterfaceID) {
+func (o *OptNewBootDiskOnVirtualMachineRelease) SetTo(v NewBootDiskOnVirtualMachineRelease) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptNetworkInterfaceID) Get() (v NetworkInterfaceID, ok bool) {
+func (o OptNewBootDiskOnVirtualMachineRelease) Get() (v NewBootDiskOnVirtualMachineRelease, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -8711,45 +9029,45 @@ func (o OptNetworkInterfaceID) Get() (v NetworkInterfaceID, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptNetworkInterfaceID) Or(d NetworkInterfaceID) NetworkInterfaceID {
+func (o OptNewBootDiskOnVirtualMachineRelease) Or(d NewBootDiskOnVirtualMachineRelease) NewBootDiskOnVirtualMachineRelease {
 	if v, ok := o.Get(); ok {
 		return v
 	}
 	return d
 }
 
-// NewOptNewElasticIP returns new OptNewElasticIP with value set to v.
-func NewOptNewElasticIP(v NewElasticIP) OptNewElasticIP {
-	return OptNewElasticIP{
+// NewOptPasswordChoice returns new OptPasswordChoice with value set to v.
+func NewOptPasswordChoice(v PasswordChoice) OptPasswordChoice {
+	return OptPasswordChoice{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptNewElasticIP is optional NewElasticIP.
-type OptNewElasticIP struct {
-	Value NewElasticIP
+// OptPasswordChoice is optional PasswordChoice.
+type OptPasswordChoice struct {
+	Value PasswordChoice
 	Set   bool
 }
 
-// IsSet returns true if OptNewElasticIP was set.
-func (o OptNewElasticIP) IsSet() bool { return o.Set }
+// IsSet returns true if OptPasswordChoice was set.
+func (o OptPasswordChoice) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptNewElasticIP) Reset() {
-	var v NewElasticIP
+func (o *OptPasswordChoice) Reset() {
+	var v PasswordChoice
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptNewElasticIP) SetTo(v NewElasticIP) {
+func (o *OptPasswordChoice) SetTo(v PasswordChoice) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptNewElasticIP) Get() (v NewElasticIP, ok bool) {
+func (o OptPasswordChoice) Get() (v PasswordChoice, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -8757,75 +9075,7 @@ func (o OptNewElasticIP) Get() (v NewElasticIP, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptNewElasticIP) Or(d NewElasticIP) NewElasticIP {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptNilSecurityGroupIDArray returns new OptNilSecurityGroupIDArray with value set to v.
-func NewOptNilSecurityGroupIDArray(v []SecurityGroupID) OptNilSecurityGroupIDArray {
-	return OptNilSecurityGroupIDArray{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNilSecurityGroupIDArray is optional nullable []SecurityGroupID.
-type OptNilSecurityGroupIDArray struct {
-	Value []SecurityGroupID
-	Set   bool
-	Null  bool
-}
-
-// IsSet returns true if OptNilSecurityGroupIDArray was set.
-func (o OptNilSecurityGroupIDArray) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNilSecurityGroupIDArray) Reset() {
-	var v []SecurityGroupID
-	o.Value = v
-	o.Set = false
-	o.Null = false
-}
-
-// SetTo sets value to v.
-func (o *OptNilSecurityGroupIDArray) SetTo(v []SecurityGroupID) {
-	o.Set = true
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o OptNilSecurityGroupIDArray) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *OptNilSecurityGroupIDArray) SetToNull() {
-	o.Set = true
-	o.Null = true
-	var v []SecurityGroupID
-	o.Value = v
-}
-
-// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
-func (o OptNilSecurityGroupIDArray) IsEmpty() bool {
-	return !o.Set && !o.Null
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNilSecurityGroupIDArray) Get() (v []SecurityGroupID, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNilSecurityGroupIDArray) Or(d []SecurityGroupID) []SecurityGroupID {
+func (o OptPasswordChoice) Or(d PasswordChoice) PasswordChoice {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9016,52 +9266,6 @@ func (o OptString) Or(d string) string {
 	return d
 }
 
-// NewOptSubnetID returns new OptSubnetID with value set to v.
-func NewOptSubnetID(v SubnetID) OptSubnetID {
-	return OptSubnetID{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptSubnetID is optional SubnetID.
-type OptSubnetID struct {
-	Value SubnetID
-	Set   bool
-}
-
-// IsSet returns true if OptSubnetID was set.
-func (o OptSubnetID) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptSubnetID) Reset() {
-	var v SubnetID
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptSubnetID) SetTo(v SubnetID) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptSubnetID) Get() (v SubnetID, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptSubnetID) Or(d SubnetID) SubnetID {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptTerminationPolicy returns new OptTerminationPolicy with value set to v.
 func NewOptTerminationPolicy(v TerminationPolicy) OptTerminationPolicy {
 	return OptTerminationPolicy{
@@ -9246,6 +9450,52 @@ func (o OptUpdateVirtualMachineRequestBodyPowerState) Or(d UpdateVirtualMachineR
 	return d
 }
 
+// NewOptVirtualMachineElasticIP returns new OptVirtualMachineElasticIP with value set to v.
+func NewOptVirtualMachineElasticIP(v VirtualMachineElasticIP) OptVirtualMachineElasticIP {
+	return OptVirtualMachineElasticIP{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptVirtualMachineElasticIP is optional VirtualMachineElasticIP.
+type OptVirtualMachineElasticIP struct {
+	Value VirtualMachineElasticIP
+	Set   bool
+}
+
+// IsSet returns true if OptVirtualMachineElasticIP was set.
+func (o OptVirtualMachineElasticIP) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptVirtualMachineElasticIP) Reset() {
+	var v VirtualMachineElasticIP
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptVirtualMachineElasticIP) SetTo(v VirtualMachineElasticIP) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptVirtualMachineElasticIP) Get() (v VirtualMachineElasticIP, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptVirtualMachineElasticIP) Or(d VirtualMachineElasticIP) VirtualMachineElasticIP {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptVirtualPrivateCloudID returns new OptVirtualPrivateCloudID with value set to v.
 func NewOptVirtualPrivateCloudID(v VirtualPrivateCloudID) OptVirtualPrivateCloudID {
 	return OptVirtualPrivateCloudID{
@@ -9290,6 +9540,76 @@ func (o OptVirtualPrivateCloudID) Or(d VirtualPrivateCloudID) VirtualPrivateClou
 		return v
 	}
 	return d
+}
+
+// The password of the login account (`login_username`). `generated` has the platform generate a strong
+// random password, returned once in the response and stored nowhere; `supplied` sets the one given.
+// Password login over SSH is enabled with it, so it answers on port 22 once a security group admits
+// it. Root never gets a password: where the login account is not root, root logs in by key only.
+// Ref: #/components/schemas/PasswordChoice
+// PasswordChoice represents sum type.
+type PasswordChoice struct {
+	// Type selects the active sum variant, switch on this field.
+	Type              PasswordChoiceType
+	GeneratedPassword GeneratedPassword
+	SuppliedPassword  SuppliedPassword
+}
+
+// PasswordChoiceType is oneOf type of PasswordChoice.
+type PasswordChoiceType string
+
+// Possible values for PasswordChoiceType.
+const (
+	GeneratedPasswordPasswordChoice PasswordChoiceType = "generated"
+	SuppliedPasswordPasswordChoice  PasswordChoiceType = "supplied"
+)
+
+// IsGeneratedPassword reports whether PasswordChoice is GeneratedPassword.
+func (s PasswordChoice) IsGeneratedPassword() bool { return s.Type == GeneratedPasswordPasswordChoice }
+
+// IsSuppliedPassword reports whether PasswordChoice is SuppliedPassword.
+func (s PasswordChoice) IsSuppliedPassword() bool { return s.Type == SuppliedPasswordPasswordChoice }
+
+// SetGeneratedPassword sets PasswordChoice to GeneratedPassword.
+func (s *PasswordChoice) SetGeneratedPassword(v GeneratedPassword) {
+	s.Type = GeneratedPasswordPasswordChoice
+	s.GeneratedPassword = v
+}
+
+// GetGeneratedPassword returns GeneratedPassword and true boolean if PasswordChoice is GeneratedPassword.
+func (s PasswordChoice) GetGeneratedPassword() (v GeneratedPassword, ok bool) {
+	if !s.IsGeneratedPassword() {
+		return v, false
+	}
+	return s.GeneratedPassword, true
+}
+
+// NewGeneratedPasswordPasswordChoice returns new PasswordChoice from GeneratedPassword.
+func NewGeneratedPasswordPasswordChoice(v GeneratedPassword) PasswordChoice {
+	var s PasswordChoice
+	s.SetGeneratedPassword(v)
+	return s
+}
+
+// SetSuppliedPassword sets PasswordChoice to SuppliedPassword.
+func (s *PasswordChoice) SetSuppliedPassword(v SuppliedPassword) {
+	s.Type = SuppliedPasswordPasswordChoice
+	s.SuppliedPassword = v
+}
+
+// GetSuppliedPassword returns SuppliedPassword and true boolean if PasswordChoice is SuppliedPassword.
+func (s PasswordChoice) GetSuppliedPassword() (v SuppliedPassword, ok bool) {
+	if !s.IsSuppliedPassword() {
+		return v, false
+	}
+	return s.SuppliedPassword, true
+}
+
+// NewSuppliedPasswordPasswordChoice returns new PasswordChoice from SuppliedPassword.
+func NewSuppliedPasswordPasswordChoice(v SuppliedPassword) PasswordChoice {
+	var s PasswordChoice
+	s.SetSuppliedPassword(v)
+	return s
 }
 
 type PeeringID string
@@ -9693,6 +10013,79 @@ func (s *PerformanceFormula) SetPerGib(val int64) {
 // SetMax sets the value of Max.
 func (s *PerformanceFormula) SetMax(val int64) {
 	s.Max = val
+}
+
+// The virtual machine's primary network interface, its network location. `new` creates one in a
+// subnet, deleted with the virtual machine; `existing` uses one you already hold, detached and kept
+// when the virtual machine is released.
+// Ref: #/components/schemas/PrimaryNetworkInterface
+// PrimaryNetworkInterface represents sum type.
+type PrimaryNetworkInterface struct {
+	// Type selects the active sum variant, switch on this field.
+	Type                            PrimaryNetworkInterfaceType
+	NewPrimaryNetworkInterface      NewPrimaryNetworkInterface
+	ExistingPrimaryNetworkInterface ExistingPrimaryNetworkInterface
+}
+
+// PrimaryNetworkInterfaceType is oneOf type of PrimaryNetworkInterface.
+type PrimaryNetworkInterfaceType string
+
+// Possible values for PrimaryNetworkInterfaceType.
+const (
+	NewPrimaryNetworkInterfacePrimaryNetworkInterface      PrimaryNetworkInterfaceType = "new"
+	ExistingPrimaryNetworkInterfacePrimaryNetworkInterface PrimaryNetworkInterfaceType = "existing"
+)
+
+// IsNewPrimaryNetworkInterface reports whether PrimaryNetworkInterface is NewPrimaryNetworkInterface.
+func (s PrimaryNetworkInterface) IsNewPrimaryNetworkInterface() bool {
+	return s.Type == NewPrimaryNetworkInterfacePrimaryNetworkInterface
+}
+
+// IsExistingPrimaryNetworkInterface reports whether PrimaryNetworkInterface is ExistingPrimaryNetworkInterface.
+func (s PrimaryNetworkInterface) IsExistingPrimaryNetworkInterface() bool {
+	return s.Type == ExistingPrimaryNetworkInterfacePrimaryNetworkInterface
+}
+
+// SetNewPrimaryNetworkInterface sets PrimaryNetworkInterface to NewPrimaryNetworkInterface.
+func (s *PrimaryNetworkInterface) SetNewPrimaryNetworkInterface(v NewPrimaryNetworkInterface) {
+	s.Type = NewPrimaryNetworkInterfacePrimaryNetworkInterface
+	s.NewPrimaryNetworkInterface = v
+}
+
+// GetNewPrimaryNetworkInterface returns NewPrimaryNetworkInterface and true boolean if PrimaryNetworkInterface is NewPrimaryNetworkInterface.
+func (s PrimaryNetworkInterface) GetNewPrimaryNetworkInterface() (v NewPrimaryNetworkInterface, ok bool) {
+	if !s.IsNewPrimaryNetworkInterface() {
+		return v, false
+	}
+	return s.NewPrimaryNetworkInterface, true
+}
+
+// NewNewPrimaryNetworkInterfacePrimaryNetworkInterface returns new PrimaryNetworkInterface from NewPrimaryNetworkInterface.
+func NewNewPrimaryNetworkInterfacePrimaryNetworkInterface(v NewPrimaryNetworkInterface) PrimaryNetworkInterface {
+	var s PrimaryNetworkInterface
+	s.SetNewPrimaryNetworkInterface(v)
+	return s
+}
+
+// SetExistingPrimaryNetworkInterface sets PrimaryNetworkInterface to ExistingPrimaryNetworkInterface.
+func (s *PrimaryNetworkInterface) SetExistingPrimaryNetworkInterface(v ExistingPrimaryNetworkInterface) {
+	s.Type = ExistingPrimaryNetworkInterfacePrimaryNetworkInterface
+	s.ExistingPrimaryNetworkInterface = v
+}
+
+// GetExistingPrimaryNetworkInterface returns ExistingPrimaryNetworkInterface and true boolean if PrimaryNetworkInterface is ExistingPrimaryNetworkInterface.
+func (s PrimaryNetworkInterface) GetExistingPrimaryNetworkInterface() (v ExistingPrimaryNetworkInterface, ok bool) {
+	if !s.IsExistingPrimaryNetworkInterface() {
+		return v, false
+	}
+	return s.ExistingPrimaryNetworkInterface, true
+}
+
+// NewExistingPrimaryNetworkInterfacePrimaryNetworkInterface returns new PrimaryNetworkInterface from ExistingPrimaryNetworkInterface.
+func NewExistingPrimaryNetworkInterfacePrimaryNetworkInterface(v ExistingPrimaryNetworkInterface) PrimaryNetworkInterface {
+	var s PrimaryNetworkInterface
+	s.SetExistingPrimaryNetworkInterface(v)
+	return s
 }
 
 // Ref: #/components/schemas/PrivateImageListResponseBody
@@ -10658,48 +11051,20 @@ func NewNetworkInterfaceAddressAssociationTargetPutElasticIPAssociationRequestBo
 	return s
 }
 
-// Ref: #/components/schemas/PutVirtualMachinePasswordRequestBody
-type PutVirtualMachinePasswordRequestBody struct {
-	// Have the platform generate a random password, returned only in this response.
-	GeneratePassword OptBool `json:"generate_password"`
-	// New root password. Exactly one of this and `generate_password`.
-	Password OptString `json:"password"`
-}
-
-// GetGeneratePassword returns the value of GeneratePassword.
-func (s *PutVirtualMachinePasswordRequestBody) GetGeneratePassword() OptBool {
-	return s.GeneratePassword
-}
-
-// GetPassword returns the value of Password.
-func (s *PutVirtualMachinePasswordRequestBody) GetPassword() OptString {
-	return s.Password
-}
-
-// SetGeneratePassword sets the value of GeneratePassword.
-func (s *PutVirtualMachinePasswordRequestBody) SetGeneratePassword(val OptBool) {
-	s.GeneratePassword = val
-}
-
-// SetPassword sets the value of Password.
-func (s *PutVirtualMachinePasswordRequestBody) SetPassword(val OptString) {
-	s.Password = val
-}
-
 // Ref: #/components/schemas/PutVirtualMachinePasswordResponseBody
 type PutVirtualMachinePasswordResponseBody struct {
-	// The password generated by the platform, returned only in this response. Empty when the password was
-	// supplied in the request.
-	Password string `json:"password"`
+	// The password the platform generated, returned only in this response; null when the password was
+	// supplied.
+	Password NilString `json:"password"`
 }
 
 // GetPassword returns the value of Password.
-func (s *PutVirtualMachinePasswordResponseBody) GetPassword() string {
+func (s *PutVirtualMachinePasswordResponseBody) GetPassword() NilString {
 	return s.Password
 }
 
 // SetPassword sets the value of Password.
-func (s *PutVirtualMachinePasswordResponseBody) SetPassword(val string) {
+func (s *PutVirtualMachinePasswordResponseBody) SetPassword(val NilString) {
 	s.Password = val
 }
 
@@ -12358,6 +12723,68 @@ func (s *SubnetListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
+// Ref: #/components/schemas/SuppliedPassword
+type SuppliedPassword struct {
+	Type SuppliedPasswordType `json:"type"`
+	// 12 to 128 characters with at least three of lowercase letters, uppercase letters, digits and
+	// symbols, otherwise refused with `VIRTUAL_MACHINE_PASSWORD_TOO_WEAK`.
+	Value string `json:"value"`
+}
+
+// GetType returns the value of Type.
+func (s *SuppliedPassword) GetType() SuppliedPasswordType {
+	return s.Type
+}
+
+// GetValue returns the value of Value.
+func (s *SuppliedPassword) GetValue() string {
+	return s.Value
+}
+
+// SetType sets the value of Type.
+func (s *SuppliedPassword) SetType(val SuppliedPasswordType) {
+	s.Type = val
+}
+
+// SetValue sets the value of Value.
+func (s *SuppliedPassword) SetValue(val string) {
+	s.Value = val
+}
+
+type SuppliedPasswordType string
+
+const (
+	SuppliedPasswordTypeSupplied SuppliedPasswordType = "supplied"
+)
+
+// AllValues returns all SuppliedPasswordType values.
+func (SuppliedPasswordType) AllValues() []SuppliedPasswordType {
+	return []SuppliedPasswordType{
+		SuppliedPasswordTypeSupplied,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SuppliedPasswordType) MarshalText() ([]byte, error) {
+	switch s {
+	case SuppliedPasswordTypeSupplied:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SuppliedPasswordType) UnmarshalText(data []byte) error {
+	switch SuppliedPasswordType(data) {
+	case SuppliedPasswordTypeSupplied:
+		*s = SuppliedPasswordTypeSupplied
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Immediate ends service when cancellation takes effect, with refunds governed by the purchased terms.
 // Period-end keeps service until the paid period ends.
 // Ref: #/components/schemas/TerminationPolicy
@@ -13517,6 +13944,78 @@ func (s *VirtualMachineAssociationTarget) SetVirtualMachineID(val VirtualMachine
 }
 
 type VirtualMachineDiskID string
+
+// `new` buys an elastic IP in the virtual machine's order; `existing` associates one you already hold.
+// One address is associated with one interface, so either creates only one virtual machine.
+// Ref: #/components/schemas/VirtualMachineElasticIP
+// VirtualMachineElasticIP represents sum type.
+type VirtualMachineElasticIP struct {
+	// Type selects the active sum variant, switch on this field.
+	Type              VirtualMachineElasticIPType
+	NewElasticIP      NewElasticIP
+	ExistingElasticIP ExistingElasticIP
+}
+
+// VirtualMachineElasticIPType is oneOf type of VirtualMachineElasticIP.
+type VirtualMachineElasticIPType string
+
+// Possible values for VirtualMachineElasticIPType.
+const (
+	NewElasticIPVirtualMachineElasticIP      VirtualMachineElasticIPType = "new"
+	ExistingElasticIPVirtualMachineElasticIP VirtualMachineElasticIPType = "existing"
+)
+
+// IsNewElasticIP reports whether VirtualMachineElasticIP is NewElasticIP.
+func (s VirtualMachineElasticIP) IsNewElasticIP() bool {
+	return s.Type == NewElasticIPVirtualMachineElasticIP
+}
+
+// IsExistingElasticIP reports whether VirtualMachineElasticIP is ExistingElasticIP.
+func (s VirtualMachineElasticIP) IsExistingElasticIP() bool {
+	return s.Type == ExistingElasticIPVirtualMachineElasticIP
+}
+
+// SetNewElasticIP sets VirtualMachineElasticIP to NewElasticIP.
+func (s *VirtualMachineElasticIP) SetNewElasticIP(v NewElasticIP) {
+	s.Type = NewElasticIPVirtualMachineElasticIP
+	s.NewElasticIP = v
+}
+
+// GetNewElasticIP returns NewElasticIP and true boolean if VirtualMachineElasticIP is NewElasticIP.
+func (s VirtualMachineElasticIP) GetNewElasticIP() (v NewElasticIP, ok bool) {
+	if !s.IsNewElasticIP() {
+		return v, false
+	}
+	return s.NewElasticIP, true
+}
+
+// NewNewElasticIPVirtualMachineElasticIP returns new VirtualMachineElasticIP from NewElasticIP.
+func NewNewElasticIPVirtualMachineElasticIP(v NewElasticIP) VirtualMachineElasticIP {
+	var s VirtualMachineElasticIP
+	s.SetNewElasticIP(v)
+	return s
+}
+
+// SetExistingElasticIP sets VirtualMachineElasticIP to ExistingElasticIP.
+func (s *VirtualMachineElasticIP) SetExistingElasticIP(v ExistingElasticIP) {
+	s.Type = ExistingElasticIPVirtualMachineElasticIP
+	s.ExistingElasticIP = v
+}
+
+// GetExistingElasticIP returns ExistingElasticIP and true boolean if VirtualMachineElasticIP is ExistingElasticIP.
+func (s VirtualMachineElasticIP) GetExistingElasticIP() (v ExistingElasticIP, ok bool) {
+	if !s.IsExistingElasticIP() {
+		return v, false
+	}
+	return s.ExistingElasticIP, true
+}
+
+// NewExistingElasticIPVirtualMachineElasticIP returns new VirtualMachineElasticIP from ExistingElasticIP.
+func NewExistingElasticIPVirtualMachineElasticIP(v ExistingElasticIP) VirtualMachineElasticIP {
+	var s VirtualMachineElasticIP
+	s.SetExistingElasticIP(v)
+	return s
+}
 
 // Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
 // completed before its Checkout Session expired. `provisioning_failed` means creation failed after the

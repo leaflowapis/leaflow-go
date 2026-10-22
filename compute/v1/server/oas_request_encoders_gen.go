@@ -291,7 +291,7 @@ func encodePutElasticIPAssociationRequest(
 }
 
 func encodePutVirtualMachinePasswordRequest(
-	req *PutVirtualMachinePasswordRequestBody,
+	req PasswordChoice,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

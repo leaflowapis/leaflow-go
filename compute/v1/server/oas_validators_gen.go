@@ -1608,20 +1608,8 @@ func (s *CreateVirtualMachineRebuildRequestBody) Validate() error {
 	if err := func() error {
 		if value, ok := s.Password.Get(); ok {
 			if err := func() error {
-				if err := (validate.String{
-					MinLength:     0,
-					MinLengthSet:  false,
-					MaxLength:     128,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(value)); err != nil {
-					return errors.Wrap(err, "string")
+				if err := value.Validate(); err != nil {
+					return err
 				}
 				return nil
 			}(); err != nil {
@@ -1671,20 +1659,25 @@ func (s *CreateVirtualMachineRequestBody) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if value, ok := s.ElasticIPID.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
+		if err := (validate.String{
+			MinLength:     1,
+			MinLengthSet:  true,
+			MaxLength:     128,
+			MaxLengthSet:  true,
+			Email:         false,
+			Hostname:      false,
+			Regex:         nil,
+			MinNumeric:    0,
+			MinNumericSet: false,
+			MaxNumeric:    0,
+			MaxNumericSet: false,
+		}).Validate(string(s.Name)); err != nil {
+			return errors.Wrap(err, "string")
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "elastic_ip_id",
+			Name:  "name",
 			Error: err,
 		})
 	}
@@ -1717,17 +1710,6 @@ func (s *CreateVirtualMachineRequestBody) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.Compute.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "compute",
-			Error: err,
-		})
-	}
-	if err := func() error {
 		if err := s.AvailabilityZoneID.Validate(); err != nil {
 			return err
 		}
@@ -1739,134 +1721,13 @@ func (s *CreateVirtualMachineRequestBody) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := (validate.String{
-			MinLength:     1,
-			MinLengthSet:  true,
-			MaxLength:     128,
-			MaxLengthSet:  true,
-			Email:         false,
-			Hostname:      false,
-			Regex:         nil,
-			MinNumeric:    0,
-			MinNumericSet: false,
-			MaxNumeric:    0,
-			MaxNumericSet: false,
-		}).Validate(string(s.Name)); err != nil {
-			return errors.Wrap(err, "string")
+		if err := s.Compute.Validate(); err != nil {
+			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "name",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.Password.Get(); ok {
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     0,
-					MinLengthSet:  false,
-					MaxLength:     128,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(value)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "password",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.NetworkInterfaceID.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "network_interface_id",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.SecurityGroupIds.Get(); ok {
-			if err := func() error {
-				if value == nil {
-					return errors.New("nil is invalid value")
-				}
-				if err := (validate.Array{
-					MinLength:    1,
-					MinLengthSet: true,
-					MaxLength:    0,
-					MaxLengthSet: false,
-				}).ValidateLength(len(value)); err != nil {
-					return errors.Wrap(err, "array")
-				}
-				var failures []validate.FieldError
-				for i, elem := range value {
-					if err := func() error {
-						if err := elem.Validate(); err != nil {
-							return err
-						}
-						return nil
-					}(); err != nil {
-						failures = append(failures, validate.FieldError{
-							Name:  fmt.Sprintf("[%d]", i),
-							Error: err,
-						})
-					}
-				}
-				if len(failures) > 0 {
-					return &validate.Error{Fields: failures}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "security_group_ids",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.SubnetID.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "subnet_id",
+			Name:  "compute",
 			Error: err,
 		})
 	}
@@ -1878,6 +1739,17 @@ func (s *CreateVirtualMachineRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "boot_disk",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.NetworkInterface.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "network_interface",
 			Error: err,
 		})
 	}
@@ -1896,6 +1768,24 @@ func (s *CreateVirtualMachineRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "elastic_ip",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Password.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "password",
 			Error: err,
 		})
 	}
@@ -2091,6 +1981,17 @@ func (s *DiskAttachment) Validate() error {
 		})
 	}
 	if err := func() error {
+		if err := s.OnVirtualMachineRelease.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "on_virtual_machine_release",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := s.State.Validate(); err != nil {
 			return err
 		}
@@ -2156,6 +2057,17 @@ func (s *DiskAttachmentList) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s DiskAttachmentOnVirtualMachineRelease) Validate() error {
+	switch s {
+	case "delete":
+		return nil
+	case "detach":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s DiskAttachmentRole) Validate() error {
@@ -3787,6 +3699,124 @@ func (s ExistingBootDiskType) Validate() error {
 	}
 }
 
+func (s *ExistingElasticIP) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Type.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.ElasticIPID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "elastic_ip_id",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s ExistingElasticIPType) Validate() error {
+	switch s {
+	case "existing":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s *ExistingPrimaryNetworkInterface) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Type.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.NetworkInterfaceID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "network_interface_id",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s ExistingPrimaryNetworkInterfaceType) Validate() error {
+	switch s {
+	case "existing":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s *GeneratedPassword) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Type.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s GeneratedPasswordType) Validate() error {
+	switch s {
+	case "generated":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s IPv4HostAddress) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
@@ -4329,6 +4359,17 @@ func (s *NetworkInterfaceAttachment) Validate() error {
 		})
 	}
 	if err := func() error {
+		if err := s.OnVirtualMachineRelease.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "on_virtual_machine_release",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := s.State.Validate(); err != nil {
 			return err
 		}
@@ -4394,6 +4435,17 @@ func (s *NetworkInterfaceAttachmentList) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s NetworkInterfaceAttachmentOnVirtualMachineRelease) Validate() error {
+	switch s {
+	case "delete":
+		return nil
+	case "detach":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s NetworkInterfaceAttachmentRole) Validate() error {
@@ -4602,6 +4654,24 @@ func (s *NewBootDisk) Validate() error {
 		})
 	}
 	if err := func() error {
+		if value, ok := s.OnVirtualMachineRelease.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "on_virtual_machine_release",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := s.Billing.Validate(); err != nil {
 			return err
 		}
@@ -4616,6 +4686,17 @@ func (s *NewBootDisk) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s NewBootDiskOnVirtualMachineRelease) Validate() error {
+	switch s {
+	case "delete":
+		return nil
+	case "detach":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s NewBootDiskType) Validate() error {
@@ -4668,20 +4749,24 @@ func (s *NewElasticIP) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if value, ok := s.InternetChargeType.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
+		if err := s.Type.Validate(); err != nil {
+			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "internet_charge_type",
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.LineID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "line_id",
 			Error: err,
 		})
 	}
@@ -4707,13 +4792,20 @@ func (s *NewElasticIP) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.LineID.Validate(); err != nil {
-			return err
+		if value, ok := s.InternetChargeType.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "line_id",
+			Name:  "internet_charge_type",
 			Error: err,
 		})
 	}
@@ -4732,6 +4824,94 @@ func (s *NewElasticIP) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s NewElasticIPType) Validate() error {
+	switch s {
+	case "new":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s *NewPrimaryNetworkInterface) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Type.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.SubnetID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "subnet_id",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.SecurityGroupIds == nil {
+			return errors.New("nil is invalid value")
+		}
+		if err := (validate.Array{
+			MinLength:    1,
+			MinLengthSet: true,
+			MaxLength:    5,
+			MaxLengthSet: true,
+		}).ValidateLength(len(s.SecurityGroupIds)); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.SecurityGroupIds {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "security_group_ids",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s NewPrimaryNetworkInterfaceType) Validate() error {
+	switch s {
+	case "new":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s *OfferedAvailabilityZone) Validate() error {
@@ -5019,6 +5199,23 @@ func (s OperationLogResourceOutcome) Validate() error {
 	}
 }
 
+func (s PasswordChoice) Validate() error {
+	switch s.Type {
+	case GeneratedPasswordPasswordChoice:
+		if err := s.GeneratedPassword.Validate(); err != nil {
+			return err
+		}
+		return nil
+	case SuppliedPasswordPasswordChoice:
+		if err := s.SuppliedPassword.Validate(); err != nil {
+			return err
+		}
+		return nil
+	default:
+		return errors.Errorf("invalid type %q", s.Type)
+	}
+}
+
 func (s PeeringID) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
@@ -5245,6 +5442,23 @@ func (s PeeringResourceStatus) Validate() error {
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s PrimaryNetworkInterface) Validate() error {
+	switch s.Type {
+	case NewPrimaryNetworkInterfacePrimaryNetworkInterface:
+		if err := s.NewPrimaryNetworkInterface.Validate(); err != nil {
+			return err
+		}
+		return nil
+	case ExistingPrimaryNetworkInterfacePrimaryNetworkInterface:
+		if err := s.ExistingPrimaryNetworkInterface.Validate(); err != nil {
+			return err
+		}
+		return nil
+	default:
+		return errors.Errorf("invalid type %q", s.Type)
 	}
 }
 
@@ -5819,48 +6033,6 @@ func (s PutElasticIPAssociationRequestBody) Validate() error {
 	default:
 		return errors.Errorf("invalid type %q", s.Type)
 	}
-}
-
-func (s *PutVirtualMachinePasswordRequestBody) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if value, ok := s.Password.Get(); ok {
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     0,
-					MinLengthSet:  false,
-					MaxLength:     128,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(value)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "password",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
 }
 
 func (s *PutVirtualMachineRescueRequestBody) Validate() error {
@@ -6954,6 +7126,61 @@ func (s *SubnetListResponseBody) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s *SuppliedPassword) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Type.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := (validate.String{
+			MinLength:     12,
+			MinLengthSet:  true,
+			MaxLength:     128,
+			MaxLengthSet:  true,
+			Email:         false,
+			Hostname:      false,
+			Regex:         nil,
+			MinNumeric:    0,
+			MinNumericSet: false,
+			MaxNumeric:    0,
+			MaxNumericSet: false,
+		}).Validate(string(s.Value)); err != nil {
+			return errors.Wrap(err, "string")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "value",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s SuppliedPasswordType) Validate() error {
+	switch s {
+	case "supplied":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s TerminationPolicy) Validate() error {
@@ -8289,6 +8516,23 @@ func (s VirtualMachineDiskID) Validate() error {
 		return errors.Wrap(err, "string")
 	}
 	return nil
+}
+
+func (s VirtualMachineElasticIP) Validate() error {
+	switch s.Type {
+	case NewElasticIPVirtualMachineElasticIP:
+		if err := s.NewElasticIP.Validate(); err != nil {
+			return err
+		}
+		return nil
+	case ExistingElasticIPVirtualMachineElasticIP:
+		if err := s.ExistingElasticIP.Validate(); err != nil {
+			return err
+		}
+		return nil
+	default:
+		return errors.Errorf("invalid type %q", s.Type)
+	}
 }
 
 func (s VirtualMachineFailureReason) Validate() error {

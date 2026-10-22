@@ -863,9 +863,9 @@ func (s BootDisk) encodeFields(e *jx.Encoder) {
 				e.Int64(s.SizeGB)
 			}
 			{
-				if s.DeleteWithVirtualMachine.Set {
-					e.FieldStart("delete_with_virtual_machine")
-					s.DeleteWithVirtualMachine.Encode(e)
+				if s.OnVirtualMachineRelease.Set {
+					e.FieldStart("on_virtual_machine_release")
+					s.OnVirtualMachineRelease.Encode(e)
 				}
 			}
 			{
@@ -4084,12 +4084,6 @@ func (s *CreateVirtualMachineRebuildRequestBody) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *CreateVirtualMachineRebuildRequestBody) encodeFields(e *jx.Encoder) {
 	{
-		if s.GeneratePassword.Set {
-			e.FieldStart("generate_password")
-			s.GeneratePassword.Encode(e)
-		}
-	}
-	{
 		e.FieldStart("image_id")
 		s.ImageID.Encode(e)
 	}
@@ -4101,10 +4095,9 @@ func (s *CreateVirtualMachineRebuildRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateVirtualMachineRebuildRequestBody = [3]string{
-	0: "generate_password",
-	1: "image_id",
-	2: "password",
+var jsonFieldsNameOfCreateVirtualMachineRebuildRequestBody = [2]string{
+	0: "image_id",
+	1: "password",
 }
 
 // Decode decodes CreateVirtualMachineRebuildRequestBody from json.
@@ -4116,18 +4109,8 @@ func (s *CreateVirtualMachineRebuildRequestBody) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "generate_password":
-			if err := func() error {
-				s.GeneratePassword.Reset()
-				if err := s.GeneratePassword.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"generate_password\"")
-			}
 		case "image_id":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
 				if err := s.ImageID.Decode(d); err != nil {
 					return err
@@ -4156,7 +4139,7 @@ func (s *CreateVirtualMachineRebuildRequestBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000010,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4217,7 +4200,7 @@ func (s *CreateVirtualMachineRebuildResponseBody) encodeFields(e *jx.Encoder) {
 	}
 	{
 		e.FieldStart("password")
-		e.Str(s.Password)
+		s.Password.Encode(e)
 	}
 }
 
@@ -4248,9 +4231,7 @@ func (s *CreateVirtualMachineRebuildResponseBody) Decode(d *jx.Decoder) error {
 		case "password":
 			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
-				v, err := d.Str()
-				s.Password = string(v)
-				if err != nil {
+				if err := s.Password.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -4323,10 +4304,8 @@ func (s *CreateVirtualMachineRequestBody) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *CreateVirtualMachineRequestBody) encodeFields(e *jx.Encoder) {
 	{
-		if s.ElasticIPID.Set {
-			e.FieldStart("elastic_ip_id")
-			s.ElasticIPID.Encode(e)
-		}
+		e.FieldStart("name")
+		e.Str(s.Name)
 	}
 	{
 		if s.Count.Set {
@@ -4335,55 +4314,31 @@ func (s *CreateVirtualMachineRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.GeneratePassword.Set {
-			e.FieldStart("generate_password")
-			s.GeneratePassword.Encode(e)
-		}
+		e.FieldStart("availability_zone_id")
+		s.AvailabilityZoneID.Encode(e)
 	}
 	{
 		e.FieldStart("compute")
 		s.Compute.Encode(e)
 	}
 	{
-		e.FieldStart("availability_zone_id")
-		s.AvailabilityZoneID.Encode(e)
-	}
-	{
-		e.FieldStart("name")
-		e.Str(s.Name)
-	}
-	{
-		if s.Password.Set {
-			e.FieldStart("password")
-			s.Password.Encode(e)
-		}
-	}
-	{
-		if s.NetworkInterfaceID.Set {
-			e.FieldStart("network_interface_id")
-			s.NetworkInterfaceID.Encode(e)
-		}
-	}
-	{
-		if s.SecurityGroupIds.Set {
-			e.FieldStart("security_group_ids")
-			s.SecurityGroupIds.Encode(e)
-		}
-	}
-	{
-		if s.SubnetID.Set {
-			e.FieldStart("subnet_id")
-			s.SubnetID.Encode(e)
-		}
-	}
-	{
 		e.FieldStart("boot_disk")
 		s.BootDisk.Encode(e)
+	}
+	{
+		e.FieldStart("network_interface")
+		s.NetworkInterface.Encode(e)
 	}
 	{
 		if s.ElasticIP.Set {
 			e.FieldStart("elastic_ip")
 			s.ElasticIP.Encode(e)
+		}
+	}
+	{
+		if s.Password.Set {
+			e.FieldStart("password")
+			s.Password.Encode(e)
 		}
 	}
 	{
@@ -4394,20 +4349,16 @@ func (s *CreateVirtualMachineRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateVirtualMachineRequestBody = [13]string{
-	0:  "elastic_ip_id",
-	1:  "count",
-	2:  "generate_password",
-	3:  "compute",
-	4:  "availability_zone_id",
-	5:  "name",
-	6:  "password",
-	7:  "network_interface_id",
-	8:  "security_group_ids",
-	9:  "subnet_id",
-	10: "boot_disk",
-	11: "elastic_ip",
-	12: "checkout",
+var jsonFieldsNameOfCreateVirtualMachineRequestBody = [9]string{
+	0: "name",
+	1: "count",
+	2: "availability_zone_id",
+	3: "compute",
+	4: "boot_disk",
+	5: "network_interface",
+	6: "elastic_ip",
+	7: "password",
+	8: "checkout",
 }
 
 // Decode decodes CreateVirtualMachineRequestBody from json.
@@ -4420,15 +4371,17 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "elastic_ip_id":
+		case "name":
+			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				s.ElasticIPID.Reset()
-				if err := s.ElasticIPID.Decode(d); err != nil {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"elastic_ip_id\"")
+				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "count":
 			if err := func() error {
@@ -4440,15 +4393,15 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"count\"")
 			}
-		case "generate_password":
+		case "availability_zone_id":
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				s.GeneratePassword.Reset()
-				if err := s.GeneratePassword.Decode(d); err != nil {
+				if err := s.AvailabilityZoneID.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"generate_password\"")
+				return errors.Wrap(err, "decode field \"availability_zone_id\"")
 			}
 		case "compute":
 			requiredBitSet[0] |= 1 << 3
@@ -4460,70 +4413,8 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"compute\"")
 			}
-		case "availability_zone_id":
-			requiredBitSet[0] |= 1 << 4
-			if err := func() error {
-				if err := s.AvailabilityZoneID.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"availability_zone_id\"")
-			}
-		case "name":
-			requiredBitSet[0] |= 1 << 5
-			if err := func() error {
-				v, err := d.Str()
-				s.Name = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"name\"")
-			}
-		case "password":
-			if err := func() error {
-				s.Password.Reset()
-				if err := s.Password.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"password\"")
-			}
-		case "network_interface_id":
-			if err := func() error {
-				s.NetworkInterfaceID.Reset()
-				if err := s.NetworkInterfaceID.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"network_interface_id\"")
-			}
-		case "security_group_ids":
-			if err := func() error {
-				s.SecurityGroupIds.Reset()
-				if err := s.SecurityGroupIds.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"security_group_ids\"")
-			}
-		case "subnet_id":
-			if err := func() error {
-				s.SubnetID.Reset()
-				if err := s.SubnetID.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"subnet_id\"")
-			}
 		case "boot_disk":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				if err := s.BootDisk.Decode(d); err != nil {
 					return err
@@ -4531,6 +4422,16 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"boot_disk\"")
+			}
+		case "network_interface":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.NetworkInterface.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"network_interface\"")
 			}
 		case "elastic_ip":
 			if err := func() error {
@@ -4541,6 +4442,16 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"elastic_ip\"")
+			}
+		case "password":
+			if err := func() error {
+				s.Password.Reset()
+				if err := s.Password.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"password\"")
 			}
 		case "checkout":
 			if err := func() error {
@@ -4562,8 +4473,8 @@ func (s *CreateVirtualMachineRequestBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b00111000,
-		0b00000100,
+		0b00111101,
+		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4916,8 +4827,8 @@ func (s *DiskAttachment) encodeFields(e *jx.Encoder) {
 		s.Role.Encode(e)
 	}
 	{
-		e.FieldStart("delete_with_virtual_machine")
-		e.Bool(s.DeleteWithVirtualMachine)
+		e.FieldStart("on_virtual_machine_release")
+		s.OnVirtualMachineRelease.Encode(e)
 	}
 	{
 		e.FieldStart("state")
@@ -4950,7 +4861,7 @@ var jsonFieldsNameOfDiskAttachment = [11]string{
 	1:  "virtual_machine_id",
 	2:  "disk_id",
 	3:  "role",
-	4:  "delete_with_virtual_machine",
+	4:  "on_virtual_machine_release",
 	5:  "state",
 	6:  "attached_at",
 	7:  "detached_at",
@@ -5008,17 +4919,15 @@ func (s *DiskAttachment) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"role\"")
 			}
-		case "delete_with_virtual_machine":
+		case "on_virtual_machine_release":
 			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
-				v, err := d.Bool()
-				s.DeleteWithVirtualMachine = bool(v)
-				if err != nil {
+				if err := s.OnVirtualMachineRelease.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"delete_with_virtual_machine\"")
+				return errors.Wrap(err, "decode field \"on_virtual_machine_release\"")
 			}
 		case "state":
 			requiredBitSet[0] |= 1 << 5
@@ -5254,6 +5163,46 @@ func (s *DiskAttachmentList) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *DiskAttachmentList) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes DiskAttachmentOnVirtualMachineRelease as json.
+func (s DiskAttachmentOnVirtualMachineRelease) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes DiskAttachmentOnVirtualMachineRelease from json.
+func (s *DiskAttachmentOnVirtualMachineRelease) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode DiskAttachmentOnVirtualMachineRelease to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch DiskAttachmentOnVirtualMachineRelease(v) {
+	case DiskAttachmentOnVirtualMachineReleaseDelete:
+		*s = DiskAttachmentOnVirtualMachineReleaseDelete
+	case DiskAttachmentOnVirtualMachineReleaseDetach:
+		*s = DiskAttachmentOnVirtualMachineReleaseDetach
+	default:
+		*s = DiskAttachmentOnVirtualMachineRelease(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s DiskAttachmentOnVirtualMachineRelease) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *DiskAttachmentOnVirtualMachineRelease) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -10189,6 +10138,300 @@ func (s *ExistingBootDiskType) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *ExistingElasticIP) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *ExistingElasticIP) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("type")
+		s.Type.Encode(e)
+	}
+	{
+		e.FieldStart("elastic_ip_id")
+		s.ElasticIPID.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfExistingElasticIP = [2]string{
+	0: "type",
+	1: "elastic_ip_id",
+}
+
+// Decode decodes ExistingElasticIP from json.
+func (s *ExistingElasticIP) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ExistingElasticIP to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "type":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Type.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"type\"")
+			}
+		case "elastic_ip_id":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.ElasticIPID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"elastic_ip_id\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode ExistingElasticIP")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfExistingElasticIP) {
+					name = jsonFieldsNameOfExistingElasticIP[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *ExistingElasticIP) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ExistingElasticIP) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes ExistingElasticIPType as json.
+func (s ExistingElasticIPType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes ExistingElasticIPType from json.
+func (s *ExistingElasticIPType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ExistingElasticIPType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch ExistingElasticIPType(v) {
+	case ExistingElasticIPTypeExisting:
+		*s = ExistingElasticIPTypeExisting
+	default:
+		*s = ExistingElasticIPType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s ExistingElasticIPType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ExistingElasticIPType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *ExistingPrimaryNetworkInterface) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *ExistingPrimaryNetworkInterface) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("type")
+		s.Type.Encode(e)
+	}
+	{
+		e.FieldStart("network_interface_id")
+		s.NetworkInterfaceID.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfExistingPrimaryNetworkInterface = [2]string{
+	0: "type",
+	1: "network_interface_id",
+}
+
+// Decode decodes ExistingPrimaryNetworkInterface from json.
+func (s *ExistingPrimaryNetworkInterface) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ExistingPrimaryNetworkInterface to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "type":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Type.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"type\"")
+			}
+		case "network_interface_id":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.NetworkInterfaceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"network_interface_id\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode ExistingPrimaryNetworkInterface")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfExistingPrimaryNetworkInterface) {
+					name = jsonFieldsNameOfExistingPrimaryNetworkInterface[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *ExistingPrimaryNetworkInterface) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ExistingPrimaryNetworkInterface) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes ExistingPrimaryNetworkInterfaceType as json.
+func (s ExistingPrimaryNetworkInterfaceType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes ExistingPrimaryNetworkInterfaceType from json.
+func (s *ExistingPrimaryNetworkInterfaceType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ExistingPrimaryNetworkInterfaceType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch ExistingPrimaryNetworkInterfaceType(v) {
+	case ExistingPrimaryNetworkInterfaceTypeExisting:
+		*s = ExistingPrimaryNetworkInterfaceTypeExisting
+	default:
+		*s = ExistingPrimaryNetworkInterfaceType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s ExistingPrimaryNetworkInterfaceType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ExistingPrimaryNetworkInterfaceType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *FreeSubnetCidr) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -10295,6 +10538,138 @@ func (s *FreeSubnetCidr) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *FreeSubnetCidr) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *GeneratedPassword) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *GeneratedPassword) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("type")
+		s.Type.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfGeneratedPassword = [1]string{
+	0: "type",
+}
+
+// Decode decodes GeneratedPassword from json.
+func (s *GeneratedPassword) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode GeneratedPassword to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "type":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Type.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"type\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode GeneratedPassword")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfGeneratedPassword) {
+					name = jsonFieldsNameOfGeneratedPassword[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *GeneratedPassword) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *GeneratedPassword) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes GeneratedPasswordType as json.
+func (s GeneratedPasswordType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes GeneratedPasswordType from json.
+func (s *GeneratedPasswordType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode GeneratedPasswordType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch GeneratedPasswordType(v) {
+	case GeneratedPasswordTypeGenerated:
+		*s = GeneratedPasswordTypeGenerated
+	default:
+		*s = GeneratedPasswordType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s GeneratedPasswordType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *GeneratedPasswordType) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -11646,8 +12021,8 @@ func (s *NetworkInterfaceAttachment) encodeFields(e *jx.Encoder) {
 		s.Role.Encode(e)
 	}
 	{
-		e.FieldStart("delete_with_virtual_machine")
-		e.Bool(s.DeleteWithVirtualMachine)
+		e.FieldStart("on_virtual_machine_release")
+		s.OnVirtualMachineRelease.Encode(e)
 	}
 	{
 		e.FieldStart("state")
@@ -11672,7 +12047,7 @@ var jsonFieldsNameOfNetworkInterfaceAttachment = [9]string{
 	1: "virtual_machine_id",
 	2: "network_interface_id",
 	3: "role",
-	4: "delete_with_virtual_machine",
+	4: "on_virtual_machine_release",
 	5: "state",
 	6: "attached_at",
 	7: "detached_at",
@@ -11728,17 +12103,15 @@ func (s *NetworkInterfaceAttachment) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"role\"")
 			}
-		case "delete_with_virtual_machine":
+		case "on_virtual_machine_release":
 			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
-				v, err := d.Bool()
-				s.DeleteWithVirtualMachine = bool(v)
-				if err != nil {
+				if err := s.OnVirtualMachineRelease.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"delete_with_virtual_machine\"")
+				return errors.Wrap(err, "decode field \"on_virtual_machine_release\"")
 			}
 		case "state":
 			requiredBitSet[0] |= 1 << 5
@@ -11954,6 +12327,46 @@ func (s *NetworkInterfaceAttachmentList) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NetworkInterfaceAttachmentList) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes NetworkInterfaceAttachmentOnVirtualMachineRelease as json.
+func (s NetworkInterfaceAttachmentOnVirtualMachineRelease) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes NetworkInterfaceAttachmentOnVirtualMachineRelease from json.
+func (s *NetworkInterfaceAttachmentOnVirtualMachineRelease) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode NetworkInterfaceAttachmentOnVirtualMachineRelease to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch NetworkInterfaceAttachmentOnVirtualMachineRelease(v) {
+	case NetworkInterfaceAttachmentOnVirtualMachineReleaseDelete:
+		*s = NetworkInterfaceAttachmentOnVirtualMachineReleaseDelete
+	case NetworkInterfaceAttachmentOnVirtualMachineReleaseDetach:
+		*s = NetworkInterfaceAttachmentOnVirtualMachineReleaseDetach
+	default:
+		*s = NetworkInterfaceAttachmentOnVirtualMachineRelease(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NetworkInterfaceAttachmentOnVirtualMachineRelease) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NetworkInterfaceAttachmentOnVirtualMachineRelease) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -12437,9 +12850,9 @@ func (s *NewBootDisk) encodeFields(e *jx.Encoder) {
 		e.Int64(s.SizeGB)
 	}
 	{
-		if s.DeleteWithVirtualMachine.Set {
-			e.FieldStart("delete_with_virtual_machine")
-			s.DeleteWithVirtualMachine.Encode(e)
+		if s.OnVirtualMachineRelease.Set {
+			e.FieldStart("on_virtual_machine_release")
+			s.OnVirtualMachineRelease.Encode(e)
 		}
 	}
 	{
@@ -12453,7 +12866,7 @@ var jsonFieldsNameOfNewBootDisk = [6]string{
 	1: "image_id",
 	2: "disk_type_id",
 	3: "size_gb",
-	4: "delete_with_virtual_machine",
+	4: "on_virtual_machine_release",
 	5: "billing",
 }
 
@@ -12509,15 +12922,15 @@ func (s *NewBootDisk) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"size_gb\"")
 			}
-		case "delete_with_virtual_machine":
+		case "on_virtual_machine_release":
 			if err := func() error {
-				s.DeleteWithVirtualMachine.Reset()
-				if err := s.DeleteWithVirtualMachine.Decode(d); err != nil {
+				s.OnVirtualMachineRelease.Reset()
+				if err := s.OnVirtualMachineRelease.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"delete_with_virtual_machine\"")
+				return errors.Wrap(err, "decode field \"on_virtual_machine_release\"")
 			}
 		case "billing":
 			requiredBitSet[0] |= 1 << 5
@@ -12581,6 +12994,46 @@ func (s *NewBootDisk) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NewBootDisk) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes NewBootDiskOnVirtualMachineRelease as json.
+func (s NewBootDiskOnVirtualMachineRelease) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes NewBootDiskOnVirtualMachineRelease from json.
+func (s *NewBootDiskOnVirtualMachineRelease) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode NewBootDiskOnVirtualMachineRelease to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch NewBootDiskOnVirtualMachineRelease(v) {
+	case NewBootDiskOnVirtualMachineReleaseDelete:
+		*s = NewBootDiskOnVirtualMachineReleaseDelete
+	case NewBootDiskOnVirtualMachineReleaseDetach:
+		*s = NewBootDiskOnVirtualMachineReleaseDetach
+	default:
+		*s = NewBootDiskOnVirtualMachineRelease(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NewBootDiskOnVirtualMachineRelease) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NewBootDiskOnVirtualMachineRelease) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -12742,18 +13195,22 @@ func (s *NewElasticIP) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *NewElasticIP) encodeFields(e *jx.Encoder) {
 	{
-		if s.InternetChargeType.Set {
-			e.FieldStart("internet_charge_type")
-			s.InternetChargeType.Encode(e)
-		}
+		e.FieldStart("type")
+		s.Type.Encode(e)
+	}
+	{
+		e.FieldStart("line_id")
+		s.LineID.Encode(e)
 	}
 	{
 		e.FieldStart("bandwidth_mbps")
 		e.Int64(s.BandwidthMbps)
 	}
 	{
-		e.FieldStart("line_id")
-		s.LineID.Encode(e)
+		if s.InternetChargeType.Set {
+			e.FieldStart("internet_charge_type")
+			s.InternetChargeType.Encode(e)
+		}
 	}
 	{
 		e.FieldStart("billing")
@@ -12761,11 +13218,12 @@ func (s *NewElasticIP) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfNewElasticIP = [4]string{
-	0: "internet_charge_type",
-	1: "bandwidth_mbps",
-	2: "line_id",
-	3: "billing",
+var jsonFieldsNameOfNewElasticIP = [5]string{
+	0: "type",
+	1: "line_id",
+	2: "bandwidth_mbps",
+	3: "internet_charge_type",
+	4: "billing",
 }
 
 // Decode decodes NewElasticIP from json.
@@ -12778,18 +13236,28 @@ func (s *NewElasticIP) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "internet_charge_type":
+		case "type":
+			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				s.InternetChargeType.Reset()
-				if err := s.InternetChargeType.Decode(d); err != nil {
+				if err := s.Type.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"internet_charge_type\"")
+				return errors.Wrap(err, "decode field \"type\"")
+			}
+		case "line_id":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.LineID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"line_id\"")
 			}
 		case "bandwidth_mbps":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Int64()
 				s.BandwidthMbps = int64(v)
@@ -12800,18 +13268,18 @@ func (s *NewElasticIP) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"bandwidth_mbps\"")
 			}
-		case "line_id":
-			requiredBitSet[0] |= 1 << 2
+		case "internet_charge_type":
 			if err := func() error {
-				if err := s.LineID.Decode(d); err != nil {
+				s.InternetChargeType.Reset()
+				if err := s.InternetChargeType.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"line_id\"")
+				return errors.Wrap(err, "decode field \"internet_charge_type\"")
 			}
 		case "billing":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				if err := s.Billing.Decode(d); err != nil {
 					return err
@@ -12830,7 +13298,7 @@ func (s *NewElasticIP) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00001110,
+		0b00010111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -12872,6 +13340,218 @@ func (s *NewElasticIP) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NewElasticIP) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes NewElasticIPType as json.
+func (s NewElasticIPType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes NewElasticIPType from json.
+func (s *NewElasticIPType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode NewElasticIPType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch NewElasticIPType(v) {
+	case NewElasticIPTypeNew:
+		*s = NewElasticIPTypeNew
+	default:
+		*s = NewElasticIPType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NewElasticIPType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NewElasticIPType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *NewPrimaryNetworkInterface) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *NewPrimaryNetworkInterface) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("type")
+		s.Type.Encode(e)
+	}
+	{
+		e.FieldStart("subnet_id")
+		s.SubnetID.Encode(e)
+	}
+	{
+		e.FieldStart("security_group_ids")
+		e.ArrStart()
+		for _, elem := range s.SecurityGroupIds {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+}
+
+var jsonFieldsNameOfNewPrimaryNetworkInterface = [3]string{
+	0: "type",
+	1: "subnet_id",
+	2: "security_group_ids",
+}
+
+// Decode decodes NewPrimaryNetworkInterface from json.
+func (s *NewPrimaryNetworkInterface) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode NewPrimaryNetworkInterface to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "type":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Type.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"type\"")
+			}
+		case "subnet_id":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.SubnetID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"subnet_id\"")
+			}
+		case "security_group_ids":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				s.SecurityGroupIds = make([]SecurityGroupID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem SecurityGroupID
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.SecurityGroupIds = append(s.SecurityGroupIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"security_group_ids\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode NewPrimaryNetworkInterface")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfNewPrimaryNetworkInterface) {
+					name = jsonFieldsNameOfNewPrimaryNetworkInterface[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *NewPrimaryNetworkInterface) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NewPrimaryNetworkInterface) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes NewPrimaryNetworkInterfaceType as json.
+func (s NewPrimaryNetworkInterfaceType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes NewPrimaryNetworkInterfaceType from json.
+func (s *NewPrimaryNetworkInterfaceType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode NewPrimaryNetworkInterfaceType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch NewPrimaryNetworkInterfaceType(v) {
+	case NewPrimaryNetworkInterfaceTypeNew:
+		*s = NewPrimaryNetworkInterfaceTypeNew
+	default:
+		*s = NewPrimaryNetworkInterfaceType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NewPrimaryNetworkInterfaceType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NewPrimaryNetworkInterfaceType) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -15529,39 +16209,6 @@ func (s *OptDiskTypeID) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes ElasticIPID as json.
-func (o OptElasticIPID) Encode(e *jx.Encoder) {
-	if !o.Set {
-		return
-	}
-	o.Value.Encode(e)
-}
-
-// Decode decodes ElasticIPID from json.
-func (o *OptElasticIPID) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode OptElasticIPID to nil")
-	}
-	o.Set = true
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s OptElasticIPID) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptElasticIPID) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
 // Encode encodes ErrorMeta as json.
 func (o OptErrorMeta) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -15730,18 +16377,18 @@ func (s *OptMachineTypeID) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes NetworkInterfaceID as json.
-func (o OptNetworkInterfaceID) Encode(e *jx.Encoder) {
+// Encode encodes NewBootDiskOnVirtualMachineRelease as json.
+func (o OptNewBootDiskOnVirtualMachineRelease) Encode(e *jx.Encoder) {
 	if !o.Set {
 		return
 	}
-	o.Value.Encode(e)
+	e.Str(string(o.Value))
 }
 
-// Decode decodes NetworkInterfaceID from json.
-func (o *OptNetworkInterfaceID) Decode(d *jx.Decoder) error {
+// Decode decodes NewBootDiskOnVirtualMachineRelease from json.
+func (o *OptNewBootDiskOnVirtualMachineRelease) Decode(d *jx.Decoder) error {
 	if o == nil {
-		return errors.New("invalid: unable to decode OptNetworkInterfaceID to nil")
+		return errors.New("invalid: unable to decode OptNewBootDiskOnVirtualMachineRelease to nil")
 	}
 	o.Set = true
 	if err := o.Value.Decode(d); err != nil {
@@ -15751,30 +16398,30 @@ func (o *OptNetworkInterfaceID) Decode(d *jx.Decoder) error {
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s OptNetworkInterfaceID) MarshalJSON() ([]byte, error) {
+func (s OptNewBootDiskOnVirtualMachineRelease) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptNetworkInterfaceID) UnmarshalJSON(data []byte) error {
+func (s *OptNewBootDiskOnVirtualMachineRelease) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
 
-// Encode encodes NewElasticIP as json.
-func (o OptNewElasticIP) Encode(e *jx.Encoder) {
+// Encode encodes PasswordChoice as json.
+func (o OptPasswordChoice) Encode(e *jx.Encoder) {
 	if !o.Set {
 		return
 	}
 	o.Value.Encode(e)
 }
 
-// Decode decodes NewElasticIP from json.
-func (o *OptNewElasticIP) Decode(d *jx.Decoder) error {
+// Decode decodes PasswordChoice from json.
+func (o *OptPasswordChoice) Decode(d *jx.Decoder) error {
 	if o == nil {
-		return errors.New("invalid: unable to decode OptNewElasticIP to nil")
+		return errors.New("invalid: unable to decode OptPasswordChoice to nil")
 	}
 	o.Set = true
 	if err := o.Value.Decode(d); err != nil {
@@ -15784,75 +16431,14 @@ func (o *OptNewElasticIP) Decode(d *jx.Decoder) error {
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s OptNewElasticIP) MarshalJSON() ([]byte, error) {
+func (s OptPasswordChoice) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptNewElasticIP) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes []SecurityGroupID as json.
-func (o OptNilSecurityGroupIDArray) Encode(e *jx.Encoder) {
-	if !o.Set {
-		return
-	}
-	if o.Null {
-		e.Null()
-		return
-	}
-	e.ArrStart()
-	for _, elem := range o.Value {
-		elem.Encode(e)
-	}
-	e.ArrEnd()
-}
-
-// Decode decodes []SecurityGroupID from json.
-func (o *OptNilSecurityGroupIDArray) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode OptNilSecurityGroupIDArray to nil")
-	}
-	if d.Next() == jx.Null {
-		if err := d.Null(); err != nil {
-			return err
-		}
-
-		var v []SecurityGroupID
-		o.Value = v
-		o.Set = true
-		o.Null = true
-		return nil
-	}
-	o.Set = true
-	o.Null = false
-	o.Value = make([]SecurityGroupID, 0)
-	if err := d.Arr(func(d *jx.Decoder) error {
-		var elem SecurityGroupID
-		if err := elem.Decode(d); err != nil {
-			return err
-		}
-		o.Value = append(o.Value, elem)
-		return nil
-	}); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s OptNilSecurityGroupIDArray) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptNilSecurityGroupIDArray) UnmarshalJSON(data []byte) error {
+func (s *OptPasswordChoice) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -15987,39 +16573,6 @@ func (s OptString) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptString) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes SubnetID as json.
-func (o OptSubnetID) Encode(e *jx.Encoder) {
-	if !o.Set {
-		return
-	}
-	o.Value.Encode(e)
-}
-
-// Decode decodes SubnetID from json.
-func (o *OptSubnetID) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode OptSubnetID to nil")
-	}
-	o.Set = true
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s OptSubnetID) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptSubnetID) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -16159,6 +16712,39 @@ func (s *OptUpdateVirtualMachineRequestBodyPowerState) UnmarshalJSON(data []byte
 	return s.Decode(d)
 }
 
+// Encode encodes VirtualMachineElasticIP as json.
+func (o OptVirtualMachineElasticIP) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes VirtualMachineElasticIP from json.
+func (o *OptVirtualMachineElasticIP) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptVirtualMachineElasticIP to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptVirtualMachineElasticIP) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptVirtualMachineElasticIP) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes VirtualPrivateCloudID as json.
 func (o OptVirtualPrivateCloudID) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -16188,6 +16774,101 @@ func (s OptVirtualPrivateCloudID) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptVirtualPrivateCloudID) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes PasswordChoice as json.
+func (s PasswordChoice) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+func (s PasswordChoice) encodeFields(e *jx.Encoder) {
+	switch s.Type {
+	case GeneratedPasswordPasswordChoice:
+		e.FieldStart("type")
+		e.Str("generated")
+	case SuppliedPasswordPasswordChoice:
+		e.FieldStart("type")
+		e.Str("supplied")
+		{
+			s := s.SuppliedPassword
+			{
+				e.FieldStart("value")
+				e.Str(s.Value)
+			}
+		}
+	}
+}
+
+// Decode decodes PasswordChoice from json.
+func (s *PasswordChoice) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PasswordChoice to nil")
+	}
+	// Sum type discriminator.
+	if typ := d.Next(); typ != jx.Object {
+		return errors.Errorf("unexpected json type %q", typ)
+	}
+
+	var found bool
+	if err := d.Capture(func(d *jx.Decoder) error {
+		return d.ObjBytes(func(d *jx.Decoder, key []byte) error {
+			if found {
+				return d.Skip()
+			}
+			switch string(key) {
+			case "type":
+				typ, err := d.Str()
+				if err != nil {
+					return err
+				}
+				switch typ {
+				case "generated":
+					s.Type = GeneratedPasswordPasswordChoice
+					found = true
+				case "supplied":
+					s.Type = SuppliedPasswordPasswordChoice
+					found = true
+				default:
+					return errors.Errorf("unknown type %s", typ)
+				}
+				return nil
+			}
+			return d.Skip()
+		})
+	}); err != nil {
+		return errors.Wrap(err, "capture")
+	}
+	if !found {
+		return errors.New("unable to detect sum type variant")
+	}
+	switch s.Type {
+	case GeneratedPasswordPasswordChoice:
+		if err := s.GeneratedPassword.Decode(d); err != nil {
+			return err
+		}
+	case SuppliedPasswordPasswordChoice:
+		if err := s.SuppliedPassword.Decode(d); err != nil {
+			return err
+		}
+	default:
+		return errors.Errorf("inferred invalid type: %s", s.Type)
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s PasswordChoice) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PasswordChoice) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -17001,6 +17682,116 @@ func (s *PerformanceFormula) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *PerformanceFormula) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes PrimaryNetworkInterface as json.
+func (s PrimaryNetworkInterface) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+func (s PrimaryNetworkInterface) encodeFields(e *jx.Encoder) {
+	switch s.Type {
+	case NewPrimaryNetworkInterfacePrimaryNetworkInterface:
+		e.FieldStart("type")
+		e.Str("new")
+		{
+			s := s.NewPrimaryNetworkInterface
+			{
+				e.FieldStart("subnet_id")
+				s.SubnetID.Encode(e)
+			}
+			{
+				e.FieldStart("security_group_ids")
+				e.ArrStart()
+				for _, elem := range s.SecurityGroupIds {
+					elem.Encode(e)
+				}
+				e.ArrEnd()
+			}
+		}
+	case ExistingPrimaryNetworkInterfacePrimaryNetworkInterface:
+		e.FieldStart("type")
+		e.Str("existing")
+		{
+			s := s.ExistingPrimaryNetworkInterface
+			{
+				e.FieldStart("network_interface_id")
+				s.NetworkInterfaceID.Encode(e)
+			}
+		}
+	}
+}
+
+// Decode decodes PrimaryNetworkInterface from json.
+func (s *PrimaryNetworkInterface) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PrimaryNetworkInterface to nil")
+	}
+	// Sum type discriminator.
+	if typ := d.Next(); typ != jx.Object {
+		return errors.Errorf("unexpected json type %q", typ)
+	}
+
+	var found bool
+	if err := d.Capture(func(d *jx.Decoder) error {
+		return d.ObjBytes(func(d *jx.Decoder, key []byte) error {
+			if found {
+				return d.Skip()
+			}
+			switch string(key) {
+			case "type":
+				typ, err := d.Str()
+				if err != nil {
+					return err
+				}
+				switch typ {
+				case "new":
+					s.Type = NewPrimaryNetworkInterfacePrimaryNetworkInterface
+					found = true
+				case "existing":
+					s.Type = ExistingPrimaryNetworkInterfacePrimaryNetworkInterface
+					found = true
+				default:
+					return errors.Errorf("unknown type %s", typ)
+				}
+				return nil
+			}
+			return d.Skip()
+		})
+	}); err != nil {
+		return errors.Wrap(err, "capture")
+	}
+	if !found {
+		return errors.New("unable to detect sum type variant")
+	}
+	switch s.Type {
+	case NewPrimaryNetworkInterfacePrimaryNetworkInterface:
+		if err := s.NewPrimaryNetworkInterface.Decode(d); err != nil {
+			return err
+		}
+	case ExistingPrimaryNetworkInterfacePrimaryNetworkInterface:
+		if err := s.ExistingPrimaryNetworkInterface.Decode(d); err != nil {
+			return err
+		}
+	default:
+		return errors.Errorf("inferred invalid type: %s", s.Type)
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s PrimaryNetworkInterface) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PrimaryNetworkInterface) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -18795,86 +19586,6 @@ func (s *PutElasticIPAssociationRequestBody) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
-func (s *PutVirtualMachinePasswordRequestBody) Encode(e *jx.Encoder) {
-	e.ObjStart()
-	s.encodeFields(e)
-	e.ObjEnd()
-}
-
-// encodeFields encodes fields.
-func (s *PutVirtualMachinePasswordRequestBody) encodeFields(e *jx.Encoder) {
-	{
-		if s.GeneratePassword.Set {
-			e.FieldStart("generate_password")
-			s.GeneratePassword.Encode(e)
-		}
-	}
-	{
-		if s.Password.Set {
-			e.FieldStart("password")
-			s.Password.Encode(e)
-		}
-	}
-}
-
-var jsonFieldsNameOfPutVirtualMachinePasswordRequestBody = [2]string{
-	0: "generate_password",
-	1: "password",
-}
-
-// Decode decodes PutVirtualMachinePasswordRequestBody from json.
-func (s *PutVirtualMachinePasswordRequestBody) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode PutVirtualMachinePasswordRequestBody to nil")
-	}
-
-	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
-		switch string(k) {
-		case "generate_password":
-			if err := func() error {
-				s.GeneratePassword.Reset()
-				if err := s.GeneratePassword.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"generate_password\"")
-			}
-		case "password":
-			if err := func() error {
-				s.Password.Reset()
-				if err := s.Password.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"password\"")
-			}
-		default:
-			return errors.Errorf("unexpected field %q", k)
-		}
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "decode PutVirtualMachinePasswordRequestBody")
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s *PutVirtualMachinePasswordRequestBody) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *PutVirtualMachinePasswordRequestBody) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode implements json.Marshaler.
 func (s *PutVirtualMachinePasswordResponseBody) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -18885,7 +19596,7 @@ func (s *PutVirtualMachinePasswordResponseBody) Encode(e *jx.Encoder) {
 func (s *PutVirtualMachinePasswordResponseBody) encodeFields(e *jx.Encoder) {
 	{
 		e.FieldStart("password")
-		e.Str(s.Password)
+		s.Password.Encode(e)
 	}
 }
 
@@ -18905,9 +19616,7 @@ func (s *PutVirtualMachinePasswordResponseBody) Decode(d *jx.Decoder) error {
 		case "password":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				v, err := d.Str()
-				s.Password = string(v)
-				if err != nil {
+				if err := s.Password.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -22435,6 +23144,155 @@ func (s *SubnetListResponseBody) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode implements json.Marshaler.
+func (s *SuppliedPassword) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *SuppliedPassword) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("type")
+		s.Type.Encode(e)
+	}
+	{
+		e.FieldStart("value")
+		e.Str(s.Value)
+	}
+}
+
+var jsonFieldsNameOfSuppliedPassword = [2]string{
+	0: "type",
+	1: "value",
+}
+
+// Decode decodes SuppliedPassword from json.
+func (s *SuppliedPassword) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SuppliedPassword to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "type":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Type.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"type\"")
+			}
+		case "value":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Value = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"value\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode SuppliedPassword")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfSuppliedPassword) {
+					name = jsonFieldsNameOfSuppliedPassword[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *SuppliedPassword) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SuppliedPassword) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes SuppliedPasswordType as json.
+func (s SuppliedPasswordType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes SuppliedPasswordType from json.
+func (s *SuppliedPasswordType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SuppliedPasswordType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch SuppliedPasswordType(v) {
+	case SuppliedPasswordTypeSupplied:
+		*s = SuppliedPasswordTypeSupplied
+	default:
+		*s = SuppliedPasswordType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s SuppliedPasswordType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SuppliedPasswordType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes TerminationPolicy as json.
 func (s TerminationPolicy) Encode(e *jx.Encoder) {
 	e.Str(string(s))
@@ -25389,6 +26247,122 @@ func (s VirtualMachineDiskID) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *VirtualMachineDiskID) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes VirtualMachineElasticIP as json.
+func (s VirtualMachineElasticIP) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+func (s VirtualMachineElasticIP) encodeFields(e *jx.Encoder) {
+	switch s.Type {
+	case NewElasticIPVirtualMachineElasticIP:
+		e.FieldStart("type")
+		e.Str("new")
+		{
+			s := s.NewElasticIP
+			{
+				e.FieldStart("line_id")
+				s.LineID.Encode(e)
+			}
+			{
+				e.FieldStart("bandwidth_mbps")
+				e.Int64(s.BandwidthMbps)
+			}
+			{
+				if s.InternetChargeType.Set {
+					e.FieldStart("internet_charge_type")
+					s.InternetChargeType.Encode(e)
+				}
+			}
+			{
+				e.FieldStart("billing")
+				s.Billing.Encode(e)
+			}
+		}
+	case ExistingElasticIPVirtualMachineElasticIP:
+		e.FieldStart("type")
+		e.Str("existing")
+		{
+			s := s.ExistingElasticIP
+			{
+				e.FieldStart("elastic_ip_id")
+				s.ElasticIPID.Encode(e)
+			}
+		}
+	}
+}
+
+// Decode decodes VirtualMachineElasticIP from json.
+func (s *VirtualMachineElasticIP) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode VirtualMachineElasticIP to nil")
+	}
+	// Sum type discriminator.
+	if typ := d.Next(); typ != jx.Object {
+		return errors.Errorf("unexpected json type %q", typ)
+	}
+
+	var found bool
+	if err := d.Capture(func(d *jx.Decoder) error {
+		return d.ObjBytes(func(d *jx.Decoder, key []byte) error {
+			if found {
+				return d.Skip()
+			}
+			switch string(key) {
+			case "type":
+				typ, err := d.Str()
+				if err != nil {
+					return err
+				}
+				switch typ {
+				case "new":
+					s.Type = NewElasticIPVirtualMachineElasticIP
+					found = true
+				case "existing":
+					s.Type = ExistingElasticIPVirtualMachineElasticIP
+					found = true
+				default:
+					return errors.Errorf("unknown type %s", typ)
+				}
+				return nil
+			}
+			return d.Skip()
+		})
+	}); err != nil {
+		return errors.Wrap(err, "capture")
+	}
+	if !found {
+		return errors.New("unable to detect sum type variant")
+	}
+	switch s.Type {
+	case NewElasticIPVirtualMachineElasticIP:
+		if err := s.NewElasticIP.Decode(d); err != nil {
+			return err
+		}
+	case ExistingElasticIPVirtualMachineElasticIP:
+		if err := s.ExistingElasticIP.Decode(d); err != nil {
+			return err
+		}
+	default:
+		return errors.Errorf("inferred invalid type: %s", s.Type)
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s VirtualMachineElasticIP) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *VirtualMachineElasticIP) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
