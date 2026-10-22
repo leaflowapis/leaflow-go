@@ -53,7 +53,7 @@ type Invoker interface {
 	// Requests cancellation on the purchase's agreed terms, with the same rules as creating a
 	// cancellation. Give the refund amount from a quote with this subscription in
 	// `cancellation.subscription_ids`. Open to the owner of the subscription's current billing account and
-	// to members of its project with the project permission `billing:subscription.write`.
+	// to members of its project with the project permission `billing:finance.manage`.
 	//
 	// Immediate cancellation asks the owning service to release the resources now; period-end cancellation
 	// keeps the subscription active or suspended until the paid term ends. The subscription becomes
@@ -106,7 +106,7 @@ type Invoker interface {
 	// Ends subscriptions of one service together. Deleting a resource is an `immediate` cancellation of
 	// every subscription released with it, such as a server with its disks or an address with its
 	// bandwidth. Open to the owner of the subscriptions' current billing account and to members of their
-	// project with the project permission `billing:subscription.write`.
+	// project with the project permission `billing:finance.manage`.
 	//
 	// The owning service releases the resources at once for `immediate`, or at `scheduled_at`, the end of
 	// the paid term, for `period_end`. When release is confirmed, the unused value is returned to the
@@ -152,7 +152,7 @@ type Invoker interface {
 	// resources are created through that service.
 	//
 	// Open to the owner of the subscription's current billing account and to members of its project with
-	// the project permission `billing:subscription.write`. Keep `checkout_session_id` and read the session
+	// the project permission `billing:finance.manage`. Keep `checkout_session_id` and read the session
 	// after an unknown outcome; creating it again conflicts.
 	//
 	// POST /api/v1/checkout-sessions
@@ -374,8 +374,8 @@ type Invoker interface {
 	// The statement's consumption, grouped by project, product or meter and filtered within the statement.
 	// Quantities are given only for meter groups; grouping by meter also splits by the meter's
 	// presentation dimensions. Open to the owner of the statement's account and to members with the
-	// project permission `billing:cost.read` of each project in `project_ids`, which must then be given
-	// and currently assigned to that account.
+	// project permission `billing:finance.manage` of each project in `project_ids`, which must then be
+	// given and currently assigned to that account.
 	//
 	// GET /api/v1/statements/{statementId}/usage-summary
 	GetStatementUsage(ctx context.Context, params GetStatementUsageParams) (*StatementSummary, error)
@@ -613,8 +613,8 @@ type Invoker interface {
 	// Project filters use the account recorded on each charge, including charges for projects later
 	// assigned to another account. The total covers all matching groups, not just the returned page.
 	//
-	// Open to the owner of the account and to members with the project permission `billing:cost.read` of
-	// each project in `project_ids`, which must then be given and currently assigned to the account.
+	// Open to the owner of the account and to members with the project permission `billing:finance.manage`
+	// of each project in `project_ids`, which must then be given and currently assigned to the account.
 	//
 	// GET /api/v1/spend
 	ListSpend(ctx context.Context, params ListSpendParams) (*SpendRowList, error)
@@ -647,9 +647,9 @@ type Invoker interface {
 	ListTransactions(ctx context.Context, params ListTransactionsParams) (*TransactionList, error)
 	// ListUsageCharges invokes list-usage-charges operation.
 	//
-	// Priced usage charges in the requested scope; members with the project permission `billing:cost.read`
-	// list a project's charges with `project_ids`. Usage that had no price when it occurred is never
-	// charged later.
+	// Priced usage charges in the requested scope; members with the project permission
+	// `billing:finance.manage` list a project's charges with `project_ids`. Usage that had no price when
+	// it occurred is never charged later.
 	//
 	// GET /api/v1/usage-charges
 	ListUsageCharges(ctx context.Context, params ListUsageChargesParams) (*UsageChargeList, error)
@@ -715,8 +715,8 @@ type Invoker interface {
 	// PreviewCancellation invokes preview-cancellation operation.
 	//
 	// What creating the cancellation now would return, per subscription and in total. Nothing is canceled,
-	// ended or refunded. Open to the same callers and refused as creating it would be, except that nothing
-	// is recorded.
+	// ended or refunded. Open to the owner of the subscriptions' current billing account and to members of
+	// their project; refused for the same states as creating it.
 	//
 	// QUERY /api/v1/cancellations/preview
 	PreviewCancellation(ctx context.Context, request *CancellationPreviewRequest) (*CancellationRefundPreview, error)
@@ -768,8 +768,7 @@ type Invoker interface {
 	// and no order is left. To apply a promotion code or pay later, create a renewal Checkout Session.
 	//
 	// Open to the owner of the subscription's current billing account and to members of its project with
-	// the project permission `billing:subscription.write`. Only the owner can pay with
-	// `payment_method_id`.
+	// the project permission `billing:finance.manage`. Only the owner can pay with `payment_method_id`.
 	//
 	// Keep order_id and read the order after an unknown outcome; creating it again conflicts.
 	//
@@ -809,7 +808,7 @@ type Invoker interface {
 	// canceled, and 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` with `meta.cancellation_id` while a
 	// cancellation is open: creating it turned renewal off, and withdrawing it does not turn renewal back
 	// on. Open to the owner of the subscription's current billing account and to members of its project
-	// with the project permission `billing:subscription.write`.
+	// with the project permission `billing:finance.manage`.
 	//
 	// PUT /api/v1/subscriptions/{subscriptionId}/auto-renew
 	SetAutoRenew(ctx context.Context, request *AutoRenewSet, params SetAutoRenewParams) (*Subscription, error)
@@ -823,11 +822,11 @@ type Invoker interface {
 	// SetProjectAssignment invokes set-project-assignment operation.
 	//
 	// Links the project to a billing account you own; you need the project permission
-	// `billing:project_assignment.write`. A project without one is linked directly. Moving it to another
-	// account has the same requirements as unlinking: you own both accounts, the project has no metered
-	// resources, no subscriptions that have not ended and no orders in progress, and the current account
-	// has no unpaid invoices. Nothing moves with the project; charges already incurred stay with the
-	// account linked when they occurred.
+	// `billing:finance.manage`. A project without one is linked directly. Moving it to another account has
+	// the same requirements as unlinking: you own both accounts, the project has no metered resources, no
+	// subscriptions that have not ended and no orders in progress, and the current account has no unpaid
+	// invoices. Nothing moves with the project; charges already incurred stay with the account linked when
+	// they occurred.
 	//
 	// Refused once the project no longer accepts purchases because it is being deleted.
 	//
@@ -846,8 +845,8 @@ type Invoker interface {
 	// UnlinkProjectBillingAccount invokes unlink-project-billing-account operation.
 	//
 	// Ends the project's current assignment; the assignment history is kept. You need to own the account
-	// and hold the project permission `billing:project_assignment.write`. Allowed only when the project
-	// has no metered resources, no subscriptions that have not ended and no orders in progress, including
+	// and hold the project permission `billing:finance.manage`. Allowed only when the project has no
+	// metered resources, no subscriptions that have not ended and no orders in progress, including
 	// period-end changes, and the billing account has no unpaid invoices; invoices of orders awaiting
 	// payment do not count. Orders are not modified, so wait for them to complete. Charges already
 	// incurred stay with the billing account and are invoiced as usual. The project cannot make purchases
@@ -875,7 +874,7 @@ type Invoker interface {
 	// refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions continue, but automatic renewal,
 	// turned off when the cancellation was created, stays off until it is turned on again. Withdrawing a
 	// withdrawn cancellation returns it unchanged. Open to the owner of the subscriptions' current billing
-	// account and to members of their project with the project permission `billing:subscription.write`.
+	// account and to members of their project with the project permission `billing:finance.manage`.
 	//
 	// POST /api/v1/cancellations/{cancellationId}/withdraw
 	WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (*Cancellation, error)
@@ -1091,7 +1090,7 @@ func (c *Client) sendCancelOrder(ctx context.Context, request OptOrderCancel, pa
 // Requests cancellation on the purchase's agreed terms, with the same rules as creating a
 // cancellation. Give the refund amount from a quote with this subscription in
 // `cancellation.subscription_ids`. Open to the owner of the subscription's current billing account and
-// to members of its project with the project permission `billing:subscription.write`.
+// to members of its project with the project permission `billing:finance.manage`.
 //
 // Immediate cancellation asks the owning service to release the resources now; period-end cancellation
 // keeps the subscription active or suspended until the paid term ends. The subscription becomes
@@ -1665,7 +1664,7 @@ func (c *Client) sendCreateBillingAccount(ctx context.Context, request *BillingA
 // Ends subscriptions of one service together. Deleting a resource is an `immediate` cancellation of
 // every subscription released with it, such as a server with its disks or an address with its
 // bandwidth. Open to the owner of the subscriptions' current billing account and to members of their
-// project with the project permission `billing:subscription.write`.
+// project with the project permission `billing:finance.manage`.
 //
 // The owning service releases the resources at once for `immediate`, or at `scheduled_at`, the end of
 // the paid term, for `period_end`. When release is confirmed, the unused value is returned to the
@@ -1830,7 +1829,7 @@ func (c *Client) sendCreateCancellation(ctx context.Context, request *Cancellati
 // resources are created through that service.
 //
 // Open to the owner of the subscription's current billing account and to members of its project with
-// the project permission `billing:subscription.write`. Keep `checkout_session_id` and read the session
+// the project permission `billing:finance.manage`. Keep `checkout_session_id` and read the session
 // after an unknown outcome; creating it again conflicts.
 //
 // POST /api/v1/checkout-sessions
@@ -5246,8 +5245,8 @@ func (c *Client) sendGetStatement(ctx context.Context, params GetStatementParams
 // The statement's consumption, grouped by project, product or meter and filtered within the statement.
 // Quantities are given only for meter groups; grouping by meter also splits by the meter's
 // presentation dimensions. Open to the owner of the statement's account and to members with the
-// project permission `billing:cost.read` of each project in `project_ids`, which must then be given
-// and currently assigned to that account.
+// project permission `billing:finance.manage` of each project in `project_ids`, which must then be
+// given and currently assigned to that account.
 //
 // GET /api/v1/statements/{statementId}/usage-summary
 func (c *Client) GetStatementUsage(ctx context.Context, params GetStatementUsageParams) (*StatementSummary, error) {
@@ -11391,8 +11390,8 @@ func (c *Client) sendListRenewalPrices(ctx context.Context, params ListRenewalPr
 // Project filters use the account recorded on each charge, including charges for projects later
 // assigned to another account. The total covers all matching groups, not just the returned page.
 //
-// Open to the owner of the account and to members with the project permission `billing:cost.read` of
-// each project in `project_ids`, which must then be given and currently assigned to the account.
+// Open to the owner of the account and to members with the project permission `billing:finance.manage`
+// of each project in `project_ids`, which must then be given and currently assigned to the account.
 //
 // GET /api/v1/spend
 func (c *Client) ListSpend(ctx context.Context, params ListSpendParams) (*SpendRowList, error) {
@@ -12451,9 +12450,9 @@ func (c *Client) sendListTransactions(ctx context.Context, params ListTransactio
 
 // ListUsageCharges invokes list-usage-charges operation.
 //
-// Priced usage charges in the requested scope; members with the project permission `billing:cost.read`
-// list a project's charges with `project_ids`. Usage that had no price when it occurred is never
-// charged later.
+// Priced usage charges in the requested scope; members with the project permission
+// `billing:finance.manage` list a project's charges with `project_ids`. Usage that had no price when
+// it occurred is never charged later.
 //
 // GET /api/v1/usage-charges
 func (c *Client) ListUsageCharges(ctx context.Context, params ListUsageChargesParams) (*UsageChargeList, error) {
@@ -13419,8 +13418,8 @@ func (c *Client) sendPayTogether(ctx context.Context, request *PayTogetherReques
 // PreviewCancellation invokes preview-cancellation operation.
 //
 // What creating the cancellation now would return, per subscription and in total. Nothing is canceled,
-// ended or refunded. Open to the same callers and refused as creating it would be, except that nothing
-// is recorded.
+// ended or refunded. Open to the owner of the subscriptions' current billing account and to members of
+// their project; refused for the same states as creating it.
 //
 // QUERY /api/v1/cancellations/preview
 func (c *Client) PreviewCancellation(ctx context.Context, request *CancellationPreviewRequest) (*CancellationRefundPreview, error) {
@@ -14149,8 +14148,7 @@ func (c *Client) sendPreviewWithdrawal(ctx context.Context, request *WithdrawalP
 // and no order is left. To apply a promotion code or pay later, create a renewal Checkout Session.
 //
 // Open to the owner of the subscription's current billing account and to members of its project with
-// the project permission `billing:subscription.write`. Only the owner can pay with
-// `payment_method_id`.
+// the project permission `billing:finance.manage`. Only the owner can pay with `payment_method_id`.
 //
 // Keep order_id and read the order after an unknown outcome; creating it again conflicts.
 //
@@ -14645,7 +14643,7 @@ func (c *Client) sendSearchRates(ctx context.Context, request *RateSearch, param
 // canceled, and 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` with `meta.cancellation_id` while a
 // cancellation is open: creating it turned renewal off, and withdrawing it does not turn renewal back
 // on. Open to the owner of the subscription's current billing account and to members of its project
-// with the project permission `billing:subscription.write`.
+// with the project permission `billing:finance.manage`.
 //
 // PUT /api/v1/subscriptions/{subscriptionId}/auto-renew
 func (c *Client) SetAutoRenew(ctx context.Context, request *AutoRenewSet, params SetAutoRenewParams) (*Subscription, error) {
@@ -14914,11 +14912,11 @@ func (c *Client) sendSetDefaultPaymentMethod(ctx context.Context, params SetDefa
 // SetProjectAssignment invokes set-project-assignment operation.
 //
 // Links the project to a billing account you own; you need the project permission
-// `billing:project_assignment.write`. A project without one is linked directly. Moving it to another
-// account has the same requirements as unlinking: you own both accounts, the project has no metered
-// resources, no subscriptions that have not ended and no orders in progress, and the current account
-// has no unpaid invoices. Nothing moves with the project; charges already incurred stay with the
-// account linked when they occurred.
+// `billing:finance.manage`. A project without one is linked directly. Moving it to another account has
+// the same requirements as unlinking: you own both accounts, the project has no metered resources, no
+// subscriptions that have not ended and no orders in progress, and the current account has no unpaid
+// invoices. Nothing moves with the project; charges already incurred stay with the account linked when
+// they occurred.
 //
 // Refused once the project no longer accepts purchases because it is being deleted.
 //
@@ -15191,8 +15189,8 @@ func (c *Client) sendSuspendBillingAccount(ctx context.Context, params SuspendBi
 // UnlinkProjectBillingAccount invokes unlink-project-billing-account operation.
 //
 // Ends the project's current assignment; the assignment history is kept. You need to own the account
-// and hold the project permission `billing:project_assignment.write`. Allowed only when the project
-// has no metered resources, no subscriptions that have not ended and no orders in progress, including
+// and hold the project permission `billing:finance.manage`. Allowed only when the project has no
+// metered resources, no subscriptions that have not ended and no orders in progress, including
 // period-end changes, and the billing account has no unpaid invoices; invoices of orders awaiting
 // payment do not count. Orders are not modified, so wait for them to complete. Charges already
 // incurred stay with the billing account and are invoiced as usual. The project cannot make purchases
@@ -15638,7 +15636,7 @@ func (c *Client) sendUpdateContact(ctx context.Context, request *ContactUpdate, 
 // refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions continue, but automatic renewal,
 // turned off when the cancellation was created, stays off until it is turned on again. Withdrawing a
 // withdrawn cancellation returns it unchanged. Open to the owner of the subscriptions' current billing
-// account and to members of their project with the project permission `billing:subscription.write`.
+// account and to members of their project with the project permission `billing:finance.manage`.
 //
 // POST /api/v1/cancellations/{cancellationId}/withdraw
 func (c *Client) WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (*Cancellation, error) {

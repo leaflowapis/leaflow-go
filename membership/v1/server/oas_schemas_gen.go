@@ -2428,13 +2428,12 @@ func (s *PlanList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// A price of the plan in Billing.
+// A price of the plan in Billing. Membership returns no amounts; read the price from Billing with
+// `get-price` or `search-prices` by `price_id`.
 // Ref: #/components/schemas/PlanPrice
 type PlanPrice struct {
-	PriceID  uuid.UUID `json:"price_id"`
-	Currency Currency  `json:"currency"`
-	// Charged for each period, before tax and discounts.
-	UnitAmount    Money             `json:"unit_amount"`
+	PriceID       uuid.UUID         `json:"price_id"`
+	Currency      Currency          `json:"currency"`
 	Interval      PlanPriceInterval `json:"interval"`
 	IntervalCount int               `json:"interval_count"`
 }
@@ -2447,11 +2446,6 @@ func (s *PlanPrice) GetPriceID() uuid.UUID {
 // GetCurrency returns the value of Currency.
 func (s *PlanPrice) GetCurrency() Currency {
 	return s.Currency
-}
-
-// GetUnitAmount returns the value of UnitAmount.
-func (s *PlanPrice) GetUnitAmount() Money {
-	return s.UnitAmount
 }
 
 // GetInterval returns the value of Interval.
@@ -2472,11 +2466,6 @@ func (s *PlanPrice) SetPriceID(val uuid.UUID) {
 // SetCurrency sets the value of Currency.
 func (s *PlanPrice) SetCurrency(val Currency) {
 	s.Currency = val
-}
-
-// SetUnitAmount sets the value of UnitAmount.
-func (s *PlanPrice) SetUnitAmount(val Money) {
-	s.UnitAmount = val
 }
 
 // SetInterval sets the value of Interval.

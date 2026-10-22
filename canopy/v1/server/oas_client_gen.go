@@ -147,7 +147,7 @@ type Invoker interface {
 	//
 	// The model platform service of the authenticated project. The forwarding endpoints accept its
 	// requests only while `status` is `active`; each request is then billed under `subscription_id`, per
-	// token, at the rates stated in each model's `pricing`.
+	// token, at the rates Billing holds for each model's `billing`.
 	//
 	// When the project is deleted, its API keys are revoked and the subscription is canceled; the service
 	// then reads `inactive` with `ended_at` set.
@@ -193,8 +193,8 @@ type Invoker interface {
 	// `context_length` and `max_output_tokens` are advisory. The server does not truncate on their basis,
 	// and the request body is forwarded upstream unchanged.
 	//
-	// `pricing` states what requests to each model cost in the currency of the project's current billing
-	// account.
+	// Canopy returns no amounts: each model's `billing` names the Billing plan and the rate dimensions its
+	// token usage is priced at. Read the rates from Billing with `search-prices` and `search-rates`.
 	//
 	// GET /api/v1/models
 	ListModels(ctx context.Context) (ListModelsRes, error)
@@ -2249,7 +2249,7 @@ func (c *Client) sendGetResponse(ctx context.Context, params GetResponseParams) 
 //
 // The model platform service of the authenticated project. The forwarding endpoints accept its
 // requests only while `status` is `active`; each request is then billed under `subscription_id`, per
-// token, at the rates stated in each model's `pricing`.
+// token, at the rates Billing holds for each model's `billing`.
 //
 // When the project is deleted, its API keys are revoked and the subscription is canceled; the service
 // then reads `inactive` with `ended_at` set.
@@ -3102,8 +3102,8 @@ func (c *Client) sendListInferenceModels(ctx context.Context) (res ListInference
 // `context_length` and `max_output_tokens` are advisory. The server does not truncate on their basis,
 // and the request body is forwarded upstream unchanged.
 //
-// `pricing` states what requests to each model cost in the currency of the project's current billing
-// account.
+// Canopy returns no amounts: each model's `billing` names the Billing plan and the rate dimensions its
+// token usage is priced at. Read the rates from Billing with `search-prices` and `search-rates`.
 //
 // GET /api/v1/models
 func (c *Client) ListModels(ctx context.Context) (ListModelsRes, error) {

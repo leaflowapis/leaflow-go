@@ -22341,6 +22341,16 @@ func (s *PriceSearch) encodeFields(e *jx.Encoder) {
 		e.Str(s.Currency)
 	}
 	{
+		if s.Ids != nil {
+			e.FieldStart("ids")
+			e.ArrStart()
+			for _, elem := range s.Ids {
+				json.EncodeUUID(e, elem)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
 		if s.PlanIds != nil {
 			e.FieldStart("plan_ids")
 			e.ArrStart()
@@ -22382,14 +22392,15 @@ func (s *PriceSearch) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPriceSearch = [7]string{
+var jsonFieldsNameOfPriceSearch = [8]string{
 	0: "currency",
-	1: "plan_ids",
-	2: "product_id",
-	3: "type",
-	4: "usage_type",
-	5: "page",
-	6: "page_size",
+	1: "ids",
+	2: "plan_ids",
+	3: "product_id",
+	4: "type",
+	5: "usage_type",
+	6: "page",
+	7: "page_size",
 }
 
 // Decode decodes PriceSearch from json.
@@ -22412,6 +22423,25 @@ func (s *PriceSearch) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"currency\"")
+			}
+		case "ids":
+			if err := func() error {
+				s.Ids = make([]uuid.UUID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem uuid.UUID
+					v, err := json.DecodeUUID(d)
+					elem = v
+					if err != nil {
+						return err
+					}
+					s.Ids = append(s.Ids, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"ids\"")
 			}
 		case "plan_ids":
 			if err := func() error {
