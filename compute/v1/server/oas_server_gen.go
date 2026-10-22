@@ -731,25 +731,15 @@ type Handler interface {
 	GetVirtualMachine(ctx context.Context, params GetVirtualMachineParams) (*VirtualMachine, error)
 	// GetVirtualMachineConsole implements get-virtual-machine-console operation.
 	//
-	// Operates the virtual machine directly from a browser and does not require the virtual machine to be
-	// reachable over the network, which makes it usable when a network misconfiguration prevents login.
+	// The virtual machine's VNC console, operated from a browser through a noVNC client. It does not
+	// require the virtual machine to be reachable over the network, which makes it usable when a network
+	// misconfiguration prevents login.
 	//
 	// The returned address is single-use and expires within minutes. Every request issues a new address,
 	// so request one before each use and do not cache the response.
 	//
 	// GET /api/v1/virtual-machines/{virtualMachineId}/console
 	GetVirtualMachineConsole(ctx context.Context, params GetVirtualMachineConsoleParams) (*ConsoleResponseBody, error)
-	// GetVirtualMachineConsoleOutput implements get-virtual-machine-console-output operation.
-	//
-	// The raw text the virtual machine wrote to its serial console during boot and from the kernel.
-	// Consult it first when login fails or the remote console shows nothing: it shows where boot stopped,
-	// whether the system disk was mounted, and whether initialisation reported errors.
-	//
-	// A virtual machine in `error` and one suspended by the platform can be read as well. Refused with
-	// `VIRTUAL_MACHINE_CONSOLE_UNAVAILABLE` while the cloud has no server for it.
-	//
-	// GET /api/v1/virtual-machines/{virtualMachineId}/console-output
-	GetVirtualMachineConsoleOutput(ctx context.Context, params GetVirtualMachineConsoleOutputParams) (*ConsoleOutputResponseBody, error)
 	// GetVirtualPrivateCloud implements get-virtual-private-cloud operation.
 	//
 	// Retrieve a virtual private cloud.

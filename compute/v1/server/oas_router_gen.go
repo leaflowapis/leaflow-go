@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	rn92AllowedHeaders = map[string]string{
+	rn91AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn69AllowedHeaders = map[string]string{
@@ -26,7 +26,7 @@ var (
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
-	rn93AllowedHeaders = map[string]string{
+	rn92AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn72AllowedHeaders = map[string]string{
@@ -44,7 +44,7 @@ var (
 	rn12AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn94AllowedHeaders = map[string]string{
+	rn93AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn75AllowedHeaders = map[string]string{
@@ -64,7 +64,7 @@ var (
 		"GET":    "Authorization",
 		"PUT":    "Authorization,Content-Type",
 	}
-	rn96AllowedHeaders = map[string]string{
+	rn95AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn14AllowedHeaders = map[string]string{
@@ -84,7 +84,7 @@ var (
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 	}
-	rn97AllowedHeaders = map[string]string{
+	rn96AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn77AllowedHeaders = map[string]string{
@@ -99,7 +99,7 @@ var (
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
-	rn98AllowedHeaders = map[string]string{
+	rn97AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn79AllowedHeaders = map[string]string{
@@ -123,19 +123,19 @@ var (
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
-	rn99AllowedHeaders = map[string]string{
+	rn98AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn81AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn101AllowedHeaders = map[string]string{
+	rn100AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn84AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn100AllowedHeaders = map[string]string{
+	rn99AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn86AllowedHeaders = map[string]string{
@@ -199,9 +199,6 @@ var (
 	rn88AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn89AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
 	rn3AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
@@ -216,7 +213,7 @@ var (
 	rn67AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
-	rn102AllowedHeaders = map[string]string{
+	rn101AllowedHeaders = map[string]string{
 		"PUT": "Authorization,Content-Type",
 	}
 	rn31AllowedHeaders = map[string]string{
@@ -238,7 +235,7 @@ var (
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
-	rn91AllowedHeaders = map[string]string{
+	rn90AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn63AllowedHeaders = map[string]string{
@@ -314,7 +311,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn92AllowedHeaders,
+							allowedHeaders: rn91AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -472,7 +469,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "GET",
-									allowedHeaders: rn93AllowedHeaders,
+									allowedHeaders: rn92AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -650,7 +647,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
-								allowedHeaders: rn94AllowedHeaders,
+								allowedHeaders: rn93AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -831,7 +828,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "GET",
-											allowedHeaders: rn96AllowedHeaders,
+											allowedHeaders: rn95AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -1010,7 +1007,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn97AllowedHeaders,
+							allowedHeaders: rn96AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -1144,7 +1141,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn98AllowedHeaders,
+							allowedHeaders: rn97AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -1362,7 +1359,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
-								allowedHeaders: rn99AllowedHeaders,
+								allowedHeaders: rn98AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -1438,7 +1435,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
-								allowedHeaders: rn101AllowedHeaders,
+								allowedHeaders: rn100AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -1499,7 +1496,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "GET",
-										allowedHeaders: rn100AllowedHeaders,
+										allowedHeaders: rn99AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -2074,6 +2071,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									}
 
 									if len(elem) == 0 {
+										// Leaf node.
 										switch r.Method {
 										case "GET":
 											s.handleGetVirtualMachineConsoleRequest([1]string{
@@ -2089,35 +2087,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										}
 
 										return
-									}
-									switch elem[0] {
-									case '-': // Prefix: "-output"
-
-										if l := len("-output"); len(elem) >= l && elem[0:l] == "-output" {
-											elem = elem[l:]
-										} else {
-											break
-										}
-
-										if len(elem) == 0 {
-											// Leaf node.
-											switch r.Method {
-											case "GET":
-												s.handleGetVirtualMachineConsoleOutputRequest([1]string{
-													args[0],
-												}, elemIsEscaped, w, r)
-											default:
-												s.notAllowed(w, r, notAllowedParams{
-													allowedMethods: "GET",
-													allowedHeaders: rn89AllowedHeaders,
-													acceptPost:     "",
-													acceptPatch:    "",
-												})
-											}
-
-											return
-										}
-
 									}
 
 								}
@@ -2278,7 +2247,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PUT",
-											allowedHeaders: rn102AllowedHeaders,
+											allowedHeaders: rn101AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -2505,7 +2474,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "GET",
-											allowedHeaders: rn91AllowedHeaders,
+											allowedHeaders: rn90AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -4604,10 +4573,11 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									}
 
 									if len(elem) == 0 {
+										// Leaf node.
 										switch method {
 										case "GET":
 											r.name = GetVirtualMachineConsoleOperation
-											r.summary = "Retrieve a remote console"
+											r.summary = "Retrieve a VNC console"
 											r.operationID = "get-virtual-machine-console"
 											r.operationGroup = ""
 											r.pathPattern = "/api/v1/virtual-machines/{virtualMachineId}/console"
@@ -4617,33 +4587,6 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										default:
 											return
 										}
-									}
-									switch elem[0] {
-									case '-': // Prefix: "-output"
-
-										if l := len("-output"); len(elem) >= l && elem[0:l] == "-output" {
-											elem = elem[l:]
-										} else {
-											break
-										}
-
-										if len(elem) == 0 {
-											// Leaf node.
-											switch method {
-											case "GET":
-												r.name = GetVirtualMachineConsoleOutputOperation
-												r.summary = "Retrieve the console output"
-												r.operationID = "get-virtual-machine-console-output"
-												r.operationGroup = ""
-												r.pathPattern = "/api/v1/virtual-machines/{virtualMachineId}/console-output"
-												r.args = args
-												r.count = 1
-												return r, true
-											default:
-												return
-											}
-										}
-
 									}
 
 								}
