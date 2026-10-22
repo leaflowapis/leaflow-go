@@ -1985,6 +1985,233 @@ func (s *Server) handleCreateNetworkInterfaceRequest(args [0]string, argsEscaped
 	}
 }
 
+// handleCreateNetworkInterfaceAddressRequest handles create-network-interface-address operation.
+//
+// Adds an IPv4 address in the network interface's subnet, given or chosen by the network, and answers
+// 202 with the network interface showing the `add_address` operation until the address is in place; it
+// then appears among `addresses` with `role` `secondary`. An elastic IP can be associated with it like
+// the primary address.
+//
+// The operating system has to be configured to use it: DHCP hands out only the primary address.
+// Changing the addresses of a network interface in use may briefly interrupt its traffic.
+//
+// A network interface holds at most its virtual machine's machine type's
+// `max_ipv4_per_network_interface` IPv4 addresses while attached, and 50 otherwise (409
+// `NETWORK_INTERFACE_ADDRESS_CEILING`). An address already in use in the subnet is refused with 409
+// `NETWORK_INTERFACE_ADDRESS_ALREADY_TAKEN`, a full subnet with 409
+// `NETWORK_INTERFACE_SUBNET_EXHAUSTED`.
+//
+// POST /api/v1/network-interfaces/{networkInterfaceId}/addresses
+func (s *Server) handleCreateNetworkInterfaceAddressRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-network-interface-address"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/network-interfaces/{networkInterfaceId}/addresses"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateNetworkInterfaceAddressOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateNetworkInterfaceAddressOperation,
+			ID:   "create-network-interface-address",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateNetworkInterfaceAddressOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCreateNetworkInterfaceAddressParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateNetworkInterfaceAddressRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *NetworkInterface
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateNetworkInterfaceAddressOperation,
+			OperationSummary: "Add a secondary IPv4 address",
+			OperationID:      "create-network-interface-address",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "networkInterfaceId",
+					In:   "path",
+				}: params.NetworkInterfaceId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *CreateNetworkInterfaceAddressRequestBody
+			Params   = CreateNetworkInterfaceAddressParams
+			Response = *NetworkInterface
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCreateNetworkInterfaceAddressParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateNetworkInterfaceAddress(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateNetworkInterfaceAddress(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateNetworkInterfaceAddressResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleCreatePeeringRequest handles create-peering operation.
 //
 // Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
@@ -5997,6 +6224,213 @@ func (s *Server) handleDeleteNetworkInterfaceRequest(args [1]string, argsEscaped
 	}
 
 	if err := encodeDeleteNetworkInterfaceResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleDeleteNetworkInterfaceAddressRequest handles delete-network-interface-address operation.
+//
+// Removes a secondary IPv4 address and answers 202 with the network interface showing the
+// `remove_address` operation until it is gone. The primary address goes only with the network
+// interface (409 `NETWORK_INTERFACE_ADDRESS_PRIMARY`), and an address an elastic IP is associated with
+// is refused until it is disassociated (409 `NETWORK_INTERFACE_ADDRESS_ASSOCIATED`).
+//
+// DELETE /api/v1/network-interfaces/{networkInterfaceId}/addresses/{addressId}
+func (s *Server) handleDeleteNetworkInterfaceAddressRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-network-interface-address"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/api/v1/network-interfaces/{networkInterfaceId}/addresses/{addressId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteNetworkInterfaceAddressOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: DeleteNetworkInterfaceAddressOperation,
+			ID:   "delete-network-interface-address",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteNetworkInterfaceAddressOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeDeleteNetworkInterfaceAddressParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *NetworkInterface
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    DeleteNetworkInterfaceAddressOperation,
+			OperationSummary: "Remove a secondary IPv4 address",
+			OperationID:      "delete-network-interface-address",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "networkInterfaceId",
+					In:   "path",
+				}: params.NetworkInterfaceId,
+				{
+					Name: "addressId",
+					In:   "path",
+				}: params.AddressId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = DeleteNetworkInterfaceAddressParams
+			Response = *NetworkInterface
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackDeleteNetworkInterfaceAddressParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.DeleteNetworkInterfaceAddress(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.DeleteNetworkInterfaceAddress(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeDeleteNetworkInterfaceAddressResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -21386,8 +21820,17 @@ func (s *Server) handleUpdateLaunchTemplateRequest(args [1]string, argsEscaped b
 
 // handleUpdateNetworkInterfaceRequest handles update-network-interface operation.
 //
-// Changes the name only. Renaming is not an operation and is accepted at any time. The security groups
-// and addresses of a network interface cannot be changed through this endpoint.
+// Changes the name, or replaces the security groups. The two are never combined (422
+// `UPDATE_FIELDS_COMBINED`).
+//
+//   - `name` is not an operation, is accepted at any time and answers 200.
+//   - `security_group_ids` is the complete new set, one to five groups of the network interface's
+//     virtual private cloud; groups left out are removed. It applies to traffic of the running virtual
+//     machine as soon as it is in place, and answers 202 with the network interface showing the
+//     `update_security_groups` operation until then.
+//
+// Secondary IPv4 addresses are added and removed under
+// `/network-interfaces/{networkInterfaceId}/addresses`.
 //
 // PATCH /api/v1/network-interfaces/{networkInterfaceId}
 func (s *Server) handleUpdateNetworkInterfaceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -21535,7 +21978,7 @@ func (s *Server) handleUpdateNetworkInterfaceRequest(args [1]string, argsEscaped
 		}
 	}()
 
-	var response *NetworkInterface
+	var response UpdateNetworkInterfaceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -21556,7 +21999,7 @@ func (s *Server) handleUpdateNetworkInterfaceRequest(args [1]string, argsEscaped
 		type (
 			Request  = *UpdateNetworkInterfaceRequestBody
 			Params   = UpdateNetworkInterfaceParams
-			Response = *NetworkInterface
+			Response = UpdateNetworkInterfaceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,

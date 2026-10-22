@@ -237,6 +237,19 @@ func encodeCreateNetworkInterfaceResponse(response *NetworkInterface, w http.Res
 	return nil
 }
 
+func encodeCreateNetworkInterfaceAddressResponse(response *NetworkInterface, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeCreatePeeringResponse(response *PeeringResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
@@ -648,6 +661,19 @@ func encodeDeleteNetworkInterfaceResponse(response DeleteNetworkInterfaceRes, w 
 	default:
 		return errors.Errorf("unexpected response type: %T", response)
 	}
+}
+
+func encodeDeleteNetworkInterfaceAddressResponse(response *NetworkInterface, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
 }
 
 func encodeDeletePeeringResponse(response DeletePeeringRes, w http.ResponseWriter, span trace.Span) error {
@@ -1871,17 +1897,35 @@ func encodeUpdateLaunchTemplateResponse(response *LaunchTemplate, w http.Respons
 	return nil
 }
 
-func encodeUpdateNetworkInterfaceResponse(response *NetworkInterface, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
+func encodeUpdateNetworkInterfaceResponse(response UpdateNetworkInterfaceRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *UpdateNetworkInterfaceOK:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(200)
 
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *UpdateNetworkInterfaceAccepted:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(202)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
 	}
-
-	return nil
 }
 
 func encodeUpdatePeeringResponse(response UpdatePeeringRes, w http.ResponseWriter, span trace.Span) error {

@@ -2436,6 +2436,69 @@ func (s *CreateLaunchTemplateResponseBody) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *CreateNetworkInterfaceAddressRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *CreateNetworkInterfaceAddressRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		if s.Address.Set {
+			e.FieldStart("address")
+			s.Address.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfCreateNetworkInterfaceAddressRequestBody = [1]string{
+	0: "address",
+}
+
+// Decode decodes CreateNetworkInterfaceAddressRequestBody from json.
+func (s *CreateNetworkInterfaceAddressRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode CreateNetworkInterfaceAddressRequestBody to nil")
+	}
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "address":
+			if err := func() error {
+				s.Address.Reset()
+				if err := s.Address.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"address\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode CreateNetworkInterfaceAddressRequestBody")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *CreateNetworkInterfaceAddressRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *CreateNetworkInterfaceAddressRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *CreateNetworkInterfaceRequestBody) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -13227,6 +13290,14 @@ func (s *NetworkInterface) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		e.FieldStart("security_group_ids")
+		e.ArrStart()
+		for _, elem := range s.SecurityGroupIds {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
 		if s.Addresses != nil {
 			e.FieldStart("addresses")
 			e.ArrStart()
@@ -13250,16 +13321,17 @@ func (s *NetworkInterface) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfNetworkInterface = [9]string{
+var jsonFieldsNameOfNetworkInterface = [10]string{
 	0: "id",
 	1: "mac",
 	2: "name",
 	3: "virtual_private_cloud_id",
 	4: "elastic_ip_addresses",
-	5: "addresses",
-	6: "attachment",
-	7: "status",
-	8: "operation",
+	5: "security_group_ids",
+	6: "addresses",
+	7: "attachment",
+	8: "status",
+	9: "operation",
 }
 
 // Decode decodes NetworkInterface from json.
@@ -13340,6 +13412,24 @@ func (s *NetworkInterface) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"elastic_ip_addresses\"")
 			}
+		case "security_group_ids":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				s.SecurityGroupIds = make([]SecurityGroupID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem SecurityGroupID
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.SecurityGroupIds = append(s.SecurityGroupIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"security_group_ids\"")
+			}
 		case "addresses":
 			if err := func() error {
 				s.Addresses = make([]NetworkInterfaceAddress, 0)
@@ -13358,7 +13448,7 @@ func (s *NetworkInterface) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"addresses\"")
 			}
 		case "attachment":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.Attachment.Decode(d); err != nil {
 					return err
@@ -13368,7 +13458,7 @@ func (s *NetworkInterface) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"attachment\"")
 			}
 		case "status":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -13378,7 +13468,7 @@ func (s *NetworkInterface) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "operation":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				if err := s.Operation.Decode(d); err != nil {
 					return err
@@ -13397,8 +13487,8 @@ func (s *NetworkInterface) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b11011111,
-		0b00000001,
+		0b10111111,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -14611,6 +14701,12 @@ func (s *NetworkInterfaceOperationType) Decode(d *jx.Decoder) error {
 		*s = NetworkInterfaceOperationTypeDetach
 	case NetworkInterfaceOperationTypeAssociateElasticIP:
 		*s = NetworkInterfaceOperationTypeAssociateElasticIP
+	case NetworkInterfaceOperationTypeUpdateSecurityGroups:
+		*s = NetworkInterfaceOperationTypeUpdateSecurityGroups
+	case NetworkInterfaceOperationTypeAddAddress:
+		*s = NetworkInterfaceOperationTypeAddAddress
+	case NetworkInterfaceOperationTypeRemoveAddress:
+		*s = NetworkInterfaceOperationTypeRemoveAddress
 	case NetworkInterfaceOperationTypeDelete:
 		*s = NetworkInterfaceOperationTypeDelete
 	default:
@@ -27443,6 +27539,82 @@ func (s *UpdateLaunchTemplateRequestBody) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes UpdateNetworkInterfaceAccepted as json.
+func (s *UpdateNetworkInterfaceAccepted) Encode(e *jx.Encoder) {
+	unwrapped := (*NetworkInterface)(s)
+
+	unwrapped.Encode(e)
+}
+
+// Decode decodes UpdateNetworkInterfaceAccepted from json.
+func (s *UpdateNetworkInterfaceAccepted) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode UpdateNetworkInterfaceAccepted to nil")
+	}
+	var unwrapped NetworkInterface
+	if err := func() error {
+		if err := unwrapped.Decode(d); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return errors.Wrap(err, "alias")
+	}
+	*s = UpdateNetworkInterfaceAccepted(unwrapped)
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *UpdateNetworkInterfaceAccepted) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *UpdateNetworkInterfaceAccepted) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes UpdateNetworkInterfaceOK as json.
+func (s *UpdateNetworkInterfaceOK) Encode(e *jx.Encoder) {
+	unwrapped := (*NetworkInterface)(s)
+
+	unwrapped.Encode(e)
+}
+
+// Decode decodes UpdateNetworkInterfaceOK from json.
+func (s *UpdateNetworkInterfaceOK) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode UpdateNetworkInterfaceOK to nil")
+	}
+	var unwrapped NetworkInterface
+	if err := func() error {
+		if err := unwrapped.Decode(d); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return errors.Wrap(err, "alias")
+	}
+	*s = UpdateNetworkInterfaceOK(unwrapped)
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *UpdateNetworkInterfaceOK) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *UpdateNetworkInterfaceOK) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode implements json.Marshaler.
 func (s *UpdateNetworkInterfaceRequestBody) Encode(e *jx.Encoder) {
 	e.ObjStart()
@@ -27458,10 +27630,21 @@ func (s *UpdateNetworkInterfaceRequestBody) encodeFields(e *jx.Encoder) {
 			s.Name.Encode(e)
 		}
 	}
+	{
+		if s.SecurityGroupIds != nil {
+			e.FieldStart("security_group_ids")
+			e.ArrStart()
+			for _, elem := range s.SecurityGroupIds {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
 }
 
-var jsonFieldsNameOfUpdateNetworkInterfaceRequestBody = [1]string{
+var jsonFieldsNameOfUpdateNetworkInterfaceRequestBody = [2]string{
 	0: "name",
+	1: "security_group_ids",
 }
 
 // Decode decodes UpdateNetworkInterfaceRequestBody from json.
@@ -27483,6 +27666,23 @@ func (s *UpdateNetworkInterfaceRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "security_group_ids":
+			if err := func() error {
+				s.SecurityGroupIds = make([]SecurityGroupID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem SecurityGroupID
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.SecurityGroupIds = append(s.SecurityGroupIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"security_group_ids\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)

@@ -154,6 +154,24 @@ type Handler interface {
 	//
 	// POST /api/v1/network-interfaces
 	CreateNetworkInterface(ctx context.Context, req *CreateNetworkInterfaceRequestBody) (*NetworkInterface, error)
+	// CreateNetworkInterfaceAddress implements create-network-interface-address operation.
+	//
+	// Adds an IPv4 address in the network interface's subnet, given or chosen by the network, and answers
+	// 202 with the network interface showing the `add_address` operation until the address is in place; it
+	// then appears among `addresses` with `role` `secondary`. An elastic IP can be associated with it like
+	// the primary address.
+	//
+	// The operating system has to be configured to use it: DHCP hands out only the primary address.
+	// Changing the addresses of a network interface in use may briefly interrupt its traffic.
+	//
+	// A network interface holds at most its virtual machine's machine type's
+	// `max_ipv4_per_network_interface` IPv4 addresses while attached, and 50 otherwise (409
+	// `NETWORK_INTERFACE_ADDRESS_CEILING`). An address already in use in the subnet is refused with 409
+	// `NETWORK_INTERFACE_ADDRESS_ALREADY_TAKEN`, a full subnet with 409
+	// `NETWORK_INTERFACE_SUBNET_EXHAUSTED`.
+	//
+	// POST /api/v1/network-interfaces/{networkInterfaceId}/addresses
+	CreateNetworkInterfaceAddress(ctx context.Context, req *CreateNetworkInterfaceAddressRequestBody, params CreateNetworkInterfaceAddressParams) (*NetworkInterface, error)
 	// CreatePeering implements create-peering operation.
 	//
 	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
@@ -439,6 +457,15 @@ type Handler interface {
 	//
 	// DELETE /api/v1/network-interfaces/{networkInterfaceId}
 	DeleteNetworkInterface(ctx context.Context, params DeleteNetworkInterfaceParams) (DeleteNetworkInterfaceRes, error)
+	// DeleteNetworkInterfaceAddress implements delete-network-interface-address operation.
+	//
+	// Removes a secondary IPv4 address and answers 202 with the network interface showing the
+	// `remove_address` operation until it is gone. The primary address goes only with the network
+	// interface (409 `NETWORK_INTERFACE_ADDRESS_PRIMARY`), and an address an elastic IP is associated with
+	// is refused until it is disassociated (409 `NETWORK_INTERFACE_ADDRESS_ASSOCIATED`).
+	//
+	// DELETE /api/v1/network-interfaces/{networkInterfaceId}/addresses/{addressId}
+	DeleteNetworkInterfaceAddress(ctx context.Context, params DeleteNetworkInterfaceAddressParams) (*NetworkInterface, error)
 	// DeletePeering implements delete-peering operation.
 	//
 	// Delete peering.
@@ -1115,11 +1142,20 @@ type Handler interface {
 	UpdateLaunchTemplate(ctx context.Context, req *UpdateLaunchTemplateRequestBody, params UpdateLaunchTemplateParams) (*LaunchTemplate, error)
 	// UpdateNetworkInterface implements update-network-interface operation.
 	//
-	// Changes the name only. Renaming is not an operation and is accepted at any time. The security groups
-	// and addresses of a network interface cannot be changed through this endpoint.
+	// Changes the name, or replaces the security groups. The two are never combined (422
+	// `UPDATE_FIELDS_COMBINED`).
+	//
+	//  - `name` is not an operation, is accepted at any time and answers 200.
+	//  - `security_group_ids` is the complete new set, one to five groups of the network interface's
+	//    virtual private cloud; groups left out are removed. It applies to traffic of the running virtual
+	//    machine as soon as it is in place, and answers 202 with the network interface showing the
+	//    `update_security_groups` operation until then.
+	//
+	// Secondary IPv4 addresses are added and removed under
+	// `/network-interfaces/{networkInterfaceId}/addresses`.
 	//
 	// PATCH /api/v1/network-interfaces/{networkInterfaceId}
-	UpdateNetworkInterface(ctx context.Context, req *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (*NetworkInterface, error)
+	UpdateNetworkInterface(ctx context.Context, req *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (UpdateNetworkInterfaceRes, error)
 	// UpdatePeering implements update-peering operation.
 	//
 	// The accepter project writes its decision as `acceptance`. Only the accepter project may write it;

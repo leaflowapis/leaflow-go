@@ -175,6 +175,24 @@ type Invoker interface {
 	//
 	// POST /api/v1/network-interfaces
 	CreateNetworkInterface(ctx context.Context, request *CreateNetworkInterfaceRequestBody) (*NetworkInterface, error)
+	// CreateNetworkInterfaceAddress invokes create-network-interface-address operation.
+	//
+	// Adds an IPv4 address in the network interface's subnet, given or chosen by the network, and answers
+	// 202 with the network interface showing the `add_address` operation until the address is in place; it
+	// then appears among `addresses` with `role` `secondary`. An elastic IP can be associated with it like
+	// the primary address.
+	//
+	// The operating system has to be configured to use it: DHCP hands out only the primary address.
+	// Changing the addresses of a network interface in use may briefly interrupt its traffic.
+	//
+	// A network interface holds at most its virtual machine's machine type's
+	// `max_ipv4_per_network_interface` IPv4 addresses while attached, and 50 otherwise (409
+	// `NETWORK_INTERFACE_ADDRESS_CEILING`). An address already in use in the subnet is refused with 409
+	// `NETWORK_INTERFACE_ADDRESS_ALREADY_TAKEN`, a full subnet with 409
+	// `NETWORK_INTERFACE_SUBNET_EXHAUSTED`.
+	//
+	// POST /api/v1/network-interfaces/{networkInterfaceId}/addresses
+	CreateNetworkInterfaceAddress(ctx context.Context, request *CreateNetworkInterfaceAddressRequestBody, params CreateNetworkInterfaceAddressParams) (*NetworkInterface, error)
 	// CreatePeering invokes create-peering operation.
 	//
 	// Request IPv4 peering between non-overlapping VPCs in the same Region. The target project must accept
@@ -460,6 +478,15 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/network-interfaces/{networkInterfaceId}
 	DeleteNetworkInterface(ctx context.Context, params DeleteNetworkInterfaceParams) (DeleteNetworkInterfaceRes, error)
+	// DeleteNetworkInterfaceAddress invokes delete-network-interface-address operation.
+	//
+	// Removes a secondary IPv4 address and answers 202 with the network interface showing the
+	// `remove_address` operation until it is gone. The primary address goes only with the network
+	// interface (409 `NETWORK_INTERFACE_ADDRESS_PRIMARY`), and an address an elastic IP is associated with
+	// is refused until it is disassociated (409 `NETWORK_INTERFACE_ADDRESS_ASSOCIATED`).
+	//
+	// DELETE /api/v1/network-interfaces/{networkInterfaceId}/addresses/{addressId}
+	DeleteNetworkInterfaceAddress(ctx context.Context, params DeleteNetworkInterfaceAddressParams) (*NetworkInterface, error)
 	// DeletePeering invokes delete-peering operation.
 	//
 	// Delete peering.
@@ -1136,11 +1163,20 @@ type Invoker interface {
 	UpdateLaunchTemplate(ctx context.Context, request *UpdateLaunchTemplateRequestBody, params UpdateLaunchTemplateParams) (*LaunchTemplate, error)
 	// UpdateNetworkInterface invokes update-network-interface operation.
 	//
-	// Changes the name only. Renaming is not an operation and is accepted at any time. The security groups
-	// and addresses of a network interface cannot be changed through this endpoint.
+	// Changes the name, or replaces the security groups. The two are never combined (422
+	// `UPDATE_FIELDS_COMBINED`).
+	//
+	//  - `name` is not an operation, is accepted at any time and answers 200.
+	//  - `security_group_ids` is the complete new set, one to five groups of the network interface's
+	//    virtual private cloud; groups left out are removed. It applies to traffic of the running virtual
+	//    machine as soon as it is in place, and answers 202 with the network interface showing the
+	//    `update_security_groups` operation until then.
+	//
+	// Secondary IPv4 addresses are added and removed under
+	// `/network-interfaces/{networkInterfaceId}/addresses`.
 	//
 	// PATCH /api/v1/network-interfaces/{networkInterfaceId}
-	UpdateNetworkInterface(ctx context.Context, request *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (*NetworkInterface, error)
+	UpdateNetworkInterface(ctx context.Context, request *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (UpdateNetworkInterfaceRes, error)
 	// UpdatePeering invokes update-peering operation.
 	//
 	// The accepter project writes its decision as `acceptance`. Only the accepter project may write it;
@@ -2592,6 +2628,165 @@ func (c *Client) sendCreateNetworkInterface(ctx context.Context, request *Create
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateNetworkInterfaceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateNetworkInterfaceAddress invokes create-network-interface-address operation.
+//
+// Adds an IPv4 address in the network interface's subnet, given or chosen by the network, and answers
+// 202 with the network interface showing the `add_address` operation until the address is in place; it
+// then appears among `addresses` with `role` `secondary`. An elastic IP can be associated with it like
+// the primary address.
+//
+// The operating system has to be configured to use it: DHCP hands out only the primary address.
+// Changing the addresses of a network interface in use may briefly interrupt its traffic.
+//
+// A network interface holds at most its virtual machine's machine type's
+// `max_ipv4_per_network_interface` IPv4 addresses while attached, and 50 otherwise (409
+// `NETWORK_INTERFACE_ADDRESS_CEILING`). An address already in use in the subnet is refused with 409
+// `NETWORK_INTERFACE_ADDRESS_ALREADY_TAKEN`, a full subnet with 409
+// `NETWORK_INTERFACE_SUBNET_EXHAUSTED`.
+//
+// POST /api/v1/network-interfaces/{networkInterfaceId}/addresses
+func (c *Client) CreateNetworkInterfaceAddress(ctx context.Context, request *CreateNetworkInterfaceAddressRequestBody, params CreateNetworkInterfaceAddressParams) (*NetworkInterface, error) {
+	res, err := c.sendCreateNetworkInterfaceAddress(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCreateNetworkInterfaceAddress(ctx context.Context, request *CreateNetworkInterfaceAddressRequestBody, params CreateNetworkInterfaceAddressParams) (res *NetworkInterface, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-network-interface-address"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/network-interfaces/{networkInterfaceId}/addresses"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateNetworkInterfaceAddressOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/network-interfaces/"
+	{
+		// Encode "networkInterfaceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "networkInterfaceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.NetworkInterfaceId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/addresses"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateNetworkInterfaceAddressRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateNetworkInterfaceAddressOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateNetworkInterfaceAddressResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5278,6 +5473,165 @@ func (c *Client) sendDeleteNetworkInterface(ctx context.Context, params DeleteNe
 
 	stage = "DecodeResponse"
 	result, err := decodeDeleteNetworkInterfaceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeleteNetworkInterfaceAddress invokes delete-network-interface-address operation.
+//
+// Removes a secondary IPv4 address and answers 202 with the network interface showing the
+// `remove_address` operation until it is gone. The primary address goes only with the network
+// interface (409 `NETWORK_INTERFACE_ADDRESS_PRIMARY`), and an address an elastic IP is associated with
+// is refused until it is disassociated (409 `NETWORK_INTERFACE_ADDRESS_ASSOCIATED`).
+//
+// DELETE /api/v1/network-interfaces/{networkInterfaceId}/addresses/{addressId}
+func (c *Client) DeleteNetworkInterfaceAddress(ctx context.Context, params DeleteNetworkInterfaceAddressParams) (*NetworkInterface, error) {
+	res, err := c.sendDeleteNetworkInterfaceAddress(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeleteNetworkInterfaceAddress(ctx context.Context, params DeleteNetworkInterfaceAddressParams) (res *NetworkInterface, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-network-interface-address"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/network-interfaces/{networkInterfaceId}/addresses/{addressId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteNetworkInterfaceAddressOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/network-interfaces/"
+	{
+		// Encode "networkInterfaceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "networkInterfaceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.NetworkInterfaceId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/addresses/"
+	{
+		// Encode "addressId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "addressId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.AddressId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteNetworkInterfaceAddressOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteNetworkInterfaceAddressResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -16658,16 +17012,25 @@ func (c *Client) sendUpdateLaunchTemplate(ctx context.Context, request *UpdateLa
 
 // UpdateNetworkInterface invokes update-network-interface operation.
 //
-// Changes the name only. Renaming is not an operation and is accepted at any time. The security groups
-// and addresses of a network interface cannot be changed through this endpoint.
+// Changes the name, or replaces the security groups. The two are never combined (422
+// `UPDATE_FIELDS_COMBINED`).
+//
+//   - `name` is not an operation, is accepted at any time and answers 200.
+//   - `security_group_ids` is the complete new set, one to five groups of the network interface's
+//     virtual private cloud; groups left out are removed. It applies to traffic of the running virtual
+//     machine as soon as it is in place, and answers 202 with the network interface showing the
+//     `update_security_groups` operation until then.
+//
+// Secondary IPv4 addresses are added and removed under
+// `/network-interfaces/{networkInterfaceId}/addresses`.
 //
 // PATCH /api/v1/network-interfaces/{networkInterfaceId}
-func (c *Client) UpdateNetworkInterface(ctx context.Context, request *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (*NetworkInterface, error) {
+func (c *Client) UpdateNetworkInterface(ctx context.Context, request *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (UpdateNetworkInterfaceRes, error) {
 	res, err := c.sendUpdateNetworkInterface(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendUpdateNetworkInterface(ctx context.Context, request *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (res *NetworkInterface, err error) {
+func (c *Client) sendUpdateNetworkInterface(ctx context.Context, request *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (res UpdateNetworkInterfaceRes, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {

@@ -335,6 +335,86 @@ func decodeCreateLaunchTemplateVersionParams(args [1]string, argsEscaped bool, r
 	return params, nil
 }
 
+// CreateNetworkInterfaceAddressParams is parameters of create-network-interface-address operation.
+type CreateNetworkInterfaceAddressParams struct {
+	NetworkInterfaceId NetworkInterfaceID
+}
+
+func unpackCreateNetworkInterfaceAddressParams(packed middleware.Parameters) (params CreateNetworkInterfaceAddressParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "networkInterfaceId",
+			In:   "path",
+		}
+		params.NetworkInterfaceId = packed[key].(NetworkInterfaceID)
+	}
+	return params
+}
+
+func decodeCreateNetworkInterfaceAddressParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateNetworkInterfaceAddressParams, _ error) {
+	// Decode path: networkInterfaceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "networkInterfaceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotNetworkInterfaceIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotNetworkInterfaceIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.NetworkInterfaceId = NetworkInterfaceID(paramsDotNetworkInterfaceIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.NetworkInterfaceId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "networkInterfaceId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // CreateVirtualMachineCommandParams is parameters of create-virtual-machine-command operation.
 type CreateVirtualMachineCommandParams struct {
 	VirtualMachineId VirtualMachineID
@@ -1199,6 +1279,154 @@ func decodeDeleteNetworkInterfaceParams(args [1]string, argsEscaped bool, r *htt
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "networkInterfaceId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// DeleteNetworkInterfaceAddressParams is parameters of delete-network-interface-address operation.
+type DeleteNetworkInterfaceAddressParams struct {
+	NetworkInterfaceId NetworkInterfaceID
+	AddressId          NetworkInterfaceAddressID
+}
+
+func unpackDeleteNetworkInterfaceAddressParams(packed middleware.Parameters) (params DeleteNetworkInterfaceAddressParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "networkInterfaceId",
+			In:   "path",
+		}
+		params.NetworkInterfaceId = packed[key].(NetworkInterfaceID)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "addressId",
+			In:   "path",
+		}
+		params.AddressId = packed[key].(NetworkInterfaceAddressID)
+	}
+	return params
+}
+
+func decodeDeleteNetworkInterfaceAddressParams(args [2]string, argsEscaped bool, r *http.Request) (params DeleteNetworkInterfaceAddressParams, _ error) {
+	// Decode path: networkInterfaceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "networkInterfaceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotNetworkInterfaceIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotNetworkInterfaceIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.NetworkInterfaceId = NetworkInterfaceID(paramsDotNetworkInterfaceIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.NetworkInterfaceId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "networkInterfaceId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: addressId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "addressId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotAddressIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotAddressIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.AddressId = NetworkInterfaceAddressID(paramsDotAddressIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.AddressId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "addressId",
 			In:   "path",
 			Err:  err,
 		}

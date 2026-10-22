@@ -894,6 +894,22 @@ func (s *CreateLaunchTemplateResponseBody) SetVersion(val LaunchTemplateVersion)
 	s.Version = val
 }
 
+// Ref: #/components/schemas/CreateNetworkInterfaceAddressRequestBody
+type CreateNetworkInterfaceAddressRequestBody struct {
+	// The IPv4 address to add, in the network interface's subnet. Chosen by the network when omitted.
+	Address OptString `json:"address"`
+}
+
+// GetAddress returns the value of Address.
+func (s *CreateNetworkInterfaceAddressRequestBody) GetAddress() OptString {
+	return s.Address
+}
+
+// SetAddress sets the value of Address.
+func (s *CreateNetworkInterfaceAddressRequestBody) SetAddress(val OptString) {
+	s.Address = val
+}
+
 // Ref: #/components/schemas/CreateNetworkInterfaceRequestBody
 type CreateNetworkInterfaceRequestBody struct {
 	Name OptString `json:"name"`
@@ -5981,9 +5997,11 @@ type NetworkInterface struct {
 	VirtualPrivateCloudID VirtualPrivateCloudID `json:"virtual_private_cloud_id"`
 	// Elastic IPv4 addresses associated with this network interface; an empty array when none are
 	// associated.
-	ElasticIPAddresses []string                      `json:"elastic_ip_addresses"`
-	Addresses          []NetworkInterfaceAddress     `json:"addresses"`
-	Attachment         NilNetworkInterfaceAttachment `json:"attachment"`
+	ElasticIPAddresses []string `json:"elastic_ip_addresses"`
+	// The security groups the network interface holds.
+	SecurityGroupIds []SecurityGroupID             `json:"security_group_ids"`
+	Addresses        []NetworkInterfaceAddress     `json:"addresses"`
+	Attachment       NilNetworkInterfaceAttachment `json:"attachment"`
 	// `pending` until the interface is created, then `available`. `error` means its creation failed or the
 	// cloud reports it broken; delete it and create another.
 	Status NetworkInterfaceStatus `json:"status"`
@@ -6014,6 +6032,11 @@ func (s *NetworkInterface) GetVirtualPrivateCloudID() VirtualPrivateCloudID {
 // GetElasticIPAddresses returns the value of ElasticIPAddresses.
 func (s *NetworkInterface) GetElasticIPAddresses() []string {
 	return s.ElasticIPAddresses
+}
+
+// GetSecurityGroupIds returns the value of SecurityGroupIds.
+func (s *NetworkInterface) GetSecurityGroupIds() []SecurityGroupID {
+	return s.SecurityGroupIds
 }
 
 // GetAddresses returns the value of Addresses.
@@ -6059,6 +6082,11 @@ func (s *NetworkInterface) SetVirtualPrivateCloudID(val VirtualPrivateCloudID) {
 // SetElasticIPAddresses sets the value of ElasticIPAddresses.
 func (s *NetworkInterface) SetElasticIPAddresses(val []string) {
 	s.ElasticIPAddresses = val
+}
+
+// SetSecurityGroupIds sets the value of SecurityGroupIds.
+func (s *NetworkInterface) SetSecurityGroupIds(val []SecurityGroupID) {
+	s.SecurityGroupIds = val
 }
 
 // SetAddresses sets the value of Addresses.
@@ -6579,7 +6607,8 @@ func (s *NetworkInterfaceListResponseBody) SetPagination(val OffsetPagination) {
 // Ref: #/components/schemas/NetworkInterfaceOperation
 type NetworkInterfaceOperation struct {
 	// `associate_elastic_ip` holds the network interface while an elastic IP is associated with it
-	// directly rather than through a virtual machine.
+	// directly rather than through a virtual machine. `update_security_groups` replaces its security
+	// groups, `add_address` and `remove_address` change its secondary IPv4 addresses.
 	Type      NetworkInterfaceOperationType `json:"type"`
 	StartedAt time.Time                     `json:"started_at"`
 }
@@ -6605,15 +6634,19 @@ func (s *NetworkInterfaceOperation) SetStartedAt(val time.Time) {
 }
 
 // `associate_elastic_ip` holds the network interface while an elastic IP is associated with it
-// directly rather than through a virtual machine.
+// directly rather than through a virtual machine. `update_security_groups` replaces its security
+// groups, `add_address` and `remove_address` change its secondary IPv4 addresses.
 type NetworkInterfaceOperationType string
 
 const (
-	NetworkInterfaceOperationTypeCreate             NetworkInterfaceOperationType = "create"
-	NetworkInterfaceOperationTypeAttach             NetworkInterfaceOperationType = "attach"
-	NetworkInterfaceOperationTypeDetach             NetworkInterfaceOperationType = "detach"
-	NetworkInterfaceOperationTypeAssociateElasticIP NetworkInterfaceOperationType = "associate_elastic_ip"
-	NetworkInterfaceOperationTypeDelete             NetworkInterfaceOperationType = "delete"
+	NetworkInterfaceOperationTypeCreate               NetworkInterfaceOperationType = "create"
+	NetworkInterfaceOperationTypeAttach               NetworkInterfaceOperationType = "attach"
+	NetworkInterfaceOperationTypeDetach               NetworkInterfaceOperationType = "detach"
+	NetworkInterfaceOperationTypeAssociateElasticIP   NetworkInterfaceOperationType = "associate_elastic_ip"
+	NetworkInterfaceOperationTypeUpdateSecurityGroups NetworkInterfaceOperationType = "update_security_groups"
+	NetworkInterfaceOperationTypeAddAddress           NetworkInterfaceOperationType = "add_address"
+	NetworkInterfaceOperationTypeRemoveAddress        NetworkInterfaceOperationType = "remove_address"
+	NetworkInterfaceOperationTypeDelete               NetworkInterfaceOperationType = "delete"
 )
 
 // AllValues returns all NetworkInterfaceOperationType values.
@@ -6623,6 +6656,9 @@ func (NetworkInterfaceOperationType) AllValues() []NetworkInterfaceOperationType
 		NetworkInterfaceOperationTypeAttach,
 		NetworkInterfaceOperationTypeDetach,
 		NetworkInterfaceOperationTypeAssociateElasticIP,
+		NetworkInterfaceOperationTypeUpdateSecurityGroups,
+		NetworkInterfaceOperationTypeAddAddress,
+		NetworkInterfaceOperationTypeRemoveAddress,
 		NetworkInterfaceOperationTypeDelete,
 	}
 }
@@ -6637,6 +6673,12 @@ func (s NetworkInterfaceOperationType) MarshalText() ([]byte, error) {
 	case NetworkInterfaceOperationTypeDetach:
 		return []byte(s), nil
 	case NetworkInterfaceOperationTypeAssociateElasticIP:
+		return []byte(s), nil
+	case NetworkInterfaceOperationTypeUpdateSecurityGroups:
+		return []byte(s), nil
+	case NetworkInterfaceOperationTypeAddAddress:
+		return []byte(s), nil
+	case NetworkInterfaceOperationTypeRemoveAddress:
 		return []byte(s), nil
 	case NetworkInterfaceOperationTypeDelete:
 		return []byte(s), nil
@@ -6659,6 +6701,15 @@ func (s *NetworkInterfaceOperationType) UnmarshalText(data []byte) error {
 		return nil
 	case NetworkInterfaceOperationTypeAssociateElasticIP:
 		*s = NetworkInterfaceOperationTypeAssociateElasticIP
+		return nil
+	case NetworkInterfaceOperationTypeUpdateSecurityGroups:
+		*s = NetworkInterfaceOperationTypeUpdateSecurityGroups
+		return nil
+	case NetworkInterfaceOperationTypeAddAddress:
+		*s = NetworkInterfaceOperationTypeAddAddress
+		return nil
+	case NetworkInterfaceOperationTypeRemoveAddress:
+		*s = NetworkInterfaceOperationTypeRemoveAddress
 		return nil
 	case NetworkInterfaceOperationTypeDelete:
 		*s = NetworkInterfaceOperationTypeDelete
@@ -14958,10 +15009,20 @@ func (s *UpdateLaunchTemplateRequestBody) SetDefaultVersion(val OptInt64) {
 	s.DefaultVersion = val
 }
 
+type UpdateNetworkInterfaceAccepted NetworkInterface
+
+func (*UpdateNetworkInterfaceAccepted) updateNetworkInterfaceRes() {}
+
+type UpdateNetworkInterfaceOK NetworkInterface
+
+func (*UpdateNetworkInterfaceOK) updateNetworkInterfaceRes() {}
+
 // The mutable fields of a network interface, all optional, at least one required.
 // Ref: #/components/schemas/UpdateNetworkInterfaceRequestBody
 type UpdateNetworkInterfaceRequestBody struct {
 	Name OptString `json:"name"`
+	// The complete new set of security groups, of the network interface's virtual private cloud.
+	SecurityGroupIds []SecurityGroupID `json:"security_group_ids"`
 }
 
 // GetName returns the value of Name.
@@ -14969,9 +15030,19 @@ func (s *UpdateNetworkInterfaceRequestBody) GetName() OptString {
 	return s.Name
 }
 
+// GetSecurityGroupIds returns the value of SecurityGroupIds.
+func (s *UpdateNetworkInterfaceRequestBody) GetSecurityGroupIds() []SecurityGroupID {
+	return s.SecurityGroupIds
+}
+
 // SetName sets the value of Name.
 func (s *UpdateNetworkInterfaceRequestBody) SetName(val OptString) {
 	s.Name = val
+}
+
+// SetSecurityGroupIds sets the value of SecurityGroupIds.
+func (s *UpdateNetworkInterfaceRequestBody) SetSecurityGroupIds(val []SecurityGroupID) {
+	s.SecurityGroupIds = val
 }
 
 type UpdatePeeringAccepted PeeringResource

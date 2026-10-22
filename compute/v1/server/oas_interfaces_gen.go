@@ -125,6 +125,10 @@ type UpdateElasticIPRes interface {
 	updateElasticIPRes()
 }
 
+type UpdateNetworkInterfaceRes interface {
+	updateNetworkInterfaceRes()
+}
+
 type UpdatePeeringRes interface {
 	updatePeeringRes()
 }

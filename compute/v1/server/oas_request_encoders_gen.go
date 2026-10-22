@@ -136,6 +136,20 @@ func encodeCreateNetworkInterfaceRequest(
 	return nil
 }
 
+func encodeCreateNetworkInterfaceAddressRequest(
+	req *CreateNetworkInterfaceAddressRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCreatePeeringRequest(
 	req *CreatePeeringRequestBody,
 	r *http.Request,

@@ -906,6 +906,48 @@ func (s *CreateLaunchTemplateResponseBody) Validate() error {
 	return nil
 }
 
+func (s *CreateNetworkInterfaceAddressRequestBody) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if value, ok := s.Address.Get(); ok {
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     15,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(value)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "address",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
 func (s *CreateNetworkInterfaceRequestBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -4989,6 +5031,34 @@ func (s *NetworkInterface) Validate() error {
 		})
 	}
 	if err := func() error {
+		if s.SecurityGroupIds == nil {
+			return errors.New("nil is invalid value")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.SecurityGroupIds {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "security_group_ids",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		var failures []validate.FieldError
 		for i, elem := range s.Addresses {
 			if err := func() error {
@@ -5476,6 +5546,12 @@ func (s NetworkInterfaceOperationType) Validate() error {
 	case "detach":
 		return nil
 	case "associate_elastic_ip":
+		return nil
+	case "update_security_groups":
+		return nil
+	case "add_address":
+		return nil
+	case "remove_address":
 		return nil
 	case "delete":
 		return nil
@@ -8949,6 +9025,22 @@ func (s *UpdateLaunchTemplateRequestBody) Validate() error {
 	return nil
 }
 
+func (s *UpdateNetworkInterfaceAccepted) Validate() error {
+	alias := (*NetworkInterface)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *UpdateNetworkInterfaceOK) Validate() error {
+	alias := (*NetworkInterface)(s)
+	if err := alias.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *UpdateNetworkInterfaceRequestBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -8982,6 +9074,42 @@ func (s *UpdateNetworkInterfaceRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "name",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.SecurityGroupIds == nil {
+			return nil // optional
+		}
+		if err := (validate.Array{
+			MinLength:    1,
+			MinLengthSet: true,
+			MaxLength:    5,
+			MaxLengthSet: true,
+		}).ValidateLength(len(s.SecurityGroupIds)); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.SecurityGroupIds {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "security_group_ids",
 			Error: err,
 		})
 	}
