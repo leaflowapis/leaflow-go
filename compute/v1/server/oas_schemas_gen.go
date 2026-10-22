@@ -13780,17 +13780,15 @@ func (s *VirtualMachineRestrictionSource) UnmarshalText(data []byte) error {
 type VirtualMachineStatus string
 
 const (
-	VirtualMachineStatusPending          VirtualMachineStatus = "pending"
-	VirtualMachineStatusActive           VirtualMachineStatus = "active"
-	VirtualMachineStatusStopped          VirtualMachineStatus = "stopped"
-	VirtualMachineStatusPaused           VirtualMachineStatus = "paused"
-	VirtualMachineStatusSuspended        VirtualMachineStatus = "suspended"
-	VirtualMachineStatusShelved          VirtualMachineStatus = "shelved"
-	VirtualMachineStatusShelvedOffloaded VirtualMachineStatus = "shelved_offloaded"
-	VirtualMachineStatusRescued          VirtualMachineStatus = "rescued"
-	VirtualMachineStatusDeleted          VirtualMachineStatus = "deleted"
-	VirtualMachineStatusFailed           VirtualMachineStatus = "failed"
-	VirtualMachineStatusError            VirtualMachineStatus = "error"
+	VirtualMachineStatusPending   VirtualMachineStatus = "pending"
+	VirtualMachineStatusActive    VirtualMachineStatus = "active"
+	VirtualMachineStatusStopped   VirtualMachineStatus = "stopped"
+	VirtualMachineStatusPaused    VirtualMachineStatus = "paused"
+	VirtualMachineStatusSuspended VirtualMachineStatus = "suspended"
+	VirtualMachineStatusRescued   VirtualMachineStatus = "rescued"
+	VirtualMachineStatusDeleted   VirtualMachineStatus = "deleted"
+	VirtualMachineStatusFailed    VirtualMachineStatus = "failed"
+	VirtualMachineStatusError     VirtualMachineStatus = "error"
 )
 
 // AllValues returns all VirtualMachineStatus values.
@@ -13801,8 +13799,6 @@ func (VirtualMachineStatus) AllValues() []VirtualMachineStatus {
 		VirtualMachineStatusStopped,
 		VirtualMachineStatusPaused,
 		VirtualMachineStatusSuspended,
-		VirtualMachineStatusShelved,
-		VirtualMachineStatusShelvedOffloaded,
 		VirtualMachineStatusRescued,
 		VirtualMachineStatusDeleted,
 		VirtualMachineStatusFailed,
@@ -13822,10 +13818,6 @@ func (s VirtualMachineStatus) MarshalText() ([]byte, error) {
 	case VirtualMachineStatusPaused:
 		return []byte(s), nil
 	case VirtualMachineStatusSuspended:
-		return []byte(s), nil
-	case VirtualMachineStatusShelved:
-		return []byte(s), nil
-	case VirtualMachineStatusShelvedOffloaded:
 		return []byte(s), nil
 	case VirtualMachineStatusRescued:
 		return []byte(s), nil
@@ -13857,12 +13849,6 @@ func (s *VirtualMachineStatus) UnmarshalText(data []byte) error {
 		return nil
 	case VirtualMachineStatusSuspended:
 		*s = VirtualMachineStatusSuspended
-		return nil
-	case VirtualMachineStatusShelved:
-		*s = VirtualMachineStatusShelved
-		return nil
-	case VirtualMachineStatusShelvedOffloaded:
-		*s = VirtualMachineStatusShelvedOffloaded
 		return nil
 	case VirtualMachineStatusRescued:
 		*s = VirtualMachineStatusRescued

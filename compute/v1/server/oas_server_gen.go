@@ -20,7 +20,8 @@ type Handler interface {
 	// AttachVirtualMachineNetworkInterface implements attach-virtual-machine-network-interface operation.
 	//
 	// Returns the network interface; the virtual machine shows the `attach_network_interface` operation
-	// and the interface the `attach` operation until the attachment is confirmed.
+	// and the interface the `attach` operation until the attachment is confirmed. The virtual machine has
+	// to be running; a stopped one holds no host and is refused with 409 `VIRTUAL_MACHINE_NOT_RUNNING`.
 	//
 	// POST /api/v1/virtual-machines/{virtualMachineId}/network-interfaces
 	AttachVirtualMachineNetworkInterface(ctx context.Context, req *AttachNetworkInterfaceRequestBody, params AttachVirtualMachineNetworkInterfaceParams) (AttachVirtualMachineNetworkInterfaceRes, error)
@@ -317,6 +318,10 @@ type Handler interface {
 	//
 	// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
 	//
+	// The virtual machine has to be running; a stopped one holds no host and is refused with 409
+	// `VIRTUAL_MACHINE_NOT_RUNNING`. Start it first; a virtual machine whose operating system no longer
+	// boots still starts.
+	//
 	// The image this virtual machine already runs is accepted even after the platform has withdrawn it,
 	// since rebuilding is the only way back into a virtual machine broken from the inside. Any other
 	// withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new
@@ -522,7 +527,8 @@ type Handler interface {
 	// DetachVirtualMachineNetworkInterface implements detach-virtual-machine-network-interface operation.
 	//
 	// The primary network interface cannot be detached; the virtual machine would lose its network
-	// address.
+	// address. The virtual machine has to be running; a stopped one holds no host and is refused with 409
+	// `VIRTUAL_MACHINE_NOT_RUNNING`.
 	//
 	// Returns the network interface; the virtual machine shows the `detach_network_interface` operation
 	// and the interface the `detach` operation until it is detached.
@@ -927,7 +933,8 @@ type Handler interface {
 	//
 	// Boots a temporary rescue environment while retaining the original system disk. Changing
 	// `power_state` or `machine_type_id`, rebuilding and putting a password are unavailable in rescue
-	// mode.
+	// mode. A stopped virtual machine holds no host and is refused with 409 `VIRTUAL_MACHINE_NOT_RUNNING`;
+	// start it first, which works even when its operating system no longer boots.
 	//
 	// The request does not name an image. The rescue image is the region's enabled rescue image for the
 	// architecture of the virtual machine's system disk. A region and architecture with no enabled rescue
@@ -1079,17 +1086,32 @@ type Handler interface {
 	//    put credentials here. The note is visible to platform operators.
 	//
 	// `power_state` is the state the virtual machine should be in, and the request returns 202 with the
-	// virtual machine as it is when the request is accepted. `running` starts it: outstanding restrictions
-	// can prevent starting, and the virtual machine shows the `start` operation until it is running or the
-	// start has failed. `stopped` stops it: a stopped virtual machine keeps its disks, network attachments
-	// and sellable quota, and shows the `stop` operation until it is stopped or the stop has failed.
+	// virtual machine as it is when the request is accepted.
 	//
-	// `machine_type_id` resizes the virtual machine and returns 202 with the virtual machine and the
-	// Checkout Session for the change, including for metered terms. The virtual machine keeps its usage
-	// type and period, priced with the target type's matching option; a target type without that option is
-	// refused with 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing accepts the order. Do
-	// not submit the change again after paying. After an uncertain response, look the Checkout Session up
-	// in Billing before submitting again.
+	//  - `stopped` stops it and releases its host, as on AWS and Alibaba Cloud: a stopped virtual machine
+	//    keeps its disks, network interfaces, addresses and quota, holds no vCPU or memory, and is not
+	//    charged for compute. It shows the `stop` operation until it is stopped.
+	//  - `running` starts it, placing it on a host of its availability zone again; outstanding
+	//    restrictions can prevent starting. When no host of the zone has room for it now, the request is
+	//    refused with 409 `VIRTUAL_MACHINE_START_NO_HOST_ROOM` and the virtual machine stays stopped; try
+	//    again later. Another start can take the room after the request was accepted, and the start then
+	//    ends with the virtual machine still stopped. It shows the `start` operation until it is running
+	//    or the start has failed.
+	//  - Starting connects its disks afresh, so a disk grown while attached runs at the performance of its
+	//    new size from the next start after a stop. A virtual machine powered off from inside its
+	//    operating system keeps its host and starts on it again; stop it with `power_state` first for its
+	//    disks to be connected afresh.
+	//  - A stopped virtual machine holds no host, so changing `machine_type_id`, rebuilding it, rescuing
+	//    it and attaching or detaching a network interface are refused with 409
+	//    `VIRTUAL_MACHINE_NOT_RUNNING` until it is started. Disks can be attached and detached while it is
+	//    stopped.
+	//
+	// `machine_type_id` resizes a running virtual machine, which restarts once during the resize, and
+	// returns 202 with the virtual machine and the Checkout Session for the change, including for metered
+	// terms. The virtual machine keeps its usage type and period, priced with the target type's matching
+	// option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. The
+	// resize starts once Billing accepts the order. Do not submit the change again after paying. After an
+	// uncertain response, look the Checkout Session up in Billing before submitting again.
 	//
 	// The virtual machine shows the `resize` operation until the resize is applied, its Checkout Session
 	// expires or its order is canceled, so other operations and a second resize are refused with

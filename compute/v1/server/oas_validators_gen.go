@@ -8551,10 +8551,6 @@ func (s VirtualMachineStatus) Validate() error {
 		return nil
 	case "suspended":
 		return nil
-	case "shelved":
-		return nil
-	case "shelved_offloaded":
-		return nil
 	case "rescued":
 		return nil
 	case "deleted":

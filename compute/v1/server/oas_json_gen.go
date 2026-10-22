@@ -25995,10 +25995,6 @@ func (s *VirtualMachineStatus) Decode(d *jx.Decoder) error {
 		*s = VirtualMachineStatusPaused
 	case VirtualMachineStatusSuspended:
 		*s = VirtualMachineStatusSuspended
-	case VirtualMachineStatusShelved:
-		*s = VirtualMachineStatusShelved
-	case VirtualMachineStatusShelvedOffloaded:
-		*s = VirtualMachineStatusShelvedOffloaded
 	case VirtualMachineStatusRescued:
 		*s = VirtualMachineStatusRescued
 	case VirtualMachineStatusDeleted:
