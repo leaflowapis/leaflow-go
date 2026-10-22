@@ -123,7 +123,7 @@ type Invoker interface {
 	CreateDiskRevert(ctx context.Context, request *CreateDiskRevertRequestBody, params CreateDiskRevertParams) (CreateDiskRevertRes, error)
 	// CreateElasticIP invokes create-elastic-ip operation.
 	//
-	// Select a public elastic IP type. The elastic IP is bought through a Billing Checkout Session, and no
+	// Select an elastic IP line. The elastic IP is bought through a Billing Checkout Session, and no
 	// address is allocated before its order is accepted.
 	//
 	// Returns the elastic IP as `pending` with its Checkout Session; `address` is null until the address
@@ -395,9 +395,10 @@ type Invoker interface {
 	// cleanup is confirmed; the address then immediately returns to available inventory, with no cooldown
 	// period. Deleting the association or replacing it alone does not release the address.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the elastic IP. It is released by canceling the
-	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_set`.
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for it, including a
+	// pay-as-you-go subscription, which every elastic IP has for its address. `meta.resource_id` names the
+	// elastic IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through
+	// Billing, the same set as its `release_set`: the address's and the network's together.
 	//
 	// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
 	// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
@@ -598,13 +599,13 @@ type Invoker interface {
 	//
 	// GET /api/v1/elastic-ips/{elasticIpId}/association
 	GetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (*ElasticIPAssociation, error)
-	// GetElasticIPType invokes get-elastic-ip-type operation.
+	// GetElasticIPLine invokes get-elastic-ip-line operation.
 	//
-	// Includes off-sale or retired products referenced by existing elastic IPs. No inventory or gateway
-	// facts are returned.
+	// Includes lines off sale that existing elastic IPs are on. No inventory or gateway facts are
+	// returned.
 	//
-	// GET /api/v1/elastic-ip-types/{elasticIpTypeId}
-	GetElasticIPType(ctx context.Context, params GetElasticIPTypeParams) (*ElasticIPType, error)
+	// GET /api/v1/elastic-ip-lines/{elasticIpLineId}
+	GetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (*ElasticIPLine, error)
 	// GetMachineType invokes get-machine-type operation.
 	//
 	// Returns only an on-sale machine type, under the same access rules as listing. Off-sale, retired or
@@ -767,14 +768,15 @@ type Invoker interface {
 	//
 	// GET /api/v1/disks
 	ListDisks(ctx context.Context, params ListDisksParams) (*DiskListResponseBody, error)
-	// ListElasticIPTypes invokes list-elastic-ip-types operation.
+	// ListElasticIPLines invokes list-elastic-ip-lines operation.
 	//
-	// Lists on-sale products. Region is optional. Prices, commercial terms and checkout are read directly
-	// from Billing. `q` searches the names and descriptions of the on-sale products; filters combine with
-	// AND, and pagination is independent of them.
+	// Lists the lines on sale. A line is the network an elastic IP is bought on, with the bandwidth that
+	// can be chosen and the two Billing Plans its elastic IPs are paid under. Region is optional. Prices,
+	// commercial terms and checkout are read directly from Billing. `q` searches the names and
+	// descriptions of the lines on sale; filters combine with AND, and pagination is independent of them.
 	//
-	// GET /api/v1/elastic-ip-types
-	ListElasticIPTypes(ctx context.Context, params ListElasticIPTypesParams) (*ElasticIPTypeListResponseBody, error)
+	// GET /api/v1/elastic-ip-lines
+	ListElasticIPLines(ctx context.Context, params ListElasticIPLinesParams) (*ElasticIPLineListResponseBody, error)
 	// ListElasticIps invokes list-elastic-ips operation.
 	//
 	// List elastic IPs.
@@ -1033,13 +1035,23 @@ type Invoker interface {
 	// and `proration_date` belong to the purchase of the `bandwidth_mbps` change and are accepted only
 	// together with it.
 	//
-	// The change goes through a Checkout Session that keeps the elastic IP's usage type and period; no
-	// separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The
-	// elastic IP shows the `update_bandwidth` operation until the change is applied, its Checkout Session
-	// expires or its order is canceled, so other operations and a second change are refused with
-	// `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If
-	// checkout is not completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its
-	// value and Billing shows the outcome.
+	// No separate bandwidth resource is created, and the limit applies to inbound and outbound traffic
+	// alike. The new value must lie within the line's bandwidth range and step, otherwise the request is
+	// refused with `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic IP's network
+	// subscription:
+	//
+	//  - Prepaid: the change goes through a Checkout Session that changes the network subscription, priced
+	//    for the rest of its period. It starts once Billing accepts the order; if checkout is not
+	//    completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and
+	//    Billing shows the outcome.
+	//  - Pay-as-you-go: there is no checkout. The change starts at once, `checkout_session_id` and
+	//    `order_id` are null, and the new limit is metered from the instant it is applied; if it fails,
+	//    the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
+	//    `ELASTIC_IP_CHECKOUT_UNUSED`.
+	//
+	// The elastic IP shows the `update_bandwidth` operation until the change is applied or ends, so other
+	// operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit
+	// stays in effect until the change is applied.
 	//
 	// While the address is associated with a virtual machine, the limit must not exceed the
 	// `max_bandwidth_mbps` of that virtual machine's type; a higher limit is refused with
@@ -1963,7 +1975,7 @@ func (c *Client) sendCreateDiskRevert(ctx context.Context, request *CreateDiskRe
 
 // CreateElasticIP invokes create-elastic-ip operation.
 //
-// Select a public elastic IP type. The elastic IP is bought through a Billing Checkout Session, and no
+// Select an elastic IP line. The elastic IP is bought through a Billing Checkout Session, and no
 // address is allocated before its order is accepted.
 //
 // Returns the elastic IP as `pending` with its Checkout Session; `address` is null until the address
@@ -4214,9 +4226,10 @@ func (c *Client) sendDeleteDiskBackup(ctx context.Context, params DeleteDiskBack
 // cleanup is confirmed; the address then immediately returns to available inventory, with no cooldown
 // period. Deleting the association or replacing it alone does not release the address.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
-// pay-as-you-go subscription. `meta.resource_id` names the elastic IP. It is released by canceling the
-// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_set`.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for it, including a
+// pay-as-you-go subscription, which every elastic IP has for its address. `meta.resource_id` names the
+// elastic IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through
+// Billing, the same set as its `release_set`: the address's and the network's together.
 //
 // Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
@@ -7281,22 +7294,22 @@ func (c *Client) sendGetElasticIPAssociation(ctx context.Context, params GetElas
 	return result, nil
 }
 
-// GetElasticIPType invokes get-elastic-ip-type operation.
+// GetElasticIPLine invokes get-elastic-ip-line operation.
 //
-// Includes off-sale or retired products referenced by existing elastic IPs. No inventory or gateway
-// facts are returned.
+// Includes lines off sale that existing elastic IPs are on. No inventory or gateway facts are
+// returned.
 //
-// GET /api/v1/elastic-ip-types/{elasticIpTypeId}
-func (c *Client) GetElasticIPType(ctx context.Context, params GetElasticIPTypeParams) (*ElasticIPType, error) {
-	res, err := c.sendGetElasticIPType(ctx, params)
+// GET /api/v1/elastic-ip-lines/{elasticIpLineId}
+func (c *Client) GetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (*ElasticIPLine, error) {
+	res, err := c.sendGetElasticIPLine(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetElasticIPType(ctx context.Context, params GetElasticIPTypeParams) (res *ElasticIPType, err error) {
+func (c *Client) sendGetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (res *ElasticIPLine, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-elastic-ip-type"),
+		otelogen.OperationID("get-elastic-ip-line"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/elastic-ip-types/{elasticIpTypeId}"),
+		semconv.URLTemplateKey.String("/api/v1/elastic-ip-lines/{elasticIpLineId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -7312,7 +7325,7 @@ func (c *Client) sendGetElasticIPType(ctx context.Context, params GetElasticIPTy
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetElasticIPTypeOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, GetElasticIPLineOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -7330,16 +7343,16 @@ func (c *Client) sendGetElasticIPType(ctx context.Context, params GetElasticIPTy
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [2]string
-	pathParts[0] = "/api/v1/elastic-ip-types/"
+	pathParts[0] = "/api/v1/elastic-ip-lines/"
 	{
-		// Encode "elasticIpTypeId" parameter.
+		// Encode "elasticIpLineId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "elasticIpTypeId",
+			Param:   "elasticIpLineId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.ElasticIpTypeId); true {
+			if unwrapped := string(params.ElasticIpLineId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -7365,7 +7378,7 @@ func (c *Client) sendGetElasticIPType(ctx context.Context, params GetElasticIPTy
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, GetElasticIPTypeOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, GetElasticIPLineOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -7408,7 +7421,7 @@ func (c *Client) sendGetElasticIPType(ctx context.Context, params GetElasticIPTy
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeGetElasticIPTypeResponse(resp)
+	result, err := decodeGetElasticIPLineResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -10775,23 +10788,24 @@ func (c *Client) sendListDisks(ctx context.Context, params ListDisksParams) (res
 	return result, nil
 }
 
-// ListElasticIPTypes invokes list-elastic-ip-types operation.
+// ListElasticIPLines invokes list-elastic-ip-lines operation.
 //
-// Lists on-sale products. Region is optional. Prices, commercial terms and checkout are read directly
-// from Billing. `q` searches the names and descriptions of the on-sale products; filters combine with
-// AND, and pagination is independent of them.
+// Lists the lines on sale. A line is the network an elastic IP is bought on, with the bandwidth that
+// can be chosen and the two Billing Plans its elastic IPs are paid under. Region is optional. Prices,
+// commercial terms and checkout are read directly from Billing. `q` searches the names and
+// descriptions of the lines on sale; filters combine with AND, and pagination is independent of them.
 //
-// GET /api/v1/elastic-ip-types
-func (c *Client) ListElasticIPTypes(ctx context.Context, params ListElasticIPTypesParams) (*ElasticIPTypeListResponseBody, error) {
-	res, err := c.sendListElasticIPTypes(ctx, params)
+// GET /api/v1/elastic-ip-lines
+func (c *Client) ListElasticIPLines(ctx context.Context, params ListElasticIPLinesParams) (*ElasticIPLineListResponseBody, error) {
+	res, err := c.sendListElasticIPLines(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListElasticIPTypes(ctx context.Context, params ListElasticIPTypesParams) (res *ElasticIPTypeListResponseBody, err error) {
+func (c *Client) sendListElasticIPLines(ctx context.Context, params ListElasticIPLinesParams) (res *ElasticIPLineListResponseBody, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-elastic-ip-types"),
+		otelogen.OperationID("list-elastic-ip-lines"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/elastic-ip-types"),
+		semconv.URLTemplateKey.String("/api/v1/elastic-ip-lines"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -10807,7 +10821,7 @@ func (c *Client) sendListElasticIPTypes(ctx context.Context, params ListElasticI
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListElasticIPTypesOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListElasticIPLinesOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -10825,7 +10839,7 @@ func (c *Client) sendListElasticIPTypes(ctx context.Context, params ListElasticI
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/api/v1/elastic-ip-types"
+	pathParts[0] = "/api/v1/elastic-ip-lines"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -10914,7 +10928,7 @@ func (c *Client) sendListElasticIPTypes(ctx context.Context, params ListElasticI
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListElasticIPTypesOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, ListElasticIPLinesOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -10957,7 +10971,7 @@ func (c *Client) sendListElasticIPTypes(ctx context.Context, params ListElasticI
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeListElasticIPTypesResponse(resp)
+	result, err := decodeListElasticIPLinesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -14985,13 +14999,23 @@ func (c *Client) sendUpdateDiskBackup(ctx context.Context, request *UpdateDiskBa
 // and `proration_date` belong to the purchase of the `bandwidth_mbps` change and are accepted only
 // together with it.
 //
-// The change goes through a Checkout Session that keeps the elastic IP's usage type and period; no
-// separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The
-// elastic IP shows the `update_bandwidth` operation until the change is applied, its Checkout Session
-// expires or its order is canceled, so other operations and a second change are refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If
-// checkout is not completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its
-// value and Billing shows the outcome.
+// No separate bandwidth resource is created, and the limit applies to inbound and outbound traffic
+// alike. The new value must lie within the line's bandwidth range and step, otherwise the request is
+// refused with `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic IP's network
+// subscription:
+//
+//   - Prepaid: the change goes through a Checkout Session that changes the network subscription, priced
+//     for the rest of its period. It starts once Billing accepts the order; if checkout is not
+//     completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and
+//     Billing shows the outcome.
+//   - Pay-as-you-go: there is no checkout. The change starts at once, `checkout_session_id` and
+//     `order_id` are null, and the new limit is metered from the instant it is applied; if it fails,
+//     the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
+//     `ELASTIC_IP_CHECKOUT_UNUSED`.
+//
+// The elastic IP shows the `update_bandwidth` operation until the change is applied or ends, so other
+// operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit
+// stays in effect until the change is applied.
 //
 // While the address is associated with a virtual machine, the limit must not exceed the
 // `max_bandwidth_mbps` of that virtual machine's type; a higher limit is refused with

@@ -25,7 +25,7 @@ var regexMap = map[string]ogenregex.Regexp{
 	"^disktype_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":      ogenregex.MustCompile("^disktype_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^eip_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":           ogenregex.MustCompile("^eip_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^eipassoc_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":      ogenregex.MustCompile("^eipassoc_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
-	"^eiptype_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":       ogenregex.MustCompile("^eiptype_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
+	"^eipline_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":       ogenregex.MustCompile("^eipline_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^eni_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":           ogenregex.MustCompile("^eni_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^eniaddr_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":       ogenregex.MustCompile("^eniaddr_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^image_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":         ogenregex.MustCompile("^image_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),

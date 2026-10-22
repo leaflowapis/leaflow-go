@@ -2550,24 +2550,24 @@ func decodeGetElasticIPAssociationParams(args [1]string, argsEscaped bool, r *ht
 	return params, nil
 }
 
-// GetElasticIPTypeParams is parameters of get-elastic-ip-type operation.
-type GetElasticIPTypeParams struct {
-	ElasticIpTypeId ElasticIPTypeID
+// GetElasticIPLineParams is parameters of get-elastic-ip-line operation.
+type GetElasticIPLineParams struct {
+	ElasticIpLineId ElasticIPLineID
 }
 
-func unpackGetElasticIPTypeParams(packed middleware.Parameters) (params GetElasticIPTypeParams) {
+func unpackGetElasticIPLineParams(packed middleware.Parameters) (params GetElasticIPLineParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "elasticIpTypeId",
+			Name: "elasticIpLineId",
 			In:   "path",
 		}
-		params.ElasticIpTypeId = packed[key].(ElasticIPTypeID)
+		params.ElasticIpLineId = packed[key].(ElasticIPLineID)
 	}
 	return params
 }
 
-func decodeGetElasticIPTypeParams(args [1]string, argsEscaped bool, r *http.Request) (params GetElasticIPTypeParams, _ error) {
-	// Decode path: elasticIpTypeId.
+func decodeGetElasticIPLineParams(args [1]string, argsEscaped bool, r *http.Request) (params GetElasticIPLineParams, _ error) {
+	// Decode path: elasticIpLineId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -2579,14 +2579,14 @@ func decodeGetElasticIPTypeParams(args [1]string, argsEscaped bool, r *http.Requ
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "elasticIpTypeId",
+				Param:   "elasticIpLineId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
 			})
 
 			if err := func() error {
-				var paramsDotElasticIpTypeIdVal string
+				var paramsDotElasticIpLineIdVal string
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
@@ -2598,18 +2598,18 @@ func decodeGetElasticIPTypeParams(args [1]string, argsEscaped bool, r *http.Requ
 						return err
 					}
 
-					paramsDotElasticIpTypeIdVal = c
+					paramsDotElasticIpLineIdVal = c
 					return nil
 				}(); err != nil {
 					return err
 				}
-				params.ElasticIpTypeId = ElasticIPTypeID(paramsDotElasticIpTypeIdVal)
+				params.ElasticIpLineId = ElasticIPLineID(paramsDotElasticIpLineIdVal)
 				return nil
 			}(); err != nil {
 				return err
 			}
 			if err := func() error {
-				if err := params.ElasticIpTypeId.Validate(); err != nil {
+				if err := params.ElasticIpLineId.Validate(); err != nil {
 					return err
 				}
 				return nil
@@ -2622,7 +2622,7 @@ func decodeGetElasticIPTypeParams(args [1]string, argsEscaped bool, r *http.Requ
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "elasticIpTypeId",
+			Name: "elasticIpLineId",
 			In:   "path",
 			Err:  err,
 		}
@@ -5522,11 +5522,10 @@ func decodeListDisksParams(args [0]string, argsEscaped bool, r *http.Request) (p
 	return params, nil
 }
 
-// ListElasticIPTypesParams is parameters of list-elastic-ip-types operation.
-type ListElasticIPTypesParams struct {
+// ListElasticIPLinesParams is parameters of list-elastic-ip-lines operation.
+type ListElasticIPLinesParams struct {
 	RegionID OptRegionID `json:",omitempty,omitzero"`
-	// Search text matched against product names and descriptions; combined with the other filters using
-	// AND.
+	// Search text matched against line names and descriptions; combined with the other filters using AND.
 	Q OptString `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
@@ -5534,7 +5533,7 @@ type ListElasticIPTypesParams struct {
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
-func unpackListElasticIPTypesParams(packed middleware.Parameters) (params ListElasticIPTypesParams) {
+func unpackListElasticIPLinesParams(packed middleware.Parameters) (params ListElasticIPLinesParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "region_id",
@@ -5574,7 +5573,7 @@ func unpackListElasticIPTypesParams(packed middleware.Parameters) (params ListEl
 	return params
 }
 
-func decodeListElasticIPTypesParams(args [0]string, argsEscaped bool, r *http.Request) (params ListElasticIPTypesParams, _ error) {
+func decodeListElasticIPLinesParams(args [0]string, argsEscaped bool, r *http.Request) (params ListElasticIPLinesParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
 	// Decode query: region_id.
 	if err := func() error {

@@ -102,7 +102,7 @@ type Handler interface {
 	CreateDiskRevert(ctx context.Context, req *CreateDiskRevertRequestBody, params CreateDiskRevertParams) (CreateDiskRevertRes, error)
 	// CreateElasticIP implements create-elastic-ip operation.
 	//
-	// Select a public elastic IP type. The elastic IP is bought through a Billing Checkout Session, and no
+	// Select an elastic IP line. The elastic IP is bought through a Billing Checkout Session, and no
 	// address is allocated before its order is accepted.
 	//
 	// Returns the elastic IP as `pending` with its Checkout Session; `address` is null until the address
@@ -374,9 +374,10 @@ type Handler interface {
 	// cleanup is confirmed; the address then immediately returns to available inventory, with no cooldown
 	// period. Deleting the association or replacing it alone does not release the address.
 	//
-	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
-	// pay-as-you-go subscription. `meta.resource_id` names the elastic IP. It is released by canceling the
-	// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_set`.
+	// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for it, including a
+	// pay-as-you-go subscription, which every elastic IP has for its address. `meta.resource_id` names the
+	// elastic IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through
+	// Billing, the same set as its `release_set`: the address's and the network's together.
 	//
 	// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
 	// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
@@ -577,13 +578,13 @@ type Handler interface {
 	//
 	// GET /api/v1/elastic-ips/{elasticIpId}/association
 	GetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (*ElasticIPAssociation, error)
-	// GetElasticIPType implements get-elastic-ip-type operation.
+	// GetElasticIPLine implements get-elastic-ip-line operation.
 	//
-	// Includes off-sale or retired products referenced by existing elastic IPs. No inventory or gateway
-	// facts are returned.
+	// Includes lines off sale that existing elastic IPs are on. No inventory or gateway facts are
+	// returned.
 	//
-	// GET /api/v1/elastic-ip-types/{elasticIpTypeId}
-	GetElasticIPType(ctx context.Context, params GetElasticIPTypeParams) (*ElasticIPType, error)
+	// GET /api/v1/elastic-ip-lines/{elasticIpLineId}
+	GetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (*ElasticIPLine, error)
 	// GetMachineType implements get-machine-type operation.
 	//
 	// Returns only an on-sale machine type, under the same access rules as listing. Off-sale, retired or
@@ -746,14 +747,15 @@ type Handler interface {
 	//
 	// GET /api/v1/disks
 	ListDisks(ctx context.Context, params ListDisksParams) (*DiskListResponseBody, error)
-	// ListElasticIPTypes implements list-elastic-ip-types operation.
+	// ListElasticIPLines implements list-elastic-ip-lines operation.
 	//
-	// Lists on-sale products. Region is optional. Prices, commercial terms and checkout are read directly
-	// from Billing. `q` searches the names and descriptions of the on-sale products; filters combine with
-	// AND, and pagination is independent of them.
+	// Lists the lines on sale. A line is the network an elastic IP is bought on, with the bandwidth that
+	// can be chosen and the two Billing Plans its elastic IPs are paid under. Region is optional. Prices,
+	// commercial terms and checkout are read directly from Billing. `q` searches the names and
+	// descriptions of the lines on sale; filters combine with AND, and pagination is independent of them.
 	//
-	// GET /api/v1/elastic-ip-types
-	ListElasticIPTypes(ctx context.Context, params ListElasticIPTypesParams) (*ElasticIPTypeListResponseBody, error)
+	// GET /api/v1/elastic-ip-lines
+	ListElasticIPLines(ctx context.Context, params ListElasticIPLinesParams) (*ElasticIPLineListResponseBody, error)
 	// ListElasticIps implements list-elastic-ips operation.
 	//
 	// List elastic IPs.
@@ -1012,13 +1014,23 @@ type Handler interface {
 	// and `proration_date` belong to the purchase of the `bandwidth_mbps` change and are accepted only
 	// together with it.
 	//
-	// The change goes through a Checkout Session that keeps the elastic IP's usage type and period; no
-	// separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The
-	// elastic IP shows the `update_bandwidth` operation until the change is applied, its Checkout Session
-	// expires or its order is canceled, so other operations and a second change are refused with
-	// `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If
-	// checkout is not completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its
-	// value and Billing shows the outcome.
+	// No separate bandwidth resource is created, and the limit applies to inbound and outbound traffic
+	// alike. The new value must lie within the line's bandwidth range and step, otherwise the request is
+	// refused with `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic IP's network
+	// subscription:
+	//
+	//  - Prepaid: the change goes through a Checkout Session that changes the network subscription, priced
+	//    for the rest of its period. It starts once Billing accepts the order; if checkout is not
+	//    completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and
+	//    Billing shows the outcome.
+	//  - Pay-as-you-go: there is no checkout. The change starts at once, `checkout_session_id` and
+	//    `order_id` are null, and the new limit is metered from the instant it is applied; if it fails,
+	//    the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
+	//    `ELASTIC_IP_CHECKOUT_UNUSED`.
+	//
+	// The elastic IP shows the `update_bandwidth` operation until the change is applied or ends, so other
+	// operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit
+	// stays in effect until the change is applied.
 	//
 	// While the address is associated with a virtual machine, the limit must not exceed the
 	// `max_bandwidth_mbps` of that virtual machine's type; a higher limit is refused with

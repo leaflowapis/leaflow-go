@@ -720,13 +720,16 @@ type CreateElasticIPRequestBody struct {
 	// nothing for the traffic, while the address itself bills normally — so the invoice looks correct
 	// and nothing anywhere reports it.
 	//
-	// It is part of this elastic IP resource and uses the same commercial terms, selected from Billing's
-	// catalog. Changing it later updates the same elastic IP through `update-elastic-ip`, not an
-	// independent bandwidth resource.
-	BandwidthMbps int64              `json:"bandwidth_mbps"`
-	TypeID        ElasticIPTypeID    `json:"type_id"`
-	Billing       BillingChoice      `json:"billing"`
-	Checkout      OptCheckoutOptions `json:"checkout"`
+	// It must lie within the line's `min_bandwidth_mbps` and `max_bandwidth_mbps` and be a multiple of its
+	// `bandwidth_step_mbps`, otherwise the request is refused with `ELASTIC_IP_BANDWIDTH_RANGE`. Changing
+	// it later updates the same elastic IP through `update-elastic-ip`, not an independent bandwidth
+	// resource.
+	BandwidthMbps int64           `json:"bandwidth_mbps"`
+	LineID        ElasticIPLineID `json:"line_id"`
+	// The terms of the network subscription, which pays for the bandwidth or the traffic. The address
+	// subscription is always pay-as-you-go and takes no terms. Traffic is only sold pay-as-you-go.
+	Billing  BillingChoice      `json:"billing"`
+	Checkout OptCheckoutOptions `json:"checkout"`
 }
 
 // GetInternetChargeType returns the value of InternetChargeType.
@@ -744,9 +747,9 @@ func (s *CreateElasticIPRequestBody) GetBandwidthMbps() int64 {
 	return s.BandwidthMbps
 }
 
-// GetTypeID returns the value of TypeID.
-func (s *CreateElasticIPRequestBody) GetTypeID() ElasticIPTypeID {
-	return s.TypeID
+// GetLineID returns the value of LineID.
+func (s *CreateElasticIPRequestBody) GetLineID() ElasticIPLineID {
+	return s.LineID
 }
 
 // GetBilling returns the value of Billing.
@@ -774,9 +777,9 @@ func (s *CreateElasticIPRequestBody) SetBandwidthMbps(val int64) {
 	s.BandwidthMbps = val
 }
 
-// SetTypeID sets the value of TypeID.
-func (s *CreateElasticIPRequestBody) SetTypeID(val ElasticIPTypeID) {
-	s.TypeID = val
+// SetLineID sets the value of LineID.
+func (s *CreateElasticIPRequestBody) SetLineID(val ElasticIPLineID) {
+	s.LineID = val
 }
 
 // SetBilling sets the value of Billing.
@@ -2822,9 +2825,6 @@ type DiskResource struct {
 	OrderID           NilUUID `json:"order_id"`
 	// The Billing order item for this resource.
 	OrderItemID NilUUID `json:"order_item_id"`
-	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
-	// until its checkout completes. Null when the resource was not bought through one.
-	CheckoutSessionID NilUUID `json:"checkout_session_id"`
 	// The Billing subscription associated with this resource. It may still be pending; its presence does
 	// not imply delivery or metering. Null when no subscription is associated.
 	SubscriptionID NilUUID `json:"subscription_id"`
@@ -2902,11 +2902,6 @@ func (s *DiskResource) GetOrderID() NilUUID {
 // GetOrderItemID returns the value of OrderItemID.
 func (s *DiskResource) GetOrderItemID() NilUUID {
 	return s.OrderItemID
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *DiskResource) GetCheckoutSessionID() NilUUID {
-	return s.CheckoutSessionID
 }
 
 // GetSubscriptionID returns the value of SubscriptionID.
@@ -2997,11 +2992,6 @@ func (s *DiskResource) SetOrderID(val NilUUID) {
 // SetOrderItemID sets the value of OrderItemID.
 func (s *DiskResource) SetOrderItemID(val NilUUID) {
 	s.OrderItemID = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *DiskResource) SetCheckoutSessionID(val NilUUID) {
-	s.CheckoutSessionID = val
 }
 
 // SetSubscriptionID sets the value of SubscriptionID.
@@ -3100,7 +3090,6 @@ func (s *DiskResourceAccessState) UnmarshalText(data []byte) error {
 type DiskResourceFailureReason string
 
 const (
-	DiskResourceFailureReasonCheckoutExpired    DiskResourceFailureReason = "checkout_expired"
 	DiskResourceFailureReasonOrderDeclined      DiskResourceFailureReason = "order_declined"
 	DiskResourceFailureReasonOrderCanceled      DiskResourceFailureReason = "order_canceled"
 	DiskResourceFailureReasonOrderExpired       DiskResourceFailureReason = "order_expired"
@@ -3111,7 +3100,6 @@ const (
 // AllValues returns all DiskResourceFailureReason values.
 func (DiskResourceFailureReason) AllValues() []DiskResourceFailureReason {
 	return []DiskResourceFailureReason{
-		DiskResourceFailureReasonCheckoutExpired,
 		DiskResourceFailureReasonOrderDeclined,
 		DiskResourceFailureReasonOrderCanceled,
 		DiskResourceFailureReasonOrderExpired,
@@ -3123,8 +3111,6 @@ func (DiskResourceFailureReason) AllValues() []DiskResourceFailureReason {
 // MarshalText implements encoding.TextMarshaler.
 func (s DiskResourceFailureReason) MarshalText() ([]byte, error) {
 	switch s {
-	case DiskResourceFailureReasonCheckoutExpired:
-		return []byte(s), nil
 	case DiskResourceFailureReasonOrderDeclined:
 		return []byte(s), nil
 	case DiskResourceFailureReasonOrderCanceled:
@@ -3143,9 +3129,6 @@ func (s DiskResourceFailureReason) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *DiskResourceFailureReason) UnmarshalText(data []byte) error {
 	switch DiskResourceFailureReason(data) {
-	case DiskResourceFailureReasonCheckoutExpired:
-		*s = DiskResourceFailureReasonCheckoutExpired
-		return nil
 	case DiskResourceFailureReasonOrderDeclined:
 		*s = DiskResourceFailureReasonOrderDeclined
 		return nil
@@ -3467,8 +3450,10 @@ func (s *DiskTypeResourceMedia) UnmarshalText(data []byte) error {
 }
 
 // One public IP resource, including its bandwidth configuration. Bandwidth has no separate Compute
-// resource ID; one subscription pays for the address and its bandwidth. Changing bandwidth updates
-// this same resource, not another allocation.
+// resource ID. Two subscriptions of one order pay for it: the address subscription, always
+// pay-as-you-go, charges for the address while it is not associated with anything, and the network
+// subscription, on the terms chosen at purchase, charges for the bandwidth or the traffic. Changing
+// bandwidth updates this same resource, not another allocation.
 // Ref: #/components/schemas/ElasticIP
 type ElasticIP struct {
 	InternetChargeType InternetChargeType `json:"internet_charge_type"`
@@ -3481,24 +3466,30 @@ type ElasticIP struct {
 	BandwidthMbps NilInt64        `json:"bandwidth_mbps"`
 	CreatedAt     time.Time       `json:"created_at"`
 	ID            ElasticIPID     `json:"id"`
-	TypeID        ElasticIPTypeID `json:"type_id"`
+	LineID        ElasticIPLineID `json:"line_id"`
 	RegionID      RegionID        `json:"region_id"`
 	// `pending` until the address is created, with no address allocated before the order is accepted and
 	// the `create` operation shown while it is created; then `available`. `failed` means no address was
 	// allocated; `failure_reason` states why.
 	Status ElasticIPStatus `json:"status"`
-	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
+	// The Billing Checkout Session that bought this resource; `order_id` and the order items stay null
 	// until its checkout completes. Null when the resource was not bought through one.
 	CheckoutSessionID NilUUID `json:"checkout_session_id"`
 	OrderID           NilUUID `json:"order_id"`
-	// The Billing order item for this resource.
-	OrderItemID NilUUID `json:"order_item_id"`
-	// The Billing subscription associated with this resource. It may still be pending; its presence does
-	// not imply delivery or metering. Null when no subscription is associated.
-	SubscriptionID NilUUID `json:"subscription_id"`
-	// The subscription a cancellation through Billing has to cover to release this elastic IP, with the
-	// resource it pays for, so that each line of a cancellation can name what it releases. A subscription
-	// that has ended is not listed, and the set is empty when no subscription pays for the elastic IP.
+	// The Billing order item of the address, always pay-as-you-go.
+	AddressOrderItemID NilUUID `json:"address_order_item_id"`
+	// The Billing subscription of the address. It may still be pending; its presence does not imply
+	// delivery or metering.
+	AddressSubscriptionID NilUUID `json:"address_subscription_id"`
+	// The Billing order item of the bandwidth or traffic.
+	NetworkOrderItemID NilUUID `json:"network_order_item_id"`
+	// The Billing subscription of the bandwidth or traffic. It may still be pending; its presence does not
+	// imply delivery or metering.
+	NetworkSubscriptionID NilUUID `json:"network_subscription_id"`
+	// The subscriptions a cancellation through Billing has to cover to release this elastic IP, both the
+	// address's and the network's, each with the resource it pays for, so that each line of a cancellation
+	// can name what it releases. A subscription that has ended is not listed, and the set is empty when no
+	// subscription pays for the elastic IP.
 	ReleaseSet  []ReleaseSetItem        `json:"release_set"`
 	AccessState NilElasticIPAccessState `json:"access_state"`
 	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
@@ -3545,9 +3536,9 @@ func (s *ElasticIP) GetID() ElasticIPID {
 	return s.ID
 }
 
-// GetTypeID returns the value of TypeID.
-func (s *ElasticIP) GetTypeID() ElasticIPTypeID {
-	return s.TypeID
+// GetLineID returns the value of LineID.
+func (s *ElasticIP) GetLineID() ElasticIPLineID {
+	return s.LineID
 }
 
 // GetRegionID returns the value of RegionID.
@@ -3570,14 +3561,24 @@ func (s *ElasticIP) GetOrderID() NilUUID {
 	return s.OrderID
 }
 
-// GetOrderItemID returns the value of OrderItemID.
-func (s *ElasticIP) GetOrderItemID() NilUUID {
-	return s.OrderItemID
+// GetAddressOrderItemID returns the value of AddressOrderItemID.
+func (s *ElasticIP) GetAddressOrderItemID() NilUUID {
+	return s.AddressOrderItemID
 }
 
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *ElasticIP) GetSubscriptionID() NilUUID {
-	return s.SubscriptionID
+// GetAddressSubscriptionID returns the value of AddressSubscriptionID.
+func (s *ElasticIP) GetAddressSubscriptionID() NilUUID {
+	return s.AddressSubscriptionID
+}
+
+// GetNetworkOrderItemID returns the value of NetworkOrderItemID.
+func (s *ElasticIP) GetNetworkOrderItemID() NilUUID {
+	return s.NetworkOrderItemID
+}
+
+// GetNetworkSubscriptionID returns the value of NetworkSubscriptionID.
+func (s *ElasticIP) GetNetworkSubscriptionID() NilUUID {
+	return s.NetworkSubscriptionID
 }
 
 // GetReleaseSet returns the value of ReleaseSet.
@@ -3640,9 +3641,9 @@ func (s *ElasticIP) SetID(val ElasticIPID) {
 	s.ID = val
 }
 
-// SetTypeID sets the value of TypeID.
-func (s *ElasticIP) SetTypeID(val ElasticIPTypeID) {
-	s.TypeID = val
+// SetLineID sets the value of LineID.
+func (s *ElasticIP) SetLineID(val ElasticIPLineID) {
+	s.LineID = val
 }
 
 // SetRegionID sets the value of RegionID.
@@ -3665,14 +3666,24 @@ func (s *ElasticIP) SetOrderID(val NilUUID) {
 	s.OrderID = val
 }
 
-// SetOrderItemID sets the value of OrderItemID.
-func (s *ElasticIP) SetOrderItemID(val NilUUID) {
-	s.OrderItemID = val
+// SetAddressOrderItemID sets the value of AddressOrderItemID.
+func (s *ElasticIP) SetAddressOrderItemID(val NilUUID) {
+	s.AddressOrderItemID = val
 }
 
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *ElasticIP) SetSubscriptionID(val NilUUID) {
-	s.SubscriptionID = val
+// SetAddressSubscriptionID sets the value of AddressSubscriptionID.
+func (s *ElasticIP) SetAddressSubscriptionID(val NilUUID) {
+	s.AddressSubscriptionID = val
+}
+
+// SetNetworkOrderItemID sets the value of NetworkOrderItemID.
+func (s *ElasticIP) SetNetworkOrderItemID(val NilUUID) {
+	s.NetworkOrderItemID = val
+}
+
+// SetNetworkSubscriptionID sets the value of NetworkSubscriptionID.
+func (s *ElasticIP) SetNetworkSubscriptionID(val NilUUID) {
+	s.NetworkSubscriptionID = val
 }
 
 // SetReleaseSet sets the value of ReleaseSet.
@@ -3973,6 +3984,229 @@ func (s *ElasticIPFailureReason) UnmarshalText(data []byte) error {
 
 type ElasticIPID string
 
+// The network an elastic IP is bought on: the bandwidth that can be chosen, and the two Billing Plans
+// every elastic IP of the line is paid under in one order. The address subscription is always used and
+// meters the address while it is held idle, associated with nothing; the network subscription pays the
+// bandwidth, prepaid or used while associated, or the traffic sent. Contains no supply ranges,
+// gateways or backend execution state.
+// Ref: #/components/schemas/ElasticIPLine
+type ElasticIPLine struct {
+	ID          ElasticIPLineID `json:"id"`
+	RegionID    RegionID        `json:"region_id"`
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	// The Billing Plan of the address subscription every elastic IP of this line has. It is always used,
+	// and meters the address while no network interface holds it. Read its prices from Billing.
+	AddressPlanID uuid.UUID `json:"address_plan_id"`
+	// The Billing Plan of the network subscription every elastic IP of this line has, which pays its
+	// bandwidth, prepaid or used while associated, or its traffic. Read its prices from Billing.
+	NetworkPlanID uuid.UUID `json:"network_plan_id"`
+	// The least bandwidth an elastic IP of this line can be bought with, in Mbps.
+	MinBandwidthMbps int64 `json:"min_bandwidth_mbps"`
+	// The most bandwidth an elastic IP of this line can be bought with, in Mbps, at most 1000. An elastic
+	// IP associated with a virtual machine is also held to the machine type's `max_bandwidth_mbps`.
+	MaxBandwidthMbps int64 `json:"max_bandwidth_mbps"`
+	// Bandwidth is bought in multiples of this many Mbps, from `min_bandwidth_mbps` to
+	// `max_bandwidth_mbps`, both of which are multiples of it too.
+	BandwidthStepMbps int64 `json:"bandwidth_step_mbps"`
+	// `on_sale` is offered for new elastic IPs; `off_sale` takes none, while the elastic IPs already on it
+	// keep working.
+	SaleStatus ElasticIPLineSaleStatus `json:"sale_status"`
+	CreatedAt  time.Time               `json:"created_at"`
+	UpdatedAt  time.Time               `json:"updated_at"`
+}
+
+// GetID returns the value of ID.
+func (s *ElasticIPLine) GetID() ElasticIPLineID {
+	return s.ID
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *ElasticIPLine) GetRegionID() RegionID {
+	return s.RegionID
+}
+
+// GetName returns the value of Name.
+func (s *ElasticIPLine) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *ElasticIPLine) GetDescription() string {
+	return s.Description
+}
+
+// GetAddressPlanID returns the value of AddressPlanID.
+func (s *ElasticIPLine) GetAddressPlanID() uuid.UUID {
+	return s.AddressPlanID
+}
+
+// GetNetworkPlanID returns the value of NetworkPlanID.
+func (s *ElasticIPLine) GetNetworkPlanID() uuid.UUID {
+	return s.NetworkPlanID
+}
+
+// GetMinBandwidthMbps returns the value of MinBandwidthMbps.
+func (s *ElasticIPLine) GetMinBandwidthMbps() int64 {
+	return s.MinBandwidthMbps
+}
+
+// GetMaxBandwidthMbps returns the value of MaxBandwidthMbps.
+func (s *ElasticIPLine) GetMaxBandwidthMbps() int64 {
+	return s.MaxBandwidthMbps
+}
+
+// GetBandwidthStepMbps returns the value of BandwidthStepMbps.
+func (s *ElasticIPLine) GetBandwidthStepMbps() int64 {
+	return s.BandwidthStepMbps
+}
+
+// GetSaleStatus returns the value of SaleStatus.
+func (s *ElasticIPLine) GetSaleStatus() ElasticIPLineSaleStatus {
+	return s.SaleStatus
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *ElasticIPLine) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *ElasticIPLine) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetID sets the value of ID.
+func (s *ElasticIPLine) SetID(val ElasticIPLineID) {
+	s.ID = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *ElasticIPLine) SetRegionID(val RegionID) {
+	s.RegionID = val
+}
+
+// SetName sets the value of Name.
+func (s *ElasticIPLine) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *ElasticIPLine) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetAddressPlanID sets the value of AddressPlanID.
+func (s *ElasticIPLine) SetAddressPlanID(val uuid.UUID) {
+	s.AddressPlanID = val
+}
+
+// SetNetworkPlanID sets the value of NetworkPlanID.
+func (s *ElasticIPLine) SetNetworkPlanID(val uuid.UUID) {
+	s.NetworkPlanID = val
+}
+
+// SetMinBandwidthMbps sets the value of MinBandwidthMbps.
+func (s *ElasticIPLine) SetMinBandwidthMbps(val int64) {
+	s.MinBandwidthMbps = val
+}
+
+// SetMaxBandwidthMbps sets the value of MaxBandwidthMbps.
+func (s *ElasticIPLine) SetMaxBandwidthMbps(val int64) {
+	s.MaxBandwidthMbps = val
+}
+
+// SetBandwidthStepMbps sets the value of BandwidthStepMbps.
+func (s *ElasticIPLine) SetBandwidthStepMbps(val int64) {
+	s.BandwidthStepMbps = val
+}
+
+// SetSaleStatus sets the value of SaleStatus.
+func (s *ElasticIPLine) SetSaleStatus(val ElasticIPLineSaleStatus) {
+	s.SaleStatus = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *ElasticIPLine) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *ElasticIPLine) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+type ElasticIPLineID string
+
+// Ref: #/components/schemas/ElasticIPLineListResponseBody
+type ElasticIPLineListResponseBody struct {
+	Items      []ElasticIPLine  `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *ElasticIPLineListResponseBody) GetItems() []ElasticIPLine {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *ElasticIPLineListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *ElasticIPLineListResponseBody) SetItems(val []ElasticIPLine) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *ElasticIPLineListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// `on_sale` is offered for new elastic IPs; `off_sale` takes none, while the elastic IPs already on it
+// keep working.
+type ElasticIPLineSaleStatus string
+
+const (
+	ElasticIPLineSaleStatusOnSale  ElasticIPLineSaleStatus = "on_sale"
+	ElasticIPLineSaleStatusOffSale ElasticIPLineSaleStatus = "off_sale"
+)
+
+// AllValues returns all ElasticIPLineSaleStatus values.
+func (ElasticIPLineSaleStatus) AllValues() []ElasticIPLineSaleStatus {
+	return []ElasticIPLineSaleStatus{
+		ElasticIPLineSaleStatusOnSale,
+		ElasticIPLineSaleStatusOffSale,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ElasticIPLineSaleStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ElasticIPLineSaleStatusOnSale:
+		return []byte(s), nil
+	case ElasticIPLineSaleStatusOffSale:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ElasticIPLineSaleStatus) UnmarshalText(data []byte) error {
+	switch ElasticIPLineSaleStatus(data) {
+	case ElasticIPLineSaleStatusOnSale:
+		*s = ElasticIPLineSaleStatusOnSale
+		return nil
+	case ElasticIPLineSaleStatusOffSale:
+		*s = ElasticIPLineSaleStatusOffSale
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/ElasticIPListResponseBody
 type ElasticIPListResponseBody struct {
 	Items      []ElasticIP      `json:"items"`
@@ -4242,199 +4476,6 @@ func (s *ElasticIPStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// The IPv4 public network product and its Billing Plan references. Contains no supply ranges, gateways
-// or backend execution state.
-// Ref: #/components/schemas/ElasticIPType
-type ElasticIPType struct {
-	ID          ElasticIPTypeID `json:"id"`
-	RegionID    RegionID        `json:"region_id"`
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	PlanID      uuid.UUID       `json:"plan_id"`
-	// The traffic Billing Plan, when configured. Traffic billing is not currently available for creation.
-	TrafficPlanID   OptUUID             `json:"traffic_plan_id"`
-	Status          ElasticIPTypeStatus `json:"status"`
-	CatalogRevision int64               `json:"catalog_revision"`
-	CreatedAt       time.Time           `json:"created_at"`
-	UpdatedAt       time.Time           `json:"updated_at"`
-}
-
-// GetID returns the value of ID.
-func (s *ElasticIPType) GetID() ElasticIPTypeID {
-	return s.ID
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *ElasticIPType) GetRegionID() RegionID {
-	return s.RegionID
-}
-
-// GetName returns the value of Name.
-func (s *ElasticIPType) GetName() string {
-	return s.Name
-}
-
-// GetDescription returns the value of Description.
-func (s *ElasticIPType) GetDescription() string {
-	return s.Description
-}
-
-// GetPlanID returns the value of PlanID.
-func (s *ElasticIPType) GetPlanID() uuid.UUID {
-	return s.PlanID
-}
-
-// GetTrafficPlanID returns the value of TrafficPlanID.
-func (s *ElasticIPType) GetTrafficPlanID() OptUUID {
-	return s.TrafficPlanID
-}
-
-// GetStatus returns the value of Status.
-func (s *ElasticIPType) GetStatus() ElasticIPTypeStatus {
-	return s.Status
-}
-
-// GetCatalogRevision returns the value of CatalogRevision.
-func (s *ElasticIPType) GetCatalogRevision() int64 {
-	return s.CatalogRevision
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *ElasticIPType) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetUpdatedAt returns the value of UpdatedAt.
-func (s *ElasticIPType) GetUpdatedAt() time.Time {
-	return s.UpdatedAt
-}
-
-// SetID sets the value of ID.
-func (s *ElasticIPType) SetID(val ElasticIPTypeID) {
-	s.ID = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *ElasticIPType) SetRegionID(val RegionID) {
-	s.RegionID = val
-}
-
-// SetName sets the value of Name.
-func (s *ElasticIPType) SetName(val string) {
-	s.Name = val
-}
-
-// SetDescription sets the value of Description.
-func (s *ElasticIPType) SetDescription(val string) {
-	s.Description = val
-}
-
-// SetPlanID sets the value of PlanID.
-func (s *ElasticIPType) SetPlanID(val uuid.UUID) {
-	s.PlanID = val
-}
-
-// SetTrafficPlanID sets the value of TrafficPlanID.
-func (s *ElasticIPType) SetTrafficPlanID(val OptUUID) {
-	s.TrafficPlanID = val
-}
-
-// SetStatus sets the value of Status.
-func (s *ElasticIPType) SetStatus(val ElasticIPTypeStatus) {
-	s.Status = val
-}
-
-// SetCatalogRevision sets the value of CatalogRevision.
-func (s *ElasticIPType) SetCatalogRevision(val int64) {
-	s.CatalogRevision = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *ElasticIPType) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetUpdatedAt sets the value of UpdatedAt.
-func (s *ElasticIPType) SetUpdatedAt(val time.Time) {
-	s.UpdatedAt = val
-}
-
-type ElasticIPTypeID string
-
-// Ref: #/components/schemas/ElasticIPTypeListResponseBody
-type ElasticIPTypeListResponseBody struct {
-	Items      []ElasticIPType  `json:"items"`
-	Pagination OffsetPagination `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *ElasticIPTypeListResponseBody) GetItems() []ElasticIPType {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *ElasticIPTypeListResponseBody) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *ElasticIPTypeListResponseBody) SetItems(val []ElasticIPType) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *ElasticIPTypeListResponseBody) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
-type ElasticIPTypeStatus string
-
-const (
-	ElasticIPTypeStatusOnSale  ElasticIPTypeStatus = "on_sale"
-	ElasticIPTypeStatusOffSale ElasticIPTypeStatus = "off_sale"
-	ElasticIPTypeStatusRetired ElasticIPTypeStatus = "retired"
-)
-
-// AllValues returns all ElasticIPTypeStatus values.
-func (ElasticIPTypeStatus) AllValues() []ElasticIPTypeStatus {
-	return []ElasticIPTypeStatus{
-		ElasticIPTypeStatusOnSale,
-		ElasticIPTypeStatusOffSale,
-		ElasticIPTypeStatusRetired,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ElasticIPTypeStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case ElasticIPTypeStatusOnSale:
-		return []byte(s), nil
-	case ElasticIPTypeStatusOffSale:
-		return []byte(s), nil
-	case ElasticIPTypeStatusRetired:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ElasticIPTypeStatus) UnmarshalText(data []byte) error {
-	switch ElasticIPTypeStatus(data) {
-	case ElasticIPTypeStatusOnSale:
-		*s = ElasticIPTypeStatusOnSale
-		return nil
-	case ElasticIPTypeStatusOffSale:
-		*s = ElasticIPTypeStatusOffSale
-		return nil
-	case ElasticIPTypeStatusRetired:
-		*s = ElasticIPTypeStatusRetired
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/Error
 type Error struct {
 	Code    OptString `json:"code"`
@@ -4663,8 +4704,10 @@ type IPv4HostAddress string
 
 type ImageID string
 
-// Bandwidth billing is available. Traffic billing is reserved and cannot currently be selected for
-// creation.
+// What the network subscription of an elastic IP charges for. `bandwidth` charges for the bandwidth
+// ceiling, prepaid for a period or by the Mbit/s-second while the address is associated. `traffic`
+// charges for the bytes the address sends; it is reserved and refused with
+// `ELASTIC_IP_TRAFFIC_UNAVAILABLE` until traffic is metered.
 // Ref: #/components/schemas/InternetChargeType
 type InternetChargeType string
 
@@ -5822,9 +5865,13 @@ func (s *NewCompute) SetBilling(val BillingChoice) {
 // Ref: #/components/schemas/NewElasticIP
 type NewElasticIP struct {
 	InternetChargeType OptInternetChargeType `json:"internet_charge_type"`
-	BandwidthMbps      int64                 `json:"bandwidth_mbps"`
-	TypeID             ElasticIPTypeID       `json:"type_id"`
-	Billing            BillingChoice         `json:"billing"`
+	// Within the line's `min_bandwidth_mbps` and `max_bandwidth_mbps` and a multiple of its
+	// `bandwidth_step_mbps`, otherwise refused with `ELASTIC_IP_BANDWIDTH_RANGE`.
+	BandwidthMbps int64           `json:"bandwidth_mbps"`
+	LineID        ElasticIPLineID `json:"line_id"`
+	// The terms of the elastic IP's network subscription, which follow the rule shared by every component
+	// of the purchase. Its address subscription is always pay-as-you-go and is exempt from that rule.
+	Billing BillingChoice `json:"billing"`
 }
 
 // GetInternetChargeType returns the value of InternetChargeType.
@@ -5837,9 +5884,9 @@ func (s *NewElasticIP) GetBandwidthMbps() int64 {
 	return s.BandwidthMbps
 }
 
-// GetTypeID returns the value of TypeID.
-func (s *NewElasticIP) GetTypeID() ElasticIPTypeID {
-	return s.TypeID
+// GetLineID returns the value of LineID.
+func (s *NewElasticIP) GetLineID() ElasticIPLineID {
+	return s.LineID
 }
 
 // GetBilling returns the value of Billing.
@@ -5857,9 +5904,9 @@ func (s *NewElasticIP) SetBandwidthMbps(val int64) {
 	s.BandwidthMbps = val
 }
 
-// SetTypeID sets the value of TypeID.
-func (s *NewElasticIP) SetTypeID(val ElasticIPTypeID) {
-	s.TypeID = val
+// SetLineID sets the value of LineID.
+func (s *NewElasticIP) SetLineID(val ElasticIPLineID) {
+	s.LineID = val
 }
 
 // SetBilling sets the value of Billing.
@@ -8957,52 +9004,6 @@ func (o OptURI) Get() (v url.URL, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptURI) Or(d url.URL) url.URL {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptUUID returns new OptUUID with value set to v.
-func NewOptUUID(v uuid.UUID) OptUUID {
-	return OptUUID{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptUUID is optional uuid.UUID.
-type OptUUID struct {
-	Value uuid.UUID
-	Set   bool
-}
-
-// IsSet returns true if OptUUID was set.
-func (o OptUUID) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptUUID) Reset() {
-	var v uuid.UUID
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptUUID) SetTo(v uuid.UUID) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptUUID) Get() (v uuid.UUID, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -12412,12 +12413,14 @@ type UpdateElasticIPRequestBody struct {
 	// Applied to both directions.
 	BandwidthMbps OptInt64 `json:"bandwidth_mbps"`
 	// The `proration_date` of the Billing quote for this change, so that the order is priced from the same
-	// instant. Only with `bandwidth_mbps`, and only for automatic checkout; deferred checkout is priced
-	// when the customer completes it. Defaults to the time of the request; it must be a whole second, not
-	// in the future and at most 10 minutes old, otherwise the request is refused with
-	// `BILLING_CHANGE_INVALID`.
+	// instant. Only with `bandwidth_mbps` on a prepaid network subscription, and only for automatic
+	// checkout; deferred checkout is priced when the customer completes it. Defaults to the time of the
+	// request; it must be a whole second, not in the future and at most 10 minutes old, otherwise the
+	// request is refused with `BILLING_CHANGE_INVALID`.
 	ProrationDate OptDateTime `json:"proration_date"`
-	// How the purchase of the `bandwidth_mbps` change is checked out. Only with `bandwidth_mbps`.
+	// How the purchase of the `bandwidth_mbps` change is checked out. Only with `bandwidth_mbps` on a
+	// prepaid network subscription; a pay-as-you-go one has nothing to check out and refuses it with
+	// `ELASTIC_IP_CHECKOUT_UNUSED`.
 	Checkout OptCheckoutOptions `json:"checkout"`
 }
 

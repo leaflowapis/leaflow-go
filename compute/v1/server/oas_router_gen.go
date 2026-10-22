@@ -615,9 +615,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 				switch elem[0] {
-				case '-': // Prefix: "-types"
+				case '-': // Prefix: "-lines"
 
-					if l := len("-types"); len(elem) >= l && elem[0:l] == "-types" {
+					if l := len("-lines"); len(elem) >= l && elem[0:l] == "-lines" {
 						elem = elem[l:]
 					} else {
 						break
@@ -626,7 +626,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					if len(elem) == 0 {
 						switch r.Method {
 						case "GET":
-							s.handleListElasticIPTypesRequest([0]string{}, elemIsEscaped, w, r)
+							s.handleListElasticIPLinesRequest([0]string{}, elemIsEscaped, w, r)
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
@@ -647,7 +647,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							break
 						}
 
-						// Param: "elasticIpTypeId"
+						// Param: "elasticIpLineId"
 						// Leaf parameter, slashes are prohibited
 						idx := strings.IndexByte(elem, '/')
 						if idx >= 0 {
@@ -660,7 +660,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							// Leaf node.
 							switch r.Method {
 							case "GET":
-								s.handleGetElasticIPTypeRequest([1]string{
+								s.handleGetElasticIPLineRequest([1]string{
 									args[0],
 								}, elemIsEscaped, w, r)
 							default:
@@ -2809,9 +2809,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					break
 				}
 				switch elem[0] {
-				case '-': // Prefix: "-types"
+				case '-': // Prefix: "-lines"
 
-					if l := len("-types"); len(elem) >= l && elem[0:l] == "-types" {
+					if l := len("-lines"); len(elem) >= l && elem[0:l] == "-lines" {
 						elem = elem[l:]
 					} else {
 						break
@@ -2820,11 +2820,11 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					if len(elem) == 0 {
 						switch method {
 						case "GET":
-							r.name = ListElasticIPTypesOperation
-							r.summary = "List and search public elastic IP products"
-							r.operationID = "list-elastic-ip-types"
+							r.name = ListElasticIPLinesOperation
+							r.summary = "List and search elastic IP lines"
+							r.operationID = "list-elastic-ip-lines"
 							r.operationGroup = ""
-							r.pathPattern = "/api/v1/elastic-ip-types"
+							r.pathPattern = "/api/v1/elastic-ip-lines"
 							r.args = args
 							r.count = 0
 							return r, true
@@ -2841,7 +2841,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							break
 						}
 
-						// Param: "elasticIpTypeId"
+						// Param: "elasticIpLineId"
 						// Leaf parameter, slashes are prohibited
 						idx := strings.IndexByte(elem, '/')
 						if idx >= 0 {
@@ -2854,11 +2854,11 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							// Leaf node.
 							switch method {
 							case "GET":
-								r.name = GetElasticIPTypeOperation
-								r.summary = "Get an elastic IP product"
-								r.operationID = "get-elastic-ip-type"
+								r.name = GetElasticIPLineOperation
+								r.summary = "Get an elastic IP line"
+								r.operationID = "get-elastic-ip-line"
 								r.operationGroup = ""
-								r.pathPattern = "/api/v1/elastic-ip-types/{elasticIpTypeId}"
+								r.pathPattern = "/api/v1/elastic-ip-lines/{elasticIpLineId}"
 								r.args = args
 								r.count = 1
 								return r, true

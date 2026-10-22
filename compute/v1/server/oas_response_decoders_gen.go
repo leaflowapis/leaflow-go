@@ -4630,7 +4630,7 @@ func decodeGetElasticIPAssociationResponse(resp *http.Response) (res *ElasticIPA
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeGetElasticIPTypeResponse(resp *http.Response) (res *ElasticIPType, _ error) {
+func decodeGetElasticIPLineResponse(resp *http.Response) (res *ElasticIPLine, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -4646,7 +4646,7 @@ func decodeGetElasticIPTypeResponse(resp *http.Response) (res *ElasticIPType, _ 
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response ElasticIPType
+			var response ElasticIPLine
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -6811,7 +6811,7 @@ func decodeListDisksResponse(resp *http.Response) (res *DiskListResponseBody, _ 
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeListElasticIPTypesResponse(resp *http.Response) (res *ElasticIPTypeListResponseBody, _ error) {
+func decodeListElasticIPLinesResponse(resp *http.Response) (res *ElasticIPLineListResponseBody, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -6827,7 +6827,7 @@ func decodeListElasticIPTypesResponse(resp *http.Response) (res *ElasticIPTypeLi
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response ElasticIPTypeListResponseBody
+			var response ElasticIPLineListResponseBody
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err

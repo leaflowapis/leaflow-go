@@ -1142,7 +1142,7 @@ func (s *Server) handleCreateDiskRevertRequest(args [1]string, argsEscaped bool,
 
 // handleCreateElasticIPRequest handles create-elastic-ip operation.
 //
-// Select a public elastic IP type. The elastic IP is bought through a Billing Checkout Session, and no
+// Select an elastic IP line. The elastic IP is bought through a Billing Checkout Session, and no
 // address is allocated before its order is accepted.
 //
 // Returns the elastic IP as `pending` with its Checkout Session; `address` is null until the address
@@ -4563,9 +4563,10 @@ func (s *Server) handleDeleteDiskBackupRequest(args [1]string, argsEscaped bool,
 // cleanup is confirmed; the address then immediately returns to available inventory, with no cooldown
 // period. Deleting the association or replacing it alone does not release the address.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the address, including a
-// pay-as-you-go subscription. `meta.resource_id` names the elastic IP. It is released by canceling the
-// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_set`.
+// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for it, including a
+// pay-as-you-go subscription, which every elastic IP has for its address. `meta.resource_id` names the
+// elastic IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through
+// Billing, the same set as its `release_set`: the address's and the network's together.
 //
 // Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
@@ -9042,25 +9043,25 @@ func (s *Server) handleGetElasticIPAssociationRequest(args [1]string, argsEscape
 	}
 }
 
-// handleGetElasticIPTypeRequest handles get-elastic-ip-type operation.
+// handleGetElasticIPLineRequest handles get-elastic-ip-line operation.
 //
-// Includes off-sale or retired products referenced by existing elastic IPs. No inventory or gateway
-// facts are returned.
+// Includes lines off sale that existing elastic IPs are on. No inventory or gateway facts are
+// returned.
 //
-// GET /api/v1/elastic-ip-types/{elasticIpTypeId}
-func (s *Server) handleGetElasticIPTypeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/elastic-ip-lines/{elasticIpLineId}
+func (s *Server) handleGetElasticIPLineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-elastic-ip-type"),
+		otelogen.OperationID("get-elastic-ip-line"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/elastic-ip-types/{elasticIpTypeId}"),
+		semconv.HTTPRouteKey.String("/api/v1/elastic-ip-lines/{elasticIpLineId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetElasticIPTypeOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetElasticIPLineOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -9115,15 +9116,15 @@ func (s *Server) handleGetElasticIPTypeRequest(args [1]string, argsEscaped bool,
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: GetElasticIPTypeOperation,
-			ID:   "get-elastic-ip-type",
+			Name: GetElasticIPLineOperation,
+			ID:   "get-elastic-ip-line",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetElasticIPTypeOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetElasticIPLineOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -9165,7 +9166,7 @@ func (s *Server) handleGetElasticIPTypeRequest(args [1]string, argsEscaped bool,
 			return
 		}
 	}
-	params, err := decodeGetElasticIPTypeParams(args, argsEscaped, r)
+	params, err := decodeGetElasticIPLineParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -9178,28 +9179,28 @@ func (s *Server) handleGetElasticIPTypeRequest(args [1]string, argsEscaped bool,
 
 	var rawBody []byte
 
-	var response *ElasticIPType
+	var response *ElasticIPLine
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    GetElasticIPTypeOperation,
-			OperationSummary: "Get an elastic IP product",
-			OperationID:      "get-elastic-ip-type",
+			OperationName:    GetElasticIPLineOperation,
+			OperationSummary: "Get an elastic IP line",
+			OperationID:      "get-elastic-ip-line",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "elasticIpTypeId",
+					Name: "elasticIpLineId",
 					In:   "path",
-				}: params.ElasticIpTypeId,
+				}: params.ElasticIpLineId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = GetElasticIPTypeParams
-			Response = *ElasticIPType
+			Params   = GetElasticIPLineParams
+			Response = *ElasticIPLine
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -9208,14 +9209,14 @@ func (s *Server) handleGetElasticIPTypeRequest(args [1]string, argsEscaped bool,
 		](
 			m,
 			mreq,
-			unpackGetElasticIPTypeParams,
+			unpackGetElasticIPLineParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetElasticIPType(ctx, params)
+				response, err = s.h.GetElasticIPLine(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.GetElasticIPType(ctx, params)
+		response, err = s.h.GetElasticIPLine(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -9234,7 +9235,7 @@ func (s *Server) handleGetElasticIPTypeRequest(args [1]string, argsEscaped bool,
 		return
 	}
 
-	if err := encodeGetElasticIPTypeResponse(response, w, span); err != nil {
+	if err := encodeGetElasticIPLineResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -13919,26 +13920,27 @@ func (s *Server) handleListDisksRequest(args [0]string, argsEscaped bool, w http
 	}
 }
 
-// handleListElasticIPTypesRequest handles list-elastic-ip-types operation.
+// handleListElasticIPLinesRequest handles list-elastic-ip-lines operation.
 //
-// Lists on-sale products. Region is optional. Prices, commercial terms and checkout are read directly
-// from Billing. `q` searches the names and descriptions of the on-sale products; filters combine with
-// AND, and pagination is independent of them.
+// Lists the lines on sale. A line is the network an elastic IP is bought on, with the bandwidth that
+// can be chosen and the two Billing Plans its elastic IPs are paid under. Region is optional. Prices,
+// commercial terms and checkout are read directly from Billing. `q` searches the names and
+// descriptions of the lines on sale; filters combine with AND, and pagination is independent of them.
 //
-// GET /api/v1/elastic-ip-types
-func (s *Server) handleListElasticIPTypesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/elastic-ip-lines
+func (s *Server) handleListElasticIPLinesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-elastic-ip-types"),
+		otelogen.OperationID("list-elastic-ip-lines"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/elastic-ip-types"),
+		semconv.HTTPRouteKey.String("/api/v1/elastic-ip-lines"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListElasticIPTypesOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListElasticIPLinesOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -13993,15 +13995,15 @@ func (s *Server) handleListElasticIPTypesRequest(args [0]string, argsEscaped boo
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListElasticIPTypesOperation,
-			ID:   "list-elastic-ip-types",
+			Name: ListElasticIPLinesOperation,
+			ID:   "list-elastic-ip-lines",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListElasticIPTypesOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListElasticIPLinesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -14043,7 +14045,7 @@ func (s *Server) handleListElasticIPTypesRequest(args [0]string, argsEscaped boo
 			return
 		}
 	}
-	params, err := decodeListElasticIPTypesParams(args, argsEscaped, r)
+	params, err := decodeListElasticIPLinesParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -14056,13 +14058,13 @@ func (s *Server) handleListElasticIPTypesRequest(args [0]string, argsEscaped boo
 
 	var rawBody []byte
 
-	var response *ElasticIPTypeListResponseBody
+	var response *ElasticIPLineListResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListElasticIPTypesOperation,
-			OperationSummary: "List and search public elastic IP products",
-			OperationID:      "list-elastic-ip-types",
+			OperationName:    ListElasticIPLinesOperation,
+			OperationSummary: "List and search elastic IP lines",
+			OperationID:      "list-elastic-ip-lines",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -14088,8 +14090,8 @@ func (s *Server) handleListElasticIPTypesRequest(args [0]string, argsEscaped boo
 
 		type (
 			Request  = struct{}
-			Params   = ListElasticIPTypesParams
-			Response = *ElasticIPTypeListResponseBody
+			Params   = ListElasticIPLinesParams
+			Response = *ElasticIPLineListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -14098,14 +14100,14 @@ func (s *Server) handleListElasticIPTypesRequest(args [0]string, argsEscaped boo
 		](
 			m,
 			mreq,
-			unpackListElasticIPTypesParams,
+			unpackListElasticIPLinesParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListElasticIPTypes(ctx, params)
+				response, err = s.h.ListElasticIPLines(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListElasticIPTypes(ctx, params)
+		response, err = s.h.ListElasticIPLines(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -14124,7 +14126,7 @@ func (s *Server) handleListElasticIPTypesRequest(args [0]string, argsEscaped boo
 		return
 	}
 
-	if err := encodeListElasticIPTypesResponse(response, w, span); err != nil {
+	if err := encodeListElasticIPLinesResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -19258,13 +19260,23 @@ func (s *Server) handleUpdateDiskBackupRequest(args [1]string, argsEscaped bool,
 // and `proration_date` belong to the purchase of the `bandwidth_mbps` change and are accepted only
 // together with it.
 //
-// The change goes through a Checkout Session that keeps the elastic IP's usage type and period; no
-// separate bandwidth resource is created. The limit applies to inbound and outbound traffic alike. The
-// elastic IP shows the `update_bandwidth` operation until the change is applied, its Checkout Session
-// expires or its order is canceled, so other operations and a second change are refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in effect until the change is applied. If
-// checkout is not completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its
-// value and Billing shows the outcome.
+// No separate bandwidth resource is created, and the limit applies to inbound and outbound traffic
+// alike. The new value must lie within the line's bandwidth range and step, otherwise the request is
+// refused with `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic IP's network
+// subscription:
+//
+//   - Prepaid: the change goes through a Checkout Session that changes the network subscription, priced
+//     for the rest of its period. It starts once Billing accepts the order; if checkout is not
+//     completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and
+//     Billing shows the outcome.
+//   - Pay-as-you-go: there is no checkout. The change starts at once, `checkout_session_id` and
+//     `order_id` are null, and the new limit is metered from the instant it is applied; if it fails,
+//     the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
+//     `ELASTIC_IP_CHECKOUT_UNUSED`.
+//
+// The elastic IP shows the `update_bandwidth` operation until the change is applied or ends, so other
+// operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit
+// stays in effect until the change is applied.
 //
 // While the address is associated with a virtual machine, the limit must not exceed the
 // `max_bandwidth_mbps` of that virtual machine's type; a higher limit is refused with
