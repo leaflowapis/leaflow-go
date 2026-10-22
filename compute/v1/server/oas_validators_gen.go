@@ -8562,70 +8562,31 @@ func (s *VirtualMachineRestriction) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if err := s.ID.Validate(); err != nil {
+		if err := s.Reason.Validate(); err != nil {
 			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "id",
+			Name:  "reason",
 			Error: err,
 		})
 	}
 	if err := func() error {
-		if err := s.Source.Validate(); err != nil {
-			return err
+		if value, ok := s.DiskID.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "source",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := (validate.String{
-			MinLength:     1,
-			MinLengthSet:  true,
-			MaxLength:     255,
-			MaxLengthSet:  true,
-			Email:         false,
-			Hostname:      false,
-			Regex:         nil,
-			MinNumeric:    0,
-			MinNumericSet: false,
-			MaxNumeric:    0,
-			MaxNumericSet: false,
-		}).Validate(string(s.SourceID)); err != nil {
-			return errors.Wrap(err, "string")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "source_id",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := (validate.String{
-			MinLength:     1,
-			MinLengthSet:  true,
-			MaxLength:     128,
-			MaxLengthSet:  true,
-			Email:         false,
-			Hostname:      false,
-			Regex:         nil,
-			MinNumeric:    0,
-			MinNumericSet: false,
-			MaxNumeric:    0,
-			MaxNumericSet: false,
-		}).Validate(string(s.ReasonCode)); err != nil {
-			return errors.Wrap(err, "string")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "reason_code",
+			Name:  "disk_id",
 			Error: err,
 		})
 	}
@@ -8635,33 +8596,17 @@ func (s *VirtualMachineRestriction) Validate() error {
 	return nil
 }
 
-func (s VirtualMachineRestrictionID) Validate() error {
-	alias := (string)(s)
-	if err := (validate.String{
-		MinLength:     40,
-		MinLengthSet:  true,
-		MaxLength:     40,
-		MaxLengthSet:  true,
-		Email:         false,
-		Hostname:      false,
-		Regex:         regexMap["^vmrestriction_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"],
-		MinNumeric:    0,
-		MinNumericSet: false,
-		MaxNumeric:    0,
-		MaxNumericSet: false,
-	}).Validate(string(alias)); err != nil {
-		return errors.Wrap(err, "string")
-	}
-	return nil
-}
-
-func (s VirtualMachineRestrictionSource) Validate() error {
+func (s VirtualMachineRestrictionReason) Validate() error {
 	switch s {
-	case "billing":
+	case "operator_suspended":
 		return nil
-	case "iam":
+	case "billing_suspended":
 		return nil
-	case "operator":
+	case "billing_reclaimed":
+		return nil
+	case "boot_disk_suspended":
+		return nil
+	case "boot_disk_reclaimed":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

@@ -26106,33 +26106,28 @@ func (s *VirtualMachineRestriction) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *VirtualMachineRestriction) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("id")
-		s.ID.Encode(e)
+		e.FieldStart("reason")
+		s.Reason.Encode(e)
 	}
 	{
-		e.FieldStart("source")
-		s.Source.Encode(e)
+		e.FieldStart("subscription_id")
+		s.SubscriptionID.Encode(e)
 	}
 	{
-		e.FieldStart("source_id")
-		e.Str(s.SourceID)
+		e.FieldStart("disk_id")
+		s.DiskID.Encode(e)
 	}
 	{
-		e.FieldStart("reason_code")
-		e.Str(s.ReasonCode)
-	}
-	{
-		e.FieldStart("created_at")
-		json.EncodeDateTime(e, s.CreatedAt)
+		e.FieldStart("started_at")
+		s.StartedAt.Encode(e, json.EncodeDateTime)
 	}
 }
 
-var jsonFieldsNameOfVirtualMachineRestriction = [5]string{
-	0: "id",
-	1: "source",
-	2: "source_id",
-	3: "reason_code",
-	4: "created_at",
+var jsonFieldsNameOfVirtualMachineRestriction = [4]string{
+	0: "reason",
+	1: "subscription_id",
+	2: "disk_id",
+	3: "started_at",
 }
 
 // Decode decodes VirtualMachineRestriction from json.
@@ -26144,61 +26139,45 @@ func (s *VirtualMachineRestriction) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "id":
+		case "reason":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				if err := s.ID.Decode(d); err != nil {
+				if err := s.Reason.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"id\"")
+				return errors.Wrap(err, "decode field \"reason\"")
 			}
-		case "source":
+		case "subscription_id":
 			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
-				if err := s.Source.Decode(d); err != nil {
+				if err := s.SubscriptionID.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"source\"")
+				return errors.Wrap(err, "decode field \"subscription_id\"")
 			}
-		case "source_id":
+		case "disk_id":
 			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				v, err := d.Str()
-				s.SourceID = string(v)
-				if err != nil {
+				if err := s.DiskID.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"source_id\"")
+				return errors.Wrap(err, "decode field \"disk_id\"")
 			}
-		case "reason_code":
+		case "started_at":
 			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
-				v, err := d.Str()
-				s.ReasonCode = string(v)
-				if err != nil {
+				if err := s.StartedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"reason_code\"")
-			}
-		case "created_at":
-			requiredBitSet[0] |= 1 << 4
-			if err := func() error {
-				v, err := json.DecodeDateTime(d)
-				s.CreatedAt = v
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"created_at\"")
+				return errors.Wrap(err, "decode field \"started_at\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -26210,7 +26189,7 @@ func (s *VirtualMachineRestriction) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00011111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -26256,84 +26235,48 @@ func (s *VirtualMachineRestriction) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes VirtualMachineRestrictionID as json.
-func (s VirtualMachineRestrictionID) Encode(e *jx.Encoder) {
-	unwrapped := string(s)
-
-	e.Str(unwrapped)
-}
-
-// Decode decodes VirtualMachineRestrictionID from json.
-func (s *VirtualMachineRestrictionID) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode VirtualMachineRestrictionID to nil")
-	}
-	var unwrapped string
-	if err := func() error {
-		v, err := d.Str()
-		unwrapped = string(v)
-		if err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return errors.Wrap(err, "alias")
-	}
-	*s = VirtualMachineRestrictionID(unwrapped)
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s VirtualMachineRestrictionID) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *VirtualMachineRestrictionID) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes VirtualMachineRestrictionSource as json.
-func (s VirtualMachineRestrictionSource) Encode(e *jx.Encoder) {
+// Encode encodes VirtualMachineRestrictionReason as json.
+func (s VirtualMachineRestrictionReason) Encode(e *jx.Encoder) {
 	e.Str(string(s))
 }
 
-// Decode decodes VirtualMachineRestrictionSource from json.
-func (s *VirtualMachineRestrictionSource) Decode(d *jx.Decoder) error {
+// Decode decodes VirtualMachineRestrictionReason from json.
+func (s *VirtualMachineRestrictionReason) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode VirtualMachineRestrictionSource to nil")
+		return errors.New("invalid: unable to decode VirtualMachineRestrictionReason to nil")
 	}
 	v, err := d.StrBytes()
 	if err != nil {
 		return err
 	}
 	// Try to use constant string.
-	switch VirtualMachineRestrictionSource(v) {
-	case VirtualMachineRestrictionSourceBilling:
-		*s = VirtualMachineRestrictionSourceBilling
-	case VirtualMachineRestrictionSourceIam:
-		*s = VirtualMachineRestrictionSourceIam
-	case VirtualMachineRestrictionSourceOperator:
-		*s = VirtualMachineRestrictionSourceOperator
+	switch VirtualMachineRestrictionReason(v) {
+	case VirtualMachineRestrictionReasonOperatorSuspended:
+		*s = VirtualMachineRestrictionReasonOperatorSuspended
+	case VirtualMachineRestrictionReasonBillingSuspended:
+		*s = VirtualMachineRestrictionReasonBillingSuspended
+	case VirtualMachineRestrictionReasonBillingReclaimed:
+		*s = VirtualMachineRestrictionReasonBillingReclaimed
+	case VirtualMachineRestrictionReasonBootDiskSuspended:
+		*s = VirtualMachineRestrictionReasonBootDiskSuspended
+	case VirtualMachineRestrictionReasonBootDiskReclaimed:
+		*s = VirtualMachineRestrictionReasonBootDiskReclaimed
 	default:
-		*s = VirtualMachineRestrictionSource(v)
+		*s = VirtualMachineRestrictionReason(v)
 	}
 
 	return nil
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s VirtualMachineRestrictionSource) MarshalJSON() ([]byte, error) {
+func (s VirtualMachineRestrictionReason) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *VirtualMachineRestrictionSource) UnmarshalJSON(data []byte) error {
+func (s *VirtualMachineRestrictionReason) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

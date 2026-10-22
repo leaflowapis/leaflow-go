@@ -13940,94 +13940,110 @@ func (s *VirtualMachineReleaseResourceType) UnmarshalText(data []byte) error {
 	}
 }
 
-// An independent restriction on use. Removing one restriction never removes another source’s
-// restriction, and never starts a virtual machine its user stopped.
+// One hold on the virtual machine. While any holds it, the virtual machine is stopped and refuses
+// being started, rebooted, rebuilt, resized, rescued, having its password reset and running commands,
+// with 409 `VIRTUAL_MACHINE_SUSPENDED`. Holds are independent: lifting one never lifts another, and
+// once none remains the virtual machine is started again only if a hold stopped it, never one its user
+// stopped.
 // Ref: #/components/schemas/VirtualMachineRestriction
 type VirtualMachineRestriction struct {
-	ID         VirtualMachineRestrictionID     `json:"id"`
-	Source     VirtualMachineRestrictionSource `json:"source"`
-	SourceID   string                          `json:"source_id"`
-	ReasonCode string                          `json:"reason_code"`
-	CreatedAt  time.Time                       `json:"created_at"`
+	// Why it is held. `operator_suspended` is a suspension by the platform. `billing_suspended` is the
+	// virtual machine's own subscription suspended for non-payment, and `billing_reclaimed` that
+	// subscription ending, after which the virtual machine is released. `boot_disk_suspended` and
+	// `boot_disk_reclaimed` are the same for the subscription of the disk the virtual machine boots from:
+	// that disk is billed apart, and the virtual machine cannot run without it, so renewing the disk's
+	// subscription lifts the hold, and a reclaimed boot disk is released together with its virtual
+	// machine.
+	Reason VirtualMachineRestrictionReason `json:"reason"`
+	// The Billing subscription whose state holds the virtual machine; null for `operator_suspended`.
+	SubscriptionID NilUUID `json:"subscription_id"`
+	// The disk the virtual machine boots from, for `boot_disk_suspended` and `boot_disk_reclaimed`; null
+	// otherwise.
+	DiskID NilDiskID `json:"disk_id"`
+	// When the hold began; null when that instant was not recorded.
+	StartedAt NilDateTime `json:"started_at"`
 }
 
-// GetID returns the value of ID.
-func (s *VirtualMachineRestriction) GetID() VirtualMachineRestrictionID {
-	return s.ID
+// GetReason returns the value of Reason.
+func (s *VirtualMachineRestriction) GetReason() VirtualMachineRestrictionReason {
+	return s.Reason
 }
 
-// GetSource returns the value of Source.
-func (s *VirtualMachineRestriction) GetSource() VirtualMachineRestrictionSource {
-	return s.Source
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *VirtualMachineRestriction) GetSubscriptionID() NilUUID {
+	return s.SubscriptionID
 }
 
-// GetSourceID returns the value of SourceID.
-func (s *VirtualMachineRestriction) GetSourceID() string {
-	return s.SourceID
+// GetDiskID returns the value of DiskID.
+func (s *VirtualMachineRestriction) GetDiskID() NilDiskID {
+	return s.DiskID
 }
 
-// GetReasonCode returns the value of ReasonCode.
-func (s *VirtualMachineRestriction) GetReasonCode() string {
-	return s.ReasonCode
+// GetStartedAt returns the value of StartedAt.
+func (s *VirtualMachineRestriction) GetStartedAt() NilDateTime {
+	return s.StartedAt
 }
 
-// GetCreatedAt returns the value of CreatedAt.
-func (s *VirtualMachineRestriction) GetCreatedAt() time.Time {
-	return s.CreatedAt
+// SetReason sets the value of Reason.
+func (s *VirtualMachineRestriction) SetReason(val VirtualMachineRestrictionReason) {
+	s.Reason = val
 }
 
-// SetID sets the value of ID.
-func (s *VirtualMachineRestriction) SetID(val VirtualMachineRestrictionID) {
-	s.ID = val
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *VirtualMachineRestriction) SetSubscriptionID(val NilUUID) {
+	s.SubscriptionID = val
 }
 
-// SetSource sets the value of Source.
-func (s *VirtualMachineRestriction) SetSource(val VirtualMachineRestrictionSource) {
-	s.Source = val
+// SetDiskID sets the value of DiskID.
+func (s *VirtualMachineRestriction) SetDiskID(val NilDiskID) {
+	s.DiskID = val
 }
 
-// SetSourceID sets the value of SourceID.
-func (s *VirtualMachineRestriction) SetSourceID(val string) {
-	s.SourceID = val
+// SetStartedAt sets the value of StartedAt.
+func (s *VirtualMachineRestriction) SetStartedAt(val NilDateTime) {
+	s.StartedAt = val
 }
 
-// SetReasonCode sets the value of ReasonCode.
-func (s *VirtualMachineRestriction) SetReasonCode(val string) {
-	s.ReasonCode = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *VirtualMachineRestriction) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-type VirtualMachineRestrictionID string
-
-type VirtualMachineRestrictionSource string
+// Why it is held. `operator_suspended` is a suspension by the platform. `billing_suspended` is the
+// virtual machine's own subscription suspended for non-payment, and `billing_reclaimed` that
+// subscription ending, after which the virtual machine is released. `boot_disk_suspended` and
+// `boot_disk_reclaimed` are the same for the subscription of the disk the virtual machine boots from:
+// that disk is billed apart, and the virtual machine cannot run without it, so renewing the disk's
+// subscription lifts the hold, and a reclaimed boot disk is released together with its virtual
+// machine.
+type VirtualMachineRestrictionReason string
 
 const (
-	VirtualMachineRestrictionSourceBilling  VirtualMachineRestrictionSource = "billing"
-	VirtualMachineRestrictionSourceIam      VirtualMachineRestrictionSource = "iam"
-	VirtualMachineRestrictionSourceOperator VirtualMachineRestrictionSource = "operator"
+	VirtualMachineRestrictionReasonOperatorSuspended VirtualMachineRestrictionReason = "operator_suspended"
+	VirtualMachineRestrictionReasonBillingSuspended  VirtualMachineRestrictionReason = "billing_suspended"
+	VirtualMachineRestrictionReasonBillingReclaimed  VirtualMachineRestrictionReason = "billing_reclaimed"
+	VirtualMachineRestrictionReasonBootDiskSuspended VirtualMachineRestrictionReason = "boot_disk_suspended"
+	VirtualMachineRestrictionReasonBootDiskReclaimed VirtualMachineRestrictionReason = "boot_disk_reclaimed"
 )
 
-// AllValues returns all VirtualMachineRestrictionSource values.
-func (VirtualMachineRestrictionSource) AllValues() []VirtualMachineRestrictionSource {
-	return []VirtualMachineRestrictionSource{
-		VirtualMachineRestrictionSourceBilling,
-		VirtualMachineRestrictionSourceIam,
-		VirtualMachineRestrictionSourceOperator,
+// AllValues returns all VirtualMachineRestrictionReason values.
+func (VirtualMachineRestrictionReason) AllValues() []VirtualMachineRestrictionReason {
+	return []VirtualMachineRestrictionReason{
+		VirtualMachineRestrictionReasonOperatorSuspended,
+		VirtualMachineRestrictionReasonBillingSuspended,
+		VirtualMachineRestrictionReasonBillingReclaimed,
+		VirtualMachineRestrictionReasonBootDiskSuspended,
+		VirtualMachineRestrictionReasonBootDiskReclaimed,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s VirtualMachineRestrictionSource) MarshalText() ([]byte, error) {
+func (s VirtualMachineRestrictionReason) MarshalText() ([]byte, error) {
 	switch s {
-	case VirtualMachineRestrictionSourceBilling:
+	case VirtualMachineRestrictionReasonOperatorSuspended:
 		return []byte(s), nil
-	case VirtualMachineRestrictionSourceIam:
+	case VirtualMachineRestrictionReasonBillingSuspended:
 		return []byte(s), nil
-	case VirtualMachineRestrictionSourceOperator:
+	case VirtualMachineRestrictionReasonBillingReclaimed:
+		return []byte(s), nil
+	case VirtualMachineRestrictionReasonBootDiskSuspended:
+		return []byte(s), nil
+	case VirtualMachineRestrictionReasonBootDiskReclaimed:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -14035,16 +14051,22 @@ func (s VirtualMachineRestrictionSource) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *VirtualMachineRestrictionSource) UnmarshalText(data []byte) error {
-	switch VirtualMachineRestrictionSource(data) {
-	case VirtualMachineRestrictionSourceBilling:
-		*s = VirtualMachineRestrictionSourceBilling
+func (s *VirtualMachineRestrictionReason) UnmarshalText(data []byte) error {
+	switch VirtualMachineRestrictionReason(data) {
+	case VirtualMachineRestrictionReasonOperatorSuspended:
+		*s = VirtualMachineRestrictionReasonOperatorSuspended
 		return nil
-	case VirtualMachineRestrictionSourceIam:
-		*s = VirtualMachineRestrictionSourceIam
+	case VirtualMachineRestrictionReasonBillingSuspended:
+		*s = VirtualMachineRestrictionReasonBillingSuspended
 		return nil
-	case VirtualMachineRestrictionSourceOperator:
-		*s = VirtualMachineRestrictionSourceOperator
+	case VirtualMachineRestrictionReasonBillingReclaimed:
+		*s = VirtualMachineRestrictionReasonBillingReclaimed
+		return nil
+	case VirtualMachineRestrictionReasonBootDiskSuspended:
+		*s = VirtualMachineRestrictionReasonBootDiskSuspended
+		return nil
+	case VirtualMachineRestrictionReasonBootDiskReclaimed:
+		*s = VirtualMachineRestrictionReasonBootDiskReclaimed
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
