@@ -498,7 +498,7 @@ func encodeCreateVirtualPrivateCloudResponse(response *VirtualPrivateCloud, w ht
 
 func encodeDeleteDiskResponse(response DeleteDiskRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
-	case *DiskResource:
+	case *DeleteDiskResponseBody:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(202)
 
@@ -529,7 +529,7 @@ func encodeDeleteDiskResponse(response DeleteDiskRes, w http.ResponseWriter, spa
 
 func encodeDeleteDiskBackupResponse(response DeleteDiskBackupRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
-	case *DiskBackupResource:
+	case *DeleteDiskBackupResponseBody:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(202)
 
@@ -560,7 +560,7 @@ func encodeDeleteDiskBackupResponse(response DeleteDiskBackupRes, w http.Respons
 
 func encodeDeleteElasticIPResponse(response DeleteElasticIPRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
-	case *ElasticIP:
+	case *DeleteElasticIPResponseBody:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(202)
 
@@ -709,7 +709,7 @@ func encodeDeletePeeringResponse(response DeletePeeringRes, w http.ResponseWrite
 
 func encodeDeletePrivateImageResponse(response DeletePrivateImageRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
-	case *PrivateImageResource:
+	case *DeletePrivateImageResponseBody:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(202)
 
@@ -758,7 +758,7 @@ func encodeDeleteSecurityGroupRuleResponse(response *DeleteSecurityGroupRuleNoCo
 
 func encodeDeleteSnapshotResponse(response DeleteSnapshotRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
-	case *SnapshotResource:
+	case *DeleteSnapshotResponseBody:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(202)
 
@@ -795,7 +795,7 @@ func encodeDeleteSubnetResponse(response *DeleteSubnetNoContent, w http.Response
 
 func encodeDeleteVirtualMachineResponse(response DeleteVirtualMachineRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
-	case *VirtualMachine:
+	case *DeleteVirtualMachineResponseBody:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(202)
 

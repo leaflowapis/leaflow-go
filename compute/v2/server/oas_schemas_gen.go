@@ -125,6 +125,91 @@ func (s *AvailabilityZoneResource) SetRegionID(val RegionID) {
 	s.RegionID = val
 }
 
+// A Billing cancellation that Compute created to release a resource and the subscriptions in its
+// release set. Billing owns it; read its progress and any refund there by `id`.
+// Ref: #/components/schemas/BillingCancellation
+type BillingCancellation struct {
+	ID uuid.UUID `json:"id"`
+	// `immediate` releases the resources once Billing has canceled the subscriptions, refunding a licensed
+	// one under its terms; `period_end` keeps them working until the paid period ends.
+	Mode BillingCancellationMode `json:"mode"`
+	// When the subscriptions end and the resources are released; null while Billing has not fixed it.
+	ScheduledAt NilDateTime `json:"scheduled_at"`
+}
+
+// GetID returns the value of ID.
+func (s *BillingCancellation) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetMode returns the value of Mode.
+func (s *BillingCancellation) GetMode() BillingCancellationMode {
+	return s.Mode
+}
+
+// GetScheduledAt returns the value of ScheduledAt.
+func (s *BillingCancellation) GetScheduledAt() NilDateTime {
+	return s.ScheduledAt
+}
+
+// SetID sets the value of ID.
+func (s *BillingCancellation) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetMode sets the value of Mode.
+func (s *BillingCancellation) SetMode(val BillingCancellationMode) {
+	s.Mode = val
+}
+
+// SetScheduledAt sets the value of ScheduledAt.
+func (s *BillingCancellation) SetScheduledAt(val NilDateTime) {
+	s.ScheduledAt = val
+}
+
+// `immediate` releases the resources once Billing has canceled the subscriptions, refunding a licensed
+// one under its terms; `period_end` keeps them working until the paid period ends.
+type BillingCancellationMode string
+
+const (
+	BillingCancellationModeImmediate BillingCancellationMode = "immediate"
+	BillingCancellationModePeriodEnd BillingCancellationMode = "period_end"
+)
+
+// AllValues returns all BillingCancellationMode values.
+func (BillingCancellationMode) AllValues() []BillingCancellationMode {
+	return []BillingCancellationMode{
+		BillingCancellationModeImmediate,
+		BillingCancellationModePeriodEnd,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s BillingCancellationMode) MarshalText() ([]byte, error) {
+	switch s {
+	case BillingCancellationModeImmediate:
+		return []byte(s), nil
+	case BillingCancellationModePeriodEnd:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *BillingCancellationMode) UnmarshalText(data []byte) error {
+	switch BillingCancellationMode(data) {
+	case BillingCancellationModeImmediate:
+		*s = BillingCancellationModeImmediate
+		return nil
+	case BillingCancellationModePeriodEnd:
+		*s = BillingCancellationModePeriodEnd
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // The commercial terms for one newly purchased component. Licensed requires period and
 // termination_policy; metered refuses both. Components in one virtual machine purchase must use the
 // same usage type and period, while their termination policies may differ.
@@ -2099,11 +2184,135 @@ func (s *CreateVirtualPrivateCloudRequestBody) SetCidr(val string) {
 	s.Cidr = val
 }
 
+// The disk backup as it is when the deletion is accepted, and the Billing cancellation that releases
+// it when subscriptions pay for it.
+// Ref: #/components/schemas/DeleteDiskBackupResponseBody
+type DeleteDiskBackupResponseBody struct {
+	DiskBackup DiskBackupResource `json:"disk_backup"`
+	// The cancellation Compute created for the disk backup's subscriptions; null when none pays for it.
+	Cancellation NilBillingCancellation `json:"cancellation"`
+}
+
+// GetDiskBackup returns the value of DiskBackup.
+func (s *DeleteDiskBackupResponseBody) GetDiskBackup() DiskBackupResource {
+	return s.DiskBackup
+}
+
+// GetCancellation returns the value of Cancellation.
+func (s *DeleteDiskBackupResponseBody) GetCancellation() NilBillingCancellation {
+	return s.Cancellation
+}
+
+// SetDiskBackup sets the value of DiskBackup.
+func (s *DeleteDiskBackupResponseBody) SetDiskBackup(val DiskBackupResource) {
+	s.DiskBackup = val
+}
+
+// SetCancellation sets the value of Cancellation.
+func (s *DeleteDiskBackupResponseBody) SetCancellation(val NilBillingCancellation) {
+	s.Cancellation = val
+}
+
+func (*DeleteDiskBackupResponseBody) deleteDiskBackupRes() {}
+
+// The disk as it is when the deletion is accepted, and the Billing cancellation that releases it when
+// subscriptions pay for it.
+// Ref: #/components/schemas/DeleteDiskResponseBody
+type DeleteDiskResponseBody struct {
+	Disk DiskResource `json:"disk"`
+	// The cancellation Compute created for the disk's subscriptions; null when none pays for it.
+	Cancellation NilBillingCancellation `json:"cancellation"`
+}
+
+// GetDisk returns the value of Disk.
+func (s *DeleteDiskResponseBody) GetDisk() DiskResource {
+	return s.Disk
+}
+
+// GetCancellation returns the value of Cancellation.
+func (s *DeleteDiskResponseBody) GetCancellation() NilBillingCancellation {
+	return s.Cancellation
+}
+
+// SetDisk sets the value of Disk.
+func (s *DeleteDiskResponseBody) SetDisk(val DiskResource) {
+	s.Disk = val
+}
+
+// SetCancellation sets the value of Cancellation.
+func (s *DeleteDiskResponseBody) SetCancellation(val NilBillingCancellation) {
+	s.Cancellation = val
+}
+
+func (*DeleteDiskResponseBody) deleteDiskRes() {}
+
+// The elastic IP as it is when the deletion is accepted, and the Billing cancellation that releases it
+// when subscriptions pay for it.
+// Ref: #/components/schemas/DeleteElasticIPResponseBody
+type DeleteElasticIPResponseBody struct {
+	ElasticIP ElasticIP `json:"elastic_ip"`
+	// The cancellation Compute created for the elastic IP's subscriptions; null when none pays for it.
+	Cancellation NilBillingCancellation `json:"cancellation"`
+}
+
+// GetElasticIP returns the value of ElasticIP.
+func (s *DeleteElasticIPResponseBody) GetElasticIP() ElasticIP {
+	return s.ElasticIP
+}
+
+// GetCancellation returns the value of Cancellation.
+func (s *DeleteElasticIPResponseBody) GetCancellation() NilBillingCancellation {
+	return s.Cancellation
+}
+
+// SetElasticIP sets the value of ElasticIP.
+func (s *DeleteElasticIPResponseBody) SetElasticIP(val ElasticIP) {
+	s.ElasticIP = val
+}
+
+// SetCancellation sets the value of Cancellation.
+func (s *DeleteElasticIPResponseBody) SetCancellation(val NilBillingCancellation) {
+	s.Cancellation = val
+}
+
+func (*DeleteElasticIPResponseBody) deleteElasticIPRes() {}
+
 // DeleteLaunchTemplateNoContent is response for DeleteLaunchTemplate operation.
 type DeleteLaunchTemplateNoContent struct{}
 
 // DeleteLaunchTemplateVersionNoContent is response for DeleteLaunchTemplateVersion operation.
 type DeleteLaunchTemplateVersionNoContent struct{}
+
+// The private image as it is when the deletion is accepted, and the Billing cancellation that releases
+// it when subscriptions pay for it.
+// Ref: #/components/schemas/DeletePrivateImageResponseBody
+type DeletePrivateImageResponseBody struct {
+	PrivateImage PrivateImageResource `json:"private_image"`
+	// The cancellation Compute created for the private image's subscriptions; null when none pays for it.
+	Cancellation NilBillingCancellation `json:"cancellation"`
+}
+
+// GetPrivateImage returns the value of PrivateImage.
+func (s *DeletePrivateImageResponseBody) GetPrivateImage() PrivateImageResource {
+	return s.PrivateImage
+}
+
+// GetCancellation returns the value of Cancellation.
+func (s *DeletePrivateImageResponseBody) GetCancellation() NilBillingCancellation {
+	return s.Cancellation
+}
+
+// SetPrivateImage sets the value of PrivateImage.
+func (s *DeletePrivateImageResponseBody) SetPrivateImage(val PrivateImageResource) {
+	s.PrivateImage = val
+}
+
+// SetCancellation sets the value of Cancellation.
+func (s *DeletePrivateImageResponseBody) SetCancellation(val NilBillingCancellation) {
+	s.Cancellation = val
+}
+
+func (*DeletePrivateImageResponseBody) deletePrivateImageRes() {}
 
 // DeleteRouteNoContent is response for DeleteRoute operation.
 type DeleteRouteNoContent struct{}
@@ -2114,8 +2323,71 @@ type DeleteSecurityGroupNoContent struct{}
 // DeleteSecurityGroupRuleNoContent is response for DeleteSecurityGroupRule operation.
 type DeleteSecurityGroupRuleNoContent struct{}
 
+// The snapshot as it is when the deletion is accepted, and the Billing cancellation that releases it
+// when subscriptions pay for it.
+// Ref: #/components/schemas/DeleteSnapshotResponseBody
+type DeleteSnapshotResponseBody struct {
+	Snapshot SnapshotResource `json:"snapshot"`
+	// The cancellation Compute created for the snapshot's subscriptions; null when none pays for it.
+	Cancellation NilBillingCancellation `json:"cancellation"`
+}
+
+// GetSnapshot returns the value of Snapshot.
+func (s *DeleteSnapshotResponseBody) GetSnapshot() SnapshotResource {
+	return s.Snapshot
+}
+
+// GetCancellation returns the value of Cancellation.
+func (s *DeleteSnapshotResponseBody) GetCancellation() NilBillingCancellation {
+	return s.Cancellation
+}
+
+// SetSnapshot sets the value of Snapshot.
+func (s *DeleteSnapshotResponseBody) SetSnapshot(val SnapshotResource) {
+	s.Snapshot = val
+}
+
+// SetCancellation sets the value of Cancellation.
+func (s *DeleteSnapshotResponseBody) SetCancellation(val NilBillingCancellation) {
+	s.Cancellation = val
+}
+
+func (*DeleteSnapshotResponseBody) deleteSnapshotRes() {}
+
 // DeleteSubnetNoContent is response for DeleteSubnet operation.
 type DeleteSubnetNoContent struct{}
+
+// The virtual machine as it is when the deletion is accepted, and the Billing cancellation that
+// releases it when subscriptions pay for it.
+// Ref: #/components/schemas/DeleteVirtualMachineResponseBody
+type DeleteVirtualMachineResponseBody struct {
+	VirtualMachine VirtualMachine `json:"virtual_machine"`
+	// The cancellation Compute created for the virtual machine's subscriptions; null when none pays for
+	// it.
+	Cancellation NilBillingCancellation `json:"cancellation"`
+}
+
+// GetVirtualMachine returns the value of VirtualMachine.
+func (s *DeleteVirtualMachineResponseBody) GetVirtualMachine() VirtualMachine {
+	return s.VirtualMachine
+}
+
+// GetCancellation returns the value of Cancellation.
+func (s *DeleteVirtualMachineResponseBody) GetCancellation() NilBillingCancellation {
+	return s.Cancellation
+}
+
+// SetVirtualMachine sets the value of VirtualMachine.
+func (s *DeleteVirtualMachineResponseBody) SetVirtualMachine(val VirtualMachine) {
+	s.VirtualMachine = val
+}
+
+// SetCancellation sets the value of Cancellation.
+func (s *DeleteVirtualMachineResponseBody) SetCancellation(val NilBillingCancellation) {
+	s.Cancellation = val
+}
+
+func (*DeleteVirtualMachineResponseBody) deleteVirtualMachineRes() {}
 
 // DeleteVirtualPrivateCloudIpv6Accepted is response for DeleteVirtualPrivateCloudIpv6 operation.
 type DeleteVirtualPrivateCloudIpv6Accepted struct{}
@@ -2794,8 +3066,6 @@ func (s *DiskBackupResource) SetReleaseSet(val []ReleaseSetItem) {
 	s.ReleaseSet = val
 }
 
-func (*DiskBackupResource) deleteDiskBackupRes() {}
-
 // Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
 // completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
 // order was accepted, and the charge for this backup is refunded.
@@ -3400,7 +3670,6 @@ func (s *DiskResource) SetAttachment(val NilDiskAttachment) {
 
 func (*DiskResource) attachVirtualMachineDiskRes() {}
 func (*DiskResource) createDiskRevertRes()         {}
-func (*DiskResource) deleteDiskRes()               {}
 func (*DiskResource) detachVirtualMachineDiskRes() {}
 
 type DiskResourceAccessState string
@@ -4086,7 +4355,6 @@ func (s *ElasticIP) SetAssociation(val NilElasticIPAssociation) {
 }
 
 func (*ElasticIP) deleteElasticIPAssociationRes() {}
-func (*ElasticIP) deleteElasticIPRes()            {}
 func (*ElasticIP) putElasticIPAssociationRes()    {}
 
 type ElasticIPAccessState string
@@ -7628,6 +7896,51 @@ func (o NilAvailabilityZoneID) Get() (v AvailabilityZoneID, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilAvailabilityZoneID) Or(d AvailabilityZoneID) AvailabilityZoneID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilBillingCancellation returns new NilBillingCancellation with value set to v.
+func NewNilBillingCancellation(v BillingCancellation) NilBillingCancellation {
+	return NilBillingCancellation{
+		Value: v,
+	}
+}
+
+// NilBillingCancellation is nullable BillingCancellation.
+type NilBillingCancellation struct {
+	Value BillingCancellation
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilBillingCancellation) SetTo(v BillingCancellation) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilBillingCancellation) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilBillingCancellation) SetToNull() {
+	o.Null = true
+	var v BillingCancellation
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilBillingCancellation) Get() (v BillingCancellation, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilBillingCancellation) Or(d BillingCancellation) BillingCancellation {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -12671,8 +12984,6 @@ func (s *PrivateImageResource) SetReleaseSet(val []ReleaseSetItem) {
 	s.ReleaseSet = val
 }
 
-func (*PrivateImageResource) deletePrivateImageRes() {}
-
 // Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
 // completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
 // order was accepted, and the charge for this image is refunded.
@@ -14617,8 +14928,6 @@ func (s *SnapshotResource) SetReleaseSet(val []ReleaseSetItem) {
 	s.ReleaseSet = val
 }
 
-func (*SnapshotResource) deleteSnapshotRes() {}
-
 // Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
 // completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
 // order was accepted, and the charge for this snapshot is refunded.
@@ -16114,7 +16423,6 @@ func (s *VirtualMachine) SetLaunchTemplateVersion(val NilInt64) {
 }
 
 func (*VirtualMachine) createVirtualMachineRebootRes() {}
-func (*VirtualMachine) deleteVirtualMachineRes()       {}
 func (*VirtualMachine) deleteVirtualMachineRescueRes() {}
 
 type VirtualMachineAccessState string

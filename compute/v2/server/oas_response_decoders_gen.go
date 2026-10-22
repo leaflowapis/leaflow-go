@@ -2429,7 +2429,7 @@ func decodeDeleteDiskResponse(resp *http.Response) (res DeleteDiskRes, _ error) 
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response DiskResource
+			var response DeleteDiskResponseBody
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -2556,7 +2556,7 @@ func decodeDeleteDiskBackupResponse(resp *http.Response) (res DeleteDiskBackupRe
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response DiskBackupResource
+			var response DeleteDiskBackupResponseBody
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -2683,7 +2683,7 @@ func decodeDeleteElasticIPResponse(resp *http.Response) (res DeleteElasticIPRes,
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response ElasticIP
+			var response DeleteElasticIPResponseBody
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -3385,7 +3385,7 @@ func decodeDeletePrivateImageResponse(resp *http.Response) (res DeletePrivateIma
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response PrivateImageResource
+			var response DeletePrivateImageResponseBody
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -3665,7 +3665,7 @@ func decodeDeleteSnapshotResponse(resp *http.Response) (res DeleteSnapshotRes, _
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response SnapshotResource
+			var response DeleteSnapshotResponseBody
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -3843,7 +3843,7 @@ func decodeDeleteVirtualMachineResponse(resp *http.Response) (res DeleteVirtualM
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response VirtualMachine
+			var response DeleteVirtualMachineResponseBody
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err

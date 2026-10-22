@@ -4797,13 +4797,16 @@ func (s *Server) handleCreateVirtualPrivateCloudRequest(args [0]string, argsEsca
 //
 // Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the disk, including a
-// pay-as-you-go subscription. `meta.resource_id` names the disk. It is released by canceling the
-// subscriptions listed in `meta.subscription_ids` through Billing, the same set as its `release_set`.
-//
 // Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
 // checkout created one. Expire the session or cancel the order in Billing instead.
+//
+// While subscriptions pay for the disk (those in its `release_set`), deleting it cancels them rather
+// than being refused: Compute creates one Billing cancellation for the whole set and answers with it
+// in `cancellation`. The cancellation is `immediate` when every subscription in the set allows that, a
+// licensed one being refunded under its terms, and `period_end` when any of them ends only with its
+// paid period; the disk then keeps working until `scheduled_at` and is released then. Asking again
+// while that cancellation is pending answers with it again.
 //
 // DELETE /api/v2/disks/{diskId}
 func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5006,14 +5009,20 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 // Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of
 // the backup ends once it is deleted.
 //
-// Quota capacity and storage metering are released only after cleanup is confirmed. Billing determines
-// whether its commercial subscription must be canceled first.
+// Quota capacity and storage metering are released only after cleanup is confirmed.
 //
 // A resource whose purchase still awaits checkout or payment is refused with
 // `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
 // `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
 // Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 // must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+//
+// While subscriptions pay for the disk backup (those in its `release_set`), deleting it cancels them
+// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
+// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
+// with its paid period; the disk backup then keeps working until `scheduled_at` and is released then.
+// Asking again while that cancellation is pending answers with it again.
 //
 // DELETE /api/v2/disk-backups/{diskBackupId}
 func (s *Server) handleDeleteDiskBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5217,14 +5226,16 @@ func (s *Server) handleDeleteDiskBackupRequest(args [1]string, argsEscaped bool,
 // cleanup is confirmed; the address then immediately returns to available inventory, with no cooldown
 // period. Deleting the association or replacing it alone does not release the address.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for it, including a
-// pay-as-you-go subscription, which every elastic IP has for its address. `meta.resource_id` names the
-// elastic IP. It is released by canceling the subscriptions listed in `meta.subscription_ids` through
-// Billing, the same set as its `release_set`: the address's and the network's together.
-//
 // Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
 // checkout created one. Expire the session or cancel the order in Billing instead.
+//
+// While subscriptions pay for the elastic IP (those in its `release_set`), deleting it cancels them
+// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
+// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
+// with its paid period; the elastic IP then keeps working until `scheduled_at` and is released then.
+// Asking again while that cancellation is pending answers with it again.
 //
 // DELETE /api/v2/elastic-ips/{elasticIpId}
 func (s *Server) handleDeleteElasticIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6650,14 +6661,20 @@ func (s *Server) handleDeletePeeringRequest(args [1]string, argsEscaped bool, w 
 // An image whose capture has not finished can be deleted; the capture is aborted. This is the one
 // operation accepted while the `create` operation is in progress.
 //
-// Quota capacity and storage metering are released only after cleanup is confirmed. Billing determines
-// whether its commercial subscription must be canceled first.
+// Quota capacity and storage metering are released only after cleanup is confirmed.
 //
 // A resource whose purchase still awaits checkout or payment is refused with
 // `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
 // `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
 // Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 // must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+//
+// While subscriptions pay for the private image (those in its `release_set`), deleting it cancels them
+// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
+// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
+// with its paid period; the private image then keeps working until `scheduled_at` and is released
+// then. Asking again while that cancellation is pending answers with it again.
 //
 // DELETE /api/v2/private-images/{privateImageId}
 func (s *Server) handleDeletePrivateImageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -7468,6 +7485,13 @@ func (s *Server) handleDeleteSecurityGroupRuleRequest(args [1]string, argsEscape
 // Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 // must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 //
+// While subscriptions pay for the snapshot (those in its `release_set`), deleting it cancels them
+// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+// with it in `cancellation`. The cancellation is `immediate` when every subscription in the set allows
+// that, a licensed one being refunded under its terms, and `period_end` when any of them ends only
+// with its paid period; the snapshot then keeps working until `scheduled_at` and is released then.
+// Asking again while that cancellation is pending answers with it again.
+//
 // DELETE /api/v2/snapshots/{snapshotId}
 func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -7874,14 +7898,16 @@ func (s *Server) handleDeleteSubnetRequest(args [1]string, argsEscaped bool, w h
 // A virtual machine being captured as a private image cannot be released. Wait for the capture to
 // finish, or delete that image first.
 //
-// Refused with `COMPUTE_RESOURCE_SUBSCRIBED` while a subscription pays for the virtual machine, or for
-// a disk that is deleted with it, including a pay-as-you-go subscription. `meta.resource_id` names
-// that resource. The virtual machine is released by canceling the subscriptions listed in
-// `meta.subscription_ids` through Billing, the same set as its `release_set`.
-//
 // Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
 // checkout created one. Expire the session or cancel the order in Billing instead.
+//
+// While subscriptions pay for the virtual machine (those in its `release_set`), deleting it cancels
+// them rather than being refused: Compute creates one Billing cancellation for the whole set and
+// answers with it in `cancellation`. The cancellation is `immediate` when every subscription in the
+// set allows that, a licensed one being refunded under its terms, and `period_end` when any of them
+// ends only with its paid period; the virtual machine then keeps working until `scheduled_at` and is
+// released then. Asking again while that cancellation is pending answers with it again.
 //
 // DELETE /api/v2/virtual-machines/{virtualMachineId}
 func (s *Server) handleDeleteVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
