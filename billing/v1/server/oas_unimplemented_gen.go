@@ -754,15 +754,6 @@ func (UnimplementedHandler) ListProjectAssignments(ctx context.Context, params L
 	return r, ht.ErrNotImplemented
 }
 
-// ListRates implements list-rates operation.
-//
-// Rules of a public rate card; contract cards are not readable here.
-//
-// GET /api/v1/rate-cards/{rateCardId}/rules
-func (UnimplementedHandler) ListRates(ctx context.Context, params ListRatesParams) (r ListRatesRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // ListRefunds implements list-refunds operation.
 //
 // Newest first.
@@ -1015,23 +1006,11 @@ func (UnimplementedHandler) ResumeBillingAccount(ctx context.Context, params Res
 //
 // Lists the active prices in `currency` that meet every condition in the body, as `list-prices` lists
 // them, for anyone, signed in or not. Use it for conditions a query string cannot hold, such as the
-// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own; read
-// its rates with `search-rates`.
+// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own and
+// carries its `rates`, which `dimensions` narrows to the dimension values of the items on the page.
 //
 // QUERY /api/v1/prices
 func (UnimplementedHandler) SearchPrices(ctx context.Context, req *PriceSearch) (r *PriceList, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// SearchRates implements search-rates operation.
-//
-// Rules of a public rate card that meet every condition in the body, as `list-rates` lists them, for
-// anyone, signed in or not; contract cards are not readable here. Use it to read the rates at the
-// dimension values of the items on a page, such as each region and machine type offered, and match
-// each rate to its price by meter, usage type, interval and dimensions.
-//
-// QUERY /api/v1/rate-cards/{rateCardId}/rules
-func (UnimplementedHandler) SearchRates(ctx context.Context, req *RateSearch, params SearchRatesParams) (r *RateList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

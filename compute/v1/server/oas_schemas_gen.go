@@ -1135,9 +1135,9 @@ func (s *BillingChoiceUsageType) UnmarshalText(data []byte) error {
 }
 
 // How one order line of an item is sold in Billing. Give `plan_id` to Billing's `search-prices` for
-// its prices, and `dimensions` to `search-rates` for the rates of a price that delegates to a rate
-// card. Quote a purchase or a change with Billing's `get-quote` using these values, the quantity this
-// describes and the chosen terms, and estimate metered usage with `estimate-usage` and `meters`.
+// its prices, with `dimensions` to narrow the `rates` of a price that delegates to a rate card. Quote
+// a purchase or a change with Billing's `get-quote` using these values, the quantity this describes
+// and the chosen terms, and estimate metered usage with `estimate-usage` and `meters`.
 // Ref: #/components/schemas/BillingComponent
 type BillingComponent struct {
 	// The Billing plan the line is ordered under.

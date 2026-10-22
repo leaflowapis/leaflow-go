@@ -563,12 +563,6 @@ type Handler interface {
 	//
 	// GET /api/v1/assignments
 	ListProjectAssignments(ctx context.Context, params ListProjectAssignmentsParams) (*ProjectAssignmentList, error)
-	// ListRates implements list-rates operation.
-	//
-	// Rules of a public rate card; contract cards are not readable here.
-	//
-	// GET /api/v1/rate-cards/{rateCardId}/rules
-	ListRates(ctx context.Context, params ListRatesParams) (ListRatesRes, error)
 	// ListRefunds implements list-refunds operation.
 	//
 	// Newest first.
@@ -764,20 +758,11 @@ type Handler interface {
 	//
 	// Lists the active prices in `currency` that meet every condition in the body, as `list-prices` lists
 	// them, for anyone, signed in or not. Use it for conditions a query string cannot hold, such as the
-	// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own; read
-	// its rates with `search-rates`.
+	// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own and
+	// carries its `rates`, which `dimensions` narrows to the dimension values of the items on the page.
 	//
 	// QUERY /api/v1/prices
 	SearchPrices(ctx context.Context, req *PriceSearch) (*PriceList, error)
-	// SearchRates implements search-rates operation.
-	//
-	// Rules of a public rate card that meet every condition in the body, as `list-rates` lists them, for
-	// anyone, signed in or not; contract cards are not readable here. Use it to read the rates at the
-	// dimension values of the items on a page, such as each region and machine type offered, and match
-	// each rate to its price by meter, usage type, interval and dimensions.
-	//
-	// QUERY /api/v1/rate-cards/{rateCardId}/rules
-	SearchRates(ctx context.Context, req *RateSearch, params SearchRatesParams) (*RateList, error)
 	// SetAutoRenew implements set-auto-renew operation.
 	//
 	// Turns automatic renewal of an active or suspended licensed subscription on or off. Turning it off

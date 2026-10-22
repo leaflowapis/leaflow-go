@@ -2052,8 +2052,8 @@ func (s *Model) SetSupportedEndpoints(val []ModelEndpoint) {
 func (*Model) getInferenceModelRes() {}
 
 // How requests to a model are billed: under the service's subscription, on the Billing plan `plan_id`,
-// one rate for each token kind. Read the rates from Billing with `search-prices` for the plan and then
-// `search-rates` with each meter's `dimensions`.
+// one rate for each token kind. Read the rates from Billing with `search-prices` for the plan,
+// narrowing each price's `rates` with each meter's `dimensions`.
 //
 // Each token kind is priced on its own. `input` excludes cached input, which is `cache_read`, and
 // `output` excludes reasoning the provider reports separately, which is `reasoning`; a request is

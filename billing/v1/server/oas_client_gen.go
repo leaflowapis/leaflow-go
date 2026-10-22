@@ -584,12 +584,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/assignments
 	ListProjectAssignments(ctx context.Context, params ListProjectAssignmentsParams) (*ProjectAssignmentList, error)
-	// ListRates invokes list-rates operation.
-	//
-	// Rules of a public rate card; contract cards are not readable here.
-	//
-	// GET /api/v1/rate-cards/{rateCardId}/rules
-	ListRates(ctx context.Context, params ListRatesParams) (ListRatesRes, error)
 	// ListRefunds invokes list-refunds operation.
 	//
 	// Newest first.
@@ -785,20 +779,11 @@ type Invoker interface {
 	//
 	// Lists the active prices in `currency` that meet every condition in the body, as `list-prices` lists
 	// them, for anyone, signed in or not. Use it for conditions a query string cannot hold, such as the
-	// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own; read
-	// its rates with `search-rates`.
+	// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own and
+	// carries its `rates`, which `dimensions` narrows to the dimension values of the items on the page.
 	//
 	// QUERY /api/v1/prices
 	SearchPrices(ctx context.Context, request *PriceSearch) (*PriceList, error)
-	// SearchRates invokes search-rates operation.
-	//
-	// Rules of a public rate card that meet every condition in the body, as `list-rates` lists them, for
-	// anyone, signed in or not; contract cards are not readable here. Use it to read the rates at the
-	// dimension values of the items on a page, such as each region and machine type offered, and match
-	// each rate to its price by meter, usage type, interval and dimensions.
-	//
-	// QUERY /api/v1/rate-cards/{rateCardId}/rules
-	SearchRates(ctx context.Context, request *RateSearch, params SearchRatesParams) (*RateList, error)
 	// SetAutoRenew invokes set-auto-renew operation.
 	//
 	// Turns automatic renewal of an active or suspended licensed subscription on or off. Turning it off
@@ -10819,194 +10804,6 @@ func (c *Client) sendListProjectAssignments(ctx context.Context, params ListProj
 	return result, nil
 }
 
-// ListRates invokes list-rates operation.
-//
-// Rules of a public rate card; contract cards are not readable here.
-//
-// GET /api/v1/rate-cards/{rateCardId}/rules
-func (c *Client) ListRates(ctx context.Context, params ListRatesParams) (ListRatesRes, error) {
-	res, err := c.sendListRates(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListRates(ctx context.Context, params ListRatesParams) (res ListRatesRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-rates"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/rate-cards/{rateCardId}/rules"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListRatesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/rate-cards/"
-	{
-		// Encode "rateCardId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "rateCardId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.RateCardId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/rules"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "meter_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "meter_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.MeterID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "at" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "at",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.At.Get(); ok {
-				return e.EncodeValue(conv.DateTimeToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "If-None-Match",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.IfNoneMatch.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListRatesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // ListRefunds invokes list-refunds operation.
 //
 // Newest first.
@@ -14429,8 +14226,8 @@ func (c *Client) sendResumeBillingAccount(ctx context.Context, params ResumeBill
 //
 // Lists the active prices in `currency` that meet every condition in the body, as `list-prices` lists
 // them, for anyone, signed in or not. Use it for conditions a query string cannot hold, such as the
-// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own; read
-// its rates with `search-rates`.
+// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own and
+// carries its `rates`, which `dimensions` narrows to the dimension values of the items on the page.
 //
 // QUERY /api/v1/prices
 func (c *Client) SearchPrices(ctx context.Context, request *PriceSearch) (*PriceList, error) {
@@ -14513,120 +14310,6 @@ func (c *Client) sendSearchPrices(ctx context.Context, request *PriceSearch) (re
 
 	stage = "DecodeResponse"
 	result, err := decodeSearchPricesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// SearchRates invokes search-rates operation.
-//
-// Rules of a public rate card that meet every condition in the body, as `list-rates` lists them, for
-// anyone, signed in or not; contract cards are not readable here. Use it to read the rates at the
-// dimension values of the items on a page, such as each region and machine type offered, and match
-// each rate to its price by meter, usage type, interval and dimensions.
-//
-// QUERY /api/v1/rate-cards/{rateCardId}/rules
-func (c *Client) SearchRates(ctx context.Context, request *RateSearch, params SearchRatesParams) (*RateList, error) {
-	res, err := c.sendSearchRates(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendSearchRates(ctx context.Context, request *RateSearch, params SearchRatesParams) (res *RateList, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("search-rates"),
-		semconv.HTTPRequestMethodKey.String("QUERY"),
-		semconv.URLTemplateKey.String("/api/v1/rate-cards/{rateCardId}/rules"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, SearchRatesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/rate-cards/"
-	{
-		// Encode "rateCardId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "rateCardId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.RateCardId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/rules"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "QUERY", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeSearchRatesRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeSearchRatesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

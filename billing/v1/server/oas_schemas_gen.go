@@ -7606,7 +7606,6 @@ func (s *NotModified) SetETag(val OptString) {
 func (*NotModified) listPlansRes()        {}
 func (*NotModified) listPricesByPlanRes() {}
 func (*NotModified) listProductsRes()     {}
-func (*NotModified) listRatesRes()        {}
 
 // A catalog object, inlined for display.
 // Ref: #/components/schemas/ObjectIdentity
@@ -9101,6 +9100,74 @@ func (o OptNilNamedIdentity) Get() (v NamedIdentity, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilNamedIdentity) Or(d NamedIdentity) NamedIdentity {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilRateArray returns new OptNilRateArray with value set to v.
+func NewOptNilRateArray(v []Rate) OptNilRateArray {
+	return OptNilRateArray{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilRateArray is optional nullable []Rate.
+type OptNilRateArray struct {
+	Value []Rate
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilRateArray was set.
+func (o OptNilRateArray) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilRateArray) Reset() {
+	var v []Rate
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilRateArray) SetTo(v []Rate) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilRateArray) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilRateArray) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v []Rate
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilRateArray) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilRateArray) Get() (v []Rate, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilRateArray) Or(d []Rate) []Rate {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -13418,10 +13485,14 @@ func (*PlanListHeaders) listPlansRes() {}
 
 // Ref: #/components/schemas/Price
 type Price struct {
-	RateCard  OptObjectIdentity `json:"rate_card"`
-	LookupKey OptString         `json:"lookup_key"`
-	Product   Product           `json:"product"`
-	Plan      ObjectIdentity    `json:"plan"`
+	// For a price that delegates to a rate card, the rates in effect now that it charges at, one for each
+	// meter, dimension values and period; metered rates for a metered price, and rates on its own meter
+	// and period for a licensed one. `search-prices` narrows them with `dimensions`. Null for a price with
+	// its own amounts.
+	Rates     OptNilRateArray `json:"rates"`
+	LookupKey OptString       `json:"lookup_key"`
+	Product   Product         `json:"product"`
+	Plan      ObjectIdentity  `json:"plan"`
 	// For a metered price with its own amounts, the meter it charges. For a licensed price, the meter its
 	// quantity is held on. Absent otherwise.
 	MeterID      OptUUID           `json:"meter_id"`
@@ -13452,8 +13523,6 @@ type Price struct {
 	TiersMode OptPriceTiersMode `json:"tiers_mode"`
 	// Present for `tiered`, in ascending order.
 	Tiers []Tier `json:"tiers"`
-	// Present when the price delegates to a rate card, the price list its rates are read from.
-	RateCardID OptUUID `json:"rate_card_id"`
 	// The smallest quantity that can be bought. Absent means no lower bound.
 	MinQuantity OptString `json:"min_quantity"`
 	// The largest quantity that may be bought; absent when there is no limit. A larger quantity is refused
@@ -13467,9 +13536,9 @@ type Price struct {
 	SetupFee      OptMoney      `json:"setup_fee"`
 }
 
-// GetRateCard returns the value of RateCard.
-func (s *Price) GetRateCard() OptObjectIdentity {
-	return s.RateCard
+// GetRates returns the value of Rates.
+func (s *Price) GetRates() OptNilRateArray {
+	return s.Rates
 }
 
 // GetLookupKey returns the value of LookupKey.
@@ -13577,11 +13646,6 @@ func (s *Price) GetTiers() []Tier {
 	return s.Tiers
 }
 
-// GetRateCardID returns the value of RateCardID.
-func (s *Price) GetRateCardID() OptUUID {
-	return s.RateCardID
-}
-
 // GetMinQuantity returns the value of MinQuantity.
 func (s *Price) GetMinQuantity() OptString {
 	return s.MinQuantity
@@ -13612,9 +13676,9 @@ func (s *Price) GetSetupFee() OptMoney {
 	return s.SetupFee
 }
 
-// SetRateCard sets the value of RateCard.
-func (s *Price) SetRateCard(val OptObjectIdentity) {
-	s.RateCard = val
+// SetRates sets the value of Rates.
+func (s *Price) SetRates(val OptNilRateArray) {
+	s.Rates = val
 }
 
 // SetLookupKey sets the value of LookupKey.
@@ -13720,11 +13784,6 @@ func (s *Price) SetTiersMode(val OptPriceTiersMode) {
 // SetTiers sets the value of Tiers.
 func (s *Price) SetTiers(val []Tier) {
 	s.Tiers = val
-}
-
-// SetRateCardID sets the value of RateCardID.
-func (s *Price) SetRateCardID(val OptUUID) {
-	s.RateCardID = val
 }
 
 // SetMinQuantity sets the value of MinQuantity.
@@ -14104,6 +14163,9 @@ type PriceSearch struct {
 	Type OptPriceType `json:"type"`
 	// Narrows to one usage type.
 	UsageType OptUsageType `json:"usage_type"`
+	// Narrows each price's `rates` to these dimension value sets, given as on order lines and usage;
+	// prices are not filtered by it. A set no rate has adds nothing.
+	Dimensions []PriceSearchDimensionsItem `json:"dimensions"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:"page"`
 	// Items per page. Defaults to 50; at most 200.
@@ -14138,6 +14200,11 @@ func (s *PriceSearch) GetType() OptPriceType {
 // GetUsageType returns the value of UsageType.
 func (s *PriceSearch) GetUsageType() OptUsageType {
 	return s.UsageType
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *PriceSearch) GetDimensions() []PriceSearchDimensionsItem {
+	return s.Dimensions
 }
 
 // GetPage returns the value of Page.
@@ -14180,6 +14247,11 @@ func (s *PriceSearch) SetUsageType(val OptUsageType) {
 	s.UsageType = val
 }
 
+// SetDimensions sets the value of Dimensions.
+func (s *PriceSearch) SetDimensions(val []PriceSearchDimensionsItem) {
+	s.Dimensions = val
+}
+
 // SetPage sets the value of Page.
 func (s *PriceSearch) SetPage(val OptInt64) {
 	s.Page = val
@@ -14188,6 +14260,17 @@ func (s *PriceSearch) SetPage(val OptInt64) {
 // SetPageSize sets the value of PageSize.
 func (s *PriceSearch) SetPageSize(val OptInt64) {
 	s.PageSize = val
+}
+
+type PriceSearchDimensionsItem map[string]string
+
+func (s *PriceSearchDimensionsItem) init() PriceSearchDimensionsItem {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
 }
 
 // How a ladder is walked: `graduated` charges each band at its own rate, `volume` charges everything
@@ -16527,137 +16610,6 @@ func (s *RateInterval) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
-}
-
-// Ref: #/components/schemas/RateList
-type RateList struct {
-	Items      []Rate           `json:"items"`
-	Pagination OffsetPagination `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *RateList) GetItems() []Rate {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *RateList) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *RateList) SetItems(val []Rate) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *RateList) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
-// RateListHeaders wraps RateList with response headers.
-type RateListHeaders struct {
-	ETag     OptString
-	Response RateList
-}
-
-// GetETag returns the value of ETag.
-func (s *RateListHeaders) GetETag() OptString {
-	return s.ETag
-}
-
-// GetResponse returns the value of Response.
-func (s *RateListHeaders) GetResponse() RateList {
-	return s.Response
-}
-
-// SetETag sets the value of ETag.
-func (s *RateListHeaders) SetETag(val OptString) {
-	s.ETag = val
-}
-
-// SetResponse sets the value of Response.
-func (s *RateListHeaders) SetResponse(val RateList) {
-	s.Response = val
-}
-
-func (*RateListHeaders) listRatesRes() {}
-
-// Conditions combined with AND.
-// Ref: #/components/schemas/RateSearch
-type RateSearch struct {
-	// Only rates on this meter.
-	MeterID OptUUID `json:"meter_id"`
-	// Rates in effect at this moment; defaults to now.
-	At OptDateTime `json:"at"`
-	// Only rates whose dimension values are exactly one of these sets, given as on order lines and usage.
-	// A set no rate has matches nothing.
-	Dimensions []RateSearchDimensionsItem `json:"dimensions"`
-	// 1-based page number. Defaults to 1.
-	Page OptInt64 `json:"page"`
-	// Items per page. Defaults to 50; at most 200.
-	PageSize OptInt64 `json:"page_size"`
-}
-
-// GetMeterID returns the value of MeterID.
-func (s *RateSearch) GetMeterID() OptUUID {
-	return s.MeterID
-}
-
-// GetAt returns the value of At.
-func (s *RateSearch) GetAt() OptDateTime {
-	return s.At
-}
-
-// GetDimensions returns the value of Dimensions.
-func (s *RateSearch) GetDimensions() []RateSearchDimensionsItem {
-	return s.Dimensions
-}
-
-// GetPage returns the value of Page.
-func (s *RateSearch) GetPage() OptInt64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *RateSearch) GetPageSize() OptInt64 {
-	return s.PageSize
-}
-
-// SetMeterID sets the value of MeterID.
-func (s *RateSearch) SetMeterID(val OptUUID) {
-	s.MeterID = val
-}
-
-// SetAt sets the value of At.
-func (s *RateSearch) SetAt(val OptDateTime) {
-	s.At = val
-}
-
-// SetDimensions sets the value of Dimensions.
-func (s *RateSearch) SetDimensions(val []RateSearchDimensionsItem) {
-	s.Dimensions = val
-}
-
-// SetPage sets the value of Page.
-func (s *RateSearch) SetPage(val OptInt64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *RateSearch) SetPageSize(val OptInt64) {
-	s.PageSize = val
-}
-
-type RateSearchDimensionsItem map[string]string
-
-func (s *RateSearchDimensionsItem) init() RateSearchDimensionsItem {
-	m := *s
-	if m == nil {
-		m = map[string]string{}
-		*s = m
-	}
-	return m
 }
 
 // `graduated` charges each band at its own rate; `volume` charges everything at the rate of the band

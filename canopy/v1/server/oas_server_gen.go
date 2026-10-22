@@ -173,7 +173,8 @@ type Handler interface {
 	// and the request body is forwarded upstream unchanged.
 	//
 	// Canopy returns no amounts: each model's `billing` names the Billing plan and the rate dimensions its
-	// token usage is priced at. Read the rates from Billing with `search-prices` and `search-rates`.
+	// token usage is priced at. Read the rates from the `rates` of the plan's prices in Billing's
+	// `search-prices`.
 	//
 	// GET /api/v1/models
 	ListModels(ctx context.Context) (ListModelsRes, error)

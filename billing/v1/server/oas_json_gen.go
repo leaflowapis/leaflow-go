@@ -15112,6 +15112,67 @@ func (s *OptNilNamedIdentity) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes []Rate as json.
+func (o OptNilRateArray) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	if o.Null {
+		e.Null()
+		return
+	}
+	e.ArrStart()
+	for _, elem := range o.Value {
+		elem.Encode(e)
+	}
+	e.ArrEnd()
+}
+
+// Decode decodes []Rate from json.
+func (o *OptNilRateArray) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptNilRateArray to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v []Rate
+		o.Value = v
+		o.Set = true
+		o.Null = true
+		return nil
+	}
+	o.Set = true
+	o.Null = false
+	o.Value = make([]Rate, 0)
+	if err := d.Arr(func(d *jx.Decoder) error {
+		var elem Rate
+		if err := elem.Decode(d); err != nil {
+			return err
+		}
+		o.Value = append(o.Value, elem)
+		return nil
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptNilRateArray) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptNilRateArray) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes ScheduledChange as json.
 func (o OptNilScheduledChange) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -21318,9 +21379,9 @@ func (s *Price) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *Price) encodeFields(e *jx.Encoder) {
 	{
-		if s.RateCard.Set {
-			e.FieldStart("rate_card")
-			s.RateCard.Encode(e)
+		if s.Rates.Set {
+			e.FieldStart("rates")
+			s.Rates.Encode(e)
 		}
 	}
 	{
@@ -21436,12 +21497,6 @@ func (s *Price) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.RateCardID.Set {
-			e.FieldStart("rate_card_id")
-			s.RateCardID.Encode(e)
-		}
-	}
-	{
 		if s.MinQuantity.Set {
 			e.FieldStart("min_quantity")
 			s.MinQuantity.Encode(e)
@@ -21477,8 +21532,8 @@ func (s *Price) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPrice = [29]string{
-	0:  "rate_card",
+var jsonFieldsNameOfPrice = [28]string{
+	0:  "rates",
 	1:  "lookup_key",
 	2:  "product",
 	3:  "plan",
@@ -21500,13 +21555,12 @@ var jsonFieldsNameOfPrice = [29]string{
 	19: "unit_amount",
 	20: "tiers_mode",
 	21: "tiers",
-	22: "rate_card_id",
-	23: "min_quantity",
-	24: "max_quantity",
-	25: "quantity_step",
-	26: "interval_count",
-	27: "interval",
-	28: "setup_fee",
+	22: "min_quantity",
+	23: "max_quantity",
+	24: "quantity_step",
+	25: "interval_count",
+	26: "interval",
+	27: "setup_fee",
 }
 
 // Decode decodes Price from json.
@@ -21518,15 +21572,15 @@ func (s *Price) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "rate_card":
+		case "rates":
 			if err := func() error {
-				s.RateCard.Reset()
-				if err := s.RateCard.Decode(d); err != nil {
+				s.Rates.Reset()
+				if err := s.Rates.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"rate_card\"")
+				return errors.Wrap(err, "decode field \"rates\"")
 			}
 		case "lookup_key":
 			if err := func() error {
@@ -21755,16 +21809,6 @@ func (s *Price) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"tiers\"")
 			}
-		case "rate_card_id":
-			if err := func() error {
-				s.RateCardID.Reset()
-				if err := s.RateCardID.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"rate_card_id\"")
-			}
 		case "min_quantity":
 			if err := func() error {
 				s.MinQuantity.Reset()
@@ -21806,7 +21850,7 @@ func (s *Price) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"interval_count\"")
 			}
 		case "interval":
-			requiredBitSet[3] |= 1 << 3
+			requiredBitSet[3] |= 1 << 2
 			if err := func() error {
 				if err := s.Interval.Decode(d); err != nil {
 					return err
@@ -21838,7 +21882,7 @@ func (s *Price) Decode(d *jx.Decoder) error {
 		0b11001100,
 		0b11100000,
 		0b00000011,
-		0b00001000,
+		0b00000100,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -22419,6 +22463,16 @@ func (s *PriceSearch) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.Dimensions != nil {
+			e.FieldStart("dimensions")
+			e.ArrStart()
+			for _, elem := range s.Dimensions {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
 		if s.Page.Set {
 			e.FieldStart("page")
 			s.Page.Encode(e)
@@ -22432,15 +22486,16 @@ func (s *PriceSearch) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPriceSearch = [8]string{
+var jsonFieldsNameOfPriceSearch = [9]string{
 	0: "currency",
 	1: "ids",
 	2: "plan_ids",
 	3: "product_id",
 	4: "type",
 	5: "usage_type",
-	6: "page",
-	7: "page_size",
+	6: "dimensions",
+	7: "page",
+	8: "page_size",
 }
 
 // Decode decodes PriceSearch from json.
@@ -22448,7 +22503,7 @@ func (s *PriceSearch) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode PriceSearch to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -22532,6 +22587,23 @@ func (s *PriceSearch) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"usage_type\"")
 			}
+		case "dimensions":
+			if err := func() error {
+				s.Dimensions = make([]PriceSearchDimensionsItem, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem PriceSearchDimensionsItem
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Dimensions = append(s.Dimensions, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"dimensions\"")
+			}
 		case "page":
 			if err := func() error {
 				s.Page.Reset()
@@ -22561,8 +22633,9 @@ func (s *PriceSearch) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
+	for i, mask := range [2]uint8{
 		0b00000001,
+		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -22604,6 +22677,73 @@ func (s *PriceSearch) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *PriceSearch) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s PriceSearchDimensionsItem) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields implements json.Marshaler.
+func (s PriceSearchDimensionsItem) encodeFields(e *jx.Encoder) {
+	for k, elem := range s {
+		e.FieldStart(k)
+
+		e.Str(elem)
+	}
+}
+
+// Decode decodes PriceSearchDimensionsItem from json.
+func (s *PriceSearchDimensionsItem) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PriceSearchDimensionsItem to nil")
+	}
+	m := s.init()
+	var propertiesCount int
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		propertiesCount++
+		var elem string
+		if err := func() error {
+			v, err := d.Str()
+			elem = string(v)
+			if err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return errors.Wrapf(err, "decode field %q", k)
+		}
+		m[string(k)] = elem
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PriceSearchDimensionsItem")
+	}
+	// Validate properties count.
+	if err := (validate.Object{
+		MinProperties:    1,
+		MinPropertiesSet: true,
+		MaxProperties:    0,
+		MaxPropertiesSet: false,
+	}).ValidateProperties(propertiesCount); err != nil {
+		return errors.Wrap(err, "object")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s PriceSearchDimensionsItem) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PriceSearchDimensionsItem) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -26693,336 +26833,6 @@ func (s RateInterval) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *RateInterval) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode implements json.Marshaler.
-func (s *RateList) Encode(e *jx.Encoder) {
-	e.ObjStart()
-	s.encodeFields(e)
-	e.ObjEnd()
-}
-
-// encodeFields encodes fields.
-func (s *RateList) encodeFields(e *jx.Encoder) {
-	{
-		e.FieldStart("items")
-		e.ArrStart()
-		for _, elem := range s.Items {
-			elem.Encode(e)
-		}
-		e.ArrEnd()
-	}
-	{
-		e.FieldStart("pagination")
-		s.Pagination.Encode(e)
-	}
-}
-
-var jsonFieldsNameOfRateList = [2]string{
-	0: "items",
-	1: "pagination",
-}
-
-// Decode decodes RateList from json.
-func (s *RateList) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode RateList to nil")
-	}
-	var requiredBitSet [1]uint8
-
-	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
-		switch string(k) {
-		case "items":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				s.Items = make([]Rate, 0)
-				if err := d.Arr(func(d *jx.Decoder) error {
-					var elem Rate
-					if err := elem.Decode(d); err != nil {
-						return err
-					}
-					s.Items = append(s.Items, elem)
-					return nil
-				}); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"items\"")
-			}
-		case "pagination":
-			requiredBitSet[0] |= 1 << 1
-			if err := func() error {
-				if err := s.Pagination.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"pagination\"")
-			}
-		default:
-			return d.Skip()
-		}
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "decode RateList")
-	}
-	// Validate required fields.
-	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b00000011,
-	} {
-		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
-			// Mask only required fields and check equality to mask using XOR.
-			//
-			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
-			// Bits of fields which would be set are actually bits of missed fields.
-			missed := bits.OnesCount8(result)
-			for bitN := 0; bitN < missed; bitN++ {
-				bitIdx := bits.TrailingZeros8(result)
-				fieldIdx := i*8 + bitIdx
-				var name string
-				if fieldIdx < len(jsonFieldsNameOfRateList) {
-					name = jsonFieldsNameOfRateList[fieldIdx]
-				} else {
-					name = strconv.Itoa(fieldIdx)
-				}
-				failures = append(failures, validate.FieldError{
-					Name:  name,
-					Error: validate.ErrFieldRequired,
-				})
-				// Reset bit.
-				result &^= 1 << bitIdx
-			}
-		}
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s *RateList) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *RateList) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode implements json.Marshaler.
-func (s *RateSearch) Encode(e *jx.Encoder) {
-	e.ObjStart()
-	s.encodeFields(e)
-	e.ObjEnd()
-}
-
-// encodeFields encodes fields.
-func (s *RateSearch) encodeFields(e *jx.Encoder) {
-	{
-		if s.MeterID.Set {
-			e.FieldStart("meter_id")
-			s.MeterID.Encode(e)
-		}
-	}
-	{
-		if s.At.Set {
-			e.FieldStart("at")
-			s.At.Encode(e, json.EncodeDateTime)
-		}
-	}
-	{
-		if s.Dimensions != nil {
-			e.FieldStart("dimensions")
-			e.ArrStart()
-			for _, elem := range s.Dimensions {
-				elem.Encode(e)
-			}
-			e.ArrEnd()
-		}
-	}
-	{
-		if s.Page.Set {
-			e.FieldStart("page")
-			s.Page.Encode(e)
-		}
-	}
-	{
-		if s.PageSize.Set {
-			e.FieldStart("page_size")
-			s.PageSize.Encode(e)
-		}
-	}
-}
-
-var jsonFieldsNameOfRateSearch = [5]string{
-	0: "meter_id",
-	1: "at",
-	2: "dimensions",
-	3: "page",
-	4: "page_size",
-}
-
-// Decode decodes RateSearch from json.
-func (s *RateSearch) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode RateSearch to nil")
-	}
-
-	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
-		switch string(k) {
-		case "meter_id":
-			if err := func() error {
-				s.MeterID.Reset()
-				if err := s.MeterID.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"meter_id\"")
-			}
-		case "at":
-			if err := func() error {
-				s.At.Reset()
-				if err := s.At.Decode(d, json.DecodeDateTime); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"at\"")
-			}
-		case "dimensions":
-			if err := func() error {
-				s.Dimensions = make([]RateSearchDimensionsItem, 0)
-				if err := d.Arr(func(d *jx.Decoder) error {
-					var elem RateSearchDimensionsItem
-					if err := elem.Decode(d); err != nil {
-						return err
-					}
-					s.Dimensions = append(s.Dimensions, elem)
-					return nil
-				}); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"dimensions\"")
-			}
-		case "page":
-			if err := func() error {
-				s.Page.Reset()
-				if err := s.Page.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"page\"")
-			}
-		case "page_size":
-			if err := func() error {
-				s.PageSize.Reset()
-				if err := s.PageSize.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"page_size\"")
-			}
-		default:
-			return errors.Errorf("unexpected field %q", k)
-		}
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "decode RateSearch")
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s *RateSearch) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *RateSearch) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode implements json.Marshaler.
-func (s RateSearchDimensionsItem) Encode(e *jx.Encoder) {
-	e.ObjStart()
-	s.encodeFields(e)
-	e.ObjEnd()
-}
-
-// encodeFields implements json.Marshaler.
-func (s RateSearchDimensionsItem) encodeFields(e *jx.Encoder) {
-	for k, elem := range s {
-		e.FieldStart(k)
-
-		e.Str(elem)
-	}
-}
-
-// Decode decodes RateSearchDimensionsItem from json.
-func (s *RateSearchDimensionsItem) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode RateSearchDimensionsItem to nil")
-	}
-	m := s.init()
-	var propertiesCount int
-	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
-		propertiesCount++
-		var elem string
-		if err := func() error {
-			v, err := d.Str()
-			elem = string(v)
-			if err != nil {
-				return err
-			}
-			return nil
-		}(); err != nil {
-			return errors.Wrapf(err, "decode field %q", k)
-		}
-		m[string(k)] = elem
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "decode RateSearchDimensionsItem")
-	}
-	// Validate properties count.
-	if err := (validate.Object{
-		MinProperties:    1,
-		MinPropertiesSet: true,
-		MaxProperties:    0,
-		MaxPropertiesSet: false,
-	}).ValidateProperties(propertiesCount); err != nil {
-		return errors.Wrap(err, "object")
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s RateSearchDimensionsItem) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *RateSearchDimensionsItem) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
