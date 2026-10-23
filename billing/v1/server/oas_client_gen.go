@@ -848,13 +848,14 @@ type Invoker interface {
 	UpdateContact(ctx context.Context, request *ContactUpdate, params UpdateContactParams) (*Contact, error)
 	// WithdrawCancellation invokes withdraw-cancellation operation.
 	//
-	// Withdraws the whole cancellation while no resource has begun to be released; afterwards it is
-	// refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions continue, but automatic renewal,
-	// turned off when the cancellation was created, stays off until it is turned on again. Withdrawing a
-	// withdrawn cancellation returns it unchanged. Open to the owner of the subscriptions' current billing
-	// account and to members of their project with the project permission `billing:finance.manage`.
+	// Withdraws the whole cancellation, which stays with status `canceled`, while no resource has begun to
+	// be released; afterwards it is refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions
+	// continue, but automatic renewal, turned off when the cancellation was created, stays off until it is
+	// turned on again. Withdrawing a withdrawn cancellation returns it unchanged. Open to the owner of the
+	// subscriptions' current billing account and to members of their project with the project permission
+	// `billing:finance.manage`.
 	//
-	// POST /api/v1/cancellations/{cancellationId}:withdraw
+	// DELETE /api/v1/cancellations/{cancellationId}
 	WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (*Cancellation, error)
 }
 
@@ -15182,13 +15183,14 @@ func (c *Client) sendUpdateContact(ctx context.Context, request *ContactUpdate, 
 
 // WithdrawCancellation invokes withdraw-cancellation operation.
 //
-// Withdraws the whole cancellation while no resource has begun to be released; afterwards it is
-// refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions continue, but automatic renewal,
-// turned off when the cancellation was created, stays off until it is turned on again. Withdrawing a
-// withdrawn cancellation returns it unchanged. Open to the owner of the subscriptions' current billing
-// account and to members of their project with the project permission `billing:finance.manage`.
+// Withdraws the whole cancellation, which stays with status `canceled`, while no resource has begun to
+// be released; afterwards it is refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions
+// continue, but automatic renewal, turned off when the cancellation was created, stays off until it is
+// turned on again. Withdrawing a withdrawn cancellation returns it unchanged. Open to the owner of the
+// subscriptions' current billing account and to members of their project with the project permission
+// `billing:finance.manage`.
 //
-// POST /api/v1/cancellations/{cancellationId}:withdraw
+// DELETE /api/v1/cancellations/{cancellationId}
 func (c *Client) WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (*Cancellation, error) {
 	res, err := c.sendWithdrawCancellation(ctx, params)
 	return res, err
@@ -15197,8 +15199,8 @@ func (c *Client) WithdrawCancellation(ctx context.Context, params WithdrawCancel
 func (c *Client) sendWithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (res *Cancellation, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("withdraw-cancellation"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/cancellations/{cancellationId}:withdraw"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/cancellations/{cancellationId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -15231,7 +15233,7 @@ func (c *Client) sendWithdrawCancellation(ctx context.Context, params WithdrawCa
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
+	var pathParts [2]string
 	pathParts[0] = "/api/v1/cancellations/"
 	{
 		// Encode "cancellationId" parameter.
@@ -15251,11 +15253,10 @@ func (c *Client) sendWithdrawCancellation(ctx context.Context, params WithdrawCa
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = ":withdraw"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
+	r, err := ht.NewRequest(ctx, "DELETE", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}

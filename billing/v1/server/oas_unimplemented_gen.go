@@ -1096,13 +1096,14 @@ func (UnimplementedHandler) UpdateContact(ctx context.Context, req *ContactUpdat
 
 // WithdrawCancellation implements withdraw-cancellation operation.
 //
-// Withdraws the whole cancellation while no resource has begun to be released; afterwards it is
-// refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions continue, but automatic renewal,
-// turned off when the cancellation was created, stays off until it is turned on again. Withdrawing a
-// withdrawn cancellation returns it unchanged. Open to the owner of the subscriptions' current billing
-// account and to members of their project with the project permission `billing:finance.manage`.
+// Withdraws the whole cancellation, which stays with status `canceled`, while no resource has begun to
+// be released; afterwards it is refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions
+// continue, but automatic renewal, turned off when the cancellation was created, stays off until it is
+// turned on again. Withdrawing a withdrawn cancellation returns it unchanged. Open to the owner of the
+// subscriptions' current billing account and to members of their project with the project permission
+// `billing:finance.manage`.
 //
-// POST /api/v1/cancellations/{cancellationId}:withdraw
+// DELETE /api/v1/cancellations/{cancellationId}
 func (UnimplementedHandler) WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (r *Cancellation, _ error) {
 	return r, ht.ErrNotImplemented
 }

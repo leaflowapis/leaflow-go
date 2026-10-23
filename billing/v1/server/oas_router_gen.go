@@ -62,10 +62,8 @@ var (
 		"POST": "Authorization,Content-Type",
 	}
 	rn35AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn111AllowedHeaders = map[string]string{
-		"POST": "Authorization",
+		"DELETE": "Authorization",
+		"GET":    "Authorization",
 	}
 	rn17AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
@@ -806,23 +804,28 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						}
 
 						// Param: "cancellationId"
-						// Match until ":"
-						idx := strings.IndexByte(elem, ':')
-						if idx < 0 {
-							idx = len(elem)
+						// Leaf parameter, slashes are prohibited
+						idx := strings.IndexByte(elem, '/')
+						if idx >= 0 {
+							break
 						}
-						args[0] = elem[:idx]
-						elem = elem[idx:]
+						args[0] = elem
+						elem = ""
 
 						if len(elem) == 0 {
+							// Leaf node.
 							switch r.Method {
+							case "DELETE":
+								s.handleWithdrawCancellationRequest([1]string{
+									args[0],
+								}, elemIsEscaped, w, r)
 							case "GET":
 								s.handleGetCancellationRequest([1]string{
 									args[0],
 								}, elemIsEscaped, w, r)
 							default:
 								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "GET",
+									allowedMethods: "DELETE,GET",
 									allowedHeaders: rn35AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
@@ -830,35 +833,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							}
 
 							return
-						}
-						switch elem[0] {
-						case ':': // Prefix: ":withdraw"
-
-							if l := len(":withdraw"); len(elem) >= l && elem[0:l] == ":withdraw" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "POST":
-									s.handleWithdrawCancellationRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "POST",
-										allowedHeaders: rn111AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
 						}
 
 					}
@@ -3389,16 +3363,26 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						}
 
 						// Param: "cancellationId"
-						// Match until ":"
-						idx := strings.IndexByte(elem, ':')
-						if idx < 0 {
-							idx = len(elem)
+						// Leaf parameter, slashes are prohibited
+						idx := strings.IndexByte(elem, '/')
+						if idx >= 0 {
+							break
 						}
-						args[0] = elem[:idx]
-						elem = elem[idx:]
+						args[0] = elem
+						elem = ""
 
 						if len(elem) == 0 {
+							// Leaf node.
 							switch method {
+							case "DELETE":
+								r.name = WithdrawCancellationOperation
+								r.summary = "Withdraw a cancellation"
+								r.operationID = "withdraw-cancellation"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/cancellations/{cancellationId}"
+								r.args = args
+								r.count = 1
+								return r, true
 							case "GET":
 								r.name = GetCancellationOperation
 								r.summary = "Get a cancellation"
@@ -3411,33 +3395,6 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							default:
 								return
 							}
-						}
-						switch elem[0] {
-						case ':': // Prefix: ":withdraw"
-
-							if l := len(":withdraw"); len(elem) >= l && elem[0:l] == ":withdraw" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "POST":
-									r.name = WithdrawCancellationOperation
-									r.summary = "Withdraw a cancellation"
-									r.operationID = "withdraw-cancellation"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/cancellations/{cancellationId}:withdraw"
-									r.args = args
-									r.count = 1
-									return r, true
-								default:
-									return
-								}
-							}
-
 						}
 
 					}
