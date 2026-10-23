@@ -51,9 +51,9 @@ type Invoker interface {
 	// CancelSubscription invokes cancel-subscription operation.
 	//
 	// Requests cancellation on the purchase's agreed terms, with the same rules as creating a
-	// cancellation. Give the refund amount from a quote with this subscription in
-	// `cancellation.subscription_ids`. Open to the owner of the subscription's current billing account and
-	// to members of its project with the project permission `billing:finance.manage`.
+	// cancellation. Give the `proration_date` and `refundable_amount` of preview-cancellation for this
+	// subscription. Open to the owner of the subscription's current billing account and to members of its
+	// project with the project permission `billing:finance.manage`.
 	//
 	// Immediate cancellation asks the owning service to release the resources now; period-end cancellation
 	// keeps the subscription active or suspended until the paid term ends. The subscription becomes
@@ -342,8 +342,7 @@ type Invoker interface {
 	// GetQuote invokes get-quote operation.
 	//
 	// Calculates what a proposed purchase, a change of your subscriptions or their renewal would invoice
-	// now, and what each purchased or changed line renews at, or what ending subscriptions would return.
-	// Nothing is saved, reserved, redeemed or canceled.
+	// now, and what each purchased or changed line renews at. Nothing is saved, reserved or redeemed.
 	//
 	// With `billing_account_id`, the quote is for that billing account: its currency, account discounts,
 	// tax and funds apply, changes and renewals use the account currently paying for each subscription,
@@ -707,6 +706,14 @@ type Invoker interface {
 	//
 	// POST /api/v1/payments
 	PayTogether(ctx context.Context, request *PayTogetherRequest) (*PaymentResult, error)
+	// PreviewCancellation invokes preview-cancellation operation.
+	//
+	// What creating the cancellation now would return, per subscription and in total. Nothing is canceled,
+	// ended or refunded. Open to the owner of the subscriptions' current billing account and to members of
+	// their project; refused for the same states as creating it.
+	//
+	// QUERY /api/v1/cancellations:preview
+	PreviewCancellation(ctx context.Context, request *CancellationPreviewRequest) (*CancellationPreview, error)
 	// PreviewInvoicePayment invokes preview-invoice-payment operation.
 	//
 	// What paying this invoice now would take from credit grants, from the balance and, for the rest, from
@@ -1067,9 +1074,9 @@ func (c *Client) sendCancelOrder(ctx context.Context, request OptOrderCancel, pa
 // CancelSubscription invokes cancel-subscription operation.
 //
 // Requests cancellation on the purchase's agreed terms, with the same rules as creating a
-// cancellation. Give the refund amount from a quote with this subscription in
-// `cancellation.subscription_ids`. Open to the owner of the subscription's current billing account and
-// to members of its project with the project permission `billing:finance.manage`.
+// cancellation. Give the `proration_date` and `refundable_amount` of preview-cancellation for this
+// subscription. Open to the owner of the subscription's current billing account and to members of its
+// project with the project permission `billing:finance.manage`.
 //
 // Immediate cancellation asks the owning service to release the resources now; period-end cancellation
 // keeps the subscription active or suspended until the paid term ends. The subscription becomes
@@ -4947,8 +4954,7 @@ func (c *Client) sendGetProjectAssignment(ctx context.Context, params GetProject
 // GetQuote invokes get-quote operation.
 //
 // Calculates what a proposed purchase, a change of your subscriptions or their renewal would invoice
-// now, and what each purchased or changed line renews at, or what ending subscriptions would return.
-// Nothing is saved, reserved, redeemed or canceled.
+// now, and what each purchased or changed line renews at. Nothing is saved, reserved or redeemed.
 //
 // With `billing_account_id`, the quote is for that billing account: its currency, account discounts,
 // tax and funds apply, changes and renewals use the account currently paying for each subscription,
@@ -13200,6 +13206,133 @@ func (c *Client) sendPayTogether(ctx context.Context, request *PayTogetherReques
 
 	stage = "DecodeResponse"
 	result, err := decodePayTogetherResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// PreviewCancellation invokes preview-cancellation operation.
+//
+// What creating the cancellation now would return, per subscription and in total. Nothing is canceled,
+// ended or refunded. Open to the owner of the subscriptions' current billing account and to members of
+// their project; refused for the same states as creating it.
+//
+// QUERY /api/v1/cancellations:preview
+func (c *Client) PreviewCancellation(ctx context.Context, request *CancellationPreviewRequest) (*CancellationPreview, error) {
+	res, err := c.sendPreviewCancellation(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendPreviewCancellation(ctx context.Context, request *CancellationPreviewRequest) (res *CancellationPreview, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("preview-cancellation"),
+		semconv.HTTPRequestMethodKey.String("QUERY"),
+		semconv.URLTemplateKey.String("/api/v1/cancellations:preview"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, PreviewCancellationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/cancellations:preview"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "QUERY", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodePreviewCancellationRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, PreviewCancellationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodePreviewCancellationResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
