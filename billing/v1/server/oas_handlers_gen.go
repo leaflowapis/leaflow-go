@@ -50,14 +50,14 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 // cancellation. Refunds are previewed with `preview-order-refund`. Open to the owner of the order's
 // billing account and to members of its project.
 //
-// POST /api/v1/orders/{orderId}/cancel
+// POST /api/v1/orders/{orderId}:cancel
 func (s *Server) handleCancelOrderRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-order"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/orders/{orderId}/cancel"),
+		semconv.HTTPRouteKey.String("/api/v1/orders/{orderId}:cancel"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -274,14 +274,14 @@ func (s *Server) handleCancelOrderRequest(args [1]string, argsEscaped bool, w ht
 // released together must be canceled together through create-cancellation, and pending or provisioning
 // purchases through their order. Repeating the request while the cancellation is open returns it.
 //
-// POST /api/v1/subscriptions/{subscriptionId}/cancel
+// POST /api/v1/subscriptions/{subscriptionId}:cancel
 func (s *Server) handleCancelSubscriptionRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-subscription"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/subscriptions/{subscriptionId}/cancel"),
+		semconv.HTTPRouteKey.String("/api/v1/subscriptions/{subscriptionId}:cancel"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -496,14 +496,14 @@ func (s *Server) handleCancelSubscriptionRequest(args [1]string, argsEscaped boo
 // naming the outcome, or while the gateway is processing the payment, with `status` `pending`; read
 // the top-up again later.
 //
-// POST /api/v1/top-ups/{topUpId}/cancel
+// POST /api/v1/top-ups/{topUpId}:cancel
 func (s *Server) handleCancelTopUpRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-top-up"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/top-ups/{topUpId}/cancel"),
+		semconv.HTTPRouteKey.String("/api/v1/top-ups/{topUpId}:cancel"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -708,14 +708,14 @@ func (s *Server) handleCancelTopUpRequest(args [1]string, argsEscaped bool, w ht
 //
 // Open to the owner of the session's billing account and to members of its project.
 //
-// POST /api/v1/checkout-sessions/{checkoutSessionId}/confirm
+// POST /api/v1/checkout-sessions/{checkoutSessionId}:confirm
 func (s *Server) handleConfirmCheckoutSessionRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("confirm-checkout-session"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/checkout-sessions/{checkoutSessionId}/confirm"),
+		semconv.HTTPRouteKey.String("/api/v1/checkout-sessions/{checkoutSessionId}:confirm"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -3158,14 +3158,14 @@ func (s *Server) handleEstimateUsageRequest(args [0]string, argsEscaped bool, w 
 // the purchase. An expired session is returned unchanged. Open to the owner of the session's billing
 // account and to members of its project.
 //
-// POST /api/v1/checkout-sessions/{checkoutSessionId}/expire
+// POST /api/v1/checkout-sessions/{checkoutSessionId}:expire
 func (s *Server) handleExpireCheckoutSessionRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("expire-checkout-session"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/checkout-sessions/{checkoutSessionId}/expire"),
+		semconv.HTTPRouteKey.String("/api/v1/checkout-sessions/{checkoutSessionId}:expire"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -14860,14 +14860,14 @@ func (s *Server) handleListWithdrawalsRequest(args [0]string, argsEscaped bool, 
 // Open to the owner of the invoice's billing account and, for the invoice of an order of a project, to
 // members of the project. Only the owner can pay with a saved `payment_method_id`.
 //
-// POST /api/v1/invoices/{invoiceId}/pay
+// POST /api/v1/invoices/{invoiceId}:pay
 func (s *Server) handlePayInvoiceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("pay-invoice"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/invoices/{invoiceId}/pay"),
+		semconv.HTTPRouteKey.String("/api/v1/invoices/{invoiceId}:pay"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -15292,14 +15292,14 @@ func (s *Server) handlePayTogetherRequest(args [0]string, argsEscaped bool, w ht
 // Refused with the same errors as paying, except that insufficient funds are not an error here: they
 // show as a `gateway_amount` above zero. Open to the same callers as paying.
 //
-// GET /api/v1/invoices/{invoiceId}/payment-preview
+// GET /api/v1/invoices/{invoiceId}:previewPayment
 func (s *Server) handlePreviewInvoicePaymentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("preview-invoice-payment"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/invoices/{invoiceId}/payment-preview"),
+		semconv.HTTPRouteKey.String("/api/v1/invoices/{invoiceId}:previewPayment"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -15502,14 +15502,14 @@ func (s *Server) handlePreviewInvoicePaymentRequest(args [1]string, argsEscaped 
 // Nothing is canceled or refunded. Open to the owner of the order's billing account and to members of
 // its project.
 //
-// GET /api/v1/orders/{orderId}/refund-preview
+// GET /api/v1/orders/{orderId}:previewRefund
 func (s *Server) handlePreviewOrderRefundRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("preview-order-refund"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/orders/{orderId}/refund-preview"),
+		semconv.HTTPRouteKey.String("/api/v1/orders/{orderId}:previewRefund"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -15709,14 +15709,14 @@ func (s *Server) handlePreviewOrderRefundRequest(args [1]string, argsEscaped boo
 // created. Refused with the same errors as paying together, except that insufficient funds show as a
 // `gateway_amount` above zero instead of an error.
 //
-// QUERY /api/v1/payments/preview
+// QUERY /api/v1/payments:preview
 func (s *Server) handlePreviewPayTogetherRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("preview-pay-together"),
 		semconv.HTTPRequestMethodKey.String("QUERY"),
-		semconv.HTTPRouteKey.String("/api/v1/payments/preview"),
+		semconv.HTTPRouteKey.String("/api/v1/payments:preview"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -15911,14 +15911,14 @@ func (s *Server) handlePreviewPayTogetherRequest(args [0]string, argsEscaped boo
 // available balance. Nothing is created or reserved. Fails when a selected source has no refund route
 // or its original processing cost is not yet known.
 //
-// QUERY /api/v1/withdrawals/preview
+// QUERY /api/v1/withdrawals:preview
 func (s *Server) handlePreviewWithdrawalRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("preview-withdrawal"),
 		semconv.HTTPRequestMethodKey.String("QUERY"),
-		semconv.HTTPRouteKey.String("/api/v1/withdrawals/preview"),
+		semconv.HTTPRouteKey.String("/api/v1/withdrawals:preview"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -16122,14 +16122,14 @@ func (s *Server) handlePreviewWithdrawalRequest(args [0]string, argsEscaped bool
 //
 // Keep order_id and read the order after an unknown outcome; creating it again conflicts.
 //
-// POST /api/v1/subscriptions/{subscriptionId}/renew
+// POST /api/v1/subscriptions/{subscriptionId}:renew
 func (s *Server) handleRenewSubscriptionRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("renew-subscription"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/subscriptions/{subscriptionId}/renew"),
+		semconv.HTTPRouteKey.String("/api/v1/subscriptions/{subscriptionId}:renew"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -16338,14 +16338,14 @@ func (s *Server) handleRenewSubscriptionRequest(args [1]string, argsEscaped bool
 // Resumes a billing account you suspended. Refused with `BILLING_ACCOUNT_SUSPENDED_BY_OPERATOR` when
 // Leaflow suspended it. Does not create a resource.
 //
-// POST /api/v1/billing-accounts/{accountId}/resume
+// POST /api/v1/billing-accounts/{accountId}:resume
 func (s *Server) handleResumeBillingAccountRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("resume-billing-account"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/billing-accounts/{accountId}/resume"),
+		semconv.HTTPRouteKey.String("/api/v1/billing-accounts/{accountId}:resume"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -17344,14 +17344,14 @@ func (s *Server) handleSetProjectAssignmentRequest(args [1]string, argsEscaped b
 // you can still top up and pay invoices. Resume it yourself; one suspended by Leaflow can only be
 // resumed by Leaflow. Does not create a resource.
 //
-// POST /api/v1/billing-accounts/{accountId}/suspend
+// POST /api/v1/billing-accounts/{accountId}:suspend
 func (s *Server) handleSuspendBillingAccountRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("suspend-billing-account"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/billing-accounts/{accountId}/suspend"),
+		semconv.HTTPRouteKey.String("/api/v1/billing-accounts/{accountId}:suspend"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -18190,14 +18190,14 @@ func (s *Server) handleUpdateContactRequest(args [2]string, argsEscaped bool, w 
 // withdrawn cancellation returns it unchanged. Open to the owner of the subscriptions' current billing
 // account and to members of their project with the project permission `billing:finance.manage`.
 //
-// POST /api/v1/cancellations/{cancellationId}/withdraw
+// POST /api/v1/cancellations/{cancellationId}:withdraw
 func (s *Server) handleWithdrawCancellationRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("withdraw-cancellation"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/cancellations/{cancellationId}/withdraw"),
+		semconv.HTTPRouteKey.String("/api/v1/cancellations/{cancellationId}:withdraw"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)

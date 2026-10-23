@@ -18,7 +18,7 @@ var _ Handler = UnimplementedHandler{}
 // The incident is also marked as acknowledged in the monitoring system, so that other channels can see
 // it already has an owner.
 //
-// POST /api/v1/incidents/{incidentId}/acknowledge
+// POST /api/v1/incidents/{incidentId}:acknowledge
 func (UnimplementedHandler) AcknowledgeIncident(ctx context.Context, req *AcknowledgeIncidentRequestBody, params AcknowledgeIncidentParams) (r *IncidentResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -49,7 +49,7 @@ func (UnimplementedHandler) AssignIncident(ctx context.Context, req *AssignIncid
 // Cancelled rather than deleted, so that readers who saw the announcement have an explanation.
 // Maintenance that has already started cannot be cancelled; finish it early instead.
 //
-// POST /api/v1/status-page/maintenances/{maintenanceId}/cancel
+// POST /api/v1/status-page/maintenances/{maintenanceId}:cancel
 func (UnimplementedHandler) CancelStatusPageMaintenance(ctx context.Context, params CancelStatusPageMaintenanceParams) (r *StatusPageMaintenanceResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -60,7 +60,7 @@ func (UnimplementedHandler) CancelStatusPageMaintenance(ctx context.Context, par
 // of the incident itself. An incident that has not recovered may still be closed as an accepted risk,
 // and remains unrecovered in the monitoring system.
 //
-// POST /api/v1/incidents/{incidentId}/close
+// POST /api/v1/incidents/{incidentId}:close
 func (UnimplementedHandler) CloseIncident(ctx context.Context, req *CloseIncidentRequestBody, params CloseIncidentParams) (r *IncidentResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -70,7 +70,7 @@ func (UnimplementedHandler) CloseIncident(ctx context.Context, req *CloseInciden
 // Optional: maintenance finishes on its own at the scheduled end time. Use this endpoint when the work
 // is done ahead of schedule; the affected components return to operational immediately.
 //
-// POST /api/v1/status-page/maintenances/{maintenanceId}/complete
+// POST /api/v1/status-page/maintenances/{maintenanceId}:complete
 func (UnimplementedHandler) CompleteStatusPageMaintenance(ctx context.Context, params CompleteStatusPageMaintenanceParams) (r *StatusPageMaintenanceResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -190,7 +190,7 @@ func (UnimplementedHandler) DeleteWebCheck(ctx context.Context, params DeleteWeb
 // Reversible: the monitored host is retained, only collection stops, and history is unaffected.
 // Enrolling again resumes collection. To remove the history as well, use DELETE.
 //
-// POST /api/v1/servers/{serverId}/disable
+// POST /api/v1/servers/{serverId}:disable
 func (UnimplementedHandler) DisableServerMonitoring(ctx context.Context, params DisableServerMonitoringParams) error {
 	return ht.ErrNotImplemented
 }
@@ -663,7 +663,7 @@ func (UnimplementedHandler) PutWebCheck(ctx context.Context, req *PutWebCheckReq
 //
 // Reopen a closed incident.
 //
-// POST /api/v1/incidents/{incidentId}/reopen
+// POST /api/v1/incidents/{incidentId}:reopen
 func (UnimplementedHandler) ReopenIncident(ctx context.Context, params ReopenIncidentParams) (r *IncidentResource, _ error) {
 	return r, ht.ErrNotImplemented
 }

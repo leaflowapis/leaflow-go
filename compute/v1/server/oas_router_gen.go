@@ -52,12 +52,14 @@ var (
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 	}
-	rn95AllowedHeaders = map[string]string{
+	rn94AllowedHeaders = map[string]string{
 		"PUT": "Authorization,Content-Type",
 	}
 	rn14AllowedHeaders = map[string]string{
-		"DELETE": "Authorization",
-		"PUT":    "Authorization,Content-Type",
+		"POST": "Authorization,Content-Type",
+	}
+	rn103AllowedHeaders = map[string]string{
+		"POST": "Authorization",
 	}
 	rn23AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
@@ -102,10 +104,10 @@ var (
 	rn62AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
-	rn96AllowedHeaders = map[string]string{
+	rn95AllowedHeaders = map[string]string{
 		"PUT": "Authorization,Content-Type",
 	}
-	rn97AllowedHeaders = map[string]string{
+	rn96AllowedHeaders = map[string]string{
 		"PUT": "Authorization,Content-Type",
 	}
 	rn85AllowedHeaders = map[string]string{
@@ -327,8 +329,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					}
 
 					// Param: "backupId"
-					// Match until "/"
-					idx := strings.IndexByte(elem, '/')
+					// Match until ":"
+					idx := strings.IndexByte(elem, ':')
 					if idx < 0 {
 						idx = len(elem)
 					}
@@ -361,9 +363,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/restore"
+					case ':': // Prefix: ":restore"
 
-						if l := len("/restore"); len(elem) >= l && elem[0:l] == "/restore" {
+						if l := len(":restore"); len(elem) >= l && elem[0:l] == ":restore" {
 							elem = elem[l:]
 						} else {
 							break
@@ -501,8 +503,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						}
 
 						// Param: "diskId"
-						// Match until "/"
-						idx := strings.IndexByte(elem, '/')
+						// Match until ":"
+						idx := strings.IndexByte(elem, ':')
 						if idx < 0 {
 							idx = len(elem)
 						}
@@ -535,9 +537,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							return
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/re"
+						case ':': // Prefix: ":re"
 
-							if l := len("/re"); len(elem) >= l && elem[0:l] == "/re" {
+							if l := len(":re"); len(elem) >= l && elem[0:l] == ":re" {
 								elem = elem[l:]
 							} else {
 								break
@@ -644,8 +646,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					}
 
 					// Param: "floatingIpId"
-					// Match until "/"
-					idx := strings.IndexByte(elem, '/')
+					// Match until one of "/:"
+					idx := strings.IndexAny(elem, "/:")
 					if idx < 0 {
 						idx = len(elem)
 					}
@@ -674,9 +676,36 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/b"
+					case '/': // Prefix: "/bandwidth"
 
-						if l := len("/b"); len(elem) >= l && elem[0:l] == "/b" {
+						if l := len("/bandwidth"); len(elem) >= l && elem[0:l] == "/bandwidth" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch r.Method {
+							case "PUT":
+								s.handleSetFloatingIPBandwidthRequest([1]string{
+									args[0],
+								}, elemIsEscaped, w, r)
+							default:
+								s.notAllowed(w, r, notAllowedParams{
+									allowedMethods: "PUT",
+									allowedHeaders: rn94AllowedHeaders,
+									acceptPost:     "",
+									acceptPatch:    "",
+								})
+							}
+
+							return
+						}
+
+					case ':': // Prefix: ":"
+
+						if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
 							elem = elem[l:]
 						} else {
 							break
@@ -686,9 +715,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							break
 						}
 						switch elem[0] {
-						case 'a': // Prefix: "andwidth"
+						case 'b': // Prefix: "bind"
 
-							if l := len("andwidth"); len(elem) >= l && elem[0:l] == "andwidth" {
+							if l := len("bind"); len(elem) >= l && elem[0:l] == "bind" {
 								elem = elem[l:]
 							} else {
 								break
@@ -697,15 +726,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							if len(elem) == 0 {
 								// Leaf node.
 								switch r.Method {
-								case "PUT":
-									s.handleSetFloatingIPBandwidthRequest([1]string{
+								case "POST":
+									s.handleBindFloatingIPRequest([1]string{
 										args[0],
 									}, elemIsEscaped, w, r)
 								default:
 									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "PUT",
-										allowedHeaders: rn95AllowedHeaders,
-										acceptPost:     "",
+										allowedMethods: "POST",
+										allowedHeaders: rn14AllowedHeaders,
+										acceptPost:     "application/json",
 										acceptPatch:    "",
 									})
 								}
@@ -713,9 +742,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								return
 							}
 
-						case 'i': // Prefix: "inding"
+						case 'u': // Prefix: "unbind"
 
-							if l := len("inding"); len(elem) >= l && elem[0:l] == "inding" {
+							if l := len("unbind"); len(elem) >= l && elem[0:l] == "unbind" {
 								elem = elem[l:]
 							} else {
 								break
@@ -724,18 +753,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							if len(elem) == 0 {
 								// Leaf node.
 								switch r.Method {
-								case "DELETE":
+								case "POST":
 									s.handleUnbindFloatingIPRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								case "PUT":
-									s.handleBindFloatingIPRequest([1]string{
 										args[0],
 									}, elemIsEscaped, w, r)
 								default:
 									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "DELETE,PUT",
-										allowedHeaders: rn14AllowedHeaders,
+										allowedMethods: "POST",
+										allowedHeaders: rn103AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -906,8 +931,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							}
 
 							// Param: "instanceId"
-							// Match until "/"
-							idx := strings.IndexByte(elem, '/')
+							// Match until one of "/:"
+							idx := strings.IndexAny(elem, "/:")
 							if idx < 0 {
 								idx = len(elem)
 							}
@@ -1200,7 +1225,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										default:
 											s.notAllowed(w, r, notAllowedParams{
 												allowedMethods: "PUT",
-												allowedHeaders: rn96AllowedHeaders,
+												allowedHeaders: rn95AllowedHeaders,
 												acceptPost:     "",
 												acceptPatch:    "",
 											})
@@ -1227,7 +1252,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										default:
 											s.notAllowed(w, r, notAllowedParams{
 												allowedMethods: "PUT",
-												allowedHeaders: rn97AllowedHeaders,
+												allowedHeaders: rn96AllowedHeaders,
 												acceptPost:     "",
 												acceptPatch:    "",
 											})
@@ -1346,6 +1371,20 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 									}
 
+								}
+
+							case ':': // Prefix: ":"
+
+								if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									break
+								}
+								switch elem[0] {
 								case 'r': // Prefix: "re"
 
 									if l := len("re"); len(elem) >= l && elem[0:l] == "re" {
@@ -1630,8 +1669,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						}
 
 						// Param: "peeringId"
-						// Match until "/"
-						idx := strings.IndexByte(elem, '/')
+						// Match until ":"
+						idx := strings.IndexByte(elem, ':')
 						if idx < 0 {
 							idx = len(elem)
 						}
@@ -1660,9 +1699,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							return
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/"
+						case ':': // Prefix: ":"
 
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
 								elem = elem[l:]
 							} else {
 								break
@@ -2704,8 +2743,8 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					}
 
 					// Param: "backupId"
-					// Match until "/"
-					idx := strings.IndexByte(elem, '/')
+					// Match until ":"
+					idx := strings.IndexByte(elem, ':')
 					if idx < 0 {
 						idx = len(elem)
 					}
@@ -2746,9 +2785,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						}
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/restore"
+					case ':': // Prefix: ":restore"
 
-						if l := len("/restore"); len(elem) >= l && elem[0:l] == "/restore" {
+						if l := len(":restore"); len(elem) >= l && elem[0:l] == ":restore" {
 							elem = elem[l:]
 						} else {
 							break
@@ -2762,7 +2801,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								r.summary = "Restore from a backup"
 								r.operationID = "restore-backup"
 								r.operationGroup = ""
-								r.pathPattern = "/api/v1/backups/{backupId}/restore"
+								r.pathPattern = "/api/v1/backups/{backupId}:restore"
 								r.args = args
 								r.count = 1
 								return r, true
@@ -2889,8 +2928,8 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						}
 
 						// Param: "diskId"
-						// Match until "/"
-						idx := strings.IndexByte(elem, '/')
+						// Match until ":"
+						idx := strings.IndexByte(elem, ':')
 						if idx < 0 {
 							idx = len(elem)
 						}
@@ -2931,9 +2970,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							}
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/re"
+						case ':': // Prefix: ":re"
 
-							if l := len("/re"); len(elem) >= l && elem[0:l] == "/re" {
+							if l := len(":re"); len(elem) >= l && elem[0:l] == ":re" {
 								elem = elem[l:]
 							} else {
 								break
@@ -2959,7 +2998,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										r.summary = "Resize a disk"
 										r.operationID = "resize-disk"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/disks/{diskId}/resize"
+										r.pathPattern = "/api/v1/disks/{diskId}:resize"
 										r.args = args
 										r.count = 1
 										return r, true
@@ -2984,7 +3023,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										r.summary = "Revert to a snapshot"
 										r.operationID = "revert-disk"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/disks/{diskId}/revert"
+										r.pathPattern = "/api/v1/disks/{diskId}:revert"
 										r.args = args
 										r.count = 1
 										return r, true
@@ -3043,8 +3082,8 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					}
 
 					// Param: "floatingIpId"
-					// Match until "/"
-					idx := strings.IndexByte(elem, '/')
+					// Match until one of "/:"
+					idx := strings.IndexAny(elem, "/:")
 					if idx < 0 {
 						idx = len(elem)
 					}
@@ -3076,9 +3115,34 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						}
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/b"
+					case '/': // Prefix: "/bandwidth"
 
-						if l := len("/b"); len(elem) >= l && elem[0:l] == "/b" {
+						if l := len("/bandwidth"); len(elem) >= l && elem[0:l] == "/bandwidth" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch method {
+							case "PUT":
+								r.name = SetFloatingIPBandwidthOperation
+								r.summary = "Set the bandwidth limit"
+								r.operationID = "set-floating-ip-bandwidth"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/floating-ips/{floatingIpId}/bandwidth"
+								r.args = args
+								r.count = 1
+								return r, true
+							default:
+								return
+							}
+						}
+
+					case ':': // Prefix: ":"
+
+						if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
 							elem = elem[l:]
 						} else {
 							break
@@ -3088,9 +3152,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							break
 						}
 						switch elem[0] {
-						case 'a': // Prefix: "andwidth"
+						case 'b': // Prefix: "bind"
 
-							if l := len("andwidth"); len(elem) >= l && elem[0:l] == "andwidth" {
+							if l := len("bind"); len(elem) >= l && elem[0:l] == "bind" {
 								elem = elem[l:]
 							} else {
 								break
@@ -3099,12 +3163,12 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							if len(elem) == 0 {
 								// Leaf node.
 								switch method {
-								case "PUT":
-									r.name = SetFloatingIPBandwidthOperation
-									r.summary = "Set the bandwidth limit"
-									r.operationID = "set-floating-ip-bandwidth"
+								case "POST":
+									r.name = BindFloatingIPOperation
+									r.summary = "Bind a floating IP to a network interface"
+									r.operationID = "bind-floating-ip"
 									r.operationGroup = ""
-									r.pathPattern = "/api/v1/floating-ips/{floatingIpId}/bandwidth"
+									r.pathPattern = "/api/v1/floating-ips/{floatingIpId}:bind"
 									r.args = args
 									r.count = 1
 									return r, true
@@ -3113,9 +3177,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								}
 							}
 
-						case 'i': // Prefix: "inding"
+						case 'u': // Prefix: "unbind"
 
-							if l := len("inding"); len(elem) >= l && elem[0:l] == "inding" {
+							if l := len("unbind"); len(elem) >= l && elem[0:l] == "unbind" {
 								elem = elem[l:]
 							} else {
 								break
@@ -3124,21 +3188,12 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							if len(elem) == 0 {
 								// Leaf node.
 								switch method {
-								case "DELETE":
+								case "POST":
 									r.name = UnbindFloatingIPOperation
 									r.summary = "Unbind a floating IP"
 									r.operationID = "unbind-floating-ip"
 									r.operationGroup = ""
-									r.pathPattern = "/api/v1/floating-ips/{floatingIpId}/binding"
-									r.args = args
-									r.count = 1
-									return r, true
-								case "PUT":
-									r.name = BindFloatingIPOperation
-									r.summary = "Bind a floating IP to a network interface"
-									r.operationID = "bind-floating-ip"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/floating-ips/{floatingIpId}/binding"
+									r.pathPattern = "/api/v1/floating-ips/{floatingIpId}:unbind"
 									r.args = args
 									r.count = 1
 									return r, true
@@ -3331,8 +3386,8 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							}
 
 							// Param: "instanceId"
-							// Match until "/"
-							idx := strings.IndexByte(elem, '/')
+							// Match until one of "/:"
+							idx := strings.IndexAny(elem, "/:")
 							if idx < 0 {
 								idx = len(elem)
 							}
@@ -3762,6 +3817,20 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 									}
 
+								}
+
+							case ':': // Prefix: ":"
+
+								if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									break
+								}
+								switch elem[0] {
 								case 'r': // Prefix: "re"
 
 									if l := len("re"); len(elem) >= l && elem[0:l] == "re" {
@@ -3802,7 +3871,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 													r.summary = "Reboot an instance"
 													r.operationID = "reboot-instance"
 													r.operationGroup = ""
-													r.pathPattern = "/api/v1/instances/{instanceId}/reboot"
+													r.pathPattern = "/api/v1/instances/{instanceId}:reboot"
 													r.args = args
 													r.count = 1
 													return r, true
@@ -3827,7 +3896,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 													r.summary = "Rebuild an instance"
 													r.operationID = "rebuild-instance"
 													r.operationGroup = ""
-													r.pathPattern = "/api/v1/instances/{instanceId}/rebuild"
+													r.pathPattern = "/api/v1/instances/{instanceId}:rebuild"
 													r.args = args
 													r.count = 1
 													return r, true
@@ -3854,7 +3923,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												r.summary = "Resize an instance"
 												r.operationID = "resize-instance"
 												r.operationGroup = ""
-												r.pathPattern = "/api/v1/instances/{instanceId}/resize"
+												r.pathPattern = "/api/v1/instances/{instanceId}:resize"
 												r.args = args
 												r.count = 1
 												return r, true
@@ -3893,7 +3962,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												r.summary = "Start an instance"
 												r.operationID = "start-instance"
 												r.operationGroup = ""
-												r.pathPattern = "/api/v1/instances/{instanceId}/start"
+												r.pathPattern = "/api/v1/instances/{instanceId}:start"
 												r.args = args
 												r.count = 1
 												return r, true
@@ -3918,7 +3987,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												r.summary = "Stop an instance"
 												r.operationID = "stop-instance"
 												r.operationGroup = ""
-												r.pathPattern = "/api/v1/instances/{instanceId}/stop"
+												r.pathPattern = "/api/v1/instances/{instanceId}:stop"
 												r.args = args
 												r.count = 1
 												return r, true
@@ -4043,8 +4112,8 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						}
 
 						// Param: "peeringId"
-						// Match until "/"
-						idx := strings.IndexByte(elem, '/')
+						// Match until ":"
+						idx := strings.IndexByte(elem, ':')
 						if idx < 0 {
 							idx = len(elem)
 						}
@@ -4076,9 +4145,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							}
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/"
+						case ':': // Prefix: ":"
 
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
 								elem = elem[l:]
 							} else {
 								break
@@ -4104,7 +4173,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										r.summary = "Accept peering"
 										r.operationID = "accept-peering"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/peerings/{peeringId}/accept"
+										r.pathPattern = "/api/v1/peerings/{peeringId}:accept"
 										r.args = args
 										r.count = 1
 										return r, true
@@ -4129,7 +4198,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										r.summary = "Reject peering"
 										r.operationID = "reject-peering"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/peerings/{peeringId}/reject"
+										r.pathPattern = "/api/v1/peerings/{peeringId}:reject"
 										r.args = args
 										r.count = 1
 										return r, true

@@ -19,7 +19,7 @@ var _ Handler = UnimplementedHandler{}
 // answered also succeeds: another tab may have answered first, or the auto-answer window may have
 // passed, and either way the turn has continued.
 //
-// POST /api/v1/threads/{thread}/items/{item}/answer
+// POST /api/v1/threads/{thread}/items/{item}:answer
 func (UnimplementedHandler) AnswerQuestion(ctx context.Context, req *AnswerQuestionRequestBody, params AnswerQuestionParams) error {
 	return ht.ErrNotImplemented
 }
@@ -40,7 +40,7 @@ func (UnimplementedHandler) BeginWeixinLogin(ctx context.Context, params BeginWe
 // Stops the run in progress. The conversation is told the run was cancelled. Succeeds when nothing is
 // running.
 //
-// POST /api/v1/tasks/{task}/cancel
+// POST /api/v1/tasks/{task}:cancel
 func (UnimplementedHandler) CancelTaskRun(ctx context.Context, params CancelTaskRunParams) (r *TaskResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -49,7 +49,7 @@ func (UnimplementedHandler) CancelTaskRun(ctx context.Context, params CancelTask
 //
 // Cancel upload.
 //
-// POST /api/v1/uploads/{upload}/cancel
+// POST /api/v1/uploads/{upload}:cancel
 func (UnimplementedHandler) CancelUpload(ctx context.Context, params CancelUploadParams) error {
 	return ht.ErrNotImplemented
 }
@@ -61,7 +61,7 @@ func (UnimplementedHandler) CancelUpload(ctx context.Context, params CancelUploa
 // binding-code rule cannot be tested this way — whether something is a binding code depends on what
 // the sender actually wrote.
 //
-// GET /api/v1/channels/{channel}/sender-check
+// GET /api/v1/channels/{channel}:checkSender
 func (UnimplementedHandler) CheckSender(ctx context.Context, params CheckSenderParams) (r *SenderCheckResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -75,7 +75,7 @@ func (UnimplementedHandler) CheckSender(ctx context.Context, params CheckSenderP
 // Fails with 409 and code THREAD_RUNNING while a turn is running, and with 409 and code
 // NOTHING_TO_COMPACT when there is no history to summarize.
 //
-// POST /api/v1/threads/{thread}/compact
+// POST /api/v1/threads/{thread}:compact
 func (UnimplementedHandler) CompactThread(ctx context.Context, params CompactThreadParams) (r *TurnStartedResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -84,7 +84,7 @@ func (UnimplementedHandler) CompactThread(ctx context.Context, params CompactThr
 //
 // Complete upload.
 //
-// POST /api/v1/uploads/{upload}/complete
+// POST /api/v1/uploads/{upload}:complete
 func (UnimplementedHandler) CompleteUpload(ctx context.Context, req *CompleteUploadRequestBody, params CompleteUploadParams) (r *UploadedResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -422,7 +422,7 @@ func (UnimplementedHandler) GetWeixinLogin(ctx context.Context, params GetWeixin
 // Succeeds when nothing is running, because pressing stop races with the turn finishing on its own.
 // Available while the project is suspended or being cleaned up.
 //
-// POST /api/v1/threads/{thread}/interrupt
+// POST /api/v1/threads/{thread}:interrupt
 func (UnimplementedHandler) InterruptThread(ctx context.Context, params InterruptThreadParams) error {
 	return ht.ErrNotImplemented
 }
@@ -581,7 +581,7 @@ func (UnimplementedHandler) ListUploads(ctx context.Context) (r *UploadListRespo
 //
 // Clears `unread` until the assistant replies again.
 //
-// POST /api/v1/threads/{thread}/read
+// POST /api/v1/threads/{thread}:markRead
 func (UnimplementedHandler) MarkThreadRead(ctx context.Context, params MarkThreadReadParams) error {
 	return ht.ErrNotImplemented
 }
@@ -591,7 +591,7 @@ func (UnimplementedHandler) MarkThreadRead(ctx context.Context, params MarkThrea
 // Places the folder before `beforeFolderId`, or last when it is null. The inbox stays first. Fails
 // with 409 and code ORDER_CHANGED when `expectedVersion` is stale; read the folders again and retry.
 //
-// POST /api/v1/folders/{folder}/move
+// POST /api/v1/folders/{folder}:move
 func (UnimplementedHandler) MoveFolder(ctx context.Context, req *MoveFolderRequestBody, params MoveFolderParams) (r *FolderResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -611,7 +611,7 @@ func (UnimplementedHandler) OpenRealtime(ctx context.Context, params OpenRealtim
 //
 // Stops future runs from its trigger. A run in progress continues. Pausing a paused task succeeds.
 //
-// POST /api/v1/tasks/{task}/pause
+// POST /api/v1/tasks/{task}:pause
 func (UnimplementedHandler) PauseTask(ctx context.Context, params PauseTaskParams) (r *TaskResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -657,7 +657,7 @@ func (UnimplementedHandler) PutUploadPart(ctx context.Context, req PutUploadPart
 // Lets its trigger start runs again. Missed runs within `catchupSeconds` are started. Resuming an
 // active task succeeds.
 //
-// POST /api/v1/tasks/{task}/resume
+// POST /api/v1/tasks/{task}:resume
 func (UnimplementedHandler) ResumeTask(ctx context.Context, params ResumeTaskParams) (r *TaskResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -669,7 +669,7 @@ func (UnimplementedHandler) ResumeTask(ctx context.Context, params ResumeTaskPar
 //
 // Fails with 409 and code THREAD_RUNNING while a turn is running.
 //
-// POST /api/v1/threads/{thread}/resume
+// POST /api/v1/threads/{thread}:resume
 func (UnimplementedHandler) ResumeThread(ctx context.Context, req *ResumeThreadRequestBody, params ResumeThreadParams) (r *TurnStartedResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -680,7 +680,7 @@ func (UnimplementedHandler) ResumeThread(ctx context.Context, req *ResumeThreadR
 // `reverted` and are left out of later model requests; ordinals are not renumbered. Executed tools and
 // external changes are not undone. Returns how many items were reverted.
 //
-// POST /api/v1/threads/{thread}/revert
+// POST /api/v1/threads/{thread}:revert
 func (UnimplementedHandler) RevertThread(ctx context.Context, req *RevertRequestBody, params RevertThreadParams) (r *RevertedCountResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -693,7 +693,7 @@ func (UnimplementedHandler) RevertThread(ctx context.Context, req *RevertRequest
 // returned in this response only and cannot be retrieved again. For a `supplied` platform you must
 // pass the new secret from that platform's own console.
 //
-// POST /api/v1/channels/{channel}/secret
+// POST /api/v1/channels/{channel}:rotateSecret
 func (UnimplementedHandler) RotateChannelSecret(ctx context.Context, req OptRotateSecretRequestBody, params RotateChannelSecretParams) (r *WebhookSecretResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -703,7 +703,7 @@ func (UnimplementedHandler) RotateChannelSecret(ctx context.Context, req OptRota
 // Starts a run immediately, outside its trigger. Fails with 409 and code TASK_RUNNING when a run is
 // already in progress and the overlap policy is `skip`.
 //
-// POST /api/v1/tasks/{task}/run
+// POST /api/v1/tasks/{task}:run
 func (UnimplementedHandler) RunTask(ctx context.Context, params RunTaskParams) (r *TaskRunResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -777,7 +777,7 @@ func (UnimplementedHandler) SubmitToolResult(ctx context.Context, req *ToolResul
 // For when WeChat asks for an SMS or device code after the scan. The person who started the login gets
 // that code on their own phone.
 //
-// POST /api/v1/weixin-logins/{login}/verify-code
+// POST /api/v1/weixin-logins/{login}:verifyCode
 func (UnimplementedHandler) SubmitWeixinVerifyCode(ctx context.Context, req *VerifyCodeRequestBody, params SubmitWeixinVerifyCodeParams) (r *LoginResource, _ error) {
 	return r, ht.ErrNotImplemented
 }

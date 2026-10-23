@@ -17,7 +17,7 @@ var _ Handler = UnimplementedHandler{}
 //
 // Cancels the scheduled downgrade. Returns 409 MEMBERSHIP_CHANGE_PENDING if none is scheduled.
 //
-// DELETE /api/v1/memberships/{membershipId}/downgrade
+// POST /api/v1/memberships/{membershipId}:cancelDowngrade
 func (UnimplementedHandler) CancelMembershipDowngrade(ctx context.Context, params CancelMembershipDowngradeParams) (r *Membership, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -101,7 +101,7 @@ func (UnimplementedHandler) ListPlans(ctx context.Context, params ListPlansParam
 // MEMBERSHIP_ACCOUNT_DELETING while the caller's account deletion is pending, or 403
 // MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or banned.
 //
-// POST /api/v1/memberships/{membershipId}/downgrade
+// POST /api/v1/memberships/{membershipId}:scheduleDowngrade
 func (UnimplementedHandler) ScheduleMembershipDowngrade(ctx context.Context, req *MembershipDowngrade, params ScheduleMembershipDowngradeParams) (r *Membership, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -114,7 +114,7 @@ func (UnimplementedHandler) ScheduleMembershipDowngrade(ctx context.Context, req
 // 403 MEMBERSHIP_ACCOUNT_DELETING while the caller's account deletion is pending, or 403
 // MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or banned.
 //
-// POST /api/v1/memberships/{membershipId}/upgrade
+// POST /api/v1/memberships/{membershipId}:upgrade
 func (UnimplementedHandler) UpgradeMembership(ctx context.Context, req *MembershipUpgrade, params UpgradeMembershipParams) (r *MembershipPurchase, _ error) {
 	return r, ht.ErrNotImplemented
 }

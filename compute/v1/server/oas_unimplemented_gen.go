@@ -17,7 +17,7 @@ var _ Handler = UnimplementedHandler{}
 //
 // Accept peering.
 //
-// POST /api/v1/peerings/{peeringId}/accept
+// POST /api/v1/peerings/{peeringId}:accept
 func (UnimplementedHandler) AcceptPeering(ctx context.Context, params AcceptPeeringParams) (r AcceptPeeringRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -78,7 +78,7 @@ func (UnimplementedHandler) AttachPort(ctx context.Context, req *AttachPortReque
 //
 // The floating IP shows the `bind` operation until the binding is confirmed.
 //
-// PUT /api/v1/floating-ips/{floatingIpId}/binding
+// POST /api/v1/floating-ips/{floatingIpId}:bind
 func (UnimplementedHandler) BindFloatingIP(ctx context.Context, req *BindFloatingIPRequestBody, params BindFloatingIPParams) (r BindFloatingIPRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -974,7 +974,7 @@ func (UnimplementedHandler) OpenInstanceConsole(ctx context.Context, params Open
 //
 // The instance shows the `reboot` operation until the reboot has finished.
 //
-// POST /api/v1/instances/{instanceId}/reboot
+// POST /api/v1/instances/{instanceId}:reboot
 func (UnimplementedHandler) RebootInstance(ctx context.Context, req *RebootInstanceRequestBody, params RebootInstanceParams) (r RebootInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -989,7 +989,7 @@ func (UnimplementedHandler) RebootInstance(ctx context.Context, req *RebootInsta
 //
 // The instance shows the `rebuild` operation until the rebuild has finished.
 //
-// POST /api/v1/instances/{instanceId}/rebuild
+// POST /api/v1/instances/{instanceId}:rebuild
 func (UnimplementedHandler) RebuildInstance(ctx context.Context, req *RebuildInstanceRequestBody, params RebuildInstanceParams) (r RebuildInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -998,7 +998,7 @@ func (UnimplementedHandler) RebuildInstance(ctx context.Context, req *RebuildIns
 //
 // Reject peering.
 //
-// POST /api/v1/peerings/{peeringId}/reject
+// POST /api/v1/peerings/{peeringId}:reject
 func (UnimplementedHandler) RejectPeering(ctx context.Context, params RejectPeeringParams) (r *PeeringResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -1123,7 +1123,7 @@ func (UnimplementedHandler) ResetInstancePassword(ctx context.Context, req *Rese
 // types use a performance level that does not scale with size, so resizing a system disk does not
 // change its performance.
 //
-// POST /api/v1/disks/{diskId}/resize
+// POST /api/v1/disks/{diskId}:resize
 func (UnimplementedHandler) ResizeDisk(ctx context.Context, req *ResizeDiskRequestBody, params ResizeDiskParams) (r ResizeDiskRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -1144,7 +1144,7 @@ func (UnimplementedHandler) ResizeDisk(ctx context.Context, req *ResizeDiskReque
 // Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
 // previous type, submit another resize.
 //
-// POST /api/v1/instances/{instanceId}/resize
+// POST /api/v1/instances/{instanceId}:resize
 func (UnimplementedHandler) ResizeInstance(ctx context.Context, req *ResizeInstanceRequestBody, params ResizeInstanceParams) (r ResizeInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -1157,7 +1157,7 @@ func (UnimplementedHandler) ResizeInstance(ctx context.Context, req *ResizeInsta
 // must not be smaller than the backup. Returns the new disk as `pending` with its Checkout Session; it
 // cannot be attached until it is `available`.
 //
-// POST /api/v1/backups/{backupId}/restore
+// POST /api/v1/backups/{backupId}:restore
 func (UnimplementedHandler) RestoreBackup(ctx context.Context, req *RestoreBackupRequestBody, params RestoreBackupParams) (r RestoreBackupRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -1174,7 +1174,7 @@ func (UnimplementedHandler) RestoreBackup(ctx context.Context, req *RestoreBacku
 //
 // The disk shows the `revert` operation until the revert is complete.
 //
-// POST /api/v1/disks/{diskId}/revert
+// POST /api/v1/disks/{diskId}:revert
 func (UnimplementedHandler) RevertDisk(ctx context.Context, req *RevertDiskRequestBody, params RevertDiskParams) (r RevertDiskRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -1289,7 +1289,7 @@ func (UnimplementedHandler) SetSnapshotQuota(ctx context.Context, req *SetSnapsh
 // Outstanding restrictions can prevent starting. The instance shows the `start` operation until it is
 // running or the start has failed.
 //
-// POST /api/v1/instances/{instanceId}/start
+// POST /api/v1/instances/{instanceId}:start
 func (UnimplementedHandler) StartInstance(ctx context.Context, req *PowerRequest, params StartInstanceParams) (r StartInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -1299,7 +1299,7 @@ func (UnimplementedHandler) StartInstance(ctx context.Context, req *PowerRequest
 // A stopped instance keeps its disks, network attachments and sellable quota. The instance shows the
 // `stop` operation until it is stopped or the stop has failed.
 //
-// POST /api/v1/instances/{instanceId}/stop
+// POST /api/v1/instances/{instanceId}:stop
 func (UnimplementedHandler) StopInstance(ctx context.Context, req *PowerRequest, params StopInstanceParams) (r StopInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -1319,7 +1319,7 @@ func (UnimplementedHandler) SuggestSubnetCidr(ctx context.Context, params Sugges
 // The address remains held by the project and simply no longer points at any network interface. The
 // floating IP shows the `unbind` operation until the change is confirmed.
 //
-// DELETE /api/v1/floating-ips/{floatingIpId}/binding
+// POST /api/v1/floating-ips/{floatingIpId}:unbind
 func (UnimplementedHandler) UnbindFloatingIP(ctx context.Context, params UnbindFloatingIPParams) (r UnbindFloatingIPRes, _ error) {
 	return r, ht.ErrNotImplemented
 }

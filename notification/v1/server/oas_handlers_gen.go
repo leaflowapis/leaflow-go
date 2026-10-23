@@ -38,14 +38,14 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 // Archiving removes a notification from the default listing without deleting it; pass
 // `include_archived` to see it again. Archiving also marks it read.
 //
-// POST /api/v1/notifications/{notificationId}/archive
+// POST /api/v1/notifications/{notificationId}:archive
 func (s *Server) handleArchiveNotificationRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("archive-notification"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/notifications/{notificationId}/archive"),
+		semconv.HTTPRouteKey.String("/api/v1/notifications/{notificationId}:archive"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -640,14 +640,14 @@ func (s *Server) handleCancelEmailOverrideRequest(args [0]string, argsEscaped bo
 // and a new one has to be sent; the pending address itself is kept, so nobody loses their place by
 // mistyping.
 //
-// POST /api/v1/preferences/email-override/code/confirm
+// POST /api/v1/preferences/email-override/code:confirm
 func (s *Server) handleConfirmEmailOverrideRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("confirm-email-override"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/preferences/email-override/code/confirm"),
+		semconv.HTTPRouteKey.String("/api/v1/preferences/email-override/code:confirm"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -3418,14 +3418,14 @@ func (s *Server) handleListUserChannelsRequest(args [0]string, argsEscaped bool,
 //
 // Marking a notification that is already read succeeds and changes nothing.
 //
-// POST /api/v1/notifications/{notificationId}/read
+// POST /api/v1/notifications/{notificationId}:markRead
 func (s *Server) handleMarkNotificationReadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("mark-notification-read"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/notifications/{notificationId}/read"),
+		semconv.HTTPRouteKey.String("/api/v1/notifications/{notificationId}:markRead"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -3621,14 +3621,14 @@ func (s *Server) handleMarkNotificationReadRequest(args [1]string, argsEscaped b
 //
 // Marking one that is already unread succeeds and changes nothing.
 //
-// DELETE /api/v1/notifications/{notificationId}/read
+// POST /api/v1/notifications/{notificationId}:markUnread
 func (s *Server) handleMarkNotificationUnreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("mark-notification-unread"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/notifications/{notificationId}/read"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/notifications/{notificationId}:markUnread"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -3824,14 +3824,14 @@ func (s *Server) handleMarkNotificationUnreadRequest(args [1]string, argsEscaped
 //
 // Passing an empty list marks everything currently unread as read.
 //
-// POST /api/v1/notifications/read
+// POST /api/v1/notifications:batchMarkRead
 func (s *Server) handleMarkNotificationsReadRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("mark-notifications-read"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/notifications/read"),
+		semconv.HTTPRouteKey.String("/api/v1/notifications:batchMarkRead"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -4025,14 +4025,14 @@ func (s *Server) handleMarkNotificationsReadRequest(args [0]string, argsEscaped 
 // Idempotent. Announcements you had already read stay read, and the count only covers the ones this
 // call changed.
 //
-// POST /api/v1/announcements/read
+// POST /api/v1/announcements:markAllRead
 func (s *Server) handleReadAllAnnouncementsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("read-all-announcements"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/announcements/read"),
+		semconv.HTTPRouteKey.String("/api/v1/announcements:markAllRead"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -4211,14 +4211,14 @@ func (s *Server) handleReadAllAnnouncementsRequest(args [0]string, argsEscaped b
 // Idempotent: marking one twice is the same as marking it once. There is no way to mark it unread —
 // having read something is a fact, not a state.
 //
-// POST /api/v1/announcements/{announcementId}/read
+// POST /api/v1/announcements/{announcementId}:markRead
 func (s *Server) handleReadAnnouncementRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("read-announcement"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/announcements/{announcementId}/read"),
+		semconv.HTTPRouteKey.String("/api/v1/announcements/{announcementId}:markRead"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -4423,14 +4423,14 @@ func (s *Server) handleReadAnnouncementRequest(args [1]string, argsEscaped bool,
 // clients and by browser prefetching, either of which would consume the credential before the
 // recipient opened it.
 //
-// POST /api/v1/credentials/{ticketId}/reveal
+// POST /api/v1/credentials/{ticketId}:reveal
 func (s *Server) handleRevealCredentialRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("reveal-credential"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/credentials/{ticketId}/reveal"),
+		semconv.HTTPRouteKey.String("/api/v1/credentials/{ticketId}:reveal"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -4824,14 +4824,14 @@ func (s *Server) handleSendEmailOverrideCodeRequest(args [0]string, argsEscaped 
 //
 // Unarchiving one that is not archived succeeds and changes nothing.
 //
-// DELETE /api/v1/notifications/{notificationId}/archive
+// POST /api/v1/notifications/{notificationId}:unarchive
 func (s *Server) handleUnarchiveNotificationRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("unarchive-notification"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/notifications/{notificationId}/archive"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/notifications/{notificationId}:unarchive"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -5689,14 +5689,14 @@ func (s *Server) handleUpdateUserChannelRequest(args [1]string, argsEscaped bool
 // A channel that fails verification is not marked verified and continues to be skipped. The reason is
 // reported in `last_error`; it is the provider's own wording and is not translated.
 //
-// POST /api/v1/channels/{channelId}/verify
+// POST /api/v1/channels/{channelId}:verify
 func (s *Server) handleVerifyUserChannelRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("verify-user-channel"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/channels/{channelId}/verify"),
+		semconv.HTTPRouteKey.String("/api/v1/channels/{channelId}:verify"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)

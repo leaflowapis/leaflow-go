@@ -33,7 +33,7 @@ type Invoker interface {
 	//
 	// Cancels the scheduled downgrade. Returns 409 MEMBERSHIP_CHANGE_PENDING if none is scheduled.
 	//
-	// DELETE /api/v1/memberships/{membershipId}/downgrade
+	// POST /api/v1/memberships/{membershipId}:cancelDowngrade
 	CancelMembershipDowngrade(ctx context.Context, params CancelMembershipDowngradeParams) (*Membership, error)
 	// CreateMembership invokes create-membership operation.
 	//
@@ -93,7 +93,7 @@ type Invoker interface {
 	// MEMBERSHIP_ACCOUNT_DELETING while the caller's account deletion is pending, or 403
 	// MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or banned.
 	//
-	// POST /api/v1/memberships/{membershipId}/downgrade
+	// POST /api/v1/memberships/{membershipId}:scheduleDowngrade
 	ScheduleMembershipDowngrade(ctx context.Context, request *MembershipDowngrade, params ScheduleMembershipDowngradeParams) (*Membership, error)
 	// UpgradeMembership invokes upgrade-membership operation.
 	//
@@ -103,7 +103,7 @@ type Invoker interface {
 	// 403 MEMBERSHIP_ACCOUNT_DELETING while the caller's account deletion is pending, or 403
 	// MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or banned.
 	//
-	// POST /api/v1/memberships/{membershipId}/upgrade
+	// POST /api/v1/memberships/{membershipId}:upgrade
 	UpgradeMembership(ctx context.Context, request *MembershipUpgrade, params UpgradeMembershipParams) (*MembershipPurchase, error)
 }
 
@@ -152,7 +152,7 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 //
 // Cancels the scheduled downgrade. Returns 409 MEMBERSHIP_CHANGE_PENDING if none is scheduled.
 //
-// DELETE /api/v1/memberships/{membershipId}/downgrade
+// POST /api/v1/memberships/{membershipId}:cancelDowngrade
 func (c *Client) CancelMembershipDowngrade(ctx context.Context, params CancelMembershipDowngradeParams) (*Membership, error) {
 	res, err := c.sendCancelMembershipDowngrade(ctx, params)
 	return res, err
@@ -161,8 +161,8 @@ func (c *Client) CancelMembershipDowngrade(ctx context.Context, params CancelMem
 func (c *Client) sendCancelMembershipDowngrade(ctx context.Context, params CancelMembershipDowngradeParams) (res *Membership, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-membership-downgrade"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/memberships/{membershipId}/downgrade"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/memberships/{membershipId}:cancelDowngrade"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -215,11 +215,11 @@ func (c *Client) sendCancelMembershipDowngrade(ctx context.Context, params Cance
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/downgrade"
+	pathParts[2] = ":cancelDowngrade"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
+	r, err := ht.NewRequest(ctx, "POST", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
@@ -1317,7 +1317,7 @@ func (c *Client) sendListPlans(ctx context.Context, params ListPlansParams) (res
 // MEMBERSHIP_ACCOUNT_DELETING while the caller's account deletion is pending, or 403
 // MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or banned.
 //
-// POST /api/v1/memberships/{membershipId}/downgrade
+// POST /api/v1/memberships/{membershipId}:scheduleDowngrade
 func (c *Client) ScheduleMembershipDowngrade(ctx context.Context, request *MembershipDowngrade, params ScheduleMembershipDowngradeParams) (*Membership, error) {
 	res, err := c.sendScheduleMembershipDowngrade(ctx, request, params)
 	return res, err
@@ -1327,7 +1327,7 @@ func (c *Client) sendScheduleMembershipDowngrade(ctx context.Context, request *M
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("schedule-membership-downgrade"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/memberships/{membershipId}/downgrade"),
+		semconv.URLTemplateKey.String("/api/v1/memberships/{membershipId}:scheduleDowngrade"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1380,7 +1380,7 @@ func (c *Client) sendScheduleMembershipDowngrade(ctx context.Context, request *M
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/downgrade"
+	pathParts[2] = ":scheduleDowngrade"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -1456,7 +1456,7 @@ func (c *Client) sendScheduleMembershipDowngrade(ctx context.Context, request *M
 // 403 MEMBERSHIP_ACCOUNT_DELETING while the caller's account deletion is pending, or 403
 // MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or banned.
 //
-// POST /api/v1/memberships/{membershipId}/upgrade
+// POST /api/v1/memberships/{membershipId}:upgrade
 func (c *Client) UpgradeMembership(ctx context.Context, request *MembershipUpgrade, params UpgradeMembershipParams) (*MembershipPurchase, error) {
 	res, err := c.sendUpgradeMembership(ctx, request, params)
 	return res, err
@@ -1475,7 +1475,7 @@ func (c *Client) sendUpgradeMembership(ctx context.Context, request *MembershipU
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("upgrade-membership"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/memberships/{membershipId}/upgrade"),
+		semconv.URLTemplateKey.String("/api/v1/memberships/{membershipId}:upgrade"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1528,7 +1528,7 @@ func (c *Client) sendUpgradeMembership(ctx context.Context, request *MembershipU
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/upgrade"
+	pathParts[2] = ":upgrade"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"

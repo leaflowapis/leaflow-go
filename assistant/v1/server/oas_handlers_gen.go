@@ -39,14 +39,14 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 // answered also succeeds: another tab may have answered first, or the auto-answer window may have
 // passed, and either way the turn has continued.
 //
-// POST /api/v1/threads/{thread}/items/{item}/answer
+// POST /api/v1/threads/{thread}/items/{item}:answer
 func (s *Server) handleAnswerQuestionRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("answer-question"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/items/{item}/answer"),
+		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/items/{item}:answer"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -461,14 +461,14 @@ func (s *Server) handleBeginWeixinLoginRequest(args [1]string, argsEscaped bool,
 // Stops the run in progress. The conversation is told the run was cancelled. Succeeds when nothing is
 // running.
 //
-// POST /api/v1/tasks/{task}/cancel
+// POST /api/v1/tasks/{task}:cancel
 func (s *Server) handleCancelTaskRunRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-task-run"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/tasks/{task}/cancel"),
+		semconv.HTTPRouteKey.String("/api/v1/tasks/{task}:cancel"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -661,14 +661,14 @@ func (s *Server) handleCancelTaskRunRequest(args [1]string, argsEscaped bool, w 
 //
 // Cancel upload.
 //
-// POST /api/v1/uploads/{upload}/cancel
+// POST /api/v1/uploads/{upload}:cancel
 func (s *Server) handleCancelUploadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-upload"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/uploads/{upload}/cancel"),
+		semconv.HTTPRouteKey.String("/api/v1/uploads/{upload}:cancel"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -864,14 +864,14 @@ func (s *Server) handleCancelUploadRequest(args [1]string, argsEscaped bool, w h
 // binding-code rule cannot be tested this way — whether something is a binding code depends on what
 // the sender actually wrote.
 //
-// GET /api/v1/channels/{channel}/sender-check
+// GET /api/v1/channels/{channel}:checkSender
 func (s *Server) handleCheckSenderRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("check-sender"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/channels/{channel}/sender-check"),
+		semconv.HTTPRouteKey.String("/api/v1/channels/{channel}:checkSender"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -1077,14 +1077,14 @@ func (s *Server) handleCheckSenderRequest(args [1]string, argsEscaped bool, w ht
 // Fails with 409 and code THREAD_RUNNING while a turn is running, and with 409 and code
 // NOTHING_TO_COMPACT when there is no history to summarize.
 //
-// POST /api/v1/threads/{thread}/compact
+// POST /api/v1/threads/{thread}:compact
 func (s *Server) handleCompactThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("compact-thread"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/compact"),
+		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}:compact"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -1277,14 +1277,14 @@ func (s *Server) handleCompactThreadRequest(args [1]string, argsEscaped bool, w 
 //
 // Complete upload.
 //
-// POST /api/v1/uploads/{upload}/complete
+// POST /api/v1/uploads/{upload}:complete
 func (s *Server) handleCompleteUploadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("complete-upload"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/uploads/{upload}/complete"),
+		semconv.HTTPRouteKey.String("/api/v1/uploads/{upload}:complete"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -7338,14 +7338,14 @@ func (s *Server) handleGetWeixinLoginRequest(args [1]string, argsEscaped bool, w
 // Succeeds when nothing is running, because pressing stop races with the turn finishing on its own.
 // Available while the project is suspended or being cleaned up.
 //
-// POST /api/v1/threads/{thread}/interrupt
+// POST /api/v1/threads/{thread}:interrupt
 func (s *Server) handleInterruptThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("interrupt-thread"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/interrupt"),
+		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}:interrupt"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -9981,14 +9981,14 @@ func (s *Server) handleListUploadsRequest(args [0]string, argsEscaped bool, w ht
 //
 // Clears `unread` until the assistant replies again.
 //
-// POST /api/v1/threads/{thread}/read
+// POST /api/v1/threads/{thread}:markRead
 func (s *Server) handleMarkThreadReadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("mark-thread-read"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/read"),
+		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}:markRead"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -10182,14 +10182,14 @@ func (s *Server) handleMarkThreadReadRequest(args [1]string, argsEscaped bool, w
 // Places the folder before `beforeFolderId`, or last when it is null. The inbox stays first. Fails
 // with 409 and code ORDER_CHANGED when `expectedVersion` is stale; read the folders again and retry.
 //
-// POST /api/v1/folders/{folder}/move
+// POST /api/v1/folders/{folder}:move
 func (s *Server) handleMoveFolderRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("move-folder"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/folders/{folder}/move"),
+		semconv.HTTPRouteKey.String("/api/v1/folders/{folder}:move"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -10553,14 +10553,14 @@ func (s *Server) handleOpenRealtimeRequest(args [0]string, argsEscaped bool, w h
 //
 // Stops future runs from its trigger. A run in progress continues. Pausing a paused task succeeds.
 //
-// POST /api/v1/tasks/{task}/pause
+// POST /api/v1/tasks/{task}:pause
 func (s *Server) handlePauseTaskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("pause-task"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/tasks/{task}/pause"),
+		semconv.HTTPRouteKey.String("/api/v1/tasks/{task}:pause"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -11409,14 +11409,14 @@ func (s *Server) handlePutUploadPartRequest(args [2]string, argsEscaped bool, w 
 // Lets its trigger start runs again. Missed runs within `catchupSeconds` are started. Resuming an
 // active task succeeds.
 //
-// POST /api/v1/tasks/{task}/resume
+// POST /api/v1/tasks/{task}:resume
 func (s *Server) handleResumeTaskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("resume-task"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/tasks/{task}/resume"),
+		semconv.HTTPRouteKey.String("/api/v1/tasks/{task}:resume"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -11612,14 +11612,14 @@ func (s *Server) handleResumeTaskRequest(args [1]string, argsEscaped bool, w htt
 //
 // Fails with 409 and code THREAD_RUNNING while a turn is running.
 //
-// POST /api/v1/threads/{thread}/resume
+// POST /api/v1/threads/{thread}:resume
 func (s *Server) handleResumeThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("resume-thread"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/resume"),
+		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}:resume"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -11829,14 +11829,14 @@ func (s *Server) handleResumeThreadRequest(args [1]string, argsEscaped bool, w h
 // `reverted` and are left out of later model requests; ordinals are not renumbered. Executed tools and
 // external changes are not undone. Returns how many items were reverted.
 //
-// POST /api/v1/threads/{thread}/revert
+// POST /api/v1/threads/{thread}:revert
 func (s *Server) handleRevertThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("revert-thread"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}/revert"),
+		semconv.HTTPRouteKey.String("/api/v1/threads/{thread}:revert"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -12048,14 +12048,14 @@ func (s *Server) handleRevertThreadRequest(args [1]string, argsEscaped bool, w h
 // returned in this response only and cannot be retrieved again. For a `supplied` platform you must
 // pass the new secret from that platform's own console.
 //
-// POST /api/v1/channels/{channel}/secret
+// POST /api/v1/channels/{channel}:rotateSecret
 func (s *Server) handleRotateChannelSecretRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rotate-channel-secret"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/channels/{channel}/secret"),
+		semconv.HTTPRouteKey.String("/api/v1/channels/{channel}:rotateSecret"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -12264,14 +12264,14 @@ func (s *Server) handleRotateChannelSecretRequest(args [1]string, argsEscaped bo
 // Starts a run immediately, outside its trigger. Fails with 409 and code TASK_RUNNING when a run is
 // already in progress and the overlap policy is `skip`.
 //
-// POST /api/v1/tasks/{task}/run
+// POST /api/v1/tasks/{task}:run
 func (s *Server) handleRunTaskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("run-task"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/tasks/{task}/run"),
+		semconv.HTTPRouteKey.String("/api/v1/tasks/{task}:run"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -13533,14 +13533,14 @@ func (s *Server) handleSubmitToolResultRequest(args [2]string, argsEscaped bool,
 // For when WeChat asks for an SMS or device code after the scan. The person who started the login gets
 // that code on their own phone.
 //
-// POST /api/v1/weixin-logins/{login}/verify-code
+// POST /api/v1/weixin-logins/{login}:verifyCode
 func (s *Server) handleSubmitWeixinVerifyCodeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("submit-weixin-verify-code"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/weixin-logins/{login}/verify-code"),
+		semconv.HTTPRouteKey.String("/api/v1/weixin-logins/{login}:verifyCode"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)

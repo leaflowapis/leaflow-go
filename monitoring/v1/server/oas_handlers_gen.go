@@ -38,14 +38,14 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 // The incident is also marked as acknowledged in the monitoring system, so that other channels can see
 // it already has an owner.
 //
-// POST /api/v1/incidents/{incidentId}/acknowledge
+// POST /api/v1/incidents/{incidentId}:acknowledge
 func (s *Server) handleAcknowledgeIncidentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("acknowledge-incident"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/incidents/{incidentId}/acknowledge"),
+		semconv.HTTPRouteKey.String("/api/v1/incidents/{incidentId}:acknowledge"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -687,14 +687,14 @@ func (s *Server) handleAssignIncidentRequest(args [1]string, argsEscaped bool, w
 // Cancelled rather than deleted, so that readers who saw the announcement have an explanation.
 // Maintenance that has already started cannot be cancelled; finish it early instead.
 //
-// POST /api/v1/status-page/maintenances/{maintenanceId}/cancel
+// POST /api/v1/status-page/maintenances/{maintenanceId}:cancel
 func (s *Server) handleCancelStatusPageMaintenanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-status-page-maintenance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/status-page/maintenances/{maintenanceId}/cancel"),
+		semconv.HTTPRouteKey.String("/api/v1/status-page/maintenances/{maintenanceId}:cancel"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -889,14 +889,14 @@ func (s *Server) handleCancelStatusPageMaintenanceRequest(args [1]string, argsEs
 // of the incident itself. An incident that has not recovered may still be closed as an accepted risk,
 // and remains unrecovered in the monitoring system.
 //
-// POST /api/v1/incidents/{incidentId}/close
+// POST /api/v1/incidents/{incidentId}:close
 func (s *Server) handleCloseIncidentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("close-incident"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/incidents/{incidentId}/close"),
+		semconv.HTTPRouteKey.String("/api/v1/incidents/{incidentId}:close"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -1105,14 +1105,14 @@ func (s *Server) handleCloseIncidentRequest(args [1]string, argsEscaped bool, w 
 // Optional: maintenance finishes on its own at the scheduled end time. Use this endpoint when the work
 // is done ahead of schedule; the affected components return to operational immediately.
 //
-// POST /api/v1/status-page/maintenances/{maintenanceId}/complete
+// POST /api/v1/status-page/maintenances/{maintenanceId}:complete
 func (s *Server) handleCompleteStatusPageMaintenanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("complete-status-page-maintenance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/status-page/maintenances/{maintenanceId}/complete"),
+		semconv.HTTPRouteKey.String("/api/v1/status-page/maintenances/{maintenanceId}:complete"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -3476,14 +3476,14 @@ func (s *Server) handleDeleteWebCheckRequest(args [2]string, argsEscaped bool, w
 // Reversible: the monitored host is retained, only collection stops, and history is unaffected.
 // Enrolling again resumes collection. To remove the history as well, use DELETE.
 //
-// POST /api/v1/servers/{serverId}/disable
+// POST /api/v1/servers/{serverId}:disable
 func (s *Server) handleDisableServerMonitoringRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("disable-server-monitoring"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/servers/{serverId}/disable"),
+		semconv.HTTPRouteKey.String("/api/v1/servers/{serverId}:disable"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -12096,14 +12096,14 @@ func (s *Server) handlePutWebCheckRequest(args [2]string, argsEscaped bool, w ht
 //
 // Reopen a closed incident.
 //
-// POST /api/v1/incidents/{incidentId}/reopen
+// POST /api/v1/incidents/{incidentId}:reopen
 func (s *Server) handleReopenIncidentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("reopen-incident"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/incidents/{incidentId}/reopen"),
+		semconv.HTTPRouteKey.String("/api/v1/incidents/{incidentId}:reopen"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)

@@ -5412,14 +5412,14 @@ func (s *Server) handleSetProjectSlugRequest(args [0]string, argsEscaped bool, w
 //
 // The only way `OWNER` moves, and only the owner can initiate it.
 //
-// POST /api/v1/transfer-ownership
+// POST /api/v1/project:transferOwnership
 func (s *Server) handleTransferProjectOwnershipRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("transfer-project-ownership"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/transfer-ownership"),
+		semconv.HTTPRouteKey.String("/api/v1/project:transferOwnership"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)

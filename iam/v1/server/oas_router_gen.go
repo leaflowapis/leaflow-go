@@ -53,6 +53,9 @@ var (
 	rn26AllowedHeaders = map[string]string{
 		"PUT": "Authorization,Content-Type",
 	}
+	rn27AllowedHeaders = map[string]string{
+		"POST": "Authorization,Content-Type",
+	}
 	rn18AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
@@ -73,9 +76,6 @@ var (
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
-	}
-	rn27AllowedHeaders = map[string]string{
-		"POST": "Authorization,Content-Type",
 	}
 )
 
@@ -537,6 +537,31 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							return
 						}
 
+					case ':': // Prefix: ":transferOwnership"
+
+						if l := len(":transferOwnership"); len(elem) >= l && elem[0:l] == ":transferOwnership" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch r.Method {
+							case "POST":
+								s.handleTransferProjectOwnershipRequest([0]string{}, elemIsEscaped, w, r)
+							default:
+								s.notAllowed(w, r, notAllowedParams{
+									allowedMethods: "POST",
+									allowedHeaders: rn27AllowedHeaders,
+									acceptPost:     "application/json",
+									acceptPatch:    "",
+								})
+							}
+
+							return
+						}
+
 					}
 
 				}
@@ -708,31 +733,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 
-				}
-
-			case 't': // Prefix: "transfer-ownership"
-
-				if l := len("transfer-ownership"); len(elem) >= l && elem[0:l] == "transfer-ownership" {
-					elem = elem[l:]
-				} else {
-					break
-				}
-
-				if len(elem) == 0 {
-					// Leaf node.
-					switch r.Method {
-					case "POST":
-						s.handleTransferProjectOwnershipRequest([0]string{}, elemIsEscaped, w, r)
-					default:
-						s.notAllowed(w, r, notAllowedParams{
-							allowedMethods: "POST",
-							allowedHeaders: rn27AllowedHeaders,
-							acceptPost:     "application/json",
-							acceptPatch:    "",
-						})
-					}
-
-					return
 				}
 
 			}
@@ -1270,6 +1270,31 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							}
 						}
 
+					case ':': // Prefix: ":transferOwnership"
+
+						if l := len(":transferOwnership"); len(elem) >= l && elem[0:l] == ":transferOwnership" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch method {
+							case "POST":
+								r.name = TransferProjectOwnershipOperation
+								r.summary = "Transfer ownership of a project"
+								r.operationID = "transfer-project-ownership"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/project:transferOwnership"
+								r.args = args
+								r.count = 0
+								return r, true
+							default:
+								return
+							}
+						}
+
 					}
 
 				}
@@ -1471,31 +1496,6 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						}
 					}
 
-				}
-
-			case 't': // Prefix: "transfer-ownership"
-
-				if l := len("transfer-ownership"); len(elem) >= l && elem[0:l] == "transfer-ownership" {
-					elem = elem[l:]
-				} else {
-					break
-				}
-
-				if len(elem) == 0 {
-					// Leaf node.
-					switch method {
-					case "POST":
-						r.name = TransferProjectOwnershipOperation
-						r.summary = "Transfer ownership of a project"
-						r.operationID = "transfer-project-ownership"
-						r.operationGroup = ""
-						r.pathPattern = "/api/v1/transfer-ownership"
-						r.args = args
-						r.count = 0
-						return r, true
-					default:
-						return
-					}
 				}
 
 			}

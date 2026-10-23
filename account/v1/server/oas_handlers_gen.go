@@ -241,14 +241,14 @@ func (s *Server) handleAcceptAgreementsRequest(args [0]string, argsEscaped bool,
 //
 // No token is required; the invitation is addressed to the email address of the current account.
 //
-// POST /account/v1/me/invitations/{invitationId}/accept
+// POST /account/v1/me/invitations/{invitationId}:accept
 func (s *Server) handleAcceptInvitationRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("accept-invitation"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/account/v1/me/invitations/{invitationId}/accept"),
+		semconv.HTTPRouteKey.String("/account/v1/me/invitations/{invitationId}:accept"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -441,14 +441,14 @@ func (s *Server) handleAcceptInvitationRequest(args [1]string, argsEscaped bool,
 //
 // A token that does not match, and an invitation that no longer stands, answer the same way.
 //
-// POST /account/v1/me/invitations/accept
+// POST /account/v1/me/invitations:accept
 func (s *Server) handleAcceptInvitationByTokenRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("accept-invitation-by-token"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/account/v1/me/invitations/accept"),
+		semconv.HTTPRouteKey.String("/account/v1/me/invitations:accept"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -642,14 +642,14 @@ func (s *Server) handleAcceptInvitationByTokenRequest(args [0]string, argsEscape
 // Returns the account to use. Cancelling when no deletion is open returns `state` `none`. Fails with
 // 409 `ACCOUNT_DELETION_NOT_CANCELLABLE` once `scheduled_at` has passed.
 //
-// DELETE /account/v1/me/deletion
+// POST /account/v1/me:undelete
 func (s *Server) handleCancelAccountDeletionRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-account-deletion"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/account/v1/me/deletion"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/account/v1/me:undelete"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -2439,8 +2439,8 @@ func (s *Server) handleGetProjectSlugAvailabilityRequest(args [1]string, argsEsc
 //
 // No token required.
 //
-// While `registration_mode` is not `OPEN`, `POST /account/v1/register` answers 403: `CLOSED` refuses
-// everyone, and `INVITE_ONLY` accepts only an email address holding a project invitation.
+// While `registration_mode` is not `OPEN`, `POST /account/v1/me:register` answers 403: `CLOSED`
+// refuses everyone, and `INVITE_ONLY` accepts only an email address holding a project invitation.
 // `project_creation_mode` behaves the same way, and `VERIFIED_ONLY` requires identity verification to
 // have completed.
 //
@@ -2580,7 +2580,7 @@ func (s *Server) handleGetSettingsRequest(args [0]string, argsEscaped bool, w ht
 // handleListAgreementsRequest handles list-agreements operation.
 //
 // No token required. Send the `type` and `version` of each one back unchanged to
-// `POST /account/v1/register`.
+// `POST /account/v1/me:register`.
 //
 // The array is empty while no agreement is in force, and registration then takes no `consents`.
 //
@@ -3632,14 +3632,14 @@ func (s *Server) handlePreviewInvitationByTokenRequest(args [0]string, argsEscap
 // list again. An account that already exists answers 409, and one that has been deleted answers 410
 // `USER_DELETED`: the same sign-in cannot register again.
 //
-// POST /account/v1/register
+// POST /account/v1/me:register
 func (s *Server) handleRegisterRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("register"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/account/v1/register"),
+		semconv.HTTPRouteKey.String("/account/v1/me:register"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -3840,7 +3840,7 @@ func (s *Server) handleRegisterRequest(args [0]string, argsEscaped bool, w http.
 //   - Otherwise `state` becomes `scheduled`, and the account is deleted at `scheduled_at`, fifteen days
 //     after the request. The conditions are checked once more at that time.
 //
-// The deletion can be cancelled with `DELETE /account/v1/me/deletion` until `scheduled_at`, and not
+// The deletion can be cancelled with `POST /account/v1/me:undelete` until `scheduled_at`, and not
 // after. Once carried out it cannot be undone, and the same sign-in cannot register again. Any
 // remaining balance and prepaid benefits are forfeited, which `acknowledge_forfeiture` confirms.
 //
@@ -3849,14 +3849,14 @@ func (s *Server) handleRegisterRequest(args [0]string, argsEscaped bool, w http.
 // caller signed in within the last `meta.max_age` seconds; sign in again with that `max_age` and
 // retry.
 //
-// POST /account/v1/me/deletion
+// DELETE /account/v1/me
 func (s *Server) handleRequestAccountDeletionRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("request-account-deletion"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/account/v1/me/deletion"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/account/v1/me"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -3967,23 +3967,18 @@ func (s *Server) handleRequestAccountDeletionRequest(args [0]string, argsEscaped
 			return
 		}
 	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeRequestAccountDeletionRequest(r)
+	params, err := decodeRequestAccountDeletionParams(args, argsEscaped, r)
 	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
+		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
 			Err:              err,
 		}
-		defer recordError("DecodeRequest", err)
+		defer recordError("DecodeParams", err)
 		s.cfg.ErrorHandler(ctx, w, r, err)
 		return
 	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
+
+	var rawBody []byte
 
 	var response *AccountDeletionResource
 	if m := s.cfg.Middleware; m != nil {
@@ -3992,15 +3987,20 @@ func (s *Server) handleRequestAccountDeletionRequest(args [0]string, argsEscaped
 			OperationName:    RequestAccountDeletionOperation,
 			OperationSummary: "Request deletion of the current account",
 			OperationID:      "request-account-deletion",
-			Body:             request,
+			Body:             nil,
 			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
+			Params: middleware.Parameters{
+				{
+					Name: "acknowledge_forfeiture",
+					In:   "query",
+				}: params.AcknowledgeForfeiture,
+			},
+			Raw: r,
 		}
 
 		type (
-			Request  = *RequestAccountDeletionRequestBody
-			Params   = struct{}
+			Request  = struct{}
+			Params   = RequestAccountDeletionParams
 			Response = *AccountDeletionResource
 		)
 		response, err = middleware.HookMiddleware[
@@ -4010,14 +4010,14 @@ func (s *Server) handleRequestAccountDeletionRequest(args [0]string, argsEscaped
 		](
 			m,
 			mreq,
-			nil,
+			unpackRequestAccountDeletionParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.RequestAccountDeletion(ctx, request)
+				response, err = s.h.RequestAccountDeletion(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.RequestAccountDeletion(ctx, request)
+		response, err = s.h.RequestAccountDeletion(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {

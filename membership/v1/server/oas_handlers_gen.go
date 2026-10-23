@@ -37,14 +37,14 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 //
 // Cancels the scheduled downgrade. Returns 409 MEMBERSHIP_CHANGE_PENDING if none is scheduled.
 //
-// DELETE /api/v1/memberships/{membershipId}/downgrade
+// POST /api/v1/memberships/{membershipId}:cancelDowngrade
 func (s *Server) handleCancelMembershipDowngradeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-membership-downgrade"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/memberships/{membershipId}/downgrade"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/memberships/{membershipId}:cancelDowngrade"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -1593,14 +1593,14 @@ func (s *Server) handleListPlansRequest(args [0]string, argsEscaped bool, w http
 // MEMBERSHIP_ACCOUNT_DELETING while the caller's account deletion is pending, or 403
 // MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or banned.
 //
-// POST /api/v1/memberships/{membershipId}/downgrade
+// POST /api/v1/memberships/{membershipId}:scheduleDowngrade
 func (s *Server) handleScheduleMembershipDowngradeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("schedule-membership-downgrade"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/memberships/{membershipId}/downgrade"),
+		semconv.HTTPRouteKey.String("/api/v1/memberships/{membershipId}:scheduleDowngrade"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -1812,14 +1812,14 @@ func (s *Server) handleScheduleMembershipDowngradeRequest(args [1]string, argsEs
 // 403 MEMBERSHIP_ACCOUNT_DELETING while the caller's account deletion is pending, or 403
 // MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or banned.
 //
-// POST /api/v1/memberships/{membershipId}/upgrade
+// POST /api/v1/memberships/{membershipId}:upgrade
 func (s *Server) handleUpgradeMembershipRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("upgrade-membership"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/memberships/{membershipId}/upgrade"),
+		semconv.HTTPRouteKey.String("/api/v1/memberships/{membershipId}:upgrade"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)

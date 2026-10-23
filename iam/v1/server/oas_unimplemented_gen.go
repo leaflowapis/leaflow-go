@@ -306,7 +306,7 @@ func (UnimplementedHandler) SetProjectSlug(ctx context.Context, req *SetProjectS
 //
 // The only way `OWNER` moves, and only the owner can initiate it.
 //
-// POST /api/v1/transfer-ownership
+// POST /api/v1/project:transferOwnership
 func (UnimplementedHandler) TransferProjectOwnership(ctx context.Context, req *TransferOwnershipRequestBody) (r *OwnershipTransferResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }

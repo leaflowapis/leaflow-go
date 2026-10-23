@@ -100,7 +100,7 @@ func (UnimplementedHandler) DeleteResponse(ctx context.Context, params DeleteRes
 // A temporary measure; the key may be enabled again at any time. Use revocation to invalidate it
 // permanently.
 //
-// POST /api/v1/keys/{keyId}/disable
+// POST /api/v1/keys/{keyId}:disable
 func (UnimplementedHandler) DisableAPIKey(ctx context.Context, params DisableAPIKeyParams) (r DisableAPIKeyRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -111,7 +111,7 @@ func (UnimplementedHandler) DisableAPIKey(ctx context.Context, params DisableAPI
 // because its project is suspended answers `API_KEY_PROJECT_SUSPENDED` with `suspended` set to true;
 // the latter requires the project to be restored first.
 //
-// POST /api/v1/keys/{keyId}/enable
+// POST /api/v1/keys/{keyId}:enable
 func (UnimplementedHandler) EnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (r EnableAPIKeyRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -290,7 +290,7 @@ func (UnimplementedHandler) ListUsageByModel(ctx context.Context, params ListUsa
 //
 // Use disabling for a temporary measure.
 //
-// POST /api/v1/keys/{keyId}/revoke
+// POST /api/v1/keys/{keyId}:revoke
 func (UnimplementedHandler) RevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (r RevokeAPIKeyRes, _ error) {
 	return r, ht.ErrNotImplemented
 }

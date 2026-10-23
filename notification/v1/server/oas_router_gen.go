@@ -14,10 +14,10 @@ var (
 	rn20AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn28AllowedHeaders = map[string]string{
+	rn33AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
-	rn31AllowedHeaders = map[string]string{
+	rn30AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
 	rn9AllowedHeaders = map[string]string{
@@ -28,20 +28,17 @@ var (
 		"DELETE": "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
-	rn33AllowedHeaders = map[string]string{
+	rn36AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
 	rn17AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn32AllowedHeaders = map[string]string{
+	rn34AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
 	rn23AllowedHeaders = map[string]string{
 		"GET": "Authorization",
-	}
-	rn27AllowedHeaders = map[string]string{
-		"POST": "Authorization,Content-Type",
 	}
 	rn8AllowedHeaders = map[string]string{
 		"GET": "Authorization",
@@ -50,12 +47,19 @@ var (
 		"GET": "Authorization",
 	}
 	rn3AllowedHeaders = map[string]string{
-		"DELETE": "Authorization",
-		"POST":   "Authorization",
+		"POST": "Authorization",
 	}
 	rn26AllowedHeaders = map[string]string{
-		"DELETE": "Authorization",
-		"POST":   "Authorization",
+		"POST": "Authorization",
+	}
+	rn28AllowedHeaders = map[string]string{
+		"POST": "Authorization",
+	}
+	rn35AllowedHeaders = map[string]string{
+		"POST": "Authorization",
+	}
+	rn29AllowedHeaders = map[string]string{
+		"POST": "Authorization,Content-Type",
 	}
 	rn19AllowedHeaders = map[string]string{
 		"GET":   "Authorization",
@@ -166,40 +170,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						break
 					}
 
-					if len(elem) == 0 {
-						break
-					}
-					switch elem[0] {
-					case 'r': // Prefix: "read"
-						origElem := elem
-						if l := len("read"); len(elem) >= l && elem[0:l] == "read" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							// Leaf node.
-							switch r.Method {
-							case "POST":
-								s.handleReadAllAnnouncementsRequest([0]string{}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "POST",
-									allowedHeaders: rn28AllowedHeaders,
-									acceptPost:     "",
-									acceptPatch:    "",
-								})
-							}
-
-							return
-						}
-
-						elem = origElem
-					}
 					// Param: "announcementId"
-					// Match until "/"
-					idx := strings.IndexByte(elem, '/')
+					// Match until ":"
+					idx := strings.IndexByte(elem, ':')
 					if idx < 0 {
 						idx = len(elem)
 					}
@@ -210,9 +183,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						break
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/read"
+					case ':': // Prefix: ":markRead"
 
-						if l := len("/read"); len(elem) >= l && elem[0:l] == "/read" {
+						if l := len(":markRead"); len(elem) >= l && elem[0:l] == ":markRead" {
 							elem = elem[l:]
 						} else {
 							break
@@ -228,7 +201,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "POST",
-									allowedHeaders: rn31AllowedHeaders,
+									allowedHeaders: rn33AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -237,6 +210,31 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							return
 						}
 
+					}
+
+				case ':': // Prefix: ":markAllRead"
+
+					if l := len(":markAllRead"); len(elem) >= l && elem[0:l] == ":markAllRead" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch r.Method {
+						case "POST":
+							s.handleReadAllAnnouncementsRequest([0]string{}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "POST",
+								allowedHeaders: rn30AllowedHeaders,
+								acceptPost:     "",
+								acceptPatch:    "",
+							})
+						}
+
+						return
 					}
 
 				}
@@ -288,8 +286,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						}
 
 						// Param: "channelId"
-						// Match until "/"
-						idx := strings.IndexByte(elem, '/')
+						// Match until ":"
+						idx := strings.IndexByte(elem, ':')
 						if idx < 0 {
 							idx = len(elem)
 						}
@@ -318,9 +316,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							return
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/verify"
+						case ':': // Prefix: ":verify"
 
-							if l := len("/verify"); len(elem) >= l && elem[0:l] == "/verify" {
+							if l := len(":verify"); len(elem) >= l && elem[0:l] == ":verify" {
 								elem = elem[l:]
 							} else {
 								break
@@ -336,7 +334,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn33AllowedHeaders,
+										allowedHeaders: rn36AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -358,8 +356,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					}
 
 					// Param: "ticketId"
-					// Match until "/"
-					idx := strings.IndexByte(elem, '/')
+					// Match until ":"
+					idx := strings.IndexByte(elem, ':')
 					if idx < 0 {
 						idx = len(elem)
 					}
@@ -384,9 +382,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/reveal"
+					case ':': // Prefix: ":reveal"
 
-						if l := len("/reveal"); len(elem) >= l && elem[0:l] == "/reveal" {
+						if l := len(":reveal"); len(elem) >= l && elem[0:l] == ":reveal" {
 							elem = elem[l:]
 						} else {
 							break
@@ -402,7 +400,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "POST",
-									allowedHeaders: rn32AllowedHeaders,
+									allowedHeaders: rn34AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -488,32 +486,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							break
 						}
 						switch elem[0] {
-						case 'r': // Prefix: "read"
-							origElem := elem
-							if l := len("read"); len(elem) >= l && elem[0:l] == "read" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "POST":
-									s.handleMarkNotificationsReadRequest([0]string{}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "POST",
-										allowedHeaders: rn27AllowedHeaders,
-										acceptPost:     "application/json",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
-							elem = origElem
 						case 'u': // Prefix: "unread-count"
 							origElem := elem
 							if l := len("unread-count"); len(elem) >= l && elem[0:l] == "unread-count" {
@@ -542,8 +514,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							elem = origElem
 						}
 						// Param: "notificationId"
-						// Match until "/"
-						idx := strings.IndexByte(elem, '/')
+						// Match until ":"
+						idx := strings.IndexByte(elem, ':')
 						if idx < 0 {
 							idx = len(elem)
 						}
@@ -568,9 +540,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							return
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/"
+						case ':': // Prefix: ":"
 
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
 								elem = elem[l:]
 							} else {
 								break
@@ -591,17 +563,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								if len(elem) == 0 {
 									// Leaf node.
 									switch r.Method {
-									case "DELETE":
-										s.handleUnarchiveNotificationRequest([1]string{
-											args[0],
-										}, elemIsEscaped, w, r)
 									case "POST":
 										s.handleArchiveNotificationRequest([1]string{
 											args[0],
 										}, elemIsEscaped, w, r)
 									default:
 										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "DELETE,POST",
+											allowedMethods: "POST",
 											allowedHeaders: rn3AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
@@ -611,9 +579,77 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									return
 								}
 
-							case 'r': // Prefix: "read"
+							case 'm': // Prefix: "mark"
 
-								if l := len("read"); len(elem) >= l && elem[0:l] == "read" {
+								if l := len("mark"); len(elem) >= l && elem[0:l] == "mark" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									break
+								}
+								switch elem[0] {
+								case 'R': // Prefix: "Read"
+
+									if l := len("Read"); len(elem) >= l && elem[0:l] == "Read" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch r.Method {
+										case "POST":
+											s.handleMarkNotificationReadRequest([1]string{
+												args[0],
+											}, elemIsEscaped, w, r)
+										default:
+											s.notAllowed(w, r, notAllowedParams{
+												allowedMethods: "POST",
+												allowedHeaders: rn26AllowedHeaders,
+												acceptPost:     "",
+												acceptPatch:    "",
+											})
+										}
+
+										return
+									}
+
+								case 'U': // Prefix: "Unread"
+
+									if l := len("Unread"); len(elem) >= l && elem[0:l] == "Unread" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch r.Method {
+										case "POST":
+											s.handleMarkNotificationUnreadRequest([1]string{
+												args[0],
+											}, elemIsEscaped, w, r)
+										default:
+											s.notAllowed(w, r, notAllowedParams{
+												allowedMethods: "POST",
+												allowedHeaders: rn28AllowedHeaders,
+												acceptPost:     "",
+												acceptPatch:    "",
+											})
+										}
+
+										return
+									}
+
+								}
+
+							case 'u': // Prefix: "unarchive"
+
+								if l := len("unarchive"); len(elem) >= l && elem[0:l] == "unarchive" {
 									elem = elem[l:]
 								} else {
 									break
@@ -622,18 +658,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								if len(elem) == 0 {
 									// Leaf node.
 									switch r.Method {
-									case "DELETE":
-										s.handleMarkNotificationUnreadRequest([1]string{
-											args[0],
-										}, elemIsEscaped, w, r)
 									case "POST":
-										s.handleMarkNotificationReadRequest([1]string{
+										s.handleUnarchiveNotificationRequest([1]string{
 											args[0],
 										}, elemIsEscaped, w, r)
 									default:
 										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "DELETE,POST",
-											allowedHeaders: rn26AllowedHeaders,
+											allowedMethods: "POST",
+											allowedHeaders: rn35AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -644,6 +676,31 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 							}
 
+						}
+
+					case ':': // Prefix: ":batchMarkRead"
+
+						if l := len(":batchMarkRead"); len(elem) >= l && elem[0:l] == ":batchMarkRead" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch r.Method {
+							case "POST":
+								s.handleMarkNotificationsReadRequest([0]string{}, elemIsEscaped, w, r)
+							default:
+								s.notAllowed(w, r, notAllowedParams{
+									allowedMethods: "POST",
+									allowedHeaders: rn29AllowedHeaders,
+									acceptPost:     "application/json",
+									acceptPatch:    "",
+								})
+							}
+
+							return
 						}
 
 					}
@@ -714,9 +771,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							return
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/confirm"
+						case ':': // Prefix: ":confirm"
 
-							if l := len("/confirm"); len(elem) >= l && elem[0:l] == "/confirm" {
+							if l := len(":confirm"); len(elem) >= l && elem[0:l] == ":confirm" {
 								elem = elem[l:]
 							} else {
 								break
@@ -994,40 +1051,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						break
 					}
 
-					if len(elem) == 0 {
-						break
-					}
-					switch elem[0] {
-					case 'r': // Prefix: "read"
-						origElem := elem
-						if l := len("read"); len(elem) >= l && elem[0:l] == "read" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							// Leaf node.
-							switch method {
-							case "POST":
-								r.name = ReadAllAnnouncementsOperation
-								r.summary = "Mark every visible announcement as read"
-								r.operationID = "read-all-announcements"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/announcements/read"
-								r.args = args
-								r.count = 0
-								return r, true
-							default:
-								return
-							}
-						}
-
-						elem = origElem
-					}
 					// Param: "announcementId"
-					// Match until "/"
-					idx := strings.IndexByte(elem, '/')
+					// Match until ":"
+					idx := strings.IndexByte(elem, ':')
 					if idx < 0 {
 						idx = len(elem)
 					}
@@ -1038,9 +1064,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						break
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/read"
+					case ':': // Prefix: ":markRead"
 
-						if l := len("/read"); len(elem) >= l && elem[0:l] == "/read" {
+						if l := len(":markRead"); len(elem) >= l && elem[0:l] == ":markRead" {
 							elem = elem[l:]
 						} else {
 							break
@@ -1054,7 +1080,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								r.summary = "Mark one announcement as read"
 								r.operationID = "read-announcement"
 								r.operationGroup = ""
-								r.pathPattern = "/api/v1/announcements/{announcementId}/read"
+								r.pathPattern = "/api/v1/announcements/{announcementId}:markRead"
 								r.args = args
 								r.count = 1
 								return r, true
@@ -1063,6 +1089,31 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							}
 						}
 
+					}
+
+				case ':': // Prefix: ":markAllRead"
+
+					if l := len(":markAllRead"); len(elem) >= l && elem[0:l] == ":markAllRead" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch method {
+						case "POST":
+							r.name = ReadAllAnnouncementsOperation
+							r.summary = "Mark every visible announcement as read"
+							r.operationID = "read-all-announcements"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/announcements:markAllRead"
+							r.args = args
+							r.count = 0
+							return r, true
+						default:
+							return
+						}
 					}
 
 				}
@@ -1121,8 +1172,8 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						}
 
 						// Param: "channelId"
-						// Match until "/"
-						idx := strings.IndexByte(elem, '/')
+						// Match until ":"
+						idx := strings.IndexByte(elem, ':')
 						if idx < 0 {
 							idx = len(elem)
 						}
@@ -1154,9 +1205,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							}
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/verify"
+						case ':': // Prefix: ":verify"
 
-							if l := len("/verify"); len(elem) >= l && elem[0:l] == "/verify" {
+							if l := len(":verify"); len(elem) >= l && elem[0:l] == ":verify" {
 								elem = elem[l:]
 							} else {
 								break
@@ -1170,7 +1221,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									r.summary = "Verify an outbound channel"
 									r.operationID = "verify-user-channel"
 									r.operationGroup = ""
-									r.pathPattern = "/api/v1/channels/{channelId}/verify"
+									r.pathPattern = "/api/v1/channels/{channelId}:verify"
 									r.args = args
 									r.count = 1
 									return r, true
@@ -1192,8 +1243,8 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					}
 
 					// Param: "ticketId"
-					// Match until "/"
-					idx := strings.IndexByte(elem, '/')
+					// Match until ":"
+					idx := strings.IndexByte(elem, ':')
 					if idx < 0 {
 						idx = len(elem)
 					}
@@ -1216,9 +1267,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						}
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/reveal"
+					case ':': // Prefix: ":reveal"
 
-						if l := len("/reveal"); len(elem) >= l && elem[0:l] == "/reveal" {
+						if l := len(":reveal"); len(elem) >= l && elem[0:l] == ":reveal" {
 							elem = elem[l:]
 						} else {
 							break
@@ -1232,7 +1283,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								r.summary = "Reveal a one-time credential"
 								r.operationID = "reveal-credential"
 								r.operationGroup = ""
-								r.pathPattern = "/api/v1/credentials/{ticketId}/reveal"
+								r.pathPattern = "/api/v1/credentials/{ticketId}:reveal"
 								r.args = args
 								r.count = 1
 								return r, true
@@ -1318,32 +1369,6 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							break
 						}
 						switch elem[0] {
-						case 'r': // Prefix: "read"
-							origElem := elem
-							if l := len("read"); len(elem) >= l && elem[0:l] == "read" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "POST":
-									r.name = MarkNotificationsReadOperation
-									r.summary = "Mark several notifications as read"
-									r.operationID = "mark-notifications-read"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/notifications/read"
-									r.args = args
-									r.count = 0
-									return r, true
-								default:
-									return
-								}
-							}
-
-							elem = origElem
 						case 'u': // Prefix: "unread-count"
 							origElem := elem
 							if l := len("unread-count"); len(elem) >= l && elem[0:l] == "unread-count" {
@@ -1372,8 +1397,8 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							elem = origElem
 						}
 						// Param: "notificationId"
-						// Match until "/"
-						idx := strings.IndexByte(elem, '/')
+						// Match until ":"
+						idx := strings.IndexByte(elem, ':')
 						if idx < 0 {
 							idx = len(elem)
 						}
@@ -1396,9 +1421,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							}
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/"
+						case ':': // Prefix: ":"
 
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
 								elem = elem[l:]
 							} else {
 								break
@@ -1419,21 +1444,12 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								if len(elem) == 0 {
 									// Leaf node.
 									switch method {
-									case "DELETE":
-										r.name = UnarchiveNotificationOperation
-										r.summary = "Take one notification out of the archive"
-										r.operationID = "unarchive-notification"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/notifications/{notificationId}/archive"
-										r.args = args
-										r.count = 1
-										return r, true
 									case "POST":
 										r.name = ArchiveNotificationOperation
 										r.summary = "Archive one notification"
 										r.operationID = "archive-notification"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/notifications/{notificationId}/archive"
+										r.pathPattern = "/api/v1/notifications/{notificationId}:archive"
 										r.args = args
 										r.count = 1
 										return r, true
@@ -1442,9 +1458,73 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									}
 								}
 
-							case 'r': // Prefix: "read"
+							case 'm': // Prefix: "mark"
 
-								if l := len("read"); len(elem) >= l && elem[0:l] == "read" {
+								if l := len("mark"); len(elem) >= l && elem[0:l] == "mark" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									break
+								}
+								switch elem[0] {
+								case 'R': // Prefix: "Read"
+
+									if l := len("Read"); len(elem) >= l && elem[0:l] == "Read" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch method {
+										case "POST":
+											r.name = MarkNotificationReadOperation
+											r.summary = "Mark one notification as read"
+											r.operationID = "mark-notification-read"
+											r.operationGroup = ""
+											r.pathPattern = "/api/v1/notifications/{notificationId}:markRead"
+											r.args = args
+											r.count = 1
+											return r, true
+										default:
+											return
+										}
+									}
+
+								case 'U': // Prefix: "Unread"
+
+									if l := len("Unread"); len(elem) >= l && elem[0:l] == "Unread" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch method {
+										case "POST":
+											r.name = MarkNotificationUnreadOperation
+											r.summary = "Mark one notification as unread"
+											r.operationID = "mark-notification-unread"
+											r.operationGroup = ""
+											r.pathPattern = "/api/v1/notifications/{notificationId}:markUnread"
+											r.args = args
+											r.count = 1
+											return r, true
+										default:
+											return
+										}
+									}
+
+								}
+
+							case 'u': // Prefix: "unarchive"
+
+								if l := len("unarchive"); len(elem) >= l && elem[0:l] == "unarchive" {
 									elem = elem[l:]
 								} else {
 									break
@@ -1453,21 +1533,12 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								if len(elem) == 0 {
 									// Leaf node.
 									switch method {
-									case "DELETE":
-										r.name = MarkNotificationUnreadOperation
-										r.summary = "Mark one notification as unread"
-										r.operationID = "mark-notification-unread"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/notifications/{notificationId}/read"
-										r.args = args
-										r.count = 1
-										return r, true
 									case "POST":
-										r.name = MarkNotificationReadOperation
-										r.summary = "Mark one notification as read"
-										r.operationID = "mark-notification-read"
+										r.name = UnarchiveNotificationOperation
+										r.summary = "Take one notification out of the archive"
+										r.operationID = "unarchive-notification"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/notifications/{notificationId}/read"
+										r.pathPattern = "/api/v1/notifications/{notificationId}:unarchive"
 										r.args = args
 										r.count = 1
 										return r, true
@@ -1478,6 +1549,31 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 							}
 
+						}
+
+					case ':': // Prefix: ":batchMarkRead"
+
+						if l := len(":batchMarkRead"); len(elem) >= l && elem[0:l] == ":batchMarkRead" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							// Leaf node.
+							switch method {
+							case "POST":
+								r.name = MarkNotificationsReadOperation
+								r.summary = "Mark several notifications as read"
+								r.operationID = "mark-notifications-read"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/notifications:batchMarkRead"
+								r.args = args
+								r.count = 0
+								return r, true
+							default:
+								return
+							}
 						}
 
 					}
@@ -1562,9 +1658,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							}
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/confirm"
+						case ':': // Prefix: ":confirm"
 
-							if l := len("/confirm"); len(elem) >= l && elem[0:l] == "/confirm" {
+							if l := len(":confirm"); len(elem) >= l && elem[0:l] == ":confirm" {
 								elem = elem[l:]
 							} else {
 								break
@@ -1578,7 +1674,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									r.summary = "Confirm the pending address with its code"
 									r.operationID = "confirm-email-override"
 									r.operationGroup = ""
-									r.pathPattern = "/api/v1/preferences/email-override/code/confirm"
+									r.pathPattern = "/api/v1/preferences/email-override/code:confirm"
 									r.args = args
 									r.count = 0
 									return r, true

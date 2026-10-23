@@ -36,7 +36,7 @@ type Invoker interface {
 	// A closed ticket can be rated once; see `POST /api/v1/tickets/{ticketId}/satisfaction`. Posting a
 	// further message reopens it.
 	//
-	// POST /api/v1/tickets/{ticketId}/close
+	// POST /api/v1/tickets/{ticketId}:close
 	CloseTicket(ctx context.Context, params CloseTicketParams) (*TicketResource, error)
 	// CreateTicket invokes create-ticket operation.
 	//
@@ -207,7 +207,7 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 // A closed ticket can be rated once; see `POST /api/v1/tickets/{ticketId}/satisfaction`. Posting a
 // further message reopens it.
 //
-// POST /api/v1/tickets/{ticketId}/close
+// POST /api/v1/tickets/{ticketId}:close
 func (c *Client) CloseTicket(ctx context.Context, params CloseTicketParams) (*TicketResource, error) {
 	res, err := c.sendCloseTicket(ctx, params)
 	return res, err
@@ -217,7 +217,7 @@ func (c *Client) sendCloseTicket(ctx context.Context, params CloseTicketParams) 
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("close-ticket"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/tickets/{ticketId}/close"),
+		semconv.URLTemplateKey.String("/api/v1/tickets/{ticketId}:close"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -270,7 +270,7 @@ func (c *Client) sendCloseTicket(ctx context.Context, params CloseTicketParams) 
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/close"
+	pathParts[2] = ":close"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"

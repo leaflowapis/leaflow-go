@@ -37,14 +37,14 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 //
 // Accept peering.
 //
-// POST /api/v1/peerings/{peeringId}/accept
+// POST /api/v1/peerings/{peeringId}:accept
 func (s *Server) handleAcceptPeeringRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("accept-peering"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/peerings/{peeringId}/accept"),
+		semconv.HTTPRouteKey.String("/api/v1/peerings/{peeringId}:accept"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -1098,14 +1098,14 @@ func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w htt
 //
 // The floating IP shows the `bind` operation until the binding is confirmed.
 //
-// PUT /api/v1/floating-ips/{floatingIpId}/binding
+// POST /api/v1/floating-ips/{floatingIpId}:bind
 func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("bind-floating-ip"),
-		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.HTTPRouteKey.String("/api/v1/floating-ips/{floatingIpId}/binding"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/floating-ips/{floatingIpId}:bind"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -16068,14 +16068,14 @@ func (s *Server) handleOpenInstanceConsoleRequest(args [1]string, argsEscaped bo
 //
 // The instance shows the `reboot` operation until the reboot has finished.
 //
-// POST /api/v1/instances/{instanceId}/reboot
+// POST /api/v1/instances/{instanceId}:reboot
 func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("reboot-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/reboot"),
+		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}:reboot"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -16289,14 +16289,14 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 //
 // The instance shows the `rebuild` operation until the rebuild has finished.
 //
-// POST /api/v1/instances/{instanceId}/rebuild
+// POST /api/v1/instances/{instanceId}:rebuild
 func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rebuild-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/rebuild"),
+		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}:rebuild"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -16504,14 +16504,14 @@ func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, 
 //
 // Reject peering.
 //
-// POST /api/v1/peerings/{peeringId}/reject
+// POST /api/v1/peerings/{peeringId}:reject
 func (s *Server) handleRejectPeeringRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("reject-peering"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/peerings/{peeringId}/reject"),
+		semconv.HTTPRouteKey.String("/api/v1/peerings/{peeringId}:reject"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -18663,14 +18663,14 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 // types use a performance level that does not scale with size, so resizing a system disk does not
 // change its performance.
 //
-// POST /api/v1/disks/{diskId}/resize
+// POST /api/v1/disks/{diskId}:resize
 func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("resize-disk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/disks/{diskId}/resize"),
+		semconv.HTTPRouteKey.String("/api/v1/disks/{diskId}:resize"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -18890,14 +18890,14 @@ func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w htt
 // Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
 // previous type, submit another resize.
 //
-// POST /api/v1/instances/{instanceId}/resize
+// POST /api/v1/instances/{instanceId}:resize
 func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("resize-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/resize"),
+		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}:resize"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -19109,14 +19109,14 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 // must not be smaller than the backup. Returns the new disk as `pending` with its Checkout Session; it
 // cannot be attached until it is `available`.
 //
-// POST /api/v1/backups/{backupId}/restore
+// POST /api/v1/backups/{backupId}:restore
 func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("restore-backup"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/backups/{backupId}/restore"),
+		semconv.HTTPRouteKey.String("/api/v1/backups/{backupId}:restore"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -19332,14 +19332,14 @@ func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w 
 //
 // The disk shows the `revert` operation until the revert is complete.
 //
-// POST /api/v1/disks/{diskId}/revert
+// POST /api/v1/disks/{diskId}:revert
 func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("revert-disk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/disks/{diskId}/revert"),
+		semconv.HTTPRouteKey.String("/api/v1/disks/{diskId}:revert"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -20683,14 +20683,14 @@ func (s *Server) handleSetSnapshotQuotaRequest(args [1]string, argsEscaped bool,
 // Outstanding restrictions can prevent starting. The instance shows the `start` operation until it is
 // running or the start has failed.
 //
-// POST /api/v1/instances/{instanceId}/start
+// POST /api/v1/instances/{instanceId}:start
 func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("start-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/start"),
+		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}:start"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -20899,14 +20899,14 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 // A stopped instance keeps its disks, network attachments and sellable quota. The instance shows the
 // `stop` operation until it is stopped or the stop has failed.
 //
-// POST /api/v1/instances/{instanceId}/stop
+// POST /api/v1/instances/{instanceId}:stop
 func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("stop-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/stop"),
+		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}:stop"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -21320,14 +21320,14 @@ func (s *Server) handleSuggestSubnetCidrRequest(args [1]string, argsEscaped bool
 // The address remains held by the project and simply no longer points at any network interface. The
 // floating IP shows the `unbind` operation until the change is confirmed.
 //
-// DELETE /api/v1/floating-ips/{floatingIpId}/binding
+// POST /api/v1/floating-ips/{floatingIpId}:unbind
 func (s *Server) handleUnbindFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("unbind-floating-ip"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/floating-ips/{floatingIpId}/binding"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/floating-ips/{floatingIpId}:unbind"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)

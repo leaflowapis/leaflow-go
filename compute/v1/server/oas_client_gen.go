@@ -33,7 +33,7 @@ type Invoker interface {
 	//
 	// Accept peering.
 	//
-	// POST /api/v1/peerings/{peeringId}/accept
+	// POST /api/v1/peerings/{peeringId}:accept
 	AcceptPeering(ctx context.Context, params AcceptPeeringParams) (AcceptPeeringRes, error)
 	// AllocateFloatingIP invokes allocate-floating-ip operation.
 	//
@@ -79,7 +79,7 @@ type Invoker interface {
 	//
 	// The floating IP shows the `bind` operation until the binding is confirmed.
 	//
-	// PUT /api/v1/floating-ips/{floatingIpId}/binding
+	// POST /api/v1/floating-ips/{floatingIpId}:bind
 	BindFloatingIP(ctx context.Context, request *BindFloatingIPRequestBody, params BindFloatingIPParams) (BindFloatingIPRes, error)
 	// CreateBackup invokes create-backup operation.
 	//
@@ -759,7 +759,7 @@ type Invoker interface {
 	//
 	// The instance shows the `reboot` operation until the reboot has finished.
 	//
-	// POST /api/v1/instances/{instanceId}/reboot
+	// POST /api/v1/instances/{instanceId}:reboot
 	RebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (RebootInstanceRes, error)
 	// RebuildInstance invokes rebuild-instance operation.
 	//
@@ -771,13 +771,13 @@ type Invoker interface {
 	//
 	// The instance shows the `rebuild` operation until the rebuild has finished.
 	//
-	// POST /api/v1/instances/{instanceId}/rebuild
+	// POST /api/v1/instances/{instanceId}:rebuild
 	RebuildInstance(ctx context.Context, request *RebuildInstanceRequestBody, params RebuildInstanceParams) (RebuildInstanceRes, error)
 	// RejectPeering invokes reject-peering operation.
 	//
 	// Reject peering.
 	//
-	// POST /api/v1/peerings/{peeringId}/reject
+	// POST /api/v1/peerings/{peeringId}:reject
 	RejectPeering(ctx context.Context, params RejectPeeringParams) (*PeeringResource, error)
 	// ReleaseFloatingIP invokes release-floating-ip operation.
 	//
@@ -872,7 +872,7 @@ type Invoker interface {
 	// types use a performance level that does not scale with size, so resizing a system disk does not
 	// change its performance.
 	//
-	// POST /api/v1/disks/{diskId}/resize
+	// POST /api/v1/disks/{diskId}:resize
 	ResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (ResizeDiskRes, error)
 	// ResizeInstance invokes resize-instance operation.
 	//
@@ -890,7 +890,7 @@ type Invoker interface {
 	// Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
 	// previous type, submit another resize.
 	//
-	// POST /api/v1/instances/{instanceId}/resize
+	// POST /api/v1/instances/{instanceId}:resize
 	ResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (ResizeInstanceRes, error)
 	// RestoreBackup invokes restore-backup operation.
 	//
@@ -900,7 +900,7 @@ type Invoker interface {
 	// must not be smaller than the backup. Returns the new disk as `pending` with its Checkout Session; it
 	// cannot be attached until it is `available`.
 	//
-	// POST /api/v1/backups/{backupId}/restore
+	// POST /api/v1/backups/{backupId}:restore
 	RestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (RestoreBackupRes, error)
 	// RevertDisk invokes revert-disk operation.
 	//
@@ -914,7 +914,7 @@ type Invoker interface {
 	//
 	// The disk shows the `revert` operation until the revert is complete.
 	//
-	// POST /api/v1/disks/{diskId}/revert
+	// POST /api/v1/disks/{diskId}:revert
 	RevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (RevertDiskRes, error)
 	// RunInstanceCommand invokes run-instance-command operation.
 	//
@@ -1011,14 +1011,14 @@ type Invoker interface {
 	// Outstanding restrictions can prevent starting. The instance shows the `start` operation until it is
 	// running or the start has failed.
 	//
-	// POST /api/v1/instances/{instanceId}/start
+	// POST /api/v1/instances/{instanceId}:start
 	StartInstance(ctx context.Context, request *PowerRequest, params StartInstanceParams) (StartInstanceRes, error)
 	// StopInstance invokes stop-instance operation.
 	//
 	// A stopped instance keeps its disks, network attachments and sellable quota. The instance shows the
 	// `stop` operation until it is stopped or the stop has failed.
 	//
-	// POST /api/v1/instances/{instanceId}/stop
+	// POST /api/v1/instances/{instanceId}:stop
 	StopInstance(ctx context.Context, request *PowerRequest, params StopInstanceParams) (StopInstanceRes, error)
 	// SuggestSubnetCidr invokes suggest-subnet-cidr operation.
 	//
@@ -1032,7 +1032,7 @@ type Invoker interface {
 	// The address remains held by the project and simply no longer points at any network interface. The
 	// floating IP shows the `unbind` operation until the change is confirmed.
 	//
-	// DELETE /api/v1/floating-ips/{floatingIpId}/binding
+	// POST /api/v1/floating-ips/{floatingIpId}:unbind
 	UnbindFloatingIP(ctx context.Context, params UnbindFloatingIPParams) (UnbindFloatingIPRes, error)
 }
 
@@ -1081,7 +1081,7 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 //
 // Accept peering.
 //
-// POST /api/v1/peerings/{peeringId}/accept
+// POST /api/v1/peerings/{peeringId}:accept
 func (c *Client) AcceptPeering(ctx context.Context, params AcceptPeeringParams) (AcceptPeeringRes, error) {
 	res, err := c.sendAcceptPeering(ctx, params)
 	return res, err
@@ -1091,7 +1091,7 @@ func (c *Client) sendAcceptPeering(ctx context.Context, params AcceptPeeringPara
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("accept-peering"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/peerings/{peeringId}/accept"),
+		semconv.URLTemplateKey.String("/api/v1/peerings/{peeringId}:accept"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1144,7 +1144,7 @@ func (c *Client) sendAcceptPeering(ctx context.Context, params AcceptPeeringPara
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/accept"
+	pathParts[2] = ":accept"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -1759,7 +1759,7 @@ func (c *Client) sendAttachPort(ctx context.Context, request *AttachPortRequestB
 //
 // The floating IP shows the `bind` operation until the binding is confirmed.
 //
-// PUT /api/v1/floating-ips/{floatingIpId}/binding
+// POST /api/v1/floating-ips/{floatingIpId}:bind
 func (c *Client) BindFloatingIP(ctx context.Context, request *BindFloatingIPRequestBody, params BindFloatingIPParams) (BindFloatingIPRes, error) {
 	res, err := c.sendBindFloatingIP(ctx, request, params)
 	return res, err
@@ -1768,8 +1768,8 @@ func (c *Client) BindFloatingIP(ctx context.Context, request *BindFloatingIPRequ
 func (c *Client) sendBindFloatingIP(ctx context.Context, request *BindFloatingIPRequestBody, params BindFloatingIPParams) (res BindFloatingIPRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("bind-floating-ip"),
-		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.URLTemplateKey.String("/api/v1/floating-ips/{floatingIpId}/binding"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/floating-ips/{floatingIpId}:bind"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1822,11 +1822,11 @@ func (c *Client) sendBindFloatingIP(ctx context.Context, request *BindFloatingIP
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/binding"
+	pathParts[2] = ":bind"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PUT", u)
+	r, err := ht.NewRequest(ctx, "POST", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
@@ -12571,7 +12571,7 @@ func (c *Client) sendOpenInstanceConsole(ctx context.Context, params OpenInstanc
 //
 // The instance shows the `reboot` operation until the reboot has finished.
 //
-// POST /api/v1/instances/{instanceId}/reboot
+// POST /api/v1/instances/{instanceId}:reboot
 func (c *Client) RebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (RebootInstanceRes, error) {
 	res, err := c.sendRebootInstance(ctx, request, params)
 	return res, err
@@ -12581,7 +12581,7 @@ func (c *Client) sendRebootInstance(ctx context.Context, request *RebootInstance
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("reboot-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}/reboot"),
+		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}:reboot"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -12634,7 +12634,7 @@ func (c *Client) sendRebootInstance(ctx context.Context, request *RebootInstance
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/reboot"
+	pathParts[2] = ":reboot"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -12712,7 +12712,7 @@ func (c *Client) sendRebootInstance(ctx context.Context, request *RebootInstance
 //
 // The instance shows the `rebuild` operation until the rebuild has finished.
 //
-// POST /api/v1/instances/{instanceId}/rebuild
+// POST /api/v1/instances/{instanceId}:rebuild
 func (c *Client) RebuildInstance(ctx context.Context, request *RebuildInstanceRequestBody, params RebuildInstanceParams) (RebuildInstanceRes, error) {
 	res, err := c.sendRebuildInstance(ctx, request, params)
 	return res, err
@@ -12731,7 +12731,7 @@ func (c *Client) sendRebuildInstance(ctx context.Context, request *RebuildInstan
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rebuild-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}/rebuild"),
+		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}:rebuild"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -12784,7 +12784,7 @@ func (c *Client) sendRebuildInstance(ctx context.Context, request *RebuildInstan
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/rebuild"
+	pathParts[2] = ":rebuild"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -12856,7 +12856,7 @@ func (c *Client) sendRebuildInstance(ctx context.Context, request *RebuildInstan
 //
 // Reject peering.
 //
-// POST /api/v1/peerings/{peeringId}/reject
+// POST /api/v1/peerings/{peeringId}:reject
 func (c *Client) RejectPeering(ctx context.Context, params RejectPeeringParams) (*PeeringResource, error) {
 	res, err := c.sendRejectPeering(ctx, params)
 	return res, err
@@ -12866,7 +12866,7 @@ func (c *Client) sendRejectPeering(ctx context.Context, params RejectPeeringPara
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("reject-peering"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/peerings/{peeringId}/reject"),
+		semconv.URLTemplateKey.String("/api/v1/peerings/{peeringId}:reject"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -12919,7 +12919,7 @@ func (c *Client) sendRejectPeering(ctx context.Context, params RejectPeeringPara
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/reject"
+	pathParts[2] = ":reject"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -14320,7 +14320,7 @@ func (c *Client) sendResetInstancePassword(ctx context.Context, request *ResetPa
 // types use a performance level that does not scale with size, so resizing a system disk does not
 // change its performance.
 //
-// POST /api/v1/disks/{diskId}/resize
+// POST /api/v1/disks/{diskId}:resize
 func (c *Client) ResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (ResizeDiskRes, error) {
 	res, err := c.sendResizeDisk(ctx, request, params)
 	return res, err
@@ -14339,7 +14339,7 @@ func (c *Client) sendResizeDisk(ctx context.Context, request *ResizeDiskRequestB
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("resize-disk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/disks/{diskId}/resize"),
+		semconv.URLTemplateKey.String("/api/v1/disks/{diskId}:resize"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -14392,7 +14392,7 @@ func (c *Client) sendResizeDisk(ctx context.Context, request *ResizeDiskRequestB
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/resize"
+	pathParts[2] = ":resize"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -14476,7 +14476,7 @@ func (c *Client) sendResizeDisk(ctx context.Context, request *ResizeDiskRequestB
 // Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
 // previous type, submit another resize.
 //
-// POST /api/v1/instances/{instanceId}/resize
+// POST /api/v1/instances/{instanceId}:resize
 func (c *Client) ResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (ResizeInstanceRes, error) {
 	res, err := c.sendResizeInstance(ctx, request, params)
 	return res, err
@@ -14495,7 +14495,7 @@ func (c *Client) sendResizeInstance(ctx context.Context, request *ResizeInstance
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("resize-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}/resize"),
+		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}:resize"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -14548,7 +14548,7 @@ func (c *Client) sendResizeInstance(ctx context.Context, request *ResizeInstance
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/resize"
+	pathParts[2] = ":resize"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -14624,7 +14624,7 @@ func (c *Client) sendResizeInstance(ctx context.Context, request *ResizeInstance
 // must not be smaller than the backup. Returns the new disk as `pending` with its Checkout Session; it
 // cannot be attached until it is `available`.
 //
-// POST /api/v1/backups/{backupId}/restore
+// POST /api/v1/backups/{backupId}:restore
 func (c *Client) RestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (RestoreBackupRes, error) {
 	res, err := c.sendRestoreBackup(ctx, request, params)
 	return res, err
@@ -14643,7 +14643,7 @@ func (c *Client) sendRestoreBackup(ctx context.Context, request *RestoreBackupRe
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("restore-backup"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/backups/{backupId}/restore"),
+		semconv.URLTemplateKey.String("/api/v1/backups/{backupId}:restore"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -14696,7 +14696,7 @@ func (c *Client) sendRestoreBackup(ctx context.Context, request *RestoreBackupRe
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/restore"
+	pathParts[2] = ":restore"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -14776,7 +14776,7 @@ func (c *Client) sendRestoreBackup(ctx context.Context, request *RestoreBackupRe
 //
 // The disk shows the `revert` operation until the revert is complete.
 //
-// POST /api/v1/disks/{diskId}/revert
+// POST /api/v1/disks/{diskId}:revert
 func (c *Client) RevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (RevertDiskRes, error) {
 	res, err := c.sendRevertDisk(ctx, request, params)
 	return res, err
@@ -14786,7 +14786,7 @@ func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestB
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("revert-disk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/disks/{diskId}/revert"),
+		semconv.URLTemplateKey.String("/api/v1/disks/{diskId}:revert"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -14839,7 +14839,7 @@ func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestB
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/revert"
+	pathParts[2] = ":revert"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -15692,7 +15692,7 @@ func (c *Client) sendSetSnapshotQuota(ctx context.Context, request *SetSnapshotQ
 // Outstanding restrictions can prevent starting. The instance shows the `start` operation until it is
 // running or the start has failed.
 //
-// POST /api/v1/instances/{instanceId}/start
+// POST /api/v1/instances/{instanceId}:start
 func (c *Client) StartInstance(ctx context.Context, request *PowerRequest, params StartInstanceParams) (StartInstanceRes, error) {
 	res, err := c.sendStartInstance(ctx, request, params)
 	return res, err
@@ -15711,7 +15711,7 @@ func (c *Client) sendStartInstance(ctx context.Context, request *PowerRequest, p
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("start-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}/start"),
+		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}:start"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -15764,7 +15764,7 @@ func (c *Client) sendStartInstance(ctx context.Context, request *PowerRequest, p
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/start"
+	pathParts[2] = ":start"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -15837,7 +15837,7 @@ func (c *Client) sendStartInstance(ctx context.Context, request *PowerRequest, p
 // A stopped instance keeps its disks, network attachments and sellable quota. The instance shows the
 // `stop` operation until it is stopped or the stop has failed.
 //
-// POST /api/v1/instances/{instanceId}/stop
+// POST /api/v1/instances/{instanceId}:stop
 func (c *Client) StopInstance(ctx context.Context, request *PowerRequest, params StopInstanceParams) (StopInstanceRes, error) {
 	res, err := c.sendStopInstance(ctx, request, params)
 	return res, err
@@ -15856,7 +15856,7 @@ func (c *Client) sendStopInstance(ctx context.Context, request *PowerRequest, pa
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("stop-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}/stop"),
+		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}:stop"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -15909,7 +15909,7 @@ func (c *Client) sendStopInstance(ctx context.Context, request *PowerRequest, pa
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/stop"
+	pathParts[2] = ":stop"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -16136,7 +16136,7 @@ func (c *Client) sendSuggestSubnetCidr(ctx context.Context, params SuggestSubnet
 // The address remains held by the project and simply no longer points at any network interface. The
 // floating IP shows the `unbind` operation until the change is confirmed.
 //
-// DELETE /api/v1/floating-ips/{floatingIpId}/binding
+// POST /api/v1/floating-ips/{floatingIpId}:unbind
 func (c *Client) UnbindFloatingIP(ctx context.Context, params UnbindFloatingIPParams) (UnbindFloatingIPRes, error) {
 	res, err := c.sendUnbindFloatingIP(ctx, params)
 	return res, err
@@ -16145,8 +16145,8 @@ func (c *Client) UnbindFloatingIP(ctx context.Context, params UnbindFloatingIPPa
 func (c *Client) sendUnbindFloatingIP(ctx context.Context, params UnbindFloatingIPParams) (res UnbindFloatingIPRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("unbind-floating-ip"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/floating-ips/{floatingIpId}/binding"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/floating-ips/{floatingIpId}:unbind"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -16199,11 +16199,11 @@ func (c *Client) sendUnbindFloatingIP(ctx context.Context, params UnbindFloating
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/binding"
+	pathParts[2] = ":unbind"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
+	r, err := ht.NewRequest(ctx, "POST", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}

@@ -43,20 +43,20 @@ type Invoker interface {
 	//
 	// No token is required; the invitation is addressed to the email address of the current account.
 	//
-	// POST /account/v1/me/invitations/{invitationId}/accept
+	// POST /account/v1/me/invitations/{invitationId}:accept
 	AcceptInvitation(ctx context.Context, params AcceptInvitationParams) (*AcceptedInvitationResponseBody, error)
 	// AcceptInvitationByToken invokes accept-invitation-by-token operation.
 	//
 	// A token that does not match, and an invitation that no longer stands, answer the same way.
 	//
-	// POST /account/v1/me/invitations/accept
+	// POST /account/v1/me/invitations:accept
 	AcceptInvitationByToken(ctx context.Context, request *AcceptInvitationByTokenRequestBody) (*AcceptedInvitationResponseBody, error)
 	// CancelAccountDeletion invokes cancel-account-deletion operation.
 	//
 	// Returns the account to use. Cancelling when no deletion is open returns `state` `none`. Fails with
 	// 409 `ACCOUNT_DELETION_NOT_CANCELLABLE` once `scheduled_at` has passed.
 	//
-	// DELETE /account/v1/me/deletion
+	// POST /account/v1/me:undelete
 	CancelAccountDeletion(ctx context.Context) (*AccountDeletionResource, error)
 	// CreateProject invokes create-project operation.
 	//
@@ -167,8 +167,8 @@ type Invoker interface {
 	//
 	// No token required.
 	//
-	// While `registration_mode` is not `OPEN`, `POST /account/v1/register` answers 403: `CLOSED` refuses
-	// everyone, and `INVITE_ONLY` accepts only an email address holding a project invitation.
+	// While `registration_mode` is not `OPEN`, `POST /account/v1/me:register` answers 403: `CLOSED`
+	// refuses everyone, and `INVITE_ONLY` accepts only an email address holding a project invitation.
 	// `project_creation_mode` behaves the same way, and `VERIFIED_ONLY` requires identity verification to
 	// have completed.
 	//
@@ -179,7 +179,7 @@ type Invoker interface {
 	// ListAgreements invokes list-agreements operation.
 	//
 	// No token required. Send the `type` and `version` of each one back unchanged to
-	// `POST /account/v1/register`.
+	// `POST /account/v1/me:register`.
 	//
 	// The array is empty while no agreement is in force, and registration then takes no `consents`.
 	//
@@ -242,7 +242,7 @@ type Invoker interface {
 	// list again. An account that already exists answers 409, and one that has been deleted answers 410
 	// `USER_DELETED`: the same sign-in cannot register again.
 	//
-	// POST /account/v1/register
+	// POST /account/v1/me:register
 	Register(ctx context.Context, request *RegisterRequestBody) (*AccountResource, error)
 	// RequestAccountDeletion invokes request-account-deletion operation.
 	//
@@ -256,7 +256,7 @@ type Invoker interface {
 	//  - Otherwise `state` becomes `scheduled`, and the account is deleted at `scheduled_at`, fifteen days
 	//    after the request. The conditions are checked once more at that time.
 	//
-	// The deletion can be cancelled with `DELETE /account/v1/me/deletion` until `scheduled_at`, and not
+	// The deletion can be cancelled with `POST /account/v1/me:undelete` until `scheduled_at`, and not
 	// after. Once carried out it cannot be undone, and the same sign-in cannot register again. Any
 	// remaining balance and prepaid benefits are forfeited, which `acknowledge_forfeiture` confirms.
 	//
@@ -265,8 +265,8 @@ type Invoker interface {
 	// caller signed in within the last `meta.max_age` seconds; sign in again with that `max_age` and
 	// retry.
 	//
-	// POST /account/v1/me/deletion
-	RequestAccountDeletion(ctx context.Context, request *RequestAccountDeletionRequestBody) (*AccountDeletionResource, error)
+	// DELETE /account/v1/me
+	RequestAccountDeletion(ctx context.Context, params RequestAccountDeletionParams) (*AccountDeletionResource, error)
 	// SearchProjects invokes search-projects operation.
 	//
 	// Projects the caller belongs to, most recently created first. The conditions in the body are combined
@@ -465,7 +465,7 @@ func (c *Client) sendAcceptAgreements(ctx context.Context, request *AcceptConsen
 //
 // No token is required; the invitation is addressed to the email address of the current account.
 //
-// POST /account/v1/me/invitations/{invitationId}/accept
+// POST /account/v1/me/invitations/{invitationId}:accept
 func (c *Client) AcceptInvitation(ctx context.Context, params AcceptInvitationParams) (*AcceptedInvitationResponseBody, error) {
 	res, err := c.sendAcceptInvitation(ctx, params)
 	return res, err
@@ -475,7 +475,7 @@ func (c *Client) sendAcceptInvitation(ctx context.Context, params AcceptInvitati
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("accept-invitation"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/account/v1/me/invitations/{invitationId}/accept"),
+		semconv.URLTemplateKey.String("/account/v1/me/invitations/{invitationId}:accept"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -528,7 +528,7 @@ func (c *Client) sendAcceptInvitation(ctx context.Context, params AcceptInvitati
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/accept"
+	pathParts[2] = ":accept"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -597,7 +597,7 @@ func (c *Client) sendAcceptInvitation(ctx context.Context, params AcceptInvitati
 //
 // A token that does not match, and an invitation that no longer stands, answer the same way.
 //
-// POST /account/v1/me/invitations/accept
+// POST /account/v1/me/invitations:accept
 func (c *Client) AcceptInvitationByToken(ctx context.Context, request *AcceptInvitationByTokenRequestBody) (*AcceptedInvitationResponseBody, error) {
 	res, err := c.sendAcceptInvitationByToken(ctx, request)
 	return res, err
@@ -616,7 +616,7 @@ func (c *Client) sendAcceptInvitationByToken(ctx context.Context, request *Accep
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("accept-invitation-by-token"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/account/v1/me/invitations/accept"),
+		semconv.URLTemplateKey.String("/account/v1/me/invitations:accept"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -650,7 +650,7 @@ func (c *Client) sendAcceptInvitationByToken(ctx context.Context, request *Accep
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/account/v1/me/invitations/accept"
+	pathParts[0] = "/account/v1/me/invitations:accept"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -723,7 +723,7 @@ func (c *Client) sendAcceptInvitationByToken(ctx context.Context, request *Accep
 // Returns the account to use. Cancelling when no deletion is open returns `state` `none`. Fails with
 // 409 `ACCOUNT_DELETION_NOT_CANCELLABLE` once `scheduled_at` has passed.
 //
-// DELETE /account/v1/me/deletion
+// POST /account/v1/me:undelete
 func (c *Client) CancelAccountDeletion(ctx context.Context) (*AccountDeletionResource, error) {
 	res, err := c.sendCancelAccountDeletion(ctx)
 	return res, err
@@ -732,8 +732,8 @@ func (c *Client) CancelAccountDeletion(ctx context.Context) (*AccountDeletionRes
 func (c *Client) sendCancelAccountDeletion(ctx context.Context) (res *AccountDeletionResource, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-account-deletion"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/account/v1/me/deletion"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/me:undelete"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -767,11 +767,11 @@ func (c *Client) sendCancelAccountDeletion(ctx context.Context) (res *AccountDel
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/account/v1/me/deletion"
+	pathParts[0] = "/account/v1/me:undelete"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
+	r, err := ht.NewRequest(ctx, "POST", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
@@ -1883,8 +1883,8 @@ func (c *Client) sendGetProjectSlugAvailability(ctx context.Context, params GetP
 //
 // No token required.
 //
-// While `registration_mode` is not `OPEN`, `POST /account/v1/register` answers 403: `CLOSED` refuses
-// everyone, and `INVITE_ONLY` accepts only an email address holding a project invitation.
+// While `registration_mode` is not `OPEN`, `POST /account/v1/me:register` answers 403: `CLOSED`
+// refuses everyone, and `INVITE_ONLY` accepts only an email address holding a project invitation.
 // `project_creation_mode` behaves the same way, and `VERIFIED_ONLY` requires identity verification to
 // have completed.
 //
@@ -1969,7 +1969,7 @@ func (c *Client) sendGetSettings(ctx context.Context) (res *SettingsResource, er
 // ListAgreements invokes list-agreements operation.
 //
 // No token required. Send the `type` and `version` of each one back unchanged to
-// `POST /account/v1/register`.
+// `POST /account/v1/me:register`.
 //
 // The array is empty while no agreement is in force, and registration then takes no `consents`.
 //
@@ -2703,7 +2703,7 @@ func (c *Client) sendPreviewInvitationByToken(ctx context.Context, params Previe
 // list again. An account that already exists answers 409, and one that has been deleted answers 410
 // `USER_DELETED`: the same sign-in cannot register again.
 //
-// POST /account/v1/register
+// POST /account/v1/me:register
 func (c *Client) Register(ctx context.Context, request *RegisterRequestBody) (*AccountResource, error) {
 	res, err := c.sendRegister(ctx, request)
 	return res, err
@@ -2722,7 +2722,7 @@ func (c *Client) sendRegister(ctx context.Context, request *RegisterRequestBody)
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("register"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/account/v1/register"),
+		semconv.URLTemplateKey.String("/account/v1/me:register"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2756,7 +2756,7 @@ func (c *Client) sendRegister(ctx context.Context, request *RegisterRequestBody)
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/account/v1/register"
+	pathParts[0] = "/account/v1/me:register"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -2836,7 +2836,7 @@ func (c *Client) sendRegister(ctx context.Context, request *RegisterRequestBody)
 //   - Otherwise `state` becomes `scheduled`, and the account is deleted at `scheduled_at`, fifteen days
 //     after the request. The conditions are checked once more at that time.
 //
-// The deletion can be cancelled with `DELETE /account/v1/me/deletion` until `scheduled_at`, and not
+// The deletion can be cancelled with `POST /account/v1/me:undelete` until `scheduled_at`, and not
 // after. Once carried out it cannot be undone, and the same sign-in cannot register again. Any
 // remaining balance and prepaid benefits are forfeited, which `acknowledge_forfeiture` confirms.
 //
@@ -2845,17 +2845,17 @@ func (c *Client) sendRegister(ctx context.Context, request *RegisterRequestBody)
 // caller signed in within the last `meta.max_age` seconds; sign in again with that `max_age` and
 // retry.
 //
-// POST /account/v1/me/deletion
-func (c *Client) RequestAccountDeletion(ctx context.Context, request *RequestAccountDeletionRequestBody) (*AccountDeletionResource, error) {
-	res, err := c.sendRequestAccountDeletion(ctx, request)
+// DELETE /account/v1/me
+func (c *Client) RequestAccountDeletion(ctx context.Context, params RequestAccountDeletionParams) (*AccountDeletionResource, error) {
+	res, err := c.sendRequestAccountDeletion(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendRequestAccountDeletion(ctx context.Context, request *RequestAccountDeletionRequestBody) (res *AccountDeletionResource, err error) {
+func (c *Client) sendRequestAccountDeletion(ctx context.Context, params RequestAccountDeletionParams) (res *AccountDeletionResource, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("request-account-deletion"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/account/v1/me/deletion"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/account/v1/me"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2889,16 +2889,31 @@ func (c *Client) sendRequestAccountDeletion(ctx context.Context, request *Reques
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/account/v1/me/deletion"
+	pathParts[0] = "/account/v1/me"
 	uri.AddPathParts(u, pathParts[:]...)
 
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "acknowledge_forfeiture" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "acknowledge_forfeiture",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.BoolToString(params.AcknowledgeForfeiture))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
+	r, err := ht.NewRequest(ctx, "DELETE", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRequestAccountDeletionRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
 	}
 
 	{

@@ -12,7 +12,7 @@ type Handler interface {
 	//
 	// Accept peering.
 	//
-	// POST /api/v1/peerings/{peeringId}/accept
+	// POST /api/v1/peerings/{peeringId}:accept
 	AcceptPeering(ctx context.Context, params AcceptPeeringParams) (AcceptPeeringRes, error)
 	// AllocateFloatingIP implements allocate-floating-ip operation.
 	//
@@ -58,7 +58,7 @@ type Handler interface {
 	//
 	// The floating IP shows the `bind` operation until the binding is confirmed.
 	//
-	// PUT /api/v1/floating-ips/{floatingIpId}/binding
+	// POST /api/v1/floating-ips/{floatingIpId}:bind
 	BindFloatingIP(ctx context.Context, req *BindFloatingIPRequestBody, params BindFloatingIPParams) (BindFloatingIPRes, error)
 	// CreateBackup implements create-backup operation.
 	//
@@ -738,7 +738,7 @@ type Handler interface {
 	//
 	// The instance shows the `reboot` operation until the reboot has finished.
 	//
-	// POST /api/v1/instances/{instanceId}/reboot
+	// POST /api/v1/instances/{instanceId}:reboot
 	RebootInstance(ctx context.Context, req *RebootInstanceRequestBody, params RebootInstanceParams) (RebootInstanceRes, error)
 	// RebuildInstance implements rebuild-instance operation.
 	//
@@ -750,13 +750,13 @@ type Handler interface {
 	//
 	// The instance shows the `rebuild` operation until the rebuild has finished.
 	//
-	// POST /api/v1/instances/{instanceId}/rebuild
+	// POST /api/v1/instances/{instanceId}:rebuild
 	RebuildInstance(ctx context.Context, req *RebuildInstanceRequestBody, params RebuildInstanceParams) (RebuildInstanceRes, error)
 	// RejectPeering implements reject-peering operation.
 	//
 	// Reject peering.
 	//
-	// POST /api/v1/peerings/{peeringId}/reject
+	// POST /api/v1/peerings/{peeringId}:reject
 	RejectPeering(ctx context.Context, params RejectPeeringParams) (*PeeringResource, error)
 	// ReleaseFloatingIP implements release-floating-ip operation.
 	//
@@ -851,7 +851,7 @@ type Handler interface {
 	// types use a performance level that does not scale with size, so resizing a system disk does not
 	// change its performance.
 	//
-	// POST /api/v1/disks/{diskId}/resize
+	// POST /api/v1/disks/{diskId}:resize
 	ResizeDisk(ctx context.Context, req *ResizeDiskRequestBody, params ResizeDiskParams) (ResizeDiskRes, error)
 	// ResizeInstance implements resize-instance operation.
 	//
@@ -869,7 +869,7 @@ type Handler interface {
 	// Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
 	// previous type, submit another resize.
 	//
-	// POST /api/v1/instances/{instanceId}/resize
+	// POST /api/v1/instances/{instanceId}:resize
 	ResizeInstance(ctx context.Context, req *ResizeInstanceRequestBody, params ResizeInstanceParams) (ResizeInstanceRes, error)
 	// RestoreBackup implements restore-backup operation.
 	//
@@ -879,7 +879,7 @@ type Handler interface {
 	// must not be smaller than the backup. Returns the new disk as `pending` with its Checkout Session; it
 	// cannot be attached until it is `available`.
 	//
-	// POST /api/v1/backups/{backupId}/restore
+	// POST /api/v1/backups/{backupId}:restore
 	RestoreBackup(ctx context.Context, req *RestoreBackupRequestBody, params RestoreBackupParams) (RestoreBackupRes, error)
 	// RevertDisk implements revert-disk operation.
 	//
@@ -893,7 +893,7 @@ type Handler interface {
 	//
 	// The disk shows the `revert` operation until the revert is complete.
 	//
-	// POST /api/v1/disks/{diskId}/revert
+	// POST /api/v1/disks/{diskId}:revert
 	RevertDisk(ctx context.Context, req *RevertDiskRequestBody, params RevertDiskParams) (RevertDiskRes, error)
 	// RunInstanceCommand implements run-instance-command operation.
 	//
@@ -990,14 +990,14 @@ type Handler interface {
 	// Outstanding restrictions can prevent starting. The instance shows the `start` operation until it is
 	// running or the start has failed.
 	//
-	// POST /api/v1/instances/{instanceId}/start
+	// POST /api/v1/instances/{instanceId}:start
 	StartInstance(ctx context.Context, req *PowerRequest, params StartInstanceParams) (StartInstanceRes, error)
 	// StopInstance implements stop-instance operation.
 	//
 	// A stopped instance keeps its disks, network attachments and sellable quota. The instance shows the
 	// `stop` operation until it is stopped or the stop has failed.
 	//
-	// POST /api/v1/instances/{instanceId}/stop
+	// POST /api/v1/instances/{instanceId}:stop
 	StopInstance(ctx context.Context, req *PowerRequest, params StopInstanceParams) (StopInstanceRes, error)
 	// SuggestSubnetCidr implements suggest-subnet-cidr operation.
 	//
@@ -1011,7 +1011,7 @@ type Handler interface {
 	// The address remains held by the project and simply no longer points at any network interface. The
 	// floating IP shows the `unbind` operation until the change is confirmed.
 	//
-	// DELETE /api/v1/floating-ips/{floatingIpId}/binding
+	// POST /api/v1/floating-ips/{floatingIpId}:unbind
 	UnbindFloatingIP(ctx context.Context, params UnbindFloatingIPParams) (UnbindFloatingIPRes, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//

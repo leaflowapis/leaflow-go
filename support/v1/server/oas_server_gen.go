@@ -15,7 +15,7 @@ type Handler interface {
 	// A closed ticket can be rated once; see `POST /api/v1/tickets/{ticketId}/satisfaction`. Posting a
 	// further message reopens it.
 	//
-	// POST /api/v1/tickets/{ticketId}/close
+	// POST /api/v1/tickets/{ticketId}:close
 	CloseTicket(ctx context.Context, params CloseTicketParams) (*TicketResource, error)
 	// CreateTicket implements create-ticket operation.
 	//

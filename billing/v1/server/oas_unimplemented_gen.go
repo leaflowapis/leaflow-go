@@ -30,7 +30,7 @@ var _ Handler = UnimplementedHandler{}
 // cancellation. Refunds are previewed with `preview-order-refund`. Open to the owner of the order's
 // billing account and to members of its project.
 //
-// POST /api/v1/orders/{orderId}/cancel
+// POST /api/v1/orders/{orderId}:cancel
 func (UnimplementedHandler) CancelOrder(ctx context.Context, req OptOrderCancel, params CancelOrderParams) (r CancelOrderRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -48,7 +48,7 @@ func (UnimplementedHandler) CancelOrder(ctx context.Context, req OptOrderCancel,
 // released together must be canceled together through create-cancellation, and pending or provisioning
 // purchases through their order. Repeating the request while the cancellation is open returns it.
 //
-// POST /api/v1/subscriptions/{subscriptionId}/cancel
+// POST /api/v1/subscriptions/{subscriptionId}:cancel
 func (UnimplementedHandler) CancelSubscription(ctx context.Context, req *CancelSubscriptionRequest, params CancelSubscriptionParams) (r *Cancellation, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -64,7 +64,7 @@ func (UnimplementedHandler) CancelSubscription(ctx context.Context, req *CancelS
 // naming the outcome, or while the gateway is processing the payment, with `status` `pending`; read
 // the top-up again later.
 //
-// POST /api/v1/top-ups/{topUpId}/cancel
+// POST /api/v1/top-ups/{topUpId}:cancel
 func (UnimplementedHandler) CancelTopUp(ctx context.Context, params CancelTopUpParams) (r CancelTopUpRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -85,7 +85,7 @@ func (UnimplementedHandler) CancelTopUp(ctx context.Context, params CancelTopUpP
 //
 // Open to the owner of the session's billing account and to members of its project.
 //
-// POST /api/v1/checkout-sessions/{checkoutSessionId}/confirm
+// POST /api/v1/checkout-sessions/{checkoutSessionId}:confirm
 func (UnimplementedHandler) ConfirmCheckoutSession(ctx context.Context, req *CheckoutSessionConfirm, params ConfirmCheckoutSessionParams) (r ConfirmCheckoutSessionRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -255,7 +255,7 @@ func (UnimplementedHandler) EstimateUsage(ctx context.Context, req *UsageEstimat
 // the purchase. An expired session is returned unchanged. Open to the owner of the session's billing
 // account and to members of its project.
 //
-// POST /api/v1/checkout-sessions/{checkoutSessionId}/expire
+// POST /api/v1/checkout-sessions/{checkoutSessionId}:expire
 func (UnimplementedHandler) ExpireCheckoutSession(ctx context.Context, params ExpireCheckoutSessionParams) (r ExpireCheckoutSessionRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -888,7 +888,7 @@ func (UnimplementedHandler) ListWithdrawals(ctx context.Context, params ListWith
 // Open to the owner of the invoice's billing account and, for the invoice of an order of a project, to
 // members of the project. Only the owner can pay with a saved `payment_method_id`.
 //
-// POST /api/v1/invoices/{invoiceId}/pay
+// POST /api/v1/invoices/{invoiceId}:pay
 func (UnimplementedHandler) PayInvoice(ctx context.Context, req OptPayInvoiceRequest, params PayInvoiceParams) (r *PaymentResult, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -923,7 +923,7 @@ func (UnimplementedHandler) PayTogether(ctx context.Context, req *PayTogetherReq
 // Refused with the same errors as paying, except that insufficient funds are not an error here: they
 // show as a `gateway_amount` above zero. Open to the same callers as paying.
 //
-// GET /api/v1/invoices/{invoiceId}/payment-preview
+// GET /api/v1/invoices/{invoiceId}:previewPayment
 func (UnimplementedHandler) PreviewInvoicePayment(ctx context.Context, params PreviewInvoicePaymentParams) (r *PaymentPreview, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -934,7 +934,7 @@ func (UnimplementedHandler) PreviewInvoicePayment(ctx context.Context, params Pr
 // Nothing is canceled or refunded. Open to the owner of the order's billing account and to members of
 // its project.
 //
-// GET /api/v1/orders/{orderId}/refund-preview
+// GET /api/v1/orders/{orderId}:previewRefund
 func (UnimplementedHandler) PreviewOrderRefund(ctx context.Context, params PreviewOrderRefundParams) (r *OrderRefundPreview, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -946,7 +946,7 @@ func (UnimplementedHandler) PreviewOrderRefund(ctx context.Context, params Previ
 // created. Refused with the same errors as paying together, except that insufficient funds show as a
 // `gateway_amount` above zero instead of an error.
 //
-// QUERY /api/v1/payments/preview
+// QUERY /api/v1/payments:preview
 func (UnimplementedHandler) PreviewPayTogether(ctx context.Context, req *PayTogetherRequest) (r *PaymentPreview, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -957,7 +957,7 @@ func (UnimplementedHandler) PreviewPayTogether(ctx context.Context, req *PayToge
 // available balance. Nothing is created or reserved. Fails when a selected source has no refund route
 // or its original processing cost is not yet known.
 //
-// QUERY /api/v1/withdrawals/preview
+// QUERY /api/v1/withdrawals:preview
 func (UnimplementedHandler) PreviewWithdrawal(ctx context.Context, req *WithdrawalPreviewRequest) (r *WithdrawalPreview, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -977,7 +977,7 @@ func (UnimplementedHandler) PreviewWithdrawal(ctx context.Context, req *Withdraw
 //
 // Keep order_id and read the order after an unknown outcome; creating it again conflicts.
 //
-// POST /api/v1/subscriptions/{subscriptionId}/renew
+// POST /api/v1/subscriptions/{subscriptionId}:renew
 func (UnimplementedHandler) RenewSubscription(ctx context.Context, req *RenewRequest, params RenewSubscriptionParams) (r RenewSubscriptionRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -987,7 +987,7 @@ func (UnimplementedHandler) RenewSubscription(ctx context.Context, req *RenewReq
 // Resumes a billing account you suspended. Refused with `BILLING_ACCOUNT_SUSPENDED_BY_OPERATOR` when
 // Leaflow suspended it. Does not create a resource.
 //
-// POST /api/v1/billing-accounts/{accountId}/resume
+// POST /api/v1/billing-accounts/{accountId}:resume
 func (UnimplementedHandler) ResumeBillingAccount(ctx context.Context, params ResumeBillingAccountParams) (r *BillingAccount, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -1054,7 +1054,7 @@ func (UnimplementedHandler) SetProjectAssignment(ctx context.Context, req *SetPr
 // you can still top up and pay invoices. Resume it yourself; one suspended by Leaflow can only be
 // resumed by Leaflow. Does not create a resource.
 //
-// POST /api/v1/billing-accounts/{accountId}/suspend
+// POST /api/v1/billing-accounts/{accountId}:suspend
 func (UnimplementedHandler) SuspendBillingAccount(ctx context.Context, params SuspendBillingAccountParams) (r *BillingAccount, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -1102,7 +1102,7 @@ func (UnimplementedHandler) UpdateContact(ctx context.Context, req *ContactUpdat
 // withdrawn cancellation returns it unchanged. Open to the owner of the subscriptions' current billing
 // account and to members of their project with the project permission `billing:finance.manage`.
 //
-// POST /api/v1/cancellations/{cancellationId}/withdraw
+// POST /api/v1/cancellations/{cancellationId}:withdraw
 func (UnimplementedHandler) WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (r *Cancellation, _ error) {
 	return r, ht.ErrNotImplemented
 }

@@ -241,7 +241,7 @@ type Invoker interface {
 	//
 	// The only way `OWNER` moves, and only the owner can initiate it.
 	//
-	// POST /api/v1/transfer-ownership
+	// POST /api/v1/project:transferOwnership
 	TransferProjectOwnership(ctx context.Context, request *TransferOwnershipRequestBody) (*OwnershipTransferResponseBody, error)
 	// UpdatePolicy invokes update-policy operation.
 	//
@@ -3852,7 +3852,7 @@ func (c *Client) sendSetProjectSlug(ctx context.Context, request *SetProjectSlug
 //
 // The only way `OWNER` moves, and only the owner can initiate it.
 //
-// POST /api/v1/transfer-ownership
+// POST /api/v1/project:transferOwnership
 func (c *Client) TransferProjectOwnership(ctx context.Context, request *TransferOwnershipRequestBody) (*OwnershipTransferResponseBody, error) {
 	res, err := c.sendTransferProjectOwnership(ctx, request)
 	return res, err
@@ -3871,7 +3871,7 @@ func (c *Client) sendTransferProjectOwnership(ctx context.Context, request *Tran
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("transfer-project-ownership"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/transfer-ownership"),
+		semconv.URLTemplateKey.String("/api/v1/project:transferOwnership"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3905,7 +3905,7 @@ func (c *Client) sendTransferProjectOwnership(ctx context.Context, request *Tran
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/api/v1/transfer-ownership"
+	pathParts[0] = "/api/v1/project:transferOwnership"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
