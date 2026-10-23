@@ -3343,9 +3343,9 @@ func (s DiskResourceStatus) Validate() error {
 func (s DiskSnapshotID) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
-		MinLength:     35,
+		MinLength:     39,
 		MinLengthSet:  true,
-		MaxLength:     35,
+		MaxLength:     39,
 		MaxLengthSet:  true,
 		Email:         false,
 		Hostname:      false,
@@ -10445,9 +10445,9 @@ func (s VirtualPrivateCloudOperationType) Validate() error {
 func (s VirtualPrivateCloudPeeringID) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
-		MinLength:     34,
+		MinLength:     37,
 		MinLengthSet:  true,
-		MaxLength:     34,
+		MaxLength:     37,
 		MaxLengthSet:  true,
 		Email:         false,
 		Hostname:      false,
@@ -10674,9 +10674,9 @@ func (s VirtualPrivateCloudPeeringResourceStatus) Validate() error {
 func (s VirtualPrivateCloudRouteID) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
-		MinLength:     32,
+		MinLength:     35,
 		MinLengthSet:  true,
-		MaxLength:     32,
+		MaxLength:     35,
 		MaxLengthSet:  true,
 		Email:         false,
 		Hostname:      false,

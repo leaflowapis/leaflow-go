@@ -932,7 +932,7 @@ type Invoker interface {
 	ListRegions(ctx context.Context, params ListRegionsParams) (*RegionListResponseBody, error)
 	// ListSecurityGroupRules invokes list-security-group-rules operation.
 	//
-	// List security group rules.
+	// The rules of the security group, or with `-` those of every security group of the project.
 	//
 	// GET /api/v2/security-groups/{securityGroupId}/rules
 	ListSecurityGroupRules(ctx context.Context, params ListSecurityGroupRulesParams) (*SecurityGroupRuleListResponseBody, error)
@@ -968,15 +968,16 @@ type Invoker interface {
 	ListVirtualPrivateCloudPeerings(ctx context.Context, params ListVirtualPrivateCloudPeeringsParams) (*VirtualPrivateCloudPeeringListResponseBody, error)
 	// ListVirtualPrivateCloudRoutes invokes list-virtual-private-cloud-routes operation.
 	//
-	// Static routes of the virtual private cloud, including the routes its peerings write, which show
-	// `type` peering.
+	// Static routes of the virtual private cloud, or with `-` those of every virtual private cloud of the
+	// project, including the routes peerings write, which show `type` peering.
 	//
 	// GET /api/v2/virtual-private-clouds/{virtualPrivateCloudId}/routes
 	ListVirtualPrivateCloudRoutes(ctx context.Context, params ListVirtualPrivateCloudRoutesParams) (*VirtualPrivateCloudRouteListResponseBody, error)
 	// ListVirtualPrivateCloudSubnets invokes list-virtual-private-cloud-subnets operation.
 	//
-	// The subnets of the virtual private cloud. A subnet is dual-stack once IPv6 is enabled on its virtual
-	// private cloud, which gives every subnet a /64 of the cloud's /56.
+	// The subnets of the virtual private cloud, or with `-` those of every virtual private cloud of the
+	// project. A subnet is dual-stack once IPv6 is enabled on its virtual private cloud, which gives every
+	// subnet a /64 of the cloud's /56.
 	//
 	// GET /api/v2/virtual-private-clouds/{virtualPrivateCloudId}/subnets
 	ListVirtualPrivateCloudSubnets(ctx context.Context, params ListVirtualPrivateCloudSubnetsParams) (*VirtualPrivateCloudSubnetListResponseBody, error)
@@ -14143,7 +14144,7 @@ func (c *Client) sendListRegions(ctx context.Context, params ListRegionsParams) 
 
 // ListSecurityGroupRules invokes list-security-group-rules operation.
 //
-// List security group rules.
+// The rules of the security group, or with `-` those of every security group of the project.
 //
 // GET /api/v2/security-groups/{securityGroupId}/rules
 func (c *Client) ListSecurityGroupRules(ctx context.Context, params ListSecurityGroupRulesParams) (*SecurityGroupRuleListResponseBody, error) {
@@ -15172,8 +15173,8 @@ func (c *Client) sendListVirtualPrivateCloudPeerings(ctx context.Context, params
 
 // ListVirtualPrivateCloudRoutes invokes list-virtual-private-cloud-routes operation.
 //
-// Static routes of the virtual private cloud, including the routes its peerings write, which show
-// `type` peering.
+// Static routes of the virtual private cloud, or with `-` those of every virtual private cloud of the
+// project, including the routes peerings write, which show `type` peering.
 //
 // GET /api/v2/virtual-private-clouds/{virtualPrivateCloudId}/routes
 func (c *Client) ListVirtualPrivateCloudRoutes(ctx context.Context, params ListVirtualPrivateCloudRoutesParams) (*VirtualPrivateCloudRouteListResponseBody, error) {
@@ -15346,8 +15347,9 @@ func (c *Client) sendListVirtualPrivateCloudRoutes(ctx context.Context, params L
 
 // ListVirtualPrivateCloudSubnets invokes list-virtual-private-cloud-subnets operation.
 //
-// The subnets of the virtual private cloud. A subnet is dual-stack once IPv6 is enabled on its virtual
-// private cloud, which gives every subnet a /64 of the cloud's /56.
+// The subnets of the virtual private cloud, or with `-` those of every virtual private cloud of the
+// project. A subnet is dual-stack once IPv6 is enabled on its virtual private cloud, which gives every
+// subnet a /64 of the cloud's /56.
 //
 // GET /api/v2/virtual-private-clouds/{virtualPrivateCloudId}/subnets
 func (c *Client) ListVirtualPrivateCloudSubnets(ctx context.Context, params ListVirtualPrivateCloudSubnetsParams) (*VirtualPrivateCloudSubnetListResponseBody, error) {

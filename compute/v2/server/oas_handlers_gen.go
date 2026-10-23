@@ -17592,7 +17592,7 @@ func (s *Server) handleListRegionsRequest(args [0]string, argsEscaped bool, w ht
 
 // handleListSecurityGroupRulesRequest handles list-security-group-rules operation.
 //
-// List security group rules.
+// The rules of the security group, or with `-` those of every security group of the project.
 //
 // GET /api/v2/security-groups/{securityGroupId}/rules
 func (s *Server) handleListSecurityGroupRulesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -18840,8 +18840,8 @@ func (s *Server) handleListVirtualPrivateCloudPeeringsRequest(args [0]string, ar
 
 // handleListVirtualPrivateCloudRoutesRequest handles list-virtual-private-cloud-routes operation.
 //
-// Static routes of the virtual private cloud, including the routes its peerings write, which show
-// `type` peering.
+// Static routes of the virtual private cloud, or with `-` those of every virtual private cloud of the
+// project, including the routes peerings write, which show `type` peering.
 //
 // GET /api/v2/virtual-private-clouds/{virtualPrivateCloudId}/routes
 func (s *Server) handleListVirtualPrivateCloudRoutesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -19049,8 +19049,9 @@ func (s *Server) handleListVirtualPrivateCloudRoutesRequest(args [1]string, args
 
 // handleListVirtualPrivateCloudSubnetsRequest handles list-virtual-private-cloud-subnets operation.
 //
-// The subnets of the virtual private cloud. A subnet is dual-stack once IPv6 is enabled on its virtual
-// private cloud, which gives every subnet a /64 of the cloud's /56.
+// The subnets of the virtual private cloud, or with `-` those of every virtual private cloud of the
+// project. A subnet is dual-stack once IPv6 is enabled on its virtual private cloud, which gives every
+// subnet a /64 of the cloud's /56.
 //
 // GET /api/v2/virtual-private-clouds/{virtualPrivateCloudId}/subnets
 func (s *Server) handleListVirtualPrivateCloudSubnetsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
