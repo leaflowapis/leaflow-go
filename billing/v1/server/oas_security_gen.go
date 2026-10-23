@@ -102,6 +102,7 @@ var operationRolesAccessTokenAuth = map[string][]string{
 	ListWithdrawalsOperation:             []string{},
 	PayInvoiceOperation:                  []string{},
 	PayTogetherOperation:                 []string{},
+	PreviewCancellationOperation:         []string{},
 	PreviewInvoicePaymentOperation:       []string{},
 	PreviewOrderRefundOperation:          []string{},
 	PreviewPayTogetherOperation:          []string{},

@@ -30,9 +30,9 @@ type Handler interface {
 	// CancelSubscription implements cancel-subscription operation.
 	//
 	// Requests cancellation on the purchase's agreed terms, with the same rules as creating a
-	// cancellation. Give the refund amount from a quote with this subscription in
-	// `cancellation.subscription_ids`. Open to the owner of the subscription's current billing account and
-	// to members of its project with the project permission `billing:finance.manage`.
+	// cancellation. Give the `proration_date` and `refundable_amount` of preview-cancellation for this
+	// subscription. Open to the owner of the subscription's current billing account and to members of its
+	// project with the project permission `billing:finance.manage`.
 	//
 	// Immediate cancellation asks the owning service to release the resources now; period-end cancellation
 	// keeps the subscription active or suspended until the paid term ends. The subscription becomes
@@ -321,8 +321,7 @@ type Handler interface {
 	// GetQuote implements get-quote operation.
 	//
 	// Calculates what a proposed purchase, a change of your subscriptions or their renewal would invoice
-	// now, and what each purchased or changed line renews at, or what ending subscriptions would return.
-	// Nothing is saved, reserved, redeemed or canceled.
+	// now, and what each purchased or changed line renews at. Nothing is saved, reserved or redeemed.
 	//
 	// With `billing_account_id`, the quote is for that billing account: its currency, account discounts,
 	// tax and funds apply, changes and renewals use the account currently paying for each subscription,
@@ -686,6 +685,14 @@ type Handler interface {
 	//
 	// POST /api/v1/payments
 	PayTogether(ctx context.Context, req *PayTogetherRequest) (*PaymentResult, error)
+	// PreviewCancellation implements preview-cancellation operation.
+	//
+	// What creating the cancellation now would return, per subscription and in total. Nothing is canceled,
+	// ended or refunded. Open to the owner of the subscriptions' current billing account and to members of
+	// their project; refused for the same states as creating it.
+	//
+	// QUERY /api/v1/cancellations:preview
+	PreviewCancellation(ctx context.Context, req *CancellationPreviewRequest) (*CancellationPreview, error)
 	// PreviewInvoicePayment implements preview-invoice-payment operation.
 	//
 	// What paying this invoice now would take from credit grants, from the balance and, for the rest, from
