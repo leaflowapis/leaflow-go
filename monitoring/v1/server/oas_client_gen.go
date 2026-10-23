@@ -509,7 +509,7 @@ type Invoker interface {
 	// The agent configuration must be updated to match, otherwise the machine loses contact immediately.
 	// The new key is likewise returned in clear text only in this response.
 	//
-	// POST /api/v1/servers/{serverId}/psk
+	// POST /api/v1/servers/{serverId}:rotatePsk
 	RotateAgentPsk(ctx context.Context, params RotateAgentPskParams) (*EnrollmentResource, error)
 	// ScheduleStatusPageMaintenance invokes schedule-status-page-maintenance operation.
 	//
@@ -9140,7 +9140,7 @@ func (c *Client) sendReopenIncident(ctx context.Context, params ReopenIncidentPa
 // The agent configuration must be updated to match, otherwise the machine loses contact immediately.
 // The new key is likewise returned in clear text only in this response.
 //
-// POST /api/v1/servers/{serverId}/psk
+// POST /api/v1/servers/{serverId}:rotatePsk
 func (c *Client) RotateAgentPsk(ctx context.Context, params RotateAgentPskParams) (*EnrollmentResource, error) {
 	res, err := c.sendRotateAgentPsk(ctx, params)
 	return res, err
@@ -9150,7 +9150,7 @@ func (c *Client) sendRotateAgentPsk(ctx context.Context, params RotateAgentPskPa
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rotate-agent-psk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/servers/{serverId}/psk"),
+		semconv.URLTemplateKey.String("/api/v1/servers/{serverId}:rotatePsk"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -9203,7 +9203,7 @@ func (c *Client) sendRotateAgentPsk(ctx context.Context, params RotateAgentPskPa
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/psk"
+	pathParts[2] = ":rotatePsk"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"

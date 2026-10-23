@@ -123,8 +123,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					}
 
 					// Param: "credentialId"
-					// Match until "/"
-					idx := strings.IndexByte(elem, '/')
+					// Match until ":"
+					idx := strings.IndexByte(elem, ':')
 					if idx < 0 {
 						idx = len(elem)
 					}
@@ -157,9 +157,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/verification"
+					case ':': // Prefix: ":verify"
 
-						if l := len("/verification"); len(elem) >= l && elem[0:l] == "/verification" {
+						if l := len(":verify"); len(elem) >= l && elem[0:l] == ":verify" {
 							elem = elem[l:]
 						} else {
 							break
@@ -486,8 +486,8 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					}
 
 					// Param: "credentialId"
-					// Match until "/"
-					idx := strings.IndexByte(elem, '/')
+					// Match until ":"
+					idx := strings.IndexByte(elem, ':')
 					if idx < 0 {
 						idx = len(elem)
 					}
@@ -528,9 +528,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						}
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/verification"
+					case ':': // Prefix: ":verify"
 
-						if l := len("/verification"); len(elem) >= l && elem[0:l] == "/verification" {
+						if l := len(":verify"); len(elem) >= l && elem[0:l] == ":verify" {
 							elem = elem[l:]
 						} else {
 							break
@@ -544,7 +544,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								r.summary = "Re-validate a provider credential"
 								r.operationID = "verify-credential"
 								r.operationGroup = ""
-								r.pathPattern = "/api/v1/credentials/{credentialId}/verification"
+								r.pathPattern = "/api/v1/credentials/{credentialId}:verify"
 								r.args = args
 								r.count = 1
 								return r, true

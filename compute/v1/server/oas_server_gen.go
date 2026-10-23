@@ -397,7 +397,7 @@ type Handler interface {
 	//
 	// A released prefix is not re-allocated immediately.
 	//
-	// DELETE /api/v1/private-networks/{privateNetworkId}/ipv6
+	// POST /api/v1/private-networks/{privateNetworkId}:disableIpv6
 	DisablePrivateNetworkIpv6(ctx context.Context, params DisablePrivateNetworkIpv6Params) (DisablePrivateNetworkIpv6Res, error)
 	// EnablePrivateNetworkIpv6 implements enable-private-network-ipv6 operation.
 	//
@@ -407,7 +407,7 @@ type Handler interface {
 	// If the private network is not yet connected to the internet, connectivity is established as part of
 	// this call.
 	//
-	// POST /api/v1/private-networks/{privateNetworkId}/ipv6
+	// POST /api/v1/private-networks/{privateNetworkId}:enableIpv6
 	EnablePrivateNetworkIpv6(ctx context.Context, params EnablePrivateNetworkIpv6Params) (EnablePrivateNetworkIpv6Res, error)
 	// GetBackup implements get-backup operation.
 	//
@@ -826,7 +826,7 @@ type Handler interface {
 	// The request is also rejected when the image is marked as supported but the corresponding component
 	// has been removed or stopped inside the instance.
 	//
-	// POST /api/v1/instances/{instanceId}/password
+	// POST /api/v1/instances/{instanceId}:resetPassword
 	ResetInstancePassword(ctx context.Context, req *ResetPasswordRequestBody, params ResetInstancePasswordParams) (ResetInstancePasswordRes, error)
 	// ResizeDisk implements resize-disk operation.
 	//

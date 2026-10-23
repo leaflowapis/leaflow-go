@@ -418,7 +418,7 @@ type Invoker interface {
 	//
 	// A released prefix is not re-allocated immediately.
 	//
-	// DELETE /api/v1/private-networks/{privateNetworkId}/ipv6
+	// POST /api/v1/private-networks/{privateNetworkId}:disableIpv6
 	DisablePrivateNetworkIpv6(ctx context.Context, params DisablePrivateNetworkIpv6Params) (DisablePrivateNetworkIpv6Res, error)
 	// EnablePrivateNetworkIpv6 invokes enable-private-network-ipv6 operation.
 	//
@@ -428,7 +428,7 @@ type Invoker interface {
 	// If the private network is not yet connected to the internet, connectivity is established as part of
 	// this call.
 	//
-	// POST /api/v1/private-networks/{privateNetworkId}/ipv6
+	// POST /api/v1/private-networks/{privateNetworkId}:enableIpv6
 	EnablePrivateNetworkIpv6(ctx context.Context, params EnablePrivateNetworkIpv6Params) (EnablePrivateNetworkIpv6Res, error)
 	// GetBackup invokes get-backup operation.
 	//
@@ -847,7 +847,7 @@ type Invoker interface {
 	// The request is also rejected when the image is marked as supported but the corresponding component
 	// has been removed or stopped inside the instance.
 	//
-	// POST /api/v1/instances/{instanceId}/password
+	// POST /api/v1/instances/{instanceId}:resetPassword
 	ResetInstancePassword(ctx context.Context, request *ResetPasswordRequestBody, params ResetInstancePasswordParams) (ResetInstancePasswordRes, error)
 	// ResizeDisk invokes resize-disk operation.
 	//
@@ -6380,7 +6380,7 @@ func (c *Client) sendDetachPort(ctx context.Context, params DetachPortParams) (r
 //
 // A released prefix is not re-allocated immediately.
 //
-// DELETE /api/v1/private-networks/{privateNetworkId}/ipv6
+// POST /api/v1/private-networks/{privateNetworkId}:disableIpv6
 func (c *Client) DisablePrivateNetworkIpv6(ctx context.Context, params DisablePrivateNetworkIpv6Params) (DisablePrivateNetworkIpv6Res, error) {
 	res, err := c.sendDisablePrivateNetworkIpv6(ctx, params)
 	return res, err
@@ -6389,8 +6389,8 @@ func (c *Client) DisablePrivateNetworkIpv6(ctx context.Context, params DisablePr
 func (c *Client) sendDisablePrivateNetworkIpv6(ctx context.Context, params DisablePrivateNetworkIpv6Params) (res DisablePrivateNetworkIpv6Res, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("disable-private-network-ipv6"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/private-networks/{privateNetworkId}/ipv6"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/private-networks/{privateNetworkId}:disableIpv6"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -6443,11 +6443,11 @@ func (c *Client) sendDisablePrivateNetworkIpv6(ctx context.Context, params Disab
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/ipv6"
+	pathParts[2] = ":disableIpv6"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
+	r, err := ht.NewRequest(ctx, "POST", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
@@ -6516,7 +6516,7 @@ func (c *Client) sendDisablePrivateNetworkIpv6(ctx context.Context, params Disab
 // If the private network is not yet connected to the internet, connectivity is established as part of
 // this call.
 //
-// POST /api/v1/private-networks/{privateNetworkId}/ipv6
+// POST /api/v1/private-networks/{privateNetworkId}:enableIpv6
 func (c *Client) EnablePrivateNetworkIpv6(ctx context.Context, params EnablePrivateNetworkIpv6Params) (EnablePrivateNetworkIpv6Res, error) {
 	res, err := c.sendEnablePrivateNetworkIpv6(ctx, params)
 	return res, err
@@ -6526,7 +6526,7 @@ func (c *Client) sendEnablePrivateNetworkIpv6(ctx context.Context, params Enable
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("enable-private-network-ipv6"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/private-networks/{privateNetworkId}/ipv6"),
+		semconv.URLTemplateKey.String("/api/v1/private-networks/{privateNetworkId}:enableIpv6"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -6579,7 +6579,7 @@ func (c *Client) sendEnablePrivateNetworkIpv6(ctx context.Context, params Enable
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/ipv6"
+	pathParts[2] = ":enableIpv6"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -14157,7 +14157,7 @@ func (c *Client) sendRenameSnapshot(ctx context.Context, request *RenameSnapshot
 // The request is also rejected when the image is marked as supported but the corresponding component
 // has been removed or stopped inside the instance.
 //
-// POST /api/v1/instances/{instanceId}/password
+// POST /api/v1/instances/{instanceId}:resetPassword
 func (c *Client) ResetInstancePassword(ctx context.Context, request *ResetPasswordRequestBody, params ResetInstancePasswordParams) (ResetInstancePasswordRes, error) {
 	res, err := c.sendResetInstancePassword(ctx, request, params)
 	return res, err
@@ -14176,7 +14176,7 @@ func (c *Client) sendResetInstancePassword(ctx context.Context, request *ResetPa
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("reset-instance-password"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}/password"),
+		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}:resetPassword"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -14229,7 +14229,7 @@ func (c *Client) sendResetInstancePassword(ctx context.Context, request *ResetPa
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/password"
+	pathParts[2] = ":resetPassword"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"

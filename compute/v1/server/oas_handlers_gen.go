@@ -7787,14 +7787,14 @@ func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w htt
 //
 // A released prefix is not re-allocated immediately.
 //
-// DELETE /api/v1/private-networks/{privateNetworkId}/ipv6
+// POST /api/v1/private-networks/{privateNetworkId}:disableIpv6
 func (s *Server) handleDisablePrivateNetworkIpv6Request(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("disable-private-network-ipv6"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/private-networks/{privateNetworkId}/ipv6"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/private-networks/{privateNetworkId}:disableIpv6"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -7991,14 +7991,14 @@ func (s *Server) handleDisablePrivateNetworkIpv6Request(args [1]string, argsEsca
 // If the private network is not yet connected to the internet, connectivity is established as part of
 // this call.
 //
-// POST /api/v1/private-networks/{privateNetworkId}/ipv6
+// POST /api/v1/private-networks/{privateNetworkId}:enableIpv6
 func (s *Server) handleEnablePrivateNetworkIpv6Request(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("enable-private-network-ipv6"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/private-networks/{privateNetworkId}/ipv6"),
+		semconv.HTTPRouteKey.String("/api/v1/private-networks/{privateNetworkId}:enableIpv6"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -18429,14 +18429,14 @@ func (s *Server) handleRenameSnapshotRequest(args [1]string, argsEscaped bool, w
 // The request is also rejected when the image is marked as supported but the corresponding component
 // has been removed or stopped inside the instance.
 //
-// POST /api/v1/instances/{instanceId}/password
+// POST /api/v1/instances/{instanceId}:resetPassword
 func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("reset-instance-password"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}/password"),
+		semconv.HTTPRouteKey.String("/api/v1/instances/{instanceId}:resetPassword"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)

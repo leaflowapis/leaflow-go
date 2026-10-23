@@ -513,7 +513,7 @@ func (UnimplementedHandler) DetachPort(ctx context.Context, params DetachPortPar
 //
 // A released prefix is not re-allocated immediately.
 //
-// DELETE /api/v1/private-networks/{privateNetworkId}/ipv6
+// POST /api/v1/private-networks/{privateNetworkId}:disableIpv6
 func (UnimplementedHandler) DisablePrivateNetworkIpv6(ctx context.Context, params DisablePrivateNetworkIpv6Params) (r DisablePrivateNetworkIpv6Res, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -526,7 +526,7 @@ func (UnimplementedHandler) DisablePrivateNetworkIpv6(ctx context.Context, param
 // If the private network is not yet connected to the internet, connectivity is established as part of
 // this call.
 //
-// POST /api/v1/private-networks/{privateNetworkId}/ipv6
+// POST /api/v1/private-networks/{privateNetworkId}:enableIpv6
 func (UnimplementedHandler) EnablePrivateNetworkIpv6(ctx context.Context, params EnablePrivateNetworkIpv6Params) (r EnablePrivateNetworkIpv6Res, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -1095,7 +1095,7 @@ func (UnimplementedHandler) RenameSnapshot(ctx context.Context, req *RenameSnaps
 // The request is also rejected when the image is marked as supported but the corresponding component
 // has been removed or stopped inside the instance.
 //
-// POST /api/v1/instances/{instanceId}/password
+// POST /api/v1/instances/{instanceId}:resetPassword
 func (UnimplementedHandler) ResetInstancePassword(ctx context.Context, req *ResetPasswordRequestBody, params ResetInstancePasswordParams) (r ResetInstancePasswordRes, _ error) {
 	return r, ht.ErrNotImplemented
 }

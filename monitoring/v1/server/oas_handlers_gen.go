@@ -12297,14 +12297,14 @@ func (s *Server) handleReopenIncidentRequest(args [1]string, argsEscaped bool, w
 // The agent configuration must be updated to match, otherwise the machine loses contact immediately.
 // The new key is likewise returned in clear text only in this response.
 //
-// POST /api/v1/servers/{serverId}/psk
+// POST /api/v1/servers/{serverId}:rotatePsk
 func (s *Server) handleRotateAgentPskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rotate-agent-psk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/servers/{serverId}/psk"),
+		semconv.HTTPRouteKey.String("/api/v1/servers/{serverId}:rotatePsk"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)

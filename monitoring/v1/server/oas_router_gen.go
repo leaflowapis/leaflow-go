@@ -23,7 +23,7 @@ var (
 	rn4AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn61AllowedHeaders = map[string]string{
+	rn62AllowedHeaders = map[string]string{
 		"PUT": "Authorization,Content-Type",
 	}
 	rn44AllowedHeaders = map[string]string{
@@ -64,9 +64,6 @@ var (
 	rn37AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn60AllowedHeaders = map[string]string{
-		"POST": "Authorization",
-	}
 	rn38AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
@@ -79,6 +76,9 @@ var (
 		"PUT":    "Authorization,Content-Type",
 	}
 	rn34AllowedHeaders = map[string]string{
+		"POST": "Authorization",
+	}
+	rn61AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
 	rn41AllowedHeaders = map[string]string{
@@ -359,7 +359,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "PUT",
-										allowedHeaders: rn61AllowedHeaders,
+										allowedHeaders: rn62AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -740,33 +740,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									return
 								}
 
-							case 'p': // Prefix: "psk"
-
-								if l := len("psk"); len(elem) >= l && elem[0:l] == "psk" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch r.Method {
-									case "POST":
-										s.handleRotateAgentPskRequest([1]string{
-											args[0],
-										}, elemIsEscaped, w, r)
-									default:
-										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "POST",
-											allowedHeaders: rn60AllowedHeaders,
-											acceptPost:     "",
-											acceptPatch:    "",
-										})
-									}
-
-									return
-								}
-
 							case 'r': // Prefix: "resources"
 
 								if l := len("resources"); len(elem) >= l && elem[0:l] == "resources" {
@@ -870,31 +843,72 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 							}
 
-						case ':': // Prefix: ":disable"
+						case ':': // Prefix: ":"
 
-							if l := len(":disable"); len(elem) >= l && elem[0:l] == ":disable" {
+							if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "POST":
-									s.handleDisableServerMonitoringRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "POST",
-										allowedHeaders: rn34AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
+								break
+							}
+							switch elem[0] {
+							case 'd': // Prefix: "disable"
+
+								if l := len("disable"); len(elem) >= l && elem[0:l] == "disable" {
+									elem = elem[l:]
+								} else {
+									break
 								}
 
-								return
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "POST":
+										s.handleDisableServerMonitoringRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "POST",
+											allowedHeaders: rn34AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
+							case 'r': // Prefix: "rotatePsk"
+
+								if l := len("rotatePsk"); len(elem) >= l && elem[0:l] == "rotatePsk" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "POST":
+										s.handleRotateAgentPskRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "POST",
+											allowedHeaders: rn61AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
 							}
 
 						}
@@ -2253,31 +2267,6 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									}
 								}
 
-							case 'p': // Prefix: "psk"
-
-								if l := len("psk"); len(elem) >= l && elem[0:l] == "psk" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch method {
-									case "POST":
-										r.name = RotateAgentPskOperation
-										r.summary = "Rotate the agent PSK"
-										r.operationID = "rotate-agent-psk"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/servers/{serverId}/psk"
-										r.args = args
-										r.count = 1
-										return r, true
-									default:
-										return
-									}
-								}
-
 							case 'r': // Prefix: "resources"
 
 								if l := len("resources"); len(elem) >= l && elem[0:l] == "resources" {
@@ -2382,29 +2371,68 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 							}
 
-						case ':': // Prefix: ":disable"
+						case ':': // Prefix: ":"
 
-							if l := len(":disable"); len(elem) >= l && elem[0:l] == ":disable" {
+							if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "POST":
-									r.name = DisableServerMonitoringOperation
-									r.summary = "Stop monitoring a machine"
-									r.operationID = "disable-server-monitoring"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/servers/{serverId}:disable"
-									r.args = args
-									r.count = 1
-									return r, true
-								default:
-									return
+								break
+							}
+							switch elem[0] {
+							case 'd': // Prefix: "disable"
+
+								if l := len("disable"); len(elem) >= l && elem[0:l] == "disable" {
+									elem = elem[l:]
+								} else {
+									break
 								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "POST":
+										r.name = DisableServerMonitoringOperation
+										r.summary = "Stop monitoring a machine"
+										r.operationID = "disable-server-monitoring"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/servers/{serverId}:disable"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+
+							case 'r': // Prefix: "rotatePsk"
+
+								if l := len("rotatePsk"); len(elem) >= l && elem[0:l] == "rotatePsk" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "POST":
+										r.name = RotateAgentPskOperation
+										r.summary = "Rotate the agent PSK"
+										r.operationID = "rotate-agent-psk"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/servers/{serverId}:rotatePsk"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+
 							}
 
 						}

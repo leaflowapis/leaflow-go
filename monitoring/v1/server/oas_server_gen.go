@@ -488,7 +488,7 @@ type Handler interface {
 	// The agent configuration must be updated to match, otherwise the machine loses contact immediately.
 	// The new key is likewise returned in clear text only in this response.
 	//
-	// POST /api/v1/servers/{serverId}/psk
+	// POST /api/v1/servers/{serverId}:rotatePsk
 	RotateAgentPsk(ctx context.Context, params RotateAgentPskParams) (*EnrollmentResource, error)
 	// ScheduleStatusPageMaintenance implements schedule-status-page-maintenance operation.
 	//
