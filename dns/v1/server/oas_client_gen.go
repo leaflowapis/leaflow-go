@@ -178,7 +178,7 @@ type Invoker interface {
 	// A failed check returns 200, not an error. The outcome is reported in `last_verify_error`: the
 	// request itself succeeded, and the answer it obtained is that the credential is no longer usable.
 	//
-	// POST /api/v1/credentials/{credentialId}/verification
+	// POST /api/v1/credentials/{credentialId}:verify
 	VerifyCredential(ctx context.Context, params VerifyCredentialParams) (*CredentialResource, error)
 }
 
@@ -2139,7 +2139,7 @@ func (c *Client) sendSetRecordSet(ctx context.Context, request *SetRecordSetRequ
 // A failed check returns 200, not an error. The outcome is reported in `last_verify_error`: the
 // request itself succeeded, and the answer it obtained is that the credential is no longer usable.
 //
-// POST /api/v1/credentials/{credentialId}/verification
+// POST /api/v1/credentials/{credentialId}:verify
 func (c *Client) VerifyCredential(ctx context.Context, params VerifyCredentialParams) (*CredentialResource, error) {
 	res, err := c.sendVerifyCredential(ctx, params)
 	return res, err
@@ -2149,7 +2149,7 @@ func (c *Client) sendVerifyCredential(ctx context.Context, params VerifyCredenti
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("verify-credential"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/credentials/{credentialId}/verification"),
+		semconv.URLTemplateKey.String("/api/v1/credentials/{credentialId}:verify"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2202,7 +2202,7 @@ func (c *Client) sendVerifyCredential(ctx context.Context, params VerifyCredenti
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/verification"
+	pathParts[2] = ":verify"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"

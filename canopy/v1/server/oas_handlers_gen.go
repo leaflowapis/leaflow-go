@@ -1366,14 +1366,14 @@ func (s *Server) handleDeleteResponseRequest(args [1]string, argsEscaped bool, w
 // A temporary measure; the key may be enabled again at any time. Use revocation to invalidate it
 // permanently.
 //
-// POST /api/v1/keys/{keyId}/disable
+// POST /api/v1/keys/{keyId}:disable
 func (s *Server) handleDisableAPIKeyRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("disable-api-key"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/keys/{keyId}/disable"),
+		semconv.HTTPRouteKey.String("/api/v1/keys/{keyId}:disable"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -1555,14 +1555,14 @@ func (s *Server) handleDisableAPIKeyRequest(args [1]string, argsEscaped bool, w 
 // because its project is suspended answers `API_KEY_PROJECT_SUSPENDED` with `suspended` set to true;
 // the latter requires the project to be restored first.
 //
-// POST /api/v1/keys/{keyId}/enable
+// POST /api/v1/keys/{keyId}:enable
 func (s *Server) handleEnableAPIKeyRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("enable-api-key"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/keys/{keyId}/enable"),
+		semconv.HTTPRouteKey.String("/api/v1/keys/{keyId}:enable"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -3855,7 +3855,8 @@ func (s *Server) handleListInferenceModelsRequest(args [0]string, argsEscaped bo
 // and the request body is forwarded upstream unchanged.
 //
 // Canopy returns no amounts: each model's `billing` names the Billing plan and the rate dimensions its
-// token usage is priced at. Read the rates from Billing with `search-prices` and `search-rates`.
+// token usage is priced at. Read the rates from the `rates` of the plan's prices in Billing's
+// `search-prices`.
 //
 // GET /api/v1/models
 func (s *Server) handleListModelsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4667,14 +4668,14 @@ func (s *Server) handleListUsageByModelRequest(args [0]string, argsEscaped bool,
 //
 // Use disabling for a temporary measure.
 //
-// POST /api/v1/keys/{keyId}/revoke
+// POST /api/v1/keys/{keyId}:revoke
 func (s *Server) handleRevokeAPIKeyRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("revoke-api-key"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/keys/{keyId}/revoke"),
+		semconv.HTTPRouteKey.String("/api/v1/keys/{keyId}:revoke"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)

@@ -100,7 +100,7 @@ func (UnimplementedHandler) DeleteResponse(ctx context.Context, params DeleteRes
 // A temporary measure; the key may be enabled again at any time. Use revocation to invalidate it
 // permanently.
 //
-// POST /api/v1/keys/{keyId}/disable
+// POST /api/v1/keys/{keyId}:disable
 func (UnimplementedHandler) DisableAPIKey(ctx context.Context, params DisableAPIKeyParams) (r DisableAPIKeyRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -111,7 +111,7 @@ func (UnimplementedHandler) DisableAPIKey(ctx context.Context, params DisableAPI
 // because its project is suspended answers `API_KEY_PROJECT_SUSPENDED` with `suspended` set to true;
 // the latter requires the project to be restored first.
 //
-// POST /api/v1/keys/{keyId}/enable
+// POST /api/v1/keys/{keyId}:enable
 func (UnimplementedHandler) EnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (r EnableAPIKeyRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -238,7 +238,8 @@ func (UnimplementedHandler) ListInferenceModels(ctx context.Context) (r ListInfe
 // and the request body is forwarded upstream unchanged.
 //
 // Canopy returns no amounts: each model's `billing` names the Billing plan and the rate dimensions its
-// token usage is priced at. Read the rates from Billing with `search-prices` and `search-rates`.
+// token usage is priced at. Read the rates from the `rates` of the plan's prices in Billing's
+// `search-prices`.
 //
 // GET /api/v1/models
 func (UnimplementedHandler) ListModels(ctx context.Context) (r ListModelsRes, _ error) {
@@ -289,7 +290,7 @@ func (UnimplementedHandler) ListUsageByModel(ctx context.Context, params ListUsa
 //
 // Use disabling for a temporary measure.
 //
-// POST /api/v1/keys/{keyId}/revoke
+// POST /api/v1/keys/{keyId}:revoke
 func (UnimplementedHandler) RevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (r RevokeAPIKeyRes, _ error) {
 	return r, ht.ErrNotImplemented
 }

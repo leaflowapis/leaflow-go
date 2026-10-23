@@ -25,7 +25,7 @@ type Handler interface {
 	// cancellation. Refunds are previewed with `preview-order-refund`. Open to the owner of the order's
 	// billing account and to members of its project.
 	//
-	// POST /api/v1/orders/{orderId}/cancel
+	// POST /api/v1/orders/{orderId}:cancel
 	CancelOrder(ctx context.Context, req OptOrderCancel, params CancelOrderParams) (CancelOrderRes, error)
 	// CancelSubscription implements cancel-subscription operation.
 	//
@@ -40,7 +40,7 @@ type Handler interface {
 	// released together must be canceled together through create-cancellation, and pending or provisioning
 	// purchases through their order. Repeating the request while the cancellation is open returns it.
 	//
-	// POST /api/v1/subscriptions/{subscriptionId}/cancel
+	// POST /api/v1/subscriptions/{subscriptionId}:cancel
 	CancelSubscription(ctx context.Context, req *CancelSubscriptionRequest, params CancelSubscriptionParams) (*Cancellation, error)
 	// CancelTopUp implements cancel-top-up operation.
 	//
@@ -53,7 +53,7 @@ type Handler interface {
 	// naming the outcome, or while the gateway is processing the payment, with `status` `pending`; read
 	// the top-up again later.
 	//
-	// POST /api/v1/top-ups/{topUpId}/cancel
+	// POST /api/v1/top-ups/{topUpId}:cancel
 	CancelTopUp(ctx context.Context, params CancelTopUpParams) (CancelTopUpRes, error)
 	// ConfirmCheckoutSession implements confirm-checkout-session operation.
 	//
@@ -71,7 +71,7 @@ type Handler interface {
 	//
 	// Open to the owner of the session's billing account and to members of its project.
 	//
-	// POST /api/v1/checkout-sessions/{checkoutSessionId}/confirm
+	// POST /api/v1/checkout-sessions/{checkoutSessionId}:confirm
 	ConfirmCheckoutSession(ctx context.Context, req *CheckoutSessionConfirm, params ConfirmCheckoutSessionParams) (ConfirmCheckoutSessionRes, error)
 	// CreateBillingAccount implements create-billing-account operation.
 	//
@@ -205,7 +205,7 @@ type Handler interface {
 	// the purchase. An expired session is returned unchanged. Open to the owner of the session's billing
 	// account and to members of its project.
 	//
-	// POST /api/v1/checkout-sessions/{checkoutSessionId}/expire
+	// POST /api/v1/checkout-sessions/{checkoutSessionId}:expire
 	ExpireCheckoutSession(ctx context.Context, params ExpireCheckoutSessionParams) (ExpireCheckoutSessionRes, error)
 	// GetAccountBalance implements get-account-balance operation.
 	//
@@ -321,7 +321,8 @@ type Handler interface {
 	// GetQuote implements get-quote operation.
 	//
 	// Calculates what a proposed purchase, a change of your subscriptions or their renewal would invoice
-	// now, and what each purchased or changed line renews at. Nothing is saved, reserved or redeemed.
+	// now, and what each purchased or changed line renews at, or what ending subscriptions would return.
+	// Nothing is saved, reserved, redeemed or canceled.
 	//
 	// With `billing_account_id`, the quote is for that billing account: its currency, account discounts,
 	// tax and funds apply, changes and renewals use the account currently paying for each subscription,
@@ -563,12 +564,6 @@ type Handler interface {
 	//
 	// GET /api/v1/assignments
 	ListProjectAssignments(ctx context.Context, params ListProjectAssignmentsParams) (*ProjectAssignmentList, error)
-	// ListRates implements list-rates operation.
-	//
-	// Rules of a public rate card; contract cards are not readable here.
-	//
-	// GET /api/v1/rate-cards/{rateCardId}/rules
-	ListRates(ctx context.Context, params ListRatesParams) (ListRatesRes, error)
 	// ListRefunds implements list-refunds operation.
 	//
 	// Newest first.
@@ -672,7 +667,7 @@ type Handler interface {
 	// Open to the owner of the invoice's billing account and, for the invoice of an order of a project, to
 	// members of the project. Only the owner can pay with a saved `payment_method_id`.
 	//
-	// POST /api/v1/invoices/{invoiceId}/pay
+	// POST /api/v1/invoices/{invoiceId}:pay
 	PayInvoice(ctx context.Context, req OptPayInvoiceRequest, params PayInvoiceParams) (*PaymentResult, error)
 	// PayTogether implements pay-together operation.
 	//
@@ -691,14 +686,6 @@ type Handler interface {
 	//
 	// POST /api/v1/payments
 	PayTogether(ctx context.Context, req *PayTogetherRequest) (*PaymentResult, error)
-	// PreviewCancellation implements preview-cancellation operation.
-	//
-	// What creating the cancellation now would return, per subscription and in total. Nothing is canceled,
-	// ended or refunded. Open to the owner of the subscriptions' current billing account and to members of
-	// their project; refused for the same states as creating it.
-	//
-	// QUERY /api/v1/cancellations/preview
-	PreviewCancellation(ctx context.Context, req *CancellationPreviewRequest) (*CancellationRefundPreview, error)
 	// PreviewInvoicePayment implements preview-invoice-payment operation.
 	//
 	// What paying this invoice now would take from credit grants, from the balance and, for the rest, from
@@ -709,7 +696,7 @@ type Handler interface {
 	// Refused with the same errors as paying, except that insufficient funds are not an error here: they
 	// show as a `gateway_amount` above zero. Open to the same callers as paying.
 	//
-	// GET /api/v1/invoices/{invoiceId}/payment-preview
+	// GET /api/v1/invoices/{invoiceId}:previewPayment
 	PreviewInvoicePayment(ctx context.Context, params PreviewInvoicePaymentParams) (*PaymentPreview, error)
 	// PreviewOrderRefund implements preview-order-refund operation.
 	//
@@ -717,7 +704,7 @@ type Handler interface {
 	// Nothing is canceled or refunded. Open to the owner of the order's billing account and to members of
 	// its project.
 	//
-	// GET /api/v1/orders/{orderId}/refund-preview
+	// GET /api/v1/orders/{orderId}:previewRefund
 	PreviewOrderRefund(ctx context.Context, params PreviewOrderRefundParams) (*OrderRefundPreview, error)
 	// PreviewPayTogether implements preview-pay-together operation.
 	//
@@ -726,7 +713,7 @@ type Handler interface {
 	// created. Refused with the same errors as paying together, except that insufficient funds show as a
 	// `gateway_amount` above zero instead of an error.
 	//
-	// QUERY /api/v1/payments/preview
+	// QUERY /api/v1/payments:preview
 	PreviewPayTogether(ctx context.Context, req *PayTogetherRequest) (*PaymentPreview, error)
 	// PreviewWithdrawal implements preview-withdrawal operation.
 	//
@@ -734,7 +721,7 @@ type Handler interface {
 	// available balance. Nothing is created or reserved. Fails when a selected source has no refund route
 	// or its original processing cost is not yet known.
 	//
-	// QUERY /api/v1/withdrawals/preview
+	// QUERY /api/v1/withdrawals:preview
 	PreviewWithdrawal(ctx context.Context, req *WithdrawalPreviewRequest) (*WithdrawalPreview, error)
 	// RenewSubscription implements renew-subscription operation.
 	//
@@ -751,33 +738,24 @@ type Handler interface {
 	//
 	// Keep order_id and read the order after an unknown outcome; creating it again conflicts.
 	//
-	// POST /api/v1/subscriptions/{subscriptionId}/renew
+	// POST /api/v1/subscriptions/{subscriptionId}:renew
 	RenewSubscription(ctx context.Context, req *RenewRequest, params RenewSubscriptionParams) (RenewSubscriptionRes, error)
 	// ResumeBillingAccount implements resume-billing-account operation.
 	//
 	// Resumes a billing account you suspended. Refused with `BILLING_ACCOUNT_SUSPENDED_BY_OPERATOR` when
 	// Leaflow suspended it. Does not create a resource.
 	//
-	// POST /api/v1/billing-accounts/{accountId}/resume
+	// POST /api/v1/billing-accounts/{accountId}:resume
 	ResumeBillingAccount(ctx context.Context, params ResumeBillingAccountParams) (*BillingAccount, error)
 	// SearchPrices implements search-prices operation.
 	//
 	// Lists the active prices in `currency` that meet every condition in the body, as `list-prices` lists
 	// them, for anyone, signed in or not. Use it for conditions a query string cannot hold, such as the
-	// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own; read
-	// its rates with `search-rates`.
+	// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own and
+	// carries its `rates`, which `dimensions` narrows to the dimension values of the items on the page.
 	//
 	// QUERY /api/v1/prices
 	SearchPrices(ctx context.Context, req *PriceSearch) (*PriceList, error)
-	// SearchRates implements search-rates operation.
-	//
-	// Rules of a public rate card that meet every condition in the body, as `list-rates` lists them, for
-	// anyone, signed in or not; contract cards are not readable here. Use it to read the rates at the
-	// dimension values of the items on a page, such as each region and machine type offered, and match
-	// each rate to its price by meter, usage type, interval and dimensions.
-	//
-	// QUERY /api/v1/rate-cards/{rateCardId}/rules
-	SearchRates(ctx context.Context, req *RateSearch, params SearchRatesParams) (*RateList, error)
 	// SetAutoRenew implements set-auto-renew operation.
 	//
 	// Turns automatic renewal of an active or suspended licensed subscription on or off. Turning it off
@@ -819,7 +797,7 @@ type Handler interface {
 	// you can still top up and pay invoices. Resume it yourself; one suspended by Leaflow can only be
 	// resumed by Leaflow. Does not create a resource.
 	//
-	// POST /api/v1/billing-accounts/{accountId}/suspend
+	// POST /api/v1/billing-accounts/{accountId}:suspend
 	SuspendBillingAccount(ctx context.Context, params SuspendBillingAccountParams) (*BillingAccount, error)
 	// UnlinkProjectBillingAccount implements unlink-project-billing-account operation.
 	//
@@ -849,13 +827,14 @@ type Handler interface {
 	UpdateContact(ctx context.Context, req *ContactUpdate, params UpdateContactParams) (*Contact, error)
 	// WithdrawCancellation implements withdraw-cancellation operation.
 	//
-	// Withdraws the whole cancellation while no resource has begun to be released; afterwards it is
-	// refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions continue, but automatic renewal,
-	// turned off when the cancellation was created, stays off until it is turned on again. Withdrawing a
-	// withdrawn cancellation returns it unchanged. Open to the owner of the subscriptions' current billing
-	// account and to members of their project with the project permission `billing:finance.manage`.
+	// Withdraws the whole cancellation, which stays with status `canceled`, while no resource has begun to
+	// be released; afterwards it is refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions
+	// continue, but automatic renewal, turned off when the cancellation was created, stays off until it is
+	// turned on again. Withdrawing a withdrawn cancellation returns it unchanged. Open to the owner of the
+	// subscriptions' current billing account and to members of their project with the project permission
+	// `billing:finance.manage`.
 	//
-	// POST /api/v1/cancellations/{cancellationId}/withdraw
+	// DELETE /api/v1/cancellations/{cancellationId}
 	WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (*Cancellation, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//

@@ -157,7 +157,7 @@ type Handler interface {
 	// A failed check returns 200, not an error. The outcome is reported in `last_verify_error`: the
 	// request itself succeeded, and the answer it obtained is that the credential is no longer usable.
 	//
-	// POST /api/v1/credentials/{credentialId}/verification
+	// POST /api/v1/credentials/{credentialId}:verify
 	VerifyCredential(ctx context.Context, params VerifyCredentialParams) (*CredentialResource, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//

@@ -50,14 +50,14 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 // cancellation. Refunds are previewed with `preview-order-refund`. Open to the owner of the order's
 // billing account and to members of its project.
 //
-// POST /api/v1/orders/{orderId}/cancel
+// POST /api/v1/orders/{orderId}:cancel
 func (s *Server) handleCancelOrderRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-order"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/orders/{orderId}/cancel"),
+		semconv.HTTPRouteKey.String("/api/v1/orders/{orderId}:cancel"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -274,14 +274,14 @@ func (s *Server) handleCancelOrderRequest(args [1]string, argsEscaped bool, w ht
 // released together must be canceled together through create-cancellation, and pending or provisioning
 // purchases through their order. Repeating the request while the cancellation is open returns it.
 //
-// POST /api/v1/subscriptions/{subscriptionId}/cancel
+// POST /api/v1/subscriptions/{subscriptionId}:cancel
 func (s *Server) handleCancelSubscriptionRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-subscription"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/subscriptions/{subscriptionId}/cancel"),
+		semconv.HTTPRouteKey.String("/api/v1/subscriptions/{subscriptionId}:cancel"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -496,14 +496,14 @@ func (s *Server) handleCancelSubscriptionRequest(args [1]string, argsEscaped boo
 // naming the outcome, or while the gateway is processing the payment, with `status` `pending`; read
 // the top-up again later.
 //
-// POST /api/v1/top-ups/{topUpId}/cancel
+// POST /api/v1/top-ups/{topUpId}:cancel
 func (s *Server) handleCancelTopUpRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-top-up"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/top-ups/{topUpId}/cancel"),
+		semconv.HTTPRouteKey.String("/api/v1/top-ups/{topUpId}:cancel"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -708,14 +708,14 @@ func (s *Server) handleCancelTopUpRequest(args [1]string, argsEscaped bool, w ht
 //
 // Open to the owner of the session's billing account and to members of its project.
 //
-// POST /api/v1/checkout-sessions/{checkoutSessionId}/confirm
+// POST /api/v1/checkout-sessions/{checkoutSessionId}:confirm
 func (s *Server) handleConfirmCheckoutSessionRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("confirm-checkout-session"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/checkout-sessions/{checkoutSessionId}/confirm"),
+		semconv.HTTPRouteKey.String("/api/v1/checkout-sessions/{checkoutSessionId}:confirm"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -3158,14 +3158,14 @@ func (s *Server) handleEstimateUsageRequest(args [0]string, argsEscaped bool, w 
 // the purchase. An expired session is returned unchanged. Open to the owner of the session's billing
 // account and to members of its project.
 //
-// POST /api/v1/checkout-sessions/{checkoutSessionId}/expire
+// POST /api/v1/checkout-sessions/{checkoutSessionId}:expire
 func (s *Server) handleExpireCheckoutSessionRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("expire-checkout-session"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/checkout-sessions/{checkoutSessionId}/expire"),
+		semconv.HTTPRouteKey.String("/api/v1/checkout-sessions/{checkoutSessionId}:expire"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -6051,7 +6051,8 @@ func (s *Server) handleGetProjectAssignmentRequest(args [1]string, argsEscaped b
 // handleGetQuoteRequest handles get-quote operation.
 //
 // Calculates what a proposed purchase, a change of your subscriptions or their renewal would invoice
-// now, and what each purchased or changed line renews at. Nothing is saved, reserved or redeemed.
+// now, and what each purchased or changed line renews at, or what ending subscriptions would return.
+// Nothing is saved, reserved, redeemed or canceled.
 //
 // With `billing_account_id`, the quote is for that billing account: its currency, account discounts,
 // tax and funds apply, changes and renewals use the account currently paying for each subscription,
@@ -12648,180 +12649,6 @@ func (s *Server) handleListProjectAssignmentsRequest(args [0]string, argsEscaped
 	}
 }
 
-// handleListRatesRequest handles list-rates operation.
-//
-// Rules of a public rate card; contract cards are not readable here.
-//
-// GET /api/v1/rate-cards/{rateCardId}/rules
-func (s *Server) handleListRatesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-rates"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/rate-cards/{rateCardId}/rules"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListRatesOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListRatesOperation,
-			ID:   "list-rates",
-		}
-	)
-	params, err := decodeListRatesParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response ListRatesRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListRatesOperation,
-			OperationSummary: "List catalog rates",
-			OperationID:      "list-rates",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "page",
-					In:   "query",
-				}: params.Page,
-				{
-					Name: "page_size",
-					In:   "query",
-				}: params.PageSize,
-				{
-					Name: "If-None-Match",
-					In:   "header",
-				}: params.IfNoneMatch,
-				{
-					Name: "meter_id",
-					In:   "query",
-				}: params.MeterID,
-				{
-					Name: "at",
-					In:   "query",
-				}: params.At,
-				{
-					Name: "rateCardId",
-					In:   "path",
-				}: params.RateCardId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListRatesParams
-			Response = ListRatesRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListRatesParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListRates(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListRates(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListRatesResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleListRefundsRequest handles list-refunds operation.
 //
 // Newest first.
@@ -15033,14 +14860,14 @@ func (s *Server) handleListWithdrawalsRequest(args [0]string, argsEscaped bool, 
 // Open to the owner of the invoice's billing account and, for the invoice of an order of a project, to
 // members of the project. Only the owner can pay with a saved `payment_method_id`.
 //
-// POST /api/v1/invoices/{invoiceId}/pay
+// POST /api/v1/invoices/{invoiceId}:pay
 func (s *Server) handlePayInvoiceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("pay-invoice"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/invoices/{invoiceId}/pay"),
+		semconv.HTTPRouteKey.String("/api/v1/invoices/{invoiceId}:pay"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -15455,208 +15282,6 @@ func (s *Server) handlePayTogetherRequest(args [0]string, argsEscaped bool, w ht
 	}
 }
 
-// handlePreviewCancellationRequest handles preview-cancellation operation.
-//
-// What creating the cancellation now would return, per subscription and in total. Nothing is canceled,
-// ended or refunded. Open to the owner of the subscriptions' current billing account and to members of
-// their project; refused for the same states as creating it.
-//
-// QUERY /api/v1/cancellations/preview
-func (s *Server) handlePreviewCancellationRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("preview-cancellation"),
-		semconv.HTTPRequestMethodKey.String("QUERY"),
-		semconv.HTTPRouteKey.String("/api/v1/cancellations/preview"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), PreviewCancellationOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: PreviewCancellationOperation,
-			ID:   "preview-cancellation",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityAccessTokenAuth(ctx, PreviewCancellationOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "AccessTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:AccessTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodePreviewCancellationRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *CancellationRefundPreview
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    PreviewCancellationOperation,
-			OperationSummary: "Preview a cancellation",
-			OperationID:      "preview-cancellation",
-			Body:             request,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = *CancellationPreviewRequest
-			Params   = struct{}
-			Response = *CancellationRefundPreview
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.PreviewCancellation(ctx, request)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.PreviewCancellation(ctx, request)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodePreviewCancellationResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handlePreviewInvoicePaymentRequest handles preview-invoice-payment operation.
 //
 // What paying this invoice now would take from credit grants, from the balance and, for the rest, from
@@ -15667,14 +15292,14 @@ func (s *Server) handlePreviewCancellationRequest(args [0]string, argsEscaped bo
 // Refused with the same errors as paying, except that insufficient funds are not an error here: they
 // show as a `gateway_amount` above zero. Open to the same callers as paying.
 //
-// GET /api/v1/invoices/{invoiceId}/payment-preview
+// GET /api/v1/invoices/{invoiceId}:previewPayment
 func (s *Server) handlePreviewInvoicePaymentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("preview-invoice-payment"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/invoices/{invoiceId}/payment-preview"),
+		semconv.HTTPRouteKey.String("/api/v1/invoices/{invoiceId}:previewPayment"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -15877,14 +15502,14 @@ func (s *Server) handlePreviewInvoicePaymentRequest(args [1]string, argsEscaped 
 // Nothing is canceled or refunded. Open to the owner of the order's billing account and to members of
 // its project.
 //
-// GET /api/v1/orders/{orderId}/refund-preview
+// GET /api/v1/orders/{orderId}:previewRefund
 func (s *Server) handlePreviewOrderRefundRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("preview-order-refund"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/orders/{orderId}/refund-preview"),
+		semconv.HTTPRouteKey.String("/api/v1/orders/{orderId}:previewRefund"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -16084,14 +15709,14 @@ func (s *Server) handlePreviewOrderRefundRequest(args [1]string, argsEscaped boo
 // created. Refused with the same errors as paying together, except that insufficient funds show as a
 // `gateway_amount` above zero instead of an error.
 //
-// QUERY /api/v1/payments/preview
+// QUERY /api/v1/payments:preview
 func (s *Server) handlePreviewPayTogetherRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("preview-pay-together"),
 		semconv.HTTPRequestMethodKey.String("QUERY"),
-		semconv.HTTPRouteKey.String("/api/v1/payments/preview"),
+		semconv.HTTPRouteKey.String("/api/v1/payments:preview"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -16286,14 +15911,14 @@ func (s *Server) handlePreviewPayTogetherRequest(args [0]string, argsEscaped boo
 // available balance. Nothing is created or reserved. Fails when a selected source has no refund route
 // or its original processing cost is not yet known.
 //
-// QUERY /api/v1/withdrawals/preview
+// QUERY /api/v1/withdrawals:preview
 func (s *Server) handlePreviewWithdrawalRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("preview-withdrawal"),
 		semconv.HTTPRequestMethodKey.String("QUERY"),
-		semconv.HTTPRouteKey.String("/api/v1/withdrawals/preview"),
+		semconv.HTTPRouteKey.String("/api/v1/withdrawals:preview"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -16497,14 +16122,14 @@ func (s *Server) handlePreviewWithdrawalRequest(args [0]string, argsEscaped bool
 //
 // Keep order_id and read the order after an unknown outcome; creating it again conflicts.
 //
-// POST /api/v1/subscriptions/{subscriptionId}/renew
+// POST /api/v1/subscriptions/{subscriptionId}:renew
 func (s *Server) handleRenewSubscriptionRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("renew-subscription"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/subscriptions/{subscriptionId}/renew"),
+		semconv.HTTPRouteKey.String("/api/v1/subscriptions/{subscriptionId}:renew"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -16713,14 +16338,14 @@ func (s *Server) handleRenewSubscriptionRequest(args [1]string, argsEscaped bool
 // Resumes a billing account you suspended. Refused with `BILLING_ACCOUNT_SUSPENDED_BY_OPERATOR` when
 // Leaflow suspended it. Does not create a resource.
 //
-// POST /api/v1/billing-accounts/{accountId}/resume
+// POST /api/v1/billing-accounts/{accountId}:resume
 func (s *Server) handleResumeBillingAccountRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("resume-billing-account"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/billing-accounts/{accountId}/resume"),
+		semconv.HTTPRouteKey.String("/api/v1/billing-accounts/{accountId}:resume"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -16913,8 +16538,8 @@ func (s *Server) handleResumeBillingAccountRequest(args [1]string, argsEscaped b
 //
 // Lists the active prices in `currency` that meet every condition in the body, as `list-prices` lists
 // them, for anyone, signed in or not. Use it for conditions a query string cannot hold, such as the
-// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own; read
-// its rates with `search-rates`.
+// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own and
+// carries its `rates`, which `dimensions` narrows to the dimension values of the items on the page.
 //
 // QUERY /api/v1/prices
 func (s *Server) handleSearchPricesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -17058,178 +16683,6 @@ func (s *Server) handleSearchPricesRequest(args [0]string, argsEscaped bool, w h
 	}
 
 	if err := encodeSearchPricesResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleSearchRatesRequest handles search-rates operation.
-//
-// Rules of a public rate card that meet every condition in the body, as `list-rates` lists them, for
-// anyone, signed in or not; contract cards are not readable here. Use it to read the rates at the
-// dimension values of the items on a page, such as each region and machine type offered, and match
-// each rate to its price by meter, usage type, interval and dimensions.
-//
-// QUERY /api/v1/rate-cards/{rateCardId}/rules
-func (s *Server) handleSearchRatesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("search-rates"),
-		semconv.HTTPRequestMethodKey.String("QUERY"),
-		semconv.HTTPRouteKey.String("/api/v1/rate-cards/{rateCardId}/rules"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), SearchRatesOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: SearchRatesOperation,
-			ID:   "search-rates",
-		}
-	)
-	params, err := decodeSearchRatesParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeSearchRatesRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *RateList
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    SearchRatesOperation,
-			OperationSummary: "Search catalog rates",
-			OperationID:      "search-rates",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "rateCardId",
-					In:   "path",
-				}: params.RateCardId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *RateSearch
-			Params   = SearchRatesParams
-			Response = *RateList
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackSearchRatesParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.SearchRates(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.SearchRates(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeSearchRatesResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -17891,14 +17344,14 @@ func (s *Server) handleSetProjectAssignmentRequest(args [1]string, argsEscaped b
 // you can still top up and pay invoices. Resume it yourself; one suspended by Leaflow can only be
 // resumed by Leaflow. Does not create a resource.
 //
-// POST /api/v1/billing-accounts/{accountId}/suspend
+// POST /api/v1/billing-accounts/{accountId}:suspend
 func (s *Server) handleSuspendBillingAccountRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("suspend-billing-account"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/billing-accounts/{accountId}/suspend"),
+		semconv.HTTPRouteKey.String("/api/v1/billing-accounts/{accountId}:suspend"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -18731,20 +18184,21 @@ func (s *Server) handleUpdateContactRequest(args [2]string, argsEscaped bool, w 
 
 // handleWithdrawCancellationRequest handles withdraw-cancellation operation.
 //
-// Withdraws the whole cancellation while no resource has begun to be released; afterwards it is
-// refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions continue, but automatic renewal,
-// turned off when the cancellation was created, stays off until it is turned on again. Withdrawing a
-// withdrawn cancellation returns it unchanged. Open to the owner of the subscriptions' current billing
-// account and to members of their project with the project permission `billing:finance.manage`.
+// Withdraws the whole cancellation, which stays with status `canceled`, while no resource has begun to
+// be released; afterwards it is refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions
+// continue, but automatic renewal, turned off when the cancellation was created, stays off until it is
+// turned on again. Withdrawing a withdrawn cancellation returns it unchanged. Open to the owner of the
+// subscriptions' current billing account and to members of their project with the project permission
+// `billing:finance.manage`.
 //
-// POST /api/v1/cancellations/{cancellationId}/withdraw
+// DELETE /api/v1/cancellations/{cancellationId}
 func (s *Server) handleWithdrawCancellationRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("withdraw-cancellation"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/cancellations/{cancellationId}/withdraw"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/api/v1/cancellations/{cancellationId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)

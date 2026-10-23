@@ -184,8 +184,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						}
 
 						// Param: "keyId"
-						// Match until "/"
-						idx := strings.IndexByte(elem, '/')
+						// Match until ":"
+						idx := strings.IndexByte(elem, ':')
 						if idx < 0 {
 							idx = len(elem)
 						}
@@ -214,9 +214,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							return
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/"
+						case ':': // Prefix: ":"
 
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
 								elem = elem[l:]
 							} else {
 								break
@@ -1084,8 +1084,8 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						}
 
 						// Param: "keyId"
-						// Match until "/"
-						idx := strings.IndexByte(elem, '/')
+						// Match until ":"
+						idx := strings.IndexByte(elem, ':')
 						if idx < 0 {
 							idx = len(elem)
 						}
@@ -1117,9 +1117,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							}
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/"
+						case ':': // Prefix: ":"
 
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
 								elem = elem[l:]
 							} else {
 								break
@@ -1145,7 +1145,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										r.summary = "Disable an API key"
 										r.operationID = "disable-api-key"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/keys/{keyId}/disable"
+										r.pathPattern = "/api/v1/keys/{keyId}:disable"
 										r.args = args
 										r.count = 1
 										return r, true
@@ -1170,7 +1170,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										r.summary = "Enable an API key"
 										r.operationID = "enable-api-key"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/keys/{keyId}/enable"
+										r.pathPattern = "/api/v1/keys/{keyId}:enable"
 										r.args = args
 										r.count = 1
 										return r, true
@@ -1195,7 +1195,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										r.summary = "Revoke an API key"
 										r.operationID = "revoke-api-key"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/keys/{keyId}/revoke"
+										r.pathPattern = "/api/v1/keys/{keyId}:revoke"
 										r.args = args
 										r.count = 1
 										return r, true

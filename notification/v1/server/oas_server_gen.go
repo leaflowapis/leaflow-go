@@ -13,7 +13,7 @@ type Handler interface {
 	// Archiving removes a notification from the default listing without deleting it; pass
 	// `include_archived` to see it again. Archiving also marks it read.
 	//
-	// POST /api/v1/notifications/{notificationId}/archive
+	// POST /api/v1/notifications/{notificationId}:archive
 	ArchiveNotification(ctx context.Context, params ArchiveNotificationParams) (*NotificationResource, error)
 	// AuthorizeRealtimeChannel implements authorize-realtime-channel operation.
 	//
@@ -48,7 +48,7 @@ type Handler interface {
 	// and a new one has to be sent; the pending address itself is kept, so nobody loses their place by
 	// mistyping.
 	//
-	// POST /api/v1/preferences/email-override/code/confirm
+	// POST /api/v1/preferences/email-override/code:confirm
 	ConfirmEmailOverride(ctx context.Context, req *ConfirmEmailOverrideRequestBody) (*PreferencesResource, error)
 	// CountUnreadNotifications implements count-unread-notifications operation.
 	//
@@ -188,7 +188,7 @@ type Handler interface {
 	//
 	// Marking a notification that is already read succeeds and changes nothing.
 	//
-	// POST /api/v1/notifications/{notificationId}/read
+	// POST /api/v1/notifications/{notificationId}:markRead
 	MarkNotificationRead(ctx context.Context, params MarkNotificationReadParams) (*NotificationResource, error)
 	// MarkNotificationUnread implements mark-notification-unread operation.
 	//
@@ -197,7 +197,7 @@ type Handler interface {
 	//
 	// Marking one that is already unread succeeds and changes nothing.
 	//
-	// DELETE /api/v1/notifications/{notificationId}/read
+	// POST /api/v1/notifications/{notificationId}:markUnread
 	MarkNotificationUnread(ctx context.Context, params MarkNotificationUnreadParams) (*NotificationResource, error)
 	// MarkNotificationsRead implements mark-notifications-read operation.
 	//
@@ -206,21 +206,21 @@ type Handler interface {
 	//
 	// Passing an empty list marks everything currently unread as read.
 	//
-	// POST /api/v1/notifications/read
+	// POST /api/v1/notifications:batchMarkRead
 	MarkNotificationsRead(ctx context.Context, req *MarkNotificationsReadRequestBody) (*UnreadCountResource, error)
 	// ReadAllAnnouncements implements read-all-announcements operation.
 	//
 	// Idempotent. Announcements you had already read stay read, and the count only covers the ones this
 	// call changed.
 	//
-	// POST /api/v1/announcements/read
+	// POST /api/v1/announcements:markAllRead
 	ReadAllAnnouncements(ctx context.Context) (*AnnouncementReadResultResource, error)
 	// ReadAnnouncement implements read-announcement operation.
 	//
 	// Idempotent: marking one twice is the same as marking it once. There is no way to mark it unread —
 	// having read something is a fact, not a state.
 	//
-	// POST /api/v1/announcements/{announcementId}/read
+	// POST /api/v1/announcements/{announcementId}:markRead
 	ReadAnnouncement(ctx context.Context, params ReadAnnouncementParams) error
 	// RevealCredential implements reveal-credential operation.
 	//
@@ -238,7 +238,7 @@ type Handler interface {
 	// clients and by browser prefetching, either of which would consume the credential before the
 	// recipient opened it.
 	//
-	// POST /api/v1/credentials/{ticketId}/reveal
+	// POST /api/v1/credentials/{ticketId}:reveal
 	RevealCredential(ctx context.Context, params RevealCredentialParams) (*RevealedCredentialResource, error)
 	// SendEmailOverrideCode implements send-email-override-code operation.
 	//
@@ -266,7 +266,7 @@ type Handler interface {
 	//
 	// Unarchiving one that is not archived succeeds and changes nothing.
 	//
-	// DELETE /api/v1/notifications/{notificationId}/archive
+	// POST /api/v1/notifications/{notificationId}:unarchive
 	UnarchiveNotification(ctx context.Context, params UnarchiveNotificationParams) (*NotificationResource, error)
 	// UpdateNotificationPreferences implements update-notification-preferences operation.
 	//
@@ -321,7 +321,7 @@ type Handler interface {
 	// A channel that fails verification is not marked verified and continues to be skipped. The reason is
 	// reported in `last_error`; it is the provider's own wording and is not translated.
 	//
-	// POST /api/v1/channels/{channelId}/verify
+	// POST /api/v1/channels/{channelId}:verify
 	VerifyUserChannel(ctx context.Context, params VerifyUserChannelParams) (*ChannelResource, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//

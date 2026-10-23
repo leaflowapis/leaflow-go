@@ -220,7 +220,7 @@ type Handler interface {
 	//
 	// The only way `OWNER` moves, and only the owner can initiate it.
 	//
-	// POST /api/v1/transfer-ownership
+	// POST /api/v1/project:transferOwnership
 	TransferProjectOwnership(ctx context.Context, req *TransferOwnershipRequestBody) (*OwnershipTransferResponseBody, error)
 	// UpdatePolicy implements update-policy operation.
 	//

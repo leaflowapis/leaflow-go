@@ -1546,7 +1546,7 @@ func (s *BillingScheme) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/CancelSubscriptionRequest
 type CancelSubscriptionRequest struct {
-	Mode CancellationPolicy `json:"mode"`
+	Mode CancellationMode `json:"mode"`
 	// For immediate cancellation, the quoted whole-second refund basis. Now when omitted.
 	ProrationDate OptDateTime `json:"proration_date"`
 	// The cancellation quote's refundable amount, including an explicit zero.
@@ -1555,7 +1555,7 @@ type CancelSubscriptionRequest struct {
 }
 
 // GetMode returns the value of Mode.
-func (s *CancelSubscriptionRequest) GetMode() CancellationPolicy {
+func (s *CancelSubscriptionRequest) GetMode() CancellationMode {
 	return s.Mode
 }
 
@@ -1575,7 +1575,7 @@ func (s *CancelSubscriptionRequest) GetReason() OptString {
 }
 
 // SetMode sets the value of Mode.
-func (s *CancelSubscriptionRequest) SetMode(val CancellationPolicy) {
+func (s *CancelSubscriptionRequest) SetMode(val CancellationMode) {
 	s.Mode = val
 }
 
@@ -1608,7 +1608,7 @@ func (s *CancelSubscriptionRequest) SetReason(val OptString) {
 type Cancellation struct {
 	ID          uuid.UUID          `json:"id"`
 	Status      CancellationStatus `json:"status"`
-	Mode        CancellationPolicy `json:"mode"`
+	Mode        CancellationMode   `json:"mode"`
 	ScheduledAt OptDateTime        `json:"scheduled_at"`
 	// For `immediate`, the second the refund is computed as of.
 	ProrationDate OptDateTime `json:"proration_date"`
@@ -1640,7 +1640,7 @@ func (s *Cancellation) GetStatus() CancellationStatus {
 }
 
 // GetMode returns the value of Mode.
-func (s *Cancellation) GetMode() CancellationPolicy {
+func (s *Cancellation) GetMode() CancellationMode {
 	return s.Mode
 }
 
@@ -1710,7 +1710,7 @@ func (s *Cancellation) SetStatus(val CancellationStatus) {
 }
 
 // SetMode sets the value of Mode.
-func (s *Cancellation) SetMode(val CancellationPolicy) {
+func (s *Cancellation) SetMode(val CancellationMode) {
 	s.Mode = val
 }
 
@@ -1772,12 +1772,12 @@ func (s *Cancellation) SetItems(val []CancellationItem) {
 // Ref: #/components/schemas/CancellationCreate
 type CancellationCreate struct {
 	// As in the quote.
-	SubscriptionIds []uuid.UUID        `json:"subscription_ids"`
-	Mode            CancellationPolicy `json:"mode"`
+	SubscriptionIds []uuid.UUID      `json:"subscription_ids"`
+	Mode            CancellationMode `json:"mode"`
 	// For `immediate`, the quote's `proration_date`: a whole second, not in the future and at most ten
 	// minutes old; the refund is computed as of it. Now when omitted.
 	ProrationDate OptDateTime `json:"proration_date"`
-	// The quote's `refundable_amount`; the cancellation is refused when the refund differs.
+	// The quote's `cancellation.refundable_amount`; the cancellation is refused when the refund differs.
 	ExpectedRefundableAmount string `json:"expected_refundable_amount"`
 	// A note from the account holder, kept with the cancellation.
 	Reason OptString `json:"reason"`
@@ -1789,7 +1789,7 @@ func (s *CancellationCreate) GetSubscriptionIds() []uuid.UUID {
 }
 
 // GetMode returns the value of Mode.
-func (s *CancellationCreate) GetMode() CancellationPolicy {
+func (s *CancellationCreate) GetMode() CancellationMode {
 	return s.Mode
 }
 
@@ -1814,7 +1814,7 @@ func (s *CancellationCreate) SetSubscriptionIds(val []uuid.UUID) {
 }
 
 // SetMode sets the value of Mode.
-func (s *CancellationCreate) SetMode(val CancellationPolicy) {
+func (s *CancellationCreate) SetMode(val CancellationMode) {
 	s.Mode = val
 }
 
@@ -2084,6 +2084,53 @@ func (s *CancellationList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
+// When subscriptions end. immediate ends them now and refunds the unused value under their refund
+// terms; period_end ends them at the end of their paid period. The cancellation terms fixed when a
+// subscription was bought decide which modes it allows: a pay-as-you-go subscription ends only
+// immediately, and a prepaid one whose terms allow only the end of its paid period ends only then.
+// Billing refuses a mode the terms do not allow with HTTP 422 BILLING_CANCELLATION_MODE_FIXED.
+// Ref: #/components/schemas/CancellationMode
+type CancellationMode string
+
+const (
+	CancellationModeImmediate CancellationMode = "immediate"
+	CancellationModePeriodEnd CancellationMode = "period_end"
+)
+
+// AllValues returns all CancellationMode values.
+func (CancellationMode) AllValues() []CancellationMode {
+	return []CancellationMode{
+		CancellationModeImmediate,
+		CancellationModePeriodEnd,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CancellationMode) MarshalText() ([]byte, error) {
+	switch s {
+	case CancellationModeImmediate:
+		return []byte(s), nil
+	case CancellationModePeriodEnd:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CancellationMode) UnmarshalText(data []byte) error {
+	switch CancellationMode(data) {
+	case CancellationModeImmediate:
+		*s = CancellationModeImmediate
+		return nil
+	case CancellationModePeriodEnd:
+		*s = CancellationModePeriodEnd
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Who requested it; `project_deletion` means the project was deleted.
 type CancellationOrigin string
 
@@ -2175,366 +2222,6 @@ func (s *CancellationPolicy) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
-}
-
-// What ending these subscriptions together would return, for one mode; preview `immediate` and
-// `period_end` separately to compare. Refused with 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a
-// subscription is already being canceled (`meta.cancellation_id`), is being reclaimed (`meta.reason`
-// `reclaim_requested`) or has a paid change waiting to switch (`meta.order_id`).
-// Ref: #/components/schemas/CancellationPreviewRequest
-type CancellationPreviewRequest struct {
-	// A billing account you own that currently pays for every subscription.
-	BillingAccountID int64 `json:"billing_account_id"`
-	// The subscriptions to end together, all of one service, including every subscription released with a
-	// resource.
-	SubscriptionIds []uuid.UUID        `json:"subscription_ids"`
-	Mode            CancellationPolicy `json:"mode"`
-}
-
-// GetBillingAccountID returns the value of BillingAccountID.
-func (s *CancellationPreviewRequest) GetBillingAccountID() int64 {
-	return s.BillingAccountID
-}
-
-// GetSubscriptionIds returns the value of SubscriptionIds.
-func (s *CancellationPreviewRequest) GetSubscriptionIds() []uuid.UUID {
-	return s.SubscriptionIds
-}
-
-// GetMode returns the value of Mode.
-func (s *CancellationPreviewRequest) GetMode() CancellationPolicy {
-	return s.Mode
-}
-
-// SetBillingAccountID sets the value of BillingAccountID.
-func (s *CancellationPreviewRequest) SetBillingAccountID(val int64) {
-	s.BillingAccountID = val
-}
-
-// SetSubscriptionIds sets the value of SubscriptionIds.
-func (s *CancellationPreviewRequest) SetSubscriptionIds(val []uuid.UUID) {
-	s.SubscriptionIds = val
-}
-
-// SetMode sets the value of Mode.
-func (s *CancellationPreviewRequest) SetMode(val CancellationPolicy) {
-	s.Mode = val
-}
-
-// What the cancellation would return, per subscription and in total, as of now. Give `proration_date`
-// and `refundable_amount` when creating the cancellation.
-//
-//   - `unused_amount`: before tax, the amount paid for the current periods in proportion to the time
-//     remaining.
-//   - `short_rate_surcharge_amount`: before tax, the part of `forfeited_amount` due to the short rate
-//     of the refund policy.
-//   - `refundable_amount`: what is returned the way it was paid, tax included; `refund_amount` plus
-//     `credit_amount`.
-//   - `refund_amount`: the part returned to the balance or the payment method.
-//   - `credit_amount`: the part restored to the credit grants that paid.
-//   - `tax_amount`: the tax included in `refundable_amount`.
-//   - `forfeited_amount`: before tax, the part of `unused_amount` the refund terms do not return.
-//
-// Metered and one-time subscriptions show zero; their usage until release is charged as usual.
-// Ref: #/components/schemas/CancellationRefundPreview
-type CancellationRefundPreview struct {
-	Mode CancellationPolicy `json:"mode"`
-	// For `period_end`, when release begins, the end of the paid terms.
-	ScheduledAt OptDateTime `json:"scheduled_at"`
-	// For `immediate`, the second the refund is computed as of. Give it when creating the cancellation.
-	ProrationDate            OptDateTime                     `json:"proration_date"`
-	Currency                 string                          `json:"currency"`
-	UnusedAmount             Money                           `json:"unused_amount"`
-	ShortRateSurchargeAmount Money                           `json:"short_rate_surcharge_amount"`
-	RefundableAmount         Money                           `json:"refundable_amount"`
-	RefundAmount             Money                           `json:"refund_amount"`
-	CreditAmount             Money                           `json:"credit_amount"`
-	TaxAmount                Money                           `json:"tax_amount"`
-	ForfeitedAmount          Money                           `json:"forfeited_amount"`
-	Items                    []CancellationRefundPreviewItem `json:"items"`
-}
-
-// GetMode returns the value of Mode.
-func (s *CancellationRefundPreview) GetMode() CancellationPolicy {
-	return s.Mode
-}
-
-// GetScheduledAt returns the value of ScheduledAt.
-func (s *CancellationRefundPreview) GetScheduledAt() OptDateTime {
-	return s.ScheduledAt
-}
-
-// GetProrationDate returns the value of ProrationDate.
-func (s *CancellationRefundPreview) GetProrationDate() OptDateTime {
-	return s.ProrationDate
-}
-
-// GetCurrency returns the value of Currency.
-func (s *CancellationRefundPreview) GetCurrency() string {
-	return s.Currency
-}
-
-// GetUnusedAmount returns the value of UnusedAmount.
-func (s *CancellationRefundPreview) GetUnusedAmount() Money {
-	return s.UnusedAmount
-}
-
-// GetShortRateSurchargeAmount returns the value of ShortRateSurchargeAmount.
-func (s *CancellationRefundPreview) GetShortRateSurchargeAmount() Money {
-	return s.ShortRateSurchargeAmount
-}
-
-// GetRefundableAmount returns the value of RefundableAmount.
-func (s *CancellationRefundPreview) GetRefundableAmount() Money {
-	return s.RefundableAmount
-}
-
-// GetRefundAmount returns the value of RefundAmount.
-func (s *CancellationRefundPreview) GetRefundAmount() Money {
-	return s.RefundAmount
-}
-
-// GetCreditAmount returns the value of CreditAmount.
-func (s *CancellationRefundPreview) GetCreditAmount() Money {
-	return s.CreditAmount
-}
-
-// GetTaxAmount returns the value of TaxAmount.
-func (s *CancellationRefundPreview) GetTaxAmount() Money {
-	return s.TaxAmount
-}
-
-// GetForfeitedAmount returns the value of ForfeitedAmount.
-func (s *CancellationRefundPreview) GetForfeitedAmount() Money {
-	return s.ForfeitedAmount
-}
-
-// GetItems returns the value of Items.
-func (s *CancellationRefundPreview) GetItems() []CancellationRefundPreviewItem {
-	return s.Items
-}
-
-// SetMode sets the value of Mode.
-func (s *CancellationRefundPreview) SetMode(val CancellationPolicy) {
-	s.Mode = val
-}
-
-// SetScheduledAt sets the value of ScheduledAt.
-func (s *CancellationRefundPreview) SetScheduledAt(val OptDateTime) {
-	s.ScheduledAt = val
-}
-
-// SetProrationDate sets the value of ProrationDate.
-func (s *CancellationRefundPreview) SetProrationDate(val OptDateTime) {
-	s.ProrationDate = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *CancellationRefundPreview) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// SetUnusedAmount sets the value of UnusedAmount.
-func (s *CancellationRefundPreview) SetUnusedAmount(val Money) {
-	s.UnusedAmount = val
-}
-
-// SetShortRateSurchargeAmount sets the value of ShortRateSurchargeAmount.
-func (s *CancellationRefundPreview) SetShortRateSurchargeAmount(val Money) {
-	s.ShortRateSurchargeAmount = val
-}
-
-// SetRefundableAmount sets the value of RefundableAmount.
-func (s *CancellationRefundPreview) SetRefundableAmount(val Money) {
-	s.RefundableAmount = val
-}
-
-// SetRefundAmount sets the value of RefundAmount.
-func (s *CancellationRefundPreview) SetRefundAmount(val Money) {
-	s.RefundAmount = val
-}
-
-// SetCreditAmount sets the value of CreditAmount.
-func (s *CancellationRefundPreview) SetCreditAmount(val Money) {
-	s.CreditAmount = val
-}
-
-// SetTaxAmount sets the value of TaxAmount.
-func (s *CancellationRefundPreview) SetTaxAmount(val Money) {
-	s.TaxAmount = val
-}
-
-// SetForfeitedAmount sets the value of ForfeitedAmount.
-func (s *CancellationRefundPreview) SetForfeitedAmount(val Money) {
-	s.ForfeitedAmount = val
-}
-
-// SetItems sets the value of Items.
-func (s *CancellationRefundPreview) SetItems(val []CancellationRefundPreviewItem) {
-	s.Items = val
-}
-
-// One subscription of the previewed cancellation.
-// Ref: #/components/schemas/CancellationRefundPreviewItem
-type CancellationRefundPreviewItem struct {
-	SubscriptionID uuid.UUID `json:"subscription_id"`
-	PlanID         uuid.UUID `json:"plan_id"`
-	PlanName       string    `json:"plan_name"`
-	// The project and its current name. Absent for an account-level purchase or when the project cannot be
-	// read.
-	Project   OptNilNamedIdentity `json:"project"`
-	Type      PriceType           `json:"type"`
-	UsageType UsageType           `json:"usage_type"`
-	// Whether automatic renewal is on now. Creating the cancellation turns it off; withdrawing it turns it
-	// back on for a metered subscription but not for a licensed one.
-	AutoRenew                bool  `json:"auto_renew"`
-	UnusedAmount             Money `json:"unused_amount"`
-	ShortRateSurchargeAmount Money `json:"short_rate_surcharge_amount"`
-	RefundableAmount         Money `json:"refundable_amount"`
-	RefundAmount             Money `json:"refund_amount"`
-	CreditAmount             Money `json:"credit_amount"`
-	TaxAmount                Money `json:"tax_amount"`
-	ForfeitedAmount          Money `json:"forfeited_amount"`
-}
-
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *CancellationRefundPreviewItem) GetSubscriptionID() uuid.UUID {
-	return s.SubscriptionID
-}
-
-// GetPlanID returns the value of PlanID.
-func (s *CancellationRefundPreviewItem) GetPlanID() uuid.UUID {
-	return s.PlanID
-}
-
-// GetPlanName returns the value of PlanName.
-func (s *CancellationRefundPreviewItem) GetPlanName() string {
-	return s.PlanName
-}
-
-// GetProject returns the value of Project.
-func (s *CancellationRefundPreviewItem) GetProject() OptNilNamedIdentity {
-	return s.Project
-}
-
-// GetType returns the value of Type.
-func (s *CancellationRefundPreviewItem) GetType() PriceType {
-	return s.Type
-}
-
-// GetUsageType returns the value of UsageType.
-func (s *CancellationRefundPreviewItem) GetUsageType() UsageType {
-	return s.UsageType
-}
-
-// GetAutoRenew returns the value of AutoRenew.
-func (s *CancellationRefundPreviewItem) GetAutoRenew() bool {
-	return s.AutoRenew
-}
-
-// GetUnusedAmount returns the value of UnusedAmount.
-func (s *CancellationRefundPreviewItem) GetUnusedAmount() Money {
-	return s.UnusedAmount
-}
-
-// GetShortRateSurchargeAmount returns the value of ShortRateSurchargeAmount.
-func (s *CancellationRefundPreviewItem) GetShortRateSurchargeAmount() Money {
-	return s.ShortRateSurchargeAmount
-}
-
-// GetRefundableAmount returns the value of RefundableAmount.
-func (s *CancellationRefundPreviewItem) GetRefundableAmount() Money {
-	return s.RefundableAmount
-}
-
-// GetRefundAmount returns the value of RefundAmount.
-func (s *CancellationRefundPreviewItem) GetRefundAmount() Money {
-	return s.RefundAmount
-}
-
-// GetCreditAmount returns the value of CreditAmount.
-func (s *CancellationRefundPreviewItem) GetCreditAmount() Money {
-	return s.CreditAmount
-}
-
-// GetTaxAmount returns the value of TaxAmount.
-func (s *CancellationRefundPreviewItem) GetTaxAmount() Money {
-	return s.TaxAmount
-}
-
-// GetForfeitedAmount returns the value of ForfeitedAmount.
-func (s *CancellationRefundPreviewItem) GetForfeitedAmount() Money {
-	return s.ForfeitedAmount
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *CancellationRefundPreviewItem) SetSubscriptionID(val uuid.UUID) {
-	s.SubscriptionID = val
-}
-
-// SetPlanID sets the value of PlanID.
-func (s *CancellationRefundPreviewItem) SetPlanID(val uuid.UUID) {
-	s.PlanID = val
-}
-
-// SetPlanName sets the value of PlanName.
-func (s *CancellationRefundPreviewItem) SetPlanName(val string) {
-	s.PlanName = val
-}
-
-// SetProject sets the value of Project.
-func (s *CancellationRefundPreviewItem) SetProject(val OptNilNamedIdentity) {
-	s.Project = val
-}
-
-// SetType sets the value of Type.
-func (s *CancellationRefundPreviewItem) SetType(val PriceType) {
-	s.Type = val
-}
-
-// SetUsageType sets the value of UsageType.
-func (s *CancellationRefundPreviewItem) SetUsageType(val UsageType) {
-	s.UsageType = val
-}
-
-// SetAutoRenew sets the value of AutoRenew.
-func (s *CancellationRefundPreviewItem) SetAutoRenew(val bool) {
-	s.AutoRenew = val
-}
-
-// SetUnusedAmount sets the value of UnusedAmount.
-func (s *CancellationRefundPreviewItem) SetUnusedAmount(val Money) {
-	s.UnusedAmount = val
-}
-
-// SetShortRateSurchargeAmount sets the value of ShortRateSurchargeAmount.
-func (s *CancellationRefundPreviewItem) SetShortRateSurchargeAmount(val Money) {
-	s.ShortRateSurchargeAmount = val
-}
-
-// SetRefundableAmount sets the value of RefundableAmount.
-func (s *CancellationRefundPreviewItem) SetRefundableAmount(val Money) {
-	s.RefundableAmount = val
-}
-
-// SetRefundAmount sets the value of RefundAmount.
-func (s *CancellationRefundPreviewItem) SetRefundAmount(val Money) {
-	s.RefundAmount = val
-}
-
-// SetCreditAmount sets the value of CreditAmount.
-func (s *CancellationRefundPreviewItem) SetCreditAmount(val Money) {
-	s.CreditAmount = val
-}
-
-// SetTaxAmount sets the value of TaxAmount.
-func (s *CancellationRefundPreviewItem) SetTaxAmount(val Money) {
-	s.TaxAmount = val
-}
-
-// SetForfeitedAmount sets the value of ForfeitedAmount.
-func (s *CancellationRefundPreviewItem) SetForfeitedAmount(val Money) {
-	s.ForfeitedAmount = val
 }
 
 type CancellationStatus string
@@ -7361,6 +7048,51 @@ func (o NilNamedIdentity) Or(d NamedIdentity) NamedIdentity {
 	return d
 }
 
+// NewNilQuoteCancellationResult returns new NilQuoteCancellationResult with value set to v.
+func NewNilQuoteCancellationResult(v QuoteCancellationResult) NilQuoteCancellationResult {
+	return NilQuoteCancellationResult{
+		Value: v,
+	}
+}
+
+// NilQuoteCancellationResult is nullable QuoteCancellationResult.
+type NilQuoteCancellationResult struct {
+	Value QuoteCancellationResult
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilQuoteCancellationResult) SetTo(v QuoteCancellationResult) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilQuoteCancellationResult) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilQuoteCancellationResult) SetToNull() {
+	o.Null = true
+	var v QuoteCancellationResult
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilQuoteCancellationResult) Get() (v QuoteCancellationResult, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilQuoteCancellationResult) Or(d QuoteCancellationResult) QuoteCancellationResult {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilQuoteDowngradeRefund returns new NilQuoteDowngradeRefund with value set to v.
 func NewNilQuoteDowngradeRefund(v QuoteDowngradeRefund) NilQuoteDowngradeRefund {
 	return NilQuoteDowngradeRefund{
@@ -7559,7 +7291,6 @@ func (s *NotModified) SetETag(val OptString) {
 func (*NotModified) listPlansRes()        {}
 func (*NotModified) listPricesByPlanRes() {}
 func (*NotModified) listProductsRes()     {}
-func (*NotModified) listRatesRes()        {}
 
 // A catalog object, inlined for display.
 // Ref: #/components/schemas/ObjectIdentity
@@ -9060,6 +8791,74 @@ func (o OptNilNamedIdentity) Or(d NamedIdentity) NamedIdentity {
 	return d
 }
 
+// NewOptNilRateArray returns new OptNilRateArray with value set to v.
+func NewOptNilRateArray(v []Rate) OptNilRateArray {
+	return OptNilRateArray{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilRateArray is optional nullable []Rate.
+type OptNilRateArray struct {
+	Value []Rate
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilRateArray was set.
+func (o OptNilRateArray) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilRateArray) Reset() {
+	var v []Rate
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilRateArray) SetTo(v []Rate) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilRateArray) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilRateArray) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v []Rate
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilRateArray) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilRateArray) Get() (v []Rate, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilRateArray) Or(d []Rate) []Rate {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilScheduledChange returns new OptNilScheduledChange with value set to v.
 func NewOptNilScheduledChange(v ScheduledChange) OptNilScheduledChange {
 	return OptNilScheduledChange{
@@ -9902,6 +9701,52 @@ func (o OptQuoteAddress) Get() (v QuoteAddress, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptQuoteAddress) Or(d QuoteAddress) QuoteAddress {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptQuoteCancellation returns new OptQuoteCancellation with value set to v.
+func NewOptQuoteCancellation(v QuoteCancellation) OptQuoteCancellation {
+	return OptQuoteCancellation{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptQuoteCancellation is optional QuoteCancellation.
+type OptQuoteCancellation struct {
+	Value QuoteCancellation
+	Set   bool
+}
+
+// IsSet returns true if OptQuoteCancellation was set.
+func (o OptQuoteCancellation) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptQuoteCancellation) Reset() {
+	var v QuoteCancellation
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptQuoteCancellation) SetTo(v QuoteCancellation) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptQuoteCancellation) Get() (v QuoteCancellation, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptQuoteCancellation) Or(d QuoteCancellation) QuoteCancellation {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -13371,10 +13216,15 @@ func (*PlanListHeaders) listPlansRes() {}
 
 // Ref: #/components/schemas/Price
 type Price struct {
-	RateCard  OptObjectIdentity `json:"rate_card"`
-	LookupKey OptString         `json:"lookup_key"`
-	Product   Product           `json:"product"`
-	Plan      ObjectIdentity    `json:"plan"`
+	// For a price that delegates to a rate card, the rates in effect now that it charges at, one for each
+	// meter, dimension values and period; metered rates for a metered price, and rates on its own meter
+	// and period for a licensed one. `search-prices` narrows them with `dimensions`. Null for a price with
+	// its own amounts. Prices are set per currency, and dimension values a currency does not offer, for
+	// example in a region it does not sell to, have no rate in that currency and cannot be bought with it.
+	Rates     OptNilRateArray `json:"rates"`
+	LookupKey OptString       `json:"lookup_key"`
+	Product   Product         `json:"product"`
+	Plan      ObjectIdentity  `json:"plan"`
 	// For a metered price with its own amounts, the meter it charges. For a licensed price, the meter its
 	// quantity is held on. Absent otherwise.
 	MeterID      OptUUID           `json:"meter_id"`
@@ -13405,8 +13255,6 @@ type Price struct {
 	TiersMode OptPriceTiersMode `json:"tiers_mode"`
 	// Present for `tiered`, in ascending order.
 	Tiers []Tier `json:"tiers"`
-	// Present when the price delegates to a rate card, the price list its rates are read from.
-	RateCardID OptUUID `json:"rate_card_id"`
 	// The smallest quantity that can be bought. Absent means no lower bound.
 	MinQuantity OptString `json:"min_quantity"`
 	// The largest quantity that may be bought; absent when there is no limit. A larger quantity is refused
@@ -13420,9 +13268,9 @@ type Price struct {
 	SetupFee      OptMoney      `json:"setup_fee"`
 }
 
-// GetRateCard returns the value of RateCard.
-func (s *Price) GetRateCard() OptObjectIdentity {
-	return s.RateCard
+// GetRates returns the value of Rates.
+func (s *Price) GetRates() OptNilRateArray {
+	return s.Rates
 }
 
 // GetLookupKey returns the value of LookupKey.
@@ -13530,11 +13378,6 @@ func (s *Price) GetTiers() []Tier {
 	return s.Tiers
 }
 
-// GetRateCardID returns the value of RateCardID.
-func (s *Price) GetRateCardID() OptUUID {
-	return s.RateCardID
-}
-
 // GetMinQuantity returns the value of MinQuantity.
 func (s *Price) GetMinQuantity() OptString {
 	return s.MinQuantity
@@ -13565,9 +13408,9 @@ func (s *Price) GetSetupFee() OptMoney {
 	return s.SetupFee
 }
 
-// SetRateCard sets the value of RateCard.
-func (s *Price) SetRateCard(val OptObjectIdentity) {
-	s.RateCard = val
+// SetRates sets the value of Rates.
+func (s *Price) SetRates(val OptNilRateArray) {
+	s.Rates = val
 }
 
 // SetLookupKey sets the value of LookupKey.
@@ -13673,11 +13516,6 @@ func (s *Price) SetTiersMode(val OptPriceTiersMode) {
 // SetTiers sets the value of Tiers.
 func (s *Price) SetTiers(val []Tier) {
 	s.Tiers = val
-}
-
-// SetRateCardID sets the value of RateCardID.
-func (s *Price) SetRateCardID(val OptUUID) {
-	s.RateCardID = val
 }
 
 // SetMinQuantity sets the value of MinQuantity.
@@ -14057,6 +13895,9 @@ type PriceSearch struct {
 	Type OptPriceType `json:"type"`
 	// Narrows to one usage type.
 	UsageType OptUsageType `json:"usage_type"`
+	// Narrows each price's `rates` to these dimension value sets, given as on order lines and usage;
+	// prices are not filtered by it. A set no rate has adds nothing.
+	Dimensions []PriceSearchDimensionsItem `json:"dimensions"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:"page"`
 	// Items per page. Defaults to 50; at most 200.
@@ -14091,6 +13932,11 @@ func (s *PriceSearch) GetType() OptPriceType {
 // GetUsageType returns the value of UsageType.
 func (s *PriceSearch) GetUsageType() OptUsageType {
 	return s.UsageType
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *PriceSearch) GetDimensions() []PriceSearchDimensionsItem {
+	return s.Dimensions
 }
 
 // GetPage returns the value of Page.
@@ -14133,6 +13979,11 @@ func (s *PriceSearch) SetUsageType(val OptUsageType) {
 	s.UsageType = val
 }
 
+// SetDimensions sets the value of Dimensions.
+func (s *PriceSearch) SetDimensions(val []PriceSearchDimensionsItem) {
+	s.Dimensions = val
+}
+
 // SetPage sets the value of Page.
 func (s *PriceSearch) SetPage(val OptInt64) {
 	s.Page = val
@@ -14141,6 +13992,17 @@ func (s *PriceSearch) SetPage(val OptInt64) {
 // SetPageSize sets the value of PageSize.
 func (s *PriceSearch) SetPageSize(val OptInt64) {
 	s.PageSize = val
+}
+
+type PriceSearchDimensionsItem map[string]string
+
+func (s *PriceSearchDimensionsItem) init() PriceSearchDimensionsItem {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
 }
 
 // How a ladder is walked: `graduated` charges each band at its own rate, `volume` charges everything
@@ -14525,7 +14387,7 @@ func (s *PurchaseOperation) UnmarshalText(data []byte) error {
 // cannot be priced. A Checkout Session quote gives what completing the session would invoice.
 // Ref: #/components/schemas/Quote
 type Quote struct {
-	// Account funds for the quoted purchase. Null without an account.
+	// Account funds for the quoted purchase. Null without an account, and for a cancellation.
 	Funds NilFunds `json:"funds"`
 	// Sum before discounts, excluding tax already included in the item amounts.
 	Subtotal Money `json:"subtotal"`
@@ -14533,17 +14395,21 @@ type Quote struct {
 	DiscountAmount Money `json:"discount_amount"`
 	// Total tax on the discounted amounts.
 	TaxAmount Money `json:"tax_amount"`
-	// The discount a purchase would get, not yet applied. Null when there is none, and for renewals.
+	// The discount a purchase would get, not yet applied. Null when there is none, and for renewals and a
+	// cancellation.
 	Discount NilQuotedDiscount    `json:"discount"`
 	Items    []QuoteItem          `json:"items"`
 	Renewals []QuoteRenewalResult `json:"renewals"`
+	// What the cancellation would return. Null unless the request quotes a cancellation.
+	Cancellation NilQuoteCancellationResult `json:"cancellation"`
 	// Subtotal minus discount_amount plus tax_amount, before credit grants and balance. For a Checkout
 	// Session quote, pass it as expected_amount when confirming the session. Renewal entries are separate
-	// orders; use each entry's total.
+	// orders; use each entry's total. Zero for a cancellation, which invoices nothing.
 	Total    Money  `json:"total"`
 	Currency string `json:"currency"`
-	// Immediate changes only; null otherwise. The instant the change is priced from; pass it when
-	// confirming the Checkout Session so it is priced from the same instant.
+	// Immediate changes and immediate cancellations only; null otherwise. The instant the change or the
+	// refund is priced from; pass it when confirming the Checkout Session or creating the cancellation so
+	// it is priced from the same instant.
 	ProrationDate NilDateTime `json:"proration_date"`
 	// `complete`: tax is calculated for the billing account's invoice contact, or for `address` without an
 	// account. `requires_location_inputs`: a quote without an account or `address`, which leaves out tax
@@ -14584,6 +14450,11 @@ func (s *Quote) GetItems() []QuoteItem {
 // GetRenewals returns the value of Renewals.
 func (s *Quote) GetRenewals() []QuoteRenewalResult {
 	return s.Renewals
+}
+
+// GetCancellation returns the value of Cancellation.
+func (s *Quote) GetCancellation() NilQuoteCancellationResult {
+	return s.Cancellation
 }
 
 // GetTotal returns the value of Total.
@@ -14641,6 +14512,11 @@ func (s *Quote) SetRenewals(val []QuoteRenewalResult) {
 	s.Renewals = val
 }
 
+// SetCancellation sets the value of Cancellation.
+func (s *Quote) SetCancellation(val NilQuoteCancellationResult) {
+	s.Cancellation = val
+}
+
 // SetTotal sets the value of Total.
 func (s *Quote) SetTotal(val Money) {
 	s.Total = val
@@ -14687,6 +14563,334 @@ func (s *QuoteAddress) SetCountry(val string) {
 // SetState sets the value of State.
 func (s *QuoteAddress) SetState(val OptString) {
 	s.State = val
+}
+
+// Preview ending these subscriptions together in one mode; quote `immediate` and `period_end`
+// separately to compare. Each must currently be paid by `billing_account_id` and be yours to read, as
+// the owner of that account or a member of the subscriptions' project. Refused as creating the
+// cancellation would be, including 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is
+// already being canceled (`meta.cancellation_id`), is being reclaimed (`meta.reason`
+// `reclaim_requested`) or has a paid change waiting to switch (`meta.order_id`).
+// Ref: #/components/schemas/QuoteCancellation
+type QuoteCancellation struct {
+	// The subscriptions to end together, all of one service, including every subscription released with a
+	// resource.
+	SubscriptionIds []uuid.UUID      `json:"subscription_ids"`
+	Mode            CancellationMode `json:"mode"`
+}
+
+// GetSubscriptionIds returns the value of SubscriptionIds.
+func (s *QuoteCancellation) GetSubscriptionIds() []uuid.UUID {
+	return s.SubscriptionIds
+}
+
+// GetMode returns the value of Mode.
+func (s *QuoteCancellation) GetMode() CancellationMode {
+	return s.Mode
+}
+
+// SetSubscriptionIds sets the value of SubscriptionIds.
+func (s *QuoteCancellation) SetSubscriptionIds(val []uuid.UUID) {
+	s.SubscriptionIds = val
+}
+
+// SetMode sets the value of Mode.
+func (s *QuoteCancellation) SetMode(val CancellationMode) {
+	s.Mode = val
+}
+
+// One subscription of the quoted cancellation.
+// Ref: #/components/schemas/QuoteCancellationItem
+type QuoteCancellationItem struct {
+	SubscriptionID uuid.UUID `json:"subscription_id"`
+	PlanID         uuid.UUID `json:"plan_id"`
+	PlanName       string    `json:"plan_name"`
+	// The project and its current name. Absent for an account-level purchase or when the project cannot be
+	// read.
+	Project   OptNilNamedIdentity `json:"project"`
+	Type      PriceType           `json:"type"`
+	UsageType UsageType           `json:"usage_type"`
+	// Whether automatic renewal is on now. Creating the cancellation turns it off; withdrawing it turns it
+	// back on for a metered subscription but not for a licensed one.
+	AutoRenew                bool  `json:"auto_renew"`
+	UnusedAmount             Money `json:"unused_amount"`
+	ShortRateSurchargeAmount Money `json:"short_rate_surcharge_amount"`
+	RefundableAmount         Money `json:"refundable_amount"`
+	RefundAmount             Money `json:"refund_amount"`
+	CreditAmount             Money `json:"credit_amount"`
+	TaxAmount                Money `json:"tax_amount"`
+	ForfeitedAmount          Money `json:"forfeited_amount"`
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *QuoteCancellationItem) GetSubscriptionID() uuid.UUID {
+	return s.SubscriptionID
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *QuoteCancellationItem) GetPlanID() uuid.UUID {
+	return s.PlanID
+}
+
+// GetPlanName returns the value of PlanName.
+func (s *QuoteCancellationItem) GetPlanName() string {
+	return s.PlanName
+}
+
+// GetProject returns the value of Project.
+func (s *QuoteCancellationItem) GetProject() OptNilNamedIdentity {
+	return s.Project
+}
+
+// GetType returns the value of Type.
+func (s *QuoteCancellationItem) GetType() PriceType {
+	return s.Type
+}
+
+// GetUsageType returns the value of UsageType.
+func (s *QuoteCancellationItem) GetUsageType() UsageType {
+	return s.UsageType
+}
+
+// GetAutoRenew returns the value of AutoRenew.
+func (s *QuoteCancellationItem) GetAutoRenew() bool {
+	return s.AutoRenew
+}
+
+// GetUnusedAmount returns the value of UnusedAmount.
+func (s *QuoteCancellationItem) GetUnusedAmount() Money {
+	return s.UnusedAmount
+}
+
+// GetShortRateSurchargeAmount returns the value of ShortRateSurchargeAmount.
+func (s *QuoteCancellationItem) GetShortRateSurchargeAmount() Money {
+	return s.ShortRateSurchargeAmount
+}
+
+// GetRefundableAmount returns the value of RefundableAmount.
+func (s *QuoteCancellationItem) GetRefundableAmount() Money {
+	return s.RefundableAmount
+}
+
+// GetRefundAmount returns the value of RefundAmount.
+func (s *QuoteCancellationItem) GetRefundAmount() Money {
+	return s.RefundAmount
+}
+
+// GetCreditAmount returns the value of CreditAmount.
+func (s *QuoteCancellationItem) GetCreditAmount() Money {
+	return s.CreditAmount
+}
+
+// GetTaxAmount returns the value of TaxAmount.
+func (s *QuoteCancellationItem) GetTaxAmount() Money {
+	return s.TaxAmount
+}
+
+// GetForfeitedAmount returns the value of ForfeitedAmount.
+func (s *QuoteCancellationItem) GetForfeitedAmount() Money {
+	return s.ForfeitedAmount
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *QuoteCancellationItem) SetSubscriptionID(val uuid.UUID) {
+	s.SubscriptionID = val
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *QuoteCancellationItem) SetPlanID(val uuid.UUID) {
+	s.PlanID = val
+}
+
+// SetPlanName sets the value of PlanName.
+func (s *QuoteCancellationItem) SetPlanName(val string) {
+	s.PlanName = val
+}
+
+// SetProject sets the value of Project.
+func (s *QuoteCancellationItem) SetProject(val OptNilNamedIdentity) {
+	s.Project = val
+}
+
+// SetType sets the value of Type.
+func (s *QuoteCancellationItem) SetType(val PriceType) {
+	s.Type = val
+}
+
+// SetUsageType sets the value of UsageType.
+func (s *QuoteCancellationItem) SetUsageType(val UsageType) {
+	s.UsageType = val
+}
+
+// SetAutoRenew sets the value of AutoRenew.
+func (s *QuoteCancellationItem) SetAutoRenew(val bool) {
+	s.AutoRenew = val
+}
+
+// SetUnusedAmount sets the value of UnusedAmount.
+func (s *QuoteCancellationItem) SetUnusedAmount(val Money) {
+	s.UnusedAmount = val
+}
+
+// SetShortRateSurchargeAmount sets the value of ShortRateSurchargeAmount.
+func (s *QuoteCancellationItem) SetShortRateSurchargeAmount(val Money) {
+	s.ShortRateSurchargeAmount = val
+}
+
+// SetRefundableAmount sets the value of RefundableAmount.
+func (s *QuoteCancellationItem) SetRefundableAmount(val Money) {
+	s.RefundableAmount = val
+}
+
+// SetRefundAmount sets the value of RefundAmount.
+func (s *QuoteCancellationItem) SetRefundAmount(val Money) {
+	s.RefundAmount = val
+}
+
+// SetCreditAmount sets the value of CreditAmount.
+func (s *QuoteCancellationItem) SetCreditAmount(val Money) {
+	s.CreditAmount = val
+}
+
+// SetTaxAmount sets the value of TaxAmount.
+func (s *QuoteCancellationItem) SetTaxAmount(val Money) {
+	s.TaxAmount = val
+}
+
+// SetForfeitedAmount sets the value of ForfeitedAmount.
+func (s *QuoteCancellationItem) SetForfeitedAmount(val Money) {
+	s.ForfeitedAmount = val
+}
+
+// What the cancellation would return, per subscription and in total, as of the quote's
+// `proration_date` for `immediate`. Give that `proration_date` and `refundable_amount` when creating
+// the cancellation.
+//
+//   - `unused_amount`: before tax, the amount paid for the current periods in proportion to the time
+//     remaining.
+//   - `short_rate_surcharge_amount`: before tax, the part of `forfeited_amount` due to the short rate
+//     of the refund policy.
+//   - `refundable_amount`: what is returned the way it was paid, tax included; `refund_amount` plus
+//     `credit_amount`.
+//   - `refund_amount`: the part returned to the balance or the payment method.
+//   - `credit_amount`: the part restored to the credit grants that paid.
+//   - `tax_amount`: the tax included in `refundable_amount`.
+//   - `forfeited_amount`: before tax, the part of `unused_amount` the refund terms do not return.
+//
+// Metered and one-time subscriptions show zero; their usage until release is charged as usual.
+// Ref: #/components/schemas/QuoteCancellationResult
+type QuoteCancellationResult struct {
+	Mode CancellationMode `json:"mode"`
+	// For `period_end`, when release begins, the end of the paid terms.
+	ScheduledAt              OptDateTime             `json:"scheduled_at"`
+	UnusedAmount             Money                   `json:"unused_amount"`
+	ShortRateSurchargeAmount Money                   `json:"short_rate_surcharge_amount"`
+	RefundableAmount         Money                   `json:"refundable_amount"`
+	RefundAmount             Money                   `json:"refund_amount"`
+	CreditAmount             Money                   `json:"credit_amount"`
+	TaxAmount                Money                   `json:"tax_amount"`
+	ForfeitedAmount          Money                   `json:"forfeited_amount"`
+	Items                    []QuoteCancellationItem `json:"items"`
+}
+
+// GetMode returns the value of Mode.
+func (s *QuoteCancellationResult) GetMode() CancellationMode {
+	return s.Mode
+}
+
+// GetScheduledAt returns the value of ScheduledAt.
+func (s *QuoteCancellationResult) GetScheduledAt() OptDateTime {
+	return s.ScheduledAt
+}
+
+// GetUnusedAmount returns the value of UnusedAmount.
+func (s *QuoteCancellationResult) GetUnusedAmount() Money {
+	return s.UnusedAmount
+}
+
+// GetShortRateSurchargeAmount returns the value of ShortRateSurchargeAmount.
+func (s *QuoteCancellationResult) GetShortRateSurchargeAmount() Money {
+	return s.ShortRateSurchargeAmount
+}
+
+// GetRefundableAmount returns the value of RefundableAmount.
+func (s *QuoteCancellationResult) GetRefundableAmount() Money {
+	return s.RefundableAmount
+}
+
+// GetRefundAmount returns the value of RefundAmount.
+func (s *QuoteCancellationResult) GetRefundAmount() Money {
+	return s.RefundAmount
+}
+
+// GetCreditAmount returns the value of CreditAmount.
+func (s *QuoteCancellationResult) GetCreditAmount() Money {
+	return s.CreditAmount
+}
+
+// GetTaxAmount returns the value of TaxAmount.
+func (s *QuoteCancellationResult) GetTaxAmount() Money {
+	return s.TaxAmount
+}
+
+// GetForfeitedAmount returns the value of ForfeitedAmount.
+func (s *QuoteCancellationResult) GetForfeitedAmount() Money {
+	return s.ForfeitedAmount
+}
+
+// GetItems returns the value of Items.
+func (s *QuoteCancellationResult) GetItems() []QuoteCancellationItem {
+	return s.Items
+}
+
+// SetMode sets the value of Mode.
+func (s *QuoteCancellationResult) SetMode(val CancellationMode) {
+	s.Mode = val
+}
+
+// SetScheduledAt sets the value of ScheduledAt.
+func (s *QuoteCancellationResult) SetScheduledAt(val OptDateTime) {
+	s.ScheduledAt = val
+}
+
+// SetUnusedAmount sets the value of UnusedAmount.
+func (s *QuoteCancellationResult) SetUnusedAmount(val Money) {
+	s.UnusedAmount = val
+}
+
+// SetShortRateSurchargeAmount sets the value of ShortRateSurchargeAmount.
+func (s *QuoteCancellationResult) SetShortRateSurchargeAmount(val Money) {
+	s.ShortRateSurchargeAmount = val
+}
+
+// SetRefundableAmount sets the value of RefundableAmount.
+func (s *QuoteCancellationResult) SetRefundableAmount(val Money) {
+	s.RefundableAmount = val
+}
+
+// SetRefundAmount sets the value of RefundAmount.
+func (s *QuoteCancellationResult) SetRefundAmount(val Money) {
+	s.RefundAmount = val
+}
+
+// SetCreditAmount sets the value of CreditAmount.
+func (s *QuoteCancellationResult) SetCreditAmount(val Money) {
+	s.CreditAmount = val
+}
+
+// SetTaxAmount sets the value of TaxAmount.
+func (s *QuoteCancellationResult) SetTaxAmount(val Money) {
+	s.TaxAmount = val
+}
+
+// SetForfeitedAmount sets the value of ForfeitedAmount.
+func (s *QuoteCancellationResult) SetForfeitedAmount(val Money) {
+	s.ForfeitedAmount = val
+}
+
+// SetItems sets the value of Items.
+func (s *QuoteCancellationResult) SetItems(val []QuoteCancellationItem) {
+	s.Items = val
 }
 
 // The new terms of one subscription. Identify the price, or the plan to select one from, as for a
@@ -15271,7 +15475,9 @@ type QuoteItemInput struct {
 	Quantity           string                `json:"quantity"`
 	// The dimension values of what is bought, such as region and instance type. Required whenever the
 	// price uses a rate card; prices with their own amounts ignore them. Every key the meter declares must
-	// be given. A combination no rate covers is refused rather than priced at zero.
+	// be given. A combination no rate covers is refused with `BILLING_PRICE_UNAVAILABLE` rather than
+	// priced at zero. Prices are set per currency, and a currency may not offer some combinations at all,
+	// for example in a region it does not sell to.
 	Dimensions OptQuoteItemInputDimensions `json:"dimensions"`
 }
 
@@ -15397,7 +15603,9 @@ func (s *QuoteItemInput) SetDimensions(val OptQuoteItemInputDimensions) {
 
 // The dimension values of what is bought, such as region and instance type. Required whenever the
 // price uses a rate card; prices with their own amounts ignore them. Every key the meter declares must
-// be given. A combination no rate covers is refused rather than priced at zero.
+// be given. A combination no rate covers is refused with `BILLING_PRICE_UNAVAILABLE` rather than
+// priced at zero. Prices are set per currency, and a currency may not offer some combinations at all,
+// for example in a region it does not sell to.
 type QuoteItemInputDimensions map[string]string
 
 func (s *QuoteItemInputDimensions) init() QuoteItemInputDimensions {
@@ -15830,14 +16038,14 @@ func (s *QuoteRenewalResultInterval) UnmarshalText(data []byte) error {
 	}
 }
 
-// Quote proposed items, changes or renewals: exactly one of them. Give exactly one of
-// `billing_account_id` and `currency`; changes and renewals need the account. Promotion codes apply to
-// proposed items and changes. An invalid combination fails with `BILLING_PURCHASE_INVALID` and the
-// field.
+// Quote proposed items, changes, renewals or a cancellation: exactly one of them. Give exactly one of
+// `billing_account_id` and `currency`; changes, renewals and a cancellation need the account.
+// Promotion codes apply to proposed items and changes. An invalid combination fails with
+// `BILLING_PURCHASE_INVALID` and the field.
 // Ref: #/components/schemas/QuoteRequest
 type QuoteRequest struct {
 	// The billing account to price for; it must be yours or currently pay for a project you are a member
-	// of, and an access token is required. Renewals must currently be paid by it.
+	// of, and an access token is required. Renewals and a cancellation must currently be paid by it.
 	BillingAccountID OptInt64 `json:"billing_account_id"`
 	// The ISO 4217 currency to price in without an account.
 	Currency OptString `json:"currency"`
@@ -15851,7 +16059,8 @@ type QuoteRequest struct {
 	// Preview changing these subscriptions in one order, each at most once. Each must currently be paid by
 	// `billing_account_id` and be yours to read, as the owner of that account or a member of the
 	// subscription's project; all must belong to the same project, or all to no project.
-	Changes []QuoteChangeInput `json:"changes"`
+	Changes      []QuoteChangeInput   `json:"changes"`
+	Cancellation OptQuoteCancellation `json:"cancellation"`
 	// When the changes take effect; defaults to `immediate`. `immediate` prices the rest of the paid
 	// period from `proration_date`, charging an upgrade the difference and showing what a downgrade
 	// refunds. `period_end` prices the first period at the new terms, which replaces the renewal when the
@@ -15887,6 +16096,11 @@ func (s *QuoteRequest) GetRenewals() []QuoteRenewal {
 // GetChanges returns the value of Changes.
 func (s *QuoteRequest) GetChanges() []QuoteChangeInput {
 	return s.Changes
+}
+
+// GetCancellation returns the value of Cancellation.
+func (s *QuoteRequest) GetCancellation() OptQuoteCancellation {
+	return s.Cancellation
 }
 
 // GetChangeEffective returns the value of ChangeEffective.
@@ -15927,6 +16141,11 @@ func (s *QuoteRequest) SetRenewals(val []QuoteRenewal) {
 // SetChanges sets the value of Changes.
 func (s *QuoteRequest) SetChanges(val []QuoteChangeInput) {
 	s.Changes = val
+}
+
+// SetCancellation sets the value of Cancellation.
+func (s *QuoteRequest) SetCancellation(val OptQuoteCancellation) {
+	s.Cancellation = val
 }
 
 // SetChangeEffective sets the value of ChangeEffective.
@@ -16480,137 +16699,6 @@ func (s *RateInterval) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
-}
-
-// Ref: #/components/schemas/RateList
-type RateList struct {
-	Items      []Rate           `json:"items"`
-	Pagination OffsetPagination `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *RateList) GetItems() []Rate {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *RateList) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *RateList) SetItems(val []Rate) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *RateList) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
-// RateListHeaders wraps RateList with response headers.
-type RateListHeaders struct {
-	ETag     OptString
-	Response RateList
-}
-
-// GetETag returns the value of ETag.
-func (s *RateListHeaders) GetETag() OptString {
-	return s.ETag
-}
-
-// GetResponse returns the value of Response.
-func (s *RateListHeaders) GetResponse() RateList {
-	return s.Response
-}
-
-// SetETag sets the value of ETag.
-func (s *RateListHeaders) SetETag(val OptString) {
-	s.ETag = val
-}
-
-// SetResponse sets the value of Response.
-func (s *RateListHeaders) SetResponse(val RateList) {
-	s.Response = val
-}
-
-func (*RateListHeaders) listRatesRes() {}
-
-// Conditions combined with AND.
-// Ref: #/components/schemas/RateSearch
-type RateSearch struct {
-	// Only rates on this meter.
-	MeterID OptUUID `json:"meter_id"`
-	// Rates in effect at this moment; defaults to now.
-	At OptDateTime `json:"at"`
-	// Only rates whose dimension values are exactly one of these sets, given as on order lines and usage.
-	// A set no rate has matches nothing.
-	Dimensions []RateSearchDimensionsItem `json:"dimensions"`
-	// 1-based page number. Defaults to 1.
-	Page OptInt64 `json:"page"`
-	// Items per page. Defaults to 50; at most 200.
-	PageSize OptInt64 `json:"page_size"`
-}
-
-// GetMeterID returns the value of MeterID.
-func (s *RateSearch) GetMeterID() OptUUID {
-	return s.MeterID
-}
-
-// GetAt returns the value of At.
-func (s *RateSearch) GetAt() OptDateTime {
-	return s.At
-}
-
-// GetDimensions returns the value of Dimensions.
-func (s *RateSearch) GetDimensions() []RateSearchDimensionsItem {
-	return s.Dimensions
-}
-
-// GetPage returns the value of Page.
-func (s *RateSearch) GetPage() OptInt64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *RateSearch) GetPageSize() OptInt64 {
-	return s.PageSize
-}
-
-// SetMeterID sets the value of MeterID.
-func (s *RateSearch) SetMeterID(val OptUUID) {
-	s.MeterID = val
-}
-
-// SetAt sets the value of At.
-func (s *RateSearch) SetAt(val OptDateTime) {
-	s.At = val
-}
-
-// SetDimensions sets the value of Dimensions.
-func (s *RateSearch) SetDimensions(val []RateSearchDimensionsItem) {
-	s.Dimensions = val
-}
-
-// SetPage sets the value of Page.
-func (s *RateSearch) SetPage(val OptInt64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *RateSearch) SetPageSize(val OptInt64) {
-	s.PageSize = val
-}
-
-type RateSearchDimensionsItem map[string]string
-
-func (s *RateSearchDimensionsItem) init() RateSearchDimensionsItem {
-	m := *s
-	if m == nil {
-		m = map[string]string{}
-		*s = m
-	}
-	return m
 }
 
 // `graduated` charges each band at its own rate; `volume` charges everything at the rate of the band
@@ -19066,7 +19154,7 @@ type SubscriptionCancellation struct {
 	ID                    uuid.UUID                      `json:"id"`
 	SubscriptionID        uuid.UUID                      `json:"subscription_id"`
 	Status                SubscriptionCancellationStatus `json:"status"`
-	Mode                  SubscriptionCancellationMode   `json:"mode"`
+	Mode                  CancellationMode               `json:"mode"`
 	RequestedAt           time.Time                      `json:"requested_at"`
 	ScheduledAt           OptDateTime                    `json:"scheduled_at"`
 	EffectiveAt           OptDateTime                    `json:"effective_at"`
@@ -19104,7 +19192,7 @@ func (s *SubscriptionCancellation) GetStatus() SubscriptionCancellationStatus {
 }
 
 // GetMode returns the value of Mode.
-func (s *SubscriptionCancellation) GetMode() SubscriptionCancellationMode {
+func (s *SubscriptionCancellation) GetMode() CancellationMode {
 	return s.Mode
 }
 
@@ -19179,7 +19267,7 @@ func (s *SubscriptionCancellation) SetStatus(val SubscriptionCancellationStatus)
 }
 
 // SetMode sets the value of Mode.
-func (s *SubscriptionCancellation) SetMode(val SubscriptionCancellationMode) {
+func (s *SubscriptionCancellation) SetMode(val CancellationMode) {
 	s.Mode = val
 }
 
@@ -19226,47 +19314,6 @@ func (s *SubscriptionCancellation) SetFailureCode(val OptString) {
 // SetFailureReason sets the value of FailureReason.
 func (s *SubscriptionCancellation) SetFailureReason(val OptString) {
 	s.FailureReason = val
-}
-
-type SubscriptionCancellationMode string
-
-const (
-	SubscriptionCancellationModeImmediate SubscriptionCancellationMode = "immediate"
-	SubscriptionCancellationModePeriodEnd SubscriptionCancellationMode = "period_end"
-)
-
-// AllValues returns all SubscriptionCancellationMode values.
-func (SubscriptionCancellationMode) AllValues() []SubscriptionCancellationMode {
-	return []SubscriptionCancellationMode{
-		SubscriptionCancellationModeImmediate,
-		SubscriptionCancellationModePeriodEnd,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s SubscriptionCancellationMode) MarshalText() ([]byte, error) {
-	switch s {
-	case SubscriptionCancellationModeImmediate:
-		return []byte(s), nil
-	case SubscriptionCancellationModePeriodEnd:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *SubscriptionCancellationMode) UnmarshalText(data []byte) error {
-	switch SubscriptionCancellationMode(data) {
-	case SubscriptionCancellationModeImmediate:
-		*s = SubscriptionCancellationModeImmediate
-		return nil
-	case SubscriptionCancellationModePeriodEnd:
-		*s = SubscriptionCancellationModePeriodEnd
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 type SubscriptionCancellationStatus string

@@ -34,7 +34,7 @@ type Invoker interface {
 	// Archiving removes a notification from the default listing without deleting it; pass
 	// `include_archived` to see it again. Archiving also marks it read.
 	//
-	// POST /api/v1/notifications/{notificationId}/archive
+	// POST /api/v1/notifications/{notificationId}:archive
 	ArchiveNotification(ctx context.Context, params ArchiveNotificationParams) (*NotificationResource, error)
 	// AuthorizeRealtimeChannel invokes authorize-realtime-channel operation.
 	//
@@ -69,7 +69,7 @@ type Invoker interface {
 	// and a new one has to be sent; the pending address itself is kept, so nobody loses their place by
 	// mistyping.
 	//
-	// POST /api/v1/preferences/email-override/code/confirm
+	// POST /api/v1/preferences/email-override/code:confirm
 	ConfirmEmailOverride(ctx context.Context, request *ConfirmEmailOverrideRequestBody) (*PreferencesResource, error)
 	// CountUnreadNotifications invokes count-unread-notifications operation.
 	//
@@ -209,7 +209,7 @@ type Invoker interface {
 	//
 	// Marking a notification that is already read succeeds and changes nothing.
 	//
-	// POST /api/v1/notifications/{notificationId}/read
+	// POST /api/v1/notifications/{notificationId}:markRead
 	MarkNotificationRead(ctx context.Context, params MarkNotificationReadParams) (*NotificationResource, error)
 	// MarkNotificationUnread invokes mark-notification-unread operation.
 	//
@@ -218,7 +218,7 @@ type Invoker interface {
 	//
 	// Marking one that is already unread succeeds and changes nothing.
 	//
-	// DELETE /api/v1/notifications/{notificationId}/read
+	// POST /api/v1/notifications/{notificationId}:markUnread
 	MarkNotificationUnread(ctx context.Context, params MarkNotificationUnreadParams) (*NotificationResource, error)
 	// MarkNotificationsRead invokes mark-notifications-read operation.
 	//
@@ -227,21 +227,21 @@ type Invoker interface {
 	//
 	// Passing an empty list marks everything currently unread as read.
 	//
-	// POST /api/v1/notifications/read
+	// POST /api/v1/notifications:batchMarkRead
 	MarkNotificationsRead(ctx context.Context, request *MarkNotificationsReadRequestBody) (*UnreadCountResource, error)
 	// ReadAllAnnouncements invokes read-all-announcements operation.
 	//
 	// Idempotent. Announcements you had already read stay read, and the count only covers the ones this
 	// call changed.
 	//
-	// POST /api/v1/announcements/read
+	// POST /api/v1/announcements:markAllRead
 	ReadAllAnnouncements(ctx context.Context) (*AnnouncementReadResultResource, error)
 	// ReadAnnouncement invokes read-announcement operation.
 	//
 	// Idempotent: marking one twice is the same as marking it once. There is no way to mark it unread —
 	// having read something is a fact, not a state.
 	//
-	// POST /api/v1/announcements/{announcementId}/read
+	// POST /api/v1/announcements/{announcementId}:markRead
 	ReadAnnouncement(ctx context.Context, params ReadAnnouncementParams) error
 	// RevealCredential invokes reveal-credential operation.
 	//
@@ -259,7 +259,7 @@ type Invoker interface {
 	// clients and by browser prefetching, either of which would consume the credential before the
 	// recipient opened it.
 	//
-	// POST /api/v1/credentials/{ticketId}/reveal
+	// POST /api/v1/credentials/{ticketId}:reveal
 	RevealCredential(ctx context.Context, params RevealCredentialParams) (*RevealedCredentialResource, error)
 	// SendEmailOverrideCode invokes send-email-override-code operation.
 	//
@@ -287,7 +287,7 @@ type Invoker interface {
 	//
 	// Unarchiving one that is not archived succeeds and changes nothing.
 	//
-	// DELETE /api/v1/notifications/{notificationId}/archive
+	// POST /api/v1/notifications/{notificationId}:unarchive
 	UnarchiveNotification(ctx context.Context, params UnarchiveNotificationParams) (*NotificationResource, error)
 	// UpdateNotificationPreferences invokes update-notification-preferences operation.
 	//
@@ -342,7 +342,7 @@ type Invoker interface {
 	// A channel that fails verification is not marked verified and continues to be skipped. The reason is
 	// reported in `last_error`; it is the provider's own wording and is not translated.
 	//
-	// POST /api/v1/channels/{channelId}/verify
+	// POST /api/v1/channels/{channelId}:verify
 	VerifyUserChannel(ctx context.Context, params VerifyUserChannelParams) (*ChannelResource, error)
 }
 
@@ -392,7 +392,7 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 // Archiving removes a notification from the default listing without deleting it; pass
 // `include_archived` to see it again. Archiving also marks it read.
 //
-// POST /api/v1/notifications/{notificationId}/archive
+// POST /api/v1/notifications/{notificationId}:archive
 func (c *Client) ArchiveNotification(ctx context.Context, params ArchiveNotificationParams) (*NotificationResource, error) {
 	res, err := c.sendArchiveNotification(ctx, params)
 	return res, err
@@ -402,7 +402,7 @@ func (c *Client) sendArchiveNotification(ctx context.Context, params ArchiveNoti
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("archive-notification"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/notifications/{notificationId}/archive"),
+		semconv.URLTemplateKey.String("/api/v1/notifications/{notificationId}:archive"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -455,7 +455,7 @@ func (c *Client) sendArchiveNotification(ctx context.Context, params ArchiveNoti
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/archive"
+	pathParts[2] = ":archive"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -779,7 +779,7 @@ func (c *Client) sendCancelEmailOverride(ctx context.Context) (res *PreferencesR
 // and a new one has to be sent; the pending address itself is kept, so nobody loses their place by
 // mistyping.
 //
-// POST /api/v1/preferences/email-override/code/confirm
+// POST /api/v1/preferences/email-override/code:confirm
 func (c *Client) ConfirmEmailOverride(ctx context.Context, request *ConfirmEmailOverrideRequestBody) (*PreferencesResource, error) {
 	res, err := c.sendConfirmEmailOverride(ctx, request)
 	return res, err
@@ -798,7 +798,7 @@ func (c *Client) sendConfirmEmailOverride(ctx context.Context, request *ConfirmE
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("confirm-email-override"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/preferences/email-override/code/confirm"),
+		semconv.URLTemplateKey.String("/api/v1/preferences/email-override/code:confirm"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -832,7 +832,7 @@ func (c *Client) sendConfirmEmailOverride(ctx context.Context, request *ConfirmE
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/api/v1/preferences/email-override/code/confirm"
+	pathParts[0] = "/api/v1/preferences/email-override/code:confirm"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -2704,7 +2704,7 @@ func (c *Client) sendListUserChannels(ctx context.Context, params ListUserChanne
 //
 // Marking a notification that is already read succeeds and changes nothing.
 //
-// POST /api/v1/notifications/{notificationId}/read
+// POST /api/v1/notifications/{notificationId}:markRead
 func (c *Client) MarkNotificationRead(ctx context.Context, params MarkNotificationReadParams) (*NotificationResource, error) {
 	res, err := c.sendMarkNotificationRead(ctx, params)
 	return res, err
@@ -2714,7 +2714,7 @@ func (c *Client) sendMarkNotificationRead(ctx context.Context, params MarkNotifi
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("mark-notification-read"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/notifications/{notificationId}/read"),
+		semconv.URLTemplateKey.String("/api/v1/notifications/{notificationId}:markRead"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2767,7 +2767,7 @@ func (c *Client) sendMarkNotificationRead(ctx context.Context, params MarkNotifi
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/read"
+	pathParts[2] = ":markRead"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -2839,7 +2839,7 @@ func (c *Client) sendMarkNotificationRead(ctx context.Context, params MarkNotifi
 //
 // Marking one that is already unread succeeds and changes nothing.
 //
-// DELETE /api/v1/notifications/{notificationId}/read
+// POST /api/v1/notifications/{notificationId}:markUnread
 func (c *Client) MarkNotificationUnread(ctx context.Context, params MarkNotificationUnreadParams) (*NotificationResource, error) {
 	res, err := c.sendMarkNotificationUnread(ctx, params)
 	return res, err
@@ -2848,8 +2848,8 @@ func (c *Client) MarkNotificationUnread(ctx context.Context, params MarkNotifica
 func (c *Client) sendMarkNotificationUnread(ctx context.Context, params MarkNotificationUnreadParams) (res *NotificationResource, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("mark-notification-unread"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/notifications/{notificationId}/read"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/notifications/{notificationId}:markUnread"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2902,11 +2902,11 @@ func (c *Client) sendMarkNotificationUnread(ctx context.Context, params MarkNoti
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/read"
+	pathParts[2] = ":markUnread"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
+	r, err := ht.NewRequest(ctx, "POST", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
@@ -2974,7 +2974,7 @@ func (c *Client) sendMarkNotificationUnread(ctx context.Context, params MarkNoti
 //
 // Passing an empty list marks everything currently unread as read.
 //
-// POST /api/v1/notifications/read
+// POST /api/v1/notifications:batchMarkRead
 func (c *Client) MarkNotificationsRead(ctx context.Context, request *MarkNotificationsReadRequestBody) (*UnreadCountResource, error) {
 	res, err := c.sendMarkNotificationsRead(ctx, request)
 	return res, err
@@ -2993,7 +2993,7 @@ func (c *Client) sendMarkNotificationsRead(ctx context.Context, request *MarkNot
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("mark-notifications-read"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/notifications/read"),
+		semconv.URLTemplateKey.String("/api/v1/notifications:batchMarkRead"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3027,7 +3027,7 @@ func (c *Client) sendMarkNotificationsRead(ctx context.Context, request *MarkNot
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/api/v1/notifications/read"
+	pathParts[0] = "/api/v1/notifications:batchMarkRead"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -3100,7 +3100,7 @@ func (c *Client) sendMarkNotificationsRead(ctx context.Context, request *MarkNot
 // Idempotent. Announcements you had already read stay read, and the count only covers the ones this
 // call changed.
 //
-// POST /api/v1/announcements/read
+// POST /api/v1/announcements:markAllRead
 func (c *Client) ReadAllAnnouncements(ctx context.Context) (*AnnouncementReadResultResource, error) {
 	res, err := c.sendReadAllAnnouncements(ctx)
 	return res, err
@@ -3110,7 +3110,7 @@ func (c *Client) sendReadAllAnnouncements(ctx context.Context) (res *Announcemen
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("read-all-announcements"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/announcements/read"),
+		semconv.URLTemplateKey.String("/api/v1/announcements:markAllRead"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3144,7 +3144,7 @@ func (c *Client) sendReadAllAnnouncements(ctx context.Context) (res *Announcemen
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/api/v1/announcements/read"
+	pathParts[0] = "/api/v1/announcements:markAllRead"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -3214,7 +3214,7 @@ func (c *Client) sendReadAllAnnouncements(ctx context.Context) (res *Announcemen
 // Idempotent: marking one twice is the same as marking it once. There is no way to mark it unread —
 // having read something is a fact, not a state.
 //
-// POST /api/v1/announcements/{announcementId}/read
+// POST /api/v1/announcements/{announcementId}:markRead
 func (c *Client) ReadAnnouncement(ctx context.Context, params ReadAnnouncementParams) error {
 	_, err := c.sendReadAnnouncement(ctx, params)
 	return err
@@ -3224,7 +3224,7 @@ func (c *Client) sendReadAnnouncement(ctx context.Context, params ReadAnnounceme
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("read-announcement"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/announcements/{announcementId}/read"),
+		semconv.URLTemplateKey.String("/api/v1/announcements/{announcementId}:markRead"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3277,7 +3277,7 @@ func (c *Client) sendReadAnnouncement(ctx context.Context, params ReadAnnounceme
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/read"
+	pathParts[2] = ":markRead"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -3358,7 +3358,7 @@ func (c *Client) sendReadAnnouncement(ctx context.Context, params ReadAnnounceme
 // clients and by browser prefetching, either of which would consume the credential before the
 // recipient opened it.
 //
-// POST /api/v1/credentials/{ticketId}/reveal
+// POST /api/v1/credentials/{ticketId}:reveal
 func (c *Client) RevealCredential(ctx context.Context, params RevealCredentialParams) (*RevealedCredentialResource, error) {
 	res, err := c.sendRevealCredential(ctx, params)
 	return res, err
@@ -3368,7 +3368,7 @@ func (c *Client) sendRevealCredential(ctx context.Context, params RevealCredenti
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("reveal-credential"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/credentials/{ticketId}/reveal"),
+		semconv.URLTemplateKey.String("/api/v1/credentials/{ticketId}:reveal"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3421,7 +3421,7 @@ func (c *Client) sendRevealCredential(ctx context.Context, params RevealCredenti
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/reveal"
+	pathParts[2] = ":reveal"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -3619,7 +3619,7 @@ func (c *Client) sendSendEmailOverrideCode(ctx context.Context) (res *EmailOverr
 //
 // Unarchiving one that is not archived succeeds and changes nothing.
 //
-// DELETE /api/v1/notifications/{notificationId}/archive
+// POST /api/v1/notifications/{notificationId}:unarchive
 func (c *Client) UnarchiveNotification(ctx context.Context, params UnarchiveNotificationParams) (*NotificationResource, error) {
 	res, err := c.sendUnarchiveNotification(ctx, params)
 	return res, err
@@ -3628,8 +3628,8 @@ func (c *Client) UnarchiveNotification(ctx context.Context, params UnarchiveNoti
 func (c *Client) sendUnarchiveNotification(ctx context.Context, params UnarchiveNotificationParams) (res *NotificationResource, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("unarchive-notification"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/notifications/{notificationId}/archive"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/notifications/{notificationId}:unarchive"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3682,11 +3682,11 @@ func (c *Client) sendUnarchiveNotification(ctx context.Context, params Unarchive
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/archive"
+	pathParts[2] = ":unarchive"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
+	r, err := ht.NewRequest(ctx, "POST", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
@@ -4214,7 +4214,7 @@ func (c *Client) sendUpdateUserChannel(ctx context.Context, request *UpdateChann
 // A channel that fails verification is not marked verified and continues to be skipped. The reason is
 // reported in `last_error`; it is the provider's own wording and is not translated.
 //
-// POST /api/v1/channels/{channelId}/verify
+// POST /api/v1/channels/{channelId}:verify
 func (c *Client) VerifyUserChannel(ctx context.Context, params VerifyUserChannelParams) (*ChannelResource, error) {
 	res, err := c.sendVerifyUserChannel(ctx, params)
 	return res, err
@@ -4224,7 +4224,7 @@ func (c *Client) sendVerifyUserChannel(ctx context.Context, params VerifyUserCha
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("verify-user-channel"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/channels/{channelId}/verify"),
+		semconv.URLTemplateKey.String("/api/v1/channels/{channelId}:verify"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -4277,7 +4277,7 @@ func (c *Client) sendVerifyUserChannel(ctx context.Context, params VerifyUserCha
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/verify"
+	pathParts[2] = ":verify"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"

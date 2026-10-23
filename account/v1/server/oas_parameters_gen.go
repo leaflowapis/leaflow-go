@@ -946,3 +946,62 @@ func decodePreviewInvitationByTokenParams(args [0]string, argsEscaped bool, r *h
 	}
 	return params, nil
 }
+
+// RequestAccountDeletionParams is parameters of request-account-deletion operation.
+type RequestAccountDeletionParams struct {
+	// Must be true. Confirms that any remaining balance and prepaid benefits are forfeited when the
+	// deletion is carried out.
+	AcknowledgeForfeiture bool
+}
+
+func unpackRequestAccountDeletionParams(packed middleware.Parameters) (params RequestAccountDeletionParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "acknowledge_forfeiture",
+			In:   "query",
+		}
+		params.AcknowledgeForfeiture = packed[key].(bool)
+	}
+	return params
+}
+
+func decodeRequestAccountDeletionParams(args [0]string, argsEscaped bool, r *http.Request) (params RequestAccountDeletionParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: acknowledge_forfeiture.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "acknowledge_forfeiture",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToBool(val)
+				if err != nil {
+					return err
+				}
+
+				params.AcknowledgeForfeiture = c
+				return nil
+			}); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "acknowledge_forfeiture",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}

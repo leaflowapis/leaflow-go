@@ -95,7 +95,7 @@ type Invoker interface {
 	// A temporary measure; the key may be enabled again at any time. Use revocation to invalidate it
 	// permanently.
 	//
-	// POST /api/v1/keys/{keyId}/disable
+	// POST /api/v1/keys/{keyId}:disable
 	DisableAPIKey(ctx context.Context, params DisableAPIKeyParams) (DisableAPIKeyRes, error)
 	// EnableAPIKey invokes enable-api-key operation.
 	//
@@ -103,7 +103,7 @@ type Invoker interface {
 	// because its project is suspended answers `API_KEY_PROJECT_SUSPENDED` with `suspended` set to true;
 	// the latter requires the project to be restored first.
 	//
-	// POST /api/v1/keys/{keyId}/enable
+	// POST /api/v1/keys/{keyId}:enable
 	EnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (EnableAPIKeyRes, error)
 	// GenerateContent invokes generate-content operation.
 	//
@@ -194,7 +194,8 @@ type Invoker interface {
 	// and the request body is forwarded upstream unchanged.
 	//
 	// Canopy returns no amounts: each model's `billing` names the Billing plan and the rate dimensions its
-	// token usage is priced at. Read the rates from Billing with `search-prices` and `search-rates`.
+	// token usage is priced at. Read the rates from the `rates` of the plan's prices in Billing's
+	// `search-prices`.
 	//
 	// GET /api/v1/models
 	ListModels(ctx context.Context) (ListModelsRes, error)
@@ -233,7 +234,7 @@ type Invoker interface {
 	//
 	// Use disabling for a temporary measure.
 	//
-	// POST /api/v1/keys/{keyId}/revoke
+	// POST /api/v1/keys/{keyId}:revoke
 	RevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (RevokeAPIKeyRes, error)
 	// StreamGenerateContent invokes stream-generate-content operation.
 	//
@@ -1191,7 +1192,7 @@ func (c *Client) sendDeleteResponse(ctx context.Context, params DeleteResponsePa
 // A temporary measure; the key may be enabled again at any time. Use revocation to invalidate it
 // permanently.
 //
-// POST /api/v1/keys/{keyId}/disable
+// POST /api/v1/keys/{keyId}:disable
 func (c *Client) DisableAPIKey(ctx context.Context, params DisableAPIKeyParams) (DisableAPIKeyRes, error) {
 	res, err := c.sendDisableAPIKey(ctx, params)
 	return res, err
@@ -1201,7 +1202,7 @@ func (c *Client) sendDisableAPIKey(ctx context.Context, params DisableAPIKeyPara
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("disable-api-key"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/keys/{keyId}/disable"),
+		semconv.URLTemplateKey.String("/api/v1/keys/{keyId}:disable"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1254,7 +1255,7 @@ func (c *Client) sendDisableAPIKey(ctx context.Context, params DisableAPIKeyPara
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/disable"
+	pathParts[2] = ":disable"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -1325,7 +1326,7 @@ func (c *Client) sendDisableAPIKey(ctx context.Context, params DisableAPIKeyPara
 // because its project is suspended answers `API_KEY_PROJECT_SUSPENDED` with `suspended` set to true;
 // the latter requires the project to be restored first.
 //
-// POST /api/v1/keys/{keyId}/enable
+// POST /api/v1/keys/{keyId}:enable
 func (c *Client) EnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (EnableAPIKeyRes, error) {
 	res, err := c.sendEnableAPIKey(ctx, params)
 	return res, err
@@ -1335,7 +1336,7 @@ func (c *Client) sendEnableAPIKey(ctx context.Context, params EnableAPIKeyParams
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("enable-api-key"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/keys/{keyId}/enable"),
+		semconv.URLTemplateKey.String("/api/v1/keys/{keyId}:enable"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1388,7 +1389,7 @@ func (c *Client) sendEnableAPIKey(ctx context.Context, params EnableAPIKeyParams
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/enable"
+	pathParts[2] = ":enable"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -3103,7 +3104,8 @@ func (c *Client) sendListInferenceModels(ctx context.Context) (res ListInference
 // and the request body is forwarded upstream unchanged.
 //
 // Canopy returns no amounts: each model's `billing` names the Billing plan and the rate dimensions its
-// token usage is priced at. Read the rates from Billing with `search-prices` and `search-rates`.
+// token usage is priced at. Read the rates from the `rates` of the plan's prices in Billing's
+// `search-prices`.
 //
 // GET /api/v1/models
 func (c *Client) ListModels(ctx context.Context) (ListModelsRes, error) {
@@ -3887,7 +3889,7 @@ func (c *Client) sendListUsageByModel(ctx context.Context, params ListUsageByMod
 //
 // Use disabling for a temporary measure.
 //
-// POST /api/v1/keys/{keyId}/revoke
+// POST /api/v1/keys/{keyId}:revoke
 func (c *Client) RevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (RevokeAPIKeyRes, error) {
 	res, err := c.sendRevokeAPIKey(ctx, params)
 	return res, err
@@ -3897,7 +3899,7 @@ func (c *Client) sendRevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("revoke-api-key"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/keys/{keyId}/revoke"),
+		semconv.URLTemplateKey.String("/api/v1/keys/{keyId}:revoke"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3950,7 +3952,7 @@ func (c *Client) sendRevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/revoke"
+	pathParts[2] = ":revoke"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"

@@ -195,7 +195,7 @@ func (UnimplementedHandler) SetRecordSet(ctx context.Context, req *SetRecordSetR
 // A failed check returns 200, not an error. The outcome is reported in `last_verify_error`: the
 // request itself succeeded, and the answer it obtained is that the credential is no longer usable.
 //
-// POST /api/v1/credentials/{credentialId}/verification
+// POST /api/v1/credentials/{credentialId}:verify
 func (UnimplementedHandler) VerifyCredential(ctx context.Context, params VerifyCredentialParams) (r *CredentialResource, _ error) {
 	return r, ht.ErrNotImplemented
 }

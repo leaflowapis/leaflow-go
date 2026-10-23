@@ -2437,14 +2437,14 @@ func (s *Server) handleSetRecordSetRequest(args [3]string, argsEscaped bool, w h
 // A failed check returns 200, not an error. The outcome is reported in `last_verify_error`: the
 // request itself succeeded, and the answer it obtained is that the credential is no longer usable.
 //
-// POST /api/v1/credentials/{credentialId}/verification
+// POST /api/v1/credentials/{credentialId}:verify
 func (s *Server) handleVerifyCredentialRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("verify-credential"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/credentials/{credentialId}/verification"),
+		semconv.HTTPRouteKey.String("/api/v1/credentials/{credentialId}:verify"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)

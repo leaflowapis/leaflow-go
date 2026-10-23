@@ -40,14 +40,14 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 // A closed ticket can be rated once; see `POST /api/v1/tickets/{ticketId}/satisfaction`. Posting a
 // further message reopens it.
 //
-// POST /api/v1/tickets/{ticketId}/close
+// POST /api/v1/tickets/{ticketId}:close
 func (s *Server) handleCloseTicketRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("close-ticket"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/tickets/{ticketId}/close"),
+		semconv.HTTPRouteKey.String("/api/v1/tickets/{ticketId}:close"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)

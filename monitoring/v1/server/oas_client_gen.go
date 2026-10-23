@@ -34,7 +34,7 @@ type Invoker interface {
 	// The incident is also marked as acknowledged in the monitoring system, so that other channels can see
 	// it already has an owner.
 	//
-	// POST /api/v1/incidents/{incidentId}/acknowledge
+	// POST /api/v1/incidents/{incidentId}:acknowledge
 	AcknowledgeIncident(ctx context.Context, request *AcknowledgeIncidentRequestBody, params AcknowledgeIncidentParams) (*IncidentResource, error)
 	// AddIncidentComment invokes add-incident-comment operation.
 	//
@@ -56,7 +56,7 @@ type Invoker interface {
 	// Cancelled rather than deleted, so that readers who saw the announcement have an explanation.
 	// Maintenance that has already started cannot be cancelled; finish it early instead.
 	//
-	// POST /api/v1/status-page/maintenances/{maintenanceId}/cancel
+	// POST /api/v1/status-page/maintenances/{maintenanceId}:cancel
 	CancelStatusPageMaintenance(ctx context.Context, params CancelStatusPageMaintenanceParams) (*StatusPageMaintenanceResource, error)
 	// CloseIncident invokes close-incident operation.
 	//
@@ -64,14 +64,14 @@ type Invoker interface {
 	// of the incident itself. An incident that has not recovered may still be closed as an accepted risk,
 	// and remains unrecovered in the monitoring system.
 	//
-	// POST /api/v1/incidents/{incidentId}/close
+	// POST /api/v1/incidents/{incidentId}:close
 	CloseIncident(ctx context.Context, request *CloseIncidentRequestBody, params CloseIncidentParams) (*IncidentResource, error)
 	// CompleteStatusPageMaintenance invokes complete-status-page-maintenance operation.
 	//
 	// Optional: maintenance finishes on its own at the scheduled end time. Use this endpoint when the work
 	// is done ahead of schedule; the affected components return to operational immediately.
 	//
-	// POST /api/v1/status-page/maintenances/{maintenanceId}/complete
+	// POST /api/v1/status-page/maintenances/{maintenanceId}:complete
 	CompleteStatusPageMaintenance(ctx context.Context, params CompleteStatusPageMaintenanceParams) (*StatusPageMaintenanceResource, error)
 	// CreateStatusPageComponent invokes create-status-page-component operation.
 	//
@@ -155,7 +155,7 @@ type Invoker interface {
 	// Reversible: the monitored host is retained, only collection stops, and history is unaffected.
 	// Enrolling again resumes collection. To remove the history as well, use DELETE.
 	//
-	// POST /api/v1/servers/{serverId}/disable
+	// POST /api/v1/servers/{serverId}:disable
 	DisableServerMonitoring(ctx context.Context, params DisableServerMonitoringParams) error
 	// EnableServerMonitoring invokes enable-server-monitoring operation.
 	//
@@ -502,14 +502,14 @@ type Invoker interface {
 	//
 	// Reopen a closed incident.
 	//
-	// POST /api/v1/incidents/{incidentId}/reopen
+	// POST /api/v1/incidents/{incidentId}:reopen
 	ReopenIncident(ctx context.Context, params ReopenIncidentParams) (*IncidentResource, error)
 	// RotateAgentPsk invokes rotate-agent-psk operation.
 	//
 	// The agent configuration must be updated to match, otherwise the machine loses contact immediately.
 	// The new key is likewise returned in clear text only in this response.
 	//
-	// POST /api/v1/servers/{serverId}/psk
+	// POST /api/v1/servers/{serverId}:rotatePsk
 	RotateAgentPsk(ctx context.Context, params RotateAgentPskParams) (*EnrollmentResource, error)
 	// ScheduleStatusPageMaintenance invokes schedule-status-page-maintenance operation.
 	//
@@ -599,7 +599,7 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 // The incident is also marked as acknowledged in the monitoring system, so that other channels can see
 // it already has an owner.
 //
-// POST /api/v1/incidents/{incidentId}/acknowledge
+// POST /api/v1/incidents/{incidentId}:acknowledge
 func (c *Client) AcknowledgeIncident(ctx context.Context, request *AcknowledgeIncidentRequestBody, params AcknowledgeIncidentParams) (*IncidentResource, error) {
 	res, err := c.sendAcknowledgeIncident(ctx, request, params)
 	return res, err
@@ -618,7 +618,7 @@ func (c *Client) sendAcknowledgeIncident(ctx context.Context, request *Acknowled
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("acknowledge-incident"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/incidents/{incidentId}/acknowledge"),
+		semconv.URLTemplateKey.String("/api/v1/incidents/{incidentId}:acknowledge"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -671,7 +671,7 @@ func (c *Client) sendAcknowledgeIncident(ctx context.Context, request *Acknowled
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/acknowledge"
+	pathParts[2] = ":acknowledge"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -1035,7 +1035,7 @@ func (c *Client) sendAssignIncident(ctx context.Context, request *AssignIncident
 // Cancelled rather than deleted, so that readers who saw the announcement have an explanation.
 // Maintenance that has already started cannot be cancelled; finish it early instead.
 //
-// POST /api/v1/status-page/maintenances/{maintenanceId}/cancel
+// POST /api/v1/status-page/maintenances/{maintenanceId}:cancel
 func (c *Client) CancelStatusPageMaintenance(ctx context.Context, params CancelStatusPageMaintenanceParams) (*StatusPageMaintenanceResource, error) {
 	res, err := c.sendCancelStatusPageMaintenance(ctx, params)
 	return res, err
@@ -1045,7 +1045,7 @@ func (c *Client) sendCancelStatusPageMaintenance(ctx context.Context, params Can
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-status-page-maintenance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/status-page/maintenances/{maintenanceId}/cancel"),
+		semconv.URLTemplateKey.String("/api/v1/status-page/maintenances/{maintenanceId}:cancel"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1098,7 +1098,7 @@ func (c *Client) sendCancelStatusPageMaintenance(ctx context.Context, params Can
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/cancel"
+	pathParts[2] = ":cancel"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -1169,7 +1169,7 @@ func (c *Client) sendCancelStatusPageMaintenance(ctx context.Context, params Can
 // of the incident itself. An incident that has not recovered may still be closed as an accepted risk,
 // and remains unrecovered in the monitoring system.
 //
-// POST /api/v1/incidents/{incidentId}/close
+// POST /api/v1/incidents/{incidentId}:close
 func (c *Client) CloseIncident(ctx context.Context, request *CloseIncidentRequestBody, params CloseIncidentParams) (*IncidentResource, error) {
 	res, err := c.sendCloseIncident(ctx, request, params)
 	return res, err
@@ -1188,7 +1188,7 @@ func (c *Client) sendCloseIncident(ctx context.Context, request *CloseIncidentRe
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("close-incident"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/incidents/{incidentId}/close"),
+		semconv.URLTemplateKey.String("/api/v1/incidents/{incidentId}:close"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1241,7 +1241,7 @@ func (c *Client) sendCloseIncident(ctx context.Context, request *CloseIncidentRe
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/close"
+	pathParts[2] = ":close"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -1314,7 +1314,7 @@ func (c *Client) sendCloseIncident(ctx context.Context, request *CloseIncidentRe
 // Optional: maintenance finishes on its own at the scheduled end time. Use this endpoint when the work
 // is done ahead of schedule; the affected components return to operational immediately.
 //
-// POST /api/v1/status-page/maintenances/{maintenanceId}/complete
+// POST /api/v1/status-page/maintenances/{maintenanceId}:complete
 func (c *Client) CompleteStatusPageMaintenance(ctx context.Context, params CompleteStatusPageMaintenanceParams) (*StatusPageMaintenanceResource, error) {
 	res, err := c.sendCompleteStatusPageMaintenance(ctx, params)
 	return res, err
@@ -1324,7 +1324,7 @@ func (c *Client) sendCompleteStatusPageMaintenance(ctx context.Context, params C
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("complete-status-page-maintenance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/status-page/maintenances/{maintenanceId}/complete"),
+		semconv.URLTemplateKey.String("/api/v1/status-page/maintenances/{maintenanceId}:complete"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1377,7 +1377,7 @@ func (c *Client) sendCompleteStatusPageMaintenance(ctx context.Context, params C
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/complete"
+	pathParts[2] = ":complete"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -2852,7 +2852,7 @@ func (c *Client) sendDeleteWebCheck(ctx context.Context, params DeleteWebCheckPa
 // Reversible: the monitored host is retained, only collection stops, and history is unaffected.
 // Enrolling again resumes collection. To remove the history as well, use DELETE.
 //
-// POST /api/v1/servers/{serverId}/disable
+// POST /api/v1/servers/{serverId}:disable
 func (c *Client) DisableServerMonitoring(ctx context.Context, params DisableServerMonitoringParams) error {
 	_, err := c.sendDisableServerMonitoring(ctx, params)
 	return err
@@ -2862,7 +2862,7 @@ func (c *Client) sendDisableServerMonitoring(ctx context.Context, params Disable
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("disable-server-monitoring"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/servers/{serverId}/disable"),
+		semconv.URLTemplateKey.String("/api/v1/servers/{serverId}:disable"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2915,7 +2915,7 @@ func (c *Client) sendDisableServerMonitoring(ctx context.Context, params Disable
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/disable"
+	pathParts[2] = ":disable"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -9007,7 +9007,7 @@ func (c *Client) sendPutWebCheck(ctx context.Context, request *PutWebCheckReques
 //
 // Reopen a closed incident.
 //
-// POST /api/v1/incidents/{incidentId}/reopen
+// POST /api/v1/incidents/{incidentId}:reopen
 func (c *Client) ReopenIncident(ctx context.Context, params ReopenIncidentParams) (*IncidentResource, error) {
 	res, err := c.sendReopenIncident(ctx, params)
 	return res, err
@@ -9017,7 +9017,7 @@ func (c *Client) sendReopenIncident(ctx context.Context, params ReopenIncidentPa
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("reopen-incident"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/incidents/{incidentId}/reopen"),
+		semconv.URLTemplateKey.String("/api/v1/incidents/{incidentId}:reopen"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -9070,7 +9070,7 @@ func (c *Client) sendReopenIncident(ctx context.Context, params ReopenIncidentPa
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/reopen"
+	pathParts[2] = ":reopen"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -9140,7 +9140,7 @@ func (c *Client) sendReopenIncident(ctx context.Context, params ReopenIncidentPa
 // The agent configuration must be updated to match, otherwise the machine loses contact immediately.
 // The new key is likewise returned in clear text only in this response.
 //
-// POST /api/v1/servers/{serverId}/psk
+// POST /api/v1/servers/{serverId}:rotatePsk
 func (c *Client) RotateAgentPsk(ctx context.Context, params RotateAgentPskParams) (*EnrollmentResource, error) {
 	res, err := c.sendRotateAgentPsk(ctx, params)
 	return res, err
@@ -9150,7 +9150,7 @@ func (c *Client) sendRotateAgentPsk(ctx context.Context, params RotateAgentPskPa
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rotate-agent-psk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/servers/{serverId}/psk"),
+		semconv.URLTemplateKey.String("/api/v1/servers/{serverId}:rotatePsk"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -9203,7 +9203,7 @@ func (c *Client) sendRotateAgentPsk(ctx context.Context, params RotateAgentPskPa
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/psk"
+	pathParts[2] = ":rotatePsk"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"

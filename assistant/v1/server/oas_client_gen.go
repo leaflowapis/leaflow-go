@@ -35,7 +35,7 @@ type Invoker interface {
 	// answered also succeeds: another tab may have answered first, or the auto-answer window may have
 	// passed, and either way the turn has continued.
 	//
-	// POST /api/v1/threads/{thread}/items/{item}/answer
+	// POST /api/v1/threads/{thread}/items/{item}:answer
 	AnswerQuestion(ctx context.Context, request *AnswerQuestionRequestBody, params AnswerQuestionParams) error
 	// BeginWeixinLogin invokes begin-weixin-login operation.
 	//
@@ -50,13 +50,13 @@ type Invoker interface {
 	// Stops the run in progress. The conversation is told the run was cancelled. Succeeds when nothing is
 	// running.
 	//
-	// POST /api/v1/tasks/{task}/cancel
+	// POST /api/v1/tasks/{task}:cancel
 	CancelTaskRun(ctx context.Context, params CancelTaskRunParams) (*TaskResource, error)
 	// CancelUpload invokes cancel-upload operation.
 	//
 	// Cancel upload.
 	//
-	// POST /api/v1/uploads/{upload}/cancel
+	// POST /api/v1/uploads/{upload}:cancel
 	CancelUpload(ctx context.Context, params CancelUploadParams) error
 	// CheckSender invokes check-sender operation.
 	//
@@ -65,7 +65,7 @@ type Invoker interface {
 	// binding-code rule cannot be tested this way — whether something is a binding code depends on what
 	// the sender actually wrote.
 	//
-	// GET /api/v1/channels/{channel}/sender-check
+	// GET /api/v1/channels/{channel}:checkSender
 	CheckSender(ctx context.Context, params CheckSenderParams) (*SenderCheckResource, error)
 	// CompactThread invokes compact-thread operation.
 	//
@@ -76,13 +76,13 @@ type Invoker interface {
 	// Fails with 409 and code THREAD_RUNNING while a turn is running, and with 409 and code
 	// NOTHING_TO_COMPACT when there is no history to summarize.
 	//
-	// POST /api/v1/threads/{thread}/compact
+	// POST /api/v1/threads/{thread}:compact
 	CompactThread(ctx context.Context, params CompactThreadParams) (*TurnStartedResponseBody, error)
 	// CompleteUpload invokes complete-upload operation.
 	//
 	// Complete upload.
 	//
-	// POST /api/v1/uploads/{upload}/complete
+	// POST /api/v1/uploads/{upload}:complete
 	CompleteUpload(ctx context.Context, request *CompleteUploadRequestBody, params CompleteUploadParams) (*UploadedResource, error)
 	// CreateBindingCode invokes create-binding-code operation.
 	//
@@ -330,7 +330,7 @@ type Invoker interface {
 	// Succeeds when nothing is running, because pressing stop races with the turn finishing on its own.
 	// Available while the project is suspended or being cleaned up.
 	//
-	// POST /api/v1/threads/{thread}/interrupt
+	// POST /api/v1/threads/{thread}:interrupt
 	InterruptThread(ctx context.Context, params InterruptThreadParams) error
 	// ListBindings invokes list-bindings operation.
 	//
@@ -450,14 +450,14 @@ type Invoker interface {
 	//
 	// Clears `unread` until the assistant replies again.
 	//
-	// POST /api/v1/threads/{thread}/read
+	// POST /api/v1/threads/{thread}:markRead
 	MarkThreadRead(ctx context.Context, params MarkThreadReadParams) error
 	// MoveFolder invokes move-folder operation.
 	//
 	// Places the folder before `beforeFolderId`, or last when it is null. The inbox stays first. Fails
 	// with 409 and code ORDER_CHANGED when `expectedVersion` is stale; read the folders again and retry.
 	//
-	// POST /api/v1/folders/{folder}/move
+	// POST /api/v1/folders/{folder}:move
 	MoveFolder(ctx context.Context, request *MoveFolderRequestBody, params MoveFolderParams) (*FolderResource, error)
 	// OpenRealtime invokes open-realtime operation.
 	//
@@ -471,7 +471,7 @@ type Invoker interface {
 	//
 	// Stops future runs from its trigger. A run in progress continues. Pausing a paused task succeeds.
 	//
-	// POST /api/v1/tasks/{task}/pause
+	// POST /api/v1/tasks/{task}:pause
 	PauseTask(ctx context.Context, params PauseTaskParams) (*TaskResource, error)
 	// PlaceThread invokes place-thread operation.
 	//
@@ -505,7 +505,7 @@ type Invoker interface {
 	// Lets its trigger start runs again. Missed runs within `catchupSeconds` are started. Resuming an
 	// active task succeeds.
 	//
-	// POST /api/v1/tasks/{task}/resume
+	// POST /api/v1/tasks/{task}:resume
 	ResumeTask(ctx context.Context, params ResumeTaskParams) (*TaskResource, error)
 	// ResumeThread invokes resume-thread operation.
 	//
@@ -514,7 +514,7 @@ type Invoker interface {
 	//
 	// Fails with 409 and code THREAD_RUNNING while a turn is running.
 	//
-	// POST /api/v1/threads/{thread}/resume
+	// POST /api/v1/threads/{thread}:resume
 	ResumeThread(ctx context.Context, request *ResumeThreadRequestBody, params ResumeThreadParams) (*TurnStartedResponseBody, error)
 	// RevertThread invokes revert-thread operation.
 	//
@@ -522,7 +522,7 @@ type Invoker interface {
 	// `reverted` and are left out of later model requests; ordinals are not renumbered. Executed tools and
 	// external changes are not undone. Returns how many items were reverted.
 	//
-	// POST /api/v1/threads/{thread}/revert
+	// POST /api/v1/threads/{thread}:revert
 	RevertThread(ctx context.Context, request *RevertRequestBody, params RevertThreadParams) (*RevertedCountResponseBody, error)
 	// RotateChannelSecret invokes rotate-channel-secret operation.
 	//
@@ -532,14 +532,14 @@ type Invoker interface {
 	// returned in this response only and cannot be retrieved again. For a `supplied` platform you must
 	// pass the new secret from that platform's own console.
 	//
-	// POST /api/v1/channels/{channel}/secret
+	// POST /api/v1/channels/{channel}:rotateSecret
 	RotateChannelSecret(ctx context.Context, request OptRotateSecretRequestBody, params RotateChannelSecretParams) (*WebhookSecretResponseBody, error)
 	// RunTask invokes run-task operation.
 	//
 	// Starts a run immediately, outside its trigger. Fails with 409 and code TASK_RUNNING when a run is
 	// already in progress and the overlap policy is `skip`.
 	//
-	// POST /api/v1/tasks/{task}/run
+	// POST /api/v1/tasks/{task}:run
 	RunTask(ctx context.Context, params RunTaskParams) (*TaskRunResource, error)
 	// SearchTasks invokes search-tasks operation.
 	//
@@ -595,7 +595,7 @@ type Invoker interface {
 	// For when WeChat asks for an SMS or device code after the scan. The person who started the login gets
 	// that code on their own phone.
 	//
-	// POST /api/v1/weixin-logins/{login}/verify-code
+	// POST /api/v1/weixin-logins/{login}:verifyCode
 	SubmitWeixinVerifyCode(ctx context.Context, request *VerifyCodeRequestBody, params SubmitWeixinVerifyCodeParams) (*LoginResource, error)
 	// UpdateChannel invokes update-channel operation.
 	//
@@ -713,7 +713,7 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 // answered also succeeds: another tab may have answered first, or the auto-answer window may have
 // passed, and either way the turn has continued.
 //
-// POST /api/v1/threads/{thread}/items/{item}/answer
+// POST /api/v1/threads/{thread}/items/{item}:answer
 func (c *Client) AnswerQuestion(ctx context.Context, request *AnswerQuestionRequestBody, params AnswerQuestionParams) error {
 	_, err := c.sendAnswerQuestion(ctx, request, params)
 	return err
@@ -723,7 +723,7 @@ func (c *Client) sendAnswerQuestion(ctx context.Context, request *AnswerQuestion
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("answer-question"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/items/{item}/answer"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/items/{item}:answer"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -795,7 +795,7 @@ func (c *Client) sendAnswerQuestion(ctx context.Context, request *AnswerQuestion
 		}
 		pathParts[3] = encoded
 	}
-	pathParts[4] = "/answer"
+	pathParts[4] = ":answer"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -1002,7 +1002,7 @@ func (c *Client) sendBeginWeixinLogin(ctx context.Context, params BeginWeixinLog
 // Stops the run in progress. The conversation is told the run was cancelled. Succeeds when nothing is
 // running.
 //
-// POST /api/v1/tasks/{task}/cancel
+// POST /api/v1/tasks/{task}:cancel
 func (c *Client) CancelTaskRun(ctx context.Context, params CancelTaskRunParams) (*TaskResource, error) {
 	res, err := c.sendCancelTaskRun(ctx, params)
 	return res, err
@@ -1012,7 +1012,7 @@ func (c *Client) sendCancelTaskRun(ctx context.Context, params CancelTaskRunPara
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-task-run"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/tasks/{task}/cancel"),
+		semconv.URLTemplateKey.String("/api/v1/tasks/{task}:cancel"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1065,7 +1065,7 @@ func (c *Client) sendCancelTaskRun(ctx context.Context, params CancelTaskRunPara
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/cancel"
+	pathParts[2] = ":cancel"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -1134,7 +1134,7 @@ func (c *Client) sendCancelTaskRun(ctx context.Context, params CancelTaskRunPara
 //
 // Cancel upload.
 //
-// POST /api/v1/uploads/{upload}/cancel
+// POST /api/v1/uploads/{upload}:cancel
 func (c *Client) CancelUpload(ctx context.Context, params CancelUploadParams) error {
 	_, err := c.sendCancelUpload(ctx, params)
 	return err
@@ -1144,7 +1144,7 @@ func (c *Client) sendCancelUpload(ctx context.Context, params CancelUploadParams
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-upload"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/uploads/{upload}/cancel"),
+		semconv.URLTemplateKey.String("/api/v1/uploads/{upload}:cancel"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1197,7 +1197,7 @@ func (c *Client) sendCancelUpload(ctx context.Context, params CancelUploadParams
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/cancel"
+	pathParts[2] = ":cancel"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -1269,7 +1269,7 @@ func (c *Client) sendCancelUpload(ctx context.Context, params CancelUploadParams
 // binding-code rule cannot be tested this way — whether something is a binding code depends on what
 // the sender actually wrote.
 //
-// GET /api/v1/channels/{channel}/sender-check
+// GET /api/v1/channels/{channel}:checkSender
 func (c *Client) CheckSender(ctx context.Context, params CheckSenderParams) (*SenderCheckResource, error) {
 	res, err := c.sendCheckSender(ctx, params)
 	return res, err
@@ -1279,7 +1279,7 @@ func (c *Client) sendCheckSender(ctx context.Context, params CheckSenderParams) 
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("check-sender"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/channels/{channel}/sender-check"),
+		semconv.URLTemplateKey.String("/api/v1/channels/{channel}:checkSender"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1332,7 +1332,7 @@ func (c *Client) sendCheckSender(ctx context.Context, params CheckSenderParams) 
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/sender-check"
+	pathParts[2] = ":checkSender"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -1441,7 +1441,7 @@ func (c *Client) sendCheckSender(ctx context.Context, params CheckSenderParams) 
 // Fails with 409 and code THREAD_RUNNING while a turn is running, and with 409 and code
 // NOTHING_TO_COMPACT when there is no history to summarize.
 //
-// POST /api/v1/threads/{thread}/compact
+// POST /api/v1/threads/{thread}:compact
 func (c *Client) CompactThread(ctx context.Context, params CompactThreadParams) (*TurnStartedResponseBody, error) {
 	res, err := c.sendCompactThread(ctx, params)
 	return res, err
@@ -1451,7 +1451,7 @@ func (c *Client) sendCompactThread(ctx context.Context, params CompactThreadPara
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("compact-thread"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/compact"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}:compact"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1504,7 +1504,7 @@ func (c *Client) sendCompactThread(ctx context.Context, params CompactThreadPara
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/compact"
+	pathParts[2] = ":compact"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -1573,7 +1573,7 @@ func (c *Client) sendCompactThread(ctx context.Context, params CompactThreadPara
 //
 // Complete upload.
 //
-// POST /api/v1/uploads/{upload}/complete
+// POST /api/v1/uploads/{upload}:complete
 func (c *Client) CompleteUpload(ctx context.Context, request *CompleteUploadRequestBody, params CompleteUploadParams) (*UploadedResource, error) {
 	res, err := c.sendCompleteUpload(ctx, request, params)
 	return res, err
@@ -1583,7 +1583,7 @@ func (c *Client) sendCompleteUpload(ctx context.Context, request *CompleteUpload
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("complete-upload"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/uploads/{upload}/complete"),
+		semconv.URLTemplateKey.String("/api/v1/uploads/{upload}:complete"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1636,7 +1636,7 @@ func (c *Client) sendCompleteUpload(ctx context.Context, request *CompleteUpload
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/complete"
+	pathParts[2] = ":complete"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -5543,7 +5543,7 @@ func (c *Client) sendGetWeixinLogin(ctx context.Context, params GetWeixinLoginPa
 // Succeeds when nothing is running, because pressing stop races with the turn finishing on its own.
 // Available while the project is suspended or being cleaned up.
 //
-// POST /api/v1/threads/{thread}/interrupt
+// POST /api/v1/threads/{thread}:interrupt
 func (c *Client) InterruptThread(ctx context.Context, params InterruptThreadParams) error {
 	_, err := c.sendInterruptThread(ctx, params)
 	return err
@@ -5553,7 +5553,7 @@ func (c *Client) sendInterruptThread(ctx context.Context, params InterruptThread
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("interrupt-thread"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/interrupt"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}:interrupt"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5606,7 +5606,7 @@ func (c *Client) sendInterruptThread(ctx context.Context, params InterruptThread
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/interrupt"
+	pathParts[2] = ":interrupt"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -7562,7 +7562,7 @@ func (c *Client) sendListUploads(ctx context.Context) (res *UploadListResponseBo
 //
 // Clears `unread` until the assistant replies again.
 //
-// POST /api/v1/threads/{thread}/read
+// POST /api/v1/threads/{thread}:markRead
 func (c *Client) MarkThreadRead(ctx context.Context, params MarkThreadReadParams) error {
 	_, err := c.sendMarkThreadRead(ctx, params)
 	return err
@@ -7572,7 +7572,7 @@ func (c *Client) sendMarkThreadRead(ctx context.Context, params MarkThreadReadPa
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("mark-thread-read"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/read"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}:markRead"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -7625,7 +7625,7 @@ func (c *Client) sendMarkThreadRead(ctx context.Context, params MarkThreadReadPa
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/read"
+	pathParts[2] = ":markRead"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -7695,7 +7695,7 @@ func (c *Client) sendMarkThreadRead(ctx context.Context, params MarkThreadReadPa
 // Places the folder before `beforeFolderId`, or last when it is null. The inbox stays first. Fails
 // with 409 and code ORDER_CHANGED when `expectedVersion` is stale; read the folders again and retry.
 //
-// POST /api/v1/folders/{folder}/move
+// POST /api/v1/folders/{folder}:move
 func (c *Client) MoveFolder(ctx context.Context, request *MoveFolderRequestBody, params MoveFolderParams) (*FolderResource, error) {
 	res, err := c.sendMoveFolder(ctx, request, params)
 	return res, err
@@ -7714,7 +7714,7 @@ func (c *Client) sendMoveFolder(ctx context.Context, request *MoveFolderRequestB
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("move-folder"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/folders/{folder}/move"),
+		semconv.URLTemplateKey.String("/api/v1/folders/{folder}:move"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -7767,7 +7767,7 @@ func (c *Client) sendMoveFolder(ctx context.Context, request *MoveFolderRequestB
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/move"
+	pathParts[2] = ":move"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -7939,7 +7939,7 @@ func (c *Client) sendOpenRealtime(ctx context.Context, params OpenRealtimeParams
 //
 // Stops future runs from its trigger. A run in progress continues. Pausing a paused task succeeds.
 //
-// POST /api/v1/tasks/{task}/pause
+// POST /api/v1/tasks/{task}:pause
 func (c *Client) PauseTask(ctx context.Context, params PauseTaskParams) (*TaskResource, error) {
 	res, err := c.sendPauseTask(ctx, params)
 	return res, err
@@ -7949,7 +7949,7 @@ func (c *Client) sendPauseTask(ctx context.Context, params PauseTaskParams) (res
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("pause-task"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/tasks/{task}/pause"),
+		semconv.URLTemplateKey.String("/api/v1/tasks/{task}:pause"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -8002,7 +8002,7 @@ func (c *Client) sendPauseTask(ctx context.Context, params PauseTaskParams) (res
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/pause"
+	pathParts[2] = ":pause"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -8553,7 +8553,7 @@ func (c *Client) sendPutUploadPart(ctx context.Context, request PutUploadPartReq
 // Lets its trigger start runs again. Missed runs within `catchupSeconds` are started. Resuming an
 // active task succeeds.
 //
-// POST /api/v1/tasks/{task}/resume
+// POST /api/v1/tasks/{task}:resume
 func (c *Client) ResumeTask(ctx context.Context, params ResumeTaskParams) (*TaskResource, error) {
 	res, err := c.sendResumeTask(ctx, params)
 	return res, err
@@ -8563,7 +8563,7 @@ func (c *Client) sendResumeTask(ctx context.Context, params ResumeTaskParams) (r
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("resume-task"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/tasks/{task}/resume"),
+		semconv.URLTemplateKey.String("/api/v1/tasks/{task}:resume"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -8616,7 +8616,7 @@ func (c *Client) sendResumeTask(ctx context.Context, params ResumeTaskParams) (r
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/resume"
+	pathParts[2] = ":resume"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -8688,7 +8688,7 @@ func (c *Client) sendResumeTask(ctx context.Context, params ResumeTaskParams) (r
 //
 // Fails with 409 and code THREAD_RUNNING while a turn is running.
 //
-// POST /api/v1/threads/{thread}/resume
+// POST /api/v1/threads/{thread}:resume
 func (c *Client) ResumeThread(ctx context.Context, request *ResumeThreadRequestBody, params ResumeThreadParams) (*TurnStartedResponseBody, error) {
 	res, err := c.sendResumeThread(ctx, request, params)
 	return res, err
@@ -8707,7 +8707,7 @@ func (c *Client) sendResumeThread(ctx context.Context, request *ResumeThreadRequ
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("resume-thread"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/resume"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}:resume"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -8760,7 +8760,7 @@ func (c *Client) sendResumeThread(ctx context.Context, request *ResumeThreadRequ
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/resume"
+	pathParts[2] = ":resume"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -8834,7 +8834,7 @@ func (c *Client) sendResumeThread(ctx context.Context, request *ResumeThreadRequ
 // `reverted` and are left out of later model requests; ordinals are not renumbered. Executed tools and
 // external changes are not undone. Returns how many items were reverted.
 //
-// POST /api/v1/threads/{thread}/revert
+// POST /api/v1/threads/{thread}:revert
 func (c *Client) RevertThread(ctx context.Context, request *RevertRequestBody, params RevertThreadParams) (*RevertedCountResponseBody, error) {
 	res, err := c.sendRevertThread(ctx, request, params)
 	return res, err
@@ -8853,7 +8853,7 @@ func (c *Client) sendRevertThread(ctx context.Context, request *RevertRequestBod
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("revert-thread"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/revert"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}:revert"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -8906,7 +8906,7 @@ func (c *Client) sendRevertThread(ctx context.Context, request *RevertRequestBod
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/revert"
+	pathParts[2] = ":revert"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -8982,7 +8982,7 @@ func (c *Client) sendRevertThread(ctx context.Context, request *RevertRequestBod
 // returned in this response only and cannot be retrieved again. For a `supplied` platform you must
 // pass the new secret from that platform's own console.
 //
-// POST /api/v1/channels/{channel}/secret
+// POST /api/v1/channels/{channel}:rotateSecret
 func (c *Client) RotateChannelSecret(ctx context.Context, request OptRotateSecretRequestBody, params RotateChannelSecretParams) (*WebhookSecretResponseBody, error) {
 	res, err := c.sendRotateChannelSecret(ctx, request, params)
 	return res, err
@@ -8992,7 +8992,7 @@ func (c *Client) sendRotateChannelSecret(ctx context.Context, request OptRotateS
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rotate-channel-secret"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/channels/{channel}/secret"),
+		semconv.URLTemplateKey.String("/api/v1/channels/{channel}:rotateSecret"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -9045,7 +9045,7 @@ func (c *Client) sendRotateChannelSecret(ctx context.Context, request OptRotateS
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/secret"
+	pathParts[2] = ":rotateSecret"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -9118,7 +9118,7 @@ func (c *Client) sendRotateChannelSecret(ctx context.Context, request OptRotateS
 // Starts a run immediately, outside its trigger. Fails with 409 and code TASK_RUNNING when a run is
 // already in progress and the overlap policy is `skip`.
 //
-// POST /api/v1/tasks/{task}/run
+// POST /api/v1/tasks/{task}:run
 func (c *Client) RunTask(ctx context.Context, params RunTaskParams) (*TaskRunResource, error) {
 	res, err := c.sendRunTask(ctx, params)
 	return res, err
@@ -9128,7 +9128,7 @@ func (c *Client) sendRunTask(ctx context.Context, params RunTaskParams) (res *Ta
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("run-task"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/tasks/{task}/run"),
+		semconv.URLTemplateKey.String("/api/v1/tasks/{task}:run"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -9181,7 +9181,7 @@ func (c *Client) sendRunTask(ctx context.Context, params RunTaskParams) (res *Ta
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/run"
+	pathParts[2] = ":run"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -9961,7 +9961,7 @@ func (c *Client) sendSubmitToolResult(ctx context.Context, request *ToolResultRe
 // For when WeChat asks for an SMS or device code after the scan. The person who started the login gets
 // that code on their own phone.
 //
-// POST /api/v1/weixin-logins/{login}/verify-code
+// POST /api/v1/weixin-logins/{login}:verifyCode
 func (c *Client) SubmitWeixinVerifyCode(ctx context.Context, request *VerifyCodeRequestBody, params SubmitWeixinVerifyCodeParams) (*LoginResource, error) {
 	res, err := c.sendSubmitWeixinVerifyCode(ctx, request, params)
 	return res, err
@@ -9980,7 +9980,7 @@ func (c *Client) sendSubmitWeixinVerifyCode(ctx context.Context, request *Verify
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("submit-weixin-verify-code"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/weixin-logins/{login}/verify-code"),
+		semconv.URLTemplateKey.String("/api/v1/weixin-logins/{login}:verifyCode"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -10033,7 +10033,7 @@ func (c *Client) sendSubmitWeixinVerifyCode(ctx context.Context, request *Verify
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/verify-code"
+	pathParts[2] = ":verifyCode"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"

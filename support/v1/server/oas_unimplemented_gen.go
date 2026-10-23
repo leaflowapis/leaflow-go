@@ -20,7 +20,7 @@ var _ Handler = UnimplementedHandler{}
 // A closed ticket can be rated once; see `POST /api/v1/tickets/{ticketId}/satisfaction`. Posting a
 // further message reopens it.
 //
-// POST /api/v1/tickets/{ticketId}/close
+// POST /api/v1/tickets/{ticketId}:close
 func (UnimplementedHandler) CloseTicket(ctx context.Context, params CloseTicketParams) (r *TicketResource, _ error) {
 	return r, ht.ErrNotImplemented
 }

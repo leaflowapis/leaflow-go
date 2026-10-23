@@ -30,7 +30,7 @@ func (UnimplementedHandler) AcceptAgreements(ctx context.Context, req *AcceptCon
 //
 // No token is required; the invitation is addressed to the email address of the current account.
 //
-// POST /account/v1/me/invitations/{invitationId}/accept
+// POST /account/v1/me/invitations/{invitationId}:accept
 func (UnimplementedHandler) AcceptInvitation(ctx context.Context, params AcceptInvitationParams) (r *AcceptedInvitationResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -39,7 +39,7 @@ func (UnimplementedHandler) AcceptInvitation(ctx context.Context, params AcceptI
 //
 // A token that does not match, and an invitation that no longer stands, answer the same way.
 //
-// POST /account/v1/me/invitations/accept
+// POST /account/v1/me/invitations:accept
 func (UnimplementedHandler) AcceptInvitationByToken(ctx context.Context, req *AcceptInvitationByTokenRequestBody) (r *AcceptedInvitationResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -49,7 +49,7 @@ func (UnimplementedHandler) AcceptInvitationByToken(ctx context.Context, req *Ac
 // Returns the account to use. Cancelling when no deletion is open returns `state` `none`. Fails with
 // 409 `ACCOUNT_DELETION_NOT_CANCELLABLE` once `scheduled_at` has passed.
 //
-// DELETE /account/v1/me/deletion
+// POST /account/v1/me:undelete
 func (UnimplementedHandler) CancelAccountDeletion(ctx context.Context) (r *AccountDeletionResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -187,8 +187,8 @@ func (UnimplementedHandler) GetProjectSlugAvailability(ctx context.Context, para
 //
 // No token required.
 //
-// While `registration_mode` is not `OPEN`, `POST /account/v1/register` answers 403: `CLOSED` refuses
-// everyone, and `INVITE_ONLY` accepts only an email address holding a project invitation.
+// While `registration_mode` is not `OPEN`, `POST /account/v1/me:register` answers 403: `CLOSED`
+// refuses everyone, and `INVITE_ONLY` accepts only an email address holding a project invitation.
 // `project_creation_mode` behaves the same way, and `VERIFIED_ONLY` requires identity verification to
 // have completed.
 //
@@ -202,7 +202,7 @@ func (UnimplementedHandler) GetSettings(ctx context.Context) (r *SettingsResourc
 // ListAgreements implements list-agreements operation.
 //
 // No token required. Send the `type` and `version` of each one back unchanged to
-// `POST /account/v1/register`.
+// `POST /account/v1/me:register`.
 //
 // The array is empty while no agreement is in force, and registration then takes no `consents`.
 //
@@ -283,7 +283,7 @@ func (UnimplementedHandler) PreviewInvitationByToken(ctx context.Context, params
 // list again. An account that already exists answers 409, and one that has been deleted answers 410
 // `USER_DELETED`: the same sign-in cannot register again.
 //
-// POST /account/v1/register
+// POST /account/v1/me:register
 func (UnimplementedHandler) Register(ctx context.Context, req *RegisterRequestBody) (r *AccountResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -300,7 +300,7 @@ func (UnimplementedHandler) Register(ctx context.Context, req *RegisterRequestBo
 //   - Otherwise `state` becomes `scheduled`, and the account is deleted at `scheduled_at`, fifteen days
 //     after the request. The conditions are checked once more at that time.
 //
-// The deletion can be cancelled with `DELETE /account/v1/me/deletion` until `scheduled_at`, and not
+// The deletion can be cancelled with `POST /account/v1/me:undelete` until `scheduled_at`, and not
 // after. Once carried out it cannot be undone, and the same sign-in cannot register again. Any
 // remaining balance and prepaid benefits are forfeited, which `acknowledge_forfeiture` confirms.
 //
@@ -309,8 +309,8 @@ func (UnimplementedHandler) Register(ctx context.Context, req *RegisterRequestBo
 // caller signed in within the last `meta.max_age` seconds; sign in again with that `max_age` and
 // retry.
 //
-// POST /account/v1/me/deletion
-func (UnimplementedHandler) RequestAccountDeletion(ctx context.Context, req *RequestAccountDeletionRequestBody) (r *AccountDeletionResource, _ error) {
+// DELETE /account/v1/me
+func (UnimplementedHandler) RequestAccountDeletion(ctx context.Context, params RequestAccountDeletionParams) (r *AccountDeletionResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

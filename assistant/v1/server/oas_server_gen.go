@@ -14,7 +14,7 @@ type Handler interface {
 	// answered also succeeds: another tab may have answered first, or the auto-answer window may have
 	// passed, and either way the turn has continued.
 	//
-	// POST /api/v1/threads/{thread}/items/{item}/answer
+	// POST /api/v1/threads/{thread}/items/{item}:answer
 	AnswerQuestion(ctx context.Context, req *AnswerQuestionRequestBody, params AnswerQuestionParams) error
 	// BeginWeixinLogin implements begin-weixin-login operation.
 	//
@@ -29,13 +29,13 @@ type Handler interface {
 	// Stops the run in progress. The conversation is told the run was cancelled. Succeeds when nothing is
 	// running.
 	//
-	// POST /api/v1/tasks/{task}/cancel
+	// POST /api/v1/tasks/{task}:cancel
 	CancelTaskRun(ctx context.Context, params CancelTaskRunParams) (*TaskResource, error)
 	// CancelUpload implements cancel-upload operation.
 	//
 	// Cancel upload.
 	//
-	// POST /api/v1/uploads/{upload}/cancel
+	// POST /api/v1/uploads/{upload}:cancel
 	CancelUpload(ctx context.Context, params CancelUploadParams) error
 	// CheckSender implements check-sender operation.
 	//
@@ -44,7 +44,7 @@ type Handler interface {
 	// binding-code rule cannot be tested this way — whether something is a binding code depends on what
 	// the sender actually wrote.
 	//
-	// GET /api/v1/channels/{channel}/sender-check
+	// GET /api/v1/channels/{channel}:checkSender
 	CheckSender(ctx context.Context, params CheckSenderParams) (*SenderCheckResource, error)
 	// CompactThread implements compact-thread operation.
 	//
@@ -55,13 +55,13 @@ type Handler interface {
 	// Fails with 409 and code THREAD_RUNNING while a turn is running, and with 409 and code
 	// NOTHING_TO_COMPACT when there is no history to summarize.
 	//
-	// POST /api/v1/threads/{thread}/compact
+	// POST /api/v1/threads/{thread}:compact
 	CompactThread(ctx context.Context, params CompactThreadParams) (*TurnStartedResponseBody, error)
 	// CompleteUpload implements complete-upload operation.
 	//
 	// Complete upload.
 	//
-	// POST /api/v1/uploads/{upload}/complete
+	// POST /api/v1/uploads/{upload}:complete
 	CompleteUpload(ctx context.Context, req *CompleteUploadRequestBody, params CompleteUploadParams) (*UploadedResource, error)
 	// CreateBindingCode implements create-binding-code operation.
 	//
@@ -309,7 +309,7 @@ type Handler interface {
 	// Succeeds when nothing is running, because pressing stop races with the turn finishing on its own.
 	// Available while the project is suspended or being cleaned up.
 	//
-	// POST /api/v1/threads/{thread}/interrupt
+	// POST /api/v1/threads/{thread}:interrupt
 	InterruptThread(ctx context.Context, params InterruptThreadParams) error
 	// ListBindings implements list-bindings operation.
 	//
@@ -429,14 +429,14 @@ type Handler interface {
 	//
 	// Clears `unread` until the assistant replies again.
 	//
-	// POST /api/v1/threads/{thread}/read
+	// POST /api/v1/threads/{thread}:markRead
 	MarkThreadRead(ctx context.Context, params MarkThreadReadParams) error
 	// MoveFolder implements move-folder operation.
 	//
 	// Places the folder before `beforeFolderId`, or last when it is null. The inbox stays first. Fails
 	// with 409 and code ORDER_CHANGED when `expectedVersion` is stale; read the folders again and retry.
 	//
-	// POST /api/v1/folders/{folder}/move
+	// POST /api/v1/folders/{folder}:move
 	MoveFolder(ctx context.Context, req *MoveFolderRequestBody, params MoveFolderParams) (*FolderResource, error)
 	// OpenRealtime implements open-realtime operation.
 	//
@@ -450,7 +450,7 @@ type Handler interface {
 	//
 	// Stops future runs from its trigger. A run in progress continues. Pausing a paused task succeeds.
 	//
-	// POST /api/v1/tasks/{task}/pause
+	// POST /api/v1/tasks/{task}:pause
 	PauseTask(ctx context.Context, params PauseTaskParams) (*TaskResource, error)
 	// PlaceThread implements place-thread operation.
 	//
@@ -484,7 +484,7 @@ type Handler interface {
 	// Lets its trigger start runs again. Missed runs within `catchupSeconds` are started. Resuming an
 	// active task succeeds.
 	//
-	// POST /api/v1/tasks/{task}/resume
+	// POST /api/v1/tasks/{task}:resume
 	ResumeTask(ctx context.Context, params ResumeTaskParams) (*TaskResource, error)
 	// ResumeThread implements resume-thread operation.
 	//
@@ -493,7 +493,7 @@ type Handler interface {
 	//
 	// Fails with 409 and code THREAD_RUNNING while a turn is running.
 	//
-	// POST /api/v1/threads/{thread}/resume
+	// POST /api/v1/threads/{thread}:resume
 	ResumeThread(ctx context.Context, req *ResumeThreadRequestBody, params ResumeThreadParams) (*TurnStartedResponseBody, error)
 	// RevertThread implements revert-thread operation.
 	//
@@ -501,7 +501,7 @@ type Handler interface {
 	// `reverted` and are left out of later model requests; ordinals are not renumbered. Executed tools and
 	// external changes are not undone. Returns how many items were reverted.
 	//
-	// POST /api/v1/threads/{thread}/revert
+	// POST /api/v1/threads/{thread}:revert
 	RevertThread(ctx context.Context, req *RevertRequestBody, params RevertThreadParams) (*RevertedCountResponseBody, error)
 	// RotateChannelSecret implements rotate-channel-secret operation.
 	//
@@ -511,14 +511,14 @@ type Handler interface {
 	// returned in this response only and cannot be retrieved again. For a `supplied` platform you must
 	// pass the new secret from that platform's own console.
 	//
-	// POST /api/v1/channels/{channel}/secret
+	// POST /api/v1/channels/{channel}:rotateSecret
 	RotateChannelSecret(ctx context.Context, req OptRotateSecretRequestBody, params RotateChannelSecretParams) (*WebhookSecretResponseBody, error)
 	// RunTask implements run-task operation.
 	//
 	// Starts a run immediately, outside its trigger. Fails with 409 and code TASK_RUNNING when a run is
 	// already in progress and the overlap policy is `skip`.
 	//
-	// POST /api/v1/tasks/{task}/run
+	// POST /api/v1/tasks/{task}:run
 	RunTask(ctx context.Context, params RunTaskParams) (*TaskRunResource, error)
 	// SearchTasks implements search-tasks operation.
 	//
@@ -574,7 +574,7 @@ type Handler interface {
 	// For when WeChat asks for an SMS or device code after the scan. The person who started the login gets
 	// that code on their own phone.
 	//
-	// POST /api/v1/weixin-logins/{login}/verify-code
+	// POST /api/v1/weixin-logins/{login}:verifyCode
 	SubmitWeixinVerifyCode(ctx context.Context, req *VerifyCodeRequestBody, params SubmitWeixinVerifyCodeParams) (*LoginResource, error)
 	// UpdateChannel implements update-channel operation.
 	//

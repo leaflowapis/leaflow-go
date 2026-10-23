@@ -13,7 +13,7 @@ type Handler interface {
 	// The incident is also marked as acknowledged in the monitoring system, so that other channels can see
 	// it already has an owner.
 	//
-	// POST /api/v1/incidents/{incidentId}/acknowledge
+	// POST /api/v1/incidents/{incidentId}:acknowledge
 	AcknowledgeIncident(ctx context.Context, req *AcknowledgeIncidentRequestBody, params AcknowledgeIncidentParams) (*IncidentResource, error)
 	// AddIncidentComment implements add-incident-comment operation.
 	//
@@ -35,7 +35,7 @@ type Handler interface {
 	// Cancelled rather than deleted, so that readers who saw the announcement have an explanation.
 	// Maintenance that has already started cannot be cancelled; finish it early instead.
 	//
-	// POST /api/v1/status-page/maintenances/{maintenanceId}/cancel
+	// POST /api/v1/status-page/maintenances/{maintenanceId}:cancel
 	CancelStatusPageMaintenance(ctx context.Context, params CancelStatusPageMaintenanceParams) (*StatusPageMaintenanceResource, error)
 	// CloseIncident implements close-incident operation.
 	//
@@ -43,14 +43,14 @@ type Handler interface {
 	// of the incident itself. An incident that has not recovered may still be closed as an accepted risk,
 	// and remains unrecovered in the monitoring system.
 	//
-	// POST /api/v1/incidents/{incidentId}/close
+	// POST /api/v1/incidents/{incidentId}:close
 	CloseIncident(ctx context.Context, req *CloseIncidentRequestBody, params CloseIncidentParams) (*IncidentResource, error)
 	// CompleteStatusPageMaintenance implements complete-status-page-maintenance operation.
 	//
 	// Optional: maintenance finishes on its own at the scheduled end time. Use this endpoint when the work
 	// is done ahead of schedule; the affected components return to operational immediately.
 	//
-	// POST /api/v1/status-page/maintenances/{maintenanceId}/complete
+	// POST /api/v1/status-page/maintenances/{maintenanceId}:complete
 	CompleteStatusPageMaintenance(ctx context.Context, params CompleteStatusPageMaintenanceParams) (*StatusPageMaintenanceResource, error)
 	// CreateStatusPageComponent implements create-status-page-component operation.
 	//
@@ -134,7 +134,7 @@ type Handler interface {
 	// Reversible: the monitored host is retained, only collection stops, and history is unaffected.
 	// Enrolling again resumes collection. To remove the history as well, use DELETE.
 	//
-	// POST /api/v1/servers/{serverId}/disable
+	// POST /api/v1/servers/{serverId}:disable
 	DisableServerMonitoring(ctx context.Context, params DisableServerMonitoringParams) error
 	// EnableServerMonitoring implements enable-server-monitoring operation.
 	//
@@ -481,14 +481,14 @@ type Handler interface {
 	//
 	// Reopen a closed incident.
 	//
-	// POST /api/v1/incidents/{incidentId}/reopen
+	// POST /api/v1/incidents/{incidentId}:reopen
 	ReopenIncident(ctx context.Context, params ReopenIncidentParams) (*IncidentResource, error)
 	// RotateAgentPsk implements rotate-agent-psk operation.
 	//
 	// The agent configuration must be updated to match, otherwise the machine loses contact immediately.
 	// The new key is likewise returned in clear text only in this response.
 	//
-	// POST /api/v1/servers/{serverId}/psk
+	// POST /api/v1/servers/{serverId}:rotatePsk
 	RotateAgentPsk(ctx context.Context, params RotateAgentPskParams) (*EnrollmentResource, error)
 	// ScheduleStatusPageMaintenance implements schedule-status-page-maintenance operation.
 	//

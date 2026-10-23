@@ -53,10 +53,6 @@ type ListProductsRes interface {
 	listProductsRes()
 }
 
-type ListRatesRes interface {
-	listRatesRes()
-}
-
 type RenewSubscriptionRes interface {
 	renewSubscriptionRes()
 }

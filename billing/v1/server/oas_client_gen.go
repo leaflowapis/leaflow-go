@@ -46,7 +46,7 @@ type Invoker interface {
 	// cancellation. Refunds are previewed with `preview-order-refund`. Open to the owner of the order's
 	// billing account and to members of its project.
 	//
-	// POST /api/v1/orders/{orderId}/cancel
+	// POST /api/v1/orders/{orderId}:cancel
 	CancelOrder(ctx context.Context, request OptOrderCancel, params CancelOrderParams) (CancelOrderRes, error)
 	// CancelSubscription invokes cancel-subscription operation.
 	//
@@ -61,7 +61,7 @@ type Invoker interface {
 	// released together must be canceled together through create-cancellation, and pending or provisioning
 	// purchases through their order. Repeating the request while the cancellation is open returns it.
 	//
-	// POST /api/v1/subscriptions/{subscriptionId}/cancel
+	// POST /api/v1/subscriptions/{subscriptionId}:cancel
 	CancelSubscription(ctx context.Context, request *CancelSubscriptionRequest, params CancelSubscriptionParams) (*Cancellation, error)
 	// CancelTopUp invokes cancel-top-up operation.
 	//
@@ -74,7 +74,7 @@ type Invoker interface {
 	// naming the outcome, or while the gateway is processing the payment, with `status` `pending`; read
 	// the top-up again later.
 	//
-	// POST /api/v1/top-ups/{topUpId}/cancel
+	// POST /api/v1/top-ups/{topUpId}:cancel
 	CancelTopUp(ctx context.Context, params CancelTopUpParams) (CancelTopUpRes, error)
 	// ConfirmCheckoutSession invokes confirm-checkout-session operation.
 	//
@@ -92,7 +92,7 @@ type Invoker interface {
 	//
 	// Open to the owner of the session's billing account and to members of its project.
 	//
-	// POST /api/v1/checkout-sessions/{checkoutSessionId}/confirm
+	// POST /api/v1/checkout-sessions/{checkoutSessionId}:confirm
 	ConfirmCheckoutSession(ctx context.Context, request *CheckoutSessionConfirm, params ConfirmCheckoutSessionParams) (ConfirmCheckoutSessionRes, error)
 	// CreateBillingAccount invokes create-billing-account operation.
 	//
@@ -226,7 +226,7 @@ type Invoker interface {
 	// the purchase. An expired session is returned unchanged. Open to the owner of the session's billing
 	// account and to members of its project.
 	//
-	// POST /api/v1/checkout-sessions/{checkoutSessionId}/expire
+	// POST /api/v1/checkout-sessions/{checkoutSessionId}:expire
 	ExpireCheckoutSession(ctx context.Context, params ExpireCheckoutSessionParams) (ExpireCheckoutSessionRes, error)
 	// GetAccountBalance invokes get-account-balance operation.
 	//
@@ -342,7 +342,8 @@ type Invoker interface {
 	// GetQuote invokes get-quote operation.
 	//
 	// Calculates what a proposed purchase, a change of your subscriptions or their renewal would invoice
-	// now, and what each purchased or changed line renews at. Nothing is saved, reserved or redeemed.
+	// now, and what each purchased or changed line renews at, or what ending subscriptions would return.
+	// Nothing is saved, reserved, redeemed or canceled.
 	//
 	// With `billing_account_id`, the quote is for that billing account: its currency, account discounts,
 	// tax and funds apply, changes and renewals use the account currently paying for each subscription,
@@ -584,12 +585,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/assignments
 	ListProjectAssignments(ctx context.Context, params ListProjectAssignmentsParams) (*ProjectAssignmentList, error)
-	// ListRates invokes list-rates operation.
-	//
-	// Rules of a public rate card; contract cards are not readable here.
-	//
-	// GET /api/v1/rate-cards/{rateCardId}/rules
-	ListRates(ctx context.Context, params ListRatesParams) (ListRatesRes, error)
 	// ListRefunds invokes list-refunds operation.
 	//
 	// Newest first.
@@ -693,7 +688,7 @@ type Invoker interface {
 	// Open to the owner of the invoice's billing account and, for the invoice of an order of a project, to
 	// members of the project. Only the owner can pay with a saved `payment_method_id`.
 	//
-	// POST /api/v1/invoices/{invoiceId}/pay
+	// POST /api/v1/invoices/{invoiceId}:pay
 	PayInvoice(ctx context.Context, request OptPayInvoiceRequest, params PayInvoiceParams) (*PaymentResult, error)
 	// PayTogether invokes pay-together operation.
 	//
@@ -712,14 +707,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/payments
 	PayTogether(ctx context.Context, request *PayTogetherRequest) (*PaymentResult, error)
-	// PreviewCancellation invokes preview-cancellation operation.
-	//
-	// What creating the cancellation now would return, per subscription and in total. Nothing is canceled,
-	// ended or refunded. Open to the owner of the subscriptions' current billing account and to members of
-	// their project; refused for the same states as creating it.
-	//
-	// QUERY /api/v1/cancellations/preview
-	PreviewCancellation(ctx context.Context, request *CancellationPreviewRequest) (*CancellationRefundPreview, error)
 	// PreviewInvoicePayment invokes preview-invoice-payment operation.
 	//
 	// What paying this invoice now would take from credit grants, from the balance and, for the rest, from
@@ -730,7 +717,7 @@ type Invoker interface {
 	// Refused with the same errors as paying, except that insufficient funds are not an error here: they
 	// show as a `gateway_amount` above zero. Open to the same callers as paying.
 	//
-	// GET /api/v1/invoices/{invoiceId}/payment-preview
+	// GET /api/v1/invoices/{invoiceId}:previewPayment
 	PreviewInvoicePayment(ctx context.Context, params PreviewInvoicePaymentParams) (*PaymentPreview, error)
 	// PreviewOrderRefund invokes preview-order-refund operation.
 	//
@@ -738,7 +725,7 @@ type Invoker interface {
 	// Nothing is canceled or refunded. Open to the owner of the order's billing account and to members of
 	// its project.
 	//
-	// GET /api/v1/orders/{orderId}/refund-preview
+	// GET /api/v1/orders/{orderId}:previewRefund
 	PreviewOrderRefund(ctx context.Context, params PreviewOrderRefundParams) (*OrderRefundPreview, error)
 	// PreviewPayTogether invokes preview-pay-together operation.
 	//
@@ -747,7 +734,7 @@ type Invoker interface {
 	// created. Refused with the same errors as paying together, except that insufficient funds show as a
 	// `gateway_amount` above zero instead of an error.
 	//
-	// QUERY /api/v1/payments/preview
+	// QUERY /api/v1/payments:preview
 	PreviewPayTogether(ctx context.Context, request *PayTogetherRequest) (*PaymentPreview, error)
 	// PreviewWithdrawal invokes preview-withdrawal operation.
 	//
@@ -755,7 +742,7 @@ type Invoker interface {
 	// available balance. Nothing is created or reserved. Fails when a selected source has no refund route
 	// or its original processing cost is not yet known.
 	//
-	// QUERY /api/v1/withdrawals/preview
+	// QUERY /api/v1/withdrawals:preview
 	PreviewWithdrawal(ctx context.Context, request *WithdrawalPreviewRequest) (*WithdrawalPreview, error)
 	// RenewSubscription invokes renew-subscription operation.
 	//
@@ -772,33 +759,24 @@ type Invoker interface {
 	//
 	// Keep order_id and read the order after an unknown outcome; creating it again conflicts.
 	//
-	// POST /api/v1/subscriptions/{subscriptionId}/renew
+	// POST /api/v1/subscriptions/{subscriptionId}:renew
 	RenewSubscription(ctx context.Context, request *RenewRequest, params RenewSubscriptionParams) (RenewSubscriptionRes, error)
 	// ResumeBillingAccount invokes resume-billing-account operation.
 	//
 	// Resumes a billing account you suspended. Refused with `BILLING_ACCOUNT_SUSPENDED_BY_OPERATOR` when
 	// Leaflow suspended it. Does not create a resource.
 	//
-	// POST /api/v1/billing-accounts/{accountId}/resume
+	// POST /api/v1/billing-accounts/{accountId}:resume
 	ResumeBillingAccount(ctx context.Context, params ResumeBillingAccountParams) (*BillingAccount, error)
 	// SearchPrices invokes search-prices operation.
 	//
 	// Lists the active prices in `currency` that meet every condition in the body, as `list-prices` lists
 	// them, for anyone, signed in or not. Use it for conditions a query string cannot hold, such as the
-	// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own; read
-	// its rates with `search-rates`.
+	// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own and
+	// carries its `rates`, which `dimensions` narrows to the dimension values of the items on the page.
 	//
 	// QUERY /api/v1/prices
 	SearchPrices(ctx context.Context, request *PriceSearch) (*PriceList, error)
-	// SearchRates invokes search-rates operation.
-	//
-	// Rules of a public rate card that meet every condition in the body, as `list-rates` lists them, for
-	// anyone, signed in or not; contract cards are not readable here. Use it to read the rates at the
-	// dimension values of the items on a page, such as each region and machine type offered, and match
-	// each rate to its price by meter, usage type, interval and dimensions.
-	//
-	// QUERY /api/v1/rate-cards/{rateCardId}/rules
-	SearchRates(ctx context.Context, request *RateSearch, params SearchRatesParams) (*RateList, error)
 	// SetAutoRenew invokes set-auto-renew operation.
 	//
 	// Turns automatic renewal of an active or suspended licensed subscription on or off. Turning it off
@@ -840,7 +818,7 @@ type Invoker interface {
 	// you can still top up and pay invoices. Resume it yourself; one suspended by Leaflow can only be
 	// resumed by Leaflow. Does not create a resource.
 	//
-	// POST /api/v1/billing-accounts/{accountId}/suspend
+	// POST /api/v1/billing-accounts/{accountId}:suspend
 	SuspendBillingAccount(ctx context.Context, params SuspendBillingAccountParams) (*BillingAccount, error)
 	// UnlinkProjectBillingAccount invokes unlink-project-billing-account operation.
 	//
@@ -870,13 +848,14 @@ type Invoker interface {
 	UpdateContact(ctx context.Context, request *ContactUpdate, params UpdateContactParams) (*Contact, error)
 	// WithdrawCancellation invokes withdraw-cancellation operation.
 	//
-	// Withdraws the whole cancellation while no resource has begun to be released; afterwards it is
-	// refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions continue, but automatic renewal,
-	// turned off when the cancellation was created, stays off until it is turned on again. Withdrawing a
-	// withdrawn cancellation returns it unchanged. Open to the owner of the subscriptions' current billing
-	// account and to members of their project with the project permission `billing:finance.manage`.
+	// Withdraws the whole cancellation, which stays with status `canceled`, while no resource has begun to
+	// be released; afterwards it is refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions
+	// continue, but automatic renewal, turned off when the cancellation was created, stays off until it is
+	// turned on again. Withdrawing a withdrawn cancellation returns it unchanged. Open to the owner of the
+	// subscriptions' current billing account and to members of their project with the project permission
+	// `billing:finance.manage`.
 	//
-	// POST /api/v1/cancellations/{cancellationId}/withdraw
+	// DELETE /api/v1/cancellations/{cancellationId}
 	WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (*Cancellation, error)
 }
 
@@ -938,7 +917,7 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 // cancellation. Refunds are previewed with `preview-order-refund`. Open to the owner of the order's
 // billing account and to members of its project.
 //
-// POST /api/v1/orders/{orderId}/cancel
+// POST /api/v1/orders/{orderId}:cancel
 func (c *Client) CancelOrder(ctx context.Context, request OptOrderCancel, params CancelOrderParams) (CancelOrderRes, error) {
 	res, err := c.sendCancelOrder(ctx, request, params)
 	return res, err
@@ -964,7 +943,7 @@ func (c *Client) sendCancelOrder(ctx context.Context, request OptOrderCancel, pa
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-order"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/orders/{orderId}/cancel"),
+		semconv.URLTemplateKey.String("/api/v1/orders/{orderId}:cancel"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1017,7 +996,7 @@ func (c *Client) sendCancelOrder(ctx context.Context, request OptOrderCancel, pa
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/cancel"
+	pathParts[2] = ":cancel"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -1098,7 +1077,7 @@ func (c *Client) sendCancelOrder(ctx context.Context, request OptOrderCancel, pa
 // released together must be canceled together through create-cancellation, and pending or provisioning
 // purchases through their order. Repeating the request while the cancellation is open returns it.
 //
-// POST /api/v1/subscriptions/{subscriptionId}/cancel
+// POST /api/v1/subscriptions/{subscriptionId}:cancel
 func (c *Client) CancelSubscription(ctx context.Context, request *CancelSubscriptionRequest, params CancelSubscriptionParams) (*Cancellation, error) {
 	res, err := c.sendCancelSubscription(ctx, request, params)
 	return res, err
@@ -1117,7 +1096,7 @@ func (c *Client) sendCancelSubscription(ctx context.Context, request *CancelSubs
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-subscription"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/subscriptions/{subscriptionId}/cancel"),
+		semconv.URLTemplateKey.String("/api/v1/subscriptions/{subscriptionId}:cancel"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1170,7 +1149,7 @@ func (c *Client) sendCancelSubscription(ctx context.Context, request *CancelSubs
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/cancel"
+	pathParts[2] = ":cancel"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -1249,7 +1228,7 @@ func (c *Client) sendCancelSubscription(ctx context.Context, request *CancelSubs
 // naming the outcome, or while the gateway is processing the payment, with `status` `pending`; read
 // the top-up again later.
 //
-// POST /api/v1/top-ups/{topUpId}/cancel
+// POST /api/v1/top-ups/{topUpId}:cancel
 func (c *Client) CancelTopUp(ctx context.Context, params CancelTopUpParams) (CancelTopUpRes, error) {
 	res, err := c.sendCancelTopUp(ctx, params)
 	return res, err
@@ -1259,7 +1238,7 @@ func (c *Client) sendCancelTopUp(ctx context.Context, params CancelTopUpParams) 
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("cancel-top-up"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/top-ups/{topUpId}/cancel"),
+		semconv.URLTemplateKey.String("/api/v1/top-ups/{topUpId}:cancel"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1312,7 +1291,7 @@ func (c *Client) sendCancelTopUp(ctx context.Context, params CancelTopUpParams) 
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/cancel"
+	pathParts[2] = ":cancel"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -1393,7 +1372,7 @@ func (c *Client) sendCancelTopUp(ctx context.Context, params CancelTopUpParams) 
 //
 // Open to the owner of the session's billing account and to members of its project.
 //
-// POST /api/v1/checkout-sessions/{checkoutSessionId}/confirm
+// POST /api/v1/checkout-sessions/{checkoutSessionId}:confirm
 func (c *Client) ConfirmCheckoutSession(ctx context.Context, request *CheckoutSessionConfirm, params ConfirmCheckoutSessionParams) (ConfirmCheckoutSessionRes, error) {
 	res, err := c.sendConfirmCheckoutSession(ctx, request, params)
 	return res, err
@@ -1412,7 +1391,7 @@ func (c *Client) sendConfirmCheckoutSession(ctx context.Context, request *Checko
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("confirm-checkout-session"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/checkout-sessions/{checkoutSessionId}/confirm"),
+		semconv.URLTemplateKey.String("/api/v1/checkout-sessions/{checkoutSessionId}:confirm"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1465,7 +1444,7 @@ func (c *Client) sendConfirmCheckoutSession(ctx context.Context, request *Checko
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/confirm"
+	pathParts[2] = ":confirm"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -2997,7 +2976,7 @@ func (c *Client) sendEstimateUsage(ctx context.Context, request *UsageEstimateRe
 // the purchase. An expired session is returned unchanged. Open to the owner of the session's billing
 // account and to members of its project.
 //
-// POST /api/v1/checkout-sessions/{checkoutSessionId}/expire
+// POST /api/v1/checkout-sessions/{checkoutSessionId}:expire
 func (c *Client) ExpireCheckoutSession(ctx context.Context, params ExpireCheckoutSessionParams) (ExpireCheckoutSessionRes, error) {
 	res, err := c.sendExpireCheckoutSession(ctx, params)
 	return res, err
@@ -3007,7 +2986,7 @@ func (c *Client) sendExpireCheckoutSession(ctx context.Context, params ExpireChe
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("expire-checkout-session"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/checkout-sessions/{checkoutSessionId}/expire"),
+		semconv.URLTemplateKey.String("/api/v1/checkout-sessions/{checkoutSessionId}:expire"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3060,7 +3039,7 @@ func (c *Client) sendExpireCheckoutSession(ctx context.Context, params ExpireChe
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/expire"
+	pathParts[2] = ":expire"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -4968,7 +4947,8 @@ func (c *Client) sendGetProjectAssignment(ctx context.Context, params GetProject
 // GetQuote invokes get-quote operation.
 //
 // Calculates what a proposed purchase, a change of your subscriptions or their renewal would invoice
-// now, and what each purchased or changed line renews at. Nothing is saved, reserved or redeemed.
+// now, and what each purchased or changed line renews at, or what ending subscriptions would return.
+// Nothing is saved, reserved, redeemed or canceled.
 //
 // With `billing_account_id`, the quote is for that billing account: its currency, account discounts,
 // tax and funds apply, changes and renewals use the account currently paying for each subscription,
@@ -10819,194 +10799,6 @@ func (c *Client) sendListProjectAssignments(ctx context.Context, params ListProj
 	return result, nil
 }
 
-// ListRates invokes list-rates operation.
-//
-// Rules of a public rate card; contract cards are not readable here.
-//
-// GET /api/v1/rate-cards/{rateCardId}/rules
-func (c *Client) ListRates(ctx context.Context, params ListRatesParams) (ListRatesRes, error) {
-	res, err := c.sendListRates(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListRates(ctx context.Context, params ListRatesParams) (res ListRatesRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-rates"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/rate-cards/{rateCardId}/rules"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListRatesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/rate-cards/"
-	{
-		// Encode "rateCardId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "rateCardId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.RateCardId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/rules"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "meter_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "meter_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.MeterID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "at" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "at",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.At.Get(); ok {
-				return e.EncodeValue(conv.DateTimeToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "If-None-Match",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.IfNoneMatch.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListRatesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // ListRefunds invokes list-refunds operation.
 //
 // Newest first.
@@ -13132,7 +12924,7 @@ func (c *Client) sendListWithdrawals(ctx context.Context, params ListWithdrawals
 // Open to the owner of the invoice's billing account and, for the invoice of an order of a project, to
 // members of the project. Only the owner can pay with a saved `payment_method_id`.
 //
-// POST /api/v1/invoices/{invoiceId}/pay
+// POST /api/v1/invoices/{invoiceId}:pay
 func (c *Client) PayInvoice(ctx context.Context, request OptPayInvoiceRequest, params PayInvoiceParams) (*PaymentResult, error) {
 	res, err := c.sendPayInvoice(ctx, request, params)
 	return res, err
@@ -13158,7 +12950,7 @@ func (c *Client) sendPayInvoice(ctx context.Context, request OptPayInvoiceReques
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("pay-invoice"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/invoices/{invoiceId}/pay"),
+		semconv.URLTemplateKey.String("/api/v1/invoices/{invoiceId}:pay"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -13211,7 +13003,7 @@ func (c *Client) sendPayInvoice(ctx context.Context, request OptPayInvoiceReques
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/pay"
+	pathParts[2] = ":pay"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -13415,133 +13207,6 @@ func (c *Client) sendPayTogether(ctx context.Context, request *PayTogetherReques
 	return result, nil
 }
 
-// PreviewCancellation invokes preview-cancellation operation.
-//
-// What creating the cancellation now would return, per subscription and in total. Nothing is canceled,
-// ended or refunded. Open to the owner of the subscriptions' current billing account and to members of
-// their project; refused for the same states as creating it.
-//
-// QUERY /api/v1/cancellations/preview
-func (c *Client) PreviewCancellation(ctx context.Context, request *CancellationPreviewRequest) (*CancellationRefundPreview, error) {
-	res, err := c.sendPreviewCancellation(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendPreviewCancellation(ctx context.Context, request *CancellationPreviewRequest) (res *CancellationRefundPreview, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("preview-cancellation"),
-		semconv.HTTPRequestMethodKey.String("QUERY"),
-		semconv.URLTemplateKey.String("/api/v1/cancellations/preview"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, PreviewCancellationOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/cancellations/preview"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "QUERY", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodePreviewCancellationRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, PreviewCancellationOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodePreviewCancellationResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // PreviewInvoicePayment invokes preview-invoice-payment operation.
 //
 // What paying this invoice now would take from credit grants, from the balance and, for the rest, from
@@ -13552,7 +13217,7 @@ func (c *Client) sendPreviewCancellation(ctx context.Context, request *Cancellat
 // Refused with the same errors as paying, except that insufficient funds are not an error here: they
 // show as a `gateway_amount` above zero. Open to the same callers as paying.
 //
-// GET /api/v1/invoices/{invoiceId}/payment-preview
+// GET /api/v1/invoices/{invoiceId}:previewPayment
 func (c *Client) PreviewInvoicePayment(ctx context.Context, params PreviewInvoicePaymentParams) (*PaymentPreview, error) {
 	res, err := c.sendPreviewInvoicePayment(ctx, params)
 	return res, err
@@ -13562,7 +13227,7 @@ func (c *Client) sendPreviewInvoicePayment(ctx context.Context, params PreviewIn
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("preview-invoice-payment"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/invoices/{invoiceId}/payment-preview"),
+		semconv.URLTemplateKey.String("/api/v1/invoices/{invoiceId}:previewPayment"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -13615,7 +13280,7 @@ func (c *Client) sendPreviewInvoicePayment(ctx context.Context, params PreviewIn
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/payment-preview"
+	pathParts[2] = ":previewPayment"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -13724,7 +13389,7 @@ func (c *Client) sendPreviewInvoicePayment(ctx context.Context, params PreviewIn
 // Nothing is canceled or refunded. Open to the owner of the order's billing account and to members of
 // its project.
 //
-// GET /api/v1/orders/{orderId}/refund-preview
+// GET /api/v1/orders/{orderId}:previewRefund
 func (c *Client) PreviewOrderRefund(ctx context.Context, params PreviewOrderRefundParams) (*OrderRefundPreview, error) {
 	res, err := c.sendPreviewOrderRefund(ctx, params)
 	return res, err
@@ -13734,7 +13399,7 @@ func (c *Client) sendPreviewOrderRefund(ctx context.Context, params PreviewOrder
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("preview-order-refund"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/orders/{orderId}/refund-preview"),
+		semconv.URLTemplateKey.String("/api/v1/orders/{orderId}:previewRefund"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -13787,7 +13452,7 @@ func (c *Client) sendPreviewOrderRefund(ctx context.Context, params PreviewOrder
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/refund-preview"
+	pathParts[2] = ":previewRefund"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -13889,7 +13554,7 @@ func (c *Client) sendPreviewOrderRefund(ctx context.Context, params PreviewOrder
 // created. Refused with the same errors as paying together, except that insufficient funds show as a
 // `gateway_amount` above zero instead of an error.
 //
-// QUERY /api/v1/payments/preview
+// QUERY /api/v1/payments:preview
 func (c *Client) PreviewPayTogether(ctx context.Context, request *PayTogetherRequest) (*PaymentPreview, error) {
 	res, err := c.sendPreviewPayTogether(ctx, request)
 	return res, err
@@ -13908,7 +13573,7 @@ func (c *Client) sendPreviewPayTogether(ctx context.Context, request *PayTogethe
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("preview-pay-together"),
 		semconv.HTTPRequestMethodKey.String("QUERY"),
-		semconv.URLTemplateKey.String("/api/v1/payments/preview"),
+		semconv.URLTemplateKey.String("/api/v1/payments:preview"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -13942,7 +13607,7 @@ func (c *Client) sendPreviewPayTogether(ctx context.Context, request *PayTogethe
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/api/v1/payments/preview"
+	pathParts[0] = "/api/v1/payments:preview"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -14016,7 +13681,7 @@ func (c *Client) sendPreviewPayTogether(ctx context.Context, request *PayTogethe
 // available balance. Nothing is created or reserved. Fails when a selected source has no refund route
 // or its original processing cost is not yet known.
 //
-// QUERY /api/v1/withdrawals/preview
+// QUERY /api/v1/withdrawals:preview
 func (c *Client) PreviewWithdrawal(ctx context.Context, request *WithdrawalPreviewRequest) (*WithdrawalPreview, error) {
 	res, err := c.sendPreviewWithdrawal(ctx, request)
 	return res, err
@@ -14035,7 +13700,7 @@ func (c *Client) sendPreviewWithdrawal(ctx context.Context, request *WithdrawalP
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("preview-withdrawal"),
 		semconv.HTTPRequestMethodKey.String("QUERY"),
-		semconv.URLTemplateKey.String("/api/v1/withdrawals/preview"),
+		semconv.URLTemplateKey.String("/api/v1/withdrawals:preview"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -14069,7 +13734,7 @@ func (c *Client) sendPreviewWithdrawal(ctx context.Context, request *WithdrawalP
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/api/v1/withdrawals/preview"
+	pathParts[0] = "/api/v1/withdrawals:preview"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -14152,7 +13817,7 @@ func (c *Client) sendPreviewWithdrawal(ctx context.Context, request *WithdrawalP
 //
 // Keep order_id and read the order after an unknown outcome; creating it again conflicts.
 //
-// POST /api/v1/subscriptions/{subscriptionId}/renew
+// POST /api/v1/subscriptions/{subscriptionId}:renew
 func (c *Client) RenewSubscription(ctx context.Context, request *RenewRequest, params RenewSubscriptionParams) (RenewSubscriptionRes, error) {
 	res, err := c.sendRenewSubscription(ctx, request, params)
 	return res, err
@@ -14171,7 +13836,7 @@ func (c *Client) sendRenewSubscription(ctx context.Context, request *RenewReques
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("renew-subscription"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/subscriptions/{subscriptionId}/renew"),
+		semconv.URLTemplateKey.String("/api/v1/subscriptions/{subscriptionId}:renew"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -14224,7 +13889,7 @@ func (c *Client) sendRenewSubscription(ctx context.Context, request *RenewReques
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/renew"
+	pathParts[2] = ":renew"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -14297,7 +13962,7 @@ func (c *Client) sendRenewSubscription(ctx context.Context, request *RenewReques
 // Resumes a billing account you suspended. Refused with `BILLING_ACCOUNT_SUSPENDED_BY_OPERATOR` when
 // Leaflow suspended it. Does not create a resource.
 //
-// POST /api/v1/billing-accounts/{accountId}/resume
+// POST /api/v1/billing-accounts/{accountId}:resume
 func (c *Client) ResumeBillingAccount(ctx context.Context, params ResumeBillingAccountParams) (*BillingAccount, error) {
 	res, err := c.sendResumeBillingAccount(ctx, params)
 	return res, err
@@ -14307,7 +13972,7 @@ func (c *Client) sendResumeBillingAccount(ctx context.Context, params ResumeBill
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("resume-billing-account"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/billing-accounts/{accountId}/resume"),
+		semconv.URLTemplateKey.String("/api/v1/billing-accounts/{accountId}:resume"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -14360,7 +14025,7 @@ func (c *Client) sendResumeBillingAccount(ctx context.Context, params ResumeBill
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/resume"
+	pathParts[2] = ":resume"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -14429,8 +14094,8 @@ func (c *Client) sendResumeBillingAccount(ctx context.Context, params ResumeBill
 //
 // Lists the active prices in `currency` that meet every condition in the body, as `list-prices` lists
 // them, for anyone, signed in or not. Use it for conditions a query string cannot hold, such as the
-// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own; read
-// its rates with `search-rates`.
+// plans of a whole catalog page. A price that delegates to a rate card has no amount of its own and
+// carries its `rates`, which `dimensions` narrows to the dimension values of the items on the page.
 //
 // QUERY /api/v1/prices
 func (c *Client) SearchPrices(ctx context.Context, request *PriceSearch) (*PriceList, error) {
@@ -14513,120 +14178,6 @@ func (c *Client) sendSearchPrices(ctx context.Context, request *PriceSearch) (re
 
 	stage = "DecodeResponse"
 	result, err := decodeSearchPricesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// SearchRates invokes search-rates operation.
-//
-// Rules of a public rate card that meet every condition in the body, as `list-rates` lists them, for
-// anyone, signed in or not; contract cards are not readable here. Use it to read the rates at the
-// dimension values of the items on a page, such as each region and machine type offered, and match
-// each rate to its price by meter, usage type, interval and dimensions.
-//
-// QUERY /api/v1/rate-cards/{rateCardId}/rules
-func (c *Client) SearchRates(ctx context.Context, request *RateSearch, params SearchRatesParams) (*RateList, error) {
-	res, err := c.sendSearchRates(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendSearchRates(ctx context.Context, request *RateSearch, params SearchRatesParams) (res *RateList, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("search-rates"),
-		semconv.HTTPRequestMethodKey.String("QUERY"),
-		semconv.URLTemplateKey.String("/api/v1/rate-cards/{rateCardId}/rules"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, SearchRatesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/rate-cards/"
-	{
-		// Encode "rateCardId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "rateCardId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.RateCardId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/rules"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "QUERY", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeSearchRatesRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeSearchRatesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -15058,7 +14609,7 @@ func (c *Client) sendSetProjectAssignment(ctx context.Context, request *SetProje
 // you can still top up and pay invoices. Resume it yourself; one suspended by Leaflow can only be
 // resumed by Leaflow. Does not create a resource.
 //
-// POST /api/v1/billing-accounts/{accountId}/suspend
+// POST /api/v1/billing-accounts/{accountId}:suspend
 func (c *Client) SuspendBillingAccount(ctx context.Context, params SuspendBillingAccountParams) (*BillingAccount, error) {
 	res, err := c.sendSuspendBillingAccount(ctx, params)
 	return res, err
@@ -15068,7 +14619,7 @@ func (c *Client) sendSuspendBillingAccount(ctx context.Context, params SuspendBi
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("suspend-billing-account"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/billing-accounts/{accountId}/suspend"),
+		semconv.URLTemplateKey.String("/api/v1/billing-accounts/{accountId}:suspend"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -15121,7 +14672,7 @@ func (c *Client) sendSuspendBillingAccount(ctx context.Context, params SuspendBi
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/suspend"
+	pathParts[2] = ":suspend"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -15632,13 +15183,14 @@ func (c *Client) sendUpdateContact(ctx context.Context, request *ContactUpdate, 
 
 // WithdrawCancellation invokes withdraw-cancellation operation.
 //
-// Withdraws the whole cancellation while no resource has begun to be released; afterwards it is
-// refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions continue, but automatic renewal,
-// turned off when the cancellation was created, stays off until it is turned on again. Withdrawing a
-// withdrawn cancellation returns it unchanged. Open to the owner of the subscriptions' current billing
-// account and to members of their project with the project permission `billing:finance.manage`.
+// Withdraws the whole cancellation, which stays with status `canceled`, while no resource has begun to
+// be released; afterwards it is refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions
+// continue, but automatic renewal, turned off when the cancellation was created, stays off until it is
+// turned on again. Withdrawing a withdrawn cancellation returns it unchanged. Open to the owner of the
+// subscriptions' current billing account and to members of their project with the project permission
+// `billing:finance.manage`.
 //
-// POST /api/v1/cancellations/{cancellationId}/withdraw
+// DELETE /api/v1/cancellations/{cancellationId}
 func (c *Client) WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (*Cancellation, error) {
 	res, err := c.sendWithdrawCancellation(ctx, params)
 	return res, err
@@ -15647,8 +15199,8 @@ func (c *Client) WithdrawCancellation(ctx context.Context, params WithdrawCancel
 func (c *Client) sendWithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (res *Cancellation, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("withdraw-cancellation"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/cancellations/{cancellationId}/withdraw"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/cancellations/{cancellationId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -15681,7 +15233,7 @@ func (c *Client) sendWithdrawCancellation(ctx context.Context, params WithdrawCa
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
+	var pathParts [2]string
 	pathParts[0] = "/api/v1/cancellations/"
 	{
 		// Encode "cancellationId" parameter.
@@ -15701,11 +15253,10 @@ func (c *Client) sendWithdrawCancellation(ctx context.Context, params WithdrawCa
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/withdraw"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
+	r, err := ht.NewRequest(ctx, "DELETE", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}

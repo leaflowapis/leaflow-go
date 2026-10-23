@@ -18,7 +18,7 @@ var _ Handler = UnimplementedHandler{}
 // Archiving removes a notification from the default listing without deleting it; pass
 // `include_archived` to see it again. Archiving also marks it read.
 //
-// POST /api/v1/notifications/{notificationId}/archive
+// POST /api/v1/notifications/{notificationId}:archive
 func (UnimplementedHandler) ArchiveNotification(ctx context.Context, params ArchiveNotificationParams) (r *NotificationResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -62,7 +62,7 @@ func (UnimplementedHandler) CancelEmailOverride(ctx context.Context) (r *Prefere
 // and a new one has to be sent; the pending address itself is kept, so nobody loses their place by
 // mistyping.
 //
-// POST /api/v1/preferences/email-override/code/confirm
+// POST /api/v1/preferences/email-override/code:confirm
 func (UnimplementedHandler) ConfirmEmailOverride(ctx context.Context, req *ConfirmEmailOverrideRequestBody) (r *PreferencesResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -244,7 +244,7 @@ func (UnimplementedHandler) ListUserChannels(ctx context.Context, params ListUse
 //
 // Marking a notification that is already read succeeds and changes nothing.
 //
-// POST /api/v1/notifications/{notificationId}/read
+// POST /api/v1/notifications/{notificationId}:markRead
 func (UnimplementedHandler) MarkNotificationRead(ctx context.Context, params MarkNotificationReadParams) (r *NotificationResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -256,7 +256,7 @@ func (UnimplementedHandler) MarkNotificationRead(ctx context.Context, params Mar
 //
 // Marking one that is already unread succeeds and changes nothing.
 //
-// DELETE /api/v1/notifications/{notificationId}/read
+// POST /api/v1/notifications/{notificationId}:markUnread
 func (UnimplementedHandler) MarkNotificationUnread(ctx context.Context, params MarkNotificationUnreadParams) (r *NotificationResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -268,7 +268,7 @@ func (UnimplementedHandler) MarkNotificationUnread(ctx context.Context, params M
 //
 // Passing an empty list marks everything currently unread as read.
 //
-// POST /api/v1/notifications/read
+// POST /api/v1/notifications:batchMarkRead
 func (UnimplementedHandler) MarkNotificationsRead(ctx context.Context, req *MarkNotificationsReadRequestBody) (r *UnreadCountResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -278,7 +278,7 @@ func (UnimplementedHandler) MarkNotificationsRead(ctx context.Context, req *Mark
 // Idempotent. Announcements you had already read stay read, and the count only covers the ones this
 // call changed.
 //
-// POST /api/v1/announcements/read
+// POST /api/v1/announcements:markAllRead
 func (UnimplementedHandler) ReadAllAnnouncements(ctx context.Context) (r *AnnouncementReadResultResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -288,7 +288,7 @@ func (UnimplementedHandler) ReadAllAnnouncements(ctx context.Context) (r *Announ
 // Idempotent: marking one twice is the same as marking it once. There is no way to mark it unread —
 // having read something is a fact, not a state.
 //
-// POST /api/v1/announcements/{announcementId}/read
+// POST /api/v1/announcements/{announcementId}:markRead
 func (UnimplementedHandler) ReadAnnouncement(ctx context.Context, params ReadAnnouncementParams) error {
 	return ht.ErrNotImplemented
 }
@@ -309,7 +309,7 @@ func (UnimplementedHandler) ReadAnnouncement(ctx context.Context, params ReadAnn
 // clients and by browser prefetching, either of which would consume the credential before the
 // recipient opened it.
 //
-// POST /api/v1/credentials/{ticketId}/reveal
+// POST /api/v1/credentials/{ticketId}:reveal
 func (UnimplementedHandler) RevealCredential(ctx context.Context, params RevealCredentialParams) (r *RevealedCredentialResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -343,7 +343,7 @@ func (UnimplementedHandler) SendEmailOverrideCode(ctx context.Context) (r *Email
 //
 // Unarchiving one that is not archived succeeds and changes nothing.
 //
-// DELETE /api/v1/notifications/{notificationId}/archive
+// POST /api/v1/notifications/{notificationId}:unarchive
 func (UnimplementedHandler) UnarchiveNotification(ctx context.Context, params UnarchiveNotificationParams) (r *NotificationResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -410,7 +410,7 @@ func (UnimplementedHandler) UpdateUserChannel(ctx context.Context, req *UpdateCh
 // A channel that fails verification is not marked verified and continues to be skipped. The reason is
 // reported in `last_error`; it is the provider's own wording and is not translated.
 //
-// POST /api/v1/channels/{channelId}/verify
+// POST /api/v1/channels/{channelId}:verify
 func (UnimplementedHandler) VerifyUserChannel(ctx context.Context, params VerifyUserChannelParams) (r *ChannelResource, _ error) {
 	return r, ht.ErrNotImplemented
 }

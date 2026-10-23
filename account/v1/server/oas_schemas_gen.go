@@ -2250,23 +2250,6 @@ func (s *RegisterRequestBody) SetLocale(val Locale) {
 	s.Locale = val
 }
 
-// Ref: #/components/schemas/RequestAccountDeletionRequestBody
-type RequestAccountDeletionRequestBody struct {
-	// Must be true. Confirms that any remaining balance and prepaid benefits are forfeited when the
-	// deletion is carried out.
-	AcknowledgeForfeiture bool `json:"acknowledge_forfeiture"`
-}
-
-// GetAcknowledgeForfeiture returns the value of AcknowledgeForfeiture.
-func (s *RequestAccountDeletionRequestBody) GetAcknowledgeForfeiture() bool {
-	return s.AcknowledgeForfeiture
-}
-
-// SetAcknowledgeForfeiture sets the value of AcknowledgeForfeiture.
-func (s *RequestAccountDeletionRequestBody) SetAcknowledgeForfeiture(val bool) {
-	s.AcknowledgeForfeiture = val
-}
-
 // Ref: #/components/schemas/ResourceRefResource
 type ResourceRefResource struct {
 	// A string rather than a UUID; a DNS zone, for one, is named by its domain. Matching is glob, so

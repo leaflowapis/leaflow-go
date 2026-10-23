@@ -12,7 +12,7 @@ type Handler interface {
 	//
 	// Cancels the scheduled downgrade. Returns 409 MEMBERSHIP_CHANGE_PENDING if none is scheduled.
 	//
-	// DELETE /api/v1/memberships/{membershipId}/downgrade
+	// POST /api/v1/memberships/{membershipId}:cancelDowngrade
 	CancelMembershipDowngrade(ctx context.Context, params CancelMembershipDowngradeParams) (*Membership, error)
 	// CreateMembership implements create-membership operation.
 	//
@@ -72,7 +72,7 @@ type Handler interface {
 	// MEMBERSHIP_ACCOUNT_DELETING while the caller's account deletion is pending, or 403
 	// MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or banned.
 	//
-	// POST /api/v1/memberships/{membershipId}/downgrade
+	// POST /api/v1/memberships/{membershipId}:scheduleDowngrade
 	ScheduleMembershipDowngrade(ctx context.Context, req *MembershipDowngrade, params ScheduleMembershipDowngradeParams) (*Membership, error)
 	// UpgradeMembership implements upgrade-membership operation.
 	//
@@ -82,7 +82,7 @@ type Handler interface {
 	// 403 MEMBERSHIP_ACCOUNT_DELETING while the caller's account deletion is pending, or 403
 	// MEMBERSHIP_ACCOUNT_UNUSABLE when the account is deleted, suspended or banned.
 	//
-	// POST /api/v1/memberships/{membershipId}/upgrade
+	// POST /api/v1/memberships/{membershipId}:upgrade
 	UpgradeMembership(ctx context.Context, req *MembershipUpgrade, params UpgradeMembershipParams) (*MembershipPurchase, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//
