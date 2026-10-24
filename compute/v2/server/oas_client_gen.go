@@ -1187,9 +1187,9 @@ type Invoker interface {
 	// together with it.
 	//
 	// No separate bandwidth resource is created, and the limit applies to inbound and outbound traffic
-	// alike. The new value must lie within the line's bandwidth range and step, otherwise the request is
-	// refused with `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic IP's network
-	// subscription:
+	// alike. The new value may be any whole number of Mbps within the line's bandwidth range, otherwise
+	// the request is refused with `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic
+	// IP's network subscription:
 	//
 	//  - Prepaid: the change goes through a Checkout Session that changes the network subscription, priced
 	//    for the rest of its period. It starts once Billing accepts the order; if checkout is not
@@ -17603,9 +17603,9 @@ func (c *Client) sendUnrescueInstance(ctx context.Context, params UnrescueInstan
 // together with it.
 //
 // No separate bandwidth resource is created, and the limit applies to inbound and outbound traffic
-// alike. The new value must lie within the line's bandwidth range and step, otherwise the request is
-// refused with `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic IP's network
-// subscription:
+// alike. The new value may be any whole number of Mbps within the line's bandwidth range, otherwise
+// the request is refused with `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic
+// IP's network subscription:
 //
 //   - Prepaid: the change goes through a Checkout Session that changes the network subscription, priced
 //     for the rest of its period. It starts once Billing accepts the order; if checkout is not

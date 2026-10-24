@@ -6756,10 +6756,6 @@ func (s *ElasticIPLine) encodeFields(e *jx.Encoder) {
 		e.Int64(s.MaxBandwidthMbps)
 	}
 	{
-		e.FieldStart("bandwidth_step_mbps")
-		e.Int64(s.BandwidthStepMbps)
-	}
-	{
 		e.FieldStart("sale_status")
 		s.SaleStatus.Encode(e)
 	}
@@ -6777,7 +6773,7 @@ func (s *ElasticIPLine) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfElasticIPLine = [13]string{
+var jsonFieldsNameOfElasticIPLine = [12]string{
 	0:  "id",
 	1:  "region_id",
 	2:  "name",
@@ -6786,11 +6782,10 @@ var jsonFieldsNameOfElasticIPLine = [13]string{
 	5:  "internet_billing",
 	6:  "min_bandwidth_mbps",
 	7:  "max_bandwidth_mbps",
-	8:  "bandwidth_step_mbps",
-	9:  "sale_status",
-	10: "traffic_sale_status",
-	11: "created_at",
-	12: "updated_at",
+	8:  "sale_status",
+	9:  "traffic_sale_status",
+	10: "created_at",
+	11: "updated_at",
 }
 
 // Decode decodes ElasticIPLine from json.
@@ -6890,20 +6885,8 @@ func (s *ElasticIPLine) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"max_bandwidth_mbps\"")
 			}
-		case "bandwidth_step_mbps":
-			requiredBitSet[1] |= 1 << 0
-			if err := func() error {
-				v, err := d.Int64()
-				s.BandwidthStepMbps = int64(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"bandwidth_step_mbps\"")
-			}
 		case "sale_status":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.SaleStatus.Decode(d); err != nil {
 					return err
@@ -6913,7 +6896,7 @@ func (s *ElasticIPLine) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"sale_status\"")
 			}
 		case "traffic_sale_status":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				if err := s.TrafficSaleStatus.Decode(d); err != nil {
 					return err
@@ -6923,7 +6906,7 @@ func (s *ElasticIPLine) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"traffic_sale_status\"")
 			}
 		case "created_at":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -6935,7 +6918,7 @@ func (s *ElasticIPLine) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "updated_at":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -6957,7 +6940,7 @@ func (s *ElasticIPLine) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00011111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

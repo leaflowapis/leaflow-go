@@ -885,10 +885,9 @@ type CreateElasticIPRequestBody struct {
 	// nothing for the traffic, while the address itself bills normally — so the invoice looks correct
 	// and nothing anywhere reports it.
 	//
-	// It must lie within the line's `min_bandwidth_mbps` and `max_bandwidth_mbps` and be a multiple of its
-	// `bandwidth_step_mbps`, otherwise the request is refused with `ELASTIC_IP_BANDWIDTH_RANGE`. Changing
-	// it later updates the same elastic IP through `update-elastic-ip`, not an independent bandwidth
-	// resource.
+	// Any whole number of Mbps within the line's `min_bandwidth_mbps` and `max_bandwidth_mbps`, otherwise
+	// the request is refused with `ELASTIC_IP_BANDWIDTH_RANGE`. Changing it later updates the same elastic
+	// IP through `update-elastic-ip`, not an independent bandwidth resource.
 	BandwidthMbps int64           `json:"bandwidth_mbps"`
 	LineID        ElasticIPLineID `json:"line_id"`
 	// The terms of the network subscription, which pays for the bandwidth or the traffic. The address
@@ -2798,9 +2797,6 @@ type ElasticIPLine struct {
 	// The most bandwidth an elastic IP of this line can be bought with, in Mbps, at most 1000. An elastic
 	// IP associated with an instance is also held to the instance type's `max_bandwidth_mbps`.
 	MaxBandwidthMbps int64 `json:"max_bandwidth_mbps"`
-	// Bandwidth is bought in multiples of this many Mbps, from `min_bandwidth_mbps` to
-	// `max_bandwidth_mbps`, both of which are multiples of it too.
-	BandwidthStepMbps int64 `json:"bandwidth_step_mbps"`
 	// `on_sale` is offered for new elastic IPs; `off_sale` takes none, while the elastic IPs already on it
 	// keep working.
 	SaleStatus ElasticIPLineSaleStatus `json:"sale_status"`
@@ -2849,11 +2845,6 @@ func (s *ElasticIPLine) GetMinBandwidthMbps() int64 {
 // GetMaxBandwidthMbps returns the value of MaxBandwidthMbps.
 func (s *ElasticIPLine) GetMaxBandwidthMbps() int64 {
 	return s.MaxBandwidthMbps
-}
-
-// GetBandwidthStepMbps returns the value of BandwidthStepMbps.
-func (s *ElasticIPLine) GetBandwidthStepMbps() int64 {
-	return s.BandwidthStepMbps
 }
 
 // GetSaleStatus returns the value of SaleStatus.
@@ -2914,11 +2905,6 @@ func (s *ElasticIPLine) SetMinBandwidthMbps(val int64) {
 // SetMaxBandwidthMbps sets the value of MaxBandwidthMbps.
 func (s *ElasticIPLine) SetMaxBandwidthMbps(val int64) {
 	s.MaxBandwidthMbps = val
-}
-
-// SetBandwidthStepMbps sets the value of BandwidthStepMbps.
-func (s *ElasticIPLine) SetBandwidthStepMbps(val int64) {
-	s.BandwidthStepMbps = val
 }
 
 // SetSaleStatus sets the value of SaleStatus.
@@ -7101,8 +7087,8 @@ func (s *NewDataVolumeOnInstanceRelease) UnmarshalText(data []byte) error {
 type NewElasticIP struct {
 	Type   NewElasticIPType `json:"type"`
 	LineID ElasticIPLineID  `json:"line_id"`
-	// Within the line's `min_bandwidth_mbps` and `max_bandwidth_mbps` and a multiple of its
-	// `bandwidth_step_mbps`, otherwise refused with `ELASTIC_IP_BANDWIDTH_RANGE`.
+	// Any whole number of Mbps within the line's `min_bandwidth_mbps` and `max_bandwidth_mbps`, otherwise
+	// refused with `ELASTIC_IP_BANDWIDTH_RANGE`.
 	BandwidthMbps      int64                 `json:"bandwidth_mbps"`
 	InternetChargeType OptInternetChargeType `json:"internet_charge_type"`
 	// The terms of the elastic IP's network subscription, `compute.billing` when omitted; they follow the
