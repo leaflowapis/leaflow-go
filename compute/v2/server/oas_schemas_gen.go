@@ -332,7 +332,8 @@ type BillingComponent struct {
 	// The Billing Plan the line is sold under.
 	PlanID uuid.UUID `json:"plan_id"`
 	// The line's dimensions, the coordinates Billing prices it at; every meter of the line reads under the
-	// same ones. Pass them to Billing unchanged; they name nothing a client needs to read.
+	// same ones, and under its own `resource_dimensions` as well. Pass them to Billing unchanged; they
+	// name nothing a client needs to read.
 	Dimensions BillingComponentDimensions `json:"dimensions"`
 	Quantity   BillingQuantity            `json:"quantity"`
 	// What a metered price of the line reads; empty when the line is never metered.
@@ -380,7 +381,8 @@ func (s *BillingComponent) SetMeters(val []BillingMeter) {
 }
 
 // The line's dimensions, the coordinates Billing prices it at; every meter of the line reads under the
-// same ones. Pass them to Billing unchanged; they name nothing a client needs to read.
+// same ones, and under its own `resource_dimensions` as well. Pass them to Billing unchanged; they
+// name nothing a client needs to read.
 type BillingComponentDimensions map[string]string
 
 func (s *BillingComponentDimensions) init() BillingComponentDimensions {
@@ -451,6 +453,13 @@ type BillingMeter struct {
 	// in GiB each second; `stored_gib` the GiB stored each second; `bandwidth_mbps` the bandwidth in Mbps
 	// each second; `egress_bytes` the bytes sent.
 	Quantity BillingMeterQuantity `json:"quantity"`
+	// Dimensions each reading carries beside the line's own, whose values the resource itself states and
+	// which can change while it is held. A private image's meter carries `position`, its
+	// `billing_position`; for a capture not made yet, the position it will take is one more than the
+	// number of the project's private images in the region whose `billing_position` is set and not
+	// `legacy`. Give them together with the line's dimensions when estimating usage. Empty for every other
+	// meter.
+	ResourceDimensions []string `json:"resource_dimensions"`
 }
 
 // GetMeterLookupKey returns the value of MeterLookupKey.
@@ -463,6 +472,11 @@ func (s *BillingMeter) GetQuantity() BillingMeterQuantity {
 	return s.Quantity
 }
 
+// GetResourceDimensions returns the value of ResourceDimensions.
+func (s *BillingMeter) GetResourceDimensions() []string {
+	return s.ResourceDimensions
+}
+
 // SetMeterLookupKey sets the value of MeterLookupKey.
 func (s *BillingMeter) SetMeterLookupKey(val string) {
 	s.MeterLookupKey = val
@@ -471,6 +485,11 @@ func (s *BillingMeter) SetMeterLookupKey(val string) {
 // SetQuantity sets the value of Quantity.
 func (s *BillingMeter) SetQuantity(val BillingMeterQuantity) {
 	s.Quantity = val
+}
+
+// SetResourceDimensions sets the value of ResourceDimensions.
+func (s *BillingMeter) SetResourceDimensions(val []string) {
+	s.ResourceDimensions = val
 }
 
 // What the meter measures. `one` counts each second the item is metered; `size_gib` the volume's size
@@ -11748,7 +11767,9 @@ func (s *PrivateImageReleaseResourceType) UnmarshalText(data []byte) error {
 }
 
 // An image this project captured from one of its instances, used to install instances of this project.
-// Its storage is billed only to this project.
+// Its storage is billed only to this project. Reclaimed for non-payment while instances installed from
+// it remain, it is kept, unusable and no longer charged, and deleted once the last of them is
+// released.
 // Ref: #/components/schemas/PrivateImageResource
 type PrivateImageResource struct {
 	ID           ImageID  `json:"id"`
@@ -11772,8 +11793,16 @@ type PrivateImageResource struct {
 	Status PrivateImageResourceStatus `json:"status"`
 	// Details of why the capture failed; non-empty only when `status` is `failed`.
 	Failure NilString `json:"failure"`
-	// Storage occupied by the project image, in bytes. Zero until the capture reports its size.
+	// Storage occupied by the project image, in bytes. Zero until the capture reports its size. It does
+	// not change what the image costs.
 	SizeBytes int64 `json:"size_bytes"`
+	// The `position` the image's storage is reported under now, the price Billing gives that position in
+	// the region's `private_image_billing` being what it costs. A number from `1`, its place among this
+	// project's stored private images in the region counted from the oldest, which moves up whenever an
+	// older one is deleted; `legacy` for an image carried over from the previous version, which takes no
+	// position and whose storage is never charged. Null while the image is not stored, before its capture
+	// finishes and once it is deleted or failed.
+	BillingPosition NilString `json:"billing_position"`
 	// The instance this image was captured from. The image remains usable after that instance is released.
 	SourceInstanceID InstanceID `json:"source_instance_id"`
 	CreatedAt        time.Time  `json:"created_at"`
@@ -11861,6 +11890,11 @@ func (s *PrivateImageResource) GetFailure() NilString {
 // GetSizeBytes returns the value of SizeBytes.
 func (s *PrivateImageResource) GetSizeBytes() int64 {
 	return s.SizeBytes
+}
+
+// GetBillingPosition returns the value of BillingPosition.
+func (s *PrivateImageResource) GetBillingPosition() NilString {
+	return s.BillingPosition
 }
 
 // GetSourceInstanceID returns the value of SourceInstanceID.
@@ -11971,6 +12005,11 @@ func (s *PrivateImageResource) SetFailure(val NilString) {
 // SetSizeBytes sets the value of SizeBytes.
 func (s *PrivateImageResource) SetSizeBytes(val int64) {
 	s.SizeBytes = val
+}
+
+// SetBillingPosition sets the value of BillingPosition.
+func (s *PrivateImageResource) SetBillingPosition(val NilString) {
+	s.BillingPosition = val
 }
 
 // SetSourceInstanceID sets the value of SourceInstanceID.
@@ -12454,7 +12493,7 @@ func (s *PublicImageResourceSaleStatus) UnmarshalText(data []byte) error {
 // The resource or capacity constrained by a project quota in a region. Platform defaults: instances=5;
 // vcpus=16; memory_mib=32768; volumes=20; volume_gib=500; virtual_private_clouds=3;
 // virtual_private_cloud_subnets=20; network_interfaces=20; elastic_ips=3; security_groups=10;
-// security_group_rules=100; volume_snapshots=20; volume_backups=20; private_images=10. memory_mib is
+// security_group_rules=100; volume_snapshots=20; volume_backups=20; private_images=20. memory_mib is
 // measured in MiB and volume_gib in GiB. A zero limit permits no additional capacity; it is not
 // unlimited.
 // Ref: #/components/schemas/QuotaResourceType
@@ -12746,7 +12785,8 @@ type RegionResource struct {
 	VolumeSnapshotBilling BillingComponent `json:"volume_snapshot_billing"`
 	// The line every volume backup in this region is, metered on the size it stores.
 	VolumeBackupBilling BillingComponent `json:"volume_backup_billing"`
-	// The line every private image in this region is, metered on the size it stores.
+	// The line every private image in this region is, metered each second it is stored under its
+	// `billing_position`.
 	PrivateImageBilling BillingComponent `json:"private_image_billing"`
 }
 

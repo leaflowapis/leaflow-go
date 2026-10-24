@@ -217,11 +217,15 @@ type Invoker interface {
 	// first for file-system consistency. The instance cannot be released while its source volume is being
 	// captured. Compute project quotas are enforced independently of billing.
 	//
-	// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
-	// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
-	// image is captured as soon as the order is accepted; with deferred checkout it stays `pending` until
-	// the customer completes checkout in Billing. The source and project quotas are checked before the
-	// Checkout Session is created, and a refused request creates nothing.
+	// It is metered on a subscription of its own and takes no billing choice. Each second the image is
+	// stored is reported under its region and its `billing_position`: its place among the project's stored
+	// private images in the region, counted from the oldest, which moves up whenever an older one is
+	// deleted. Billing prices each position, and a position it prices at zero costs nothing; that is how a
+	// number of images in each region are free. The image's size does not change what it costs. It is
+	// bought through a Billing Checkout Session: automatic checkout completes at once for metered pricing
+	// and the image is captured as soon as the order is accepted; with deferred checkout it stays
+	// `pending` until the customer completes checkout in Billing. The source and project quotas are
+	// checked before the Checkout Session is created, and a refused request creates nothing.
 	//
 	// The image shows the `create` operation from the moment its Checkout Session is created until it is
 	// delivered or its checkout or order ends. While its purchase awaits checkout or payment its deletion
@@ -2907,11 +2911,15 @@ func (c *Client) sendCreateNetworkInterfaceAddress(ctx context.Context, request 
 // first for file-system consistency. The instance cannot be released while its source volume is being
 // captured. Compute project quotas are enforced independently of billing.
 //
-// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
-// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
-// image is captured as soon as the order is accepted; with deferred checkout it stays `pending` until
-// the customer completes checkout in Billing. The source and project quotas are checked before the
-// Checkout Session is created, and a refused request creates nothing.
+// It is metered on a subscription of its own and takes no billing choice. Each second the image is
+// stored is reported under its region and its `billing_position`: its place among the project's stored
+// private images in the region, counted from the oldest, which moves up whenever an older one is
+// deleted. Billing prices each position, and a position it prices at zero costs nothing; that is how a
+// number of images in each region are free. The image's size does not change what it costs. It is
+// bought through a Billing Checkout Session: automatic checkout completes at once for metered pricing
+// and the image is captured as soon as the order is accepted; with deferred checkout it stays
+// `pending` until the customer completes checkout in Billing. The source and project quotas are
+// checked before the Checkout Session is created, and a refused request creates nothing.
 //
 // The image shows the `create` operation from the moment its Checkout Session is created until it is
 // delivered or its checkout or order ends. While its purchase awaits checkout or payment its deletion

@@ -1175,11 +1175,20 @@ func (s *BillingMeter) encodeFields(e *jx.Encoder) {
 		e.FieldStart("quantity")
 		s.Quantity.Encode(e)
 	}
+	{
+		e.FieldStart("resource_dimensions")
+		e.ArrStart()
+		for _, elem := range s.ResourceDimensions {
+			e.Str(elem)
+		}
+		e.ArrEnd()
+	}
 }
 
-var jsonFieldsNameOfBillingMeter = [2]string{
+var jsonFieldsNameOfBillingMeter = [3]string{
 	0: "meter_lookup_key",
 	1: "quantity",
+	2: "resource_dimensions",
 }
 
 // Decode decodes BillingMeter from json.
@@ -1213,6 +1222,26 @@ func (s *BillingMeter) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"quantity\"")
 			}
+		case "resource_dimensions":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				s.ResourceDimensions = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.ResourceDimensions = append(s.ResourceDimensions, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"resource_dimensions\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -1223,7 +1252,7 @@ func (s *BillingMeter) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -20416,6 +20445,10 @@ func (s *PrivateImageResource) encodeFields(e *jx.Encoder) {
 		e.Int64(s.SizeBytes)
 	}
 	{
+		e.FieldStart("billing_position")
+		s.BillingPosition.Encode(e)
+	}
+	{
 		e.FieldStart("source_instance_id")
 		s.SourceInstanceID.Encode(e)
 	}
@@ -20457,7 +20490,7 @@ func (s *PrivateImageResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPrivateImageResource = [22]string{
+var jsonFieldsNameOfPrivateImageResource = [23]string{
 	0:  "id",
 	1:  "region_id",
 	2:  "name",
@@ -20471,15 +20504,16 @@ var jsonFieldsNameOfPrivateImageResource = [22]string{
 	10: "status",
 	11: "failure",
 	12: "size_bytes",
-	13: "source_instance_id",
-	14: "created_at",
-	15: "operation",
-	16: "failure_reason",
-	17: "checkout_session_id",
-	18: "order_id",
-	19: "order_item_id",
-	20: "subscription_id",
-	21: "release_set",
+	13: "billing_position",
+	14: "source_instance_id",
+	15: "created_at",
+	16: "operation",
+	17: "failure_reason",
+	18: "checkout_session_id",
+	19: "order_id",
+	20: "order_item_id",
+	21: "subscription_id",
+	22: "release_set",
 }
 
 // Decode decodes PrivateImageResource from json.
@@ -20639,8 +20673,18 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"size_bytes\"")
 			}
-		case "source_instance_id":
+		case "billing_position":
 			requiredBitSet[1] |= 1 << 5
+			if err := func() error {
+				if err := s.BillingPosition.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"billing_position\"")
+			}
+		case "source_instance_id":
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				if err := s.SourceInstanceID.Decode(d); err != nil {
 					return err
@@ -20650,7 +20694,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"source_instance_id\"")
 			}
 		case "created_at":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -20662,7 +20706,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "operation":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				if err := s.Operation.Decode(d); err != nil {
 					return err
@@ -20672,7 +20716,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"operation\"")
 			}
 		case "failure_reason":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				if err := s.FailureReason.Decode(d); err != nil {
 					return err
@@ -20682,7 +20726,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"failure_reason\"")
 			}
 		case "checkout_session_id":
-			requiredBitSet[2] |= 1 << 1
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				if err := s.CheckoutSessionID.Decode(d); err != nil {
 					return err
@@ -20692,7 +20736,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"checkout_session_id\"")
 			}
 		case "order_id":
-			requiredBitSet[2] |= 1 << 2
+			requiredBitSet[2] |= 1 << 3
 			if err := func() error {
 				if err := s.OrderID.Decode(d); err != nil {
 					return err
@@ -20702,7 +20746,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"order_id\"")
 			}
 		case "order_item_id":
-			requiredBitSet[2] |= 1 << 3
+			requiredBitSet[2] |= 1 << 4
 			if err := func() error {
 				if err := s.OrderItemID.Decode(d); err != nil {
 					return err
@@ -20712,7 +20756,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"order_item_id\"")
 			}
 		case "subscription_id":
-			requiredBitSet[2] |= 1 << 4
+			requiredBitSet[2] |= 1 << 5
 			if err := func() error {
 				if err := s.SubscriptionID.Decode(d); err != nil {
 					return err
@@ -20722,7 +20766,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"subscription_id\"")
 			}
 		case "release_set":
-			requiredBitSet[2] |= 1 << 5
+			requiredBitSet[2] |= 1 << 6
 			if err := func() error {
 				s.ReleaseSet = make([]ReleaseSetItem, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -20751,7 +20795,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
-		0b00111111,
+		0b01111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
