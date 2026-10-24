@@ -1052,10 +1052,21 @@ type Invoker interface {
 	RejectVirtualPrivateCloudPeering(ctx context.Context, params RejectVirtualPrivateCloudPeeringParams) (RejectVirtualPrivateCloudPeeringRes, error)
 	// RescueInstance invokes rescue-instance operation.
 	//
-	// Boots a temporary rescue environment while retaining the original boot volume. Starting, stopping,
-	// changing `instance_type_id`, rebuilding and resetting the password are unavailable in rescue mode. A
-	// stopped instance is refused with 409 `INSTANCE_NOT_RUNNING`; start it first, which works even when
-	// its operating system no longer boots.
+	// Boots a temporary rescue environment in place of the instance's own system, with the original boot
+	// volume attached to it as a further disk to repair. A running instance can be rescued, and so can one
+	// in `error`. A stopped instance is refused with 409 `INSTANCE_NOT_RUNNING`; start it first, which
+	// works even when its operating system no longer boots.
+	//
+	// In rescue mode, everything only the instance's own system can take is refused with 409
+	// `INSTANCE_UNRESCUE_REQUIRED`: starting, stopping, rebooting, rebuilding, resetting the password,
+	// changing `instance_type_id`, attaching or detaching volumes and network interfaces, capturing a
+	// private image and running commands. Leave rescue mode with `:unrescue` first. The console stays
+	// available, releasing the instance works as usual, and the instance is charged as when running. A
+	// suspension that begins in rescue mode takes the instance out of rescue before stopping it, and
+	// starting it again once the suspension ends boots its own system.
+	//
+	// A rescue the compute service could not boot ends the `rescue` operation and leaves the instance as
+	// it was, or in `error`; request it again or reboot the instance.
 	//
 	// The request does not name an image. The rescue image is the region's enabled rescue image for the
 	// architecture of the instance's boot volume. A region and architecture with no enabled rescue image
@@ -16502,10 +16513,21 @@ func (c *Client) sendRejectVirtualPrivateCloudPeering(ctx context.Context, param
 
 // RescueInstance invokes rescue-instance operation.
 //
-// Boots a temporary rescue environment while retaining the original boot volume. Starting, stopping,
-// changing `instance_type_id`, rebuilding and resetting the password are unavailable in rescue mode. A
-// stopped instance is refused with 409 `INSTANCE_NOT_RUNNING`; start it first, which works even when
-// its operating system no longer boots.
+// Boots a temporary rescue environment in place of the instance's own system, with the original boot
+// volume attached to it as a further disk to repair. A running instance can be rescued, and so can one
+// in `error`. A stopped instance is refused with 409 `INSTANCE_NOT_RUNNING`; start it first, which
+// works even when its operating system no longer boots.
+//
+// In rescue mode, everything only the instance's own system can take is refused with 409
+// `INSTANCE_UNRESCUE_REQUIRED`: starting, stopping, rebooting, rebuilding, resetting the password,
+// changing `instance_type_id`, attaching or detaching volumes and network interfaces, capturing a
+// private image and running commands. Leave rescue mode with `:unrescue` first. The console stays
+// available, releasing the instance works as usual, and the instance is charged as when running. A
+// suspension that begins in rescue mode takes the instance out of rescue before stopping it, and
+// starting it again once the suspension ends boots its own system.
+//
+// A rescue the compute service could not boot ends the `rescue` operation and leaves the instance as
+// it was, or in `error`; request it again or reboot the instance.
 //
 // The request does not name an image. The rescue image is the region's enabled rescue image for the
 // architecture of the instance's boot volume. A region and architecture with no enabled rescue image
