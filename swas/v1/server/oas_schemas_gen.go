@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/go-faster/errors"
-	"github.com/go-faster/jx"
 	"github.com/google/uuid"
 )
 
@@ -126,64 +125,139 @@ func (s *CustomerRefundProgress) SetCurrency(val struct{}) {
 
 type DecimalAmount string
 
+// A failed request. The envelope follows the Google REST error format: `code` is the HTTP status,
+// `status` is its canonical name, and `reason` is the stable machine-readable code that identifies the
+// failure.
 // Ref: #/components/schemas/Error
 type Error struct {
-	Code    OptString `json:"code"`
-	Message string    `json:"message"`
-	// What a given `code` carries alongside the message. The keys depend on the code, and a client that
-	// does not recognise one ignores it.
-	Meta   OptErrorMeta `json:"meta"`
-	Status int64        `json:"status"`
+	Error ErrorStatus `json:"error"`
+}
+
+// GetError returns the value of Error.
+func (s *Error) GetError() ErrorStatus {
+	return s.Error
+}
+
+// SetError sets the value of Error.
+func (s *Error) SetError(val ErrorStatus) {
+	s.Error = val
+}
+
+// Ref: #/components/schemas/ErrorStatus
+type ErrorStatus struct {
+	// The HTTP status code of the response.
+	Code int64 `json:"code"`
+	// The canonical name of the status, such as `INVALID_ARGUMENT` or `UNAVAILABLE`.
+	Status string `json:"status"`
+	// A description of the failure for developers. It is always English and is not meant to be shown to
+	// end users as is.
+	Message string `json:"message"`
+	// A stable machine-readable code identifying the failure. Clients branch on this value and render
+	// their own text; it does not change once published.
+	Reason OptString `json:"reason"`
+	// Values that belong to `reason`, one set per reason. Clients use them to fill in localized text and
+	// never parse `message` to obtain them. Keys are documented per reason; a key that has appeared once
+	// keeps appearing.
+	Metadata OptErrorStatusMetadata `json:"metadata"`
+	// Request fields rejected by the request's constraints. Present on validation failures; one request
+	// may violate several fields.
+	FieldViolations []FieldViolation `json:"field_violations"`
+	// How long the client should wait before retrying, as a duration string such as `30s`. Present only
+	// when waiting can succeed.
+	RetryDelay OptString `json:"retry_delay"`
+	// The identifier of the request in the service's logs. Quote it when reporting a failure.
+	RequestID OptString `json:"request_id"`
 }
 
 // GetCode returns the value of Code.
-func (s *Error) GetCode() OptString {
+func (s *ErrorStatus) GetCode() int64 {
 	return s.Code
 }
 
-// GetMessage returns the value of Message.
-func (s *Error) GetMessage() string {
-	return s.Message
-}
-
-// GetMeta returns the value of Meta.
-func (s *Error) GetMeta() OptErrorMeta {
-	return s.Meta
-}
-
 // GetStatus returns the value of Status.
-func (s *Error) GetStatus() int64 {
+func (s *ErrorStatus) GetStatus() string {
 	return s.Status
 }
 
+// GetMessage returns the value of Message.
+func (s *ErrorStatus) GetMessage() string {
+	return s.Message
+}
+
+// GetReason returns the value of Reason.
+func (s *ErrorStatus) GetReason() OptString {
+	return s.Reason
+}
+
+// GetMetadata returns the value of Metadata.
+func (s *ErrorStatus) GetMetadata() OptErrorStatusMetadata {
+	return s.Metadata
+}
+
+// GetFieldViolations returns the value of FieldViolations.
+func (s *ErrorStatus) GetFieldViolations() []FieldViolation {
+	return s.FieldViolations
+}
+
+// GetRetryDelay returns the value of RetryDelay.
+func (s *ErrorStatus) GetRetryDelay() OptString {
+	return s.RetryDelay
+}
+
+// GetRequestID returns the value of RequestID.
+func (s *ErrorStatus) GetRequestID() OptString {
+	return s.RequestID
+}
+
 // SetCode sets the value of Code.
-func (s *Error) SetCode(val OptString) {
+func (s *ErrorStatus) SetCode(val int64) {
 	s.Code = val
 }
 
-// SetMessage sets the value of Message.
-func (s *Error) SetMessage(val string) {
-	s.Message = val
-}
-
-// SetMeta sets the value of Meta.
-func (s *Error) SetMeta(val OptErrorMeta) {
-	s.Meta = val
-}
-
 // SetStatus sets the value of Status.
-func (s *Error) SetStatus(val int64) {
+func (s *ErrorStatus) SetStatus(val string) {
 	s.Status = val
 }
 
-// What a given `code` carries alongside the message. The keys depend on the code, and a client that
-// does not recognise one ignores it.
-type ErrorMeta map[string]jx.Raw
+// SetMessage sets the value of Message.
+func (s *ErrorStatus) SetMessage(val string) {
+	s.Message = val
+}
 
-func (s *ErrorMeta) init() ErrorMeta {
+// SetReason sets the value of Reason.
+func (s *ErrorStatus) SetReason(val OptString) {
+	s.Reason = val
+}
+
+// SetMetadata sets the value of Metadata.
+func (s *ErrorStatus) SetMetadata(val OptErrorStatusMetadata) {
+	s.Metadata = val
+}
+
+// SetFieldViolations sets the value of FieldViolations.
+func (s *ErrorStatus) SetFieldViolations(val []FieldViolation) {
+	s.FieldViolations = val
+}
+
+// SetRetryDelay sets the value of RetryDelay.
+func (s *ErrorStatus) SetRetryDelay(val OptString) {
+	s.RetryDelay = val
+}
+
+// SetRequestID sets the value of RequestID.
+func (s *ErrorStatus) SetRequestID(val OptString) {
+	s.RequestID = val
+}
+
+// Values that belong to `reason`, one set per reason. Clients use them to fill in localized text and
+// never parse `message` to obtain them. Keys are documented per reason; a key that has appeared once
+// keeps appearing.
+type ErrorStatusMetadata map[string]string
+
+func (s *ErrorStatusMetadata) init() ErrorStatusMetadata {
 	m := *s
 	if m == nil {
-		m = map[string]jx.Raw{}
+		m = map[string]string{}
 		*s = m
 	}
 	return m
@@ -213,6 +287,34 @@ func (s *ExpectedQuote) SetCurrency(val string) {
 // SetAmount sets the value of Amount.
 func (s *ExpectedQuote) SetAmount(val DecimalAmount) {
 	s.Amount = val
+}
+
+// Ref: #/components/schemas/FieldViolation
+type FieldViolation struct {
+	// The path to the rejected field in the request body, such as `items[2].price_id`.
+	Field string `json:"field"`
+	// Why the field was rejected, such as `REQUIRED` or `OUT_OF_RANGE`.
+	Reason OptString `json:"reason"`
+}
+
+// GetField returns the value of Field.
+func (s *FieldViolation) GetField() string {
+	return s.Field
+}
+
+// GetReason returns the value of Reason.
+func (s *FieldViolation) GetReason() OptString {
+	return s.Reason
+}
+
+// SetField sets the value of Field.
+func (s *FieldViolation) SetField(val string) {
+	s.Field = val
+}
+
+// SetReason sets the value of Reason.
+func (s *FieldViolation) SetReason(val OptString) {
+	s.Reason = val
 }
 
 type GetCancellationRefundProgressBadRequest Error
@@ -1280,38 +1382,38 @@ func (s *OffsetPagination) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
-// NewOptErrorMeta returns new OptErrorMeta with value set to v.
-func NewOptErrorMeta(v ErrorMeta) OptErrorMeta {
-	return OptErrorMeta{
+// NewOptErrorStatusMetadata returns new OptErrorStatusMetadata with value set to v.
+func NewOptErrorStatusMetadata(v ErrorStatusMetadata) OptErrorStatusMetadata {
+	return OptErrorStatusMetadata{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptErrorMeta is optional ErrorMeta.
-type OptErrorMeta struct {
-	Value ErrorMeta
+// OptErrorStatusMetadata is optional ErrorStatusMetadata.
+type OptErrorStatusMetadata struct {
+	Value ErrorStatusMetadata
 	Set   bool
 }
 
-// IsSet returns true if OptErrorMeta was set.
-func (o OptErrorMeta) IsSet() bool { return o.Set }
+// IsSet returns true if OptErrorStatusMetadata was set.
+func (o OptErrorStatusMetadata) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptErrorMeta) Reset() {
-	var v ErrorMeta
+func (o *OptErrorStatusMetadata) Reset() {
+	var v ErrorStatusMetadata
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptErrorMeta) SetTo(v ErrorMeta) {
+func (o *OptErrorStatusMetadata) SetTo(v ErrorStatusMetadata) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptErrorMeta) Get() (v ErrorMeta, ok bool) {
+func (o OptErrorStatusMetadata) Get() (v ErrorStatusMetadata, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -1319,7 +1421,7 @@ func (o OptErrorMeta) Get() (v ErrorMeta, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptErrorMeta) Or(d ErrorMeta) ErrorMeta {
+func (o OptErrorStatusMetadata) Or(d ErrorStatusMetadata) ErrorStatusMetadata {
 	if v, ok := o.Get(); ok {
 		return v
 	}
