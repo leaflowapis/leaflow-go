@@ -909,6 +909,11 @@ func (s *Server) handleAttachInstanceVolumeRequest(args [1]string, argsEscaped b
 // Select an elastic IP line. The elastic IP is bought through a Billing Checkout Session, and no
 // address is allocated before its order is accepted.
 //
+// The line has to have an address left, counted before anything is ordered: refused with 409
+// `ELASTIC_IP_LINE_EXHAUSTED` when every address it sells is held or already promised to a purchase
+// waiting for its order. Two purchases checked at the same moment can both pass on the last address;
+// the later one ends `failed` with `provisioning_failed` and its charge is refunded.
+//
 // Returns the elastic IP as `pending` with its Checkout Session; `address` is null until the address
 // is allocated after the order is accepted. A requested `address` is not held while pending; if it is
 // no longer available then, the elastic IP ends `failed` with `provisioning_failed` and its charge is
@@ -1141,10 +1146,12 @@ func (s *Server) handleCreateElasticIPRequest(args [0]string, argsEscaped bool, 
 // types have to have room for all of them, checked before anything is ordered: refused with 409
 // `INSTANCE_TYPE_SOLD_OUT` or `VOLUME_TYPE_SOLD_OUT` when a type takes no new orders for now,
 // `INSTANCE_TYPE_CAPACITY_REACHED` or `VOLUME_TYPE_CAPACITY_REACHED` when what is sold of it is used
-// up, `INSTANCE_TYPE_NO_HOST_ROOM` when no host of the zone can take the machine, and
-// `VOLUME_TYPE_NO_POOL_ROOM` when the storage of the zone cannot take the boot volume. Two orders
-// placed at the same moment can both pass; an instance that finds a type full when its order is
-// accepted is not created and is refunded, ending `failed` with `provisioning_failed`.
+// up, `INSTANCE_TYPE_NO_HOST_ROOM` when no host of the zone can take the machine,
+// `VOLUME_TYPE_NO_POOL_ROOM` when the storage of the zone cannot take the boot volume, and
+// `ELASTIC_IP_LINE_EXHAUSTED` when the line of the new elastic IPs has fewer addresses left than
+// instances. Two orders placed at the same moment can both pass; an instance that finds a type full
+// when its order is accepted is not created and is refunded, ending `failed` with
+// `provisioning_failed`.
 //
 // Choose an image or existing volume through boot_volume, and exactly one of network_interface_id or
 // subnet_id. Existing network interfaces, boot volumes or elastic IPs require count=1. They are not
