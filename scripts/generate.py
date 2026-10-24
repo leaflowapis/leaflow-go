@@ -24,7 +24,9 @@ def generate_services(source):
     # 直接读取固定契约，不改 scratch/schema，不注入外部类型或生成额外业务操作。
     for spec in sorted((source / "leaflow").glob("**/openapi.yaml")):
         relative = spec.parent.relative_to(source / "leaflow")
-        package = "".join(relative.parts[:-1]) + relative.parts[-1]
+        # A Go package name has no hyphen while a contract directory may (swas-legacy): ogen refuses the name rather
+        # than fixing it, and the whole generation stops on that one service.
+        package = ("".join(relative.parts[:-1]) + relative.parts[-1]).replace("-", "")
         ogen.generate_api(spec, ROOT / relative, package, ROOT)
         print(str(relative), "native client + server + referenced models", flush=True)
         module = ROOT / relative.parent / "go.mod"
