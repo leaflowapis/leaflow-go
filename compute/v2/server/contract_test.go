@@ -12,21 +12,21 @@ import (
 )
 
 // 通过真实 ogen 解码与校验检查批准的 oneOf，不将服务端所有权判断伪装成 SDK 校验。
-func TestNativeBootDiskDecoder(t *testing.T) {
-	image := `{"type":"image","image_id":"image_00000000000000000000000001","disk_type_id":"disktype_00000000000000000000000001","size_gb":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":1},"termination_policy":"immediate"}}`
-	disk := `{"type":"disk","disk_id":"disk_00000000000000000000000001","login_username":"ubuntu"}`
+func TestNativeBootVolumeDecoder(t *testing.T) {
+	image := `{"type":"image","image_id":"image_00000000000000000000000001","volume_type_id":"voltype_00000000000000000000000001","size_gib":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":1},"termination_policy":"immediate"}}`
+	volume := `{"type":"volume","volume_id":"vol_00000000000000000000000001","login_username":"ubuntu"}`
 	for _, row := range []struct {
 		name, body string
 		valid      bool
 	}{
-		{"image", image, true}, {"disk", disk, true},
-		{"unsupported type", strings.Replace(disk, `"disk"`, `"snapshot"`, 1), false},
-		{"image plus disk source", image[:len(image)-1] + `,"disk_id":"disk_00000000000000000000000001"}`, false},
-		{"disk plus image source", disk[:len(disk)-1] + `,"image_id":"image_00000000000000000000000001"}`, false},
-		{"missing discriminator", `{"disk_id":"disk_00000000000000000000000001","login_username":"ubuntu"}`, false},
+		{"image", image, true}, {"volume", volume, true},
+		{"unsupported type", strings.Replace(volume, `"volume"`, `"snapshot"`, 1), false},
+		{"image plus volume source", image[:len(image)-1] + `,"volume_id":"vol_00000000000000000000000001"}`, false},
+		{"volume plus image source", volume[:len(volume)-1] + `,"image_id":"image_00000000000000000000000001"}`, false},
+		{"missing discriminator", `{"volume_id":"vol_00000000000000000000000001","login_username":"ubuntu"}`, false},
 	} {
 		t.Run(row.name, func(t *testing.T) {
-			var value BootDisk
+			var value BootVolume
 			err := value.Decode(jx.DecodeBytes([]byte(row.body)))
 			if err == nil {
 				err = value.Validate()
@@ -113,15 +113,15 @@ func TestNativeDocumentsSDKValidationBoundaries(t *testing.T) {
 	}
 }
 
-// 创建盘请求的周期须完整校验，计数不得被截断。
-func TestNativeCreateDiskPreservesPeriod(t *testing.T) {
+// 创建卷请求的周期须完整校验，计数不得被截断。
+func TestNativeCreateVolumePreservesPeriod(t *testing.T) {
 	for _, row := range []struct {
 		count string
 		valid bool
 	}{{"1", true}, {"2147483647", true}, {"2147483648", false}, {"0", false}, {"-1", false}} {
 		t.Run("period "+row.count, func(t *testing.T) {
-			raw := `{"disk_type_id":"disktype_00000000000000000000000001","availability_zone_id":"zone_00000000000000000000000001","name":"disk","size_gb":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":` + row.count + `},"termination_policy":"immediate"}}`
-			var value CreateDiskRequestBody
+			raw := `{"volume_type_id":"voltype_00000000000000000000000001","name":"volume","size_gib":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":` + row.count + `},"termination_policy":"immediate"}}`
+			var value CreateVolumeRequestBody
 			err := value.Decode(jx.DecodeBytes([]byte(raw)))
 			if err == nil {
 				err = value.Validate()
@@ -142,10 +142,10 @@ func TestNativeCreateDiskPreservesPeriod(t *testing.T) {
 // 对比 JSON 字段形状，防 nominal 类型变化引入 Value/Set 或额外包装层。
 func TestNativeRequestSerdePreservesWireFields(t *testing.T) {
 	for _, raw := range []string{
-		`{"disk_type_id":"disktype_00000000000000000000000001","availability_zone_id":"zone_00000000000000000000000001","name":"disk","size_gb":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":1}}}`,
-		`{"disk_type_id":"disktype_00000000000000000000000001","availability_zone_id":"zone_00000000000000000000000001","name":"disk","size_gb":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":1},"termination_policy":"period_end"},"checkout":{"mode":"deferred"}}`,
+		`{"volume_type_id":"voltype_00000000000000000000000001","name":"volume","size_gib":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":1}}}`,
+		`{"volume_type_id":"voltype_00000000000000000000000001","name":"volume","size_gib":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":1},"termination_policy":"period_end"},"checkout":{"mode":"deferred"}}`,
 	} {
-		var value CreateDiskRequestBody
+		var value CreateVolumeRequestBody
 		if err := value.Decode(jx.DecodeBytes([]byte(raw))); err != nil {
 			t.Fatal(err)
 		}
