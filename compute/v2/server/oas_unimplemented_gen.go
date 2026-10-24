@@ -28,136 +28,49 @@ func (UnimplementedHandler) AcceptVirtualPrivateCloudPeering(ctx context.Context
 
 // AssociateElasticIP implements associate-elastic-ip operation.
 //
-// Points the elastic IP at a target: a virtual machine, which means the primary private IPv4 address
-// of its primary network interface, or a network interface address (`network_interface_address_id`)
-// given directly. Exactly one of `virtual_machine_id` and `network_interface_address_id`. A network
-// interface address must be an assigned, unreleased IPv4 address on a network interface in this
-// project and region; IPv6 addresses are rejected.
+// Points the elastic IP at a target: an instance, which means the primary private IPv4 address of its
+// primary network interface, or a network interface address (`network_interface_address_id`) given
+// directly. Exactly one of `instance_id` and `network_interface_address_id`. A network interface
+// address must be an assigned, unreleased IPv4 address on a network interface in this project and
+// region; IPv6 addresses are rejected.
 //
 // The target becomes what the elastic IP points at. Repeating the request for the target it already
 // points at changes nothing; an elastic IP associated with another target is refused with
 // `ELASTIC_IP_ALREADY_ASSOCIATED` (409), and is moved by disassociating it first, so that the moment
 // traffic stops reaching the old target is one the caller chose. The elastic IP shows the `associate`
-// operation until the association is confirmed, and with a virtual machine as the target that virtual
-// machine shows the `associate_elastic_ip` operation as well, so the virtual machine must not have
-// another operation in progress.
+// operation until the association is confirmed, and with an instance as the target that instance shows
+// the `associate_elastic_ip` operation as well, so the instance must not have another operation in
+// progress.
 //
-// The elastic IP must be in the same region as the target. With a virtual machine as the target, the
-// elastic IP's `bandwidth_mbps` must not exceed the `max_bandwidth_mbps` of that virtual machine's
-// type; a higher limit is refused with `VIRTUAL_MACHINE_BANDWIDTH_CEILING`.
+// The elastic IP must be in the same region as the target. With an instance as the target, the elastic
+// IP's `bandwidth_mbps` must not exceed the `max_bandwidth_mbps` of that instance's type; a higher
+// limit is refused with `INSTANCE_BANDWIDTH_CEILING`.
 //
 // POST /api/v2/elastic-ips/{elasticIpId}:associate
 func (UnimplementedHandler) AssociateElasticIP(ctx context.Context, req AssociateElasticIPRequestBody, params AssociateElasticIPParams) (r AssociateElasticIPRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// AttachVirtualMachineDisk implements attach-virtual-machine-disk operation.
+// AttachInstanceNetworkInterface implements attach-instance-network-interface operation.
 //
-// The disk must be in the same region and availability zone as the virtual machine. Returns the disk;
-// the virtual machine shows the `attach_disk` operation and the disk the `attach` operation until the
-// attachment is confirmed. Partition the disk and mount the file system inside the virtual machine
-// once it is attached.
+// Returns the network interface; the instance shows the `attach_network_interface` operation and the
+// interface the `attach` operation until the attachment is confirmed. The instance has to be running;
+// a stopped one holds no host and is refused with 409 `INSTANCE_NOT_RUNNING`.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}/disks
-func (UnimplementedHandler) AttachVirtualMachineDisk(ctx context.Context, req *AttachDiskRequestBody, params AttachVirtualMachineDiskParams) (r AttachVirtualMachineDiskRes, _ error) {
+// POST /api/v2/instances/{instanceId}/network-interfaces
+func (UnimplementedHandler) AttachInstanceNetworkInterface(ctx context.Context, req *AttachNetworkInterfaceRequestBody, params AttachInstanceNetworkInterfaceParams) (r AttachInstanceNetworkInterfaceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// AttachVirtualMachineNetworkInterface implements attach-virtual-machine-network-interface operation.
+// AttachInstanceVolume implements attach-instance-volume operation.
 //
-// Returns the network interface; the virtual machine shows the `attach_network_interface` operation
-// and the interface the `attach` operation until the attachment is confirmed. The virtual machine has
-// to be running; a stopped one holds no host and is refused with 409 `VIRTUAL_MACHINE_NOT_RUNNING`.
+// The volume must be in the same region and availability zone as the instance. Returns the volume; the
+// instance shows the `attach_volume` operation and the volume the `attach` operation until the
+// attachment is confirmed. Partition the volume and mount the file system inside the instance once it
+// is attached.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}/network-interfaces
-func (UnimplementedHandler) AttachVirtualMachineNetworkInterface(ctx context.Context, req *AttachNetworkInterfaceRequestBody, params AttachVirtualMachineNetworkInterfaceParams) (r AttachVirtualMachineNetworkInterfaceRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateDisk implements create-disk operation.
-//
-// The disk is created in the availability zone of its disk type, and only a virtual machine in the
-// same zone can attach it.
-//
-// The type has to have room for it, checked before anything is ordered: refused with 409
-// `DISK_TYPE_SOLD_OUT` when the type takes no new disks for now, `DISK_TYPE_CAPACITY_REACHED` when
-// what is sold of it is used up, and `DISK_TYPE_NO_POOL_ROOM` when the storage of its zone cannot take
-// the disk. Two orders placed at the same moment can both pass; the one that finds the type full when
-// its order is accepted is not created and is refunded, ending `failed` with `provisioning_failed`.
-//
-// The disk is empty, or is restored from exactly one source: `disk_snapshot_id` or `disk_backup_id`.
-// Giving both is refused with 422 `DISK_SOURCE_CONFLICT`. A restore is a purchase of a new disk; the
-// source disk is unaffected and need not still exist.
-//
-//   - From a snapshot, the disk type has to be of the snapshot's availability zone (422
-//     `DISK_SNAPSHOT_OTHER_AVAILABILITY_ZONE`), because a snapshot lives in the same storage pool as
-//     its source and restores only into its own zone. `size_gb` is required and must be no smaller than
-//     the snapshot.
-//   - From a disk backup, the disk type may be of any zone of the backup's region, because a backup is
-//     an independent copy in different storage. `size_gb` matches the size of the backup when omitted,
-//     and when given it must not be smaller than the backup. The disk cannot be attached until it is
-//     `available`.
-//
-// A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still
-// resolves. Types that are off sale do not appear in the disk type listing; disks already bought on
-// one keep working and can still be resized.
-//
-// A disk bought on its own is licensed: `billing.usage_type` `metered` is refused with
-// `DISK_USAGE_TYPE_UNAVAILABLE`. A disk created with a virtual machine follows the machine's terms
-// instead and may be metered.
-//
-// The disk shows the `create` operation from the moment its Checkout Session is created until it is
-// delivered or its checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
-//
-// POST /api/v2/disks
-func (UnimplementedHandler) CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (r CreateDiskRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateDiskBackup implements create-disk-backup operation.
-//
-// Creates a backup of the disk. It remains restorable after the source disk is deleted and may be
-// restored to another availability zone in the same region, by creating a disk with `disk_backup_id`
-// (`create-disk`). A running virtual machine may produce a file-system-inconsistent backup. Pending
-// backups count toward Compute project quotas until cleanup is confirmed.
-//
-// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
-// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
-// backup is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
-// the customer completes checkout in Billing. The source and project quotas are checked before the
-// Checkout Session is created, and a refused request creates nothing.
-//
-// The backup shows the `create` operation from the moment its Checkout Session is created until it is
-// delivered or its checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
-//
-// POST /api/v2/disk-backups
-func (UnimplementedHandler) CreateDiskBackup(ctx context.Context, req *CreateDiskBackupRequestBody) (r CreateDiskBackupRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateDiskSnapshot implements create-disk-snapshot operation.
-//
-// Creates a snapshot of the disk. A running virtual machine may produce a file-system-inconsistent
-// snapshot; flush pending writes first. A system disk cannot be reverted while attached. Pending
-// snapshots count toward Compute project quotas until creation fails and cleanup is confirmed.
-//
-// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
-// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
-// snapshot is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
-// the customer completes checkout in Billing. The source and project quotas are checked before the
-// Checkout Session is created, and a refused request creates nothing.
-//
-// The snapshot shows the `create` operation from the moment its Checkout Session is created until it
-// is delivered or its checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
-//
-// POST /api/v2/disk-snapshots
-func (UnimplementedHandler) CreateDiskSnapshot(ctx context.Context, req *CreateDiskSnapshotRequestBody) (r CreateDiskSnapshotRes, _ error) {
+// POST /api/v2/instances/{instanceId}/volumes
+func (UnimplementedHandler) AttachInstanceVolume(ctx context.Context, req *AttachVolumeRequestBody, params AttachInstanceVolumeParams) (r AttachInstanceVolumeRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -171,8 +84,8 @@ func (UnimplementedHandler) CreateDiskSnapshot(ctx context.Context, req *CreateD
 // no longer available then, the elastic IP ends `failed` with `provisioning_failed` and its charge is
 // refunded.
 //
-// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to virtual machines by the
-// virtual private cloud; enable IPv6 on that network instead.
+// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the virtual
+// private cloud; enable IPv6 on that network instead.
 //
 // Allocation does not select or create a virtual private cloud. A later association selects an
 // assigned network-interface address; Compute then establishes the required network connectivity.
@@ -187,16 +100,73 @@ func (UnimplementedHandler) CreateElasticIP(ctx context.Context, req *CreateElas
 	return r, ht.ErrNotImplemented
 }
 
+// CreateInstance implements create-instance operation.
+//
+// Creates a Billing Checkout Session, including for metered terms, and returns one `pending` instance
+// per requested instance with it. Each new component carries its own commercial terms; their usage
+// type and period must match. A pending instance has no server, boot volume or address, and is not
+// metered.
+//
+// Creation starts once Billing accepts the order: the instance stays `pending` with the `create`
+// operation while it is created, then becomes `running`. With automatic checkout, insufficient funds
+// refuse the request and nothing is created. With deferred checkout, the instances stay `pending`
+// until the customer completes checkout in Billing and the order is paid; an expired Checkout Session,
+// or a canceled or expired order, leaves them `failed` with `checkout_expired`, `order_canceled` or
+// `order_expired`. Do not submit another creation request after paying. After an uncertain response,
+// look the Checkout Session up in Billing before submitting again.
+//
+// The instances are created in the availability zone of their instance type, and the volumes bought
+// with them have to be of volume types of that zone (422 `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`). The
+// types have to have room for all of them, checked before anything is ordered: refused with 409
+// `INSTANCE_TYPE_SOLD_OUT` or `VOLUME_TYPE_SOLD_OUT` when a type takes no new orders for now,
+// `INSTANCE_TYPE_CAPACITY_REACHED` or `VOLUME_TYPE_CAPACITY_REACHED` when what is sold of it is used
+// up, `INSTANCE_TYPE_NO_HOST_ROOM` when no host of the zone can take the machine, and
+// `VOLUME_TYPE_NO_POOL_ROOM` when the storage of the zone cannot take the boot volume. Two orders
+// placed at the same moment can both pass; an instance that finds a type full when its order is
+// accepted is not created and is refunded, ending `failed` with `provisioning_failed`.
+//
+// Choose an image or existing volume through boot_volume, and exactly one of network_interface_id or
+// subnet_id. Existing network interfaces, boot volumes or elastic IPs require count=1. They are not
+// held while the instance is pending; if one is no longer usable when the order is accepted, the
+// instance ends `failed` with `provisioning_failed`. Image boots require boot_volume; existing volumes
+// retain their own subscription. Instances, volumes and public IPs keep their own subscription items
+// on the same order.
+//
+// Instances of one request succeed or fail individually. Each instance, with its boot volume, network
+// interface and elastic IP, is created or fails as a whole. Instances that were created are kept; each
+// failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the
+// order then ends `partially_completed`. An instance is delivered whole or not at all: when the
+// customer cancels any of its order items before the order is accepted, it is not created, its
+// remaining items are canceled and refunded, and it ends `failed` with `order_canceled`. Each instance
+// is named after this request with a number appended.
+//
+// The network is checked before the Checkout Session is created, and a request it refuses orders and
+// charges nothing. It is refused with `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE` when the virtual private
+// cloud's `status` is not `available`, `VIRTUAL_PRIVATE_CLOUD_SUBNET_UNAVAILABLE` or
+// `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready,
+// `SECURITY_GROUP_OTHER_VIRTUAL_PRIVATE_CLOUD` when a security group belongs to another virtual
+// private cloud, and `NETWORK_INTERFACE_UNAVAILABLE` when the port's `status` is not `available`.
+// `meta` names the resource.
+//
+// Each instance shows the `create` operation from the moment the Checkout Session is created until it
+// is delivered or the checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its release with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
+//
+// POST /api/v2/instances
+func (UnimplementedHandler) CreateInstance(ctx context.Context, req *CreateInstanceRequestBody) (r CreateInstanceRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CreateLaunchTemplate implements create-launch-template operation.
 //
 // Creates a launch template with its first version, which becomes its default. A launch template
-// describes how to create virtual machines in one region, and creating a virtual machine can name it
+// describes how to create instances in one region, and creating an instance can name it
 // (`launch_template`) instead of repeating every part. It costs nothing.
 //
 // A template holds no billing terms, checkout options or password: those belong to each purchase. What
-// a version names is checked when a virtual machine is created from it, against the catalog as it is
-// then, so a version naming an image retired since is refused at that creation as any creation would
-// be.
+// a version names is checked when an instance is created from it, against the catalog as it is then,
+// so a version naming an image retired since is refused at that creation as any creation would be.
 //
 // A project holds at most 100 launch templates in a region (`LAUNCH_TEMPLATE_LIMIT`), and names are
 // unique among them (`LAUNCH_TEMPLATE_EXISTS`).
@@ -209,8 +179,8 @@ func (UnimplementedHandler) CreateLaunchTemplate(ctx context.Context, req *Creat
 // CreateLaunchTemplateVersion implements create-launch-template-version operation.
 //
 // Adds a version, numbered after every version the template ever had, so a deleted version's number is
-// never reused. It does not become the default by itself; set `default_version` on the template for
-// that. A template holds at most 100 live versions (`LAUNCH_TEMPLATE_VERSION_LIMIT`).
+// never reused. It does not become the default by itself; set `default_version_number` on the template
+// for that. A template holds at most 100 live versions (`LAUNCH_TEMPLATE_VERSION_LIMIT`).
 //
 // POST /api/v2/launch-templates/{launchTemplateId}/versions
 func (UnimplementedHandler) CreateLaunchTemplateVersion(ctx context.Context, req *NewLaunchTemplateVersion, params CreateLaunchTemplateVersionParams) (r *LaunchTemplateVersion, _ error) {
@@ -219,8 +189,8 @@ func (UnimplementedHandler) CreateLaunchTemplateVersion(ctx context.Context, req
 
 // CreateNetworkInterface implements create-network-interface operation.
 //
-// The new network interface is not attached to any virtual machine. Primary network interfaces are not
-// created here; they are created with the virtual machine.
+// The new network interface is not attached to any instance. Primary network interfaces are not
+// created here; they are created with the instance.
 //
 // POST /api/v2/network-interfaces
 func (UnimplementedHandler) CreateNetworkInterface(ctx context.Context, req *CreateNetworkInterfaceRequestBody) (r *NetworkInterface, _ error) {
@@ -237,11 +207,10 @@ func (UnimplementedHandler) CreateNetworkInterface(ctx context.Context, req *Cre
 // The operating system has to be configured to use it: DHCP hands out only the primary address.
 // Changing the addresses of a network interface in use may briefly interrupt its traffic.
 //
-// A network interface holds at most its virtual machine's machine type's
-// `max_ipv4_per_network_interface` IPv4 addresses while attached, and 50 otherwise (409
-// `NETWORK_INTERFACE_ADDRESS_CEILING`). An address already in use in the subnet is refused with 409
-// `NETWORK_INTERFACE_ADDRESS_ALREADY_TAKEN`, a full subnet with 409
-// `NETWORK_INTERFACE_SUBNET_EXHAUSTED`.
+// A network interface holds at most its instance's instance type's `max_ipv4_per_network_interface`
+// IPv4 addresses while attached, and 50 otherwise (409 `NETWORK_INTERFACE_ADDRESS_CEILING`). An
+// address already in use in the subnet is refused with 409 `NETWORK_INTERFACE_ADDRESS_ALREADY_TAKEN`,
+// a full subnet with 409 `NETWORK_INTERFACE_SUBNET_EXHAUSTED`.
 //
 // POST /api/v2/network-interfaces/{networkInterfaceId}/addresses
 func (UnimplementedHandler) CreateNetworkInterfaceAddress(ctx context.Context, req *CreateNetworkInterfaceAddressRequestBody, params CreateNetworkInterfaceAddressParams) (r *NetworkInterface, _ error) {
@@ -250,9 +219,9 @@ func (UnimplementedHandler) CreateNetworkInterfaceAddress(ctx context.Context, r
 
 // CreatePrivateImage implements create-private-image operation.
 //
-// Creates a project image from the virtual machine system disk, excluding data disks. Stop the virtual
-// machine first for file-system consistency. The virtual machine cannot be released while its source
-// disk is being captured. Compute project quotas are enforced independently of billing.
+// Creates a project image from the instance boot volume, excluding data volumes. Stop the instance
+// first for file-system consistency. The instance cannot be released while its source volume is being
+// captured. Compute project quotas are enforced independently of billing.
 //
 // It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
 // through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
@@ -290,64 +259,6 @@ func (UnimplementedHandler) CreateSecurityGroup(ctx context.Context, req *Create
 //
 // POST /api/v2/security-groups/{securityGroupId}/rules
 func (UnimplementedHandler) CreateSecurityGroupRule(ctx context.Context, req *CreateSecurityGroupRuleRequestBody, params CreateSecurityGroupRuleParams) (r *SecurityGroupRule, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateVirtualMachine implements create-virtual-machine operation.
-//
-// Creates a Billing Checkout Session, including for metered terms, and returns one `pending` virtual
-// machine per requested virtual machine with it. Each new component carries its own commercial terms;
-// their usage type and period must match. A pending virtual machine has no server, system disk or
-// address, and is not metered.
-//
-// Creation starts once Billing accepts the order: the virtual machine stays `pending` with the
-// `create` operation while it is created, then becomes `active`. With automatic checkout, insufficient
-// funds refuse the request and nothing is created. With deferred checkout, the virtual machines stay
-// `pending` until the customer completes checkout in Billing and the order is paid; an expired
-// Checkout Session, or a canceled or expired order, leaves them `failed` with `checkout_expired`,
-// `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an
-// uncertain response, look the Checkout Session up in Billing before submitting again.
-//
-// The virtual machines are created in the availability zone of their machine type, and the disks
-// bought with them have to be of disk types of that zone (422 `DISK_TYPE_OTHER_AVAILABILITY_ZONE`).
-// The types have to have room for all of them, checked before anything is ordered: refused with 409
-// `MACHINE_TYPE_SOLD_OUT` or `DISK_TYPE_SOLD_OUT` when a type takes no new orders for now,
-// `MACHINE_TYPE_CAPACITY_REACHED` or `DISK_TYPE_CAPACITY_REACHED` when what is sold of it is used up,
-// `MACHINE_TYPE_NO_HOST_ROOM` when no host of the zone can take the machine, and
-// `DISK_TYPE_NO_POOL_ROOM` when the storage of the zone cannot take the system disk. Two orders placed
-// at the same moment can both pass; a virtual machine that finds a type full when its order is
-// accepted is not created and is refunded, ending `failed` with `provisioning_failed`.
-//
-// Choose an image or existing disk through boot_disk, and exactly one of network_interface_id or
-// subnet_id. Existing network interfaces, boot disks or elastic IPs require count=1. They are not held
-// while the virtual machine is pending; if one is no longer usable when the order is accepted, the
-// virtual machine ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing
-// disks retain their own subscription. Virtual machines, disks and public IPs keep their own
-// subscription items on the same order.
-//
-// Virtual machines of one request succeed or fail individually. Each virtual machine, with its system
-// disk, network interface and elastic IP, is created or fails as a whole. Virtual machines that were
-// created are kept; each failed virtual machine ends `failed` with `provisioning_failed`, its part of
-// the order is refunded, and the order then ends `partially_completed`. A virtual machine is delivered
-// whole or not at all: when the customer cancels any of its order items before the order is accepted,
-// it is not created, its remaining items are canceled and refunded, and it ends `failed` with
-// `order_canceled`. Each virtual machine is named after this request with a number appended.
-//
-// The network is checked before the Checkout Session is created, and a request it refuses orders and
-// charges nothing. It is refused with `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE` when the virtual private
-// cloud's `status` is not `available`, `VIRTUAL_PRIVATE_CLOUD_SUBNET_UNAVAILABLE` or
-// `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready,
-// `SECURITY_GROUP_OTHER_VIRTUAL_PRIVATE_CLOUD` when a security group belongs to another virtual
-// private cloud, and `NETWORK_INTERFACE_UNAVAILABLE` when the port's `status` is not `available`.
-// `meta` names the resource.
-//
-// Each virtual machine shows the `create` operation from the moment the Checkout Session is created
-// until it is delivered or the checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its release with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
-//
-// POST /api/v2/virtual-machines
-func (UnimplementedHandler) CreateVirtualMachine(ctx context.Context, req *CreateVirtualMachineRequestBody) (r CreateVirtualMachineRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -396,71 +307,91 @@ func (UnimplementedHandler) CreateVirtualPrivateCloudSubnet(ctx context.Context,
 	return r, ht.ErrNotImplemented
 }
 
-// DeleteDisk implements delete-disk operation.
+// CreateVolume implements create-volume operation.
 //
-// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+// The volume is created in the availability zone of its volume type, and only an instance in the same
+// zone can attach it.
 //
-// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
-// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
-// checkout created one. Expire the session or cancel the order in Billing instead.
+// The type has to have room for it, checked before anything is ordered: refused with 409
+// `VOLUME_TYPE_SOLD_OUT` when the type takes no new volumes for now, `VOLUME_TYPE_CAPACITY_REACHED`
+// when what is sold of it is used up, and `VOLUME_TYPE_NO_POOL_ROOM` when the storage of its zone
+// cannot take the volume. Two orders placed at the same moment can both pass; the one that finds the
+// type full when its order is accepted is not created and is refunded, ending `failed` with
+// `provisioning_failed`.
 //
-// While subscriptions pay for the disk (those in its `release_set`), deleting it cancels them rather
-// than being refused: Compute creates one Billing cancellation for the whole set and answers with it
-// in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a licensed
-// subscription being refunded under its terms, and `period_end` keeps the disk working until
-// `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
-// again, whatever mode is asked for.
+// The volume is empty, or is restored from exactly one source: `volume_snapshot_id` or
+// `volume_backup_id`. Giving both is refused with 422 `VOLUME_SOURCE_CONFLICT`. A restore is a
+// purchase of a new volume; the source volume is unaffected and need not still exist.
 //
-// DELETE /api/v2/disks/{diskId}
-func (UnimplementedHandler) DeleteDisk(ctx context.Context, params DeleteDiskParams) (r DeleteDiskRes, _ error) {
+//   - From a snapshot, the volume type has to be of the snapshot's availability zone (422
+//     `VOLUME_SNAPSHOT_OTHER_AVAILABILITY_ZONE`), because a snapshot lives in the same storage pool as
+//     its source and restores only into its own zone. `size_gib` is required and must be no smaller
+//     than the snapshot.
+//   - From a volume backup, the volume type may be of any zone of the backup's region, because a backup
+//     is an independent copy in different storage. `size_gib` matches the size of the backup when
+//     omitted, and when given it must not be smaller than the backup. The volume cannot be attached
+//     until it is `available`.
+//
+// A volume type that is off sale is rejected with `VOLUME_TYPE_OFF_SALE`, even though its identifier
+// still resolves. Types that are off sale do not appear in the volume type listing; volumes already
+// bought on one keep working and can still be resized.
+//
+// A volume bought on its own is licensed: `billing.usage_type` `metered` is refused with
+// `VOLUME_USAGE_TYPE_UNAVAILABLE`. A volume created with an instance follows the machine's terms
+// instead and may be metered.
+//
+// The volume shows the `create` operation from the moment its Checkout Session is created until it is
+// delivered or its checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
+//
+// POST /api/v2/volumes
+func (UnimplementedHandler) CreateVolume(ctx context.Context, req *CreateVolumeRequestBody) (r CreateVolumeRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// DeleteDiskBackup implements delete-disk-backup operation.
+// CreateVolumeBackup implements create-volume-backup operation.
 //
-// Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of
-// the backup ends once it is deleted.
+// Creates a backup of the volume. It remains restorable after the source volume is deleted and may be
+// restored to another availability zone in the same region, by creating a volume with
+// `volume_backup_id` (`create-volume`). A running instance may produce a file-system-inconsistent
+// backup. Pending backups count toward Compute project quotas until cleanup is confirmed.
 //
-// Quota capacity and storage metering are released only after cleanup is confirmed.
+// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
+// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
+// backup is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
+// the customer completes checkout in Billing. The source and project quotas are checked before the
+// Checkout Session is created, and a refused request creates nothing.
 //
-// A resource whose purchase still awaits checkout or payment is refused with
-// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
-// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
-// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
-// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+// The backup shows the `create` operation from the moment its Checkout Session is created until it is
+// delivered or its checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
 //
-// While subscriptions pay for the disk backup (those in its `release_set`), deleting it cancels them
-// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the disk backup working
-// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
-// with it again, whatever mode is asked for.
-//
-// DELETE /api/v2/disk-backups/{diskBackupId}
-func (UnimplementedHandler) DeleteDiskBackup(ctx context.Context, params DeleteDiskBackupParams) (r DeleteDiskBackupRes, _ error) {
+// POST /api/v2/volume-backups
+func (UnimplementedHandler) CreateVolumeBackup(ctx context.Context, req *CreateVolumeBackupRequestBody) (r CreateVolumeBackupRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// DeleteDiskSnapshot implements delete-disk-snapshot operation.
+// CreateVolumeSnapshot implements create-volume-snapshot operation.
 //
-// Deletes this resource. Quota capacity and storage metering are released only after cleanup is
-// confirmed.
+// Creates a snapshot of the volume. A running instance may produce a file-system-inconsistent
+// snapshot; flush pending writes first. A boot volume cannot be reverted while attached. Pending
+// snapshots count toward Compute project quotas until creation fails and cleanup is confirmed.
 //
-// A resource whose purchase still awaits checkout or payment is refused with
-// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
-// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
-// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
-// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
+// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
+// snapshot is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
+// the customer completes checkout in Billing. The source and project quotas are checked before the
+// Checkout Session is created, and a refused request creates nothing.
 //
-// While subscriptions pay for the snapshot (those in its `release_set`), deleting it cancels them
-// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the snapshot working
-// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
-// with it again, whatever mode is asked for.
+// The snapshot shows the `create` operation from the moment its Checkout Session is created until it
+// is delivered or its checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
 //
-// DELETE /api/v2/disk-snapshots/{diskSnapshotId}
-func (UnimplementedHandler) DeleteDiskSnapshot(ctx context.Context, params DeleteDiskSnapshotParams) (r DeleteDiskSnapshotRes, _ error) {
+// POST /api/v2/volume-snapshots
+func (UnimplementedHandler) CreateVolumeSnapshot(ctx context.Context, req *CreateVolumeSnapshotRequestBody) (r CreateVolumeSnapshotRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -486,10 +417,35 @@ func (UnimplementedHandler) DeleteElasticIP(ctx context.Context, params DeleteEl
 	return r, ht.ErrNotImplemented
 }
 
+// DeleteInstance implements delete-instance operation.
+//
+// The boot volume is deleted with the instance, and snapshots created from the boot volume are deleted
+// with it. Data volumes are detached and kept, and their snapshots and backups are unaffected. The
+// primary network interface is released with the instance.
+//
+// An instance being captured as a private image cannot be released. Wait for the capture to finish, or
+// delete that image first.
+//
+// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
+// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
+// checkout created one. Expire the session or cancel the order in Billing instead.
+//
+// While subscriptions pay for the instance (those in its `release_set`), deleting it cancels them
+// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the instance working
+// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+// with it again, whatever mode is asked for.
+//
+// DELETE /api/v2/instances/{instanceId}
+func (UnimplementedHandler) DeleteInstance(ctx context.Context, params DeleteInstanceParams) (r DeleteInstanceRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // DeleteLaunchTemplate implements delete-launch-template operation.
 //
-// Deletes the template with every version. Virtual machines created from it are not affected and keep
-// naming the version they were created from.
+// Deletes the template with every version. Instances created from it are not affected and keep naming
+// the version they were created from.
 //
 // DELETE /api/v2/launch-templates/{launchTemplateId}
 func (UnimplementedHandler) DeleteLaunchTemplate(ctx context.Context, params DeleteLaunchTemplateParams) error {
@@ -501,15 +457,15 @@ func (UnimplementedHandler) DeleteLaunchTemplate(ctx context.Context, params Del
 // The default version cannot be deleted (`LAUNCH_TEMPLATE_VERSION_DEFAULT`); make another version the
 // default first.
 //
-// DELETE /api/v2/launch-templates/{launchTemplateId}/versions/{version}
+// DELETE /api/v2/launch-templates/{launchTemplateId}/versions/{versionNumber}
 func (UnimplementedHandler) DeleteLaunchTemplateVersion(ctx context.Context, params DeleteLaunchTemplateVersionParams) error {
 	return ht.ErrNotImplemented
 }
 
 // DeleteNetworkInterface implements delete-network-interface operation.
 //
-// The primary network interface cannot be deleted on its own, as it is released with the virtual
-// machine. A network interface still attached to a virtual machine cannot be deleted either.
+// The primary network interface cannot be deleted on its own, as it is released with the instance. A
+// network interface still attached to an instance cannot be deleted either.
 //
 // DELETE /api/v2/network-interfaces/{networkInterfaceId}
 func (UnimplementedHandler) DeleteNetworkInterface(ctx context.Context, params DeleteNetworkInterfaceParams) (r DeleteNetworkInterfaceRes, _ error) {
@@ -533,8 +489,8 @@ func (UnimplementedHandler) DeleteNetworkInterfaceAddress(ctx context.Context, p
 // Deletes a private image of this project; any other image, public images included, is reported as not
 // found.
 //
-// Deletion is rejected while virtual machines created from the image still exist, as they need it in
-// order to be rebuilt.
+// Deletion is rejected while instances created from the image still exist, as they need it in order to
+// be rebuilt.
 //
 // An image whose capture has not finished can be deleted; the capture is aborted. This is the one
 // operation accepted while the `create` operation is in progress.
@@ -578,35 +534,10 @@ func (UnimplementedHandler) DeleteSecurityGroupRule(ctx context.Context, params 
 	return ht.ErrNotImplemented
 }
 
-// DeleteVirtualMachine implements delete-virtual-machine operation.
-//
-// The system disk is deleted with the virtual machine, and snapshots created from the system disk are
-// deleted with it. Data disks are detached and kept, and their snapshots and backups are unaffected.
-// The primary network interface is released with the virtual machine.
-//
-// A virtual machine being captured as a private image cannot be released. Wait for the capture to
-// finish, or delete that image first.
-//
-// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
-// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
-// checkout created one. Expire the session or cancel the order in Billing instead.
-//
-// While subscriptions pay for the virtual machine (those in its `release_set`), deleting it cancels
-// them rather than being refused: Compute creates one Billing cancellation for the whole set and
-// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
-// now, a licensed subscription being refunded under its terms, and `period_end` keeps the virtual
-// machine working until `scheduled_at` and releases it then. Asking again while that cancellation is
-// pending answers with it again, whatever mode is asked for.
-//
-// DELETE /api/v2/virtual-machines/{virtualMachineId}
-func (UnimplementedHandler) DeleteVirtualMachine(ctx context.Context, params DeleteVirtualMachineParams) (r DeleteVirtualMachineRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // DeleteVirtualPrivateCloud implements delete-virtual-private-cloud operation.
 //
-// Deletion is rejected while virtual machines or network interfaces remain in the network. Its
-// subnets, routes, security groups and IPv6 configuration are removed with it.
+// Deletion is rejected while instances or network interfaces remain in the network. Its subnets,
+// routes, security groups and IPv6 configuration are removed with it.
 //
 // DELETE /api/v2/virtual-private-clouds/{virtualPrivateCloudId}
 func (UnimplementedHandler) DeleteVirtualPrivateCloud(ctx context.Context, params DeleteVirtualPrivateCloudParams) (r DeleteVirtualPrivateCloudRes, _ error) {
@@ -642,35 +573,102 @@ func (UnimplementedHandler) DeleteVirtualPrivateCloudSubnet(ctx context.Context,
 	return ht.ErrNotImplemented
 }
 
-// DetachVirtualMachineDisk implements detach-virtual-machine-disk operation.
+// DeleteVolume implements delete-volume operation.
 //
-// Unmount the device inside the virtual machine before calling this endpoint. Forcibly detaching a
-// file system that is being written to corrupts data.
+// Deletion is rejected while the volume is attached, or while snapshots created from it still exist.
 //
-// The disk the virtual machine boots from cannot be detached, whether it is the system disk bought
-// with the virtual machine or a disk supplied as the existing boot_disk at launch. Such a request is
-// refused with `VIRTUAL_MACHINE_BOOT_DISK_LOCKED` and changes nothing; releasing the virtual machine
-// is what frees that disk.
+// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
+// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
+// checkout created one. Expire the session or cancel the order in Billing instead.
 //
-// Returns the disk; the virtual machine shows the `detach_disk` operation and the disk the `detach`
-// operation until the disk is detached.
+// While subscriptions pay for the volume (those in its `release_set`), deleting it cancels them rather
+// than being refused: Compute creates one Billing cancellation for the whole set and answers with it
+// in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a licensed
+// subscription being refunded under its terms, and `period_end` keeps the volume working until
+// `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
+// again, whatever mode is asked for.
 //
-// DELETE /api/v2/virtual-machines/{virtualMachineId}/disks/{diskId}
-func (UnimplementedHandler) DetachVirtualMachineDisk(ctx context.Context, params DetachVirtualMachineDiskParams) (r DetachVirtualMachineDiskRes, _ error) {
+// DELETE /api/v2/volumes/{volumeId}
+func (UnimplementedHandler) DeleteVolume(ctx context.Context, params DeleteVolumeParams) (r DeleteVolumeRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// DetachVirtualMachineNetworkInterface implements detach-virtual-machine-network-interface operation.
+// DeleteVolumeBackup implements delete-volume-backup operation.
 //
-// The primary network interface cannot be detached; the virtual machine would lose its network
-// address. The virtual machine has to be running; a stopped one holds no host and is refused with 409
-// `VIRTUAL_MACHINE_NOT_RUNNING`.
+// Independent of the source volume: deletion succeeds whether or not that volume still exists.
+// Metering of the backup ends once it is deleted.
 //
-// Returns the network interface; the virtual machine shows the `detach_network_interface` operation
-// and the interface the `detach` operation until it is detached.
+// Quota capacity and storage metering are released only after cleanup is confirmed.
 //
-// DELETE /api/v2/virtual-machines/{virtualMachineId}/network-interfaces/{networkInterfaceId}
-func (UnimplementedHandler) DetachVirtualMachineNetworkInterface(ctx context.Context, params DetachVirtualMachineNetworkInterfaceParams) (r DetachVirtualMachineNetworkInterfaceRes, _ error) {
+// A resource whose purchase still awaits checkout or payment is refused with
+// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
+// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
+// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
+// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+//
+// While subscriptions pay for the volume backup (those in its `release_set`), deleting it cancels them
+// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the volume backup
+// working until `scheduled_at` and releases it then. Asking again while that cancellation is pending
+// answers with it again, whatever mode is asked for.
+//
+// DELETE /api/v2/volume-backups/{volumeBackupId}
+func (UnimplementedHandler) DeleteVolumeBackup(ctx context.Context, params DeleteVolumeBackupParams) (r DeleteVolumeBackupRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// DeleteVolumeSnapshot implements delete-volume-snapshot operation.
+//
+// Deletes this resource. Quota capacity and storage metering are released only after cleanup is
+// confirmed.
+//
+// A resource whose purchase still awaits checkout or payment is refused with
+// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
+// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
+// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
+// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+//
+// While subscriptions pay for the snapshot (those in its `release_set`), deleting it cancels them
+// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the snapshot working
+// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+// with it again, whatever mode is asked for.
+//
+// DELETE /api/v2/volume-snapshots/{volumeSnapshotId}
+func (UnimplementedHandler) DeleteVolumeSnapshot(ctx context.Context, params DeleteVolumeSnapshotParams) (r DeleteVolumeSnapshotRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// DetachInstanceNetworkInterface implements detach-instance-network-interface operation.
+//
+// The primary network interface cannot be detached; the instance would lose its network address. The
+// instance has to be running; a stopped one holds no host and is refused with 409
+// `INSTANCE_NOT_RUNNING`.
+//
+// Returns the network interface; the instance shows the `detach_network_interface` operation and the
+// interface the `detach` operation until it is detached.
+//
+// DELETE /api/v2/instances/{instanceId}/network-interfaces/{networkInterfaceId}
+func (UnimplementedHandler) DetachInstanceNetworkInterface(ctx context.Context, params DetachInstanceNetworkInterfaceParams) (r DetachInstanceNetworkInterfaceRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// DetachInstanceVolume implements detach-instance-volume operation.
+//
+// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
+// system that is being written to corrupts data.
+//
+// The volume the instance boots from cannot be detached, whether it is the boot volume bought with the
+// instance or a volume supplied as the existing boot_volume at launch. Such a request is refused with
+// `INSTANCE_BOOT_VOLUME_LOCKED` and changes nothing; releasing the instance is what frees that volume.
+//
+// Returns the volume; the instance shows the `detach_volume` operation and the volume the `detach`
+// operation until the volume is detached.
+//
+// DELETE /api/v2/instances/{instanceId}/volumes/{volumeId}
+func (UnimplementedHandler) DetachInstanceVolume(ctx context.Context, params DetachInstanceVolumeParams) (r DetachInstanceVolumeRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -687,8 +685,8 @@ func (UnimplementedHandler) DisableVirtualPrivateCloudIpv6(ctx context.Context, 
 // DisassociateElasticIP implements disassociate-elastic-ip operation.
 //
 // The address remains held by the project and simply no longer points at any network interface. The
-// elastic IP shows the `disassociate` operation until the change is confirmed, and a virtual machine
-// whose primary interface it pointed at shows the `disassociate_elastic_ip` operation. Removing an
+// elastic IP shows the `disassociate` operation until the change is confirmed, and an instance whose
+// primary interface it pointed at shows the `disassociate_elastic_ip` operation. Removing an
 // association that does not exist is refused with 404 `ELASTIC_IP_NOT_ASSOCIATED`.
 //
 // POST /api/v2/elastic-ips/{elasticIpId}:disassociate
@@ -713,48 +711,10 @@ func (UnimplementedHandler) EnableVirtualPrivateCloudIpv6(ctx context.Context, p
 
 // GetAvailabilityZone implements get-availability-zone operation.
 //
-// A disk and a virtual machine must reside in the same availability zone to be attached.
+// A volume and an instance must reside in the same availability zone to be attached.
 //
 // GET /api/v2/availability-zones/{availabilityZoneId}
 func (UnimplementedHandler) GetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (r *AvailabilityZoneResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetDisk implements get-disk operation.
-//
-// Returns the stored state of the disk; it does not query the cloud.
-//
-// GET /api/v2/disks/{diskId}
-func (UnimplementedHandler) GetDisk(ctx context.Context, params GetDiskParams) (r *DiskResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetDiskBackup implements get-disk-backup operation.
-//
-// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
-// progress.
-//
-// GET /api/v2/disk-backups/{diskBackupId}
-func (UnimplementedHandler) GetDiskBackup(ctx context.Context, params GetDiskBackupParams) (r *DiskBackupResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetDiskSnapshot implements get-disk-snapshot operation.
-//
-// Retrieve a snapshot.
-//
-// GET /api/v2/disk-snapshots/{diskSnapshotId}
-func (UnimplementedHandler) GetDiskSnapshot(ctx context.Context, params GetDiskSnapshotParams) (r *DiskSnapshotResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetDiskType implements get-disk-type operation.
-//
-// Retrieve capacity and performance constraints for an existing disk, including types withdrawn from
-// sale.
-//
-// GET /api/v2/disk-types/{diskTypeId}
-func (UnimplementedHandler) GetDiskType(ctx context.Context, params GetDiskTypeParams) (r *DiskTypeResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -790,6 +750,50 @@ func (UnimplementedHandler) GetElasticIPLine(ctx context.Context, params GetElas
 	return r, ht.ErrNotImplemented
 }
 
+// GetInstance implements get-instance operation.
+//
+// Returns the stored state of the instance; it does not query the cloud. Use it to poll creation
+// progress.
+//
+// GET /api/v2/instances/{instanceId}
+func (UnimplementedHandler) GetInstance(ctx context.Context, params GetInstanceParams) (r *Instance, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetInstanceConsole implements get-instance-console operation.
+//
+// The instance's VNC console, operated from a browser through a noVNC client. It does not require the
+// instance to be reachable over the network, which makes it usable when a network misconfiguration
+// prevents login.
+//
+// The returned address is single-use and expires within minutes. Every request issues a new address,
+// so request one before each use and do not cache the response.
+//
+// GET /api/v2/instances/{instanceId}/console
+func (UnimplementedHandler) GetInstanceConsole(ctx context.Context, params GetInstanceConsoleParams) (r *ConsoleResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetInstanceFamily implements get-instance-family operation.
+//
+// Returns an instance family under the same rule as listing; a family with no instance type on sale or
+// sold out returns 404.
+//
+// GET /api/v2/instance-families/{instanceFamilyId}
+func (UnimplementedHandler) GetInstanceFamily(ctx context.Context, params GetInstanceFamilyParams) (r *InstanceFamily, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetInstanceType implements get-instance-type operation.
+//
+// Returns an instance type on sale or sold out, under the same access rules as listing. Off-sale,
+// retired or absent types return 404.
+//
+// GET /api/v2/instance-types/{instanceTypeId}
+func (UnimplementedHandler) GetInstanceType(ctx context.Context, params GetInstanceTypeParams) (r *InstanceType, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetLaunchTemplate implements get-launch-template operation.
 //
 // Get a launch template.
@@ -803,18 +807,8 @@ func (UnimplementedHandler) GetLaunchTemplate(ctx context.Context, params GetLau
 //
 // Get a launch template version.
 //
-// GET /api/v2/launch-templates/{launchTemplateId}/versions/{version}
+// GET /api/v2/launch-templates/{launchTemplateId}/versions/{versionNumber}
 func (UnimplementedHandler) GetLaunchTemplateVersion(ctx context.Context, params GetLaunchTemplateVersionParams) (r *LaunchTemplateVersion, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetMachineType implements get-machine-type operation.
-//
-// Returns a machine type on sale or sold out, under the same access rules as listing. Off-sale,
-// retired or absent types return 404.
-//
-// GET /api/v2/machine-types/{machineTypeId}
-func (UnimplementedHandler) GetMachineType(ctx context.Context, params GetMachineTypeParams) (r *MachineType, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -851,9 +845,9 @@ func (UnimplementedHandler) GetPrivateImage(ctx context.Context, params GetPriva
 // GetPublicImage implements get-public-image operation.
 //
 // Returns a public image, on sale or withdrawn. A withdrawn image (`sale_status` is `off_sale`) is
-// still returned because virtual machines may keep running it; it cannot be chosen for a new virtual
-// machine and can only be rebuilt onto by a virtual machine that already runs it. A private image id
-// is reported as not found here; use `/private-images`.
+// still returned because instances may keep running it; it cannot be chosen for a new instance and can
+// only be rebuilt onto by an instance that already runs it. A private image id is reported as not
+// found here; use `/private-images`.
 //
 // GET /api/v2/public-images/{publicImageId}
 func (UnimplementedHandler) GetPublicImage(ctx context.Context, params GetPublicImageParams) (r *PublicImageResource, _ error) {
@@ -895,30 +889,6 @@ func (UnimplementedHandler) GetSecurityGroup(ctx context.Context, params GetSecu
 //
 // GET /api/v2/security-groups/{securityGroupId}/rules/{securityGroupRuleId}
 func (UnimplementedHandler) GetSecurityGroupRule(ctx context.Context, params GetSecurityGroupRuleParams) (r *SecurityGroupRule, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetVirtualMachine implements get-virtual-machine operation.
-//
-// Returns the stored state of the virtual machine; it does not query the cloud. Use it to poll
-// creation progress.
-//
-// GET /api/v2/virtual-machines/{virtualMachineId}
-func (UnimplementedHandler) GetVirtualMachine(ctx context.Context, params GetVirtualMachineParams) (r *VirtualMachine, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetVirtualMachineConsole implements get-virtual-machine-console operation.
-//
-// The virtual machine's VNC console, operated from a browser through a noVNC client. It does not
-// require the virtual machine to be reachable over the network, which makes it usable when a network
-// misconfiguration prevents login.
-//
-// The returned address is single-use and expires within minutes. Every request issues a new address,
-// so request one before each use and do not cache the response.
-//
-// GET /api/v2/virtual-machines/{virtualMachineId}/console
-func (UnimplementedHandler) GetVirtualMachineConsole(ctx context.Context, params GetVirtualMachineConsoleParams) (r *ConsoleResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -968,52 +938,51 @@ func (UnimplementedHandler) GetVirtualPrivateCloudSubnet(ctx context.Context, pa
 	return r, ht.ErrNotImplemented
 }
 
+// GetVolume implements get-volume operation.
+//
+// Returns the stored state of the volume; it does not query the cloud.
+//
+// GET /api/v2/volumes/{volumeId}
+func (UnimplementedHandler) GetVolume(ctx context.Context, params GetVolumeParams) (r *VolumeResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetVolumeBackup implements get-volume-backup operation.
+//
+// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
+// progress.
+//
+// GET /api/v2/volume-backups/{volumeBackupId}
+func (UnimplementedHandler) GetVolumeBackup(ctx context.Context, params GetVolumeBackupParams) (r *VolumeBackupResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetVolumeSnapshot implements get-volume-snapshot operation.
+//
+// Retrieve a snapshot.
+//
+// GET /api/v2/volume-snapshots/{volumeSnapshotId}
+func (UnimplementedHandler) GetVolumeSnapshot(ctx context.Context, params GetVolumeSnapshotParams) (r *VolumeSnapshotResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetVolumeType implements get-volume-type operation.
+//
+// Retrieve capacity and performance constraints for an existing volume, including types withdrawn from
+// sale.
+//
+// GET /api/v2/volume-types/{volumeTypeId}
+func (UnimplementedHandler) GetVolumeType(ctx context.Context, params GetVolumeTypeParams) (r *VolumeTypeResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListAvailabilityZones implements list-availability-zones operation.
 //
-// A disk and a virtual machine must reside in the same availability zone to be attached. Confirm the
-// zone before creating either. Without `region_id`, the zones of every region are listed.
+// A volume and an instance must reside in the same availability zone to be attached. Confirm the zone
+// before creating either. Without `region_id`, the zones of every region are listed.
 //
 // GET /api/v2/availability-zones
 func (UnimplementedHandler) ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (r *AvailabilityZoneListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListDiskBackups implements list-disk-backups operation.
-//
-// List disk backups.
-//
-// GET /api/v2/disk-backups
-func (UnimplementedHandler) ListDiskBackups(ctx context.Context, params ListDiskBackupsParams) (r *DiskBackupListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListDiskSnapshots implements list-disk-snapshots operation.
-//
-// List snapshots.
-//
-// GET /api/v2/disk-snapshots
-func (UnimplementedHandler) ListDiskSnapshots(ctx context.Context, params ListDiskSnapshotsParams) (r *DiskSnapshotListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListDiskTypes implements list-disk-types operation.
-//
-// Disk types on sale are listed, and sold-out ones with `sale_status` `sold_out`. Any of them boots a
-// virtual machine of its zone, holds data or takes a restore. A withdrawn one disappears from here and
-// can no longer be bought, while the disks already on it keep working and can still be resized.
-//
-// GET /api/v2/disk-types
-func (UnimplementedHandler) ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (r *DiskTypeListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListDisks implements list-disks operation.
-//
-// When both `region_id` and `availability_zone_id` are supplied, only disks attachable to a virtual
-// machine at that location are returned.
-//
-// GET /api/v2/disks
-func (UnimplementedHandler) ListDisks(ctx context.Context, params ListDisksParams) (r *DiskListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1054,6 +1023,55 @@ func (UnimplementedHandler) ListElasticIps(ctx context.Context, params ListElast
 	return r, ht.ErrNotImplemented
 }
 
+// ListInstanceFamilies implements list-instance-families operation.
+//
+// An instance family is one hardware line of a region, such as `g7`, and its instance types are its
+// sizes in each availability zone. A family shows here while it has an instance type on sale or sold
+// out.
+//
+// GET /api/v2/instance-families
+func (UnimplementedHandler) ListInstanceFamilies(ctx context.Context, params ListInstanceFamiliesParams) (r *InstanceFamilyListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListInstanceNetworkInterfaces implements list-instance-network-interfaces operation.
+//
+// List the network interfaces of an instance.
+//
+// GET /api/v2/instances/{instanceId}/network-interfaces
+func (UnimplementedHandler) ListInstanceNetworkInterfaces(ctx context.Context, params ListInstanceNetworkInterfacesParams) (r *NetworkInterfaceAttachmentList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListInstanceTypes implements list-instance-types operation.
+//
+// Instance types on sale are listed, and sold-out ones with `sale_status` `sold_out`. A withdrawn one
+// disappears from here and can no longer be ordered, while the instances already running it keep
+// running.
+//
+// GET /api/v2/instance-types
+func (UnimplementedHandler) ListInstanceTypes(ctx context.Context, params ListInstanceTypesParams) (r *InstanceTypeListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListInstanceVolumes implements list-instance-volumes operation.
+//
+// List the volumes attached to an instance.
+//
+// GET /api/v2/instances/{instanceId}/volumes
+func (UnimplementedHandler) ListInstanceVolumes(ctx context.Context, params ListInstanceVolumesParams) (r *VolumeAttachmentList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListInstances implements list-instances operation.
+//
+// Every instance in the project, newest first, in their stored state.
+//
+// GET /api/v2/instances
+func (UnimplementedHandler) ListInstances(ctx context.Context, params ListInstancesParams) (r *InstanceListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListLaunchTemplateVersions implements list-launch-template-versions operation.
 //
 // Newest first.
@@ -1069,17 +1087,6 @@ func (UnimplementedHandler) ListLaunchTemplateVersions(ctx context.Context, para
 //
 // GET /api/v2/launch-templates
 func (UnimplementedHandler) ListLaunchTemplates(ctx context.Context, params ListLaunchTemplatesParams) (r *LaunchTemplateListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListMachineTypes implements list-machine-types operation.
-//
-// Machine types on sale are listed, and sold-out ones with `sale_status` `sold_out`. A withdrawn one
-// disappears from here and can no longer be ordered, while the virtual machines already running it
-// keep running.
-//
-// GET /api/v2/machine-types
-func (UnimplementedHandler) ListMachineTypes(ctx context.Context, params ListMachineTypesParams) (r *MachineTypeListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1099,7 +1106,7 @@ func (UnimplementedHandler) ListNetworkInterfaces(ctx context.Context, params Li
 //
 // Operations performed by the platform are included, but the individual operator is not disclosed and
 // `actor_type` is `platform`. Suspension for non-payment and bans for abuse are examples: the time at
-// which a virtual machine was stopped by the platform is needed, whereas the operator is internal
+// which an instance was stopped by the platform is needed, whereas the operator is internal
 // information.
 //
 // Fields such as passwords are replaced with a placeholder as the record is written and never appear
@@ -1115,11 +1122,11 @@ func (UnimplementedHandler) ListOperationLogs(ctx context.Context, params ListOp
 // Lists the private images of this project, newest first, in every status: including while a capture
 // is in progress and after it failed. Private images of other projects are never listed.
 //
-// A private image is usable only by the project that captured it from one of its virtual machines. Its
+// A private image is usable only by the project that captured it from one of its instances. Its
 // storage is metered by the hour on a subscription of the project.
 //
-// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
-// memory of the selected machine type cannot boot; filter the options accordingly. Public images are
+// An image can only be used in the region that holds it. An image whose `min_memory_mib` exceeds the
+// memory of the selected instance type cannot boot; filter the options accordingly. Public images are
 // in `/public-images`.
 //
 // GET /api/v2/private-images
@@ -1130,14 +1137,14 @@ func (UnimplementedHandler) ListPrivateImages(ctx context.Context, params ListPr
 // ListPublicImages implements list-public-images operation.
 //
 // Lists the platform's public images that are on sale. A public image is offered to every project. One
-// the platform withdraws disappears from here and can no longer install new virtual machines, while
-// the virtual machines already running it keep running and can still be rebuilt onto it; retrieve it
-// by id to see it.
+// the platform withdraws disappears from here and can no longer install new instances, while the
+// instances already running it keep running and can still be rebuilt onto it; retrieve it by id to see
+// it.
 //
-// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
-// memory of the selected machine type cannot boot; filter the options accordingly.
+// An image can only be used in the region that holds it. An image whose `min_memory_mib` exceeds the
+// memory of the selected instance type cannot boot; filter the options accordingly.
 //
-// Images this project captured from its own virtual machines are in `/private-images`.
+// Images this project captured from its own instances are in `/private-images`.
 //
 // GET /api/v2/public-images
 func (UnimplementedHandler) ListPublicImages(ctx context.Context, params ListPublicImagesParams) (r *PublicImageListResponseBody, _ error) {
@@ -1184,33 +1191,6 @@ func (UnimplementedHandler) ListSecurityGroups(ctx context.Context, params ListS
 	return r, ht.ErrNotImplemented
 }
 
-// ListVirtualMachineDisks implements list-virtual-machine-disks operation.
-//
-// List the disks attached to a virtual machine.
-//
-// GET /api/v2/virtual-machines/{virtualMachineId}/disks
-func (UnimplementedHandler) ListVirtualMachineDisks(ctx context.Context, params ListVirtualMachineDisksParams) (r *DiskAttachmentList, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListVirtualMachineNetworkInterfaces implements list-virtual-machine-network-interfaces operation.
-//
-// List the network interfaces of a virtual machine.
-//
-// GET /api/v2/virtual-machines/{virtualMachineId}/network-interfaces
-func (UnimplementedHandler) ListVirtualMachineNetworkInterfaces(ctx context.Context, params ListVirtualMachineNetworkInterfacesParams) (r *NetworkInterfaceAttachmentList, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListVirtualMachines implements list-virtual-machines operation.
-//
-// Every virtual machine in the project, newest first, in their stored state.
-//
-// GET /api/v2/virtual-machines
-func (UnimplementedHandler) ListVirtualMachines(ctx context.Context, params ListVirtualMachinesParams) (r *VirtualMachineListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // ListVirtualPrivateCloudPeerings implements list-virtual-private-cloud-peerings operation.
 //
 // List peerings.
@@ -1250,7 +1230,46 @@ func (UnimplementedHandler) ListVirtualPrivateClouds(ctx context.Context, params
 	return r, ht.ErrNotImplemented
 }
 
-// RebootVirtualMachine implements reboot-virtual-machine operation.
+// ListVolumeBackups implements list-volume-backups operation.
+//
+// List volume backups.
+//
+// GET /api/v2/volume-backups
+func (UnimplementedHandler) ListVolumeBackups(ctx context.Context, params ListVolumeBackupsParams) (r *VolumeBackupListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListVolumeSnapshots implements list-volume-snapshots operation.
+//
+// List snapshots.
+//
+// GET /api/v2/volume-snapshots
+func (UnimplementedHandler) ListVolumeSnapshots(ctx context.Context, params ListVolumeSnapshotsParams) (r *VolumeSnapshotListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListVolumeTypes implements list-volume-types operation.
+//
+// Volume types on sale are listed, and sold-out ones with `sale_status` `sold_out`. Any of them boots
+// an instance of its zone, holds data or takes a restore. A withdrawn one disappears from here and can
+// no longer be bought, while the volumes already on it keep working and can still be resized.
+//
+// GET /api/v2/volume-types
+func (UnimplementedHandler) ListVolumeTypes(ctx context.Context, params ListVolumeTypesParams) (r *VolumeTypeListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListVolumes implements list-volumes operation.
+//
+// When both `region_id` and `availability_zone_id` are supplied, only volumes attachable to an
+// instance at that location are returned.
+//
+// GET /api/v2/volumes
+func (UnimplementedHandler) ListVolumes(ctx context.Context, params ListVolumesParams) (r *VolumeListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RebootInstance implements reboot-instance operation.
 //
 // A reboot defaults to soft, in which the operating system shuts down normally before starting again.
 //
@@ -1258,35 +1277,34 @@ func (UnimplementedHandler) ListVirtualPrivateClouds(ctx context.Context, params
 // forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
 //
 // A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft
-// reboot the virtual machine never carried out. Any other request for an operation, including a second
-// soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
+// reboot the instance never carried out. Any other request for an operation, including a second soft
+// reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
 //
-// A virtual machine suspended by the platform must be unsuspended first.
+// An instance suspended by the platform must be unsuspended first.
 //
-// The virtual machine shows the `reboot` operation until the reboot has finished.
+// The instance shows the `reboot` operation until the reboot has finished.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:reboot
-func (UnimplementedHandler) RebootVirtualMachine(ctx context.Context, req *RebootVirtualMachineRequestBody, params RebootVirtualMachineParams) (r RebootVirtualMachineRes, _ error) {
+// POST /api/v2/instances/{instanceId}:reboot
+func (UnimplementedHandler) RebootInstance(ctx context.Context, req *RebootInstanceRequestBody, params RebootInstanceParams) (r RebootInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// RebuildVirtualMachine implements rebuild-virtual-machine operation.
+// RebuildInstance implements rebuild-instance operation.
 //
-// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
+// All data on the boot volume is erased and cannot be recovered. Attached data volumes are unaffected.
 //
-// The virtual machine has to be running; a stopped one holds no host and is refused with 409
-// `VIRTUAL_MACHINE_NOT_RUNNING`. Start it first; a virtual machine whose operating system no longer
-// boots still starts.
+// The instance has to be running; a stopped one holds no host and is refused with 409
+// `INSTANCE_NOT_RUNNING`. Start it first; an instance whose operating system no longer boots still
+// starts.
 //
-// The image this virtual machine already runs is accepted even after the platform has withdrawn it,
-// since rebuilding is the only way back into a virtual machine broken from the inside. Any other
-// withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new
-// order.
+// The image this instance already runs is accepted even after the platform has withdrawn it, since
+// rebuilding is the only way back into an instance broken from the inside. Any other withdrawn image
+// is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 //
-// The virtual machine shows the `rebuild` operation until the rebuild has finished.
+// The instance shows the `rebuild` operation until the rebuild has finished.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:rebuild
-func (UnimplementedHandler) RebuildVirtualMachine(ctx context.Context, req *RebuildVirtualMachineRequestBody, params RebuildVirtualMachineParams) (r RebuildVirtualMachineRes, _ error) {
+// POST /api/v2/instances/{instanceId}:rebuild
+func (UnimplementedHandler) RebuildInstance(ctx context.Context, req *RebuildInstanceRequestBody, params RebuildInstanceParams) (r RebuildInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1302,58 +1320,57 @@ func (UnimplementedHandler) RejectVirtualPrivateCloudPeering(ctx context.Context
 	return r, ht.ErrNotImplemented
 }
 
-// RescueVirtualMachine implements rescue-virtual-machine operation.
+// RescueInstance implements rescue-instance operation.
 //
-// Boots a temporary rescue environment while retaining the original system disk. Starting, stopping,
-// changing `machine_type_id`, rebuilding and resetting the password are unavailable in rescue mode. A
-// stopped virtual machine holds no host and is refused with 409 `VIRTUAL_MACHINE_NOT_RUNNING`; start
-// it first, which works even when its operating system no longer boots.
+// Boots a temporary rescue environment while retaining the original boot volume. Starting, stopping,
+// changing `instance_type_id`, rebuilding and resetting the password are unavailable in rescue mode. A
+// stopped instance holds no host and is refused with 409 `INSTANCE_NOT_RUNNING`; start it first, which
+// works even when its operating system no longer boots.
 //
 // The request does not name an image. The rescue image is the region's enabled rescue image for the
-// architecture of the virtual machine's system disk. A region and architecture with no enabled rescue
-// image is refused with `RESCUE_IMAGE_NOT_CONFIGURED` (409).
+// architecture of the instance's boot volume. A region and architecture with no enabled rescue image
+// is refused with `RESCUE_IMAGE_NOT_CONFIGURED` (409).
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:rescue
-func (UnimplementedHandler) RescueVirtualMachine(ctx context.Context, req *RescueVirtualMachineRequestBody, params RescueVirtualMachineParams) (r RescueVirtualMachineRes, _ error) {
+// POST /api/v2/instances/{instanceId}:rescue
+func (UnimplementedHandler) RescueInstance(ctx context.Context, req *RescueInstanceRequestBody, params RescueInstanceParams) (r RescueInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// ResetVirtualMachinePassword implements reset-virtual-machine-password operation.
+// ResetInstancePassword implements reset-instance-password operation.
 //
 // Sets the password of the login account (`login_username`) without a reboot; root is never given one.
-// The virtual machine must be running.
+// The instance must be running.
 //
 // Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
-// password can then only be set by rebuilding the virtual machine, which erases all data on the system
-// disk.
+// password can then only be set by rebuilding the instance, which erases all data on the boot volume.
 //
 // The request is also rejected when the image is marked as supported but the corresponding component
-// has been removed or stopped inside the virtual machine.
+// has been removed or stopped inside the instance.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:resetPassword
-func (UnimplementedHandler) ResetVirtualMachinePassword(ctx context.Context, req PasswordChoice, params ResetVirtualMachinePasswordParams) (r ResetVirtualMachinePasswordRes, _ error) {
+// POST /api/v2/instances/{instanceId}:resetPassword
+func (UnimplementedHandler) ResetInstancePassword(ctx context.Context, req PasswordChoice, params ResetInstancePasswordParams) (r ResetInstancePasswordRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// RevertDisk implements revert-disk operation.
+// RevertVolume implements revert-volume operation.
 //
-// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
-// moment is lost and cannot be recovered.
+// Restores the contents of the volume to the moment the snapshot was taken. All data written after
+// that moment is lost and cannot be recovered.
 //
-// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
-// must be detached from its virtual machine first; and a disk resized since the snapshot was taken
-// cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a
-// new disk from the snapshot instead.
+// Three restrictions apply: only the most recent snapshot of the volume can be reverted to; the volume
+// must be detached from its instance first; and a volume resized since the snapshot was taken cannot
+// be reverted. To return to an earlier point in time, or to keep the existing volume, create a new
+// volume from the snapshot instead.
 //
-// The revert is a request of its own rather than a state of the disk: the response is the disk, which
-// shows the `revert` operation until the revert is complete.
+// The revert is a request of its own rather than a state of the volume: the response is the volume,
+// which shows the `revert` operation until the revert is complete.
 //
-// POST /api/v2/disks/{diskId}:revert
-func (UnimplementedHandler) RevertDisk(ctx context.Context, req *RevertDiskRequestBody, params RevertDiskParams) (r RevertDiskRes, _ error) {
+// POST /api/v2/volumes/{volumeId}:revert
+func (UnimplementedHandler) RevertVolume(ctx context.Context, req *RevertVolumeRequestBody, params RevertVolumeParams) (r RevertVolumeRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// RunVirtualMachineCommand implements run-virtual-machine-command operation.
+// RunInstanceCommand implements run-instance-command operation.
 //
 // Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
 // standard input and no way to answer a prompt: a command that waits for input produces nothing and is
@@ -1364,135 +1381,71 @@ func (UnimplementedHandler) RevertDisk(ctx context.Context, req *RevertDiskReque
 // that matches nothing exits 1 and is a perfectly successful call.
 //
 // The status therefore answers a different question — did the command run at all. A non-2xx means it
-// did not, and nothing about the virtual machine was changed by this request: it was suspended, not
-// running or had no elastic IP associated; or it refused the platform key; or the connection could not
-// be opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
+// did not, and nothing about the instance was changed by this request: it was suspended, not running
+// or had no elastic IP associated; or it refused the platform key; or the connection could not be
+// opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
 //
-// Three conditions must hold; the virtual machine is unreachable otherwise:
+// Three conditions must hold; the instance is unreachable otherwise:
 //
-//   - it is `active`
+//   - it is `running`
 //   - an elastic IP is associated with it, since this endpoint connects over the public internet
 //   - its security group permits inbound TCP 22
 //
-// Authentication uses the key the platform attaches to every virtual machine at creation, so nothing
-// has to be set up first. The virtual machine must have applied that key at first boot, which images
-// without a full cloud-init do not do.
+// Authentication uses the key the platform attaches to every instance at creation, so nothing has to
+// be set up first. The instance must have applied that key at first boot, which images without a full
+// cloud-init do not do.
 //
-// Do not pass secrets in the command. Read them from a file on the virtual machine instead: neither
-// the command nor its output is a confidential channel.
+// Do not pass secrets in the command. Read them from a file on the instance instead: neither the
+// command nor its output is a confidential channel.
 //
 // Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:runCommand
-func (UnimplementedHandler) RunVirtualMachineCommand(ctx context.Context, req *RunVirtualMachineCommandRequestBody, params RunVirtualMachineCommandParams) (r *RunVirtualMachineCommandResponseBody, _ error) {
+// POST /api/v2/instances/{instanceId}:runCommand
+func (UnimplementedHandler) RunInstanceCommand(ctx context.Context, req *RunInstanceCommandRequestBody, params RunInstanceCommandParams) (r *RunInstanceCommandResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// StartVirtualMachine implements start-virtual-machine operation.
+// StartInstance implements start-instance operation.
 //
-// Places the virtual machine on a host of its availability zone again; outstanding restrictions can
-// prevent starting. When no host of the zone has room for it now, the request is refused with 409
-// `VIRTUAL_MACHINE_START_NO_HOST_ROOM` and the virtual machine stays stopped; try again later. Another
-// start can take the room after the request was accepted, and the start then ends with the virtual
-// machine still stopped. It shows the `start` operation until it is running or the start has failed.
+// Places the instance on a host of its availability zone again; outstanding restrictions can prevent
+// starting. When no host of the zone has room for it now, the request is refused with 409
+// `INSTANCE_START_NO_HOST_ROOM` and the instance stays stopped; try again later. Another start can
+// take the room after the request was accepted, and the start then ends with the instance still
+// stopped. It shows the `start` operation until it is running or the start has failed.
 //
-// Starting connects its disks afresh, so a disk grown while attached runs at the performance of its
-// new size from the next start after a stop. A virtual machine powered off from inside its operating
-// system keeps its host and starts on it again; stop it with `:stop` first for its disks to be
-// connected afresh. Starting a running virtual machine changes nothing.
+// Starting connects its volumes afresh, so a volume grown while attached runs at the performance of
+// its new size from the next start after a stop. An instance powered off from inside its operating
+// system keeps its host and starts on it again; stop it with `:stop` first for its volumes to be
+// connected afresh. Starting a running instance changes nothing.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:start
-func (UnimplementedHandler) StartVirtualMachine(ctx context.Context, params StartVirtualMachineParams) (r StartVirtualMachineRes, _ error) {
+// POST /api/v2/instances/{instanceId}:start
+func (UnimplementedHandler) StartInstance(ctx context.Context, params StartInstanceParams) (r StartInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// StopVirtualMachine implements stop-virtual-machine operation.
+// StopInstance implements stop-instance operation.
 //
-// Stops the virtual machine and releases its host, as on AWS and Alibaba Cloud: a stopped virtual
-// machine keeps its disks, network interfaces, addresses and quota, holds no vCPU or memory, and is
-// not charged for compute. It shows the `stop` operation until it is stopped. Stopping a stopped
-// virtual machine changes nothing.
+// Stops the instance and releases its host, as on AWS and Alibaba Cloud: a stopped instance keeps its
+// volumes, network interfaces, addresses and quota, holds no vCPU or memory, and is not charged for
+// compute. It shows the `stop` operation until it is stopped. Stopping a stopped instance changes
+// nothing.
 //
-// A stopped virtual machine holds no host, so changing `machine_type_id`, rebuilding it, rescuing it
-// and attaching or detaching a network interface are refused with 409 `VIRTUAL_MACHINE_NOT_RUNNING`
-// until it is started. Disks can be attached and detached while it is stopped.
+// A stopped instance holds no host, so changing `instance_type_id`, rebuilding it, rescuing it and
+// attaching or detaching a network interface are refused with 409 `INSTANCE_NOT_RUNNING` until it is
+// started. Volumes can be attached and detached while it is stopped.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:stop
-func (UnimplementedHandler) StopVirtualMachine(ctx context.Context, params StopVirtualMachineParams) (r StopVirtualMachineRes, _ error) {
+// POST /api/v2/instances/{instanceId}:stop
+func (UnimplementedHandler) StopInstance(ctx context.Context, params StopInstanceParams) (r StopInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// UnrescueVirtualMachine implements unrescue-virtual-machine operation.
+// UnrescueInstance implements unrescue-instance operation.
 //
-// Restores boot from the original system disk. Completion is shown by the virtual machine state, and
-// the virtual machine shows the `unrescue` operation until then.
+// Restores boot from the original boot volume. Completion is shown by the instance state, and the
+// instance shows the `unrescue` operation until then.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:unrescue
-func (UnimplementedHandler) UnrescueVirtualMachine(ctx context.Context, params UnrescueVirtualMachineParams) (r UnrescueVirtualMachineRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// UpdateDisk implements update-disk operation.
-//
-// Changes the name, the capacity or the disk type. The availability zone is immutable.
-//
-// `size_gb` and `disk_type_id` are operational fields: each starts a change and cannot be combined
-// with any other field in the same request, including the other one. Such a request is refused with
-// 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside a change that was then refused
-// would leave the request half applied. `checkout` and `proration_date` belong to the purchase of the
-// change and are accepted only together with one of them.
-//
-// Renaming is not an operation and is accepted at any time. It returns 200 with `checkout_session_id`
-// and `order_id` null.
-//
-// Resizing accepts only an increase; a smaller `size_gb` is refused with `DISK_CANNOT_SHRINK` (422),
-// since a file system cannot be shrunk from outside the virtual machine. It returns 202 with the disk
-// and the Checkout Session for the resize, which keeps the disk's usage type and period. The disk
-// shows the `resize` operation until the resize is applied, its Checkout Session expires or its order
-// is canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
-// meanwhile. The disk keeps its current size until the resize is applied; once `size_gb` shows the new
-// size, extend the file system inside the virtual machine. If checkout is not completed, the order is
-// not accepted or the resize fails, the disk keeps its size and Billing shows the outcome.
-//
-// Changing the type moves the disk to another disk type at the same capacity, priced as that type, and
-// returns 202 with the disk and the Checkout Session for the change, which keeps the disk's usage type
-// and period. The disk has to be detached (409 `DISK_RETYPE_ATTACHED`), so a system disk cannot change
-// its type. The target has to be on sale (`DISK_TYPE_OFF_SALE`), in the disk's region (422
-// `DISK_RETYPE_OTHER_REGION`), of the disk's availability zone (422
-// `DISK_TYPE_OTHER_AVAILABILITY_ZONE`) with room for the disk (409 `DISK_TYPE_SOLD_OUT`,
-// `DISK_TYPE_CAPACITY_REACHED`, `DISK_TYPE_NO_POOL_ROOM`), admit the disk's capacity (422
-// `DISK_SIZE_OUT_OF_RANGE`, `DISK_SIZE_NOT_ON_STEP`) and differ from the current one (422
-// `DISK_RETYPE_SAME_TYPE`). The disk shows the `retype` operation until the change is applied, its
-// Checkout Session expires or its order is canceled. A target on the same storage backend takes effect
-// at once; one on another backend copies the disk's data there first, which takes longer the larger
-// the disk is. The disk keeps its type until `disk_type_id` shows the new one, and its `performance`
-// follows from then on; a change that did not take effect leaves the disk as it was and is refunded.
-//
-// An attached disk, including a system disk, can be resized. The capacity is usable at once, and the
-// disk's `performance` shows what its type gives the new size. That performance applies from the
-// disk's next attachment, or the next start of its stopped virtual machine: the storage reads a disk's
-// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
-//
-// PATCH /api/v2/disks/{diskId}
-func (UnimplementedHandler) UpdateDisk(ctx context.Context, req *UpdateDiskRequestBody, params UpdateDiskParams) (r UpdateDiskRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// UpdateDiskBackup implements update-disk-backup operation.
-//
-// Changes the name only. A backup's source disk and capacity cannot be changed.
-//
-// PATCH /api/v2/disk-backups/{diskBackupId}
-func (UnimplementedHandler) UpdateDiskBackup(ctx context.Context, req *UpdateDiskBackupRequestBody, params UpdateDiskBackupParams) (r *DiskBackupResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// UpdateDiskSnapshot implements update-disk-snapshot operation.
-//
-// Changes the name only. A snapshot's source disk and capacity cannot be changed.
-//
-// PATCH /api/v2/disk-snapshots/{diskSnapshotId}
-func (UnimplementedHandler) UpdateDiskSnapshot(ctx context.Context, req *UpdateDiskSnapshotRequestBody, params UpdateDiskSnapshotParams) (r *DiskSnapshotResource, _ error) {
+// POST /api/v2/instances/{instanceId}:unrescue
+func (UnimplementedHandler) UnrescueInstance(ctx context.Context, params UnrescueInstanceParams) (r UnrescueInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1528,13 +1481,56 @@ func (UnimplementedHandler) UpdateDiskSnapshot(ctx context.Context, req *UpdateD
 // operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit
 // stays in effect until the change is applied.
 //
-// While the address is associated with a virtual machine, the limit must not exceed the
-// `max_bandwidth_mbps` of that virtual machine's type; a higher limit is refused with
-// `VIRTUAL_MACHINE_BANDWIDTH_CEILING`. The limit of an address that is not associated is checked when
-// the address is associated with a virtual machine.
+// While the address is associated with an instance, the limit must not exceed the `max_bandwidth_mbps`
+// of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of
+// an address that is not associated is checked when the address is associated with an instance.
 //
 // PATCH /api/v2/elastic-ips/{elasticIpId}
 func (UnimplementedHandler) UpdateElasticIP(ctx context.Context, req *UpdateElasticIPRequestBody, params UpdateElasticIPParams) (r UpdateElasticIPRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateInstance implements update-instance operation.
+//
+// Changes the descriptive fields (`name`, `labels`, `notes`) or the operational field
+// `instance_type_id`. All fields are optional and at least one is required. Starting and stopping are
+// the `:start` and `:stop` methods.
+//
+// `instance_type_id` starts a workflow and cannot be combined with any other field in the same
+// request. Such a request is refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that
+// committed beside a change that was then refused would leave the request half applied. `checkout` and
+// `proration_date` belong to the purchase of the `instance_type_id` change and are accepted only
+// together with it.
+//
+// Descriptive fields are not operations and are accepted at any time, whatever the instance is doing.
+// The request returns 200 with `checkout_session_id` and `order_id` null.
+//
+//   - `name` changes the display name only. The hostname inside the instance is unchanged; it equals
+//     the instance id.
+//   - `labels` records what this instance is for, as key-value pairs. Nothing on the platform reads
+//     them. The whole set is replaced: whatever is absent from the request is removed, and an empty
+//     object clears them all. Do not put credentials here. Labels are visible to platform operators.
+//   - `notes` is a free-text note about this instance: what it runs, and what to be careful about
+//     before touching it. The whole note is replaced; send an empty string to clear it. Do not put
+//     credentials here. The note is visible to platform operators.
+//
+// `instance_type_id` resizes a running instance, which restarts once during the resize, and returns
+// 202 with the instance and the Checkout Session for the change, including for metered terms. The
+// instance keeps its usage type and period, priced with the target type's matching option; a target
+// type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts once
+// Billing accepts the order. Do not submit the change again after paying. After an uncertain response,
+// look the Checkout Session up in Billing before submitting again.
+//
+// The instance shows the `resize` operation until the resize is applied, its Checkout Session expires
+// or its order is canceled, so other operations and a second resize are refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new
+// type takes effect, and is billed from then on, when `instance_type_id` shows it. If checkout is not
+// completed, the order is not accepted or the resize fails, the instance keeps its current type and
+// Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
+// previous type, submit another resize.
+//
+// PATCH /api/v2/instances/{instanceId}
+func (UnimplementedHandler) UpdateInstance(ctx context.Context, req *UpdateInstanceRequestBody, params UpdateInstanceParams) (r UpdateInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1556,8 +1552,8 @@ func (UnimplementedHandler) UpdateLaunchTemplate(ctx context.Context, req *Updat
 //
 //   - `name` is not an operation, is accepted at any time and answers 200.
 //   - `security_group_ids` is the complete new set, one to five groups of the network interface's
-//     virtual private cloud; groups left out are removed. It applies to traffic of the running virtual
-//     machine as soon as it is in place, and answers 202 with the network interface showing the
+//     virtual private cloud; groups left out are removed. It applies to traffic of the running instance
+//     as soon as it is in place, and answers 202 with the network interface showing the
 //     `update_security_groups` operation until then.
 //
 // Secondary IPv4 addresses are added and removed under
@@ -1588,50 +1584,6 @@ func (UnimplementedHandler) UpdateSecurityGroup(ctx context.Context, req *Update
 	return r, ht.ErrNotImplemented
 }
 
-// UpdateVirtualMachine implements update-virtual-machine operation.
-//
-// Changes the descriptive fields (`name`, `labels`, `notes`) or the operational field
-// `machine_type_id`. All fields are optional and at least one is required. Starting and stopping are
-// the `:start` and `:stop` methods.
-//
-// `machine_type_id` starts a workflow and cannot be combined with any other field in the same request.
-// Such a request is refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside
-// a change that was then refused would leave the request half applied. `checkout` and `proration_date`
-// belong to the purchase of the `machine_type_id` change and are accepted only together with it.
-//
-// Descriptive fields are not operations and are accepted at any time, whatever the virtual machine is
-// doing. The request returns 200 with `checkout_session_id` and `order_id` null.
-//
-//   - `name` changes the display name only. The hostname inside the virtual machine is unchanged; it
-//     equals the virtual machine id.
-//   - `labels` records what this virtual machine is for, as key-value pairs. Nothing on the platform
-//     reads them. The whole set is replaced: whatever is absent from the request is removed, and an
-//     empty object clears them all. Do not put credentials here. Labels are visible to platform
-//     operators.
-//   - `notes` is a free-text note about this virtual machine: what it runs, and what to be careful
-//     about before touching it. The whole note is replaced; send an empty string to clear it. Do not
-//     put credentials here. The note is visible to platform operators.
-//
-// `machine_type_id` resizes a running virtual machine, which restarts once during the resize, and
-// returns 202 with the virtual machine and the Checkout Session for the change, including for metered
-// terms. The virtual machine keeps its usage type and period, priced with the target type's matching
-// option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. The
-// resize starts once Billing accepts the order. Do not submit the change again after paying. After an
-// uncertain response, look the Checkout Session up in Billing before submitting again.
-//
-// The virtual machine shows the `resize` operation until the resize is applied, its Checkout Session
-// expires or its order is canceled, so other operations and a second resize are refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new
-// type takes effect, and is billed from then on, when `machine_type_id` shows it. If checkout is not
-// completed, the order is not accepted or the resize fails, the virtual machine keeps its current type
-// and Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
-// previous type, submit another resize.
-//
-// PATCH /api/v2/virtual-machines/{virtualMachineId}
-func (UnimplementedHandler) UpdateVirtualMachine(ctx context.Context, req *UpdateVirtualMachineRequestBody, params UpdateVirtualMachineParams) (r UpdateVirtualMachineRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // UpdateVirtualPrivateCloud implements update-virtual-private-cloud operation.
 //
 // Only the name can change. The CIDR is fixed for the network's life, because every subnet and address
@@ -1649,6 +1601,71 @@ func (UnimplementedHandler) UpdateVirtualPrivateCloud(ctx context.Context, req *
 //
 // PATCH /api/v2/virtual-private-clouds/{virtualPrivateCloudId}/subnets/{subnetId}
 func (UnimplementedHandler) UpdateVirtualPrivateCloudSubnet(ctx context.Context, req *UpdateVirtualPrivateCloudSubnetRequestBody, params UpdateVirtualPrivateCloudSubnetParams) (r *VirtualPrivateCloudSubnet, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateVolume implements update-volume operation.
+//
+// Changes the name, the capacity or the volume type. The availability zone is immutable.
+//
+// `size_gib` and `volume_type_id` are operational fields: each starts a change and cannot be combined
+// with any other field in the same request, including the other one. Such a request is refused with
+// 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside a change that was then refused
+// would leave the request half applied. `checkout` and `proration_date` belong to the purchase of the
+// change and are accepted only together with one of them.
+//
+// Renaming is not an operation and is accepted at any time. It returns 200 with `checkout_session_id`
+// and `order_id` null.
+//
+// Resizing accepts only an increase; a smaller `size_gib` is refused with `VOLUME_CANNOT_SHRINK`
+// (422), since a file system cannot be shrunk from outside the instance. It returns 202 with the
+// volume and the Checkout Session for the resize, which keeps the volume's usage type and period. The
+// volume shows the `resize` operation until the resize is applied, its Checkout Session expires or its
+// order is canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
+// meanwhile. The volume keeps its current size until the resize is applied; once `size_gib` shows the
+// new size, extend the file system inside the instance. If checkout is not completed, the order is not
+// accepted or the resize fails, the volume keeps its size and Billing shows the outcome.
+//
+// Changing the type moves the volume to another volume type at the same capacity, priced as that type,
+// and returns 202 with the volume and the Checkout Session for the change, which keeps the volume's
+// usage type and period. The volume has to be detached (409 `VOLUME_RETYPE_ATTACHED`), so a boot
+// volume cannot change its type. The target has to be on sale (`VOLUME_TYPE_OFF_SALE`), in the
+// volume's region (422 `VOLUME_RETYPE_OTHER_REGION`), of the volume's availability zone (422
+// `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`) with room for the volume (409 `VOLUME_TYPE_SOLD_OUT`,
+// `VOLUME_TYPE_CAPACITY_REACHED`, `VOLUME_TYPE_NO_POOL_ROOM`), admit the volume's capacity (422
+// `VOLUME_SIZE_OUT_OF_RANGE`, `VOLUME_SIZE_NOT_ON_STEP`) and differ from the current one (422
+// `VOLUME_RETYPE_SAME_TYPE`). The volume shows the `retype` operation until the change is applied, its
+// Checkout Session expires or its order is canceled. A target on the same storage backend takes effect
+// at once; one on another backend copies the volume's data there first, which takes longer the larger
+// the volume is. The volume keeps its type until `volume_type_id` shows the new one, and its
+// `performance` follows from then on; a change that did not take effect leaves the volume as it was
+// and is refunded.
+//
+// An attached volume, including a boot volume, can be resized. The capacity is usable at once, and the
+// volume's `performance` shows what its type gives the new size. That performance applies from the
+// volume's next attachment, or the next start of its stopped instance: the storage reads a volume's
+// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
+//
+// PATCH /api/v2/volumes/{volumeId}
+func (UnimplementedHandler) UpdateVolume(ctx context.Context, req *UpdateVolumeRequestBody, params UpdateVolumeParams) (r UpdateVolumeRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateVolumeBackup implements update-volume-backup operation.
+//
+// Changes the name only. A backup's source volume and capacity cannot be changed.
+//
+// PATCH /api/v2/volume-backups/{volumeBackupId}
+func (UnimplementedHandler) UpdateVolumeBackup(ctx context.Context, req *UpdateVolumeBackupRequestBody, params UpdateVolumeBackupParams) (r *VolumeBackupResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateVolumeSnapshot implements update-volume-snapshot operation.
+//
+// Changes the name only. A snapshot's source volume and capacity cannot be changed.
+//
+// PATCH /api/v2/volume-snapshots/{volumeSnapshotId}
+func (UnimplementedHandler) UpdateVolumeSnapshot(ctx context.Context, req *UpdateVolumeSnapshotRequestBody, params UpdateVolumeSnapshotParams) (r *VolumeSnapshotResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

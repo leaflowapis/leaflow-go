@@ -24,21 +24,7 @@ func encodeAssociateElasticIPRequest(
 	return nil
 }
 
-func encodeAttachVirtualMachineDiskRequest(
-	req *AttachDiskRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeAttachVirtualMachineNetworkInterfaceRequest(
+func encodeAttachInstanceNetworkInterfaceRequest(
 	req *AttachNetworkInterfaceRequestBody,
 	r *http.Request,
 ) error {
@@ -52,36 +38,8 @@ func encodeAttachVirtualMachineNetworkInterfaceRequest(
 	return nil
 }
 
-func encodeCreateDiskRequest(
-	req *CreateDiskRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeCreateDiskBackupRequest(
-	req *CreateDiskBackupRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeCreateDiskSnapshotRequest(
-	req *CreateDiskSnapshotRequestBody,
+func encodeAttachInstanceVolumeRequest(
+	req *AttachVolumeRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -96,6 +54,20 @@ func encodeCreateDiskSnapshotRequest(
 
 func encodeCreateElasticIPRequest(
 	req *CreateElasticIPRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateInstanceRequest(
+	req *CreateInstanceRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -206,20 +178,6 @@ func encodeCreateSecurityGroupRuleRequest(
 	return nil
 }
 
-func encodeCreateVirtualMachineRequest(
-	req *CreateVirtualMachineRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
 func encodeCreateVirtualPrivateCloudRequest(
 	req *CreateVirtualPrivateCloudRequestBody,
 	r *http.Request,
@@ -276,8 +234,8 @@ func encodeCreateVirtualPrivateCloudSubnetRequest(
 	return nil
 }
 
-func encodeRebootVirtualMachineRequest(
-	req *RebootVirtualMachineRequestBody,
+func encodeCreateVolumeRequest(
+	req *CreateVolumeRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -290,8 +248,8 @@ func encodeRebootVirtualMachineRequest(
 	return nil
 }
 
-func encodeRebuildVirtualMachineRequest(
-	req *RebuildVirtualMachineRequestBody,
+func encodeCreateVolumeBackupRequest(
+	req *CreateVolumeBackupRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -304,8 +262,8 @@ func encodeRebuildVirtualMachineRequest(
 	return nil
 }
 
-func encodeRescueVirtualMachineRequest(
-	req *RescueVirtualMachineRequestBody,
+func encodeCreateVolumeSnapshotRequest(
+	req *CreateVolumeSnapshotRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -318,7 +276,49 @@ func encodeRescueVirtualMachineRequest(
 	return nil
 }
 
-func encodeResetVirtualMachinePasswordRequest(
+func encodeRebootInstanceRequest(
+	req *RebootInstanceRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeRebuildInstanceRequest(
+	req *RebuildInstanceRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeRescueInstanceRequest(
+	req *RescueInstanceRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeResetInstancePasswordRequest(
 	req PasswordChoice,
 	r *http.Request,
 ) error {
@@ -332,8 +332,8 @@ func encodeResetVirtualMachinePasswordRequest(
 	return nil
 }
 
-func encodeRevertDiskRequest(
-	req *RevertDiskRequestBody,
+func encodeRevertVolumeRequest(
+	req *RevertVolumeRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -346,50 +346,8 @@ func encodeRevertDiskRequest(
 	return nil
 }
 
-func encodeRunVirtualMachineCommandRequest(
-	req *RunVirtualMachineCommandRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeUpdateDiskRequest(
-	req *UpdateDiskRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeUpdateDiskBackupRequest(
-	req *UpdateDiskBackupRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeUpdateDiskSnapshotRequest(
-	req *UpdateDiskSnapshotRequestBody,
+func encodeRunInstanceCommandRequest(
+	req *RunInstanceCommandRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -404,6 +362,20 @@ func encodeUpdateDiskSnapshotRequest(
 
 func encodeUpdateElasticIPRequest(
 	req *UpdateElasticIPRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateInstanceRequest(
+	req *UpdateInstanceRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -472,20 +444,6 @@ func encodeUpdateSecurityGroupRequest(
 	return nil
 }
 
-func encodeUpdateVirtualMachineRequest(
-	req *UpdateVirtualMachineRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
 func encodeUpdateVirtualPrivateCloudRequest(
 	req *UpdateVirtualPrivateCloudRequestBody,
 	r *http.Request,
@@ -502,6 +460,48 @@ func encodeUpdateVirtualPrivateCloudRequest(
 
 func encodeUpdateVirtualPrivateCloudSubnetRequest(
 	req *UpdateVirtualPrivateCloudSubnetRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateVolumeRequest(
+	req *UpdateVolumeRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateVolumeBackupRequest(
+	req *UpdateVolumeBackupRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateVolumeSnapshotRequest(
+	req *UpdateVolumeSnapshotRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

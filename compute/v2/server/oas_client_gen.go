@@ -41,121 +41,43 @@ type Invoker interface {
 	AcceptVirtualPrivateCloudPeering(ctx context.Context, params AcceptVirtualPrivateCloudPeeringParams) (AcceptVirtualPrivateCloudPeeringRes, error)
 	// AssociateElasticIP invokes associate-elastic-ip operation.
 	//
-	// Points the elastic IP at a target: a virtual machine, which means the primary private IPv4 address
-	// of its primary network interface, or a network interface address (`network_interface_address_id`)
-	// given directly. Exactly one of `virtual_machine_id` and `network_interface_address_id`. A network
-	// interface address must be an assigned, unreleased IPv4 address on a network interface in this
-	// project and region; IPv6 addresses are rejected.
+	// Points the elastic IP at a target: an instance, which means the primary private IPv4 address of its
+	// primary network interface, or a network interface address (`network_interface_address_id`) given
+	// directly. Exactly one of `instance_id` and `network_interface_address_id`. A network interface
+	// address must be an assigned, unreleased IPv4 address on a network interface in this project and
+	// region; IPv6 addresses are rejected.
 	//
 	// The target becomes what the elastic IP points at. Repeating the request for the target it already
 	// points at changes nothing; an elastic IP associated with another target is refused with
 	// `ELASTIC_IP_ALREADY_ASSOCIATED` (409), and is moved by disassociating it first, so that the moment
 	// traffic stops reaching the old target is one the caller chose. The elastic IP shows the `associate`
-	// operation until the association is confirmed, and with a virtual machine as the target that virtual
-	// machine shows the `associate_elastic_ip` operation as well, so the virtual machine must not have
-	// another operation in progress.
+	// operation until the association is confirmed, and with an instance as the target that instance shows
+	// the `associate_elastic_ip` operation as well, so the instance must not have another operation in
+	// progress.
 	//
-	// The elastic IP must be in the same region as the target. With a virtual machine as the target, the
-	// elastic IP's `bandwidth_mbps` must not exceed the `max_bandwidth_mbps` of that virtual machine's
-	// type; a higher limit is refused with `VIRTUAL_MACHINE_BANDWIDTH_CEILING`.
+	// The elastic IP must be in the same region as the target. With an instance as the target, the elastic
+	// IP's `bandwidth_mbps` must not exceed the `max_bandwidth_mbps` of that instance's type; a higher
+	// limit is refused with `INSTANCE_BANDWIDTH_CEILING`.
 	//
 	// POST /api/v2/elastic-ips/{elasticIpId}:associate
 	AssociateElasticIP(ctx context.Context, request AssociateElasticIPRequestBody, params AssociateElasticIPParams) (AssociateElasticIPRes, error)
-	// AttachVirtualMachineDisk invokes attach-virtual-machine-disk operation.
+	// AttachInstanceNetworkInterface invokes attach-instance-network-interface operation.
 	//
-	// The disk must be in the same region and availability zone as the virtual machine. Returns the disk;
-	// the virtual machine shows the `attach_disk` operation and the disk the `attach` operation until the
-	// attachment is confirmed. Partition the disk and mount the file system inside the virtual machine
-	// once it is attached.
+	// Returns the network interface; the instance shows the `attach_network_interface` operation and the
+	// interface the `attach` operation until the attachment is confirmed. The instance has to be running;
+	// a stopped one holds no host and is refused with 409 `INSTANCE_NOT_RUNNING`.
 	//
-	// POST /api/v2/virtual-machines/{virtualMachineId}/disks
-	AttachVirtualMachineDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachVirtualMachineDiskParams) (AttachVirtualMachineDiskRes, error)
-	// AttachVirtualMachineNetworkInterface invokes attach-virtual-machine-network-interface operation.
+	// POST /api/v2/instances/{instanceId}/network-interfaces
+	AttachInstanceNetworkInterface(ctx context.Context, request *AttachNetworkInterfaceRequestBody, params AttachInstanceNetworkInterfaceParams) (AttachInstanceNetworkInterfaceRes, error)
+	// AttachInstanceVolume invokes attach-instance-volume operation.
 	//
-	// Returns the network interface; the virtual machine shows the `attach_network_interface` operation
-	// and the interface the `attach` operation until the attachment is confirmed. The virtual machine has
-	// to be running; a stopped one holds no host and is refused with 409 `VIRTUAL_MACHINE_NOT_RUNNING`.
+	// The volume must be in the same region and availability zone as the instance. Returns the volume; the
+	// instance shows the `attach_volume` operation and the volume the `attach` operation until the
+	// attachment is confirmed. Partition the volume and mount the file system inside the instance once it
+	// is attached.
 	//
-	// POST /api/v2/virtual-machines/{virtualMachineId}/network-interfaces
-	AttachVirtualMachineNetworkInterface(ctx context.Context, request *AttachNetworkInterfaceRequestBody, params AttachVirtualMachineNetworkInterfaceParams) (AttachVirtualMachineNetworkInterfaceRes, error)
-	// CreateDisk invokes create-disk operation.
-	//
-	// The disk is created in the availability zone of its disk type, and only a virtual machine in the
-	// same zone can attach it.
-	//
-	// The type has to have room for it, checked before anything is ordered: refused with 409
-	// `DISK_TYPE_SOLD_OUT` when the type takes no new disks for now, `DISK_TYPE_CAPACITY_REACHED` when
-	// what is sold of it is used up, and `DISK_TYPE_NO_POOL_ROOM` when the storage of its zone cannot take
-	// the disk. Two orders placed at the same moment can both pass; the one that finds the type full when
-	// its order is accepted is not created and is refunded, ending `failed` with `provisioning_failed`.
-	//
-	// The disk is empty, or is restored from exactly one source: `disk_snapshot_id` or `disk_backup_id`.
-	// Giving both is refused with 422 `DISK_SOURCE_CONFLICT`. A restore is a purchase of a new disk; the
-	// source disk is unaffected and need not still exist.
-	//
-	//  - From a snapshot, the disk type has to be of the snapshot's availability zone (422
-	//    `DISK_SNAPSHOT_OTHER_AVAILABILITY_ZONE`), because a snapshot lives in the same storage pool as
-	//    its source and restores only into its own zone. `size_gb` is required and must be no smaller than
-	//    the snapshot.
-	//  - From a disk backup, the disk type may be of any zone of the backup's region, because a backup is
-	//    an independent copy in different storage. `size_gb` matches the size of the backup when omitted,
-	//    and when given it must not be smaller than the backup. The disk cannot be attached until it is
-	//    `available`.
-	//
-	// A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still
-	// resolves. Types that are off sale do not appear in the disk type listing; disks already bought on
-	// one keep working and can still be resized.
-	//
-	// A disk bought on its own is licensed: `billing.usage_type` `metered` is refused with
-	// `DISK_USAGE_TYPE_UNAVAILABLE`. A disk created with a virtual machine follows the machine's terms
-	// instead and may be metered.
-	//
-	// The disk shows the `create` operation from the moment its Checkout Session is created until it is
-	// delivered or its checkout or order ends. Every other operation on it is refused with
-	// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-	// purchase awaits checkout or payment.
-	//
-	// POST /api/v2/disks
-	CreateDisk(ctx context.Context, request *CreateDiskRequestBody) (CreateDiskRes, error)
-	// CreateDiskBackup invokes create-disk-backup operation.
-	//
-	// Creates a backup of the disk. It remains restorable after the source disk is deleted and may be
-	// restored to another availability zone in the same region, by creating a disk with `disk_backup_id`
-	// (`create-disk`). A running virtual machine may produce a file-system-inconsistent backup. Pending
-	// backups count toward Compute project quotas until cleanup is confirmed.
-	//
-	// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
-	// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
-	// backup is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
-	// the customer completes checkout in Billing. The source and project quotas are checked before the
-	// Checkout Session is created, and a refused request creates nothing.
-	//
-	// The backup shows the `create` operation from the moment its Checkout Session is created until it is
-	// delivered or its checkout or order ends. Every other operation on it is refused with
-	// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-	// purchase awaits checkout or payment.
-	//
-	// POST /api/v2/disk-backups
-	CreateDiskBackup(ctx context.Context, request *CreateDiskBackupRequestBody) (CreateDiskBackupRes, error)
-	// CreateDiskSnapshot invokes create-disk-snapshot operation.
-	//
-	// Creates a snapshot of the disk. A running virtual machine may produce a file-system-inconsistent
-	// snapshot; flush pending writes first. A system disk cannot be reverted while attached. Pending
-	// snapshots count toward Compute project quotas until creation fails and cleanup is confirmed.
-	//
-	// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
-	// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
-	// snapshot is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
-	// the customer completes checkout in Billing. The source and project quotas are checked before the
-	// Checkout Session is created, and a refused request creates nothing.
-	//
-	// The snapshot shows the `create` operation from the moment its Checkout Session is created until it
-	// is delivered or its checkout or order ends. Every other operation on it is refused with
-	// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-	// purchase awaits checkout or payment.
-	//
-	// POST /api/v2/disk-snapshots
-	CreateDiskSnapshot(ctx context.Context, request *CreateDiskSnapshotRequestBody) (CreateDiskSnapshotRes, error)
+	// POST /api/v2/instances/{instanceId}/volumes
+	AttachInstanceVolume(ctx context.Context, request *AttachVolumeRequestBody, params AttachInstanceVolumeParams) (AttachInstanceVolumeRes, error)
 	// CreateElasticIP invokes create-elastic-ip operation.
 	//
 	// Select an elastic IP line. The elastic IP is bought through a Billing Checkout Session, and no
@@ -166,8 +88,8 @@ type Invoker interface {
 	// no longer available then, the elastic IP ends `failed` with `provisioning_failed` and its charge is
 	// refunded.
 	//
-	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to virtual machines by the
-	// virtual private cloud; enable IPv6 on that network instead.
+	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the virtual
+	// private cloud; enable IPv6 on that network instead.
 	//
 	// Allocation does not select or create a virtual private cloud. A later association selects an
 	// assigned network-interface address; Compute then establishes the required network connectivity.
@@ -179,16 +101,70 @@ type Invoker interface {
 	//
 	// POST /api/v2/elastic-ips
 	CreateElasticIP(ctx context.Context, request *CreateElasticIPRequestBody) (CreateElasticIPRes, error)
+	// CreateInstance invokes create-instance operation.
+	//
+	// Creates a Billing Checkout Session, including for metered terms, and returns one `pending` instance
+	// per requested instance with it. Each new component carries its own commercial terms; their usage
+	// type and period must match. A pending instance has no server, boot volume or address, and is not
+	// metered.
+	//
+	// Creation starts once Billing accepts the order: the instance stays `pending` with the `create`
+	// operation while it is created, then becomes `running`. With automatic checkout, insufficient funds
+	// refuse the request and nothing is created. With deferred checkout, the instances stay `pending`
+	// until the customer completes checkout in Billing and the order is paid; an expired Checkout Session,
+	// or a canceled or expired order, leaves them `failed` with `checkout_expired`, `order_canceled` or
+	// `order_expired`. Do not submit another creation request after paying. After an uncertain response,
+	// look the Checkout Session up in Billing before submitting again.
+	//
+	// The instances are created in the availability zone of their instance type, and the volumes bought
+	// with them have to be of volume types of that zone (422 `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`). The
+	// types have to have room for all of them, checked before anything is ordered: refused with 409
+	// `INSTANCE_TYPE_SOLD_OUT` or `VOLUME_TYPE_SOLD_OUT` when a type takes no new orders for now,
+	// `INSTANCE_TYPE_CAPACITY_REACHED` or `VOLUME_TYPE_CAPACITY_REACHED` when what is sold of it is used
+	// up, `INSTANCE_TYPE_NO_HOST_ROOM` when no host of the zone can take the machine, and
+	// `VOLUME_TYPE_NO_POOL_ROOM` when the storage of the zone cannot take the boot volume. Two orders
+	// placed at the same moment can both pass; an instance that finds a type full when its order is
+	// accepted is not created and is refunded, ending `failed` with `provisioning_failed`.
+	//
+	// Choose an image or existing volume through boot_volume, and exactly one of network_interface_id or
+	// subnet_id. Existing network interfaces, boot volumes or elastic IPs require count=1. They are not
+	// held while the instance is pending; if one is no longer usable when the order is accepted, the
+	// instance ends `failed` with `provisioning_failed`. Image boots require boot_volume; existing volumes
+	// retain their own subscription. Instances, volumes and public IPs keep their own subscription items
+	// on the same order.
+	//
+	// Instances of one request succeed or fail individually. Each instance, with its boot volume, network
+	// interface and elastic IP, is created or fails as a whole. Instances that were created are kept; each
+	// failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the
+	// order then ends `partially_completed`. An instance is delivered whole or not at all: when the
+	// customer cancels any of its order items before the order is accepted, it is not created, its
+	// remaining items are canceled and refunded, and it ends `failed` with `order_canceled`. Each instance
+	// is named after this request with a number appended.
+	//
+	// The network is checked before the Checkout Session is created, and a request it refuses orders and
+	// charges nothing. It is refused with `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE` when the virtual private
+	// cloud's `status` is not `available`, `VIRTUAL_PRIVATE_CLOUD_SUBNET_UNAVAILABLE` or
+	// `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready,
+	// `SECURITY_GROUP_OTHER_VIRTUAL_PRIVATE_CLOUD` when a security group belongs to another virtual
+	// private cloud, and `NETWORK_INTERFACE_UNAVAILABLE` when the port's `status` is not `available`.
+	// `meta` names the resource.
+	//
+	// Each instance shows the `create` operation from the moment the Checkout Session is created until it
+	// is delivered or the checkout or order ends. Every other operation on it is refused with
+	// `COMPUTE_RESOURCE_BUSY` meanwhile, and its release with `COMPUTE_PURCHASE_PENDING` while its
+	// purchase awaits checkout or payment.
+	//
+	// POST /api/v2/instances
+	CreateInstance(ctx context.Context, request *CreateInstanceRequestBody) (CreateInstanceRes, error)
 	// CreateLaunchTemplate invokes create-launch-template operation.
 	//
 	// Creates a launch template with its first version, which becomes its default. A launch template
-	// describes how to create virtual machines in one region, and creating a virtual machine can name it
+	// describes how to create instances in one region, and creating an instance can name it
 	// (`launch_template`) instead of repeating every part. It costs nothing.
 	//
 	// A template holds no billing terms, checkout options or password: those belong to each purchase. What
-	// a version names is checked when a virtual machine is created from it, against the catalog as it is
-	// then, so a version naming an image retired since is refused at that creation as any creation would
-	// be.
+	// a version names is checked when an instance is created from it, against the catalog as it is then,
+	// so a version naming an image retired since is refused at that creation as any creation would be.
 	//
 	// A project holds at most 100 launch templates in a region (`LAUNCH_TEMPLATE_LIMIT`), and names are
 	// unique among them (`LAUNCH_TEMPLATE_EXISTS`).
@@ -198,15 +174,15 @@ type Invoker interface {
 	// CreateLaunchTemplateVersion invokes create-launch-template-version operation.
 	//
 	// Adds a version, numbered after every version the template ever had, so a deleted version's number is
-	// never reused. It does not become the default by itself; set `default_version` on the template for
-	// that. A template holds at most 100 live versions (`LAUNCH_TEMPLATE_VERSION_LIMIT`).
+	// never reused. It does not become the default by itself; set `default_version_number` on the template
+	// for that. A template holds at most 100 live versions (`LAUNCH_TEMPLATE_VERSION_LIMIT`).
 	//
 	// POST /api/v2/launch-templates/{launchTemplateId}/versions
 	CreateLaunchTemplateVersion(ctx context.Context, request *NewLaunchTemplateVersion, params CreateLaunchTemplateVersionParams) (*LaunchTemplateVersion, error)
 	// CreateNetworkInterface invokes create-network-interface operation.
 	//
-	// The new network interface is not attached to any virtual machine. Primary network interfaces are not
-	// created here; they are created with the virtual machine.
+	// The new network interface is not attached to any instance. Primary network interfaces are not
+	// created here; they are created with the instance.
 	//
 	// POST /api/v2/network-interfaces
 	CreateNetworkInterface(ctx context.Context, request *CreateNetworkInterfaceRequestBody) (*NetworkInterface, error)
@@ -220,19 +196,18 @@ type Invoker interface {
 	// The operating system has to be configured to use it: DHCP hands out only the primary address.
 	// Changing the addresses of a network interface in use may briefly interrupt its traffic.
 	//
-	// A network interface holds at most its virtual machine's machine type's
-	// `max_ipv4_per_network_interface` IPv4 addresses while attached, and 50 otherwise (409
-	// `NETWORK_INTERFACE_ADDRESS_CEILING`). An address already in use in the subnet is refused with 409
-	// `NETWORK_INTERFACE_ADDRESS_ALREADY_TAKEN`, a full subnet with 409
-	// `NETWORK_INTERFACE_SUBNET_EXHAUSTED`.
+	// A network interface holds at most its instance's instance type's `max_ipv4_per_network_interface`
+	// IPv4 addresses while attached, and 50 otherwise (409 `NETWORK_INTERFACE_ADDRESS_CEILING`). An
+	// address already in use in the subnet is refused with 409 `NETWORK_INTERFACE_ADDRESS_ALREADY_TAKEN`,
+	// a full subnet with 409 `NETWORK_INTERFACE_SUBNET_EXHAUSTED`.
 	//
 	// POST /api/v2/network-interfaces/{networkInterfaceId}/addresses
 	CreateNetworkInterfaceAddress(ctx context.Context, request *CreateNetworkInterfaceAddressRequestBody, params CreateNetworkInterfaceAddressParams) (*NetworkInterface, error)
 	// CreatePrivateImage invokes create-private-image operation.
 	//
-	// Creates a project image from the virtual machine system disk, excluding data disks. Stop the virtual
-	// machine first for file-system consistency. The virtual machine cannot be released while its source
-	// disk is being captured. Compute project quotas are enforced independently of billing.
+	// Creates a project image from the instance boot volume, excluding data volumes. Stop the instance
+	// first for file-system consistency. The instance cannot be released while its source volume is being
+	// captured. Compute project quotas are enforced independently of billing.
 	//
 	// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
 	// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
@@ -264,61 +239,6 @@ type Invoker interface {
 	//
 	// POST /api/v2/security-groups/{securityGroupId}/rules
 	CreateSecurityGroupRule(ctx context.Context, request *CreateSecurityGroupRuleRequestBody, params CreateSecurityGroupRuleParams) (*SecurityGroupRule, error)
-	// CreateVirtualMachine invokes create-virtual-machine operation.
-	//
-	// Creates a Billing Checkout Session, including for metered terms, and returns one `pending` virtual
-	// machine per requested virtual machine with it. Each new component carries its own commercial terms;
-	// their usage type and period must match. A pending virtual machine has no server, system disk or
-	// address, and is not metered.
-	//
-	// Creation starts once Billing accepts the order: the virtual machine stays `pending` with the
-	// `create` operation while it is created, then becomes `active`. With automatic checkout, insufficient
-	// funds refuse the request and nothing is created. With deferred checkout, the virtual machines stay
-	// `pending` until the customer completes checkout in Billing and the order is paid; an expired
-	// Checkout Session, or a canceled or expired order, leaves them `failed` with `checkout_expired`,
-	// `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an
-	// uncertain response, look the Checkout Session up in Billing before submitting again.
-	//
-	// The virtual machines are created in the availability zone of their machine type, and the disks
-	// bought with them have to be of disk types of that zone (422 `DISK_TYPE_OTHER_AVAILABILITY_ZONE`).
-	// The types have to have room for all of them, checked before anything is ordered: refused with 409
-	// `MACHINE_TYPE_SOLD_OUT` or `DISK_TYPE_SOLD_OUT` when a type takes no new orders for now,
-	// `MACHINE_TYPE_CAPACITY_REACHED` or `DISK_TYPE_CAPACITY_REACHED` when what is sold of it is used up,
-	// `MACHINE_TYPE_NO_HOST_ROOM` when no host of the zone can take the machine, and
-	// `DISK_TYPE_NO_POOL_ROOM` when the storage of the zone cannot take the system disk. Two orders placed
-	// at the same moment can both pass; a virtual machine that finds a type full when its order is
-	// accepted is not created and is refunded, ending `failed` with `provisioning_failed`.
-	//
-	// Choose an image or existing disk through boot_disk, and exactly one of network_interface_id or
-	// subnet_id. Existing network interfaces, boot disks or elastic IPs require count=1. They are not held
-	// while the virtual machine is pending; if one is no longer usable when the order is accepted, the
-	// virtual machine ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing
-	// disks retain their own subscription. Virtual machines, disks and public IPs keep their own
-	// subscription items on the same order.
-	//
-	// Virtual machines of one request succeed or fail individually. Each virtual machine, with its system
-	// disk, network interface and elastic IP, is created or fails as a whole. Virtual machines that were
-	// created are kept; each failed virtual machine ends `failed` with `provisioning_failed`, its part of
-	// the order is refunded, and the order then ends `partially_completed`. A virtual machine is delivered
-	// whole or not at all: when the customer cancels any of its order items before the order is accepted,
-	// it is not created, its remaining items are canceled and refunded, and it ends `failed` with
-	// `order_canceled`. Each virtual machine is named after this request with a number appended.
-	//
-	// The network is checked before the Checkout Session is created, and a request it refuses orders and
-	// charges nothing. It is refused with `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE` when the virtual private
-	// cloud's `status` is not `available`, `VIRTUAL_PRIVATE_CLOUD_SUBNET_UNAVAILABLE` or
-	// `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready,
-	// `SECURITY_GROUP_OTHER_VIRTUAL_PRIVATE_CLOUD` when a security group belongs to another virtual
-	// private cloud, and `NETWORK_INTERFACE_UNAVAILABLE` when the port's `status` is not `available`.
-	// `meta` names the resource.
-	//
-	// Each virtual machine shows the `create` operation from the moment the Checkout Session is created
-	// until it is delivered or the checkout or order ends. Every other operation on it is refused with
-	// `COMPUTE_RESOURCE_BUSY` meanwhile, and its release with `COMPUTE_PURCHASE_PENDING` while its
-	// purchase awaits checkout or payment.
-	//
-	// POST /api/v2/virtual-machines
-	CreateVirtualMachine(ctx context.Context, request *CreateVirtualMachineRequestBody) (CreateVirtualMachineRes, error)
 	// CreateVirtualPrivateCloud invokes create-virtual-private-cloud operation.
 	//
 	// Creates a virtual private cloud definition and its default security group. The default security
@@ -352,65 +272,85 @@ type Invoker interface {
 	//
 	// POST /api/v2/virtual-private-clouds/{virtualPrivateCloudId}/subnets
 	CreateVirtualPrivateCloudSubnet(ctx context.Context, request *CreateVirtualPrivateCloudSubnetRequestBody, params CreateVirtualPrivateCloudSubnetParams) (*VirtualPrivateCloudSubnet, error)
-	// DeleteDisk invokes delete-disk operation.
+	// CreateVolume invokes create-volume operation.
 	//
-	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+	// The volume is created in the availability zone of its volume type, and only an instance in the same
+	// zone can attach it.
 	//
-	// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
-	// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
-	// checkout created one. Expire the session or cancel the order in Billing instead.
+	// The type has to have room for it, checked before anything is ordered: refused with 409
+	// `VOLUME_TYPE_SOLD_OUT` when the type takes no new volumes for now, `VOLUME_TYPE_CAPACITY_REACHED`
+	// when what is sold of it is used up, and `VOLUME_TYPE_NO_POOL_ROOM` when the storage of its zone
+	// cannot take the volume. Two orders placed at the same moment can both pass; the one that finds the
+	// type full when its order is accepted is not created and is refunded, ending `failed` with
+	// `provisioning_failed`.
 	//
-	// While subscriptions pay for the disk (those in its `release_set`), deleting it cancels them rather
-	// than being refused: Compute creates one Billing cancellation for the whole set and answers with it
-	// in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a licensed
-	// subscription being refunded under its terms, and `period_end` keeps the disk working until
-	// `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
-	// again, whatever mode is asked for.
+	// The volume is empty, or is restored from exactly one source: `volume_snapshot_id` or
+	// `volume_backup_id`. Giving both is refused with 422 `VOLUME_SOURCE_CONFLICT`. A restore is a
+	// purchase of a new volume; the source volume is unaffected and need not still exist.
 	//
-	// DELETE /api/v2/disks/{diskId}
-	DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error)
-	// DeleteDiskBackup invokes delete-disk-backup operation.
+	//  - From a snapshot, the volume type has to be of the snapshot's availability zone (422
+	//    `VOLUME_SNAPSHOT_OTHER_AVAILABILITY_ZONE`), because a snapshot lives in the same storage pool as
+	//    its source and restores only into its own zone. `size_gib` is required and must be no smaller
+	//    than the snapshot.
+	//  - From a volume backup, the volume type may be of any zone of the backup's region, because a backup
+	//    is an independent copy in different storage. `size_gib` matches the size of the backup when
+	//    omitted, and when given it must not be smaller than the backup. The volume cannot be attached
+	//    until it is `available`.
 	//
-	// Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of
-	// the backup ends once it is deleted.
+	// A volume type that is off sale is rejected with `VOLUME_TYPE_OFF_SALE`, even though its identifier
+	// still resolves. Types that are off sale do not appear in the volume type listing; volumes already
+	// bought on one keep working and can still be resized.
 	//
-	// Quota capacity and storage metering are released only after cleanup is confirmed.
+	// A volume bought on its own is licensed: `billing.usage_type` `metered` is refused with
+	// `VOLUME_USAGE_TYPE_UNAVAILABLE`. A volume created with an instance follows the machine's terms
+	// instead and may be metered.
 	//
-	// A resource whose purchase still awaits checkout or payment is refused with
-	// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
-	// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
-	// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
-	// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+	// The volume shows the `create` operation from the moment its Checkout Session is created until it is
+	// delivered or its checkout or order ends. Every other operation on it is refused with
+	// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+	// purchase awaits checkout or payment.
 	//
-	// While subscriptions pay for the disk backup (those in its `release_set`), deleting it cancels them
-	// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-	// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-	// licensed subscription being refunded under its terms, and `period_end` keeps the disk backup working
-	// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
-	// with it again, whatever mode is asked for.
+	// POST /api/v2/volumes
+	CreateVolume(ctx context.Context, request *CreateVolumeRequestBody) (CreateVolumeRes, error)
+	// CreateVolumeBackup invokes create-volume-backup operation.
 	//
-	// DELETE /api/v2/disk-backups/{diskBackupId}
-	DeleteDiskBackup(ctx context.Context, params DeleteDiskBackupParams) (DeleteDiskBackupRes, error)
-	// DeleteDiskSnapshot invokes delete-disk-snapshot operation.
+	// Creates a backup of the volume. It remains restorable after the source volume is deleted and may be
+	// restored to another availability zone in the same region, by creating a volume with
+	// `volume_backup_id` (`create-volume`). A running instance may produce a file-system-inconsistent
+	// backup. Pending backups count toward Compute project quotas until cleanup is confirmed.
 	//
-	// Deletes this resource. Quota capacity and storage metering are released only after cleanup is
-	// confirmed.
+	// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
+	// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
+	// backup is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
+	// the customer completes checkout in Billing. The source and project quotas are checked before the
+	// Checkout Session is created, and a refused request creates nothing.
 	//
-	// A resource whose purchase still awaits checkout or payment is refused with
-	// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
-	// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
-	// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
-	// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+	// The backup shows the `create` operation from the moment its Checkout Session is created until it is
+	// delivered or its checkout or order ends. Every other operation on it is refused with
+	// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+	// purchase awaits checkout or payment.
 	//
-	// While subscriptions pay for the snapshot (those in its `release_set`), deleting it cancels them
-	// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-	// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-	// licensed subscription being refunded under its terms, and `period_end` keeps the snapshot working
-	// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
-	// with it again, whatever mode is asked for.
+	// POST /api/v2/volume-backups
+	CreateVolumeBackup(ctx context.Context, request *CreateVolumeBackupRequestBody) (CreateVolumeBackupRes, error)
+	// CreateVolumeSnapshot invokes create-volume-snapshot operation.
 	//
-	// DELETE /api/v2/disk-snapshots/{diskSnapshotId}
-	DeleteDiskSnapshot(ctx context.Context, params DeleteDiskSnapshotParams) (DeleteDiskSnapshotRes, error)
+	// Creates a snapshot of the volume. A running instance may produce a file-system-inconsistent
+	// snapshot; flush pending writes first. A boot volume cannot be reverted while attached. Pending
+	// snapshots count toward Compute project quotas until creation fails and cleanup is confirmed.
+	//
+	// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
+	// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
+	// snapshot is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
+	// the customer completes checkout in Billing. The source and project quotas are checked before the
+	// Checkout Session is created, and a refused request creates nothing.
+	//
+	// The snapshot shows the `create` operation from the moment its Checkout Session is created until it
+	// is delivered or its checkout or order ends. Every other operation on it is refused with
+	// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+	// purchase awaits checkout or payment.
+	//
+	// POST /api/v2/volume-snapshots
+	CreateVolumeSnapshot(ctx context.Context, request *CreateVolumeSnapshotRequestBody) (CreateVolumeSnapshotRes, error)
 	// DeleteElasticIP invokes delete-elastic-ip operation.
 	//
 	// Releases the elastic IP after dissociating it. The elastic IP shows the `delete` operation until
@@ -430,10 +370,32 @@ type Invoker interface {
 	//
 	// DELETE /api/v2/elastic-ips/{elasticIpId}
 	DeleteElasticIP(ctx context.Context, params DeleteElasticIPParams) (DeleteElasticIPRes, error)
+	// DeleteInstance invokes delete-instance operation.
+	//
+	// The boot volume is deleted with the instance, and snapshots created from the boot volume are deleted
+	// with it. Data volumes are detached and kept, and their snapshots and backups are unaffected. The
+	// primary network interface is released with the instance.
+	//
+	// An instance being captured as a private image cannot be released. Wait for the capture to finish, or
+	// delete that image first.
+	//
+	// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
+	// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
+	// checkout created one. Expire the session or cancel the order in Billing instead.
+	//
+	// While subscriptions pay for the instance (those in its `release_set`), deleting it cancels them
+	// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+	// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+	// licensed subscription being refunded under its terms, and `period_end` keeps the instance working
+	// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+	// with it again, whatever mode is asked for.
+	//
+	// DELETE /api/v2/instances/{instanceId}
+	DeleteInstance(ctx context.Context, params DeleteInstanceParams) (DeleteInstanceRes, error)
 	// DeleteLaunchTemplate invokes delete-launch-template operation.
 	//
-	// Deletes the template with every version. Virtual machines created from it are not affected and keep
-	// naming the version they were created from.
+	// Deletes the template with every version. Instances created from it are not affected and keep naming
+	// the version they were created from.
 	//
 	// DELETE /api/v2/launch-templates/{launchTemplateId}
 	DeleteLaunchTemplate(ctx context.Context, params DeleteLaunchTemplateParams) error
@@ -442,12 +404,12 @@ type Invoker interface {
 	// The default version cannot be deleted (`LAUNCH_TEMPLATE_VERSION_DEFAULT`); make another version the
 	// default first.
 	//
-	// DELETE /api/v2/launch-templates/{launchTemplateId}/versions/{version}
+	// DELETE /api/v2/launch-templates/{launchTemplateId}/versions/{versionNumber}
 	DeleteLaunchTemplateVersion(ctx context.Context, params DeleteLaunchTemplateVersionParams) error
 	// DeleteNetworkInterface invokes delete-network-interface operation.
 	//
-	// The primary network interface cannot be deleted on its own, as it is released with the virtual
-	// machine. A network interface still attached to a virtual machine cannot be deleted either.
+	// The primary network interface cannot be deleted on its own, as it is released with the instance. A
+	// network interface still attached to an instance cannot be deleted either.
 	//
 	// DELETE /api/v2/network-interfaces/{networkInterfaceId}
 	DeleteNetworkInterface(ctx context.Context, params DeleteNetworkInterfaceParams) (DeleteNetworkInterfaceRes, error)
@@ -465,8 +427,8 @@ type Invoker interface {
 	// Deletes a private image of this project; any other image, public images included, is reported as not
 	// found.
 	//
-	// Deletion is rejected while virtual machines created from the image still exist, as they need it in
-	// order to be rebuilt.
+	// Deletion is rejected while instances created from the image still exist, as they need it in order to
+	// be rebuilt.
 	//
 	// An image whose capture has not finished can be deleted; the capture is aborted. This is the one
 	// operation accepted while the `create` operation is in progress.
@@ -501,32 +463,10 @@ type Invoker interface {
 	//
 	// DELETE /api/v2/security-groups/{securityGroupId}/rules/{securityGroupRuleId}
 	DeleteSecurityGroupRule(ctx context.Context, params DeleteSecurityGroupRuleParams) error
-	// DeleteVirtualMachine invokes delete-virtual-machine operation.
-	//
-	// The system disk is deleted with the virtual machine, and snapshots created from the system disk are
-	// deleted with it. Data disks are detached and kept, and their snapshots and backups are unaffected.
-	// The primary network interface is released with the virtual machine.
-	//
-	// A virtual machine being captured as a private image cannot be released. Wait for the capture to
-	// finish, or delete that image first.
-	//
-	// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
-	// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
-	// checkout created one. Expire the session or cancel the order in Billing instead.
-	//
-	// While subscriptions pay for the virtual machine (those in its `release_set`), deleting it cancels
-	// them rather than being refused: Compute creates one Billing cancellation for the whole set and
-	// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
-	// now, a licensed subscription being refunded under its terms, and `period_end` keeps the virtual
-	// machine working until `scheduled_at` and releases it then. Asking again while that cancellation is
-	// pending answers with it again, whatever mode is asked for.
-	//
-	// DELETE /api/v2/virtual-machines/{virtualMachineId}
-	DeleteVirtualMachine(ctx context.Context, params DeleteVirtualMachineParams) (DeleteVirtualMachineRes, error)
 	// DeleteVirtualPrivateCloud invokes delete-virtual-private-cloud operation.
 	//
-	// Deletion is rejected while virtual machines or network interfaces remain in the network. Its
-	// subnets, routes, security groups and IPv6 configuration are removed with it.
+	// Deletion is rejected while instances or network interfaces remain in the network. Its subnets,
+	// routes, security groups and IPv6 configuration are removed with it.
 	//
 	// DELETE /api/v2/virtual-private-clouds/{virtualPrivateCloudId}
 	DeleteVirtualPrivateCloud(ctx context.Context, params DeleteVirtualPrivateCloudParams) (DeleteVirtualPrivateCloudRes, error)
@@ -550,32 +490,90 @@ type Invoker interface {
 	//
 	// DELETE /api/v2/virtual-private-clouds/{virtualPrivateCloudId}/subnets/{subnetId}
 	DeleteVirtualPrivateCloudSubnet(ctx context.Context, params DeleteVirtualPrivateCloudSubnetParams) error
-	// DetachVirtualMachineDisk invokes detach-virtual-machine-disk operation.
+	// DeleteVolume invokes delete-volume operation.
 	//
-	// Unmount the device inside the virtual machine before calling this endpoint. Forcibly detaching a
-	// file system that is being written to corrupts data.
+	// Deletion is rejected while the volume is attached, or while snapshots created from it still exist.
 	//
-	// The disk the virtual machine boots from cannot be detached, whether it is the system disk bought
-	// with the virtual machine or a disk supplied as the existing boot_disk at launch. Such a request is
-	// refused with `VIRTUAL_MACHINE_BOOT_DISK_LOCKED` and changes nothing; releasing the virtual machine
-	// is what frees that disk.
+	// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
+	// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
+	// checkout created one. Expire the session or cancel the order in Billing instead.
 	//
-	// Returns the disk; the virtual machine shows the `detach_disk` operation and the disk the `detach`
-	// operation until the disk is detached.
+	// While subscriptions pay for the volume (those in its `release_set`), deleting it cancels them rather
+	// than being refused: Compute creates one Billing cancellation for the whole set and answers with it
+	// in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a licensed
+	// subscription being refunded under its terms, and `period_end` keeps the volume working until
+	// `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
+	// again, whatever mode is asked for.
 	//
-	// DELETE /api/v2/virtual-machines/{virtualMachineId}/disks/{diskId}
-	DetachVirtualMachineDisk(ctx context.Context, params DetachVirtualMachineDiskParams) (DetachVirtualMachineDiskRes, error)
-	// DetachVirtualMachineNetworkInterface invokes detach-virtual-machine-network-interface operation.
+	// DELETE /api/v2/volumes/{volumeId}
+	DeleteVolume(ctx context.Context, params DeleteVolumeParams) (DeleteVolumeRes, error)
+	// DeleteVolumeBackup invokes delete-volume-backup operation.
 	//
-	// The primary network interface cannot be detached; the virtual machine would lose its network
-	// address. The virtual machine has to be running; a stopped one holds no host and is refused with 409
-	// `VIRTUAL_MACHINE_NOT_RUNNING`.
+	// Independent of the source volume: deletion succeeds whether or not that volume still exists.
+	// Metering of the backup ends once it is deleted.
 	//
-	// Returns the network interface; the virtual machine shows the `detach_network_interface` operation
-	// and the interface the `detach` operation until it is detached.
+	// Quota capacity and storage metering are released only after cleanup is confirmed.
 	//
-	// DELETE /api/v2/virtual-machines/{virtualMachineId}/network-interfaces/{networkInterfaceId}
-	DetachVirtualMachineNetworkInterface(ctx context.Context, params DetachVirtualMachineNetworkInterfaceParams) (DetachVirtualMachineNetworkInterfaceRes, error)
+	// A resource whose purchase still awaits checkout or payment is refused with
+	// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
+	// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
+	// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
+	// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+	//
+	// While subscriptions pay for the volume backup (those in its `release_set`), deleting it cancels them
+	// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+	// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+	// licensed subscription being refunded under its terms, and `period_end` keeps the volume backup
+	// working until `scheduled_at` and releases it then. Asking again while that cancellation is pending
+	// answers with it again, whatever mode is asked for.
+	//
+	// DELETE /api/v2/volume-backups/{volumeBackupId}
+	DeleteVolumeBackup(ctx context.Context, params DeleteVolumeBackupParams) (DeleteVolumeBackupRes, error)
+	// DeleteVolumeSnapshot invokes delete-volume-snapshot operation.
+	//
+	// Deletes this resource. Quota capacity and storage metering are released only after cleanup is
+	// confirmed.
+	//
+	// A resource whose purchase still awaits checkout or payment is refused with
+	// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
+	// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
+	// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
+	// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+	//
+	// While subscriptions pay for the snapshot (those in its `release_set`), deleting it cancels them
+	// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+	// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+	// licensed subscription being refunded under its terms, and `period_end` keeps the snapshot working
+	// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+	// with it again, whatever mode is asked for.
+	//
+	// DELETE /api/v2/volume-snapshots/{volumeSnapshotId}
+	DeleteVolumeSnapshot(ctx context.Context, params DeleteVolumeSnapshotParams) (DeleteVolumeSnapshotRes, error)
+	// DetachInstanceNetworkInterface invokes detach-instance-network-interface operation.
+	//
+	// The primary network interface cannot be detached; the instance would lose its network address. The
+	// instance has to be running; a stopped one holds no host and is refused with 409
+	// `INSTANCE_NOT_RUNNING`.
+	//
+	// Returns the network interface; the instance shows the `detach_network_interface` operation and the
+	// interface the `detach` operation until it is detached.
+	//
+	// DELETE /api/v2/instances/{instanceId}/network-interfaces/{networkInterfaceId}
+	DetachInstanceNetworkInterface(ctx context.Context, params DetachInstanceNetworkInterfaceParams) (DetachInstanceNetworkInterfaceRes, error)
+	// DetachInstanceVolume invokes detach-instance-volume operation.
+	//
+	// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
+	// system that is being written to corrupts data.
+	//
+	// The volume the instance boots from cannot be detached, whether it is the boot volume bought with the
+	// instance or a volume supplied as the existing boot_volume at launch. Such a request is refused with
+	// `INSTANCE_BOOT_VOLUME_LOCKED` and changes nothing; releasing the instance is what frees that volume.
+	//
+	// Returns the volume; the instance shows the `detach_volume` operation and the volume the `detach`
+	// operation until the volume is detached.
+	//
+	// DELETE /api/v2/instances/{instanceId}/volumes/{volumeId}
+	DetachInstanceVolume(ctx context.Context, params DetachInstanceVolumeParams) (DetachInstanceVolumeRes, error)
 	// DisableVirtualPrivateCloudIpv6 invokes disable-virtual-private-cloud-ipv6 operation.
 	//
 	// Removes the IPv6 of every subnet and gives the /56 back. Refused while a network interface remains
@@ -586,8 +584,8 @@ type Invoker interface {
 	// DisassociateElasticIP invokes disassociate-elastic-ip operation.
 	//
 	// The address remains held by the project and simply no longer points at any network interface. The
-	// elastic IP shows the `disassociate` operation until the change is confirmed, and a virtual machine
-	// whose primary interface it pointed at shows the `disassociate_elastic_ip` operation. Removing an
+	// elastic IP shows the `disassociate` operation until the change is confirmed, and an instance whose
+	// primary interface it pointed at shows the `disassociate_elastic_ip` operation. Removing an
 	// association that does not exist is refused with 404 `ELASTIC_IP_NOT_ASSOCIATED`.
 	//
 	// POST /api/v2/elastic-ips/{elasticIpId}:disassociate
@@ -606,36 +604,10 @@ type Invoker interface {
 	EnableVirtualPrivateCloudIpv6(ctx context.Context, params EnableVirtualPrivateCloudIpv6Params) (EnableVirtualPrivateCloudIpv6Res, error)
 	// GetAvailabilityZone invokes get-availability-zone operation.
 	//
-	// A disk and a virtual machine must reside in the same availability zone to be attached.
+	// A volume and an instance must reside in the same availability zone to be attached.
 	//
 	// GET /api/v2/availability-zones/{availabilityZoneId}
 	GetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (*AvailabilityZoneResource, error)
-	// GetDisk invokes get-disk operation.
-	//
-	// Returns the stored state of the disk; it does not query the cloud.
-	//
-	// GET /api/v2/disks/{diskId}
-	GetDisk(ctx context.Context, params GetDiskParams) (*DiskResource, error)
-	// GetDiskBackup invokes get-disk-backup operation.
-	//
-	// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
-	// progress.
-	//
-	// GET /api/v2/disk-backups/{diskBackupId}
-	GetDiskBackup(ctx context.Context, params GetDiskBackupParams) (*DiskBackupResource, error)
-	// GetDiskSnapshot invokes get-disk-snapshot operation.
-	//
-	// Retrieve a snapshot.
-	//
-	// GET /api/v2/disk-snapshots/{diskSnapshotId}
-	GetDiskSnapshot(ctx context.Context, params GetDiskSnapshotParams) (*DiskSnapshotResource, error)
-	// GetDiskType invokes get-disk-type operation.
-	//
-	// Retrieve capacity and performance constraints for an existing disk, including types withdrawn from
-	// sale.
-	//
-	// GET /api/v2/disk-types/{diskTypeId}
-	GetDiskType(ctx context.Context, params GetDiskTypeParams) (*DiskTypeResource, error)
 	// GetElasticIP invokes get-elastic-ip operation.
 	//
 	// Retrieve an elastic IP.
@@ -659,6 +631,38 @@ type Invoker interface {
 	//
 	// GET /api/v2/elastic-ip-lines/{elasticIpLineId}
 	GetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (*ElasticIPLine, error)
+	// GetInstance invokes get-instance operation.
+	//
+	// Returns the stored state of the instance; it does not query the cloud. Use it to poll creation
+	// progress.
+	//
+	// GET /api/v2/instances/{instanceId}
+	GetInstance(ctx context.Context, params GetInstanceParams) (*Instance, error)
+	// GetInstanceConsole invokes get-instance-console operation.
+	//
+	// The instance's VNC console, operated from a browser through a noVNC client. It does not require the
+	// instance to be reachable over the network, which makes it usable when a network misconfiguration
+	// prevents login.
+	//
+	// The returned address is single-use and expires within minutes. Every request issues a new address,
+	// so request one before each use and do not cache the response.
+	//
+	// GET /api/v2/instances/{instanceId}/console
+	GetInstanceConsole(ctx context.Context, params GetInstanceConsoleParams) (*ConsoleResponseBody, error)
+	// GetInstanceFamily invokes get-instance-family operation.
+	//
+	// Returns an instance family under the same rule as listing; a family with no instance type on sale or
+	// sold out returns 404.
+	//
+	// GET /api/v2/instance-families/{instanceFamilyId}
+	GetInstanceFamily(ctx context.Context, params GetInstanceFamilyParams) (*InstanceFamily, error)
+	// GetInstanceType invokes get-instance-type operation.
+	//
+	// Returns an instance type on sale or sold out, under the same access rules as listing. Off-sale,
+	// retired or absent types return 404.
+	//
+	// GET /api/v2/instance-types/{instanceTypeId}
+	GetInstanceType(ctx context.Context, params GetInstanceTypeParams) (*InstanceType, error)
 	// GetLaunchTemplate invokes get-launch-template operation.
 	//
 	// Get a launch template.
@@ -669,15 +673,8 @@ type Invoker interface {
 	//
 	// Get a launch template version.
 	//
-	// GET /api/v2/launch-templates/{launchTemplateId}/versions/{version}
+	// GET /api/v2/launch-templates/{launchTemplateId}/versions/{versionNumber}
 	GetLaunchTemplateVersion(ctx context.Context, params GetLaunchTemplateVersionParams) (*LaunchTemplateVersion, error)
-	// GetMachineType invokes get-machine-type operation.
-	//
-	// Returns a machine type on sale or sold out, under the same access rules as listing. Off-sale,
-	// retired or absent types return 404.
-	//
-	// GET /api/v2/machine-types/{machineTypeId}
-	GetMachineType(ctx context.Context, params GetMachineTypeParams) (*MachineType, error)
 	// GetNetworkInterface invokes get-network-interface operation.
 	//
 	// Returns the stored state of the network interface; it does not query the cloud.
@@ -702,9 +699,9 @@ type Invoker interface {
 	// GetPublicImage invokes get-public-image operation.
 	//
 	// Returns a public image, on sale or withdrawn. A withdrawn image (`sale_status` is `off_sale`) is
-	// still returned because virtual machines may keep running it; it cannot be chosen for a new virtual
-	// machine and can only be rebuilt onto by a virtual machine that already runs it. A private image id
-	// is reported as not found here; use `/private-images`.
+	// still returned because instances may keep running it; it cannot be chosen for a new instance and can
+	// only be rebuilt onto by an instance that already runs it. A private image id is reported as not
+	// found here; use `/private-images`.
 	//
 	// GET /api/v2/public-images/{publicImageId}
 	GetPublicImage(ctx context.Context, params GetPublicImageParams) (*PublicImageResource, error)
@@ -734,24 +731,6 @@ type Invoker interface {
 	//
 	// GET /api/v2/security-groups/{securityGroupId}/rules/{securityGroupRuleId}
 	GetSecurityGroupRule(ctx context.Context, params GetSecurityGroupRuleParams) (*SecurityGroupRule, error)
-	// GetVirtualMachine invokes get-virtual-machine operation.
-	//
-	// Returns the stored state of the virtual machine; it does not query the cloud. Use it to poll
-	// creation progress.
-	//
-	// GET /api/v2/virtual-machines/{virtualMachineId}
-	GetVirtualMachine(ctx context.Context, params GetVirtualMachineParams) (*VirtualMachine, error)
-	// GetVirtualMachineConsole invokes get-virtual-machine-console operation.
-	//
-	// The virtual machine's VNC console, operated from a browser through a noVNC client. It does not
-	// require the virtual machine to be reachable over the network, which makes it usable when a network
-	// misconfiguration prevents login.
-	//
-	// The returned address is single-use and expires within minutes. Every request issues a new address,
-	// so request one before each use and do not cache the response.
-	//
-	// GET /api/v2/virtual-machines/{virtualMachineId}/console
-	GetVirtualMachineConsole(ctx context.Context, params GetVirtualMachineConsoleParams) (*ConsoleResponseBody, error)
 	// GetVirtualPrivateCloud invokes get-virtual-private-cloud operation.
 	//
 	// Retrieve a virtual private cloud.
@@ -783,40 +762,39 @@ type Invoker interface {
 	//
 	// GET /api/v2/virtual-private-clouds/{virtualPrivateCloudId}/subnets/{subnetId}
 	GetVirtualPrivateCloudSubnet(ctx context.Context, params GetVirtualPrivateCloudSubnetParams) (*VirtualPrivateCloudSubnet, error)
+	// GetVolume invokes get-volume operation.
+	//
+	// Returns the stored state of the volume; it does not query the cloud.
+	//
+	// GET /api/v2/volumes/{volumeId}
+	GetVolume(ctx context.Context, params GetVolumeParams) (*VolumeResource, error)
+	// GetVolumeBackup invokes get-volume-backup operation.
+	//
+	// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
+	// progress.
+	//
+	// GET /api/v2/volume-backups/{volumeBackupId}
+	GetVolumeBackup(ctx context.Context, params GetVolumeBackupParams) (*VolumeBackupResource, error)
+	// GetVolumeSnapshot invokes get-volume-snapshot operation.
+	//
+	// Retrieve a snapshot.
+	//
+	// GET /api/v2/volume-snapshots/{volumeSnapshotId}
+	GetVolumeSnapshot(ctx context.Context, params GetVolumeSnapshotParams) (*VolumeSnapshotResource, error)
+	// GetVolumeType invokes get-volume-type operation.
+	//
+	// Retrieve capacity and performance constraints for an existing volume, including types withdrawn from
+	// sale.
+	//
+	// GET /api/v2/volume-types/{volumeTypeId}
+	GetVolumeType(ctx context.Context, params GetVolumeTypeParams) (*VolumeTypeResource, error)
 	// ListAvailabilityZones invokes list-availability-zones operation.
 	//
-	// A disk and a virtual machine must reside in the same availability zone to be attached. Confirm the
-	// zone before creating either. Without `region_id`, the zones of every region are listed.
+	// A volume and an instance must reside in the same availability zone to be attached. Confirm the zone
+	// before creating either. Without `region_id`, the zones of every region are listed.
 	//
 	// GET /api/v2/availability-zones
 	ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*AvailabilityZoneListResponseBody, error)
-	// ListDiskBackups invokes list-disk-backups operation.
-	//
-	// List disk backups.
-	//
-	// GET /api/v2/disk-backups
-	ListDiskBackups(ctx context.Context, params ListDiskBackupsParams) (*DiskBackupListResponseBody, error)
-	// ListDiskSnapshots invokes list-disk-snapshots operation.
-	//
-	// List snapshots.
-	//
-	// GET /api/v2/disk-snapshots
-	ListDiskSnapshots(ctx context.Context, params ListDiskSnapshotsParams) (*DiskSnapshotListResponseBody, error)
-	// ListDiskTypes invokes list-disk-types operation.
-	//
-	// Disk types on sale are listed, and sold-out ones with `sale_status` `sold_out`. Any of them boots a
-	// virtual machine of its zone, holds data or takes a restore. A withdrawn one disappears from here and
-	// can no longer be bought, while the disks already on it keep working and can still be resized.
-	//
-	// GET /api/v2/disk-types
-	ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeListResponseBody, error)
-	// ListDisks invokes list-disks operation.
-	//
-	// When both `region_id` and `availability_zone_id` are supplied, only disks attachable to a virtual
-	// machine at that location are returned.
-	//
-	// GET /api/v2/disks
-	ListDisks(ctx context.Context, params ListDisksParams) (*DiskListResponseBody, error)
 	// ListElasticIPLines invokes list-elastic-ip-lines operation.
 	//
 	// Lists the lines on sale. A line is the network an elastic IP is bought on, with the bandwidth that
@@ -845,6 +823,40 @@ type Invoker interface {
 	//
 	// GET /api/v2/elastic-ips
 	ListElasticIps(ctx context.Context, params ListElasticIpsParams) (*ElasticIPListResponseBody, error)
+	// ListInstanceFamilies invokes list-instance-families operation.
+	//
+	// An instance family is one hardware line of a region, such as `g7`, and its instance types are its
+	// sizes in each availability zone. A family shows here while it has an instance type on sale or sold
+	// out.
+	//
+	// GET /api/v2/instance-families
+	ListInstanceFamilies(ctx context.Context, params ListInstanceFamiliesParams) (*InstanceFamilyListResponseBody, error)
+	// ListInstanceNetworkInterfaces invokes list-instance-network-interfaces operation.
+	//
+	// List the network interfaces of an instance.
+	//
+	// GET /api/v2/instances/{instanceId}/network-interfaces
+	ListInstanceNetworkInterfaces(ctx context.Context, params ListInstanceNetworkInterfacesParams) (*NetworkInterfaceAttachmentList, error)
+	// ListInstanceTypes invokes list-instance-types operation.
+	//
+	// Instance types on sale are listed, and sold-out ones with `sale_status` `sold_out`. A withdrawn one
+	// disappears from here and can no longer be ordered, while the instances already running it keep
+	// running.
+	//
+	// GET /api/v2/instance-types
+	ListInstanceTypes(ctx context.Context, params ListInstanceTypesParams) (*InstanceTypeListResponseBody, error)
+	// ListInstanceVolumes invokes list-instance-volumes operation.
+	//
+	// List the volumes attached to an instance.
+	//
+	// GET /api/v2/instances/{instanceId}/volumes
+	ListInstanceVolumes(ctx context.Context, params ListInstanceVolumesParams) (*VolumeAttachmentList, error)
+	// ListInstances invokes list-instances operation.
+	//
+	// Every instance in the project, newest first, in their stored state.
+	//
+	// GET /api/v2/instances
+	ListInstances(ctx context.Context, params ListInstancesParams) (*InstanceListResponseBody, error)
 	// ListLaunchTemplateVersions invokes list-launch-template-versions operation.
 	//
 	// Newest first.
@@ -857,14 +869,6 @@ type Invoker interface {
 	//
 	// GET /api/v2/launch-templates
 	ListLaunchTemplates(ctx context.Context, params ListLaunchTemplatesParams) (*LaunchTemplateListResponseBody, error)
-	// ListMachineTypes invokes list-machine-types operation.
-	//
-	// Machine types on sale are listed, and sold-out ones with `sale_status` `sold_out`. A withdrawn one
-	// disappears from here and can no longer be ordered, while the virtual machines already running it
-	// keep running.
-	//
-	// GET /api/v2/machine-types
-	ListMachineTypes(ctx context.Context, params ListMachineTypesParams) (*MachineTypeListResponseBody, error)
 	// ListNetworkInterfaces invokes list-network-interfaces operation.
 	//
 	// List network interfaces.
@@ -878,7 +882,7 @@ type Invoker interface {
 	//
 	// Operations performed by the platform are included, but the individual operator is not disclosed and
 	// `actor_type` is `platform`. Suspension for non-payment and bans for abuse are examples: the time at
-	// which a virtual machine was stopped by the platform is needed, whereas the operator is internal
+	// which an instance was stopped by the platform is needed, whereas the operator is internal
 	// information.
 	//
 	// Fields such as passwords are replaced with a placeholder as the record is written and never appear
@@ -891,11 +895,11 @@ type Invoker interface {
 	// Lists the private images of this project, newest first, in every status: including while a capture
 	// is in progress and after it failed. Private images of other projects are never listed.
 	//
-	// A private image is usable only by the project that captured it from one of its virtual machines. Its
+	// A private image is usable only by the project that captured it from one of its instances. Its
 	// storage is metered by the hour on a subscription of the project.
 	//
-	// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
-	// memory of the selected machine type cannot boot; filter the options accordingly. Public images are
+	// An image can only be used in the region that holds it. An image whose `min_memory_mib` exceeds the
+	// memory of the selected instance type cannot boot; filter the options accordingly. Public images are
 	// in `/public-images`.
 	//
 	// GET /api/v2/private-images
@@ -903,14 +907,14 @@ type Invoker interface {
 	// ListPublicImages invokes list-public-images operation.
 	//
 	// Lists the platform's public images that are on sale. A public image is offered to every project. One
-	// the platform withdraws disappears from here and can no longer install new virtual machines, while
-	// the virtual machines already running it keep running and can still be rebuilt onto it; retrieve it
-	// by id to see it.
+	// the platform withdraws disappears from here and can no longer install new instances, while the
+	// instances already running it keep running and can still be rebuilt onto it; retrieve it by id to see
+	// it.
 	//
-	// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
-	// memory of the selected machine type cannot boot; filter the options accordingly.
+	// An image can only be used in the region that holds it. An image whose `min_memory_mib` exceeds the
+	// memory of the selected instance type cannot boot; filter the options accordingly.
 	//
-	// Images this project captured from its own virtual machines are in `/private-images`.
+	// Images this project captured from its own instances are in `/private-images`.
 	//
 	// GET /api/v2/public-images
 	ListPublicImages(ctx context.Context, params ListPublicImagesParams) (*PublicImageListResponseBody, error)
@@ -942,24 +946,6 @@ type Invoker interface {
 	//
 	// GET /api/v2/security-groups
 	ListSecurityGroups(ctx context.Context, params ListSecurityGroupsParams) (*SecurityGroupListResponseBody, error)
-	// ListVirtualMachineDisks invokes list-virtual-machine-disks operation.
-	//
-	// List the disks attached to a virtual machine.
-	//
-	// GET /api/v2/virtual-machines/{virtualMachineId}/disks
-	ListVirtualMachineDisks(ctx context.Context, params ListVirtualMachineDisksParams) (*DiskAttachmentList, error)
-	// ListVirtualMachineNetworkInterfaces invokes list-virtual-machine-network-interfaces operation.
-	//
-	// List the network interfaces of a virtual machine.
-	//
-	// GET /api/v2/virtual-machines/{virtualMachineId}/network-interfaces
-	ListVirtualMachineNetworkInterfaces(ctx context.Context, params ListVirtualMachineNetworkInterfacesParams) (*NetworkInterfaceAttachmentList, error)
-	// ListVirtualMachines invokes list-virtual-machines operation.
-	//
-	// Every virtual machine in the project, newest first, in their stored state.
-	//
-	// GET /api/v2/virtual-machines
-	ListVirtualMachines(ctx context.Context, params ListVirtualMachinesParams) (*VirtualMachineListResponseBody, error)
 	// ListVirtualPrivateCloudPeerings invokes list-virtual-private-cloud-peerings operation.
 	//
 	// List peerings.
@@ -987,7 +973,34 @@ type Invoker interface {
 	//
 	// GET /api/v2/virtual-private-clouds
 	ListVirtualPrivateClouds(ctx context.Context, params ListVirtualPrivateCloudsParams) (*VirtualPrivateCloudListResponseBody, error)
-	// RebootVirtualMachine invokes reboot-virtual-machine operation.
+	// ListVolumeBackups invokes list-volume-backups operation.
+	//
+	// List volume backups.
+	//
+	// GET /api/v2/volume-backups
+	ListVolumeBackups(ctx context.Context, params ListVolumeBackupsParams) (*VolumeBackupListResponseBody, error)
+	// ListVolumeSnapshots invokes list-volume-snapshots operation.
+	//
+	// List snapshots.
+	//
+	// GET /api/v2/volume-snapshots
+	ListVolumeSnapshots(ctx context.Context, params ListVolumeSnapshotsParams) (*VolumeSnapshotListResponseBody, error)
+	// ListVolumeTypes invokes list-volume-types operation.
+	//
+	// Volume types on sale are listed, and sold-out ones with `sale_status` `sold_out`. Any of them boots
+	// an instance of its zone, holds data or takes a restore. A withdrawn one disappears from here and can
+	// no longer be bought, while the volumes already on it keep working and can still be resized.
+	//
+	// GET /api/v2/volume-types
+	ListVolumeTypes(ctx context.Context, params ListVolumeTypesParams) (*VolumeTypeListResponseBody, error)
+	// ListVolumes invokes list-volumes operation.
+	//
+	// When both `region_id` and `availability_zone_id` are supplied, only volumes attachable to an
+	// instance at that location are returned.
+	//
+	// GET /api/v2/volumes
+	ListVolumes(ctx context.Context, params ListVolumesParams) (*VolumeListResponseBody, error)
+	// RebootInstance invokes reboot-instance operation.
 	//
 	// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
 	//
@@ -995,32 +1008,31 @@ type Invoker interface {
 	// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
 	//
 	// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft
-	// reboot the virtual machine never carried out. Any other request for an operation, including a second
-	// soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
+	// reboot the instance never carried out. Any other request for an operation, including a second soft
+	// reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
 	//
-	// A virtual machine suspended by the platform must be unsuspended first.
+	// An instance suspended by the platform must be unsuspended first.
 	//
-	// The virtual machine shows the `reboot` operation until the reboot has finished.
+	// The instance shows the `reboot` operation until the reboot has finished.
 	//
-	// POST /api/v2/virtual-machines/{virtualMachineId}:reboot
-	RebootVirtualMachine(ctx context.Context, request *RebootVirtualMachineRequestBody, params RebootVirtualMachineParams) (RebootVirtualMachineRes, error)
-	// RebuildVirtualMachine invokes rebuild-virtual-machine operation.
+	// POST /api/v2/instances/{instanceId}:reboot
+	RebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (RebootInstanceRes, error)
+	// RebuildInstance invokes rebuild-instance operation.
 	//
-	// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
+	// All data on the boot volume is erased and cannot be recovered. Attached data volumes are unaffected.
 	//
-	// The virtual machine has to be running; a stopped one holds no host and is refused with 409
-	// `VIRTUAL_MACHINE_NOT_RUNNING`. Start it first; a virtual machine whose operating system no longer
-	// boots still starts.
+	// The instance has to be running; a stopped one holds no host and is refused with 409
+	// `INSTANCE_NOT_RUNNING`. Start it first; an instance whose operating system no longer boots still
+	// starts.
 	//
-	// The image this virtual machine already runs is accepted even after the platform has withdrawn it,
-	// since rebuilding is the only way back into a virtual machine broken from the inside. Any other
-	// withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new
-	// order.
+	// The image this instance already runs is accepted even after the platform has withdrawn it, since
+	// rebuilding is the only way back into an instance broken from the inside. Any other withdrawn image
+	// is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 	//
-	// The virtual machine shows the `rebuild` operation until the rebuild has finished.
+	// The instance shows the `rebuild` operation until the rebuild has finished.
 	//
-	// POST /api/v2/virtual-machines/{virtualMachineId}:rebuild
-	RebuildVirtualMachine(ctx context.Context, request *RebuildVirtualMachineRequestBody, params RebuildVirtualMachineParams) (RebuildVirtualMachineRes, error)
+	// POST /api/v2/instances/{instanceId}:rebuild
+	RebuildInstance(ctx context.Context, request *RebuildInstanceRequestBody, params RebuildInstanceParams) (RebuildInstanceRes, error)
 	// RejectVirtualPrivateCloudPeering invokes reject-virtual-private-cloud-peering operation.
 	//
 	// Ends the peering with its `acceptance` `rejected` and its `status` `deleted`; no connectivity is
@@ -1030,49 +1042,48 @@ type Invoker interface {
 	//
 	// POST /api/v2/virtual-private-cloud-peerings/{virtualPrivateCloudPeeringId}:reject
 	RejectVirtualPrivateCloudPeering(ctx context.Context, params RejectVirtualPrivateCloudPeeringParams) (RejectVirtualPrivateCloudPeeringRes, error)
-	// RescueVirtualMachine invokes rescue-virtual-machine operation.
+	// RescueInstance invokes rescue-instance operation.
 	//
-	// Boots a temporary rescue environment while retaining the original system disk. Starting, stopping,
-	// changing `machine_type_id`, rebuilding and resetting the password are unavailable in rescue mode. A
-	// stopped virtual machine holds no host and is refused with 409 `VIRTUAL_MACHINE_NOT_RUNNING`; start
-	// it first, which works even when its operating system no longer boots.
+	// Boots a temporary rescue environment while retaining the original boot volume. Starting, stopping,
+	// changing `instance_type_id`, rebuilding and resetting the password are unavailable in rescue mode. A
+	// stopped instance holds no host and is refused with 409 `INSTANCE_NOT_RUNNING`; start it first, which
+	// works even when its operating system no longer boots.
 	//
 	// The request does not name an image. The rescue image is the region's enabled rescue image for the
-	// architecture of the virtual machine's system disk. A region and architecture with no enabled rescue
-	// image is refused with `RESCUE_IMAGE_NOT_CONFIGURED` (409).
+	// architecture of the instance's boot volume. A region and architecture with no enabled rescue image
+	// is refused with `RESCUE_IMAGE_NOT_CONFIGURED` (409).
 	//
-	// POST /api/v2/virtual-machines/{virtualMachineId}:rescue
-	RescueVirtualMachine(ctx context.Context, request *RescueVirtualMachineRequestBody, params RescueVirtualMachineParams) (RescueVirtualMachineRes, error)
-	// ResetVirtualMachinePassword invokes reset-virtual-machine-password operation.
+	// POST /api/v2/instances/{instanceId}:rescue
+	RescueInstance(ctx context.Context, request *RescueInstanceRequestBody, params RescueInstanceParams) (RescueInstanceRes, error)
+	// ResetInstancePassword invokes reset-instance-password operation.
 	//
 	// Sets the password of the login account (`login_username`) without a reboot; root is never given one.
-	// The virtual machine must be running.
+	// The instance must be running.
 	//
 	// Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
-	// password can then only be set by rebuilding the virtual machine, which erases all data on the system
-	// disk.
+	// password can then only be set by rebuilding the instance, which erases all data on the boot volume.
 	//
 	// The request is also rejected when the image is marked as supported but the corresponding component
-	// has been removed or stopped inside the virtual machine.
+	// has been removed or stopped inside the instance.
 	//
-	// POST /api/v2/virtual-machines/{virtualMachineId}:resetPassword
-	ResetVirtualMachinePassword(ctx context.Context, request PasswordChoice, params ResetVirtualMachinePasswordParams) (ResetVirtualMachinePasswordRes, error)
-	// RevertDisk invokes revert-disk operation.
+	// POST /api/v2/instances/{instanceId}:resetPassword
+	ResetInstancePassword(ctx context.Context, request PasswordChoice, params ResetInstancePasswordParams) (ResetInstancePasswordRes, error)
+	// RevertVolume invokes revert-volume operation.
 	//
-	// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
-	// moment is lost and cannot be recovered.
+	// Restores the contents of the volume to the moment the snapshot was taken. All data written after
+	// that moment is lost and cannot be recovered.
 	//
-	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
-	// must be detached from its virtual machine first; and a disk resized since the snapshot was taken
-	// cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a
-	// new disk from the snapshot instead.
+	// Three restrictions apply: only the most recent snapshot of the volume can be reverted to; the volume
+	// must be detached from its instance first; and a volume resized since the snapshot was taken cannot
+	// be reverted. To return to an earlier point in time, or to keep the existing volume, create a new
+	// volume from the snapshot instead.
 	//
-	// The revert is a request of its own rather than a state of the disk: the response is the disk, which
-	// shows the `revert` operation until the revert is complete.
+	// The revert is a request of its own rather than a state of the volume: the response is the volume,
+	// which shows the `revert` operation until the revert is complete.
 	//
-	// POST /api/v2/disks/{diskId}:revert
-	RevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (RevertDiskRes, error)
-	// RunVirtualMachineCommand invokes run-virtual-machine-command operation.
+	// POST /api/v2/volumes/{volumeId}:revert
+	RevertVolume(ctx context.Context, request *RevertVolumeRequestBody, params RevertVolumeParams) (RevertVolumeRes, error)
+	// RunInstanceCommand invokes run-instance-command operation.
 	//
 	// Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
 	// standard input and no way to answer a prompt: a command that waits for input produces nothing and is
@@ -1083,117 +1094,62 @@ type Invoker interface {
 	// that matches nothing exits 1 and is a perfectly successful call.
 	//
 	// The status therefore answers a different question — did the command run at all. A non-2xx means it
-	// did not, and nothing about the virtual machine was changed by this request: it was suspended, not
-	// running or had no elastic IP associated; or it refused the platform key; or the connection could not
-	// be opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
+	// did not, and nothing about the instance was changed by this request: it was suspended, not running
+	// or had no elastic IP associated; or it refused the platform key; or the connection could not be
+	// opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
 	//
-	// Three conditions must hold; the virtual machine is unreachable otherwise:
+	// Three conditions must hold; the instance is unreachable otherwise:
 	//
-	//  - it is `active`
+	//  - it is `running`
 	//  - an elastic IP is associated with it, since this endpoint connects over the public internet
 	//  - its security group permits inbound TCP 22
 	//
-	// Authentication uses the key the platform attaches to every virtual machine at creation, so nothing
-	// has to be set up first. The virtual machine must have applied that key at first boot, which images
-	// without a full cloud-init do not do.
+	// Authentication uses the key the platform attaches to every instance at creation, so nothing has to
+	// be set up first. The instance must have applied that key at first boot, which images without a full
+	// cloud-init do not do.
 	//
-	// Do not pass secrets in the command. Read them from a file on the virtual machine instead: neither
-	// the command nor its output is a confidential channel.
+	// Do not pass secrets in the command. Read them from a file on the instance instead: neither the
+	// command nor its output is a confidential channel.
 	//
 	// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
 	//
-	// POST /api/v2/virtual-machines/{virtualMachineId}:runCommand
-	RunVirtualMachineCommand(ctx context.Context, request *RunVirtualMachineCommandRequestBody, params RunVirtualMachineCommandParams) (*RunVirtualMachineCommandResponseBody, error)
-	// StartVirtualMachine invokes start-virtual-machine operation.
+	// POST /api/v2/instances/{instanceId}:runCommand
+	RunInstanceCommand(ctx context.Context, request *RunInstanceCommandRequestBody, params RunInstanceCommandParams) (*RunInstanceCommandResponseBody, error)
+	// StartInstance invokes start-instance operation.
 	//
-	// Places the virtual machine on a host of its availability zone again; outstanding restrictions can
-	// prevent starting. When no host of the zone has room for it now, the request is refused with 409
-	// `VIRTUAL_MACHINE_START_NO_HOST_ROOM` and the virtual machine stays stopped; try again later. Another
-	// start can take the room after the request was accepted, and the start then ends with the virtual
-	// machine still stopped. It shows the `start` operation until it is running or the start has failed.
+	// Places the instance on a host of its availability zone again; outstanding restrictions can prevent
+	// starting. When no host of the zone has room for it now, the request is refused with 409
+	// `INSTANCE_START_NO_HOST_ROOM` and the instance stays stopped; try again later. Another start can
+	// take the room after the request was accepted, and the start then ends with the instance still
+	// stopped. It shows the `start` operation until it is running or the start has failed.
 	//
-	// Starting connects its disks afresh, so a disk grown while attached runs at the performance of its
-	// new size from the next start after a stop. A virtual machine powered off from inside its operating
-	// system keeps its host and starts on it again; stop it with `:stop` first for its disks to be
-	// connected afresh. Starting a running virtual machine changes nothing.
+	// Starting connects its volumes afresh, so a volume grown while attached runs at the performance of
+	// its new size from the next start after a stop. An instance powered off from inside its operating
+	// system keeps its host and starts on it again; stop it with `:stop` first for its volumes to be
+	// connected afresh. Starting a running instance changes nothing.
 	//
-	// POST /api/v2/virtual-machines/{virtualMachineId}:start
-	StartVirtualMachine(ctx context.Context, params StartVirtualMachineParams) (StartVirtualMachineRes, error)
-	// StopVirtualMachine invokes stop-virtual-machine operation.
+	// POST /api/v2/instances/{instanceId}:start
+	StartInstance(ctx context.Context, params StartInstanceParams) (StartInstanceRes, error)
+	// StopInstance invokes stop-instance operation.
 	//
-	// Stops the virtual machine and releases its host, as on AWS and Alibaba Cloud: a stopped virtual
-	// machine keeps its disks, network interfaces, addresses and quota, holds no vCPU or memory, and is
-	// not charged for compute. It shows the `stop` operation until it is stopped. Stopping a stopped
-	// virtual machine changes nothing.
+	// Stops the instance and releases its host, as on AWS and Alibaba Cloud: a stopped instance keeps its
+	// volumes, network interfaces, addresses and quota, holds no vCPU or memory, and is not charged for
+	// compute. It shows the `stop` operation until it is stopped. Stopping a stopped instance changes
+	// nothing.
 	//
-	// A stopped virtual machine holds no host, so changing `machine_type_id`, rebuilding it, rescuing it
-	// and attaching or detaching a network interface are refused with 409 `VIRTUAL_MACHINE_NOT_RUNNING`
-	// until it is started. Disks can be attached and detached while it is stopped.
+	// A stopped instance holds no host, so changing `instance_type_id`, rebuilding it, rescuing it and
+	// attaching or detaching a network interface are refused with 409 `INSTANCE_NOT_RUNNING` until it is
+	// started. Volumes can be attached and detached while it is stopped.
 	//
-	// POST /api/v2/virtual-machines/{virtualMachineId}:stop
-	StopVirtualMachine(ctx context.Context, params StopVirtualMachineParams) (StopVirtualMachineRes, error)
-	// UnrescueVirtualMachine invokes unrescue-virtual-machine operation.
+	// POST /api/v2/instances/{instanceId}:stop
+	StopInstance(ctx context.Context, params StopInstanceParams) (StopInstanceRes, error)
+	// UnrescueInstance invokes unrescue-instance operation.
 	//
-	// Restores boot from the original system disk. Completion is shown by the virtual machine state, and
-	// the virtual machine shows the `unrescue` operation until then.
+	// Restores boot from the original boot volume. Completion is shown by the instance state, and the
+	// instance shows the `unrescue` operation until then.
 	//
-	// POST /api/v2/virtual-machines/{virtualMachineId}:unrescue
-	UnrescueVirtualMachine(ctx context.Context, params UnrescueVirtualMachineParams) (UnrescueVirtualMachineRes, error)
-	// UpdateDisk invokes update-disk operation.
-	//
-	// Changes the name, the capacity or the disk type. The availability zone is immutable.
-	//
-	// `size_gb` and `disk_type_id` are operational fields: each starts a change and cannot be combined
-	// with any other field in the same request, including the other one. Such a request is refused with
-	// 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside a change that was then refused
-	// would leave the request half applied. `checkout` and `proration_date` belong to the purchase of the
-	// change and are accepted only together with one of them.
-	//
-	// Renaming is not an operation and is accepted at any time. It returns 200 with `checkout_session_id`
-	// and `order_id` null.
-	//
-	// Resizing accepts only an increase; a smaller `size_gb` is refused with `DISK_CANNOT_SHRINK` (422),
-	// since a file system cannot be shrunk from outside the virtual machine. It returns 202 with the disk
-	// and the Checkout Session for the resize, which keeps the disk's usage type and period. The disk
-	// shows the `resize` operation until the resize is applied, its Checkout Session expires or its order
-	// is canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
-	// meanwhile. The disk keeps its current size until the resize is applied; once `size_gb` shows the new
-	// size, extend the file system inside the virtual machine. If checkout is not completed, the order is
-	// not accepted or the resize fails, the disk keeps its size and Billing shows the outcome.
-	//
-	// Changing the type moves the disk to another disk type at the same capacity, priced as that type, and
-	// returns 202 with the disk and the Checkout Session for the change, which keeps the disk's usage type
-	// and period. The disk has to be detached (409 `DISK_RETYPE_ATTACHED`), so a system disk cannot change
-	// its type. The target has to be on sale (`DISK_TYPE_OFF_SALE`), in the disk's region (422
-	// `DISK_RETYPE_OTHER_REGION`), of the disk's availability zone (422
-	// `DISK_TYPE_OTHER_AVAILABILITY_ZONE`) with room for the disk (409 `DISK_TYPE_SOLD_OUT`,
-	// `DISK_TYPE_CAPACITY_REACHED`, `DISK_TYPE_NO_POOL_ROOM`), admit the disk's capacity (422
-	// `DISK_SIZE_OUT_OF_RANGE`, `DISK_SIZE_NOT_ON_STEP`) and differ from the current one (422
-	// `DISK_RETYPE_SAME_TYPE`). The disk shows the `retype` operation until the change is applied, its
-	// Checkout Session expires or its order is canceled. A target on the same storage backend takes effect
-	// at once; one on another backend copies the disk's data there first, which takes longer the larger
-	// the disk is. The disk keeps its type until `disk_type_id` shows the new one, and its `performance`
-	// follows from then on; a change that did not take effect leaves the disk as it was and is refunded.
-	//
-	// An attached disk, including a system disk, can be resized. The capacity is usable at once, and the
-	// disk's `performance` shows what its type gives the new size. That performance applies from the
-	// disk's next attachment, or the next start of its stopped virtual machine: the storage reads a disk's
-	// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
-	//
-	// PATCH /api/v2/disks/{diskId}
-	UpdateDisk(ctx context.Context, request *UpdateDiskRequestBody, params UpdateDiskParams) (UpdateDiskRes, error)
-	// UpdateDiskBackup invokes update-disk-backup operation.
-	//
-	// Changes the name only. A backup's source disk and capacity cannot be changed.
-	//
-	// PATCH /api/v2/disk-backups/{diskBackupId}
-	UpdateDiskBackup(ctx context.Context, request *UpdateDiskBackupRequestBody, params UpdateDiskBackupParams) (*DiskBackupResource, error)
-	// UpdateDiskSnapshot invokes update-disk-snapshot operation.
-	//
-	// Changes the name only. A snapshot's source disk and capacity cannot be changed.
-	//
-	// PATCH /api/v2/disk-snapshots/{diskSnapshotId}
-	UpdateDiskSnapshot(ctx context.Context, request *UpdateDiskSnapshotRequestBody, params UpdateDiskSnapshotParams) (*DiskSnapshotResource, error)
+	// POST /api/v2/instances/{instanceId}:unrescue
+	UnrescueInstance(ctx context.Context, params UnrescueInstanceParams) (UnrescueInstanceRes, error)
 	// UpdateElasticIP invokes update-elastic-ip operation.
 	//
 	// Changes the bandwidth of this elastic IP, or what its pay-as-you-go network subscription charges
@@ -1226,13 +1182,53 @@ type Invoker interface {
 	// operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit
 	// stays in effect until the change is applied.
 	//
-	// While the address is associated with a virtual machine, the limit must not exceed the
-	// `max_bandwidth_mbps` of that virtual machine's type; a higher limit is refused with
-	// `VIRTUAL_MACHINE_BANDWIDTH_CEILING`. The limit of an address that is not associated is checked when
-	// the address is associated with a virtual machine.
+	// While the address is associated with an instance, the limit must not exceed the `max_bandwidth_mbps`
+	// of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of
+	// an address that is not associated is checked when the address is associated with an instance.
 	//
 	// PATCH /api/v2/elastic-ips/{elasticIpId}
 	UpdateElasticIP(ctx context.Context, request *UpdateElasticIPRequestBody, params UpdateElasticIPParams) (UpdateElasticIPRes, error)
+	// UpdateInstance invokes update-instance operation.
+	//
+	// Changes the descriptive fields (`name`, `labels`, `notes`) or the operational field
+	// `instance_type_id`. All fields are optional and at least one is required. Starting and stopping are
+	// the `:start` and `:stop` methods.
+	//
+	// `instance_type_id` starts a workflow and cannot be combined with any other field in the same
+	// request. Such a request is refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that
+	// committed beside a change that was then refused would leave the request half applied. `checkout` and
+	// `proration_date` belong to the purchase of the `instance_type_id` change and are accepted only
+	// together with it.
+	//
+	// Descriptive fields are not operations and are accepted at any time, whatever the instance is doing.
+	// The request returns 200 with `checkout_session_id` and `order_id` null.
+	//
+	//  - `name` changes the display name only. The hostname inside the instance is unchanged; it equals
+	//    the instance id.
+	//  - `labels` records what this instance is for, as key-value pairs. Nothing on the platform reads
+	//    them. The whole set is replaced: whatever is absent from the request is removed, and an empty
+	//    object clears them all. Do not put credentials here. Labels are visible to platform operators.
+	//  - `notes` is a free-text note about this instance: what it runs, and what to be careful about
+	//    before touching it. The whole note is replaced; send an empty string to clear it. Do not put
+	//    credentials here. The note is visible to platform operators.
+	//
+	// `instance_type_id` resizes a running instance, which restarts once during the resize, and returns
+	// 202 with the instance and the Checkout Session for the change, including for metered terms. The
+	// instance keeps its usage type and period, priced with the target type's matching option; a target
+	// type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts once
+	// Billing accepts the order. Do not submit the change again after paying. After an uncertain response,
+	// look the Checkout Session up in Billing before submitting again.
+	//
+	// The instance shows the `resize` operation until the resize is applied, its Checkout Session expires
+	// or its order is canceled, so other operations and a second resize are refused with
+	// `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new
+	// type takes effect, and is billed from then on, when `instance_type_id` shows it. If checkout is not
+	// completed, the order is not accepted or the resize fails, the instance keeps its current type and
+	// Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
+	// previous type, submit another resize.
+	//
+	// PATCH /api/v2/instances/{instanceId}
+	UpdateInstance(ctx context.Context, request *UpdateInstanceRequestBody, params UpdateInstanceParams) (UpdateInstanceRes, error)
 	// UpdateLaunchTemplate invokes update-launch-template operation.
 	//
 	// Changes the name or description, or makes another live version the default, the one a creation
@@ -1248,8 +1244,8 @@ type Invoker interface {
 	//
 	//  - `name` is not an operation, is accepted at any time and answers 200.
 	//  - `security_group_ids` is the complete new set, one to five groups of the network interface's
-	//    virtual private cloud; groups left out are removed. It applies to traffic of the running virtual
-	//    machine as soon as it is in place, and answers 202 with the network interface showing the
+	//    virtual private cloud; groups left out are removed. It applies to traffic of the running instance
+	//    as soon as it is in place, and answers 202 with the network interface showing the
 	//    `update_security_groups` operation until then.
 	//
 	// Secondary IPv4 addresses are added and removed under
@@ -1271,47 +1267,6 @@ type Invoker interface {
 	//
 	// PATCH /api/v2/security-groups/{securityGroupId}
 	UpdateSecurityGroup(ctx context.Context, request *UpdateSecurityGroupRequestBody, params UpdateSecurityGroupParams) (*SecurityGroup, error)
-	// UpdateVirtualMachine invokes update-virtual-machine operation.
-	//
-	// Changes the descriptive fields (`name`, `labels`, `notes`) or the operational field
-	// `machine_type_id`. All fields are optional and at least one is required. Starting and stopping are
-	// the `:start` and `:stop` methods.
-	//
-	// `machine_type_id` starts a workflow and cannot be combined with any other field in the same request.
-	// Such a request is refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside
-	// a change that was then refused would leave the request half applied. `checkout` and `proration_date`
-	// belong to the purchase of the `machine_type_id` change and are accepted only together with it.
-	//
-	// Descriptive fields are not operations and are accepted at any time, whatever the virtual machine is
-	// doing. The request returns 200 with `checkout_session_id` and `order_id` null.
-	//
-	//  - `name` changes the display name only. The hostname inside the virtual machine is unchanged; it
-	//    equals the virtual machine id.
-	//  - `labels` records what this virtual machine is for, as key-value pairs. Nothing on the platform
-	//    reads them. The whole set is replaced: whatever is absent from the request is removed, and an
-	//    empty object clears them all. Do not put credentials here. Labels are visible to platform
-	//    operators.
-	//  - `notes` is a free-text note about this virtual machine: what it runs, and what to be careful
-	//    about before touching it. The whole note is replaced; send an empty string to clear it. Do not
-	//    put credentials here. The note is visible to platform operators.
-	//
-	// `machine_type_id` resizes a running virtual machine, which restarts once during the resize, and
-	// returns 202 with the virtual machine and the Checkout Session for the change, including for metered
-	// terms. The virtual machine keeps its usage type and period, priced with the target type's matching
-	// option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. The
-	// resize starts once Billing accepts the order. Do not submit the change again after paying. After an
-	// uncertain response, look the Checkout Session up in Billing before submitting again.
-	//
-	// The virtual machine shows the `resize` operation until the resize is applied, its Checkout Session
-	// expires or its order is canceled, so other operations and a second resize are refused with
-	// `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new
-	// type takes effect, and is billed from then on, when `machine_type_id` shows it. If checkout is not
-	// completed, the order is not accepted or the resize fails, the virtual machine keeps its current type
-	// and Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
-	// previous type, submit another resize.
-	//
-	// PATCH /api/v2/virtual-machines/{virtualMachineId}
-	UpdateVirtualMachine(ctx context.Context, request *UpdateVirtualMachineRequestBody, params UpdateVirtualMachineParams) (UpdateVirtualMachineRes, error)
 	// UpdateVirtualPrivateCloud invokes update-virtual-private-cloud operation.
 	//
 	// Only the name can change. The CIDR is fixed for the network's life, because every subnet and address
@@ -1326,6 +1281,62 @@ type Invoker interface {
 	//
 	// PATCH /api/v2/virtual-private-clouds/{virtualPrivateCloudId}/subnets/{subnetId}
 	UpdateVirtualPrivateCloudSubnet(ctx context.Context, request *UpdateVirtualPrivateCloudSubnetRequestBody, params UpdateVirtualPrivateCloudSubnetParams) (*VirtualPrivateCloudSubnet, error)
+	// UpdateVolume invokes update-volume operation.
+	//
+	// Changes the name, the capacity or the volume type. The availability zone is immutable.
+	//
+	// `size_gib` and `volume_type_id` are operational fields: each starts a change and cannot be combined
+	// with any other field in the same request, including the other one. Such a request is refused with
+	// 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside a change that was then refused
+	// would leave the request half applied. `checkout` and `proration_date` belong to the purchase of the
+	// change and are accepted only together with one of them.
+	//
+	// Renaming is not an operation and is accepted at any time. It returns 200 with `checkout_session_id`
+	// and `order_id` null.
+	//
+	// Resizing accepts only an increase; a smaller `size_gib` is refused with `VOLUME_CANNOT_SHRINK`
+	// (422), since a file system cannot be shrunk from outside the instance. It returns 202 with the
+	// volume and the Checkout Session for the resize, which keeps the volume's usage type and period. The
+	// volume shows the `resize` operation until the resize is applied, its Checkout Session expires or its
+	// order is canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
+	// meanwhile. The volume keeps its current size until the resize is applied; once `size_gib` shows the
+	// new size, extend the file system inside the instance. If checkout is not completed, the order is not
+	// accepted or the resize fails, the volume keeps its size and Billing shows the outcome.
+	//
+	// Changing the type moves the volume to another volume type at the same capacity, priced as that type,
+	// and returns 202 with the volume and the Checkout Session for the change, which keeps the volume's
+	// usage type and period. The volume has to be detached (409 `VOLUME_RETYPE_ATTACHED`), so a boot
+	// volume cannot change its type. The target has to be on sale (`VOLUME_TYPE_OFF_SALE`), in the
+	// volume's region (422 `VOLUME_RETYPE_OTHER_REGION`), of the volume's availability zone (422
+	// `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`) with room for the volume (409 `VOLUME_TYPE_SOLD_OUT`,
+	// `VOLUME_TYPE_CAPACITY_REACHED`, `VOLUME_TYPE_NO_POOL_ROOM`), admit the volume's capacity (422
+	// `VOLUME_SIZE_OUT_OF_RANGE`, `VOLUME_SIZE_NOT_ON_STEP`) and differ from the current one (422
+	// `VOLUME_RETYPE_SAME_TYPE`). The volume shows the `retype` operation until the change is applied, its
+	// Checkout Session expires or its order is canceled. A target on the same storage backend takes effect
+	// at once; one on another backend copies the volume's data there first, which takes longer the larger
+	// the volume is. The volume keeps its type until `volume_type_id` shows the new one, and its
+	// `performance` follows from then on; a change that did not take effect leaves the volume as it was
+	// and is refunded.
+	//
+	// An attached volume, including a boot volume, can be resized. The capacity is usable at once, and the
+	// volume's `performance` shows what its type gives the new size. That performance applies from the
+	// volume's next attachment, or the next start of its stopped instance: the storage reads a volume's
+	// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
+	//
+	// PATCH /api/v2/volumes/{volumeId}
+	UpdateVolume(ctx context.Context, request *UpdateVolumeRequestBody, params UpdateVolumeParams) (UpdateVolumeRes, error)
+	// UpdateVolumeBackup invokes update-volume-backup operation.
+	//
+	// Changes the name only. A backup's source volume and capacity cannot be changed.
+	//
+	// PATCH /api/v2/volume-backups/{volumeBackupId}
+	UpdateVolumeBackup(ctx context.Context, request *UpdateVolumeBackupRequestBody, params UpdateVolumeBackupParams) (*VolumeBackupResource, error)
+	// UpdateVolumeSnapshot invokes update-volume-snapshot operation.
+	//
+	// Changes the name only. A snapshot's source volume and capacity cannot be changed.
+	//
+	// PATCH /api/v2/volume-snapshots/{volumeSnapshotId}
+	UpdateVolumeSnapshot(ctx context.Context, request *UpdateVolumeSnapshotRequestBody, params UpdateVolumeSnapshotParams) (*VolumeSnapshotResource, error)
 }
 
 // Client implements OAS client.
@@ -1510,23 +1521,23 @@ func (c *Client) sendAcceptVirtualPrivateCloudPeering(ctx context.Context, param
 
 // AssociateElasticIP invokes associate-elastic-ip operation.
 //
-// Points the elastic IP at a target: a virtual machine, which means the primary private IPv4 address
-// of its primary network interface, or a network interface address (`network_interface_address_id`)
-// given directly. Exactly one of `virtual_machine_id` and `network_interface_address_id`. A network
-// interface address must be an assigned, unreleased IPv4 address on a network interface in this
-// project and region; IPv6 addresses are rejected.
+// Points the elastic IP at a target: an instance, which means the primary private IPv4 address of its
+// primary network interface, or a network interface address (`network_interface_address_id`) given
+// directly. Exactly one of `instance_id` and `network_interface_address_id`. A network interface
+// address must be an assigned, unreleased IPv4 address on a network interface in this project and
+// region; IPv6 addresses are rejected.
 //
 // The target becomes what the elastic IP points at. Repeating the request for the target it already
 // points at changes nothing; an elastic IP associated with another target is refused with
 // `ELASTIC_IP_ALREADY_ASSOCIATED` (409), and is moved by disassociating it first, so that the moment
 // traffic stops reaching the old target is one the caller chose. The elastic IP shows the `associate`
-// operation until the association is confirmed, and with a virtual machine as the target that virtual
-// machine shows the `associate_elastic_ip` operation as well, so the virtual machine must not have
-// another operation in progress.
+// operation until the association is confirmed, and with an instance as the target that instance shows
+// the `associate_elastic_ip` operation as well, so the instance must not have another operation in
+// progress.
 //
-// The elastic IP must be in the same region as the target. With a virtual machine as the target, the
-// elastic IP's `bandwidth_mbps` must not exceed the `max_bandwidth_mbps` of that virtual machine's
-// type; a higher limit is refused with `VIRTUAL_MACHINE_BANDWIDTH_CEILING`.
+// The elastic IP must be in the same region as the target. With an instance as the target, the elastic
+// IP's `bandwidth_mbps` must not exceed the `max_bandwidth_mbps` of that instance's type; a higher
+// limit is refused with `INSTANCE_BANDWIDTH_CEILING`.
 //
 // POST /api/v2/elastic-ips/{elasticIpId}:associate
 func (c *Client) AssociateElasticIP(ctx context.Context, request AssociateElasticIPRequestBody, params AssociateElasticIPParams) (AssociateElasticIPRes, error) {
@@ -1671,20 +1682,19 @@ func (c *Client) sendAssociateElasticIP(ctx context.Context, request AssociateEl
 	return result, nil
 }
 
-// AttachVirtualMachineDisk invokes attach-virtual-machine-disk operation.
+// AttachInstanceNetworkInterface invokes attach-instance-network-interface operation.
 //
-// The disk must be in the same region and availability zone as the virtual machine. Returns the disk;
-// the virtual machine shows the `attach_disk` operation and the disk the `attach` operation until the
-// attachment is confirmed. Partition the disk and mount the file system inside the virtual machine
-// once it is attached.
+// Returns the network interface; the instance shows the `attach_network_interface` operation and the
+// interface the `attach` operation until the attachment is confirmed. The instance has to be running;
+// a stopped one holds no host and is refused with 409 `INSTANCE_NOT_RUNNING`.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}/disks
-func (c *Client) AttachVirtualMachineDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachVirtualMachineDiskParams) (AttachVirtualMachineDiskRes, error) {
-	res, err := c.sendAttachVirtualMachineDisk(ctx, request, params)
+// POST /api/v2/instances/{instanceId}/network-interfaces
+func (c *Client) AttachInstanceNetworkInterface(ctx context.Context, request *AttachNetworkInterfaceRequestBody, params AttachInstanceNetworkInterfaceParams) (AttachInstanceNetworkInterfaceRes, error) {
+	res, err := c.sendAttachInstanceNetworkInterface(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendAttachVirtualMachineDisk(ctx context.Context, request *AttachDiskRequestBody, params AttachVirtualMachineDiskParams) (res AttachVirtualMachineDiskRes, err error) {
+func (c *Client) sendAttachInstanceNetworkInterface(ctx context.Context, request *AttachNetworkInterfaceRequestBody, params AttachInstanceNetworkInterfaceParams) (res AttachInstanceNetworkInterfaceRes, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -1695,9 +1705,9 @@ func (c *Client) sendAttachVirtualMachineDisk(ctx context.Context, request *Atta
 		return res, errors.Wrap(err, "validate")
 	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("attach-virtual-machine-disk"),
+		otelogen.OperationID("attach-instance-network-interface"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}/disks"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}/network-interfaces"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1713,7 +1723,7 @@ func (c *Client) sendAttachVirtualMachineDisk(ctx context.Context, request *Atta
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, AttachVirtualMachineDiskOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, AttachInstanceNetworkInterfaceOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -1731,165 +1741,16 @@ func (c *Client) sendAttachVirtualMachineDisk(ctx context.Context, request *Atta
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v2/virtual-machines/"
+	pathParts[0] = "/api/v2/instances/"
 	{
-		// Encode "virtualMachineId" parameter.
+		// Encode "instanceId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
+			Param:   "instanceId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/disks"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeAttachVirtualMachineDiskRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, AttachVirtualMachineDiskOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeAttachVirtualMachineDiskResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// AttachVirtualMachineNetworkInterface invokes attach-virtual-machine-network-interface operation.
-//
-// Returns the network interface; the virtual machine shows the `attach_network_interface` operation
-// and the interface the `attach` operation until the attachment is confirmed. The virtual machine has
-// to be running; a stopped one holds no host and is refused with 409 `VIRTUAL_MACHINE_NOT_RUNNING`.
-//
-// POST /api/v2/virtual-machines/{virtualMachineId}/network-interfaces
-func (c *Client) AttachVirtualMachineNetworkInterface(ctx context.Context, request *AttachNetworkInterfaceRequestBody, params AttachVirtualMachineNetworkInterfaceParams) (AttachVirtualMachineNetworkInterfaceRes, error) {
-	res, err := c.sendAttachVirtualMachineNetworkInterface(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendAttachVirtualMachineNetworkInterface(ctx context.Context, request *AttachNetworkInterfaceRequestBody, params AttachVirtualMachineNetworkInterfaceParams) (res AttachVirtualMachineNetworkInterfaceRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("attach-virtual-machine-network-interface"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}/network-interfaces"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, AttachVirtualMachineNetworkInterfaceOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v2/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
+			if unwrapped := string(params.InstanceId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -1910,7 +1771,7 @@ func (c *Client) sendAttachVirtualMachineNetworkInterface(ctx context.Context, r
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeAttachVirtualMachineNetworkInterfaceRequest(request, r); err != nil {
+	if err := encodeAttachInstanceNetworkInterfaceRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -1919,7 +1780,7 @@ func (c *Client) sendAttachVirtualMachineNetworkInterface(ctx context.Context, r
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, AttachVirtualMachineNetworkInterfaceOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, AttachInstanceNetworkInterfaceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -1962,7 +1823,7 @@ func (c *Client) sendAttachVirtualMachineNetworkInterface(ctx context.Context, r
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeAttachVirtualMachineNetworkInterfaceResponse(resp)
+	result, err := decodeAttachInstanceNetworkInterfaceResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1970,50 +1831,20 @@ func (c *Client) sendAttachVirtualMachineNetworkInterface(ctx context.Context, r
 	return result, nil
 }
 
-// CreateDisk invokes create-disk operation.
+// AttachInstanceVolume invokes attach-instance-volume operation.
 //
-// The disk is created in the availability zone of its disk type, and only a virtual machine in the
-// same zone can attach it.
+// The volume must be in the same region and availability zone as the instance. Returns the volume; the
+// instance shows the `attach_volume` operation and the volume the `attach` operation until the
+// attachment is confirmed. Partition the volume and mount the file system inside the instance once it
+// is attached.
 //
-// The type has to have room for it, checked before anything is ordered: refused with 409
-// `DISK_TYPE_SOLD_OUT` when the type takes no new disks for now, `DISK_TYPE_CAPACITY_REACHED` when
-// what is sold of it is used up, and `DISK_TYPE_NO_POOL_ROOM` when the storage of its zone cannot take
-// the disk. Two orders placed at the same moment can both pass; the one that finds the type full when
-// its order is accepted is not created and is refunded, ending `failed` with `provisioning_failed`.
-//
-// The disk is empty, or is restored from exactly one source: `disk_snapshot_id` or `disk_backup_id`.
-// Giving both is refused with 422 `DISK_SOURCE_CONFLICT`. A restore is a purchase of a new disk; the
-// source disk is unaffected and need not still exist.
-//
-//   - From a snapshot, the disk type has to be of the snapshot's availability zone (422
-//     `DISK_SNAPSHOT_OTHER_AVAILABILITY_ZONE`), because a snapshot lives in the same storage pool as
-//     its source and restores only into its own zone. `size_gb` is required and must be no smaller than
-//     the snapshot.
-//   - From a disk backup, the disk type may be of any zone of the backup's region, because a backup is
-//     an independent copy in different storage. `size_gb` matches the size of the backup when omitted,
-//     and when given it must not be smaller than the backup. The disk cannot be attached until it is
-//     `available`.
-//
-// A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still
-// resolves. Types that are off sale do not appear in the disk type listing; disks already bought on
-// one keep working and can still be resized.
-//
-// A disk bought on its own is licensed: `billing.usage_type` `metered` is refused with
-// `DISK_USAGE_TYPE_UNAVAILABLE`. A disk created with a virtual machine follows the machine's terms
-// instead and may be metered.
-//
-// The disk shows the `create` operation from the moment its Checkout Session is created until it is
-// delivered or its checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
-//
-// POST /api/v2/disks
-func (c *Client) CreateDisk(ctx context.Context, request *CreateDiskRequestBody) (CreateDiskRes, error) {
-	res, err := c.sendCreateDisk(ctx, request)
+// POST /api/v2/instances/{instanceId}/volumes
+func (c *Client) AttachInstanceVolume(ctx context.Context, request *AttachVolumeRequestBody, params AttachInstanceVolumeParams) (AttachInstanceVolumeRes, error) {
+	res, err := c.sendAttachInstanceVolume(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestBody) (res CreateDiskRes, err error) {
+func (c *Client) sendAttachInstanceVolume(ctx context.Context, request *AttachVolumeRequestBody, params AttachInstanceVolumeParams) (res AttachInstanceVolumeRes, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -2024,9 +1855,9 @@ func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestB
 		return res, errors.Wrap(err, "validate")
 	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-disk"),
+		otelogen.OperationID("attach-instance-volume"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v2/disks"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}/volumes"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2042,7 +1873,7 @@ func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestB
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateDiskOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, AttachInstanceVolumeOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -2059,147 +1890,30 @@ func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestB
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v2/disks"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateDiskRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
+	var pathParts [3]string
+	pathParts[0] = "/api/v2/instances/"
 	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateDiskOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+		// Encode "instanceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InstanceId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
 		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateDiskResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateDiskBackup invokes create-disk-backup operation.
-//
-// Creates a backup of the disk. It remains restorable after the source disk is deleted and may be
-// restored to another availability zone in the same region, by creating a disk with `disk_backup_id`
-// (`create-disk`). A running virtual machine may produce a file-system-inconsistent backup. Pending
-// backups count toward Compute project quotas until cleanup is confirmed.
-//
-// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
-// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
-// backup is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
-// the customer completes checkout in Billing. The source and project quotas are checked before the
-// Checkout Session is created, and a refused request creates nothing.
-//
-// The backup shows the `create` operation from the moment its Checkout Session is created until it is
-// delivered or its checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
-//
-// POST /api/v2/disk-backups
-func (c *Client) CreateDiskBackup(ctx context.Context, request *CreateDiskBackupRequestBody) (CreateDiskBackupRes, error) {
-	res, err := c.sendCreateDiskBackup(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendCreateDiskBackup(ctx context.Context, request *CreateDiskBackupRequestBody) (res CreateDiskBackupRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-disk-backup"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v2/disk-backups"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateDiskBackupOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
+		encoded, err := e.Result()
 		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+			return res, errors.Wrap(err, "encode path")
 		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v2/disk-backups"
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/volumes"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -2207,7 +1921,7 @@ func (c *Client) sendCreateDiskBackup(ctx context.Context, request *CreateDiskBa
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeCreateDiskBackupRequest(request, r); err != nil {
+	if err := encodeAttachInstanceVolumeRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -2216,7 +1930,7 @@ func (c *Client) sendCreateDiskBackup(ctx context.Context, request *CreateDiskBa
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateDiskBackupOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, AttachInstanceVolumeOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -2259,145 +1973,7 @@ func (c *Client) sendCreateDiskBackup(ctx context.Context, request *CreateDiskBa
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeCreateDiskBackupResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateDiskSnapshot invokes create-disk-snapshot operation.
-//
-// Creates a snapshot of the disk. A running virtual machine may produce a file-system-inconsistent
-// snapshot; flush pending writes first. A system disk cannot be reverted while attached. Pending
-// snapshots count toward Compute project quotas until creation fails and cleanup is confirmed.
-//
-// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
-// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
-// snapshot is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
-// the customer completes checkout in Billing. The source and project quotas are checked before the
-// Checkout Session is created, and a refused request creates nothing.
-//
-// The snapshot shows the `create` operation from the moment its Checkout Session is created until it
-// is delivered or its checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
-//
-// POST /api/v2/disk-snapshots
-func (c *Client) CreateDiskSnapshot(ctx context.Context, request *CreateDiskSnapshotRequestBody) (CreateDiskSnapshotRes, error) {
-	res, err := c.sendCreateDiskSnapshot(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendCreateDiskSnapshot(ctx context.Context, request *CreateDiskSnapshotRequestBody) (res CreateDiskSnapshotRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-disk-snapshot"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v2/disk-snapshots"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateDiskSnapshotOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v2/disk-snapshots"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateDiskSnapshotRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateDiskSnapshotOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateDiskSnapshotResponse(resp)
+	result, err := decodeAttachInstanceVolumeResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2415,8 +1991,8 @@ func (c *Client) sendCreateDiskSnapshot(ctx context.Context, request *CreateDisk
 // no longer available then, the elastic IP ends `failed` with `provisioning_failed` and its charge is
 // refunded.
 //
-// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to virtual machines by the
-// virtual private cloud; enable IPv6 on that network instead.
+// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the virtual
+// private cloud; enable IPv6 on that network instead.
 //
 // Allocation does not select or create a virtual private cloud. A later association selects an
 // assigned network-interface address; Compute then establishes the required network connectivity.
@@ -2547,16 +2123,189 @@ func (c *Client) sendCreateElasticIP(ctx context.Context, request *CreateElastic
 	return result, nil
 }
 
+// CreateInstance invokes create-instance operation.
+//
+// Creates a Billing Checkout Session, including for metered terms, and returns one `pending` instance
+// per requested instance with it. Each new component carries its own commercial terms; their usage
+// type and period must match. A pending instance has no server, boot volume or address, and is not
+// metered.
+//
+// Creation starts once Billing accepts the order: the instance stays `pending` with the `create`
+// operation while it is created, then becomes `running`. With automatic checkout, insufficient funds
+// refuse the request and nothing is created. With deferred checkout, the instances stay `pending`
+// until the customer completes checkout in Billing and the order is paid; an expired Checkout Session,
+// or a canceled or expired order, leaves them `failed` with `checkout_expired`, `order_canceled` or
+// `order_expired`. Do not submit another creation request after paying. After an uncertain response,
+// look the Checkout Session up in Billing before submitting again.
+//
+// The instances are created in the availability zone of their instance type, and the volumes bought
+// with them have to be of volume types of that zone (422 `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`). The
+// types have to have room for all of them, checked before anything is ordered: refused with 409
+// `INSTANCE_TYPE_SOLD_OUT` or `VOLUME_TYPE_SOLD_OUT` when a type takes no new orders for now,
+// `INSTANCE_TYPE_CAPACITY_REACHED` or `VOLUME_TYPE_CAPACITY_REACHED` when what is sold of it is used
+// up, `INSTANCE_TYPE_NO_HOST_ROOM` when no host of the zone can take the machine, and
+// `VOLUME_TYPE_NO_POOL_ROOM` when the storage of the zone cannot take the boot volume. Two orders
+// placed at the same moment can both pass; an instance that finds a type full when its order is
+// accepted is not created and is refunded, ending `failed` with `provisioning_failed`.
+//
+// Choose an image or existing volume through boot_volume, and exactly one of network_interface_id or
+// subnet_id. Existing network interfaces, boot volumes or elastic IPs require count=1. They are not
+// held while the instance is pending; if one is no longer usable when the order is accepted, the
+// instance ends `failed` with `provisioning_failed`. Image boots require boot_volume; existing volumes
+// retain their own subscription. Instances, volumes and public IPs keep their own subscription items
+// on the same order.
+//
+// Instances of one request succeed or fail individually. Each instance, with its boot volume, network
+// interface and elastic IP, is created or fails as a whole. Instances that were created are kept; each
+// failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the
+// order then ends `partially_completed`. An instance is delivered whole or not at all: when the
+// customer cancels any of its order items before the order is accepted, it is not created, its
+// remaining items are canceled and refunded, and it ends `failed` with `order_canceled`. Each instance
+// is named after this request with a number appended.
+//
+// The network is checked before the Checkout Session is created, and a request it refuses orders and
+// charges nothing. It is refused with `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE` when the virtual private
+// cloud's `status` is not `available`, `VIRTUAL_PRIVATE_CLOUD_SUBNET_UNAVAILABLE` or
+// `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready,
+// `SECURITY_GROUP_OTHER_VIRTUAL_PRIVATE_CLOUD` when a security group belongs to another virtual
+// private cloud, and `NETWORK_INTERFACE_UNAVAILABLE` when the port's `status` is not `available`.
+// `meta` names the resource.
+//
+// Each instance shows the `create` operation from the moment the Checkout Session is created until it
+// is delivered or the checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its release with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
+//
+// POST /api/v2/instances
+func (c *Client) CreateInstance(ctx context.Context, request *CreateInstanceRequestBody) (CreateInstanceRes, error) {
+	res, err := c.sendCreateInstance(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateInstance(ctx context.Context, request *CreateInstanceRequestBody) (res CreateInstanceRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-instance"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v2/instances"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateInstanceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v2/instances"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateInstanceRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateInstanceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateInstanceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // CreateLaunchTemplate invokes create-launch-template operation.
 //
 // Creates a launch template with its first version, which becomes its default. A launch template
-// describes how to create virtual machines in one region, and creating a virtual machine can name it
+// describes how to create instances in one region, and creating an instance can name it
 // (`launch_template`) instead of repeating every part. It costs nothing.
 //
 // A template holds no billing terms, checkout options or password: those belong to each purchase. What
-// a version names is checked when a virtual machine is created from it, against the catalog as it is
-// then, so a version naming an image retired since is refused at that creation as any creation would
-// be.
+// a version names is checked when an instance is created from it, against the catalog as it is then,
+// so a version naming an image retired since is refused at that creation as any creation would be.
 //
 // A project holds at most 100 launch templates in a region (`LAUNCH_TEMPLATE_LIMIT`), and names are
 // unique among them (`LAUNCH_TEMPLATE_EXISTS`).
@@ -2685,8 +2434,8 @@ func (c *Client) sendCreateLaunchTemplate(ctx context.Context, request *CreateLa
 // CreateLaunchTemplateVersion invokes create-launch-template-version operation.
 //
 // Adds a version, numbered after every version the template ever had, so a deleted version's number is
-// never reused. It does not become the default by itself; set `default_version` on the template for
-// that. A template holds at most 100 live versions (`LAUNCH_TEMPLATE_VERSION_LIMIT`).
+// never reused. It does not become the default by itself; set `default_version_number` on the template
+// for that. A template holds at most 100 live versions (`LAUNCH_TEMPLATE_VERSION_LIMIT`).
 //
 // POST /api/v2/launch-templates/{launchTemplateId}/versions
 func (c *Client) CreateLaunchTemplateVersion(ctx context.Context, request *NewLaunchTemplateVersion, params CreateLaunchTemplateVersionParams) (*LaunchTemplateVersion, error) {
@@ -2833,8 +2582,8 @@ func (c *Client) sendCreateLaunchTemplateVersion(ctx context.Context, request *N
 
 // CreateNetworkInterface invokes create-network-interface operation.
 //
-// The new network interface is not attached to any virtual machine. Primary network interfaces are not
-// created here; they are created with the virtual machine.
+// The new network interface is not attached to any instance. Primary network interfaces are not
+// created here; they are created with the instance.
 //
 // POST /api/v2/network-interfaces
 func (c *Client) CreateNetworkInterface(ctx context.Context, request *CreateNetworkInterfaceRequestBody) (*NetworkInterface, error) {
@@ -2967,11 +2716,10 @@ func (c *Client) sendCreateNetworkInterface(ctx context.Context, request *Create
 // The operating system has to be configured to use it: DHCP hands out only the primary address.
 // Changing the addresses of a network interface in use may briefly interrupt its traffic.
 //
-// A network interface holds at most its virtual machine's machine type's
-// `max_ipv4_per_network_interface` IPv4 addresses while attached, and 50 otherwise (409
-// `NETWORK_INTERFACE_ADDRESS_CEILING`). An address already in use in the subnet is refused with 409
-// `NETWORK_INTERFACE_ADDRESS_ALREADY_TAKEN`, a full subnet with 409
-// `NETWORK_INTERFACE_SUBNET_EXHAUSTED`.
+// A network interface holds at most its instance's instance type's `max_ipv4_per_network_interface`
+// IPv4 addresses while attached, and 50 otherwise (409 `NETWORK_INTERFACE_ADDRESS_CEILING`). An
+// address already in use in the subnet is refused with 409 `NETWORK_INTERFACE_ADDRESS_ALREADY_TAKEN`,
+// a full subnet with 409 `NETWORK_INTERFACE_SUBNET_EXHAUSTED`.
 //
 // POST /api/v2/network-interfaces/{networkInterfaceId}/addresses
 func (c *Client) CreateNetworkInterfaceAddress(ctx context.Context, request *CreateNetworkInterfaceAddressRequestBody, params CreateNetworkInterfaceAddressParams) (*NetworkInterface, error) {
@@ -3118,9 +2866,9 @@ func (c *Client) sendCreateNetworkInterfaceAddress(ctx context.Context, request 
 
 // CreatePrivateImage invokes create-private-image operation.
 //
-// Creates a project image from the virtual machine system disk, excluding data disks. Stop the virtual
-// machine first for file-system consistency. The virtual machine cannot be released while its source
-// disk is being captured. Compute project quotas are enforced independently of billing.
+// Creates a project image from the instance boot volume, excluding data volumes. Stop the instance
+// first for file-system consistency. The instance cannot be released while its source volume is being
+// captured. Compute project quotas are enforced independently of billing.
 //
 // It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
 // through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
@@ -3524,180 +3272,6 @@ func (c *Client) sendCreateSecurityGroupRule(ctx context.Context, request *Creat
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateSecurityGroupRuleResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateVirtualMachine invokes create-virtual-machine operation.
-//
-// Creates a Billing Checkout Session, including for metered terms, and returns one `pending` virtual
-// machine per requested virtual machine with it. Each new component carries its own commercial terms;
-// their usage type and period must match. A pending virtual machine has no server, system disk or
-// address, and is not metered.
-//
-// Creation starts once Billing accepts the order: the virtual machine stays `pending` with the
-// `create` operation while it is created, then becomes `active`. With automatic checkout, insufficient
-// funds refuse the request and nothing is created. With deferred checkout, the virtual machines stay
-// `pending` until the customer completes checkout in Billing and the order is paid; an expired
-// Checkout Session, or a canceled or expired order, leaves them `failed` with `checkout_expired`,
-// `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an
-// uncertain response, look the Checkout Session up in Billing before submitting again.
-//
-// The virtual machines are created in the availability zone of their machine type, and the disks
-// bought with them have to be of disk types of that zone (422 `DISK_TYPE_OTHER_AVAILABILITY_ZONE`).
-// The types have to have room for all of them, checked before anything is ordered: refused with 409
-// `MACHINE_TYPE_SOLD_OUT` or `DISK_TYPE_SOLD_OUT` when a type takes no new orders for now,
-// `MACHINE_TYPE_CAPACITY_REACHED` or `DISK_TYPE_CAPACITY_REACHED` when what is sold of it is used up,
-// `MACHINE_TYPE_NO_HOST_ROOM` when no host of the zone can take the machine, and
-// `DISK_TYPE_NO_POOL_ROOM` when the storage of the zone cannot take the system disk. Two orders placed
-// at the same moment can both pass; a virtual machine that finds a type full when its order is
-// accepted is not created and is refunded, ending `failed` with `provisioning_failed`.
-//
-// Choose an image or existing disk through boot_disk, and exactly one of network_interface_id or
-// subnet_id. Existing network interfaces, boot disks or elastic IPs require count=1. They are not held
-// while the virtual machine is pending; if one is no longer usable when the order is accepted, the
-// virtual machine ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing
-// disks retain their own subscription. Virtual machines, disks and public IPs keep their own
-// subscription items on the same order.
-//
-// Virtual machines of one request succeed or fail individually. Each virtual machine, with its system
-// disk, network interface and elastic IP, is created or fails as a whole. Virtual machines that were
-// created are kept; each failed virtual machine ends `failed` with `provisioning_failed`, its part of
-// the order is refunded, and the order then ends `partially_completed`. A virtual machine is delivered
-// whole or not at all: when the customer cancels any of its order items before the order is accepted,
-// it is not created, its remaining items are canceled and refunded, and it ends `failed` with
-// `order_canceled`. Each virtual machine is named after this request with a number appended.
-//
-// The network is checked before the Checkout Session is created, and a request it refuses orders and
-// charges nothing. It is refused with `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE` when the virtual private
-// cloud's `status` is not `available`, `VIRTUAL_PRIVATE_CLOUD_SUBNET_UNAVAILABLE` or
-// `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready,
-// `SECURITY_GROUP_OTHER_VIRTUAL_PRIVATE_CLOUD` when a security group belongs to another virtual
-// private cloud, and `NETWORK_INTERFACE_UNAVAILABLE` when the port's `status` is not `available`.
-// `meta` names the resource.
-//
-// Each virtual machine shows the `create` operation from the moment the Checkout Session is created
-// until it is delivered or the checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its release with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
-//
-// POST /api/v2/virtual-machines
-func (c *Client) CreateVirtualMachine(ctx context.Context, request *CreateVirtualMachineRequestBody) (CreateVirtualMachineRes, error) {
-	res, err := c.sendCreateVirtualMachine(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendCreateVirtualMachine(ctx context.Context, request *CreateVirtualMachineRequestBody) (res CreateVirtualMachineRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateVirtualMachineOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v2/virtual-machines"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateVirtualMachineRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, CreateVirtualMachineOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateVirtualMachineResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4258,32 +3832,64 @@ func (c *Client) sendCreateVirtualPrivateCloudSubnet(ctx context.Context, reques
 	return result, nil
 }
 
-// DeleteDisk invokes delete-disk operation.
+// CreateVolume invokes create-volume operation.
 //
-// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+// The volume is created in the availability zone of its volume type, and only an instance in the same
+// zone can attach it.
 //
-// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
-// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
-// checkout created one. Expire the session or cancel the order in Billing instead.
+// The type has to have room for it, checked before anything is ordered: refused with 409
+// `VOLUME_TYPE_SOLD_OUT` when the type takes no new volumes for now, `VOLUME_TYPE_CAPACITY_REACHED`
+// when what is sold of it is used up, and `VOLUME_TYPE_NO_POOL_ROOM` when the storage of its zone
+// cannot take the volume. Two orders placed at the same moment can both pass; the one that finds the
+// type full when its order is accepted is not created and is refunded, ending `failed` with
+// `provisioning_failed`.
 //
-// While subscriptions pay for the disk (those in its `release_set`), deleting it cancels them rather
-// than being refused: Compute creates one Billing cancellation for the whole set and answers with it
-// in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a licensed
-// subscription being refunded under its terms, and `period_end` keeps the disk working until
-// `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
-// again, whatever mode is asked for.
+// The volume is empty, or is restored from exactly one source: `volume_snapshot_id` or
+// `volume_backup_id`. Giving both is refused with 422 `VOLUME_SOURCE_CONFLICT`. A restore is a
+// purchase of a new volume; the source volume is unaffected and need not still exist.
 //
-// DELETE /api/v2/disks/{diskId}
-func (c *Client) DeleteDisk(ctx context.Context, params DeleteDiskParams) (DeleteDiskRes, error) {
-	res, err := c.sendDeleteDisk(ctx, params)
+//   - From a snapshot, the volume type has to be of the snapshot's availability zone (422
+//     `VOLUME_SNAPSHOT_OTHER_AVAILABILITY_ZONE`), because a snapshot lives in the same storage pool as
+//     its source and restores only into its own zone. `size_gib` is required and must be no smaller
+//     than the snapshot.
+//   - From a volume backup, the volume type may be of any zone of the backup's region, because a backup
+//     is an independent copy in different storage. `size_gib` matches the size of the backup when
+//     omitted, and when given it must not be smaller than the backup. The volume cannot be attached
+//     until it is `available`.
+//
+// A volume type that is off sale is rejected with `VOLUME_TYPE_OFF_SALE`, even though its identifier
+// still resolves. Types that are off sale do not appear in the volume type listing; volumes already
+// bought on one keep working and can still be resized.
+//
+// A volume bought on its own is licensed: `billing.usage_type` `metered` is refused with
+// `VOLUME_USAGE_TYPE_UNAVAILABLE`. A volume created with an instance follows the machine's terms
+// instead and may be metered.
+//
+// The volume shows the `create` operation from the moment its Checkout Session is created until it is
+// delivered or its checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
+//
+// POST /api/v2/volumes
+func (c *Client) CreateVolume(ctx context.Context, request *CreateVolumeRequestBody) (CreateVolumeRes, error) {
+	res, err := c.sendCreateVolume(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (res DeleteDiskRes, err error) {
+func (c *Client) sendCreateVolume(ctx context.Context, request *CreateVolumeRequestBody) (res CreateVolumeRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-disk"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v2/disks/{diskId}"),
+		otelogen.OperationID("create-volume"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v2/volumes"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -4299,7 +3905,7 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DeleteDiskOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateVolumeOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -4316,56 +3922,17 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v2/disks/"
-	{
-		// Encode "diskId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.DiskId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
+	var pathParts [1]string
+	pathParts[0] = "/api/v2/volumes"
 	uri.AddPathParts(u, pathParts[:]...)
 
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "cancellation_mode" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "cancellation_mode",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.CancellationMode.Get(); ok {
-				return e.EncodeValue(conv.StringToString(string(val)))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
+	r, err := ht.NewRequest(ctx, "POST", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateVolumeRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
 	}
 
 	{
@@ -4373,7 +3940,7 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, DeleteDiskOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, CreateVolumeOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -4416,7 +3983,7 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeDeleteDiskResponse(resp)
+	result, err := decodeCreateVolumeResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4424,37 +3991,44 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 	return result, nil
 }
 
-// DeleteDiskBackup invokes delete-disk-backup operation.
+// CreateVolumeBackup invokes create-volume-backup operation.
 //
-// Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of
-// the backup ends once it is deleted.
+// Creates a backup of the volume. It remains restorable after the source volume is deleted and may be
+// restored to another availability zone in the same region, by creating a volume with
+// `volume_backup_id` (`create-volume`). A running instance may produce a file-system-inconsistent
+// backup. Pending backups count toward Compute project quotas until cleanup is confirmed.
 //
-// Quota capacity and storage metering are released only after cleanup is confirmed.
+// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
+// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
+// backup is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
+// the customer completes checkout in Billing. The source and project quotas are checked before the
+// Checkout Session is created, and a refused request creates nothing.
 //
-// A resource whose purchase still awaits checkout or payment is refused with
-// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
-// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
-// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
-// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+// The backup shows the `create` operation from the moment its Checkout Session is created until it is
+// delivered or its checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
 //
-// While subscriptions pay for the disk backup (those in its `release_set`), deleting it cancels them
-// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the disk backup working
-// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
-// with it again, whatever mode is asked for.
-//
-// DELETE /api/v2/disk-backups/{diskBackupId}
-func (c *Client) DeleteDiskBackup(ctx context.Context, params DeleteDiskBackupParams) (DeleteDiskBackupRes, error) {
-	res, err := c.sendDeleteDiskBackup(ctx, params)
+// POST /api/v2/volume-backups
+func (c *Client) CreateVolumeBackup(ctx context.Context, request *CreateVolumeBackupRequestBody) (CreateVolumeBackupRes, error) {
+	res, err := c.sendCreateVolumeBackup(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendDeleteDiskBackup(ctx context.Context, params DeleteDiskBackupParams) (res DeleteDiskBackupRes, err error) {
+func (c *Client) sendCreateVolumeBackup(ctx context.Context, request *CreateVolumeBackupRequestBody) (res CreateVolumeBackupRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-disk-backup"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v2/disk-backups/{diskBackupId}"),
+		otelogen.OperationID("create-volume-backup"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v2/volume-backups"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -4470,7 +4044,7 @@ func (c *Client) sendDeleteDiskBackup(ctx context.Context, params DeleteDiskBack
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DeleteDiskBackupOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateVolumeBackupOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -4487,56 +4061,17 @@ func (c *Client) sendDeleteDiskBackup(ctx context.Context, params DeleteDiskBack
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v2/disk-backups/"
-	{
-		// Encode "diskBackupId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskBackupId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.DiskBackupId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
+	var pathParts [1]string
+	pathParts[0] = "/api/v2/volume-backups"
 	uri.AddPathParts(u, pathParts[:]...)
 
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "cancellation_mode" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "cancellation_mode",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.CancellationMode.Get(); ok {
-				return e.EncodeValue(conv.StringToString(string(val)))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
+	r, err := ht.NewRequest(ctx, "POST", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateVolumeBackupRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
 	}
 
 	{
@@ -4544,7 +4079,7 @@ func (c *Client) sendDeleteDiskBackup(ctx context.Context, params DeleteDiskBack
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, DeleteDiskBackupOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, CreateVolumeBackupOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -4587,7 +4122,7 @@ func (c *Client) sendDeleteDiskBackup(ctx context.Context, params DeleteDiskBack
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeDeleteDiskBackupResponse(resp)
+	result, err := decodeCreateVolumeBackupResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4595,35 +4130,43 @@ func (c *Client) sendDeleteDiskBackup(ctx context.Context, params DeleteDiskBack
 	return result, nil
 }
 
-// DeleteDiskSnapshot invokes delete-disk-snapshot operation.
+// CreateVolumeSnapshot invokes create-volume-snapshot operation.
 //
-// Deletes this resource. Quota capacity and storage metering are released only after cleanup is
-// confirmed.
+// Creates a snapshot of the volume. A running instance may produce a file-system-inconsistent
+// snapshot; flush pending writes first. A boot volume cannot be reverted while attached. Pending
+// snapshots count toward Compute project quotas until creation fails and cleanup is confirmed.
 //
-// A resource whose purchase still awaits checkout or payment is refused with
-// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
-// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
-// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
-// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
+// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
+// snapshot is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
+// the customer completes checkout in Billing. The source and project quotas are checked before the
+// Checkout Session is created, and a refused request creates nothing.
 //
-// While subscriptions pay for the snapshot (those in its `release_set`), deleting it cancels them
-// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the snapshot working
-// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
-// with it again, whatever mode is asked for.
+// The snapshot shows the `create` operation from the moment its Checkout Session is created until it
+// is delivered or its checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
 //
-// DELETE /api/v2/disk-snapshots/{diskSnapshotId}
-func (c *Client) DeleteDiskSnapshot(ctx context.Context, params DeleteDiskSnapshotParams) (DeleteDiskSnapshotRes, error) {
-	res, err := c.sendDeleteDiskSnapshot(ctx, params)
+// POST /api/v2/volume-snapshots
+func (c *Client) CreateVolumeSnapshot(ctx context.Context, request *CreateVolumeSnapshotRequestBody) (CreateVolumeSnapshotRes, error) {
+	res, err := c.sendCreateVolumeSnapshot(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendDeleteDiskSnapshot(ctx context.Context, params DeleteDiskSnapshotParams) (res DeleteDiskSnapshotRes, err error) {
+func (c *Client) sendCreateVolumeSnapshot(ctx context.Context, request *CreateVolumeSnapshotRequestBody) (res CreateVolumeSnapshotRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-disk-snapshot"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v2/disk-snapshots/{diskSnapshotId}"),
+		otelogen.OperationID("create-volume-snapshot"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v2/volume-snapshots"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -4639,7 +4182,7 @@ func (c *Client) sendDeleteDiskSnapshot(ctx context.Context, params DeleteDiskSn
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DeleteDiskSnapshotOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateVolumeSnapshotOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -4656,56 +4199,17 @@ func (c *Client) sendDeleteDiskSnapshot(ctx context.Context, params DeleteDiskSn
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v2/disk-snapshots/"
-	{
-		// Encode "diskSnapshotId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskSnapshotId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.DiskSnapshotId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
+	var pathParts [1]string
+	pathParts[0] = "/api/v2/volume-snapshots"
 	uri.AddPathParts(u, pathParts[:]...)
 
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "cancellation_mode" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "cancellation_mode",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.CancellationMode.Get(); ok {
-				return e.EncodeValue(conv.StringToString(string(val)))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
+	r, err := ht.NewRequest(ctx, "POST", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateVolumeSnapshotRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
 	}
 
 	{
@@ -4713,7 +4217,7 @@ func (c *Client) sendDeleteDiskSnapshot(ctx context.Context, params DeleteDiskSn
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, DeleteDiskSnapshotOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, CreateVolumeSnapshotOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -4756,7 +4260,7 @@ func (c *Client) sendDeleteDiskSnapshot(ctx context.Context, params DeleteDiskSn
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeDeleteDiskSnapshotResponse(resp)
+	result, err := decodeCreateVolumeSnapshotResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4932,10 +4436,181 @@ func (c *Client) sendDeleteElasticIP(ctx context.Context, params DeleteElasticIP
 	return result, nil
 }
 
+// DeleteInstance invokes delete-instance operation.
+//
+// The boot volume is deleted with the instance, and snapshots created from the boot volume are deleted
+// with it. Data volumes are detached and kept, and their snapshots and backups are unaffected. The
+// primary network interface is released with the instance.
+//
+// An instance being captured as a private image cannot be released. Wait for the capture to finish, or
+// delete that image first.
+//
+// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
+// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
+// checkout created one. Expire the session or cancel the order in Billing instead.
+//
+// While subscriptions pay for the instance (those in its `release_set`), deleting it cancels them
+// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the instance working
+// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+// with it again, whatever mode is asked for.
+//
+// DELETE /api/v2/instances/{instanceId}
+func (c *Client) DeleteInstance(ctx context.Context, params DeleteInstanceParams) (DeleteInstanceRes, error) {
+	res, err := c.sendDeleteInstance(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeleteInstance(ctx context.Context, params DeleteInstanceParams) (res DeleteInstanceRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-instance"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteInstanceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/instances/"
+	{
+		// Encode "instanceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InstanceId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "cancellation_mode" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "cancellation_mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.CancellationMode.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteInstanceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteInstanceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // DeleteLaunchTemplate invokes delete-launch-template operation.
 //
-// Deletes the template with every version. Virtual machines created from it are not affected and keep
-// naming the version they were created from.
+// Deletes the template with every version. Instances created from it are not affected and keep naming
+// the version they were created from.
 //
 // DELETE /api/v2/launch-templates/{launchTemplateId}
 func (c *Client) DeleteLaunchTemplate(ctx context.Context, params DeleteLaunchTemplateParams) error {
@@ -5072,7 +4747,7 @@ func (c *Client) sendDeleteLaunchTemplate(ctx context.Context, params DeleteLaun
 // The default version cannot be deleted (`LAUNCH_TEMPLATE_VERSION_DEFAULT`); make another version the
 // default first.
 //
-// DELETE /api/v2/launch-templates/{launchTemplateId}/versions/{version}
+// DELETE /api/v2/launch-templates/{launchTemplateId}/versions/{versionNumber}
 func (c *Client) DeleteLaunchTemplateVersion(ctx context.Context, params DeleteLaunchTemplateVersionParams) error {
 	_, err := c.sendDeleteLaunchTemplateVersion(ctx, params)
 	return err
@@ -5082,7 +4757,7 @@ func (c *Client) sendDeleteLaunchTemplateVersion(ctx context.Context, params Del
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-launch-template-version"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v2/launch-templates/{launchTemplateId}/versions/{version}"),
+		semconv.URLTemplateKey.String("/api/v2/launch-templates/{launchTemplateId}/versions/{versionNumber}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5140,14 +4815,14 @@ func (c *Client) sendDeleteLaunchTemplateVersion(ctx context.Context, params Del
 	}
 	pathParts[2] = "/versions/"
 	{
-		// Encode "version" parameter.
+		// Encode "versionNumber" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "version",
+			Param:   "versionNumber",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.Int64ToString(params.Version))
+			return e.EncodeValue(conv.Int64ToString(params.VersionNumber))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -5223,8 +4898,8 @@ func (c *Client) sendDeleteLaunchTemplateVersion(ctx context.Context, params Del
 
 // DeleteNetworkInterface invokes delete-network-interface operation.
 //
-// The primary network interface cannot be deleted on its own, as it is released with the virtual
-// machine. A network interface still attached to a virtual machine cannot be deleted either.
+// The primary network interface cannot be deleted on its own, as it is released with the instance. A
+// network interface still attached to an instance cannot be deleted either.
 //
 // DELETE /api/v2/network-interfaces/{networkInterfaceId}
 func (c *Client) DeleteNetworkInterface(ctx context.Context, params DeleteNetworkInterfaceParams) (DeleteNetworkInterfaceRes, error) {
@@ -5520,8 +5195,8 @@ func (c *Client) sendDeleteNetworkInterfaceAddress(ctx context.Context, params D
 // Deletes a private image of this project; any other image, public images included, is reported as not
 // found.
 //
-// Deletion is rejected while virtual machines created from the image still exist, as they need it in
-// order to be rebuilt.
+// Deletion is rejected while instances created from the image still exist, as they need it in order to
+// be rebuilt.
 //
 // An image whose capture has not finished can be deleted; the capture is aborted. This is the one
 // operation accepted while the `create` operation is in progress.
@@ -5983,181 +5658,10 @@ func (c *Client) sendDeleteSecurityGroupRule(ctx context.Context, params DeleteS
 	return result, nil
 }
 
-// DeleteVirtualMachine invokes delete-virtual-machine operation.
-//
-// The system disk is deleted with the virtual machine, and snapshots created from the system disk are
-// deleted with it. Data disks are detached and kept, and their snapshots and backups are unaffected.
-// The primary network interface is released with the virtual machine.
-//
-// A virtual machine being captured as a private image cannot be released. Wait for the capture to
-// finish, or delete that image first.
-//
-// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
-// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
-// checkout created one. Expire the session or cancel the order in Billing instead.
-//
-// While subscriptions pay for the virtual machine (those in its `release_set`), deleting it cancels
-// them rather than being refused: Compute creates one Billing cancellation for the whole set and
-// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
-// now, a licensed subscription being refunded under its terms, and `period_end` keeps the virtual
-// machine working until `scheduled_at` and releases it then. Asking again while that cancellation is
-// pending answers with it again, whatever mode is asked for.
-//
-// DELETE /api/v2/virtual-machines/{virtualMachineId}
-func (c *Client) DeleteVirtualMachine(ctx context.Context, params DeleteVirtualMachineParams) (DeleteVirtualMachineRes, error) {
-	res, err := c.sendDeleteVirtualMachine(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendDeleteVirtualMachine(ctx context.Context, params DeleteVirtualMachineParams) (res DeleteVirtualMachineRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DeleteVirtualMachineOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v2/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "cancellation_mode" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "cancellation_mode",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.CancellationMode.Get(); ok {
-				return e.EncodeValue(conv.StringToString(string(val)))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, DeleteVirtualMachineOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeDeleteVirtualMachineResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // DeleteVirtualPrivateCloud invokes delete-virtual-private-cloud operation.
 //
-// Deletion is rejected while virtual machines or network interfaces remain in the network. Its
-// subnets, routes, security groups and IPv6 configuration are removed with it.
+// Deletion is rejected while instances or network interfaces remain in the network. Its subnets,
+// routes, security groups and IPv6 configuration are removed with it.
 //
 // DELETE /api/v2/virtual-private-clouds/{virtualPrivateCloudId}
 func (c *Client) DeleteVirtualPrivateCloud(ctx context.Context, params DeleteVirtualPrivateCloudParams) (DeleteVirtualPrivateCloudRes, error) {
@@ -6737,30 +6241,32 @@ func (c *Client) sendDeleteVirtualPrivateCloudSubnet(ctx context.Context, params
 	return result, nil
 }
 
-// DetachVirtualMachineDisk invokes detach-virtual-machine-disk operation.
+// DeleteVolume invokes delete-volume operation.
 //
-// Unmount the device inside the virtual machine before calling this endpoint. Forcibly detaching a
-// file system that is being written to corrupts data.
+// Deletion is rejected while the volume is attached, or while snapshots created from it still exist.
 //
-// The disk the virtual machine boots from cannot be detached, whether it is the system disk bought
-// with the virtual machine or a disk supplied as the existing boot_disk at launch. Such a request is
-// refused with `VIRTUAL_MACHINE_BOOT_DISK_LOCKED` and changes nothing; releasing the virtual machine
-// is what frees that disk.
+// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
+// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
+// checkout created one. Expire the session or cancel the order in Billing instead.
 //
-// Returns the disk; the virtual machine shows the `detach_disk` operation and the disk the `detach`
-// operation until the disk is detached.
+// While subscriptions pay for the volume (those in its `release_set`), deleting it cancels them rather
+// than being refused: Compute creates one Billing cancellation for the whole set and answers with it
+// in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a licensed
+// subscription being refunded under its terms, and `period_end` keeps the volume working until
+// `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
+// again, whatever mode is asked for.
 //
-// DELETE /api/v2/virtual-machines/{virtualMachineId}/disks/{diskId}
-func (c *Client) DetachVirtualMachineDisk(ctx context.Context, params DetachVirtualMachineDiskParams) (DetachVirtualMachineDiskRes, error) {
-	res, err := c.sendDetachVirtualMachineDisk(ctx, params)
+// DELETE /api/v2/volumes/{volumeId}
+func (c *Client) DeleteVolume(ctx context.Context, params DeleteVolumeParams) (DeleteVolumeRes, error) {
+	res, err := c.sendDeleteVolume(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDetachVirtualMachineDisk(ctx context.Context, params DetachVirtualMachineDiskParams) (res DetachVirtualMachineDiskRes, err error) {
+func (c *Client) sendDeleteVolume(ctx context.Context, params DeleteVolumeParams) (res DeleteVolumeRes, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("detach-virtual-machine-disk"),
+		otelogen.OperationID("delete-volume"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}/disks/{diskId}"),
+		semconv.URLTemplateKey.String("/api/v2/volumes/{volumeId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -6776,7 +6282,7 @@ func (c *Client) sendDetachVirtualMachineDisk(ctx context.Context, params Detach
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DetachVirtualMachineDiskOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteVolumeOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -6793,17 +6299,17 @@ func (c *Client) sendDetachVirtualMachineDisk(ctx context.Context, params Detach
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/api/v2/virtual-machines/"
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/volumes/"
 	{
-		// Encode "virtualMachineId" parameter.
+		// Encode "volumeId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
+			Param:   "volumeId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
+			if unwrapped := string(params.VolumeId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -6816,29 +6322,28 @@ func (c *Client) sendDetachVirtualMachineDisk(ctx context.Context, params Detach
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/disks/"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
 	{
-		// Encode "diskId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.DiskId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
+		// Encode "cancellation_mode" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "cancellation_mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.CancellationMode.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
 			}
 			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
 		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
 	}
-	uri.AddPathParts(u, pathParts[:]...)
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "DELETE", u)
@@ -6851,7 +6356,7 @@ func (c *Client) sendDetachVirtualMachineDisk(ctx context.Context, params Detach
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, DetachVirtualMachineDiskOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, DeleteVolumeOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -6894,7 +6399,7 @@ func (c *Client) sendDetachVirtualMachineDisk(ctx context.Context, params Detach
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeDetachVirtualMachineDiskResponse(resp)
+	result, err := decodeDeleteVolumeResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -6902,26 +6407,37 @@ func (c *Client) sendDetachVirtualMachineDisk(ctx context.Context, params Detach
 	return result, nil
 }
 
-// DetachVirtualMachineNetworkInterface invokes detach-virtual-machine-network-interface operation.
+// DeleteVolumeBackup invokes delete-volume-backup operation.
 //
-// The primary network interface cannot be detached; the virtual machine would lose its network
-// address. The virtual machine has to be running; a stopped one holds no host and is refused with 409
-// `VIRTUAL_MACHINE_NOT_RUNNING`.
+// Independent of the source volume: deletion succeeds whether or not that volume still exists.
+// Metering of the backup ends once it is deleted.
 //
-// Returns the network interface; the virtual machine shows the `detach_network_interface` operation
-// and the interface the `detach` operation until it is detached.
+// Quota capacity and storage metering are released only after cleanup is confirmed.
 //
-// DELETE /api/v2/virtual-machines/{virtualMachineId}/network-interfaces/{networkInterfaceId}
-func (c *Client) DetachVirtualMachineNetworkInterface(ctx context.Context, params DetachVirtualMachineNetworkInterfaceParams) (DetachVirtualMachineNetworkInterfaceRes, error) {
-	res, err := c.sendDetachVirtualMachineNetworkInterface(ctx, params)
+// A resource whose purchase still awaits checkout or payment is refused with
+// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
+// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
+// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
+// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+//
+// While subscriptions pay for the volume backup (those in its `release_set`), deleting it cancels them
+// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the volume backup
+// working until `scheduled_at` and releases it then. Asking again while that cancellation is pending
+// answers with it again, whatever mode is asked for.
+//
+// DELETE /api/v2/volume-backups/{volumeBackupId}
+func (c *Client) DeleteVolumeBackup(ctx context.Context, params DeleteVolumeBackupParams) (DeleteVolumeBackupRes, error) {
+	res, err := c.sendDeleteVolumeBackup(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDetachVirtualMachineNetworkInterface(ctx context.Context, params DetachVirtualMachineNetworkInterfaceParams) (res DetachVirtualMachineNetworkInterfaceRes, err error) {
+func (c *Client) sendDeleteVolumeBackup(ctx context.Context, params DeleteVolumeBackupParams) (res DeleteVolumeBackupRes, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("detach-virtual-machine-network-interface"),
+		otelogen.OperationID("delete-volume-backup"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}/network-interfaces/{networkInterfaceId}"),
+		semconv.URLTemplateKey.String("/api/v2/volume-backups/{volumeBackupId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -6937,7 +6453,336 @@ func (c *Client) sendDetachVirtualMachineNetworkInterface(ctx context.Context, p
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DetachVirtualMachineNetworkInterfaceOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteVolumeBackupOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/volume-backups/"
+	{
+		// Encode "volumeBackupId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "volumeBackupId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VolumeBackupId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "cancellation_mode" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "cancellation_mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.CancellationMode.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteVolumeBackupOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteVolumeBackupResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeleteVolumeSnapshot invokes delete-volume-snapshot operation.
+//
+// Deletes this resource. Quota capacity and storage metering are released only after cleanup is
+// confirmed.
+//
+// A resource whose purchase still awaits checkout or payment is refused with
+// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
+// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
+// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
+// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+//
+// While subscriptions pay for the snapshot (those in its `release_set`), deleting it cancels them
+// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the snapshot working
+// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+// with it again, whatever mode is asked for.
+//
+// DELETE /api/v2/volume-snapshots/{volumeSnapshotId}
+func (c *Client) DeleteVolumeSnapshot(ctx context.Context, params DeleteVolumeSnapshotParams) (DeleteVolumeSnapshotRes, error) {
+	res, err := c.sendDeleteVolumeSnapshot(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeleteVolumeSnapshot(ctx context.Context, params DeleteVolumeSnapshotParams) (res DeleteVolumeSnapshotRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-volume-snapshot"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v2/volume-snapshots/{volumeSnapshotId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteVolumeSnapshotOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/volume-snapshots/"
+	{
+		// Encode "volumeSnapshotId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "volumeSnapshotId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VolumeSnapshotId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "cancellation_mode" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "cancellation_mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.CancellationMode.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteVolumeSnapshotOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteVolumeSnapshotResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DetachInstanceNetworkInterface invokes detach-instance-network-interface operation.
+//
+// The primary network interface cannot be detached; the instance would lose its network address. The
+// instance has to be running; a stopped one holds no host and is refused with 409
+// `INSTANCE_NOT_RUNNING`.
+//
+// Returns the network interface; the instance shows the `detach_network_interface` operation and the
+// interface the `detach` operation until it is detached.
+//
+// DELETE /api/v2/instances/{instanceId}/network-interfaces/{networkInterfaceId}
+func (c *Client) DetachInstanceNetworkInterface(ctx context.Context, params DetachInstanceNetworkInterfaceParams) (DetachInstanceNetworkInterfaceRes, error) {
+	res, err := c.sendDetachInstanceNetworkInterface(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDetachInstanceNetworkInterface(ctx context.Context, params DetachInstanceNetworkInterfaceParams) (res DetachInstanceNetworkInterfaceRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("detach-instance-network-interface"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}/network-interfaces/{networkInterfaceId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DetachInstanceNetworkInterfaceOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -6955,16 +6800,16 @@ func (c *Client) sendDetachVirtualMachineNetworkInterface(ctx context.Context, p
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [4]string
-	pathParts[0] = "/api/v2/virtual-machines/"
+	pathParts[0] = "/api/v2/instances/"
 	{
-		// Encode "virtualMachineId" parameter.
+		// Encode "instanceId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
+			Param:   "instanceId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
+			if unwrapped := string(params.InstanceId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -7012,7 +6857,7 @@ func (c *Client) sendDetachVirtualMachineNetworkInterface(ctx context.Context, p
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, DetachVirtualMachineNetworkInterfaceOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, DetachInstanceNetworkInterfaceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -7055,7 +6900,171 @@ func (c *Client) sendDetachVirtualMachineNetworkInterface(ctx context.Context, p
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeDetachVirtualMachineNetworkInterfaceResponse(resp)
+	result, err := decodeDetachInstanceNetworkInterfaceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DetachInstanceVolume invokes detach-instance-volume operation.
+//
+// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
+// system that is being written to corrupts data.
+//
+// The volume the instance boots from cannot be detached, whether it is the boot volume bought with the
+// instance or a volume supplied as the existing boot_volume at launch. Such a request is refused with
+// `INSTANCE_BOOT_VOLUME_LOCKED` and changes nothing; releasing the instance is what frees that volume.
+//
+// Returns the volume; the instance shows the `detach_volume` operation and the volume the `detach`
+// operation until the volume is detached.
+//
+// DELETE /api/v2/instances/{instanceId}/volumes/{volumeId}
+func (c *Client) DetachInstanceVolume(ctx context.Context, params DetachInstanceVolumeParams) (DetachInstanceVolumeRes, error) {
+	res, err := c.sendDetachInstanceVolume(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDetachInstanceVolume(ctx context.Context, params DetachInstanceVolumeParams) (res DetachInstanceVolumeRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("detach-instance-volume"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}/volumes/{volumeId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DetachInstanceVolumeOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v2/instances/"
+	{
+		// Encode "instanceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InstanceId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/volumes/"
+	{
+		// Encode "volumeId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "volumeId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VolumeId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DetachInstanceVolumeOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDetachInstanceVolumeResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -7202,8 +7211,8 @@ func (c *Client) sendDisableVirtualPrivateCloudIpv6(ctx context.Context, params 
 // DisassociateElasticIP invokes disassociate-elastic-ip operation.
 //
 // The address remains held by the project and simply no longer points at any network interface. The
-// elastic IP shows the `disassociate` operation until the change is confirmed, and a virtual machine
-// whose primary interface it pointed at shows the `disassociate_elastic_ip` operation. Removing an
+// elastic IP shows the `disassociate` operation until the change is confirmed, and an instance whose
+// primary interface it pointed at shows the `disassociate_elastic_ip` operation. Removing an
 // association that does not exist is refused with 404 `ELASTIC_IP_NOT_ASSOCIATED`.
 //
 // POST /api/v2/elastic-ips/{elasticIpId}:disassociate
@@ -7480,7 +7489,7 @@ func (c *Client) sendEnableVirtualPrivateCloudIpv6(ctx context.Context, params E
 
 // GetAvailabilityZone invokes get-availability-zone operation.
 //
-// A disk and a virtual machine must reside in the same availability zone to be attached.
+// A volume and an instance must reside in the same availability zone to be attached.
 //
 // GET /api/v2/availability-zones/{availabilityZoneId}
 func (c *Client) GetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (*AvailabilityZoneResource, error) {
@@ -7606,545 +7615,6 @@ func (c *Client) sendGetAvailabilityZone(ctx context.Context, params GetAvailabi
 
 	stage = "DecodeResponse"
 	result, err := decodeGetAvailabilityZoneResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetDisk invokes get-disk operation.
-//
-// Returns the stored state of the disk; it does not query the cloud.
-//
-// GET /api/v2/disks/{diskId}
-func (c *Client) GetDisk(ctx context.Context, params GetDiskParams) (*DiskResource, error) {
-	res, err := c.sendGetDisk(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetDisk(ctx context.Context, params GetDiskParams) (res *DiskResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-disk"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/disks/{diskId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetDiskOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v2/disks/"
-	{
-		// Encode "diskId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.DiskId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, GetDiskOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetDiskResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetDiskBackup invokes get-disk-backup operation.
-//
-// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
-// progress.
-//
-// GET /api/v2/disk-backups/{diskBackupId}
-func (c *Client) GetDiskBackup(ctx context.Context, params GetDiskBackupParams) (*DiskBackupResource, error) {
-	res, err := c.sendGetDiskBackup(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetDiskBackup(ctx context.Context, params GetDiskBackupParams) (res *DiskBackupResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-disk-backup"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/disk-backups/{diskBackupId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetDiskBackupOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v2/disk-backups/"
-	{
-		// Encode "diskBackupId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskBackupId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.DiskBackupId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, GetDiskBackupOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetDiskBackupResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetDiskSnapshot invokes get-disk-snapshot operation.
-//
-// Retrieve a snapshot.
-//
-// GET /api/v2/disk-snapshots/{diskSnapshotId}
-func (c *Client) GetDiskSnapshot(ctx context.Context, params GetDiskSnapshotParams) (*DiskSnapshotResource, error) {
-	res, err := c.sendGetDiskSnapshot(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetDiskSnapshot(ctx context.Context, params GetDiskSnapshotParams) (res *DiskSnapshotResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-disk-snapshot"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/disk-snapshots/{diskSnapshotId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetDiskSnapshotOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v2/disk-snapshots/"
-	{
-		// Encode "diskSnapshotId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskSnapshotId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.DiskSnapshotId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, GetDiskSnapshotOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetDiskSnapshotResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetDiskType invokes get-disk-type operation.
-//
-// Retrieve capacity and performance constraints for an existing disk, including types withdrawn from
-// sale.
-//
-// GET /api/v2/disk-types/{diskTypeId}
-func (c *Client) GetDiskType(ctx context.Context, params GetDiskTypeParams) (*DiskTypeResource, error) {
-	res, err := c.sendGetDiskType(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetDiskType(ctx context.Context, params GetDiskTypeParams) (res *DiskTypeResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-disk-type"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/disk-types/{diskTypeId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetDiskTypeOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v2/disk-types/"
-	{
-		// Encode "diskTypeId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskTypeId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.DiskTypeId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, GetDiskTypeOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{},
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetDiskTypeResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -8561,6 +8031,553 @@ func (c *Client) sendGetElasticIPLine(ctx context.Context, params GetElasticIPLi
 	return result, nil
 }
 
+// GetInstance invokes get-instance operation.
+//
+// Returns the stored state of the instance; it does not query the cloud. Use it to poll creation
+// progress.
+//
+// GET /api/v2/instances/{instanceId}
+func (c *Client) GetInstance(ctx context.Context, params GetInstanceParams) (*Instance, error) {
+	res, err := c.sendGetInstance(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetInstance(ctx context.Context, params GetInstanceParams) (res *Instance, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-instance"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetInstanceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/instances/"
+	{
+		// Encode "instanceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InstanceId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetInstanceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetInstanceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetInstanceConsole invokes get-instance-console operation.
+//
+// The instance's VNC console, operated from a browser through a noVNC client. It does not require the
+// instance to be reachable over the network, which makes it usable when a network misconfiguration
+// prevents login.
+//
+// The returned address is single-use and expires within minutes. Every request issues a new address,
+// so request one before each use and do not cache the response.
+//
+// GET /api/v2/instances/{instanceId}/console
+func (c *Client) GetInstanceConsole(ctx context.Context, params GetInstanceConsoleParams) (*ConsoleResponseBody, error) {
+	res, err := c.sendGetInstanceConsole(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetInstanceConsole(ctx context.Context, params GetInstanceConsoleParams) (res *ConsoleResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-instance-console"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}/console"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetInstanceConsoleOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v2/instances/"
+	{
+		// Encode "instanceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InstanceId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/console"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetInstanceConsoleOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetInstanceConsoleResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetInstanceFamily invokes get-instance-family operation.
+//
+// Returns an instance family under the same rule as listing; a family with no instance type on sale or
+// sold out returns 404.
+//
+// GET /api/v2/instance-families/{instanceFamilyId}
+func (c *Client) GetInstanceFamily(ctx context.Context, params GetInstanceFamilyParams) (*InstanceFamily, error) {
+	res, err := c.sendGetInstanceFamily(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetInstanceFamily(ctx context.Context, params GetInstanceFamilyParams) (res *InstanceFamily, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-instance-family"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/instance-families/{instanceFamilyId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetInstanceFamilyOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/instance-families/"
+	{
+		// Encode "instanceFamilyId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceFamilyId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InstanceFamilyId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetInstanceFamilyOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{},
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetInstanceFamilyResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetInstanceType invokes get-instance-type operation.
+//
+// Returns an instance type on sale or sold out, under the same access rules as listing. Off-sale,
+// retired or absent types return 404.
+//
+// GET /api/v2/instance-types/{instanceTypeId}
+func (c *Client) GetInstanceType(ctx context.Context, params GetInstanceTypeParams) (*InstanceType, error) {
+	res, err := c.sendGetInstanceType(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetInstanceType(ctx context.Context, params GetInstanceTypeParams) (res *InstanceType, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-instance-type"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/instance-types/{instanceTypeId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetInstanceTypeOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/instance-types/"
+	{
+		// Encode "instanceTypeId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceTypeId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InstanceTypeId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetInstanceTypeOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{},
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetInstanceTypeResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetLaunchTemplate invokes get-launch-template operation.
 //
 // Get a launch template.
@@ -8699,7 +8716,7 @@ func (c *Client) sendGetLaunchTemplate(ctx context.Context, params GetLaunchTemp
 //
 // Get a launch template version.
 //
-// GET /api/v2/launch-templates/{launchTemplateId}/versions/{version}
+// GET /api/v2/launch-templates/{launchTemplateId}/versions/{versionNumber}
 func (c *Client) GetLaunchTemplateVersion(ctx context.Context, params GetLaunchTemplateVersionParams) (*LaunchTemplateVersion, error) {
 	res, err := c.sendGetLaunchTemplateVersion(ctx, params)
 	return res, err
@@ -8709,7 +8726,7 @@ func (c *Client) sendGetLaunchTemplateVersion(ctx context.Context, params GetLau
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-launch-template-version"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/launch-templates/{launchTemplateId}/versions/{version}"),
+		semconv.URLTemplateKey.String("/api/v2/launch-templates/{launchTemplateId}/versions/{versionNumber}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -8767,14 +8784,14 @@ func (c *Client) sendGetLaunchTemplateVersion(ctx context.Context, params GetLau
 	}
 	pathParts[2] = "/versions/"
 	{
-		// Encode "version" parameter.
+		// Encode "versionNumber" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "version",
+			Param:   "versionNumber",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.Int64ToString(params.Version))
+			return e.EncodeValue(conv.Int64ToString(params.VersionNumber))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -8841,142 +8858,6 @@ func (c *Client) sendGetLaunchTemplateVersion(ctx context.Context, params GetLau
 
 	stage = "DecodeResponse"
 	result, err := decodeGetLaunchTemplateVersionResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetMachineType invokes get-machine-type operation.
-//
-// Returns a machine type on sale or sold out, under the same access rules as listing. Off-sale,
-// retired or absent types return 404.
-//
-// GET /api/v2/machine-types/{machineTypeId}
-func (c *Client) GetMachineType(ctx context.Context, params GetMachineTypeParams) (*MachineType, error) {
-	res, err := c.sendGetMachineType(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetMachineType(ctx context.Context, params GetMachineTypeParams) (res *MachineType, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-machine-type"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/machine-types/{machineTypeId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetMachineTypeOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v2/machine-types/"
-	{
-		// Encode "machineTypeId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "machineTypeId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.MachineTypeId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, GetMachineTypeOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{},
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetMachineTypeResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -9392,9 +9273,9 @@ func (c *Client) sendGetPrivateImage(ctx context.Context, params GetPrivateImage
 // GetPublicImage invokes get-public-image operation.
 //
 // Returns a public image, on sale or withdrawn. A withdrawn image (`sale_status` is `off_sale`) is
-// still returned because virtual machines may keep running it; it cannot be chosen for a new virtual
-// machine and can only be rebuilt onto by a virtual machine that already runs it. A private image id
-// is reported as not found here; use `/private-images`.
+// still returned because instances may keep running it; it cannot be chosen for a new instance and can
+// only be rebuilt onto by an instance that already runs it. A private image id is reported as not
+// found here; use `/private-images`.
 //
 // GET /api/v2/public-images/{publicImageId}
 func (c *Client) GetPublicImage(ctx context.Context, params GetPublicImageParams) (*PublicImageResource, error) {
@@ -10100,281 +9981,6 @@ func (c *Client) sendGetSecurityGroupRule(ctx context.Context, params GetSecurit
 
 	stage = "DecodeResponse"
 	result, err := decodeGetSecurityGroupRuleResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetVirtualMachine invokes get-virtual-machine operation.
-//
-// Returns the stored state of the virtual machine; it does not query the cloud. Use it to poll
-// creation progress.
-//
-// GET /api/v2/virtual-machines/{virtualMachineId}
-func (c *Client) GetVirtualMachine(ctx context.Context, params GetVirtualMachineParams) (*VirtualMachine, error) {
-	res, err := c.sendGetVirtualMachine(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetVirtualMachine(ctx context.Context, params GetVirtualMachineParams) (res *VirtualMachine, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetVirtualMachineOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v2/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, GetVirtualMachineOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetVirtualMachineResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetVirtualMachineConsole invokes get-virtual-machine-console operation.
-//
-// The virtual machine's VNC console, operated from a browser through a noVNC client. It does not
-// require the virtual machine to be reachable over the network, which makes it usable when a network
-// misconfiguration prevents login.
-//
-// The returned address is single-use and expires within minutes. Every request issues a new address,
-// so request one before each use and do not cache the response.
-//
-// GET /api/v2/virtual-machines/{virtualMachineId}/console
-func (c *Client) GetVirtualMachineConsole(ctx context.Context, params GetVirtualMachineConsoleParams) (*ConsoleResponseBody, error) {
-	res, err := c.sendGetVirtualMachineConsole(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetVirtualMachineConsole(ctx context.Context, params GetVirtualMachineConsoleParams) (res *ConsoleResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-virtual-machine-console"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}/console"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetVirtualMachineConsoleOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v2/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/console"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, GetVirtualMachineConsoleOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetVirtualMachineConsoleResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -11119,10 +10725,549 @@ func (c *Client) sendGetVirtualPrivateCloudSubnet(ctx context.Context, params Ge
 	return result, nil
 }
 
+// GetVolume invokes get-volume operation.
+//
+// Returns the stored state of the volume; it does not query the cloud.
+//
+// GET /api/v2/volumes/{volumeId}
+func (c *Client) GetVolume(ctx context.Context, params GetVolumeParams) (*VolumeResource, error) {
+	res, err := c.sendGetVolume(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetVolume(ctx context.Context, params GetVolumeParams) (res *VolumeResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-volume"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/volumes/{volumeId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetVolumeOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/volumes/"
+	{
+		// Encode "volumeId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "volumeId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VolumeId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetVolumeOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetVolumeResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetVolumeBackup invokes get-volume-backup operation.
+//
+// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
+// progress.
+//
+// GET /api/v2/volume-backups/{volumeBackupId}
+func (c *Client) GetVolumeBackup(ctx context.Context, params GetVolumeBackupParams) (*VolumeBackupResource, error) {
+	res, err := c.sendGetVolumeBackup(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetVolumeBackup(ctx context.Context, params GetVolumeBackupParams) (res *VolumeBackupResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-volume-backup"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/volume-backups/{volumeBackupId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetVolumeBackupOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/volume-backups/"
+	{
+		// Encode "volumeBackupId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "volumeBackupId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VolumeBackupId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetVolumeBackupOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetVolumeBackupResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetVolumeSnapshot invokes get-volume-snapshot operation.
+//
+// Retrieve a snapshot.
+//
+// GET /api/v2/volume-snapshots/{volumeSnapshotId}
+func (c *Client) GetVolumeSnapshot(ctx context.Context, params GetVolumeSnapshotParams) (*VolumeSnapshotResource, error) {
+	res, err := c.sendGetVolumeSnapshot(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetVolumeSnapshot(ctx context.Context, params GetVolumeSnapshotParams) (res *VolumeSnapshotResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-volume-snapshot"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/volume-snapshots/{volumeSnapshotId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetVolumeSnapshotOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/volume-snapshots/"
+	{
+		// Encode "volumeSnapshotId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "volumeSnapshotId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VolumeSnapshotId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetVolumeSnapshotOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetVolumeSnapshotResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetVolumeType invokes get-volume-type operation.
+//
+// Retrieve capacity and performance constraints for an existing volume, including types withdrawn from
+// sale.
+//
+// GET /api/v2/volume-types/{volumeTypeId}
+func (c *Client) GetVolumeType(ctx context.Context, params GetVolumeTypeParams) (*VolumeTypeResource, error) {
+	res, err := c.sendGetVolumeType(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetVolumeType(ctx context.Context, params GetVolumeTypeParams) (res *VolumeTypeResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-volume-type"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/volume-types/{volumeTypeId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetVolumeTypeOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/volume-types/"
+	{
+		// Encode "volumeTypeId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "volumeTypeId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VolumeTypeId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetVolumeTypeOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{},
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetVolumeTypeResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListAvailabilityZones invokes list-availability-zones operation.
 //
-// A disk and a virtual machine must reside in the same availability zone to be attached. Confirm the
-// zone before creating either. Without `region_id`, the zones of every region are listed.
+// A volume and an instance must reside in the same availability zone to be attached. Confirm the zone
+// before creating either. Without `region_id`, the zones of every region are listed.
 //
 // GET /api/v2/availability-zones
 func (c *Client) ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*AvailabilityZoneListResponseBody, error) {
@@ -11285,734 +11430,6 @@ func (c *Client) sendListAvailabilityZones(ctx context.Context, params ListAvail
 
 	stage = "DecodeResponse"
 	result, err := decodeListAvailabilityZonesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListDiskBackups invokes list-disk-backups operation.
-//
-// List disk backups.
-//
-// GET /api/v2/disk-backups
-func (c *Client) ListDiskBackups(ctx context.Context, params ListDiskBackupsParams) (*DiskBackupListResponseBody, error) {
-	res, err := c.sendListDiskBackups(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListDiskBackups(ctx context.Context, params ListDiskBackupsParams) (res *DiskBackupListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-disk-backups"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/disk-backups"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListDiskBackupsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v2/disk-backups"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "disk_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "disk_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.DiskID.Get(); ok {
-				if unwrapped := string(val); true {
-					return e.EncodeValue(conv.StringToString(unwrapped))
-				}
-				return nil
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListDiskBackupsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListDiskBackupsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListDiskSnapshots invokes list-disk-snapshots operation.
-//
-// List snapshots.
-//
-// GET /api/v2/disk-snapshots
-func (c *Client) ListDiskSnapshots(ctx context.Context, params ListDiskSnapshotsParams) (*DiskSnapshotListResponseBody, error) {
-	res, err := c.sendListDiskSnapshots(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListDiskSnapshots(ctx context.Context, params ListDiskSnapshotsParams) (res *DiskSnapshotListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-disk-snapshots"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/disk-snapshots"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListDiskSnapshotsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v2/disk-snapshots"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "disk_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "disk_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.DiskID.Get(); ok {
-				if unwrapped := string(val); true {
-					return e.EncodeValue(conv.StringToString(unwrapped))
-				}
-				return nil
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListDiskSnapshotsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListDiskSnapshotsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListDiskTypes invokes list-disk-types operation.
-//
-// Disk types on sale are listed, and sold-out ones with `sale_status` `sold_out`. Any of them boots a
-// virtual machine of its zone, holds data or takes a restore. A withdrawn one disappears from here and
-// can no longer be bought, while the disks already on it keep working and can still be resized.
-//
-// GET /api/v2/disk-types
-func (c *Client) ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeListResponseBody, error) {
-	res, err := c.sendListDiskTypes(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListDiskTypes(ctx context.Context, params ListDiskTypesParams) (res *DiskTypeListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-disk-types"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/disk-types"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListDiskTypesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v2/disk-types"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "region_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "region_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.RegionID.Get(); ok {
-				if unwrapped := string(val); true {
-					return e.EncodeValue(conv.StringToString(unwrapped))
-				}
-				return nil
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "availability_zone_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "availability_zone_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.AvailabilityZoneID.Get(); ok {
-				if unwrapped := string(val); true {
-					return e.EncodeValue(conv.StringToString(unwrapped))
-				}
-				return nil
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListDiskTypesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{},
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListDiskTypesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListDisks invokes list-disks operation.
-//
-// When both `region_id` and `availability_zone_id` are supplied, only disks attachable to a virtual
-// machine at that location are returned.
-//
-// GET /api/v2/disks
-func (c *Client) ListDisks(ctx context.Context, params ListDisksParams) (*DiskListResponseBody, error) {
-	res, err := c.sendListDisks(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListDisks(ctx context.Context, params ListDisksParams) (res *DiskListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-disks"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/disks"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListDisksOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v2/disks"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "region_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "region_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.RegionID.Get(); ok {
-				if unwrapped := string(val); true {
-					return e.EncodeValue(conv.StringToString(unwrapped))
-				}
-				return nil
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "availability_zone_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "availability_zone_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.AvailabilityZoneID.Get(); ok {
-				if unwrapped := string(val); true {
-					return e.EncodeValue(conv.StringToString(unwrapped))
-				}
-				return nil
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListDisksOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListDisksResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -12588,6 +12005,908 @@ func (c *Client) sendListElasticIps(ctx context.Context, params ListElasticIpsPa
 	return result, nil
 }
 
+// ListInstanceFamilies invokes list-instance-families operation.
+//
+// An instance family is one hardware line of a region, such as `g7`, and its instance types are its
+// sizes in each availability zone. A family shows here while it has an instance type on sale or sold
+// out.
+//
+// GET /api/v2/instance-families
+func (c *Client) ListInstanceFamilies(ctx context.Context, params ListInstanceFamiliesParams) (*InstanceFamilyListResponseBody, error) {
+	res, err := c.sendListInstanceFamilies(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListInstanceFamilies(ctx context.Context, params ListInstanceFamiliesParams) (res *InstanceFamilyListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-instance-families"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/instance-families"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListInstanceFamiliesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v2/instance-families"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "region_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "region_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.RegionID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListInstanceFamiliesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{},
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListInstanceFamiliesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListInstanceNetworkInterfaces invokes list-instance-network-interfaces operation.
+//
+// List the network interfaces of an instance.
+//
+// GET /api/v2/instances/{instanceId}/network-interfaces
+func (c *Client) ListInstanceNetworkInterfaces(ctx context.Context, params ListInstanceNetworkInterfacesParams) (*NetworkInterfaceAttachmentList, error) {
+	res, err := c.sendListInstanceNetworkInterfaces(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListInstanceNetworkInterfaces(ctx context.Context, params ListInstanceNetworkInterfacesParams) (res *NetworkInterfaceAttachmentList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-instance-network-interfaces"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}/network-interfaces"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListInstanceNetworkInterfacesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v2/instances/"
+	{
+		// Encode "instanceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InstanceId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/network-interfaces"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListInstanceNetworkInterfacesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListInstanceNetworkInterfacesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListInstanceTypes invokes list-instance-types operation.
+//
+// Instance types on sale are listed, and sold-out ones with `sale_status` `sold_out`. A withdrawn one
+// disappears from here and can no longer be ordered, while the instances already running it keep
+// running.
+//
+// GET /api/v2/instance-types
+func (c *Client) ListInstanceTypes(ctx context.Context, params ListInstanceTypesParams) (*InstanceTypeListResponseBody, error) {
+	res, err := c.sendListInstanceTypes(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListInstanceTypes(ctx context.Context, params ListInstanceTypesParams) (res *InstanceTypeListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-instance-types"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/instance-types"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListInstanceTypesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v2/instance-types"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "region_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "region_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.RegionID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "instance_family_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "instance_family_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.InstanceFamilyID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "availability_zone_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "availability_zone_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.AvailabilityZoneID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListInstanceTypesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{},
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListInstanceTypesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListInstanceVolumes invokes list-instance-volumes operation.
+//
+// List the volumes attached to an instance.
+//
+// GET /api/v2/instances/{instanceId}/volumes
+func (c *Client) ListInstanceVolumes(ctx context.Context, params ListInstanceVolumesParams) (*VolumeAttachmentList, error) {
+	res, err := c.sendListInstanceVolumes(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListInstanceVolumes(ctx context.Context, params ListInstanceVolumesParams) (res *VolumeAttachmentList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-instance-volumes"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}/volumes"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListInstanceVolumesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v2/instances/"
+	{
+		// Encode "instanceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InstanceId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/volumes"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListInstanceVolumesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListInstanceVolumesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListInstances invokes list-instances operation.
+//
+// Every instance in the project, newest first, in their stored state.
+//
+// GET /api/v2/instances
+func (c *Client) ListInstances(ctx context.Context, params ListInstancesParams) (*InstanceListResponseBody, error) {
+	res, err := c.sendListInstances(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListInstances(ctx context.Context, params ListInstancesParams) (res *InstanceListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-instances"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/instances"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListInstancesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v2/instances"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "label" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "label",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Label.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListInstancesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListInstancesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListLaunchTemplateVersions invokes list-launch-template-versions operation.
 //
 // Newest first.
@@ -12932,200 +13251,6 @@ func (c *Client) sendListLaunchTemplates(ctx context.Context, params ListLaunchT
 	return result, nil
 }
 
-// ListMachineTypes invokes list-machine-types operation.
-//
-// Machine types on sale are listed, and sold-out ones with `sale_status` `sold_out`. A withdrawn one
-// disappears from here and can no longer be ordered, while the virtual machines already running it
-// keep running.
-//
-// GET /api/v2/machine-types
-func (c *Client) ListMachineTypes(ctx context.Context, params ListMachineTypesParams) (*MachineTypeListResponseBody, error) {
-	res, err := c.sendListMachineTypes(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListMachineTypes(ctx context.Context, params ListMachineTypesParams) (res *MachineTypeListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-machine-types"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/machine-types"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListMachineTypesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v2/machine-types"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "region_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "region_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.RegionID.Get(); ok {
-				if unwrapped := string(val); true {
-					return e.EncodeValue(conv.StringToString(unwrapped))
-				}
-				return nil
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "availability_zone_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "availability_zone_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.AvailabilityZoneID.Get(); ok {
-				if unwrapped := string(val); true {
-					return e.EncodeValue(conv.StringToString(unwrapped))
-				}
-				return nil
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListMachineTypesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{},
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListMachineTypesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // ListNetworkInterfaces invokes list-network-interfaces operation.
 //
 // List network interfaces.
@@ -13284,7 +13409,7 @@ func (c *Client) sendListNetworkInterfaces(ctx context.Context, params ListNetwo
 //
 // Operations performed by the platform are included, but the individual operator is not disclosed and
 // `actor_type` is `platform`. Suspension for non-payment and bans for abuse are examples: the time at
-// which a virtual machine was stopped by the platform is needed, whereas the operator is internal
+// which an instance was stopped by the platform is needed, whereas the operator is internal
 // information.
 //
 // Fields such as passwords are replaced with a placeholder as the record is written and never appear
@@ -13459,11 +13584,11 @@ func (c *Client) sendListOperationLogs(ctx context.Context, params ListOperation
 // Lists the private images of this project, newest first, in every status: including while a capture
 // is in progress and after it failed. Private images of other projects are never listed.
 //
-// A private image is usable only by the project that captured it from one of its virtual machines. Its
+// A private image is usable only by the project that captured it from one of its instances. Its
 // storage is metered by the hour on a subscription of the project.
 //
-// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
-// memory of the selected machine type cannot boot; filter the options accordingly. Public images are
+// An image can only be used in the region that holds it. An image whose `min_memory_mib` exceeds the
+// memory of the selected instance type cannot boot; filter the options accordingly. Public images are
 // in `/public-images`.
 //
 // GET /api/v2/private-images
@@ -13636,14 +13761,14 @@ func (c *Client) sendListPrivateImages(ctx context.Context, params ListPrivateIm
 // ListPublicImages invokes list-public-images operation.
 //
 // Lists the platform's public images that are on sale. A public image is offered to every project. One
-// the platform withdraws disappears from here and can no longer install new virtual machines, while
-// the virtual machines already running it keep running and can still be rebuilt onto it; retrieve it
-// by id to see it.
+// the platform withdraws disappears from here and can no longer install new instances, while the
+// instances already running it keep running and can still be rebuilt onto it; retrieve it by id to see
+// it.
 //
-// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
-// memory of the selected machine type cannot boot; filter the options accordingly.
+// An image can only be used in the region that holds it. An image whose `min_memory_mib` exceeds the
+// memory of the selected instance type cannot boot; filter the options accordingly.
 //
-// Images this project captured from its own virtual machines are in `/private-images`.
+// Images this project captured from its own instances are in `/private-images`.
 //
 // GET /api/v2/public-images
 func (c *Client) ListPublicImages(ctx context.Context, params ListPublicImagesParams) (*PublicImageListResponseBody, error) {
@@ -14506,520 +14631,6 @@ func (c *Client) sendListSecurityGroups(ctx context.Context, params ListSecurity
 	return result, nil
 }
 
-// ListVirtualMachineDisks invokes list-virtual-machine-disks operation.
-//
-// List the disks attached to a virtual machine.
-//
-// GET /api/v2/virtual-machines/{virtualMachineId}/disks
-func (c *Client) ListVirtualMachineDisks(ctx context.Context, params ListVirtualMachineDisksParams) (*DiskAttachmentList, error) {
-	res, err := c.sendListVirtualMachineDisks(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListVirtualMachineDisks(ctx context.Context, params ListVirtualMachineDisksParams) (res *DiskAttachmentList, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-virtual-machine-disks"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}/disks"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListVirtualMachineDisksOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v2/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/disks"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListVirtualMachineDisksOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListVirtualMachineDisksResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListVirtualMachineNetworkInterfaces invokes list-virtual-machine-network-interfaces operation.
-//
-// List the network interfaces of a virtual machine.
-//
-// GET /api/v2/virtual-machines/{virtualMachineId}/network-interfaces
-func (c *Client) ListVirtualMachineNetworkInterfaces(ctx context.Context, params ListVirtualMachineNetworkInterfacesParams) (*NetworkInterfaceAttachmentList, error) {
-	res, err := c.sendListVirtualMachineNetworkInterfaces(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListVirtualMachineNetworkInterfaces(ctx context.Context, params ListVirtualMachineNetworkInterfacesParams) (res *NetworkInterfaceAttachmentList, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-virtual-machine-network-interfaces"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}/network-interfaces"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListVirtualMachineNetworkInterfacesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v2/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/network-interfaces"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListVirtualMachineNetworkInterfacesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListVirtualMachineNetworkInterfacesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListVirtualMachines invokes list-virtual-machines operation.
-//
-// Every virtual machine in the project, newest first, in their stored state.
-//
-// GET /api/v2/virtual-machines
-func (c *Client) ListVirtualMachines(ctx context.Context, params ListVirtualMachinesParams) (*VirtualMachineListResponseBody, error) {
-	res, err := c.sendListVirtualMachines(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListVirtualMachines(ctx context.Context, params ListVirtualMachinesParams) (res *VirtualMachineListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-virtual-machines"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListVirtualMachinesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v2/virtual-machines"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "label" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "label",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Label.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListVirtualMachinesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListVirtualMachinesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // ListVirtualPrivateCloudPeerings invokes list-virtual-private-cloud-peerings operation.
 //
 // List peerings.
@@ -15691,32 +15302,21 @@ func (c *Client) sendListVirtualPrivateClouds(ctx context.Context, params ListVi
 	return result, nil
 }
 
-// RebootVirtualMachine invokes reboot-virtual-machine operation.
+// ListVolumeBackups invokes list-volume-backups operation.
 //
-// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+// List volume backups.
 //
-// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
-// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
-//
-// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft
-// reboot the virtual machine never carried out. Any other request for an operation, including a second
-// soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
-//
-// A virtual machine suspended by the platform must be unsuspended first.
-//
-// The virtual machine shows the `reboot` operation until the reboot has finished.
-//
-// POST /api/v2/virtual-machines/{virtualMachineId}:reboot
-func (c *Client) RebootVirtualMachine(ctx context.Context, request *RebootVirtualMachineRequestBody, params RebootVirtualMachineParams) (RebootVirtualMachineRes, error) {
-	res, err := c.sendRebootVirtualMachine(ctx, request, params)
+// GET /api/v2/volume-backups
+func (c *Client) ListVolumeBackups(ctx context.Context, params ListVolumeBackupsParams) (*VolumeBackupListResponseBody, error) {
+	res, err := c.sendListVolumeBackups(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendRebootVirtualMachine(ctx context.Context, request *RebootVirtualMachineRequestBody, params RebootVirtualMachineParams) (res RebootVirtualMachineRes, err error) {
+func (c *Client) sendListVolumeBackups(ctx context.Context, params ListVolumeBackupsParams) (res *VolumeBackupListResponseBody, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("reboot-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}:reboot"),
+		otelogen.OperationID("list-volume-backups"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/volume-backups"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -15732,7 +15332,746 @@ func (c *Client) sendRebootVirtualMachine(ctx context.Context, request *RebootVi
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RebootVirtualMachineOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListVolumeBackupsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v2/volume-backups"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "volume_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "volume_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.VolumeID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListVolumeBackupsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListVolumeBackupsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListVolumeSnapshots invokes list-volume-snapshots operation.
+//
+// List snapshots.
+//
+// GET /api/v2/volume-snapshots
+func (c *Client) ListVolumeSnapshots(ctx context.Context, params ListVolumeSnapshotsParams) (*VolumeSnapshotListResponseBody, error) {
+	res, err := c.sendListVolumeSnapshots(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListVolumeSnapshots(ctx context.Context, params ListVolumeSnapshotsParams) (res *VolumeSnapshotListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-volume-snapshots"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/volume-snapshots"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListVolumeSnapshotsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v2/volume-snapshots"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "volume_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "volume_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.VolumeID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListVolumeSnapshotsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListVolumeSnapshotsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListVolumeTypes invokes list-volume-types operation.
+//
+// Volume types on sale are listed, and sold-out ones with `sale_status` `sold_out`. Any of them boots
+// an instance of its zone, holds data or takes a restore. A withdrawn one disappears from here and can
+// no longer be bought, while the volumes already on it keep working and can still be resized.
+//
+// GET /api/v2/volume-types
+func (c *Client) ListVolumeTypes(ctx context.Context, params ListVolumeTypesParams) (*VolumeTypeListResponseBody, error) {
+	res, err := c.sendListVolumeTypes(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListVolumeTypes(ctx context.Context, params ListVolumeTypesParams) (res *VolumeTypeListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-volume-types"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/volume-types"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListVolumeTypesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v2/volume-types"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "region_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "region_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.RegionID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "availability_zone_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "availability_zone_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.AvailabilityZoneID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListVolumeTypesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{},
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListVolumeTypesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListVolumes invokes list-volumes operation.
+//
+// When both `region_id` and `availability_zone_id` are supplied, only volumes attachable to an
+// instance at that location are returned.
+//
+// GET /api/v2/volumes
+func (c *Client) ListVolumes(ctx context.Context, params ListVolumesParams) (*VolumeListResponseBody, error) {
+	res, err := c.sendListVolumes(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListVolumes(ctx context.Context, params ListVolumesParams) (res *VolumeListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-volumes"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/volumes"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListVolumesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v2/volumes"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "region_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "region_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.RegionID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "availability_zone_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "availability_zone_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.AvailabilityZoneID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListVolumesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListVolumesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// RebootInstance invokes reboot-instance operation.
+//
+// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+//
+// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
+// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
+//
+// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft
+// reboot the instance never carried out. Any other request for an operation, including a second soft
+// reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
+//
+// An instance suspended by the platform must be unsuspended first.
+//
+// The instance shows the `reboot` operation until the reboot has finished.
+//
+// POST /api/v2/instances/{instanceId}:reboot
+func (c *Client) RebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (RebootInstanceRes, error) {
+	res, err := c.sendRebootInstance(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendRebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (res RebootInstanceRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("reboot-instance"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}:reboot"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RebootInstanceOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -15750,16 +16089,16 @@ func (c *Client) sendRebootVirtualMachine(ctx context.Context, request *RebootVi
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v2/virtual-machines/"
+	pathParts[0] = "/api/v2/instances/"
 	{
-		// Encode "virtualMachineId" parameter.
+		// Encode "instanceId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
+			Param:   "instanceId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
+			if unwrapped := string(params.InstanceId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -15780,7 +16119,7 @@ func (c *Client) sendRebootVirtualMachine(ctx context.Context, request *RebootVi
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeRebootVirtualMachineRequest(request, r); err != nil {
+	if err := encodeRebootInstanceRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -15789,7 +16128,7 @@ func (c *Client) sendRebootVirtualMachine(ctx context.Context, request *RebootVi
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RebootVirtualMachineOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, RebootInstanceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -15832,7 +16171,7 @@ func (c *Client) sendRebootVirtualMachine(ctx context.Context, request *RebootVi
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeRebootVirtualMachineResponse(resp)
+	result, err := decodeRebootInstanceResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -15840,28 +16179,27 @@ func (c *Client) sendRebootVirtualMachine(ctx context.Context, request *RebootVi
 	return result, nil
 }
 
-// RebuildVirtualMachine invokes rebuild-virtual-machine operation.
+// RebuildInstance invokes rebuild-instance operation.
 //
-// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
+// All data on the boot volume is erased and cannot be recovered. Attached data volumes are unaffected.
 //
-// The virtual machine has to be running; a stopped one holds no host and is refused with 409
-// `VIRTUAL_MACHINE_NOT_RUNNING`. Start it first; a virtual machine whose operating system no longer
-// boots still starts.
+// The instance has to be running; a stopped one holds no host and is refused with 409
+// `INSTANCE_NOT_RUNNING`. Start it first; an instance whose operating system no longer boots still
+// starts.
 //
-// The image this virtual machine already runs is accepted even after the platform has withdrawn it,
-// since rebuilding is the only way back into a virtual machine broken from the inside. Any other
-// withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new
-// order.
+// The image this instance already runs is accepted even after the platform has withdrawn it, since
+// rebuilding is the only way back into an instance broken from the inside. Any other withdrawn image
+// is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 //
-// The virtual machine shows the `rebuild` operation until the rebuild has finished.
+// The instance shows the `rebuild` operation until the rebuild has finished.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:rebuild
-func (c *Client) RebuildVirtualMachine(ctx context.Context, request *RebuildVirtualMachineRequestBody, params RebuildVirtualMachineParams) (RebuildVirtualMachineRes, error) {
-	res, err := c.sendRebuildVirtualMachine(ctx, request, params)
+// POST /api/v2/instances/{instanceId}:rebuild
+func (c *Client) RebuildInstance(ctx context.Context, request *RebuildInstanceRequestBody, params RebuildInstanceParams) (RebuildInstanceRes, error) {
+	res, err := c.sendRebuildInstance(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendRebuildVirtualMachine(ctx context.Context, request *RebuildVirtualMachineRequestBody, params RebuildVirtualMachineParams) (res RebuildVirtualMachineRes, err error) {
+func (c *Client) sendRebuildInstance(ctx context.Context, request *RebuildInstanceRequestBody, params RebuildInstanceParams) (res RebuildInstanceRes, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -15872,9 +16210,9 @@ func (c *Client) sendRebuildVirtualMachine(ctx context.Context, request *Rebuild
 		return res, errors.Wrap(err, "validate")
 	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rebuild-virtual-machine"),
+		otelogen.OperationID("rebuild-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}:rebuild"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}:rebuild"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -15890,7 +16228,7 @@ func (c *Client) sendRebuildVirtualMachine(ctx context.Context, request *Rebuild
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RebuildVirtualMachineOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, RebuildInstanceOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -15908,16 +16246,16 @@ func (c *Client) sendRebuildVirtualMachine(ctx context.Context, request *Rebuild
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v2/virtual-machines/"
+	pathParts[0] = "/api/v2/instances/"
 	{
-		// Encode "virtualMachineId" parameter.
+		// Encode "instanceId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
+			Param:   "instanceId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
+			if unwrapped := string(params.InstanceId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -15938,7 +16276,7 @@ func (c *Client) sendRebuildVirtualMachine(ctx context.Context, request *Rebuild
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeRebuildVirtualMachineRequest(request, r); err != nil {
+	if err := encodeRebuildInstanceRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -15947,7 +16285,7 @@ func (c *Client) sendRebuildVirtualMachine(ctx context.Context, request *Rebuild
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RebuildVirtualMachineOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, RebuildInstanceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -15990,7 +16328,7 @@ func (c *Client) sendRebuildVirtualMachine(ctx context.Context, request *Rebuild
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeRebuildVirtualMachineResponse(resp)
+	result, err := decodeRebuildInstanceResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -16136,24 +16474,24 @@ func (c *Client) sendRejectVirtualPrivateCloudPeering(ctx context.Context, param
 	return result, nil
 }
 
-// RescueVirtualMachine invokes rescue-virtual-machine operation.
+// RescueInstance invokes rescue-instance operation.
 //
-// Boots a temporary rescue environment while retaining the original system disk. Starting, stopping,
-// changing `machine_type_id`, rebuilding and resetting the password are unavailable in rescue mode. A
-// stopped virtual machine holds no host and is refused with 409 `VIRTUAL_MACHINE_NOT_RUNNING`; start
-// it first, which works even when its operating system no longer boots.
+// Boots a temporary rescue environment while retaining the original boot volume. Starting, stopping,
+// changing `instance_type_id`, rebuilding and resetting the password are unavailable in rescue mode. A
+// stopped instance holds no host and is refused with 409 `INSTANCE_NOT_RUNNING`; start it first, which
+// works even when its operating system no longer boots.
 //
 // The request does not name an image. The rescue image is the region's enabled rescue image for the
-// architecture of the virtual machine's system disk. A region and architecture with no enabled rescue
-// image is refused with `RESCUE_IMAGE_NOT_CONFIGURED` (409).
+// architecture of the instance's boot volume. A region and architecture with no enabled rescue image
+// is refused with `RESCUE_IMAGE_NOT_CONFIGURED` (409).
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:rescue
-func (c *Client) RescueVirtualMachine(ctx context.Context, request *RescueVirtualMachineRequestBody, params RescueVirtualMachineParams) (RescueVirtualMachineRes, error) {
-	res, err := c.sendRescueVirtualMachine(ctx, request, params)
+// POST /api/v2/instances/{instanceId}:rescue
+func (c *Client) RescueInstance(ctx context.Context, request *RescueInstanceRequestBody, params RescueInstanceParams) (RescueInstanceRes, error) {
+	res, err := c.sendRescueInstance(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendRescueVirtualMachine(ctx context.Context, request *RescueVirtualMachineRequestBody, params RescueVirtualMachineParams) (res RescueVirtualMachineRes, err error) {
+func (c *Client) sendRescueInstance(ctx context.Context, request *RescueInstanceRequestBody, params RescueInstanceParams) (res RescueInstanceRes, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -16164,9 +16502,9 @@ func (c *Client) sendRescueVirtualMachine(ctx context.Context, request *RescueVi
 		return res, errors.Wrap(err, "validate")
 	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rescue-virtual-machine"),
+		otelogen.OperationID("rescue-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}:rescue"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}:rescue"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -16182,7 +16520,7 @@ func (c *Client) sendRescueVirtualMachine(ctx context.Context, request *RescueVi
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RescueVirtualMachineOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, RescueInstanceOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -16200,16 +16538,16 @@ func (c *Client) sendRescueVirtualMachine(ctx context.Context, request *RescueVi
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v2/virtual-machines/"
+	pathParts[0] = "/api/v2/instances/"
 	{
-		// Encode "virtualMachineId" parameter.
+		// Encode "instanceId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
+			Param:   "instanceId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
+			if unwrapped := string(params.InstanceId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -16230,7 +16568,7 @@ func (c *Client) sendRescueVirtualMachine(ctx context.Context, request *RescueVi
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeRescueVirtualMachineRequest(request, r); err != nil {
+	if err := encodeRescueInstanceRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -16239,7 +16577,7 @@ func (c *Client) sendRescueVirtualMachine(ctx context.Context, request *RescueVi
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RescueVirtualMachineOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, RescueInstanceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -16282,7 +16620,7 @@ func (c *Client) sendRescueVirtualMachine(ctx context.Context, request *RescueVi
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeRescueVirtualMachineResponse(resp)
+	result, err := decodeRescueInstanceResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -16290,25 +16628,24 @@ func (c *Client) sendRescueVirtualMachine(ctx context.Context, request *RescueVi
 	return result, nil
 }
 
-// ResetVirtualMachinePassword invokes reset-virtual-machine-password operation.
+// ResetInstancePassword invokes reset-instance-password operation.
 //
 // Sets the password of the login account (`login_username`) without a reboot; root is never given one.
-// The virtual machine must be running.
+// The instance must be running.
 //
 // Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
-// password can then only be set by rebuilding the virtual machine, which erases all data on the system
-// disk.
+// password can then only be set by rebuilding the instance, which erases all data on the boot volume.
 //
 // The request is also rejected when the image is marked as supported but the corresponding component
-// has been removed or stopped inside the virtual machine.
+// has been removed or stopped inside the instance.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:resetPassword
-func (c *Client) ResetVirtualMachinePassword(ctx context.Context, request PasswordChoice, params ResetVirtualMachinePasswordParams) (ResetVirtualMachinePasswordRes, error) {
-	res, err := c.sendResetVirtualMachinePassword(ctx, request, params)
+// POST /api/v2/instances/{instanceId}:resetPassword
+func (c *Client) ResetInstancePassword(ctx context.Context, request PasswordChoice, params ResetInstancePasswordParams) (ResetInstancePasswordRes, error) {
+	res, err := c.sendResetInstancePassword(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendResetVirtualMachinePassword(ctx context.Context, request PasswordChoice, params ResetVirtualMachinePasswordParams) (res ResetVirtualMachinePasswordRes, err error) {
+func (c *Client) sendResetInstancePassword(ctx context.Context, request PasswordChoice, params ResetInstancePasswordParams) (res ResetInstancePasswordRes, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -16319,9 +16656,9 @@ func (c *Client) sendResetVirtualMachinePassword(ctx context.Context, request Pa
 		return res, errors.Wrap(err, "validate")
 	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("reset-virtual-machine-password"),
+		otelogen.OperationID("reset-instance-password"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}:resetPassword"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}:resetPassword"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -16337,7 +16674,7 @@ func (c *Client) sendResetVirtualMachinePassword(ctx context.Context, request Pa
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ResetVirtualMachinePasswordOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ResetInstancePasswordOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -16355,16 +16692,16 @@ func (c *Client) sendResetVirtualMachinePassword(ctx context.Context, request Pa
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v2/virtual-machines/"
+	pathParts[0] = "/api/v2/instances/"
 	{
-		// Encode "virtualMachineId" parameter.
+		// Encode "instanceId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
+			Param:   "instanceId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
+			if unwrapped := string(params.InstanceId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -16385,7 +16722,7 @@ func (c *Client) sendResetVirtualMachinePassword(ctx context.Context, request Pa
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeResetVirtualMachinePasswordRequest(request, r); err != nil {
+	if err := encodeResetInstancePasswordRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -16394,7 +16731,7 @@ func (c *Client) sendResetVirtualMachinePassword(ctx context.Context, request Pa
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ResetVirtualMachinePasswordOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, ResetInstancePasswordOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -16437,7 +16774,7 @@ func (c *Client) sendResetVirtualMachinePassword(ctx context.Context, request Pa
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeResetVirtualMachinePasswordResponse(resp)
+	result, err := decodeResetInstancePasswordResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -16445,26 +16782,26 @@ func (c *Client) sendResetVirtualMachinePassword(ctx context.Context, request Pa
 	return result, nil
 }
 
-// RevertDisk invokes revert-disk operation.
+// RevertVolume invokes revert-volume operation.
 //
-// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
-// moment is lost and cannot be recovered.
+// Restores the contents of the volume to the moment the snapshot was taken. All data written after
+// that moment is lost and cannot be recovered.
 //
-// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
-// must be detached from its virtual machine first; and a disk resized since the snapshot was taken
-// cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a
-// new disk from the snapshot instead.
+// Three restrictions apply: only the most recent snapshot of the volume can be reverted to; the volume
+// must be detached from its instance first; and a volume resized since the snapshot was taken cannot
+// be reverted. To return to an earlier point in time, or to keep the existing volume, create a new
+// volume from the snapshot instead.
 //
-// The revert is a request of its own rather than a state of the disk: the response is the disk, which
-// shows the `revert` operation until the revert is complete.
+// The revert is a request of its own rather than a state of the volume: the response is the volume,
+// which shows the `revert` operation until the revert is complete.
 //
-// POST /api/v2/disks/{diskId}:revert
-func (c *Client) RevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (RevertDiskRes, error) {
-	res, err := c.sendRevertDisk(ctx, request, params)
+// POST /api/v2/volumes/{volumeId}:revert
+func (c *Client) RevertVolume(ctx context.Context, request *RevertVolumeRequestBody, params RevertVolumeParams) (RevertVolumeRes, error) {
+	res, err := c.sendRevertVolume(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (res RevertDiskRes, err error) {
+func (c *Client) sendRevertVolume(ctx context.Context, request *RevertVolumeRequestBody, params RevertVolumeParams) (res RevertVolumeRes, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -16475,9 +16812,9 @@ func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestB
 		return res, errors.Wrap(err, "validate")
 	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("revert-disk"),
+		otelogen.OperationID("revert-volume"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v2/disks/{diskId}:revert"),
+		semconv.URLTemplateKey.String("/api/v2/volumes/{volumeId}:revert"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -16493,7 +16830,7 @@ func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestB
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RevertDiskOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, RevertVolumeOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -16511,16 +16848,16 @@ func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestB
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v2/disks/"
+	pathParts[0] = "/api/v2/volumes/"
 	{
-		// Encode "diskId" parameter.
+		// Encode "volumeId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskId",
+			Param:   "volumeId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.DiskId); true {
+			if unwrapped := string(params.VolumeId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -16541,7 +16878,7 @@ func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestB
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeRevertDiskRequest(request, r); err != nil {
+	if err := encodeRevertVolumeRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -16550,7 +16887,7 @@ func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestB
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RevertDiskOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, RevertVolumeOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -16593,7 +16930,7 @@ func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestB
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeRevertDiskResponse(resp)
+	result, err := decodeRevertVolumeResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -16601,7 +16938,7 @@ func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestB
 	return result, nil
 }
 
-// RunVirtualMachineCommand invokes run-virtual-machine-command operation.
+// RunInstanceCommand invokes run-instance-command operation.
 //
 // Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
 // standard input and no way to answer a prompt: a command that waits for input produces nothing and is
@@ -16612,32 +16949,32 @@ func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestB
 // that matches nothing exits 1 and is a perfectly successful call.
 //
 // The status therefore answers a different question — did the command run at all. A non-2xx means it
-// did not, and nothing about the virtual machine was changed by this request: it was suspended, not
-// running or had no elastic IP associated; or it refused the platform key; or the connection could not
-// be opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
+// did not, and nothing about the instance was changed by this request: it was suspended, not running
+// or had no elastic IP associated; or it refused the platform key; or the connection could not be
+// opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
 //
-// Three conditions must hold; the virtual machine is unreachable otherwise:
+// Three conditions must hold; the instance is unreachable otherwise:
 //
-//   - it is `active`
+//   - it is `running`
 //   - an elastic IP is associated with it, since this endpoint connects over the public internet
 //   - its security group permits inbound TCP 22
 //
-// Authentication uses the key the platform attaches to every virtual machine at creation, so nothing
-// has to be set up first. The virtual machine must have applied that key at first boot, which images
-// without a full cloud-init do not do.
+// Authentication uses the key the platform attaches to every instance at creation, so nothing has to
+// be set up first. The instance must have applied that key at first boot, which images without a full
+// cloud-init do not do.
 //
-// Do not pass secrets in the command. Read them from a file on the virtual machine instead: neither
-// the command nor its output is a confidential channel.
+// Do not pass secrets in the command. Read them from a file on the instance instead: neither the
+// command nor its output is a confidential channel.
 //
 // Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:runCommand
-func (c *Client) RunVirtualMachineCommand(ctx context.Context, request *RunVirtualMachineCommandRequestBody, params RunVirtualMachineCommandParams) (*RunVirtualMachineCommandResponseBody, error) {
-	res, err := c.sendRunVirtualMachineCommand(ctx, request, params)
+// POST /api/v2/instances/{instanceId}:runCommand
+func (c *Client) RunInstanceCommand(ctx context.Context, request *RunInstanceCommandRequestBody, params RunInstanceCommandParams) (*RunInstanceCommandResponseBody, error) {
+	res, err := c.sendRunInstanceCommand(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendRunVirtualMachineCommand(ctx context.Context, request *RunVirtualMachineCommandRequestBody, params RunVirtualMachineCommandParams) (res *RunVirtualMachineCommandResponseBody, err error) {
+func (c *Client) sendRunInstanceCommand(ctx context.Context, request *RunInstanceCommandRequestBody, params RunInstanceCommandParams) (res *RunInstanceCommandResponseBody, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -16648,9 +16985,9 @@ func (c *Client) sendRunVirtualMachineCommand(ctx context.Context, request *RunV
 		return res, errors.Wrap(err, "validate")
 	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("run-virtual-machine-command"),
+		otelogen.OperationID("run-instance-command"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}:runCommand"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}:runCommand"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -16666,7 +17003,7 @@ func (c *Client) sendRunVirtualMachineCommand(ctx context.Context, request *RunV
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RunVirtualMachineCommandOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, RunInstanceCommandOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -16684,16 +17021,16 @@ func (c *Client) sendRunVirtualMachineCommand(ctx context.Context, request *RunV
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v2/virtual-machines/"
+	pathParts[0] = "/api/v2/instances/"
 	{
-		// Encode "virtualMachineId" parameter.
+		// Encode "instanceId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
+			Param:   "instanceId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
+			if unwrapped := string(params.InstanceId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -16714,7 +17051,7 @@ func (c *Client) sendRunVirtualMachineCommand(ctx context.Context, request *RunV
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeRunVirtualMachineCommandRequest(request, r); err != nil {
+	if err := encodeRunInstanceCommandRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -16723,7 +17060,7 @@ func (c *Client) sendRunVirtualMachineCommand(ctx context.Context, request *RunV
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, RunVirtualMachineCommandOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, RunInstanceCommandOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -16766,7 +17103,7 @@ func (c *Client) sendRunVirtualMachineCommand(ctx context.Context, request *RunV
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeRunVirtualMachineCommandResponse(resp)
+	result, err := decodeRunInstanceCommandResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -16774,30 +17111,30 @@ func (c *Client) sendRunVirtualMachineCommand(ctx context.Context, request *RunV
 	return result, nil
 }
 
-// StartVirtualMachine invokes start-virtual-machine operation.
+// StartInstance invokes start-instance operation.
 //
-// Places the virtual machine on a host of its availability zone again; outstanding restrictions can
-// prevent starting. When no host of the zone has room for it now, the request is refused with 409
-// `VIRTUAL_MACHINE_START_NO_HOST_ROOM` and the virtual machine stays stopped; try again later. Another
-// start can take the room after the request was accepted, and the start then ends with the virtual
-// machine still stopped. It shows the `start` operation until it is running or the start has failed.
+// Places the instance on a host of its availability zone again; outstanding restrictions can prevent
+// starting. When no host of the zone has room for it now, the request is refused with 409
+// `INSTANCE_START_NO_HOST_ROOM` and the instance stays stopped; try again later. Another start can
+// take the room after the request was accepted, and the start then ends with the instance still
+// stopped. It shows the `start` operation until it is running or the start has failed.
 //
-// Starting connects its disks afresh, so a disk grown while attached runs at the performance of its
-// new size from the next start after a stop. A virtual machine powered off from inside its operating
-// system keeps its host and starts on it again; stop it with `:stop` first for its disks to be
-// connected afresh. Starting a running virtual machine changes nothing.
+// Starting connects its volumes afresh, so a volume grown while attached runs at the performance of
+// its new size from the next start after a stop. An instance powered off from inside its operating
+// system keeps its host and starts on it again; stop it with `:stop` first for its volumes to be
+// connected afresh. Starting a running instance changes nothing.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:start
-func (c *Client) StartVirtualMachine(ctx context.Context, params StartVirtualMachineParams) (StartVirtualMachineRes, error) {
-	res, err := c.sendStartVirtualMachine(ctx, params)
+// POST /api/v2/instances/{instanceId}:start
+func (c *Client) StartInstance(ctx context.Context, params StartInstanceParams) (StartInstanceRes, error) {
+	res, err := c.sendStartInstance(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendStartVirtualMachine(ctx context.Context, params StartVirtualMachineParams) (res StartVirtualMachineRes, err error) {
+func (c *Client) sendStartInstance(ctx context.Context, params StartInstanceParams) (res StartInstanceRes, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("start-virtual-machine"),
+		otelogen.OperationID("start-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}:start"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}:start"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -16813,7 +17150,7 @@ func (c *Client) sendStartVirtualMachine(ctx context.Context, params StartVirtua
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, StartVirtualMachineOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, StartInstanceOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -16831,16 +17168,16 @@ func (c *Client) sendStartVirtualMachine(ctx context.Context, params StartVirtua
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v2/virtual-machines/"
+	pathParts[0] = "/api/v2/instances/"
 	{
-		// Encode "virtualMachineId" parameter.
+		// Encode "instanceId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
+			Param:   "instanceId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
+			if unwrapped := string(params.InstanceId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -16867,7 +17204,7 @@ func (c *Client) sendStartVirtualMachine(ctx context.Context, params StartVirtua
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, StartVirtualMachineOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, StartInstanceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -16910,7 +17247,7 @@ func (c *Client) sendStartVirtualMachine(ctx context.Context, params StartVirtua
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeStartVirtualMachineResponse(resp)
+	result, err := decodeStartInstanceResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -16918,28 +17255,28 @@ func (c *Client) sendStartVirtualMachine(ctx context.Context, params StartVirtua
 	return result, nil
 }
 
-// StopVirtualMachine invokes stop-virtual-machine operation.
+// StopInstance invokes stop-instance operation.
 //
-// Stops the virtual machine and releases its host, as on AWS and Alibaba Cloud: a stopped virtual
-// machine keeps its disks, network interfaces, addresses and quota, holds no vCPU or memory, and is
-// not charged for compute. It shows the `stop` operation until it is stopped. Stopping a stopped
-// virtual machine changes nothing.
+// Stops the instance and releases its host, as on AWS and Alibaba Cloud: a stopped instance keeps its
+// volumes, network interfaces, addresses and quota, holds no vCPU or memory, and is not charged for
+// compute. It shows the `stop` operation until it is stopped. Stopping a stopped instance changes
+// nothing.
 //
-// A stopped virtual machine holds no host, so changing `machine_type_id`, rebuilding it, rescuing it
-// and attaching or detaching a network interface are refused with 409 `VIRTUAL_MACHINE_NOT_RUNNING`
-// until it is started. Disks can be attached and detached while it is stopped.
+// A stopped instance holds no host, so changing `instance_type_id`, rebuilding it, rescuing it and
+// attaching or detaching a network interface are refused with 409 `INSTANCE_NOT_RUNNING` until it is
+// started. Volumes can be attached and detached while it is stopped.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:stop
-func (c *Client) StopVirtualMachine(ctx context.Context, params StopVirtualMachineParams) (StopVirtualMachineRes, error) {
-	res, err := c.sendStopVirtualMachine(ctx, params)
+// POST /api/v2/instances/{instanceId}:stop
+func (c *Client) StopInstance(ctx context.Context, params StopInstanceParams) (StopInstanceRes, error) {
+	res, err := c.sendStopInstance(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendStopVirtualMachine(ctx context.Context, params StopVirtualMachineParams) (res StopVirtualMachineRes, err error) {
+func (c *Client) sendStopInstance(ctx context.Context, params StopInstanceParams) (res StopInstanceRes, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("stop-virtual-machine"),
+		otelogen.OperationID("stop-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}:stop"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}:stop"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -16955,7 +17292,7 @@ func (c *Client) sendStopVirtualMachine(ctx context.Context, params StopVirtualM
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, StopVirtualMachineOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, StopInstanceOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -16973,16 +17310,16 @@ func (c *Client) sendStopVirtualMachine(ctx context.Context, params StopVirtualM
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v2/virtual-machines/"
+	pathParts[0] = "/api/v2/instances/"
 	{
-		// Encode "virtualMachineId" parameter.
+		// Encode "instanceId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
+			Param:   "instanceId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
+			if unwrapped := string(params.InstanceId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -17009,7 +17346,7 @@ func (c *Client) sendStopVirtualMachine(ctx context.Context, params StopVirtualM
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, StopVirtualMachineOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, StopInstanceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -17052,7 +17389,7 @@ func (c *Client) sendStopVirtualMachine(ctx context.Context, params StopVirtualM
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeStopVirtualMachineResponse(resp)
+	result, err := decodeStopInstanceResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -17060,22 +17397,22 @@ func (c *Client) sendStopVirtualMachine(ctx context.Context, params StopVirtualM
 	return result, nil
 }
 
-// UnrescueVirtualMachine invokes unrescue-virtual-machine operation.
+// UnrescueInstance invokes unrescue-instance operation.
 //
-// Restores boot from the original system disk. Completion is shown by the virtual machine state, and
-// the virtual machine shows the `unrescue` operation until then.
+// Restores boot from the original boot volume. Completion is shown by the instance state, and the
+// instance shows the `unrescue` operation until then.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:unrescue
-func (c *Client) UnrescueVirtualMachine(ctx context.Context, params UnrescueVirtualMachineParams) (UnrescueVirtualMachineRes, error) {
-	res, err := c.sendUnrescueVirtualMachine(ctx, params)
+// POST /api/v2/instances/{instanceId}:unrescue
+func (c *Client) UnrescueInstance(ctx context.Context, params UnrescueInstanceParams) (UnrescueInstanceRes, error) {
+	res, err := c.sendUnrescueInstance(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendUnrescueVirtualMachine(ctx context.Context, params UnrescueVirtualMachineParams) (res UnrescueVirtualMachineRes, err error) {
+func (c *Client) sendUnrescueInstance(ctx context.Context, params UnrescueInstanceParams) (res UnrescueInstanceRes, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("unrescue-virtual-machine"),
+		otelogen.OperationID("unrescue-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}:unrescue"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}:unrescue"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -17091,7 +17428,7 @@ func (c *Client) sendUnrescueVirtualMachine(ctx context.Context, params Unrescue
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, UnrescueVirtualMachineOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, UnrescueInstanceOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -17109,16 +17446,16 @@ func (c *Client) sendUnrescueVirtualMachine(ctx context.Context, params Unrescue
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/api/v2/virtual-machines/"
+	pathParts[0] = "/api/v2/instances/"
 	{
-		// Encode "virtualMachineId" parameter.
+		// Encode "instanceId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
+			Param:   "instanceId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
+			if unwrapped := string(params.InstanceId); true {
 				return e.EncodeValue(conv.StringToString(unwrapped))
 			}
 			return nil
@@ -17145,7 +17482,7 @@ func (c *Client) sendUnrescueVirtualMachine(ctx context.Context, params Unrescue
 		var satisfied bitset
 		{
 			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, UnrescueVirtualMachineOperation, r); {
+			switch err := c.securityScopedTokenAuth(ctx, UnrescueInstanceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -17188,482 +17525,7 @@ func (c *Client) sendUnrescueVirtualMachine(ctx context.Context, params Unrescue
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeUnrescueVirtualMachineResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// UpdateDisk invokes update-disk operation.
-//
-// Changes the name, the capacity or the disk type. The availability zone is immutable.
-//
-// `size_gb` and `disk_type_id` are operational fields: each starts a change and cannot be combined
-// with any other field in the same request, including the other one. Such a request is refused with
-// 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside a change that was then refused
-// would leave the request half applied. `checkout` and `proration_date` belong to the purchase of the
-// change and are accepted only together with one of them.
-//
-// Renaming is not an operation and is accepted at any time. It returns 200 with `checkout_session_id`
-// and `order_id` null.
-//
-// Resizing accepts only an increase; a smaller `size_gb` is refused with `DISK_CANNOT_SHRINK` (422),
-// since a file system cannot be shrunk from outside the virtual machine. It returns 202 with the disk
-// and the Checkout Session for the resize, which keeps the disk's usage type and period. The disk
-// shows the `resize` operation until the resize is applied, its Checkout Session expires or its order
-// is canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
-// meanwhile. The disk keeps its current size until the resize is applied; once `size_gb` shows the new
-// size, extend the file system inside the virtual machine. If checkout is not completed, the order is
-// not accepted or the resize fails, the disk keeps its size and Billing shows the outcome.
-//
-// Changing the type moves the disk to another disk type at the same capacity, priced as that type, and
-// returns 202 with the disk and the Checkout Session for the change, which keeps the disk's usage type
-// and period. The disk has to be detached (409 `DISK_RETYPE_ATTACHED`), so a system disk cannot change
-// its type. The target has to be on sale (`DISK_TYPE_OFF_SALE`), in the disk's region (422
-// `DISK_RETYPE_OTHER_REGION`), of the disk's availability zone (422
-// `DISK_TYPE_OTHER_AVAILABILITY_ZONE`) with room for the disk (409 `DISK_TYPE_SOLD_OUT`,
-// `DISK_TYPE_CAPACITY_REACHED`, `DISK_TYPE_NO_POOL_ROOM`), admit the disk's capacity (422
-// `DISK_SIZE_OUT_OF_RANGE`, `DISK_SIZE_NOT_ON_STEP`) and differ from the current one (422
-// `DISK_RETYPE_SAME_TYPE`). The disk shows the `retype` operation until the change is applied, its
-// Checkout Session expires or its order is canceled. A target on the same storage backend takes effect
-// at once; one on another backend copies the disk's data there first, which takes longer the larger
-// the disk is. The disk keeps its type until `disk_type_id` shows the new one, and its `performance`
-// follows from then on; a change that did not take effect leaves the disk as it was and is refunded.
-//
-// An attached disk, including a system disk, can be resized. The capacity is usable at once, and the
-// disk's `performance` shows what its type gives the new size. That performance applies from the
-// disk's next attachment, or the next start of its stopped virtual machine: the storage reads a disk's
-// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
-//
-// PATCH /api/v2/disks/{diskId}
-func (c *Client) UpdateDisk(ctx context.Context, request *UpdateDiskRequestBody, params UpdateDiskParams) (UpdateDiskRes, error) {
-	res, err := c.sendUpdateDisk(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendUpdateDisk(ctx context.Context, request *UpdateDiskRequestBody, params UpdateDiskParams) (res UpdateDiskRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-disk"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v2/disks/{diskId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, UpdateDiskOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v2/disks/"
-	{
-		// Encode "diskId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.DiskId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PATCH", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeUpdateDiskRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, UpdateDiskOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeUpdateDiskResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// UpdateDiskBackup invokes update-disk-backup operation.
-//
-// Changes the name only. A backup's source disk and capacity cannot be changed.
-//
-// PATCH /api/v2/disk-backups/{diskBackupId}
-func (c *Client) UpdateDiskBackup(ctx context.Context, request *UpdateDiskBackupRequestBody, params UpdateDiskBackupParams) (*DiskBackupResource, error) {
-	res, err := c.sendUpdateDiskBackup(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendUpdateDiskBackup(ctx context.Context, request *UpdateDiskBackupRequestBody, params UpdateDiskBackupParams) (res *DiskBackupResource, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-disk-backup"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v2/disk-backups/{diskBackupId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, UpdateDiskBackupOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v2/disk-backups/"
-	{
-		// Encode "diskBackupId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskBackupId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.DiskBackupId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PATCH", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeUpdateDiskBackupRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, UpdateDiskBackupOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeUpdateDiskBackupResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// UpdateDiskSnapshot invokes update-disk-snapshot operation.
-//
-// Changes the name only. A snapshot's source disk and capacity cannot be changed.
-//
-// PATCH /api/v2/disk-snapshots/{diskSnapshotId}
-func (c *Client) UpdateDiskSnapshot(ctx context.Context, request *UpdateDiskSnapshotRequestBody, params UpdateDiskSnapshotParams) (*DiskSnapshotResource, error) {
-	res, err := c.sendUpdateDiskSnapshot(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendUpdateDiskSnapshot(ctx context.Context, request *UpdateDiskSnapshotRequestBody, params UpdateDiskSnapshotParams) (res *DiskSnapshotResource, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-disk-snapshot"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v2/disk-snapshots/{diskSnapshotId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, UpdateDiskSnapshotOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v2/disk-snapshots/"
-	{
-		// Encode "diskSnapshotId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskSnapshotId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.DiskSnapshotId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PATCH", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeUpdateDiskSnapshotRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, UpdateDiskSnapshotOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeUpdateDiskSnapshotResponse(resp)
+	result, err := decodeUnrescueInstanceResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -17703,10 +17565,9 @@ func (c *Client) sendUpdateDiskSnapshot(ctx context.Context, request *UpdateDisk
 // operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit
 // stays in effect until the change is applied.
 //
-// While the address is associated with a virtual machine, the limit must not exceed the
-// `max_bandwidth_mbps` of that virtual machine's type; a higher limit is refused with
-// `VIRTUAL_MACHINE_BANDWIDTH_CEILING`. The limit of an address that is not associated is checked when
-// the address is associated with a virtual machine.
+// While the address is associated with an instance, the limit must not exceed the `max_bandwidth_mbps`
+// of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of
+// an address that is not associated is checked when the address is associated with an instance.
 //
 // PATCH /api/v2/elastic-ips/{elasticIpId}
 func (c *Client) UpdateElasticIP(ctx context.Context, request *UpdateElasticIPRequestBody, params UpdateElasticIPParams) (UpdateElasticIPRes, error) {
@@ -17843,6 +17704,187 @@ func (c *Client) sendUpdateElasticIP(ctx context.Context, request *UpdateElastic
 
 	stage = "DecodeResponse"
 	result, err := decodeUpdateElasticIPResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateInstance invokes update-instance operation.
+//
+// Changes the descriptive fields (`name`, `labels`, `notes`) or the operational field
+// `instance_type_id`. All fields are optional and at least one is required. Starting and stopping are
+// the `:start` and `:stop` methods.
+//
+// `instance_type_id` starts a workflow and cannot be combined with any other field in the same
+// request. Such a request is refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that
+// committed beside a change that was then refused would leave the request half applied. `checkout` and
+// `proration_date` belong to the purchase of the `instance_type_id` change and are accepted only
+// together with it.
+//
+// Descriptive fields are not operations and are accepted at any time, whatever the instance is doing.
+// The request returns 200 with `checkout_session_id` and `order_id` null.
+//
+//   - `name` changes the display name only. The hostname inside the instance is unchanged; it equals
+//     the instance id.
+//   - `labels` records what this instance is for, as key-value pairs. Nothing on the platform reads
+//     them. The whole set is replaced: whatever is absent from the request is removed, and an empty
+//     object clears them all. Do not put credentials here. Labels are visible to platform operators.
+//   - `notes` is a free-text note about this instance: what it runs, and what to be careful about
+//     before touching it. The whole note is replaced; send an empty string to clear it. Do not put
+//     credentials here. The note is visible to platform operators.
+//
+// `instance_type_id` resizes a running instance, which restarts once during the resize, and returns
+// 202 with the instance and the Checkout Session for the change, including for metered terms. The
+// instance keeps its usage type and period, priced with the target type's matching option; a target
+// type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts once
+// Billing accepts the order. Do not submit the change again after paying. After an uncertain response,
+// look the Checkout Session up in Billing before submitting again.
+//
+// The instance shows the `resize` operation until the resize is applied, its Checkout Session expires
+// or its order is canceled, so other operations and a second resize are refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new
+// type takes effect, and is billed from then on, when `instance_type_id` shows it. If checkout is not
+// completed, the order is not accepted or the resize fails, the instance keeps its current type and
+// Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
+// previous type, submit another resize.
+//
+// PATCH /api/v2/instances/{instanceId}
+func (c *Client) UpdateInstance(ctx context.Context, request *UpdateInstanceRequestBody, params UpdateInstanceParams) (UpdateInstanceRes, error) {
+	res, err := c.sendUpdateInstance(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateInstance(ctx context.Context, request *UpdateInstanceRequestBody, params UpdateInstanceParams) (res UpdateInstanceRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-instance"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateInstanceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/instances/"
+	{
+		// Encode "instanceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InstanceId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateInstanceRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, UpdateInstanceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateInstanceResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -18005,8 +18047,8 @@ func (c *Client) sendUpdateLaunchTemplate(ctx context.Context, request *UpdateLa
 //
 //   - `name` is not an operation, is accepted at any time and answers 200.
 //   - `security_group_ids` is the complete new set, one to five groups of the network interface's
-//     virtual private cloud; groups left out are removed. It applies to traffic of the running virtual
-//     machine as soon as it is in place, and answers 202 with the network interface showing the
+//     virtual private cloud; groups left out are removed. It applies to traffic of the running instance
+//     as soon as it is in place, and answers 202 with the network interface showing the
 //     `update_security_groups` operation until then.
 //
 // Secondary IPv4 addresses are added and removed under
@@ -18448,187 +18490,6 @@ func (c *Client) sendUpdateSecurityGroup(ctx context.Context, request *UpdateSec
 	return result, nil
 }
 
-// UpdateVirtualMachine invokes update-virtual-machine operation.
-//
-// Changes the descriptive fields (`name`, `labels`, `notes`) or the operational field
-// `machine_type_id`. All fields are optional and at least one is required. Starting and stopping are
-// the `:start` and `:stop` methods.
-//
-// `machine_type_id` starts a workflow and cannot be combined with any other field in the same request.
-// Such a request is refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside
-// a change that was then refused would leave the request half applied. `checkout` and `proration_date`
-// belong to the purchase of the `machine_type_id` change and are accepted only together with it.
-//
-// Descriptive fields are not operations and are accepted at any time, whatever the virtual machine is
-// doing. The request returns 200 with `checkout_session_id` and `order_id` null.
-//
-//   - `name` changes the display name only. The hostname inside the virtual machine is unchanged; it
-//     equals the virtual machine id.
-//   - `labels` records what this virtual machine is for, as key-value pairs. Nothing on the platform
-//     reads them. The whole set is replaced: whatever is absent from the request is removed, and an
-//     empty object clears them all. Do not put credentials here. Labels are visible to platform
-//     operators.
-//   - `notes` is a free-text note about this virtual machine: what it runs, and what to be careful
-//     about before touching it. The whole note is replaced; send an empty string to clear it. Do not
-//     put credentials here. The note is visible to platform operators.
-//
-// `machine_type_id` resizes a running virtual machine, which restarts once during the resize, and
-// returns 202 with the virtual machine and the Checkout Session for the change, including for metered
-// terms. The virtual machine keeps its usage type and period, priced with the target type's matching
-// option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. The
-// resize starts once Billing accepts the order. Do not submit the change again after paying. After an
-// uncertain response, look the Checkout Session up in Billing before submitting again.
-//
-// The virtual machine shows the `resize` operation until the resize is applied, its Checkout Session
-// expires or its order is canceled, so other operations and a second resize are refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new
-// type takes effect, and is billed from then on, when `machine_type_id` shows it. If checkout is not
-// completed, the order is not accepted or the resize fails, the virtual machine keeps its current type
-// and Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
-// previous type, submit another resize.
-//
-// PATCH /api/v2/virtual-machines/{virtualMachineId}
-func (c *Client) UpdateVirtualMachine(ctx context.Context, request *UpdateVirtualMachineRequestBody, params UpdateVirtualMachineParams) (UpdateVirtualMachineRes, error) {
-	res, err := c.sendUpdateVirtualMachine(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendUpdateVirtualMachine(ctx context.Context, request *UpdateVirtualMachineRequestBody, params UpdateVirtualMachineParams) (res UpdateVirtualMachineRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v2/virtual-machines/{virtualMachineId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, UpdateVirtualMachineOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v2/virtual-machines/"
-	{
-		// Encode "virtualMachineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "virtualMachineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.VirtualMachineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PATCH", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeUpdateVirtualMachineRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, UpdateVirtualMachineOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeUpdateVirtualMachineResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // UpdateVirtualPrivateCloud invokes update-virtual-private-cloud operation.
 //
 // Only the name can change. The CIDR is fixed for the network's life, because every subnet and address
@@ -18938,6 +18799,482 @@ func (c *Client) sendUpdateVirtualPrivateCloudSubnet(ctx context.Context, reques
 
 	stage = "DecodeResponse"
 	result, err := decodeUpdateVirtualPrivateCloudSubnetResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateVolume invokes update-volume operation.
+//
+// Changes the name, the capacity or the volume type. The availability zone is immutable.
+//
+// `size_gib` and `volume_type_id` are operational fields: each starts a change and cannot be combined
+// with any other field in the same request, including the other one. Such a request is refused with
+// 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside a change that was then refused
+// would leave the request half applied. `checkout` and `proration_date` belong to the purchase of the
+// change and are accepted only together with one of them.
+//
+// Renaming is not an operation and is accepted at any time. It returns 200 with `checkout_session_id`
+// and `order_id` null.
+//
+// Resizing accepts only an increase; a smaller `size_gib` is refused with `VOLUME_CANNOT_SHRINK`
+// (422), since a file system cannot be shrunk from outside the instance. It returns 202 with the
+// volume and the Checkout Session for the resize, which keeps the volume's usage type and period. The
+// volume shows the `resize` operation until the resize is applied, its Checkout Session expires or its
+// order is canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
+// meanwhile. The volume keeps its current size until the resize is applied; once `size_gib` shows the
+// new size, extend the file system inside the instance. If checkout is not completed, the order is not
+// accepted or the resize fails, the volume keeps its size and Billing shows the outcome.
+//
+// Changing the type moves the volume to another volume type at the same capacity, priced as that type,
+// and returns 202 with the volume and the Checkout Session for the change, which keeps the volume's
+// usage type and period. The volume has to be detached (409 `VOLUME_RETYPE_ATTACHED`), so a boot
+// volume cannot change its type. The target has to be on sale (`VOLUME_TYPE_OFF_SALE`), in the
+// volume's region (422 `VOLUME_RETYPE_OTHER_REGION`), of the volume's availability zone (422
+// `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`) with room for the volume (409 `VOLUME_TYPE_SOLD_OUT`,
+// `VOLUME_TYPE_CAPACITY_REACHED`, `VOLUME_TYPE_NO_POOL_ROOM`), admit the volume's capacity (422
+// `VOLUME_SIZE_OUT_OF_RANGE`, `VOLUME_SIZE_NOT_ON_STEP`) and differ from the current one (422
+// `VOLUME_RETYPE_SAME_TYPE`). The volume shows the `retype` operation until the change is applied, its
+// Checkout Session expires or its order is canceled. A target on the same storage backend takes effect
+// at once; one on another backend copies the volume's data there first, which takes longer the larger
+// the volume is. The volume keeps its type until `volume_type_id` shows the new one, and its
+// `performance` follows from then on; a change that did not take effect leaves the volume as it was
+// and is refunded.
+//
+// An attached volume, including a boot volume, can be resized. The capacity is usable at once, and the
+// volume's `performance` shows what its type gives the new size. That performance applies from the
+// volume's next attachment, or the next start of its stopped instance: the storage reads a volume's
+// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
+//
+// PATCH /api/v2/volumes/{volumeId}
+func (c *Client) UpdateVolume(ctx context.Context, request *UpdateVolumeRequestBody, params UpdateVolumeParams) (UpdateVolumeRes, error) {
+	res, err := c.sendUpdateVolume(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateVolume(ctx context.Context, request *UpdateVolumeRequestBody, params UpdateVolumeParams) (res UpdateVolumeRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-volume"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v2/volumes/{volumeId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateVolumeOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/volumes/"
+	{
+		// Encode "volumeId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "volumeId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VolumeId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateVolumeRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, UpdateVolumeOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateVolumeResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateVolumeBackup invokes update-volume-backup operation.
+//
+// Changes the name only. A backup's source volume and capacity cannot be changed.
+//
+// PATCH /api/v2/volume-backups/{volumeBackupId}
+func (c *Client) UpdateVolumeBackup(ctx context.Context, request *UpdateVolumeBackupRequestBody, params UpdateVolumeBackupParams) (*VolumeBackupResource, error) {
+	res, err := c.sendUpdateVolumeBackup(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateVolumeBackup(ctx context.Context, request *UpdateVolumeBackupRequestBody, params UpdateVolumeBackupParams) (res *VolumeBackupResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-volume-backup"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v2/volume-backups/{volumeBackupId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateVolumeBackupOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/volume-backups/"
+	{
+		// Encode "volumeBackupId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "volumeBackupId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VolumeBackupId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateVolumeBackupRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, UpdateVolumeBackupOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateVolumeBackupResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateVolumeSnapshot invokes update-volume-snapshot operation.
+//
+// Changes the name only. A snapshot's source volume and capacity cannot be changed.
+//
+// PATCH /api/v2/volume-snapshots/{volumeSnapshotId}
+func (c *Client) UpdateVolumeSnapshot(ctx context.Context, request *UpdateVolumeSnapshotRequestBody, params UpdateVolumeSnapshotParams) (*VolumeSnapshotResource, error) {
+	res, err := c.sendUpdateVolumeSnapshot(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateVolumeSnapshot(ctx context.Context, request *UpdateVolumeSnapshotRequestBody, params UpdateVolumeSnapshotParams) (res *VolumeSnapshotResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-volume-snapshot"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v2/volume-snapshots/{volumeSnapshotId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateVolumeSnapshotOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/volume-snapshots/"
+	{
+		// Encode "volumeSnapshotId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "volumeSnapshotId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VolumeSnapshotId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateVolumeSnapshotRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, UpdateVolumeSnapshotOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateVolumeSnapshotResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

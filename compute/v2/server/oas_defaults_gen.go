@@ -19,7 +19,7 @@ func (s *CreateElasticIPRequestBody) setDefaults() {
 }
 
 // setDefaults set default value of fields.
-func (s *CreateVirtualMachineRequestBody) setDefaults() {
+func (s *CreateInstanceRequestBody) setDefaults() {
 	{
 		val := int64(1)
 		s.Count.SetTo(val)
@@ -35,18 +35,18 @@ func (s *ElasticIP) setDefaults() {
 }
 
 // setDefaults set default value of fields.
-func (s *LaunchTemplateBootDisk) setDefaults() {
+func (s *LaunchTemplateBootVolume) setDefaults() {
 	{
-		val := LaunchTemplateBootDiskOnVirtualMachineRelease("delete")
-		s.OnVirtualMachineRelease.SetTo(val)
+		val := LaunchTemplateBootVolumeOnInstanceRelease("delete")
+		s.OnInstanceRelease.SetTo(val)
 	}
 }
 
 // setDefaults set default value of fields.
-func (s *LaunchTemplateDataDisk) setDefaults() {
+func (s *LaunchTemplateDataVolume) setDefaults() {
 	{
-		val := LaunchTemplateDataDiskOnVirtualMachineRelease("delete")
-		s.OnVirtualMachineRelease.SetTo(val)
+		val := LaunchTemplateDataVolumeOnInstanceRelease("delete")
+		s.OnInstanceRelease.SetTo(val)
 	}
 }
 
@@ -59,18 +59,18 @@ func (s *LaunchTemplateElasticIP) setDefaults() {
 }
 
 // setDefaults set default value of fields.
-func (s *NewBootDisk) setDefaults() {
+func (s *NewBootVolume) setDefaults() {
 	{
-		val := NewBootDiskOnVirtualMachineRelease("delete")
-		s.OnVirtualMachineRelease.SetTo(val)
+		val := NewBootVolumeOnInstanceRelease("delete")
+		s.OnInstanceRelease.SetTo(val)
 	}
 }
 
 // setDefaults set default value of fields.
-func (s *NewDataDisk) setDefaults() {
+func (s *NewDataVolume) setDefaults() {
 	{
-		val := NewDataDiskOnVirtualMachineRelease("delete")
-		s.OnVirtualMachineRelease.SetTo(val)
+		val := NewDataVolumeOnInstanceRelease("delete")
+		s.OnInstanceRelease.SetTo(val)
 	}
 }
 

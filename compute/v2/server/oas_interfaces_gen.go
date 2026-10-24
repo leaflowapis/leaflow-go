@@ -9,52 +9,44 @@ type AssociateElasticIPRes interface {
 	associateElasticIPRes()
 }
 
-type AttachVirtualMachineDiskRes interface {
-	attachVirtualMachineDiskRes()
+type AttachInstanceNetworkInterfaceRes interface {
+	attachInstanceNetworkInterfaceRes()
 }
 
-type AttachVirtualMachineNetworkInterfaceRes interface {
-	attachVirtualMachineNetworkInterfaceRes()
-}
-
-type CreateDiskBackupRes interface {
-	createDiskBackupRes()
-}
-
-type CreateDiskRes interface {
-	createDiskRes()
-}
-
-type CreateDiskSnapshotRes interface {
-	createDiskSnapshotRes()
+type AttachInstanceVolumeRes interface {
+	attachInstanceVolumeRes()
 }
 
 type CreateElasticIPRes interface {
 	createElasticIPRes()
 }
 
+type CreateInstanceRes interface {
+	createInstanceRes()
+}
+
 type CreatePrivateImageRes interface {
 	createPrivateImageRes()
 }
 
-type CreateVirtualMachineRes interface {
-	createVirtualMachineRes()
+type CreateVolumeBackupRes interface {
+	createVolumeBackupRes()
 }
 
-type DeleteDiskBackupRes interface {
-	deleteDiskBackupRes()
+type CreateVolumeRes interface {
+	createVolumeRes()
 }
 
-type DeleteDiskRes interface {
-	deleteDiskRes()
-}
-
-type DeleteDiskSnapshotRes interface {
-	deleteDiskSnapshotRes()
+type CreateVolumeSnapshotRes interface {
+	createVolumeSnapshotRes()
 }
 
 type DeleteElasticIPRes interface {
 	deleteElasticIPRes()
+}
+
+type DeleteInstanceRes interface {
+	deleteInstanceRes()
 }
 
 type DeleteNetworkInterfaceRes interface {
@@ -65,10 +57,6 @@ type DeletePrivateImageRes interface {
 	deletePrivateImageRes()
 }
 
-type DeleteVirtualMachineRes interface {
-	deleteVirtualMachineRes()
-}
-
 type DeleteVirtualPrivateCloudPeeringRes interface {
 	deleteVirtualPrivateCloudPeeringRes()
 }
@@ -77,12 +65,24 @@ type DeleteVirtualPrivateCloudRes interface {
 	deleteVirtualPrivateCloudRes()
 }
 
-type DetachVirtualMachineDiskRes interface {
-	detachVirtualMachineDiskRes()
+type DeleteVolumeBackupRes interface {
+	deleteVolumeBackupRes()
 }
 
-type DetachVirtualMachineNetworkInterfaceRes interface {
-	detachVirtualMachineNetworkInterfaceRes()
+type DeleteVolumeRes interface {
+	deleteVolumeRes()
+}
+
+type DeleteVolumeSnapshotRes interface {
+	deleteVolumeSnapshotRes()
+}
+
+type DetachInstanceNetworkInterfaceRes interface {
+	detachInstanceNetworkInterfaceRes()
+}
+
+type DetachInstanceVolumeRes interface {
+	detachInstanceVolumeRes()
 }
 
 type DisableVirtualPrivateCloudIpv6Res interface {
@@ -97,54 +97,54 @@ type EnableVirtualPrivateCloudIpv6Res interface {
 	enableVirtualPrivateCloudIpv6Res()
 }
 
-type RebootVirtualMachineRes interface {
-	rebootVirtualMachineRes()
+type RebootInstanceRes interface {
+	rebootInstanceRes()
 }
 
-type RebuildVirtualMachineRes interface {
-	rebuildVirtualMachineRes()
+type RebuildInstanceRes interface {
+	rebuildInstanceRes()
 }
 
 type RejectVirtualPrivateCloudPeeringRes interface {
 	rejectVirtualPrivateCloudPeeringRes()
 }
 
-type RescueVirtualMachineRes interface {
-	rescueVirtualMachineRes()
+type RescueInstanceRes interface {
+	rescueInstanceRes()
 }
 
-type ResetVirtualMachinePasswordRes interface {
-	resetVirtualMachinePasswordRes()
+type ResetInstancePasswordRes interface {
+	resetInstancePasswordRes()
 }
 
-type RevertDiskRes interface {
-	revertDiskRes()
+type RevertVolumeRes interface {
+	revertVolumeRes()
 }
 
-type StartVirtualMachineRes interface {
-	startVirtualMachineRes()
+type StartInstanceRes interface {
+	startInstanceRes()
 }
 
-type StopVirtualMachineRes interface {
-	stopVirtualMachineRes()
+type StopInstanceRes interface {
+	stopInstanceRes()
 }
 
-type UnrescueVirtualMachineRes interface {
-	unrescueVirtualMachineRes()
-}
-
-type UpdateDiskRes interface {
-	updateDiskRes()
+type UnrescueInstanceRes interface {
+	unrescueInstanceRes()
 }
 
 type UpdateElasticIPRes interface {
 	updateElasticIPRes()
 }
 
+type UpdateInstanceRes interface {
+	updateInstanceRes()
+}
+
 type UpdateNetworkInterfaceRes interface {
 	updateNetworkInterfaceRes()
 }
 
-type UpdateVirtualMachineRes interface {
-	updateVirtualMachineRes()
+type UpdateVolumeRes interface {
+	updateVolumeRes()
 }

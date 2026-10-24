@@ -22,7 +22,7 @@ func (s *ErrorStatusCode) Error() string {
 type AssociateElasticIPRequestBody struct {
 	// Type selects the active sum variant, switch on this field.
 	Type                                     AssociateElasticIPRequestBodyType
-	VirtualMachineAssociationTarget          VirtualMachineAssociationTarget
+	InstanceAssociationTarget                InstanceAssociationTarget
 	NetworkInterfaceAddressAssociationTarget NetworkInterfaceAddressAssociationTarget
 }
 
@@ -31,13 +31,13 @@ type AssociateElasticIPRequestBodyType string
 
 // Possible values for AssociateElasticIPRequestBodyType.
 const (
-	VirtualMachineAssociationTargetAssociateElasticIPRequestBody          AssociateElasticIPRequestBodyType = "VirtualMachineAssociationTarget"
+	InstanceAssociationTargetAssociateElasticIPRequestBody                AssociateElasticIPRequestBodyType = "InstanceAssociationTarget"
 	NetworkInterfaceAddressAssociationTargetAssociateElasticIPRequestBody AssociateElasticIPRequestBodyType = "NetworkInterfaceAddressAssociationTarget"
 )
 
-// IsVirtualMachineAssociationTarget reports whether AssociateElasticIPRequestBody is VirtualMachineAssociationTarget.
-func (s AssociateElasticIPRequestBody) IsVirtualMachineAssociationTarget() bool {
-	return s.Type == VirtualMachineAssociationTargetAssociateElasticIPRequestBody
+// IsInstanceAssociationTarget reports whether AssociateElasticIPRequestBody is InstanceAssociationTarget.
+func (s AssociateElasticIPRequestBody) IsInstanceAssociationTarget() bool {
+	return s.Type == InstanceAssociationTargetAssociateElasticIPRequestBody
 }
 
 // IsNetworkInterfaceAddressAssociationTarget reports whether AssociateElasticIPRequestBody is NetworkInterfaceAddressAssociationTarget.
@@ -45,24 +45,24 @@ func (s AssociateElasticIPRequestBody) IsNetworkInterfaceAddressAssociationTarge
 	return s.Type == NetworkInterfaceAddressAssociationTargetAssociateElasticIPRequestBody
 }
 
-// SetVirtualMachineAssociationTarget sets AssociateElasticIPRequestBody to VirtualMachineAssociationTarget.
-func (s *AssociateElasticIPRequestBody) SetVirtualMachineAssociationTarget(v VirtualMachineAssociationTarget) {
-	s.Type = VirtualMachineAssociationTargetAssociateElasticIPRequestBody
-	s.VirtualMachineAssociationTarget = v
+// SetInstanceAssociationTarget sets AssociateElasticIPRequestBody to InstanceAssociationTarget.
+func (s *AssociateElasticIPRequestBody) SetInstanceAssociationTarget(v InstanceAssociationTarget) {
+	s.Type = InstanceAssociationTargetAssociateElasticIPRequestBody
+	s.InstanceAssociationTarget = v
 }
 
-// GetVirtualMachineAssociationTarget returns VirtualMachineAssociationTarget and true boolean if AssociateElasticIPRequestBody is VirtualMachineAssociationTarget.
-func (s AssociateElasticIPRequestBody) GetVirtualMachineAssociationTarget() (v VirtualMachineAssociationTarget, ok bool) {
-	if !s.IsVirtualMachineAssociationTarget() {
+// GetInstanceAssociationTarget returns InstanceAssociationTarget and true boolean if AssociateElasticIPRequestBody is InstanceAssociationTarget.
+func (s AssociateElasticIPRequestBody) GetInstanceAssociationTarget() (v InstanceAssociationTarget, ok bool) {
+	if !s.IsInstanceAssociationTarget() {
 		return v, false
 	}
-	return s.VirtualMachineAssociationTarget, true
+	return s.InstanceAssociationTarget, true
 }
 
-// NewVirtualMachineAssociationTargetAssociateElasticIPRequestBody returns new AssociateElasticIPRequestBody from VirtualMachineAssociationTarget.
-func NewVirtualMachineAssociationTargetAssociateElasticIPRequestBody(v VirtualMachineAssociationTarget) AssociateElasticIPRequestBody {
+// NewInstanceAssociationTargetAssociateElasticIPRequestBody returns new AssociateElasticIPRequestBody from InstanceAssociationTarget.
+func NewInstanceAssociationTargetAssociateElasticIPRequestBody(v InstanceAssociationTarget) AssociateElasticIPRequestBody {
 	var s AssociateElasticIPRequestBody
-	s.SetVirtualMachineAssociationTarget(v)
+	s.SetInstanceAssociationTarget(v)
 	return s
 }
 
@@ -87,21 +87,6 @@ func NewNetworkInterfaceAddressAssociationTargetAssociateElasticIPRequestBody(v 
 	return s
 }
 
-// Ref: #/components/schemas/AttachDiskRequestBody
-type AttachDiskRequestBody struct {
-	DiskID DiskID `json:"disk_id"`
-}
-
-// GetDiskID returns the value of DiskID.
-func (s *AttachDiskRequestBody) GetDiskID() DiskID {
-	return s.DiskID
-}
-
-// SetDiskID sets the value of DiskID.
-func (s *AttachDiskRequestBody) SetDiskID(val DiskID) {
-	s.DiskID = val
-}
-
 // Ref: #/components/schemas/AttachNetworkInterfaceRequestBody
 type AttachNetworkInterfaceRequestBody struct {
 	NetworkInterfaceID NetworkInterfaceID `json:"network_interface_id"`
@@ -115,6 +100,21 @@ func (s *AttachNetworkInterfaceRequestBody) GetNetworkInterfaceID() NetworkInter
 // SetNetworkInterfaceID sets the value of NetworkInterfaceID.
 func (s *AttachNetworkInterfaceRequestBody) SetNetworkInterfaceID(val NetworkInterfaceID) {
 	s.NetworkInterfaceID = val
+}
+
+// Ref: #/components/schemas/AttachVolumeRequestBody
+type AttachVolumeRequestBody struct {
+	VolumeID VolumeID `json:"volume_id"`
+}
+
+// GetVolumeID returns the value of VolumeID.
+func (s *AttachVolumeRequestBody) GetVolumeID() VolumeID {
+	return s.VolumeID
+}
+
+// SetVolumeID sets the value of VolumeID.
+func (s *AttachVolumeRequestBody) SetVolumeID(val VolumeID) {
+	s.VolumeID = val
 }
 
 type AvailabilityZoneID string
@@ -239,8 +239,8 @@ func (s *BillingCancellation) SetScheduledAt(val NilDateTime) {
 }
 
 // The commercial terms for one newly purchased component. Licensed requires period and
-// termination_policy; metered refuses both. Components in one virtual machine purchase must use the
-// same usage type and period, while their termination policies may differ.
+// termination_policy; metered refuses both. Components in one instance purchase must use the same
+// usage type and period, while their termination policies may differ.
 // Ref: #/components/schemas/BillingChoice
 type BillingChoice struct {
 	// `licensed` pays for a period in advance; `metered` bills usage until canceled.
@@ -392,7 +392,7 @@ func (s *BillingComponentDimensions) init() BillingComponentDimensions {
 	return m
 }
 
-// `one` is 1 for each item bought; `size_gib` is the disk's size in GiB; `bandwidth_mbps` is the
+// `one` is 1 for each item bought; `size_gib` is the volume's size in GiB; `bandwidth_mbps` is the
 // elastic IP's bandwidth in Mbps.
 // Ref: #/components/schemas/BillingLineQuantity
 type BillingLineQuantity string
@@ -447,8 +447,8 @@ func (s *BillingLineQuantity) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/BillingMeter
 type BillingMeter struct {
 	MeterLookupKey string `json:"meter_lookup_key"`
-	// What the meter measures. `one` counts each second the item is metered; `size_gib` the disk's size in
-	// GiB each second; `stored_gib` the GiB stored each second; `bandwidth_mbps` the bandwidth in Mbps
+	// What the meter measures. `one` counts each second the item is metered; `size_gib` the volume's size
+	// in GiB each second; `stored_gib` the GiB stored each second; `bandwidth_mbps` the bandwidth in Mbps
 	// each second; `egress_bytes` the bytes sent.
 	Quantity BillingMeterQuantity `json:"quantity"`
 }
@@ -473,8 +473,8 @@ func (s *BillingMeter) SetQuantity(val BillingMeterQuantity) {
 	s.Quantity = val
 }
 
-// What the meter measures. `one` counts each second the item is metered; `size_gib` the disk's size in
-// GiB each second; `stored_gib` the GiB stored each second; `bandwidth_mbps` the bandwidth in Mbps
+// What the meter measures. `one` counts each second the item is metered; `size_gib` the volume's size
+// in GiB each second; `stored_gib` the GiB stored each second; `bandwidth_mbps` the bandwidth in Mbps
 // each second; `egress_bytes` the bytes sent.
 type BillingMeterQuantity string
 
@@ -633,71 +633,71 @@ func (s *BillingQuantity) SetMetered(val OptBillingLineQuantity) {
 	s.Metered = val
 }
 
-// Create a boot disk from an image, or use a prepared disk already held by this project. Using an
-// existing disk does not buy it again and always keeps it when the virtual machine is released.
-// Ref: #/components/schemas/BootDisk
-// BootDisk represents sum type.
-type BootDisk struct {
+// Create a boot volume from an image, or use a prepared volume already held by this project. Using an
+// existing volume does not buy it again and always keeps it when the instance is released.
+// Ref: #/components/schemas/BootVolume
+// BootVolume represents sum type.
+type BootVolume struct {
 	// Type selects the active sum variant, switch on this field.
-	Type             BootDiskType
-	NewBootDisk      NewBootDisk
-	ExistingBootDisk ExistingBootDisk
+	Type               BootVolumeType
+	NewBootVolume      NewBootVolume
+	ExistingBootVolume ExistingBootVolume
 }
 
-// BootDiskType is oneOf type of BootDisk.
-type BootDiskType string
+// BootVolumeType is oneOf type of BootVolume.
+type BootVolumeType string
 
-// Possible values for BootDiskType.
+// Possible values for BootVolumeType.
 const (
-	NewBootDiskBootDisk      BootDiskType = "image"
-	ExistingBootDiskBootDisk BootDiskType = "disk"
+	NewBootVolumeBootVolume      BootVolumeType = "image"
+	ExistingBootVolumeBootVolume BootVolumeType = "volume"
 )
 
-// IsNewBootDisk reports whether BootDisk is NewBootDisk.
-func (s BootDisk) IsNewBootDisk() bool { return s.Type == NewBootDiskBootDisk }
+// IsNewBootVolume reports whether BootVolume is NewBootVolume.
+func (s BootVolume) IsNewBootVolume() bool { return s.Type == NewBootVolumeBootVolume }
 
-// IsExistingBootDisk reports whether BootDisk is ExistingBootDisk.
-func (s BootDisk) IsExistingBootDisk() bool { return s.Type == ExistingBootDiskBootDisk }
+// IsExistingBootVolume reports whether BootVolume is ExistingBootVolume.
+func (s BootVolume) IsExistingBootVolume() bool { return s.Type == ExistingBootVolumeBootVolume }
 
-// SetNewBootDisk sets BootDisk to NewBootDisk.
-func (s *BootDisk) SetNewBootDisk(v NewBootDisk) {
-	s.Type = NewBootDiskBootDisk
-	s.NewBootDisk = v
+// SetNewBootVolume sets BootVolume to NewBootVolume.
+func (s *BootVolume) SetNewBootVolume(v NewBootVolume) {
+	s.Type = NewBootVolumeBootVolume
+	s.NewBootVolume = v
 }
 
-// GetNewBootDisk returns NewBootDisk and true boolean if BootDisk is NewBootDisk.
-func (s BootDisk) GetNewBootDisk() (v NewBootDisk, ok bool) {
-	if !s.IsNewBootDisk() {
+// GetNewBootVolume returns NewBootVolume and true boolean if BootVolume is NewBootVolume.
+func (s BootVolume) GetNewBootVolume() (v NewBootVolume, ok bool) {
+	if !s.IsNewBootVolume() {
 		return v, false
 	}
-	return s.NewBootDisk, true
+	return s.NewBootVolume, true
 }
 
-// NewNewBootDiskBootDisk returns new BootDisk from NewBootDisk.
-func NewNewBootDiskBootDisk(v NewBootDisk) BootDisk {
-	var s BootDisk
-	s.SetNewBootDisk(v)
+// NewNewBootVolumeBootVolume returns new BootVolume from NewBootVolume.
+func NewNewBootVolumeBootVolume(v NewBootVolume) BootVolume {
+	var s BootVolume
+	s.SetNewBootVolume(v)
 	return s
 }
 
-// SetExistingBootDisk sets BootDisk to ExistingBootDisk.
-func (s *BootDisk) SetExistingBootDisk(v ExistingBootDisk) {
-	s.Type = ExistingBootDiskBootDisk
-	s.ExistingBootDisk = v
+// SetExistingBootVolume sets BootVolume to ExistingBootVolume.
+func (s *BootVolume) SetExistingBootVolume(v ExistingBootVolume) {
+	s.Type = ExistingBootVolumeBootVolume
+	s.ExistingBootVolume = v
 }
 
-// GetExistingBootDisk returns ExistingBootDisk and true boolean if BootDisk is ExistingBootDisk.
-func (s BootDisk) GetExistingBootDisk() (v ExistingBootDisk, ok bool) {
-	if !s.IsExistingBootDisk() {
+// GetExistingBootVolume returns ExistingBootVolume and true boolean if BootVolume is ExistingBootVolume.
+func (s BootVolume) GetExistingBootVolume() (v ExistingBootVolume, ok bool) {
+	if !s.IsExistingBootVolume() {
 		return v, false
 	}
-	return s.ExistingBootDisk, true
+	return s.ExistingBootVolume, true
 }
 
-// NewExistingBootDiskBootDisk returns new BootDisk from ExistingBootDisk.
-func NewExistingBootDiskBootDisk(v ExistingBootDisk) BootDisk {
-	var s BootDisk
-	s.SetExistingBootDisk(v)
+// NewExistingBootVolumeBootVolume returns new BootVolume from ExistingBootVolume.
+func NewExistingBootVolumeBootVolume(v ExistingBootVolume) BootVolume {
+	var s BootVolume
+	s.SetExistingBootVolume(v)
 	return s
 }
 
@@ -855,304 +855,6 @@ func (s *ConsoleResponseBody) SetConsoleURL(val string) {
 	s.ConsoleURL = val
 }
 
-// Ref: #/components/schemas/CreateDiskBackupRequestBody
-type CreateDiskBackupRequestBody struct {
-	DiskID   DiskID             `json:"disk_id"`
-	Name     string             `json:"name"`
-	Checkout OptCheckoutOptions `json:"checkout"`
-}
-
-// GetDiskID returns the value of DiskID.
-func (s *CreateDiskBackupRequestBody) GetDiskID() DiskID {
-	return s.DiskID
-}
-
-// GetName returns the value of Name.
-func (s *CreateDiskBackupRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetCheckout returns the value of Checkout.
-func (s *CreateDiskBackupRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
-}
-
-// SetDiskID sets the value of DiskID.
-func (s *CreateDiskBackupRequestBody) SetDiskID(val DiskID) {
-	s.DiskID = val
-}
-
-// SetName sets the value of Name.
-func (s *CreateDiskBackupRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetCheckout sets the value of Checkout.
-func (s *CreateDiskBackupRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
-}
-
-// The new backup, `pending` until its order is accepted, and its Checkout Session.
-// Ref: #/components/schemas/CreateDiskBackupResponseBody
-type CreateDiskBackupResponseBody struct {
-	DiskBackup DiskBackupResource `json:"disk_backup"`
-	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
-	// Billing.
-	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
-	// The order created when checkout completes, at once for automatic checkout; null until then.
-	OrderID NilUUID `json:"order_id"`
-}
-
-// GetDiskBackup returns the value of DiskBackup.
-func (s *CreateDiskBackupResponseBody) GetDiskBackup() DiskBackupResource {
-	return s.DiskBackup
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *CreateDiskBackupResponseBody) GetCheckoutSessionID() uuid.UUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *CreateDiskBackupResponseBody) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// SetDiskBackup sets the value of DiskBackup.
-func (s *CreateDiskBackupResponseBody) SetDiskBackup(val DiskBackupResource) {
-	s.DiskBackup = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *CreateDiskBackupResponseBody) SetCheckoutSessionID(val uuid.UUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *CreateDiskBackupResponseBody) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-func (*CreateDiskBackupResponseBody) createDiskBackupRes() {}
-
-// Ref: #/components/schemas/CreateDiskRequestBody
-type CreateDiskRequestBody struct {
-	// A disk type currently on sale; the disk is created in its availability zone, and only a virtual
-	// machine of that zone can attach it. A withdrawn one is rejected even though its identifier still
-	// resolves.
-	DiskTypeID DiskTypeID `json:"disk_type_id"`
-	Name       string     `json:"name"`
-	// Required unless `disk_backup_id` is given. With `disk_snapshot_id` it need only be no smaller than
-	// the snapshot; with `disk_backup_id` it defaults to the size of the backup and must not be smaller
-	// than it.
-	SizeGB OptInt64 `json:"size_gb"`
-	// Restore from this snapshot, into a disk type of the snapshot's availability zone. Mutually exclusive
-	// with `disk_backup_id`, otherwise refused with 422 `DISK_SOURCE_CONFLICT`.
-	DiskSnapshotID OptDiskSnapshotID `json:"disk_snapshot_id"`
-	// Restore from this disk backup, which need not still have its source disk, into a disk type of any
-	// zone of the backup's region. Mutually exclusive with `disk_snapshot_id`, otherwise refused with 422
-	// `DISK_SOURCE_CONFLICT`.
-	DiskBackupID OptDiskBackupID    `json:"disk_backup_id"`
-	Billing      BillingChoice      `json:"billing"`
-	Checkout     OptCheckoutOptions `json:"checkout"`
-}
-
-// GetDiskTypeID returns the value of DiskTypeID.
-func (s *CreateDiskRequestBody) GetDiskTypeID() DiskTypeID {
-	return s.DiskTypeID
-}
-
-// GetName returns the value of Name.
-func (s *CreateDiskRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetSizeGB returns the value of SizeGB.
-func (s *CreateDiskRequestBody) GetSizeGB() OptInt64 {
-	return s.SizeGB
-}
-
-// GetDiskSnapshotID returns the value of DiskSnapshotID.
-func (s *CreateDiskRequestBody) GetDiskSnapshotID() OptDiskSnapshotID {
-	return s.DiskSnapshotID
-}
-
-// GetDiskBackupID returns the value of DiskBackupID.
-func (s *CreateDiskRequestBody) GetDiskBackupID() OptDiskBackupID {
-	return s.DiskBackupID
-}
-
-// GetBilling returns the value of Billing.
-func (s *CreateDiskRequestBody) GetBilling() BillingChoice {
-	return s.Billing
-}
-
-// GetCheckout returns the value of Checkout.
-func (s *CreateDiskRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
-}
-
-// SetDiskTypeID sets the value of DiskTypeID.
-func (s *CreateDiskRequestBody) SetDiskTypeID(val DiskTypeID) {
-	s.DiskTypeID = val
-}
-
-// SetName sets the value of Name.
-func (s *CreateDiskRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetSizeGB sets the value of SizeGB.
-func (s *CreateDiskRequestBody) SetSizeGB(val OptInt64) {
-	s.SizeGB = val
-}
-
-// SetDiskSnapshotID sets the value of DiskSnapshotID.
-func (s *CreateDiskRequestBody) SetDiskSnapshotID(val OptDiskSnapshotID) {
-	s.DiskSnapshotID = val
-}
-
-// SetDiskBackupID sets the value of DiskBackupID.
-func (s *CreateDiskRequestBody) SetDiskBackupID(val OptDiskBackupID) {
-	s.DiskBackupID = val
-}
-
-// SetBilling sets the value of Billing.
-func (s *CreateDiskRequestBody) SetBilling(val BillingChoice) {
-	s.Billing = val
-}
-
-// SetCheckout sets the value of Checkout.
-func (s *CreateDiskRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
-}
-
-// The new disk, `pending` until its order is accepted, and its Checkout Session. Also returned for a
-// disk restored from a snapshot or a disk backup.
-// Ref: #/components/schemas/CreateDiskResponseBody
-type CreateDiskResponseBody struct {
-	Disk DiskResource `json:"disk"`
-	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
-	// Billing.
-	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
-	// The order created when checkout completes, at once for automatic checkout; null until then.
-	OrderID NilUUID `json:"order_id"`
-}
-
-// GetDisk returns the value of Disk.
-func (s *CreateDiskResponseBody) GetDisk() DiskResource {
-	return s.Disk
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *CreateDiskResponseBody) GetCheckoutSessionID() uuid.UUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *CreateDiskResponseBody) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// SetDisk sets the value of Disk.
-func (s *CreateDiskResponseBody) SetDisk(val DiskResource) {
-	s.Disk = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *CreateDiskResponseBody) SetCheckoutSessionID(val uuid.UUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *CreateDiskResponseBody) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-func (*CreateDiskResponseBody) createDiskRes() {}
-
-// Creation configuration for this resource. Compute project quotas and Billing authorization are
-// checked independently.
-// Ref: #/components/schemas/CreateDiskSnapshotRequestBody
-type CreateDiskSnapshotRequestBody struct {
-	DiskID   DiskID             `json:"disk_id"`
-	Name     string             `json:"name"`
-	Checkout OptCheckoutOptions `json:"checkout"`
-}
-
-// GetDiskID returns the value of DiskID.
-func (s *CreateDiskSnapshotRequestBody) GetDiskID() DiskID {
-	return s.DiskID
-}
-
-// GetName returns the value of Name.
-func (s *CreateDiskSnapshotRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetCheckout returns the value of Checkout.
-func (s *CreateDiskSnapshotRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
-}
-
-// SetDiskID sets the value of DiskID.
-func (s *CreateDiskSnapshotRequestBody) SetDiskID(val DiskID) {
-	s.DiskID = val
-}
-
-// SetName sets the value of Name.
-func (s *CreateDiskSnapshotRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetCheckout sets the value of Checkout.
-func (s *CreateDiskSnapshotRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
-}
-
-// The new snapshot, `pending` until its order is accepted, and its Checkout Session.
-// Ref: #/components/schemas/CreateDiskSnapshotResponseBody
-type CreateDiskSnapshotResponseBody struct {
-	DiskSnapshot DiskSnapshotResource `json:"disk_snapshot"`
-	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
-	// Billing.
-	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
-	// The order created when checkout completes, at once for automatic checkout; null until then.
-	OrderID NilUUID `json:"order_id"`
-}
-
-// GetDiskSnapshot returns the value of DiskSnapshot.
-func (s *CreateDiskSnapshotResponseBody) GetDiskSnapshot() DiskSnapshotResource {
-	return s.DiskSnapshot
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *CreateDiskSnapshotResponseBody) GetCheckoutSessionID() uuid.UUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *CreateDiskSnapshotResponseBody) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// SetDiskSnapshot sets the value of DiskSnapshot.
-func (s *CreateDiskSnapshotResponseBody) SetDiskSnapshot(val DiskSnapshotResource) {
-	s.DiskSnapshot = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *CreateDiskSnapshotResponseBody) SetCheckoutSessionID(val uuid.UUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *CreateDiskSnapshotResponseBody) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-func (*CreateDiskSnapshotResponseBody) createDiskSnapshotRes() {}
-
 // Ref: #/components/schemas/CreateElasticIPRequestBody
 type CreateElasticIPRequestBody struct {
 	InternetChargeType OptInternetChargeType `json:"internet_charge_type"`
@@ -1279,6 +981,231 @@ func (s *CreateElasticIPResponseBody) SetOrderID(val NilUUID) {
 }
 
 func (*CreateElasticIPResponseBody) createElasticIPRes() {}
+
+// Every part a launch template can describe may come from `launch_template` instead: a part given here
+// overrides the template's, and `data_volumes`, when given, replaces the template's list. After that
+// the instance type, the boot volume and the network interface are required, each refused with 422
+// `INSTANCE_CREATE_INVALID` naming the field when neither gives it.
+//
+// Every component bought with the instance (its boot volume, data volumes and elastic IP) shares the
+// usage type and period of `compute.billing`; a component's own `billing` exists to choose a different
+// termination policy, and when omitted it is `compute.billing`.
+// Ref: #/components/schemas/CreateInstanceRequestBody
+type CreateInstanceRequestBody struct {
+	LaunchTemplate OptLaunchTemplateReference `json:"launch_template"`
+	Name           string                     `json:"name"`
+	// Number of instances to create; 1 when omitted. Names are numbered automatically for several.
+	Count      OptInt64      `json:"count"`
+	Compute    NewCompute    `json:"compute"`
+	BootVolume OptBootVolume `json:"boot_volume"`
+	// Data volumes created with each instance in its order and attached to it at boot, after the boot
+	// volume in the order given. An instance and its volumes are delivered together or not at all.
+	DataVolumes      []NewDataVolume            `json:"data_volumes"`
+	NetworkInterface OptPrimaryNetworkInterface `json:"network_interface"`
+	// An elastic IP associated with the primary network interface inside the creation: if association
+	// fails, no instance is created. Associating afterwards is still possible (`associate-elastic-ip`),
+	// but then it is two operations and a failure in between leaves an instance you cannot reach. Omitted,
+	// the instance has no public address.
+	ElasticIP OptInstanceElasticIP `json:"elastic_ip"`
+	// The login account's password. Omitted, only the SSH public keys of the project log in.
+	Password OptPasswordChoice `json:"password"`
+	// Your own classification of each instance, as key-value pairs. A key may not contain a colon,
+	// whitespace or control characters.
+	Labels OptCreateInstanceRequestBodyLabels `json:"labels"`
+	// A free-text note about each instance. Do not put credentials here.
+	Description OptString          `json:"description"`
+	Checkout    OptCheckoutOptions `json:"checkout"`
+}
+
+// GetLaunchTemplate returns the value of LaunchTemplate.
+func (s *CreateInstanceRequestBody) GetLaunchTemplate() OptLaunchTemplateReference {
+	return s.LaunchTemplate
+}
+
+// GetName returns the value of Name.
+func (s *CreateInstanceRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetCount returns the value of Count.
+func (s *CreateInstanceRequestBody) GetCount() OptInt64 {
+	return s.Count
+}
+
+// GetCompute returns the value of Compute.
+func (s *CreateInstanceRequestBody) GetCompute() NewCompute {
+	return s.Compute
+}
+
+// GetBootVolume returns the value of BootVolume.
+func (s *CreateInstanceRequestBody) GetBootVolume() OptBootVolume {
+	return s.BootVolume
+}
+
+// GetDataVolumes returns the value of DataVolumes.
+func (s *CreateInstanceRequestBody) GetDataVolumes() []NewDataVolume {
+	return s.DataVolumes
+}
+
+// GetNetworkInterface returns the value of NetworkInterface.
+func (s *CreateInstanceRequestBody) GetNetworkInterface() OptPrimaryNetworkInterface {
+	return s.NetworkInterface
+}
+
+// GetElasticIP returns the value of ElasticIP.
+func (s *CreateInstanceRequestBody) GetElasticIP() OptInstanceElasticIP {
+	return s.ElasticIP
+}
+
+// GetPassword returns the value of Password.
+func (s *CreateInstanceRequestBody) GetPassword() OptPasswordChoice {
+	return s.Password
+}
+
+// GetLabels returns the value of Labels.
+func (s *CreateInstanceRequestBody) GetLabels() OptCreateInstanceRequestBodyLabels {
+	return s.Labels
+}
+
+// GetDescription returns the value of Description.
+func (s *CreateInstanceRequestBody) GetDescription() OptString {
+	return s.Description
+}
+
+// GetCheckout returns the value of Checkout.
+func (s *CreateInstanceRequestBody) GetCheckout() OptCheckoutOptions {
+	return s.Checkout
+}
+
+// SetLaunchTemplate sets the value of LaunchTemplate.
+func (s *CreateInstanceRequestBody) SetLaunchTemplate(val OptLaunchTemplateReference) {
+	s.LaunchTemplate = val
+}
+
+// SetName sets the value of Name.
+func (s *CreateInstanceRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetCount sets the value of Count.
+func (s *CreateInstanceRequestBody) SetCount(val OptInt64) {
+	s.Count = val
+}
+
+// SetCompute sets the value of Compute.
+func (s *CreateInstanceRequestBody) SetCompute(val NewCompute) {
+	s.Compute = val
+}
+
+// SetBootVolume sets the value of BootVolume.
+func (s *CreateInstanceRequestBody) SetBootVolume(val OptBootVolume) {
+	s.BootVolume = val
+}
+
+// SetDataVolumes sets the value of DataVolumes.
+func (s *CreateInstanceRequestBody) SetDataVolumes(val []NewDataVolume) {
+	s.DataVolumes = val
+}
+
+// SetNetworkInterface sets the value of NetworkInterface.
+func (s *CreateInstanceRequestBody) SetNetworkInterface(val OptPrimaryNetworkInterface) {
+	s.NetworkInterface = val
+}
+
+// SetElasticIP sets the value of ElasticIP.
+func (s *CreateInstanceRequestBody) SetElasticIP(val OptInstanceElasticIP) {
+	s.ElasticIP = val
+}
+
+// SetPassword sets the value of Password.
+func (s *CreateInstanceRequestBody) SetPassword(val OptPasswordChoice) {
+	s.Password = val
+}
+
+// SetLabels sets the value of Labels.
+func (s *CreateInstanceRequestBody) SetLabels(val OptCreateInstanceRequestBodyLabels) {
+	s.Labels = val
+}
+
+// SetDescription sets the value of Description.
+func (s *CreateInstanceRequestBody) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetCheckout sets the value of Checkout.
+func (s *CreateInstanceRequestBody) SetCheckout(val OptCheckoutOptions) {
+	s.Checkout = val
+}
+
+// Your own classification of each instance, as key-value pairs. A key may not contain a colon,
+// whitespace or control characters.
+type CreateInstanceRequestBodyLabels map[string]string
+
+func (s *CreateInstanceRequestBodyLabels) init() CreateInstanceRequestBodyLabels {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+// The new instances, `pending` until their order is accepted, and the Checkout Session they share.
+// Ref: #/components/schemas/CreateInstanceResponseBody
+type CreateInstanceResponseBody struct {
+	// One instance per requested instance, in request order. Their IDs stay the same through checkout and
+	// creation.
+	Instances []Instance `json:"instances"`
+	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
+	// Billing.
+	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then.
+	OrderID NilUUID `json:"order_id"`
+	// Generated login password, returned only by this response. Null when no password was generated.
+	Password NilString `json:"password"`
+}
+
+// GetInstances returns the value of Instances.
+func (s *CreateInstanceResponseBody) GetInstances() []Instance {
+	return s.Instances
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *CreateInstanceResponseBody) GetCheckoutSessionID() uuid.UUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *CreateInstanceResponseBody) GetOrderID() NilUUID {
+	return s.OrderID
+}
+
+// GetPassword returns the value of Password.
+func (s *CreateInstanceResponseBody) GetPassword() NilString {
+	return s.Password
+}
+
+// SetInstances sets the value of Instances.
+func (s *CreateInstanceResponseBody) SetInstances(val []Instance) {
+	s.Instances = val
+}
+
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *CreateInstanceResponseBody) SetCheckoutSessionID(val uuid.UUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *CreateInstanceResponseBody) SetOrderID(val NilUUID) {
+	s.OrderID = val
+}
+
+// SetPassword sets the value of Password.
+func (s *CreateInstanceResponseBody) SetPassword(val NilString) {
+	s.Password = val
+}
+
+func (*CreateInstanceResponseBody) createInstanceRes() {}
 
 // Ref: #/components/schemas/CreateLaunchTemplateRequestBody
 type CreateLaunchTemplateRequestBody struct {
@@ -1424,15 +1351,15 @@ func (s *CreateNetworkInterfaceRequestBody) SetAddress(val OptString) {
 // checked independently.
 // Ref: #/components/schemas/CreatePrivateImageRequestBody
 type CreatePrivateImageRequestBody struct {
-	// Captured from the system disk of this virtual machine; data disks are not included.
-	VirtualMachineID VirtualMachineID   `json:"virtual_machine_id"`
-	Name             string             `json:"name"`
-	Checkout         OptCheckoutOptions `json:"checkout"`
+	// Captured from the boot volume of this instance; data volumes are not included.
+	InstanceID InstanceID         `json:"instance_id"`
+	Name       string             `json:"name"`
+	Checkout   OptCheckoutOptions `json:"checkout"`
 }
 
-// GetVirtualMachineID returns the value of VirtualMachineID.
-func (s *CreatePrivateImageRequestBody) GetVirtualMachineID() VirtualMachineID {
-	return s.VirtualMachineID
+// GetInstanceID returns the value of InstanceID.
+func (s *CreatePrivateImageRequestBody) GetInstanceID() InstanceID {
+	return s.InstanceID
 }
 
 // GetName returns the value of Name.
@@ -1445,9 +1372,9 @@ func (s *CreatePrivateImageRequestBody) GetCheckout() OptCheckoutOptions {
 	return s.Checkout
 }
 
-// SetVirtualMachineID sets the value of VirtualMachineID.
-func (s *CreatePrivateImageRequestBody) SetVirtualMachineID(val VirtualMachineID) {
-	s.VirtualMachineID = val
+// SetInstanceID sets the value of InstanceID.
+func (s *CreatePrivateImageRequestBody) SetInstanceID(val InstanceID) {
+	s.InstanceID = val
 }
 
 // SetName sets the value of Name.
@@ -1552,8 +1479,8 @@ type CreateSecurityGroupRuleRequestBody struct {
 	// The last port, or the ICMP code (0–255) when the protocol is ICMP.
 	PortRangeMax OptInt64 `json:"port_range_max"`
 	// A CIDR of the rule's IP version. Every address when omitted.
-	RemoteIPPrefix OptString `json:"remote_ip_prefix"`
-	Description    OptString `json:"description"`
+	RemoteCidr  OptString `json:"remote_cidr"`
+	Description OptString `json:"description"`
 }
 
 // GetDirection returns the value of Direction.
@@ -1581,9 +1508,9 @@ func (s *CreateSecurityGroupRuleRequestBody) GetPortRangeMax() OptInt64 {
 	return s.PortRangeMax
 }
 
-// GetRemoteIPPrefix returns the value of RemoteIPPrefix.
-func (s *CreateSecurityGroupRuleRequestBody) GetRemoteIPPrefix() OptString {
-	return s.RemoteIPPrefix
+// GetRemoteCidr returns the value of RemoteCidr.
+func (s *CreateSecurityGroupRuleRequestBody) GetRemoteCidr() OptString {
+	return s.RemoteCidr
 }
 
 // GetDescription returns the value of Description.
@@ -1616,9 +1543,9 @@ func (s *CreateSecurityGroupRuleRequestBody) SetPortRangeMax(val OptInt64) {
 	s.PortRangeMax = val
 }
 
-// SetRemoteIPPrefix sets the value of RemoteIPPrefix.
-func (s *CreateSecurityGroupRuleRequestBody) SetRemoteIPPrefix(val OptString) {
-	s.RemoteIPPrefix = val
+// SetRemoteCidr sets the value of RemoteCidr.
+func (s *CreateSecurityGroupRuleRequestBody) SetRemoteCidr(val OptString) {
+	s.RemoteCidr = val
 }
 
 // SetDescription sets the value of Description.
@@ -1640,232 +1567,6 @@ func (CreateSecurityGroupRuleRequestBodyIPVersion) AllValues() []CreateSecurityG
 		CreateSecurityGroupRuleRequestBodyIPVersion6,
 	}
 }
-
-// Every part a launch template can describe may come from `launch_template` instead: a part given here
-// overrides the template's, and `data_disks`, when given, replaces the template's list. After that the
-// machine type, the boot disk and the network interface are required, each refused with 422
-// `VIRTUAL_MACHINE_CREATE_INVALID` naming the field when neither gives it.
-//
-// Every component bought with the virtual machine (its system disk, data disks and elastic IP) shares
-// the usage type and period of `compute.billing`; a component's own `billing` exists to choose a
-// different termination policy, and when omitted it is `compute.billing`.
-// Ref: #/components/schemas/CreateVirtualMachineRequestBody
-type CreateVirtualMachineRequestBody struct {
-	LaunchTemplate OptLaunchTemplateReference `json:"launch_template"`
-	Name           string                     `json:"name"`
-	// Number of virtual machines to create; 1 when omitted. Names are numbered automatically for several.
-	Count    OptInt64    `json:"count"`
-	Compute  NewCompute  `json:"compute"`
-	BootDisk OptBootDisk `json:"boot_disk"`
-	// Data disks created with each virtual machine in its order and attached to it at boot, after the boot
-	// disk in the order given. A virtual machine and its disks are delivered together or not at all.
-	DataDisks        []NewDataDisk              `json:"data_disks"`
-	NetworkInterface OptPrimaryNetworkInterface `json:"network_interface"`
-	// An elastic IP associated with the primary network interface inside the creation: if association
-	// fails, no virtual machine is created. Associating afterwards is still possible
-	// (`associate-elastic-ip`), but then it is two operations and a failure in between leaves a virtual
-	// machine you cannot reach. Omitted, the virtual machine has no public address.
-	ElasticIP OptVirtualMachineElasticIP `json:"elastic_ip"`
-	// The login account's password. Omitted, only the SSH public keys of the project log in.
-	Password OptPasswordChoice `json:"password"`
-	// Your own classification of each virtual machine, as key-value pairs. A key may not contain a colon,
-	// whitespace or control characters.
-	Labels OptCreateVirtualMachineRequestBodyLabels `json:"labels"`
-	// A free-text note about each virtual machine. Do not put credentials here.
-	Notes    OptString          `json:"notes"`
-	Checkout OptCheckoutOptions `json:"checkout"`
-}
-
-// GetLaunchTemplate returns the value of LaunchTemplate.
-func (s *CreateVirtualMachineRequestBody) GetLaunchTemplate() OptLaunchTemplateReference {
-	return s.LaunchTemplate
-}
-
-// GetName returns the value of Name.
-func (s *CreateVirtualMachineRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetCount returns the value of Count.
-func (s *CreateVirtualMachineRequestBody) GetCount() OptInt64 {
-	return s.Count
-}
-
-// GetCompute returns the value of Compute.
-func (s *CreateVirtualMachineRequestBody) GetCompute() NewCompute {
-	return s.Compute
-}
-
-// GetBootDisk returns the value of BootDisk.
-func (s *CreateVirtualMachineRequestBody) GetBootDisk() OptBootDisk {
-	return s.BootDisk
-}
-
-// GetDataDisks returns the value of DataDisks.
-func (s *CreateVirtualMachineRequestBody) GetDataDisks() []NewDataDisk {
-	return s.DataDisks
-}
-
-// GetNetworkInterface returns the value of NetworkInterface.
-func (s *CreateVirtualMachineRequestBody) GetNetworkInterface() OptPrimaryNetworkInterface {
-	return s.NetworkInterface
-}
-
-// GetElasticIP returns the value of ElasticIP.
-func (s *CreateVirtualMachineRequestBody) GetElasticIP() OptVirtualMachineElasticIP {
-	return s.ElasticIP
-}
-
-// GetPassword returns the value of Password.
-func (s *CreateVirtualMachineRequestBody) GetPassword() OptPasswordChoice {
-	return s.Password
-}
-
-// GetLabels returns the value of Labels.
-func (s *CreateVirtualMachineRequestBody) GetLabels() OptCreateVirtualMachineRequestBodyLabels {
-	return s.Labels
-}
-
-// GetNotes returns the value of Notes.
-func (s *CreateVirtualMachineRequestBody) GetNotes() OptString {
-	return s.Notes
-}
-
-// GetCheckout returns the value of Checkout.
-func (s *CreateVirtualMachineRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
-}
-
-// SetLaunchTemplate sets the value of LaunchTemplate.
-func (s *CreateVirtualMachineRequestBody) SetLaunchTemplate(val OptLaunchTemplateReference) {
-	s.LaunchTemplate = val
-}
-
-// SetName sets the value of Name.
-func (s *CreateVirtualMachineRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetCount sets the value of Count.
-func (s *CreateVirtualMachineRequestBody) SetCount(val OptInt64) {
-	s.Count = val
-}
-
-// SetCompute sets the value of Compute.
-func (s *CreateVirtualMachineRequestBody) SetCompute(val NewCompute) {
-	s.Compute = val
-}
-
-// SetBootDisk sets the value of BootDisk.
-func (s *CreateVirtualMachineRequestBody) SetBootDisk(val OptBootDisk) {
-	s.BootDisk = val
-}
-
-// SetDataDisks sets the value of DataDisks.
-func (s *CreateVirtualMachineRequestBody) SetDataDisks(val []NewDataDisk) {
-	s.DataDisks = val
-}
-
-// SetNetworkInterface sets the value of NetworkInterface.
-func (s *CreateVirtualMachineRequestBody) SetNetworkInterface(val OptPrimaryNetworkInterface) {
-	s.NetworkInterface = val
-}
-
-// SetElasticIP sets the value of ElasticIP.
-func (s *CreateVirtualMachineRequestBody) SetElasticIP(val OptVirtualMachineElasticIP) {
-	s.ElasticIP = val
-}
-
-// SetPassword sets the value of Password.
-func (s *CreateVirtualMachineRequestBody) SetPassword(val OptPasswordChoice) {
-	s.Password = val
-}
-
-// SetLabels sets the value of Labels.
-func (s *CreateVirtualMachineRequestBody) SetLabels(val OptCreateVirtualMachineRequestBodyLabels) {
-	s.Labels = val
-}
-
-// SetNotes sets the value of Notes.
-func (s *CreateVirtualMachineRequestBody) SetNotes(val OptString) {
-	s.Notes = val
-}
-
-// SetCheckout sets the value of Checkout.
-func (s *CreateVirtualMachineRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
-}
-
-// Your own classification of each virtual machine, as key-value pairs. A key may not contain a colon,
-// whitespace or control characters.
-type CreateVirtualMachineRequestBodyLabels map[string]string
-
-func (s *CreateVirtualMachineRequestBodyLabels) init() CreateVirtualMachineRequestBodyLabels {
-	m := *s
-	if m == nil {
-		m = map[string]string{}
-		*s = m
-	}
-	return m
-}
-
-// The new virtual machines, `pending` until their order is accepted, and the Checkout Session they
-// share.
-// Ref: #/components/schemas/CreateVirtualMachineResponseBody
-type CreateVirtualMachineResponseBody struct {
-	// One virtual machine per requested virtual machine, in request order. Their IDs stay the same through
-	// checkout and creation.
-	VirtualMachines []VirtualMachine `json:"virtual_machines"`
-	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
-	// Billing.
-	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
-	// The order created when checkout completes, at once for automatic checkout; null until then.
-	OrderID NilUUID `json:"order_id"`
-	// Generated login password, returned only by this response. Null when no password was generated.
-	Password NilString `json:"password"`
-}
-
-// GetVirtualMachines returns the value of VirtualMachines.
-func (s *CreateVirtualMachineResponseBody) GetVirtualMachines() []VirtualMachine {
-	return s.VirtualMachines
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *CreateVirtualMachineResponseBody) GetCheckoutSessionID() uuid.UUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *CreateVirtualMachineResponseBody) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// GetPassword returns the value of Password.
-func (s *CreateVirtualMachineResponseBody) GetPassword() NilString {
-	return s.Password
-}
-
-// SetVirtualMachines sets the value of VirtualMachines.
-func (s *CreateVirtualMachineResponseBody) SetVirtualMachines(val []VirtualMachine) {
-	s.VirtualMachines = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *CreateVirtualMachineResponseBody) SetCheckoutSessionID(val uuid.UUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *CreateVirtualMachineResponseBody) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-// SetPassword sets the value of Password.
-func (s *CreateVirtualMachineResponseBody) SetPassword(val NilString) {
-	s.Password = val
-}
-
-func (*CreateVirtualMachineResponseBody) createVirtualMachineRes() {}
 
 // Ref: #/components/schemas/CreateVirtualPrivateCloudPeeringRequestBody
 type CreateVirtualPrivateCloudPeeringRequestBody struct {
@@ -1920,7 +1621,7 @@ type CreateVirtualPrivateCloudRequestBody struct {
 	RegionID RegionID `json:"region_id"`
 	Name     string   `json:"name"`
 	// An RFC 1918 private CIDR with a prefix length between /8 and /24, for example `10.0.0.0/16`.
-	Cidr string `json:"cidr"`
+	Ipv4Cidr string `json:"ipv4_cidr"`
 }
 
 // GetRegionID returns the value of RegionID.
@@ -1933,9 +1634,9 @@ func (s *CreateVirtualPrivateCloudRequestBody) GetName() string {
 	return s.Name
 }
 
-// GetCidr returns the value of Cidr.
-func (s *CreateVirtualPrivateCloudRequestBody) GetCidr() string {
-	return s.Cidr
+// GetIpv4Cidr returns the value of Ipv4Cidr.
+func (s *CreateVirtualPrivateCloudRequestBody) GetIpv4Cidr() string {
+	return s.Ipv4Cidr
 }
 
 // SetRegionID sets the value of RegionID.
@@ -1948,28 +1649,28 @@ func (s *CreateVirtualPrivateCloudRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// SetCidr sets the value of Cidr.
-func (s *CreateVirtualPrivateCloudRequestBody) SetCidr(val string) {
-	s.Cidr = val
+// SetIpv4Cidr sets the value of Ipv4Cidr.
+func (s *CreateVirtualPrivateCloudRequestBody) SetIpv4Cidr(val string) {
+	s.Ipv4Cidr = val
 }
 
 // Ref: #/components/schemas/CreateVirtualPrivateCloudRouteRequestBody
 type CreateVirtualPrivateCloudRouteRequestBody struct {
 	// Destination CIDR. It cannot be `0.0.0.0/0`, nor the CIDR of a subnet of the virtual private cloud.
-	Destination string `json:"destination"`
-	// Private address of a virtual machine, inside a subnet of the virtual private cloud.
-	Nexthop     string    `json:"nexthop"`
-	Description OptString `json:"description"`
+	DestinationCidr string `json:"destination_cidr"`
+	// Private address of an instance, inside a subnet of the virtual private cloud.
+	NextHopAddress string    `json:"next_hop_address"`
+	Description    OptString `json:"description"`
 }
 
-// GetDestination returns the value of Destination.
-func (s *CreateVirtualPrivateCloudRouteRequestBody) GetDestination() string {
-	return s.Destination
+// GetDestinationCidr returns the value of DestinationCidr.
+func (s *CreateVirtualPrivateCloudRouteRequestBody) GetDestinationCidr() string {
+	return s.DestinationCidr
 }
 
-// GetNexthop returns the value of Nexthop.
-func (s *CreateVirtualPrivateCloudRouteRequestBody) GetNexthop() string {
-	return s.Nexthop
+// GetNextHopAddress returns the value of NextHopAddress.
+func (s *CreateVirtualPrivateCloudRouteRequestBody) GetNextHopAddress() string {
+	return s.NextHopAddress
 }
 
 // GetDescription returns the value of Description.
@@ -1977,14 +1678,14 @@ func (s *CreateVirtualPrivateCloudRouteRequestBody) GetDescription() OptString {
 	return s.Description
 }
 
-// SetDestination sets the value of Destination.
-func (s *CreateVirtualPrivateCloudRouteRequestBody) SetDestination(val string) {
-	s.Destination = val
+// SetDestinationCidr sets the value of DestinationCidr.
+func (s *CreateVirtualPrivateCloudRouteRequestBody) SetDestinationCidr(val string) {
+	s.DestinationCidr = val
 }
 
-// SetNexthop sets the value of Nexthop.
-func (s *CreateVirtualPrivateCloudRouteRequestBody) SetNexthop(val string) {
-	s.Nexthop = val
+// SetNextHopAddress sets the value of NextHopAddress.
+func (s *CreateVirtualPrivateCloudRouteRequestBody) SetNextHopAddress(val string) {
+	s.NextHopAddress = val
 }
 
 // SetDescription sets the value of Description.
@@ -1996,7 +1697,7 @@ func (s *CreateVirtualPrivateCloudRouteRequestBody) SetDescription(val OptString
 type CreateVirtualPrivateCloudSubnetRequestBody struct {
 	Name string `json:"name"`
 	// An IPv4 CIDR inside the virtual private cloud's CIDR, overlapping no other subnet of it.
-	Cidr string `json:"cidr"`
+	Ipv4Cidr string `json:"ipv4_cidr"`
 }
 
 // GetName returns the value of Name.
@@ -2004,9 +1705,9 @@ func (s *CreateVirtualPrivateCloudSubnetRequestBody) GetName() string {
 	return s.Name
 }
 
-// GetCidr returns the value of Cidr.
-func (s *CreateVirtualPrivateCloudSubnetRequestBody) GetCidr() string {
-	return s.Cidr
+// GetIpv4Cidr returns the value of Ipv4Cidr.
+func (s *CreateVirtualPrivateCloudSubnetRequestBody) GetIpv4Cidr() string {
+	return s.Ipv4Cidr
 }
 
 // SetName sets the value of Name.
@@ -2014,103 +1715,308 @@ func (s *CreateVirtualPrivateCloudSubnetRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// SetCidr sets the value of Cidr.
-func (s *CreateVirtualPrivateCloudSubnetRequestBody) SetCidr(val string) {
-	s.Cidr = val
+// SetIpv4Cidr sets the value of Ipv4Cidr.
+func (s *CreateVirtualPrivateCloudSubnetRequestBody) SetIpv4Cidr(val string) {
+	s.Ipv4Cidr = val
 }
 
-// The disk backup as it is when the deletion is accepted, and the Billing cancellation that releases
-// it when subscriptions pay for it.
-// Ref: #/components/schemas/DeleteDiskBackupResponseBody
-type DeleteDiskBackupResponseBody struct {
-	DiskBackup DiskBackupResource `json:"disk_backup"`
-	// The cancellation Compute created for the disk backup's subscriptions; null when none pays for it.
-	Cancellation NilBillingCancellation `json:"cancellation"`
+// Ref: #/components/schemas/CreateVolumeBackupRequestBody
+type CreateVolumeBackupRequestBody struct {
+	VolumeID VolumeID           `json:"volume_id"`
+	Name     string             `json:"name"`
+	Checkout OptCheckoutOptions `json:"checkout"`
 }
 
-// GetDiskBackup returns the value of DiskBackup.
-func (s *DeleteDiskBackupResponseBody) GetDiskBackup() DiskBackupResource {
-	return s.DiskBackup
+// GetVolumeID returns the value of VolumeID.
+func (s *CreateVolumeBackupRequestBody) GetVolumeID() VolumeID {
+	return s.VolumeID
 }
 
-// GetCancellation returns the value of Cancellation.
-func (s *DeleteDiskBackupResponseBody) GetCancellation() NilBillingCancellation {
-	return s.Cancellation
+// GetName returns the value of Name.
+func (s *CreateVolumeBackupRequestBody) GetName() string {
+	return s.Name
 }
 
-// SetDiskBackup sets the value of DiskBackup.
-func (s *DeleteDiskBackupResponseBody) SetDiskBackup(val DiskBackupResource) {
-	s.DiskBackup = val
+// GetCheckout returns the value of Checkout.
+func (s *CreateVolumeBackupRequestBody) GetCheckout() OptCheckoutOptions {
+	return s.Checkout
 }
 
-// SetCancellation sets the value of Cancellation.
-func (s *DeleteDiskBackupResponseBody) SetCancellation(val NilBillingCancellation) {
-	s.Cancellation = val
+// SetVolumeID sets the value of VolumeID.
+func (s *CreateVolumeBackupRequestBody) SetVolumeID(val VolumeID) {
+	s.VolumeID = val
 }
 
-func (*DeleteDiskBackupResponseBody) deleteDiskBackupRes() {}
-
-// The disk as it is when the deletion is accepted, and the Billing cancellation that releases it when
-// subscriptions pay for it.
-// Ref: #/components/schemas/DeleteDiskResponseBody
-type DeleteDiskResponseBody struct {
-	Disk DiskResource `json:"disk"`
-	// The cancellation Compute created for the disk's subscriptions; null when none pays for it.
-	Cancellation NilBillingCancellation `json:"cancellation"`
+// SetName sets the value of Name.
+func (s *CreateVolumeBackupRequestBody) SetName(val string) {
+	s.Name = val
 }
 
-// GetDisk returns the value of Disk.
-func (s *DeleteDiskResponseBody) GetDisk() DiskResource {
-	return s.Disk
+// SetCheckout sets the value of Checkout.
+func (s *CreateVolumeBackupRequestBody) SetCheckout(val OptCheckoutOptions) {
+	s.Checkout = val
 }
 
-// GetCancellation returns the value of Cancellation.
-func (s *DeleteDiskResponseBody) GetCancellation() NilBillingCancellation {
-	return s.Cancellation
+// The new backup, `pending` until its order is accepted, and its Checkout Session.
+// Ref: #/components/schemas/CreateVolumeBackupResponseBody
+type CreateVolumeBackupResponseBody struct {
+	VolumeBackup VolumeBackupResource `json:"volume_backup"`
+	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
+	// Billing.
+	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then.
+	OrderID NilUUID `json:"order_id"`
 }
 
-// SetDisk sets the value of Disk.
-func (s *DeleteDiskResponseBody) SetDisk(val DiskResource) {
-	s.Disk = val
+// GetVolumeBackup returns the value of VolumeBackup.
+func (s *CreateVolumeBackupResponseBody) GetVolumeBackup() VolumeBackupResource {
+	return s.VolumeBackup
 }
 
-// SetCancellation sets the value of Cancellation.
-func (s *DeleteDiskResponseBody) SetCancellation(val NilBillingCancellation) {
-	s.Cancellation = val
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *CreateVolumeBackupResponseBody) GetCheckoutSessionID() uuid.UUID {
+	return s.CheckoutSessionID
 }
 
-func (*DeleteDiskResponseBody) deleteDiskRes() {}
-
-// The snapshot as it is when the deletion is accepted, and the Billing cancellation that releases it
-// when subscriptions pay for it.
-// Ref: #/components/schemas/DeleteDiskSnapshotResponseBody
-type DeleteDiskSnapshotResponseBody struct {
-	DiskSnapshot DiskSnapshotResource `json:"disk_snapshot"`
-	// The cancellation Compute created for the snapshot's subscriptions; null when none pays for it.
-	Cancellation NilBillingCancellation `json:"cancellation"`
+// GetOrderID returns the value of OrderID.
+func (s *CreateVolumeBackupResponseBody) GetOrderID() NilUUID {
+	return s.OrderID
 }
 
-// GetDiskSnapshot returns the value of DiskSnapshot.
-func (s *DeleteDiskSnapshotResponseBody) GetDiskSnapshot() DiskSnapshotResource {
-	return s.DiskSnapshot
+// SetVolumeBackup sets the value of VolumeBackup.
+func (s *CreateVolumeBackupResponseBody) SetVolumeBackup(val VolumeBackupResource) {
+	s.VolumeBackup = val
 }
 
-// GetCancellation returns the value of Cancellation.
-func (s *DeleteDiskSnapshotResponseBody) GetCancellation() NilBillingCancellation {
-	return s.Cancellation
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *CreateVolumeBackupResponseBody) SetCheckoutSessionID(val uuid.UUID) {
+	s.CheckoutSessionID = val
 }
 
-// SetDiskSnapshot sets the value of DiskSnapshot.
-func (s *DeleteDiskSnapshotResponseBody) SetDiskSnapshot(val DiskSnapshotResource) {
-	s.DiskSnapshot = val
+// SetOrderID sets the value of OrderID.
+func (s *CreateVolumeBackupResponseBody) SetOrderID(val NilUUID) {
+	s.OrderID = val
 }
 
-// SetCancellation sets the value of Cancellation.
-func (s *DeleteDiskSnapshotResponseBody) SetCancellation(val NilBillingCancellation) {
-	s.Cancellation = val
+func (*CreateVolumeBackupResponseBody) createVolumeBackupRes() {}
+
+// Ref: #/components/schemas/CreateVolumeRequestBody
+type CreateVolumeRequestBody struct {
+	// A volume type currently on sale; the volume is created in its availability zone, and only an
+	// instance of that zone can attach it. A withdrawn one is rejected even though its identifier still
+	// resolves.
+	VolumeTypeID VolumeTypeID `json:"volume_type_id"`
+	Name         string       `json:"name"`
+	// Required unless `volume_backup_id` is given. With `volume_snapshot_id` it need only be no smaller
+	// than the snapshot; with `volume_backup_id` it defaults to the size of the backup and must not be
+	// smaller than it.
+	SizeGib OptInt64 `json:"size_gib"`
+	// Restore from this snapshot, into a volume type of the snapshot's availability zone. Mutually
+	// exclusive with `volume_backup_id`, otherwise refused with 422 `VOLUME_SOURCE_CONFLICT`.
+	VolumeSnapshotID OptVolumeSnapshotID `json:"volume_snapshot_id"`
+	// Restore from this volume backup, which need not still have its source volume, into a volume type of
+	// any zone of the backup's region. Mutually exclusive with `volume_snapshot_id`, otherwise refused
+	// with 422 `VOLUME_SOURCE_CONFLICT`.
+	VolumeBackupID OptVolumeBackupID  `json:"volume_backup_id"`
+	Billing        BillingChoice      `json:"billing"`
+	Checkout       OptCheckoutOptions `json:"checkout"`
 }
 
-func (*DeleteDiskSnapshotResponseBody) deleteDiskSnapshotRes() {}
+// GetVolumeTypeID returns the value of VolumeTypeID.
+func (s *CreateVolumeRequestBody) GetVolumeTypeID() VolumeTypeID {
+	return s.VolumeTypeID
+}
+
+// GetName returns the value of Name.
+func (s *CreateVolumeRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetSizeGib returns the value of SizeGib.
+func (s *CreateVolumeRequestBody) GetSizeGib() OptInt64 {
+	return s.SizeGib
+}
+
+// GetVolumeSnapshotID returns the value of VolumeSnapshotID.
+func (s *CreateVolumeRequestBody) GetVolumeSnapshotID() OptVolumeSnapshotID {
+	return s.VolumeSnapshotID
+}
+
+// GetVolumeBackupID returns the value of VolumeBackupID.
+func (s *CreateVolumeRequestBody) GetVolumeBackupID() OptVolumeBackupID {
+	return s.VolumeBackupID
+}
+
+// GetBilling returns the value of Billing.
+func (s *CreateVolumeRequestBody) GetBilling() BillingChoice {
+	return s.Billing
+}
+
+// GetCheckout returns the value of Checkout.
+func (s *CreateVolumeRequestBody) GetCheckout() OptCheckoutOptions {
+	return s.Checkout
+}
+
+// SetVolumeTypeID sets the value of VolumeTypeID.
+func (s *CreateVolumeRequestBody) SetVolumeTypeID(val VolumeTypeID) {
+	s.VolumeTypeID = val
+}
+
+// SetName sets the value of Name.
+func (s *CreateVolumeRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetSizeGib sets the value of SizeGib.
+func (s *CreateVolumeRequestBody) SetSizeGib(val OptInt64) {
+	s.SizeGib = val
+}
+
+// SetVolumeSnapshotID sets the value of VolumeSnapshotID.
+func (s *CreateVolumeRequestBody) SetVolumeSnapshotID(val OptVolumeSnapshotID) {
+	s.VolumeSnapshotID = val
+}
+
+// SetVolumeBackupID sets the value of VolumeBackupID.
+func (s *CreateVolumeRequestBody) SetVolumeBackupID(val OptVolumeBackupID) {
+	s.VolumeBackupID = val
+}
+
+// SetBilling sets the value of Billing.
+func (s *CreateVolumeRequestBody) SetBilling(val BillingChoice) {
+	s.Billing = val
+}
+
+// SetCheckout sets the value of Checkout.
+func (s *CreateVolumeRequestBody) SetCheckout(val OptCheckoutOptions) {
+	s.Checkout = val
+}
+
+// The new volume, `pending` until its order is accepted, and its Checkout Session. Also returned for a
+// volume restored from a snapshot or a volume backup.
+// Ref: #/components/schemas/CreateVolumeResponseBody
+type CreateVolumeResponseBody struct {
+	Volume VolumeResource `json:"volume"`
+	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
+	// Billing.
+	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then.
+	OrderID NilUUID `json:"order_id"`
+}
+
+// GetVolume returns the value of Volume.
+func (s *CreateVolumeResponseBody) GetVolume() VolumeResource {
+	return s.Volume
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *CreateVolumeResponseBody) GetCheckoutSessionID() uuid.UUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *CreateVolumeResponseBody) GetOrderID() NilUUID {
+	return s.OrderID
+}
+
+// SetVolume sets the value of Volume.
+func (s *CreateVolumeResponseBody) SetVolume(val VolumeResource) {
+	s.Volume = val
+}
+
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *CreateVolumeResponseBody) SetCheckoutSessionID(val uuid.UUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *CreateVolumeResponseBody) SetOrderID(val NilUUID) {
+	s.OrderID = val
+}
+
+func (*CreateVolumeResponseBody) createVolumeRes() {}
+
+// Creation configuration for this resource. Compute project quotas and Billing authorization are
+// checked independently.
+// Ref: #/components/schemas/CreateVolumeSnapshotRequestBody
+type CreateVolumeSnapshotRequestBody struct {
+	VolumeID VolumeID           `json:"volume_id"`
+	Name     string             `json:"name"`
+	Checkout OptCheckoutOptions `json:"checkout"`
+}
+
+// GetVolumeID returns the value of VolumeID.
+func (s *CreateVolumeSnapshotRequestBody) GetVolumeID() VolumeID {
+	return s.VolumeID
+}
+
+// GetName returns the value of Name.
+func (s *CreateVolumeSnapshotRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetCheckout returns the value of Checkout.
+func (s *CreateVolumeSnapshotRequestBody) GetCheckout() OptCheckoutOptions {
+	return s.Checkout
+}
+
+// SetVolumeID sets the value of VolumeID.
+func (s *CreateVolumeSnapshotRequestBody) SetVolumeID(val VolumeID) {
+	s.VolumeID = val
+}
+
+// SetName sets the value of Name.
+func (s *CreateVolumeSnapshotRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetCheckout sets the value of Checkout.
+func (s *CreateVolumeSnapshotRequestBody) SetCheckout(val OptCheckoutOptions) {
+	s.Checkout = val
+}
+
+// The new snapshot, `pending` until its order is accepted, and its Checkout Session.
+// Ref: #/components/schemas/CreateVolumeSnapshotResponseBody
+type CreateVolumeSnapshotResponseBody struct {
+	VolumeSnapshot VolumeSnapshotResource `json:"volume_snapshot"`
+	// The Billing Checkout Session of this purchase. With deferred checkout, the customer completes it in
+	// Billing.
+	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then.
+	OrderID NilUUID `json:"order_id"`
+}
+
+// GetVolumeSnapshot returns the value of VolumeSnapshot.
+func (s *CreateVolumeSnapshotResponseBody) GetVolumeSnapshot() VolumeSnapshotResource {
+	return s.VolumeSnapshot
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *CreateVolumeSnapshotResponseBody) GetCheckoutSessionID() uuid.UUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *CreateVolumeSnapshotResponseBody) GetOrderID() NilUUID {
+	return s.OrderID
+}
+
+// SetVolumeSnapshot sets the value of VolumeSnapshot.
+func (s *CreateVolumeSnapshotResponseBody) SetVolumeSnapshot(val VolumeSnapshotResource) {
+	s.VolumeSnapshot = val
+}
+
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *CreateVolumeSnapshotResponseBody) SetCheckoutSessionID(val uuid.UUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *CreateVolumeSnapshotResponseBody) SetOrderID(val NilUUID) {
+	s.OrderID = val
+}
+
+func (*CreateVolumeSnapshotResponseBody) createVolumeSnapshotRes() {}
 
 // The elastic IP as it is when the deletion is accepted, and the Billing cancellation that releases it
 // when subscriptions pay for it.
@@ -2142,6 +2048,37 @@ func (s *DeleteElasticIPResponseBody) SetCancellation(val NilBillingCancellation
 }
 
 func (*DeleteElasticIPResponseBody) deleteElasticIPRes() {}
+
+// The instance as it is when the deletion is accepted, and the Billing cancellation that releases it
+// when subscriptions pay for it.
+// Ref: #/components/schemas/DeleteInstanceResponseBody
+type DeleteInstanceResponseBody struct {
+	Instance Instance `json:"instance"`
+	// The cancellation Compute created for the instance's subscriptions; null when none pays for it.
+	Cancellation NilBillingCancellation `json:"cancellation"`
+}
+
+// GetInstance returns the value of Instance.
+func (s *DeleteInstanceResponseBody) GetInstance() Instance {
+	return s.Instance
+}
+
+// GetCancellation returns the value of Cancellation.
+func (s *DeleteInstanceResponseBody) GetCancellation() NilBillingCancellation {
+	return s.Cancellation
+}
+
+// SetInstance sets the value of Instance.
+func (s *DeleteInstanceResponseBody) SetInstance(val Instance) {
+	s.Instance = val
+}
+
+// SetCancellation sets the value of Cancellation.
+func (s *DeleteInstanceResponseBody) SetCancellation(val NilBillingCancellation) {
+	s.Cancellation = val
+}
+
+func (*DeleteInstanceResponseBody) deleteInstanceRes() {}
 
 // DeleteLaunchTemplateNoContent is response for DeleteLaunchTemplate operation.
 type DeleteLaunchTemplateNoContent struct{}
@@ -2186,2297 +2123,104 @@ type DeleteSecurityGroupNoContent struct{}
 // DeleteSecurityGroupRuleNoContent is response for DeleteSecurityGroupRule operation.
 type DeleteSecurityGroupRuleNoContent struct{}
 
-// The virtual machine as it is when the deletion is accepted, and the Billing cancellation that
-// releases it when subscriptions pay for it.
-// Ref: #/components/schemas/DeleteVirtualMachineResponseBody
-type DeleteVirtualMachineResponseBody struct {
-	VirtualMachine VirtualMachine `json:"virtual_machine"`
-	// The cancellation Compute created for the virtual machine's subscriptions; null when none pays for
-	// it.
-	Cancellation NilBillingCancellation `json:"cancellation"`
-}
-
-// GetVirtualMachine returns the value of VirtualMachine.
-func (s *DeleteVirtualMachineResponseBody) GetVirtualMachine() VirtualMachine {
-	return s.VirtualMachine
-}
-
-// GetCancellation returns the value of Cancellation.
-func (s *DeleteVirtualMachineResponseBody) GetCancellation() NilBillingCancellation {
-	return s.Cancellation
-}
-
-// SetVirtualMachine sets the value of VirtualMachine.
-func (s *DeleteVirtualMachineResponseBody) SetVirtualMachine(val VirtualMachine) {
-	s.VirtualMachine = val
-}
-
-// SetCancellation sets the value of Cancellation.
-func (s *DeleteVirtualMachineResponseBody) SetCancellation(val NilBillingCancellation) {
-	s.Cancellation = val
-}
-
-func (*DeleteVirtualMachineResponseBody) deleteVirtualMachineRes() {}
-
 // DeleteVirtualPrivateCloudRouteNoContent is response for DeleteVirtualPrivateCloudRoute operation.
 type DeleteVirtualPrivateCloudRouteNoContent struct{}
 
 // DeleteVirtualPrivateCloudSubnetNoContent is response for DeleteVirtualPrivateCloudSubnet operation.
 type DeleteVirtualPrivateCloudSubnetNoContent struct{}
 
-// Ref: #/components/schemas/DiskAttachment
-type DiskAttachment struct {
-	ID               VirtualMachineDiskID `json:"id"`
-	VirtualMachineID VirtualMachineID     `json:"virtual_machine_id"`
-	DiskID           DiskID               `json:"disk_id"`
-	Role             DiskAttachmentRole   `json:"role"`
-	// What releasing the virtual machine does to this disk. `delete` deletes it together with the virtual
-	// machine; `detach` detaches it and leaves it to you. A disk you attached, or booted the virtual
-	// machine from, is `detach`; a disk bought with the virtual machine follows the choice made when it
-	// was bought.
-	OnVirtualMachineRelease DiskAttachmentOnVirtualMachineRelease `json:"on_virtual_machine_release"`
-	State                   DiskAttachmentState                   `json:"state"`
-	AttachedAt              NilDateTime                           `json:"attached_at"`
-	DetachedAt              NilDateTime                           `json:"detached_at"`
-	ReleasedAt              NilDateTime                           `json:"released_at"`
-	Device                  NilString                             `json:"device"`
-	// The disk's performance in effect on this attachment, as it was when the attachment was made. Null
-	// until the attachment is made.
-	Performance NilDiskPerformance `json:"performance"`
+// The volume backup as it is when the deletion is accepted, and the Billing cancellation that releases
+// it when subscriptions pay for it.
+// Ref: #/components/schemas/DeleteVolumeBackupResponseBody
+type DeleteVolumeBackupResponseBody struct {
+	VolumeBackup VolumeBackupResource `json:"volume_backup"`
+	// The cancellation Compute created for the volume backup's subscriptions; null when none pays for it.
+	Cancellation NilBillingCancellation `json:"cancellation"`
 }
 
-// GetID returns the value of ID.
-func (s *DiskAttachment) GetID() VirtualMachineDiskID {
-	return s.ID
+// GetVolumeBackup returns the value of VolumeBackup.
+func (s *DeleteVolumeBackupResponseBody) GetVolumeBackup() VolumeBackupResource {
+	return s.VolumeBackup
 }
 
-// GetVirtualMachineID returns the value of VirtualMachineID.
-func (s *DiskAttachment) GetVirtualMachineID() VirtualMachineID {
-	return s.VirtualMachineID
+// GetCancellation returns the value of Cancellation.
+func (s *DeleteVolumeBackupResponseBody) GetCancellation() NilBillingCancellation {
+	return s.Cancellation
 }
 
-// GetDiskID returns the value of DiskID.
-func (s *DiskAttachment) GetDiskID() DiskID {
-	return s.DiskID
+// SetVolumeBackup sets the value of VolumeBackup.
+func (s *DeleteVolumeBackupResponseBody) SetVolumeBackup(val VolumeBackupResource) {
+	s.VolumeBackup = val
 }
 
-// GetRole returns the value of Role.
-func (s *DiskAttachment) GetRole() DiskAttachmentRole {
-	return s.Role
+// SetCancellation sets the value of Cancellation.
+func (s *DeleteVolumeBackupResponseBody) SetCancellation(val NilBillingCancellation) {
+	s.Cancellation = val
 }
 
-// GetOnVirtualMachineRelease returns the value of OnVirtualMachineRelease.
-func (s *DiskAttachment) GetOnVirtualMachineRelease() DiskAttachmentOnVirtualMachineRelease {
-	return s.OnVirtualMachineRelease
-}
-
-// GetState returns the value of State.
-func (s *DiskAttachment) GetState() DiskAttachmentState {
-	return s.State
-}
-
-// GetAttachedAt returns the value of AttachedAt.
-func (s *DiskAttachment) GetAttachedAt() NilDateTime {
-	return s.AttachedAt
-}
-
-// GetDetachedAt returns the value of DetachedAt.
-func (s *DiskAttachment) GetDetachedAt() NilDateTime {
-	return s.DetachedAt
-}
-
-// GetReleasedAt returns the value of ReleasedAt.
-func (s *DiskAttachment) GetReleasedAt() NilDateTime {
-	return s.ReleasedAt
-}
-
-// GetDevice returns the value of Device.
-func (s *DiskAttachment) GetDevice() NilString {
-	return s.Device
-}
-
-// GetPerformance returns the value of Performance.
-func (s *DiskAttachment) GetPerformance() NilDiskPerformance {
-	return s.Performance
-}
-
-// SetID sets the value of ID.
-func (s *DiskAttachment) SetID(val VirtualMachineDiskID) {
-	s.ID = val
-}
-
-// SetVirtualMachineID sets the value of VirtualMachineID.
-func (s *DiskAttachment) SetVirtualMachineID(val VirtualMachineID) {
-	s.VirtualMachineID = val
-}
-
-// SetDiskID sets the value of DiskID.
-func (s *DiskAttachment) SetDiskID(val DiskID) {
-	s.DiskID = val
-}
-
-// SetRole sets the value of Role.
-func (s *DiskAttachment) SetRole(val DiskAttachmentRole) {
-	s.Role = val
-}
-
-// SetOnVirtualMachineRelease sets the value of OnVirtualMachineRelease.
-func (s *DiskAttachment) SetOnVirtualMachineRelease(val DiskAttachmentOnVirtualMachineRelease) {
-	s.OnVirtualMachineRelease = val
-}
-
-// SetState sets the value of State.
-func (s *DiskAttachment) SetState(val DiskAttachmentState) {
-	s.State = val
-}
-
-// SetAttachedAt sets the value of AttachedAt.
-func (s *DiskAttachment) SetAttachedAt(val NilDateTime) {
-	s.AttachedAt = val
-}
-
-// SetDetachedAt sets the value of DetachedAt.
-func (s *DiskAttachment) SetDetachedAt(val NilDateTime) {
-	s.DetachedAt = val
-}
-
-// SetReleasedAt sets the value of ReleasedAt.
-func (s *DiskAttachment) SetReleasedAt(val NilDateTime) {
-	s.ReleasedAt = val
-}
-
-// SetDevice sets the value of Device.
-func (s *DiskAttachment) SetDevice(val NilString) {
-	s.Device = val
-}
-
-// SetPerformance sets the value of Performance.
-func (s *DiskAttachment) SetPerformance(val NilDiskPerformance) {
-	s.Performance = val
-}
-
-// Ref: #/components/schemas/DiskAttachmentList
-type DiskAttachmentList struct {
-	Items      []DiskAttachment `json:"items"`
-	Pagination OffsetPagination `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *DiskAttachmentList) GetItems() []DiskAttachment {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *DiskAttachmentList) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *DiskAttachmentList) SetItems(val []DiskAttachment) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *DiskAttachmentList) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
-// What releasing the virtual machine does to this disk. `delete` deletes it together with the virtual
-// machine; `detach` detaches it and leaves it to you. A disk you attached, or booted the virtual
-// machine from, is `detach`; a disk bought with the virtual machine follows the choice made when it
-// was bought.
-type DiskAttachmentOnVirtualMachineRelease string
-
-const (
-	DiskAttachmentOnVirtualMachineReleaseDelete DiskAttachmentOnVirtualMachineRelease = "delete"
-	DiskAttachmentOnVirtualMachineReleaseDetach DiskAttachmentOnVirtualMachineRelease = "detach"
-)
-
-// AllValues returns all DiskAttachmentOnVirtualMachineRelease values.
-func (DiskAttachmentOnVirtualMachineRelease) AllValues() []DiskAttachmentOnVirtualMachineRelease {
-	return []DiskAttachmentOnVirtualMachineRelease{
-		DiskAttachmentOnVirtualMachineReleaseDelete,
-		DiskAttachmentOnVirtualMachineReleaseDetach,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskAttachmentOnVirtualMachineRelease) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskAttachmentOnVirtualMachineReleaseDelete:
-		return []byte(s), nil
-	case DiskAttachmentOnVirtualMachineReleaseDetach:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskAttachmentOnVirtualMachineRelease) UnmarshalText(data []byte) error {
-	switch DiskAttachmentOnVirtualMachineRelease(data) {
-	case DiskAttachmentOnVirtualMachineReleaseDelete:
-		*s = DiskAttachmentOnVirtualMachineReleaseDelete
-		return nil
-	case DiskAttachmentOnVirtualMachineReleaseDetach:
-		*s = DiskAttachmentOnVirtualMachineReleaseDetach
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type DiskAttachmentRole string
-
-const (
-	DiskAttachmentRoleBoot DiskAttachmentRole = "boot"
-	DiskAttachmentRoleData DiskAttachmentRole = "data"
-)
-
-// AllValues returns all DiskAttachmentRole values.
-func (DiskAttachmentRole) AllValues() []DiskAttachmentRole {
-	return []DiskAttachmentRole{
-		DiskAttachmentRoleBoot,
-		DiskAttachmentRoleData,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskAttachmentRole) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskAttachmentRoleBoot:
-		return []byte(s), nil
-	case DiskAttachmentRoleData:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskAttachmentRole) UnmarshalText(data []byte) error {
-	switch DiskAttachmentRole(data) {
-	case DiskAttachmentRoleBoot:
-		*s = DiskAttachmentRoleBoot
-		return nil
-	case DiskAttachmentRoleData:
-		*s = DiskAttachmentRoleData
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type DiskAttachmentState string
-
-const (
-	DiskAttachmentStateReserved DiskAttachmentState = "reserved"
-	DiskAttachmentStateAttached DiskAttachmentState = "attached"
-	DiskAttachmentStateReleased DiskAttachmentState = "released"
-)
-
-// AllValues returns all DiskAttachmentState values.
-func (DiskAttachmentState) AllValues() []DiskAttachmentState {
-	return []DiskAttachmentState{
-		DiskAttachmentStateReserved,
-		DiskAttachmentStateAttached,
-		DiskAttachmentStateReleased,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskAttachmentState) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskAttachmentStateReserved:
-		return []byte(s), nil
-	case DiskAttachmentStateAttached:
-		return []byte(s), nil
-	case DiskAttachmentStateReleased:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskAttachmentState) UnmarshalText(data []byte) error {
-	switch DiskAttachmentState(data) {
-	case DiskAttachmentStateReserved:
-		*s = DiskAttachmentStateReserved
-		return nil
-	case DiskAttachmentStateAttached:
-		*s = DiskAttachmentStateAttached
-		return nil
-	case DiskAttachmentStateReleased:
-		*s = DiskAttachmentStateReleased
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type DiskBackupID string
-
-// Ref: #/components/schemas/DiskBackupListResponseBody
-type DiskBackupListResponseBody struct {
-	Items      []DiskBackupResource `json:"items"`
-	Pagination OffsetPagination     `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *DiskBackupListResponseBody) GetItems() []DiskBackupResource {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *DiskBackupListResponseBody) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *DiskBackupListResponseBody) SetItems(val []DiskBackupResource) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *DiskBackupListResponseBody) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
-// An operation still running on this backup. It is not a separate resource; once it finishes, the
-// backup's `operation` is null again and the backup shows the result.
-// Ref: #/components/schemas/DiskBackupOperation
-type DiskBackupOperation struct {
-	// `restore`: a disk is being created from this backup with `disk_backup_id` on `create-disk`.
-	Type      DiskBackupOperationType `json:"type"`
-	StartedAt time.Time               `json:"started_at"`
-}
-
-// GetType returns the value of Type.
-func (s *DiskBackupOperation) GetType() DiskBackupOperationType {
-	return s.Type
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *DiskBackupOperation) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// SetType sets the value of Type.
-func (s *DiskBackupOperation) SetType(val DiskBackupOperationType) {
-	s.Type = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *DiskBackupOperation) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-// `restore`: a disk is being created from this backup with `disk_backup_id` on `create-disk`.
-type DiskBackupOperationType string
-
-const (
-	DiskBackupOperationTypeCreate  DiskBackupOperationType = "create"
-	DiskBackupOperationTypeRestore DiskBackupOperationType = "restore"
-	DiskBackupOperationTypeDelete  DiskBackupOperationType = "delete"
-)
-
-// AllValues returns all DiskBackupOperationType values.
-func (DiskBackupOperationType) AllValues() []DiskBackupOperationType {
-	return []DiskBackupOperationType{
-		DiskBackupOperationTypeCreate,
-		DiskBackupOperationTypeRestore,
-		DiskBackupOperationTypeDelete,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskBackupOperationType) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskBackupOperationTypeCreate:
-		return []byte(s), nil
-	case DiskBackupOperationTypeRestore:
-		return []byte(s), nil
-	case DiskBackupOperationTypeDelete:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskBackupOperationType) UnmarshalText(data []byte) error {
-	switch DiskBackupOperationType(data) {
-	case DiskBackupOperationTypeCreate:
-		*s = DiskBackupOperationTypeCreate
-		return nil
-	case DiskBackupOperationTypeRestore:
-		*s = DiskBackupOperationTypeRestore
-		return nil
-	case DiskBackupOperationTypeDelete:
-		*s = DiskBackupOperationTypeDelete
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// A resource a release set releases.
-// Ref: #/components/schemas/DiskBackupReleaseResource
-type DiskBackupReleaseResource struct {
-	Type DiskBackupReleaseResourceType `json:"type"`
-	// The identifier of the resource selected by type.
-	ID DiskBackupID `json:"id"`
-	// The current display name of the selected resource.
-	Name string `json:"name"`
-}
-
-// GetType returns the value of Type.
-func (s *DiskBackupReleaseResource) GetType() DiskBackupReleaseResourceType {
-	return s.Type
-}
-
-// GetID returns the value of ID.
-func (s *DiskBackupReleaseResource) GetID() DiskBackupID {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *DiskBackupReleaseResource) GetName() string {
-	return s.Name
-}
-
-// SetType sets the value of Type.
-func (s *DiskBackupReleaseResource) SetType(val DiskBackupReleaseResourceType) {
-	s.Type = val
-}
-
-// SetID sets the value of ID.
-func (s *DiskBackupReleaseResource) SetID(val DiskBackupID) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *DiskBackupReleaseResource) SetName(val string) {
-	s.Name = val
-}
-
-type DiskBackupReleaseResourceType string
-
-const (
-	DiskBackupReleaseResourceTypeDiskBackup DiskBackupReleaseResourceType = "disk_backup"
-)
-
-// AllValues returns all DiskBackupReleaseResourceType values.
-func (DiskBackupReleaseResourceType) AllValues() []DiskBackupReleaseResourceType {
-	return []DiskBackupReleaseResourceType{
-		DiskBackupReleaseResourceTypeDiskBackup,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskBackupReleaseResourceType) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskBackupReleaseResourceTypeDiskBackup:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskBackupReleaseResourceType) UnmarshalText(data []byte) error {
-	switch DiskBackupReleaseResourceType(data) {
-	case DiskBackupReleaseResourceTypeDiskBackup:
-		*s = DiskBackupReleaseResourceTypeDiskBackup
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// A retained copy of a disk, restorable after its source disk is deleted. Compute project quotas
-// constrain its count; retained storage is metered independently.
-// Ref: #/components/schemas/DiskBackupResource
-type DiskBackupResource struct {
-	CreatedAt time.Time    `json:"created_at"`
-	ID        DiskBackupID `json:"id"`
-	Name      string       `json:"name"`
-	RegionID  RegionID     `json:"region_id"`
-	// Capacity of the source disk when the backup was created. A restored disk cannot be smaller than this.
-	SizeGB int64 `json:"size_gb"`
-	// The capacity metered for this backup, in GiB: the size of the source disk when the backup was taken.
-	// Usage is this capacity multiplied by the time the backup is retained.
-	CapacityGib int64 `json:"capacity_gib"`
-	// The disk this backup was taken from. The backup remains usable after that disk is deleted.
-	SourceDiskID DiskID `json:"source_disk_id"`
-	// `pending` from the purchase until the backup is taken, then `available`; while it is taken the
-	// backup shows the `create` operation. `failed` means the backup was not created.
-	Status DiskBackupResourceStatus `json:"status"`
-	// The operation in progress on this backup, or null when none is.
-	Operation NilDiskBackupOperation `json:"operation"`
-	// Availability zone of the source disk. A restore may target another zone in the same region.
-	SourceAvailabilityZoneID AvailabilityZoneID `json:"source_availability_zone_id"`
-	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
-	// order was accepted, and the charge for this backup is refunded.
-	FailureReason NilDiskBackupResourceFailureReason `json:"failure_reason"`
-	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
-	// until its checkout completes. Null when the resource was not bought through one.
-	CheckoutSessionID NilUUID `json:"checkout_session_id"`
-	// The Billing order that bought this resource; null until checkout completes.
-	OrderID NilUUID `json:"order_id"`
-	// The Billing order item for this resource.
-	OrderItemID NilUUID `json:"order_item_id"`
-	// The subscription for this resource; its presence alone does not imply delivery.
-	SubscriptionID NilUUID `json:"subscription_id"`
-	// The subscription that pays for this disk backup, with the resource it pays for, so that a
-	// cancellation through Billing can name what it releases. Empty when no subscription pays for it, and
-	// once it is released.
-	ReleaseSet []ReleaseSetItem `json:"release_set"`
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *DiskBackupResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetID returns the value of ID.
-func (s *DiskBackupResource) GetID() DiskBackupID {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *DiskBackupResource) GetName() string {
-	return s.Name
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *DiskBackupResource) GetRegionID() RegionID {
-	return s.RegionID
-}
-
-// GetSizeGB returns the value of SizeGB.
-func (s *DiskBackupResource) GetSizeGB() int64 {
-	return s.SizeGB
-}
-
-// GetCapacityGib returns the value of CapacityGib.
-func (s *DiskBackupResource) GetCapacityGib() int64 {
-	return s.CapacityGib
-}
-
-// GetSourceDiskID returns the value of SourceDiskID.
-func (s *DiskBackupResource) GetSourceDiskID() DiskID {
-	return s.SourceDiskID
-}
-
-// GetStatus returns the value of Status.
-func (s *DiskBackupResource) GetStatus() DiskBackupResourceStatus {
-	return s.Status
-}
-
-// GetOperation returns the value of Operation.
-func (s *DiskBackupResource) GetOperation() NilDiskBackupOperation {
-	return s.Operation
-}
-
-// GetSourceAvailabilityZoneID returns the value of SourceAvailabilityZoneID.
-func (s *DiskBackupResource) GetSourceAvailabilityZoneID() AvailabilityZoneID {
-	return s.SourceAvailabilityZoneID
-}
-
-// GetFailureReason returns the value of FailureReason.
-func (s *DiskBackupResource) GetFailureReason() NilDiskBackupResourceFailureReason {
-	return s.FailureReason
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *DiskBackupResource) GetCheckoutSessionID() NilUUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *DiskBackupResource) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// GetOrderItemID returns the value of OrderItemID.
-func (s *DiskBackupResource) GetOrderItemID() NilUUID {
-	return s.OrderItemID
-}
-
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *DiskBackupResource) GetSubscriptionID() NilUUID {
-	return s.SubscriptionID
-}
-
-// GetReleaseSet returns the value of ReleaseSet.
-func (s *DiskBackupResource) GetReleaseSet() []ReleaseSetItem {
-	return s.ReleaseSet
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *DiskBackupResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetID sets the value of ID.
-func (s *DiskBackupResource) SetID(val DiskBackupID) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *DiskBackupResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *DiskBackupResource) SetRegionID(val RegionID) {
-	s.RegionID = val
-}
-
-// SetSizeGB sets the value of SizeGB.
-func (s *DiskBackupResource) SetSizeGB(val int64) {
-	s.SizeGB = val
-}
-
-// SetCapacityGib sets the value of CapacityGib.
-func (s *DiskBackupResource) SetCapacityGib(val int64) {
-	s.CapacityGib = val
-}
-
-// SetSourceDiskID sets the value of SourceDiskID.
-func (s *DiskBackupResource) SetSourceDiskID(val DiskID) {
-	s.SourceDiskID = val
-}
-
-// SetStatus sets the value of Status.
-func (s *DiskBackupResource) SetStatus(val DiskBackupResourceStatus) {
-	s.Status = val
-}
-
-// SetOperation sets the value of Operation.
-func (s *DiskBackupResource) SetOperation(val NilDiskBackupOperation) {
-	s.Operation = val
-}
-
-// SetSourceAvailabilityZoneID sets the value of SourceAvailabilityZoneID.
-func (s *DiskBackupResource) SetSourceAvailabilityZoneID(val AvailabilityZoneID) {
-	s.SourceAvailabilityZoneID = val
-}
-
-// SetFailureReason sets the value of FailureReason.
-func (s *DiskBackupResource) SetFailureReason(val NilDiskBackupResourceFailureReason) {
-	s.FailureReason = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *DiskBackupResource) SetCheckoutSessionID(val NilUUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *DiskBackupResource) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-// SetOrderItemID sets the value of OrderItemID.
-func (s *DiskBackupResource) SetOrderItemID(val NilUUID) {
-	s.OrderItemID = val
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *DiskBackupResource) SetSubscriptionID(val NilUUID) {
-	s.SubscriptionID = val
-}
-
-// SetReleaseSet sets the value of ReleaseSet.
-func (s *DiskBackupResource) SetReleaseSet(val []ReleaseSetItem) {
-	s.ReleaseSet = val
-}
-
-// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
-// order was accepted, and the charge for this backup is refunded.
-type DiskBackupResourceFailureReason string
-
-const (
-	DiskBackupResourceFailureReasonOrderDeclined      DiskBackupResourceFailureReason = "order_declined"
-	DiskBackupResourceFailureReasonOrderCanceled      DiskBackupResourceFailureReason = "order_canceled"
-	DiskBackupResourceFailureReasonOrderExpired       DiskBackupResourceFailureReason = "order_expired"
-	DiskBackupResourceFailureReasonCheckoutExpired    DiskBackupResourceFailureReason = "checkout_expired"
-	DiskBackupResourceFailureReasonProvisioningFailed DiskBackupResourceFailureReason = "provisioning_failed"
-)
-
-// AllValues returns all DiskBackupResourceFailureReason values.
-func (DiskBackupResourceFailureReason) AllValues() []DiskBackupResourceFailureReason {
-	return []DiskBackupResourceFailureReason{
-		DiskBackupResourceFailureReasonOrderDeclined,
-		DiskBackupResourceFailureReasonOrderCanceled,
-		DiskBackupResourceFailureReasonOrderExpired,
-		DiskBackupResourceFailureReasonCheckoutExpired,
-		DiskBackupResourceFailureReasonProvisioningFailed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskBackupResourceFailureReason) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskBackupResourceFailureReasonOrderDeclined:
-		return []byte(s), nil
-	case DiskBackupResourceFailureReasonOrderCanceled:
-		return []byte(s), nil
-	case DiskBackupResourceFailureReasonOrderExpired:
-		return []byte(s), nil
-	case DiskBackupResourceFailureReasonCheckoutExpired:
-		return []byte(s), nil
-	case DiskBackupResourceFailureReasonProvisioningFailed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskBackupResourceFailureReason) UnmarshalText(data []byte) error {
-	switch DiskBackupResourceFailureReason(data) {
-	case DiskBackupResourceFailureReasonOrderDeclined:
-		*s = DiskBackupResourceFailureReasonOrderDeclined
-		return nil
-	case DiskBackupResourceFailureReasonOrderCanceled:
-		*s = DiskBackupResourceFailureReasonOrderCanceled
-		return nil
-	case DiskBackupResourceFailureReasonOrderExpired:
-		*s = DiskBackupResourceFailureReasonOrderExpired
-		return nil
-	case DiskBackupResourceFailureReasonCheckoutExpired:
-		*s = DiskBackupResourceFailureReasonCheckoutExpired
-		return nil
-	case DiskBackupResourceFailureReasonProvisioningFailed:
-		*s = DiskBackupResourceFailureReasonProvisioningFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// `pending` from the purchase until the backup is taken, then `available`; while it is taken the
-// backup shows the `create` operation. `failed` means the backup was not created.
-type DiskBackupResourceStatus string
-
-const (
-	DiskBackupResourceStatusPending   DiskBackupResourceStatus = "pending"
-	DiskBackupResourceStatusAvailable DiskBackupResourceStatus = "available"
-	DiskBackupResourceStatusDeleted   DiskBackupResourceStatus = "deleted"
-	DiskBackupResourceStatusFailed    DiskBackupResourceStatus = "failed"
-	DiskBackupResourceStatusError     DiskBackupResourceStatus = "error"
-)
-
-// AllValues returns all DiskBackupResourceStatus values.
-func (DiskBackupResourceStatus) AllValues() []DiskBackupResourceStatus {
-	return []DiskBackupResourceStatus{
-		DiskBackupResourceStatusPending,
-		DiskBackupResourceStatusAvailable,
-		DiskBackupResourceStatusDeleted,
-		DiskBackupResourceStatusFailed,
-		DiskBackupResourceStatusError,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskBackupResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskBackupResourceStatusPending:
-		return []byte(s), nil
-	case DiskBackupResourceStatusAvailable:
-		return []byte(s), nil
-	case DiskBackupResourceStatusDeleted:
-		return []byte(s), nil
-	case DiskBackupResourceStatusFailed:
-		return []byte(s), nil
-	case DiskBackupResourceStatusError:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskBackupResourceStatus) UnmarshalText(data []byte) error {
-	switch DiskBackupResourceStatus(data) {
-	case DiskBackupResourceStatusPending:
-		*s = DiskBackupResourceStatusPending
-		return nil
-	case DiskBackupResourceStatusAvailable:
-		*s = DiskBackupResourceStatusAvailable
-		return nil
-	case DiskBackupResourceStatusDeleted:
-		*s = DiskBackupResourceStatusDeleted
-		return nil
-	case DiskBackupResourceStatusFailed:
-		*s = DiskBackupResourceStatusFailed
-		return nil
-	case DiskBackupResourceStatusError:
-		*s = DiskBackupResourceStatusError
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type DiskID string
-
-// Ref: #/components/schemas/DiskListResponseBody
-type DiskListResponseBody struct {
-	Items      []DiskResource   `json:"items"`
-	Pagination OffsetPagination `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *DiskListResponseBody) GetItems() []DiskResource {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *DiskListResponseBody) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *DiskListResponseBody) SetItems(val []DiskResource) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *DiskListResponseBody) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
-// An operation still running on this disk. It is not a separate resource; once it finishes, the disk's
-// `operation` is null again and the disk shows the result.
-// Ref: #/components/schemas/DiskOperation
-type DiskOperation struct {
-	// `attach` and `detach` accompany the virtual machine's `attach_disk` and `detach_disk` operations.
-	// `delete` includes release through a Billing cancellation and deletion with a virtual machine.
-	Type      DiskOperationType `json:"type"`
-	StartedAt time.Time         `json:"started_at"`
-}
-
-// GetType returns the value of Type.
-func (s *DiskOperation) GetType() DiskOperationType {
-	return s.Type
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *DiskOperation) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// SetType sets the value of Type.
-func (s *DiskOperation) SetType(val DiskOperationType) {
-	s.Type = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *DiskOperation) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-// `attach` and `detach` accompany the virtual machine's `attach_disk` and `detach_disk` operations.
-// `delete` includes release through a Billing cancellation and deletion with a virtual machine.
-type DiskOperationType string
-
-const (
-	DiskOperationTypeCreate  DiskOperationType = "create"
-	DiskOperationTypeResize  DiskOperationType = "resize"
-	DiskOperationTypeRetype  DiskOperationType = "retype"
-	DiskOperationTypeRevert  DiskOperationType = "revert"
-	DiskOperationTypeAttach  DiskOperationType = "attach"
-	DiskOperationTypeDetach  DiskOperationType = "detach"
-	DiskOperationTypeSuspend DiskOperationType = "suspend"
-	DiskOperationTypeResume  DiskOperationType = "resume"
-	DiskOperationTypeDelete  DiskOperationType = "delete"
-)
-
-// AllValues returns all DiskOperationType values.
-func (DiskOperationType) AllValues() []DiskOperationType {
-	return []DiskOperationType{
-		DiskOperationTypeCreate,
-		DiskOperationTypeResize,
-		DiskOperationTypeRetype,
-		DiskOperationTypeRevert,
-		DiskOperationTypeAttach,
-		DiskOperationTypeDetach,
-		DiskOperationTypeSuspend,
-		DiskOperationTypeResume,
-		DiskOperationTypeDelete,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskOperationType) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskOperationTypeCreate:
-		return []byte(s), nil
-	case DiskOperationTypeResize:
-		return []byte(s), nil
-	case DiskOperationTypeRetype:
-		return []byte(s), nil
-	case DiskOperationTypeRevert:
-		return []byte(s), nil
-	case DiskOperationTypeAttach:
-		return []byte(s), nil
-	case DiskOperationTypeDetach:
-		return []byte(s), nil
-	case DiskOperationTypeSuspend:
-		return []byte(s), nil
-	case DiskOperationTypeResume:
-		return []byte(s), nil
-	case DiskOperationTypeDelete:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskOperationType) UnmarshalText(data []byte) error {
-	switch DiskOperationType(data) {
-	case DiskOperationTypeCreate:
-		*s = DiskOperationTypeCreate
-		return nil
-	case DiskOperationTypeResize:
-		*s = DiskOperationTypeResize
-		return nil
-	case DiskOperationTypeRetype:
-		*s = DiskOperationTypeRetype
-		return nil
-	case DiskOperationTypeRevert:
-		*s = DiskOperationTypeRevert
-		return nil
-	case DiskOperationTypeAttach:
-		*s = DiskOperationTypeAttach
-		return nil
-	case DiskOperationTypeDetach:
-		*s = DiskOperationTypeDetach
-		return nil
-	case DiskOperationTypeSuspend:
-		*s = DiskOperationTypeSuspend
-		return nil
-	case DiskOperationTypeResume:
-		*s = DiskOperationTypeResume
-		return nil
-	case DiskOperationTypeDelete:
-		*s = DiskOperationTypeDelete
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// A disk's limits.
-// Ref: #/components/schemas/DiskPerformance
-type DiskPerformance struct {
-	Iops                     int64 `json:"iops"`
-	ThroughputBytesPerSecond int64 `json:"throughput_bytes_per_second"`
-}
-
-// GetIops returns the value of Iops.
-func (s *DiskPerformance) GetIops() int64 {
-	return s.Iops
-}
-
-// GetThroughputBytesPerSecond returns the value of ThroughputBytesPerSecond.
-func (s *DiskPerformance) GetThroughputBytesPerSecond() int64 {
-	return s.ThroughputBytesPerSecond
-}
-
-// SetIops sets the value of Iops.
-func (s *DiskPerformance) SetIops(val int64) {
-	s.Iops = val
-}
-
-// SetThroughputBytesPerSecond sets the value of ThroughputBytesPerSecond.
-func (s *DiskPerformance) SetThroughputBytesPerSecond(val int64) {
-	s.ThroughputBytesPerSecond = val
-}
-
-// A resource a release set releases.
-// Ref: #/components/schemas/DiskReleaseResource
-type DiskReleaseResource struct {
-	Type DiskReleaseResourceType `json:"type"`
-	// The identifier of the resource selected by type.
-	ID DiskID `json:"id"`
-	// The current display name of the selected resource.
-	Name string `json:"name"`
-}
-
-// GetType returns the value of Type.
-func (s *DiskReleaseResource) GetType() DiskReleaseResourceType {
-	return s.Type
-}
-
-// GetID returns the value of ID.
-func (s *DiskReleaseResource) GetID() DiskID {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *DiskReleaseResource) GetName() string {
-	return s.Name
-}
-
-// SetType sets the value of Type.
-func (s *DiskReleaseResource) SetType(val DiskReleaseResourceType) {
-	s.Type = val
-}
-
-// SetID sets the value of ID.
-func (s *DiskReleaseResource) SetID(val DiskID) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *DiskReleaseResource) SetName(val string) {
-	s.Name = val
-}
-
-type DiskReleaseResourceType string
-
-const (
-	DiskReleaseResourceTypeDisk DiskReleaseResourceType = "disk"
-)
-
-// AllValues returns all DiskReleaseResourceType values.
-func (DiskReleaseResourceType) AllValues() []DiskReleaseResourceType {
-	return []DiskReleaseResourceType{
-		DiskReleaseResourceTypeDisk,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskReleaseResourceType) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskReleaseResourceTypeDisk:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskReleaseResourceType) UnmarshalText(data []byte) error {
-	switch DiskReleaseResourceType(data) {
-	case DiskReleaseResourceTypeDisk:
-		*s = DiskReleaseResourceTypeDisk
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/DiskResource
-type DiskResource struct {
-	// Availability zone the disk actually resides in. A virtual machine must be in the same zone to attach
-	// it.
-	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
-	CreatedAt          time.Time          `json:"created_at"`
-	DiskTypeID         DiskTypeID         `json:"disk_type_id"`
-	ID                 DiskID             `json:"id"`
-	Name               string             `json:"name"`
-	RegionID           RegionID           `json:"region_id"`
-	SizeGB             int64              `json:"size_gb"`
-	Performance        DiskPerformance    `json:"performance"`
-	// `pending` until the disk is created, with no storage allocated before the order is accepted and the
-	// `create` operation shown while it is created; then `available`, or `in_use` once attached. `failed`
-	// means the disk was not created; `failure_reason` states why. `error` means the cloud reports the
-	// disk broken.
-	Status DiskResourceStatus `json:"status"`
-	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
-	// until its checkout completes. Null when the resource was not bought through one.
-	CheckoutSessionID NilUUID `json:"checkout_session_id"`
-	OrderID           NilUUID `json:"order_id"`
-	// The Billing order item for this resource.
-	OrderItemID NilUUID `json:"order_item_id"`
-	// The Billing subscription associated with this resource. It may still be pending; its presence does
-	// not imply delivery or metering. Null when no subscription is associated.
-	SubscriptionID NilUUID `json:"subscription_id"`
-	// The subscriptions a cancellation through Billing has to cover to release this disk: its own, each
-	// with the resource it pays for, so that each line of a cancellation can name what it releases.
-	// Snapshots have no individual subscriptions. A system disk is released only with its virtual machine,
-	// so for a system disk the set is that of the virtual machine. Subscriptions that have ended are not
-	// listed, and the set is empty when no subscription pays for any of them.
-	ReleaseSet  []ReleaseSetItem           `json:"release_set"`
-	AccessState NilDiskResourceAccessState `json:"access_state"`
-	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
-	// order was accepted, and the charge for this disk is refunded.
-	FailureReason NilDiskResourceFailureReason `json:"failure_reason"`
-	// The operation in progress on this disk, or null when none is.
-	Operation  NilDiskOperation  `json:"operation"`
-	Attachment NilDiskAttachment `json:"attachment"`
-}
-
-// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *DiskResource) GetAvailabilityZoneID() AvailabilityZoneID {
-	return s.AvailabilityZoneID
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *DiskResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetDiskTypeID returns the value of DiskTypeID.
-func (s *DiskResource) GetDiskTypeID() DiskTypeID {
-	return s.DiskTypeID
-}
-
-// GetID returns the value of ID.
-func (s *DiskResource) GetID() DiskID {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *DiskResource) GetName() string {
-	return s.Name
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *DiskResource) GetRegionID() RegionID {
-	return s.RegionID
-}
-
-// GetSizeGB returns the value of SizeGB.
-func (s *DiskResource) GetSizeGB() int64 {
-	return s.SizeGB
-}
-
-// GetPerformance returns the value of Performance.
-func (s *DiskResource) GetPerformance() DiskPerformance {
-	return s.Performance
-}
-
-// GetStatus returns the value of Status.
-func (s *DiskResource) GetStatus() DiskResourceStatus {
-	return s.Status
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *DiskResource) GetCheckoutSessionID() NilUUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *DiskResource) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// GetOrderItemID returns the value of OrderItemID.
-func (s *DiskResource) GetOrderItemID() NilUUID {
-	return s.OrderItemID
-}
-
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *DiskResource) GetSubscriptionID() NilUUID {
-	return s.SubscriptionID
-}
-
-// GetReleaseSet returns the value of ReleaseSet.
-func (s *DiskResource) GetReleaseSet() []ReleaseSetItem {
-	return s.ReleaseSet
-}
-
-// GetAccessState returns the value of AccessState.
-func (s *DiskResource) GetAccessState() NilDiskResourceAccessState {
-	return s.AccessState
-}
+func (*DeleteVolumeBackupResponseBody) deleteVolumeBackupRes() {}
 
-// GetFailureReason returns the value of FailureReason.
-func (s *DiskResource) GetFailureReason() NilDiskResourceFailureReason {
-	return s.FailureReason
+// The volume as it is when the deletion is accepted, and the Billing cancellation that releases it
+// when subscriptions pay for it.
+// Ref: #/components/schemas/DeleteVolumeResponseBody
+type DeleteVolumeResponseBody struct {
+	Volume VolumeResource `json:"volume"`
+	// The cancellation Compute created for the volume's subscriptions; null when none pays for it.
+	Cancellation NilBillingCancellation `json:"cancellation"`
 }
 
-// GetOperation returns the value of Operation.
-func (s *DiskResource) GetOperation() NilDiskOperation {
-	return s.Operation
+// GetVolume returns the value of Volume.
+func (s *DeleteVolumeResponseBody) GetVolume() VolumeResource {
+	return s.Volume
 }
 
-// GetAttachment returns the value of Attachment.
-func (s *DiskResource) GetAttachment() NilDiskAttachment {
-	return s.Attachment
+// GetCancellation returns the value of Cancellation.
+func (s *DeleteVolumeResponseBody) GetCancellation() NilBillingCancellation {
+	return s.Cancellation
 }
 
-// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *DiskResource) SetAvailabilityZoneID(val AvailabilityZoneID) {
-	s.AvailabilityZoneID = val
+// SetVolume sets the value of Volume.
+func (s *DeleteVolumeResponseBody) SetVolume(val VolumeResource) {
+	s.Volume = val
 }
 
-// SetCreatedAt sets the value of CreatedAt.
-func (s *DiskResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
+// SetCancellation sets the value of Cancellation.
+func (s *DeleteVolumeResponseBody) SetCancellation(val NilBillingCancellation) {
+	s.Cancellation = val
 }
 
-// SetDiskTypeID sets the value of DiskTypeID.
-func (s *DiskResource) SetDiskTypeID(val DiskTypeID) {
-	s.DiskTypeID = val
-}
-
-// SetID sets the value of ID.
-func (s *DiskResource) SetID(val DiskID) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *DiskResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *DiskResource) SetRegionID(val RegionID) {
-	s.RegionID = val
-}
-
-// SetSizeGB sets the value of SizeGB.
-func (s *DiskResource) SetSizeGB(val int64) {
-	s.SizeGB = val
-}
-
-// SetPerformance sets the value of Performance.
-func (s *DiskResource) SetPerformance(val DiskPerformance) {
-	s.Performance = val
-}
-
-// SetStatus sets the value of Status.
-func (s *DiskResource) SetStatus(val DiskResourceStatus) {
-	s.Status = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *DiskResource) SetCheckoutSessionID(val NilUUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *DiskResource) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-// SetOrderItemID sets the value of OrderItemID.
-func (s *DiskResource) SetOrderItemID(val NilUUID) {
-	s.OrderItemID = val
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *DiskResource) SetSubscriptionID(val NilUUID) {
-	s.SubscriptionID = val
-}
-
-// SetReleaseSet sets the value of ReleaseSet.
-func (s *DiskResource) SetReleaseSet(val []ReleaseSetItem) {
-	s.ReleaseSet = val
-}
-
-// SetAccessState sets the value of AccessState.
-func (s *DiskResource) SetAccessState(val NilDiskResourceAccessState) {
-	s.AccessState = val
-}
-
-// SetFailureReason sets the value of FailureReason.
-func (s *DiskResource) SetFailureReason(val NilDiskResourceFailureReason) {
-	s.FailureReason = val
-}
-
-// SetOperation sets the value of Operation.
-func (s *DiskResource) SetOperation(val NilDiskOperation) {
-	s.Operation = val
-}
-
-// SetAttachment sets the value of Attachment.
-func (s *DiskResource) SetAttachment(val NilDiskAttachment) {
-	s.Attachment = val
-}
-
-func (*DiskResource) attachVirtualMachineDiskRes() {}
-func (*DiskResource) detachVirtualMachineDiskRes() {}
-func (*DiskResource) revertDiskRes()               {}
-
-type DiskResourceAccessState string
-
-const (
-	DiskResourceAccessStatePending   DiskResourceAccessState = "pending"
-	DiskResourceAccessStateEnabled   DiskResourceAccessState = "enabled"
-	DiskResourceAccessStateSuspended DiskResourceAccessState = "suspended"
-	DiskResourceAccessStateReclaimed DiskResourceAccessState = "reclaimed"
-)
-
-// AllValues returns all DiskResourceAccessState values.
-func (DiskResourceAccessState) AllValues() []DiskResourceAccessState {
-	return []DiskResourceAccessState{
-		DiskResourceAccessStatePending,
-		DiskResourceAccessStateEnabled,
-		DiskResourceAccessStateSuspended,
-		DiskResourceAccessStateReclaimed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskResourceAccessState) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskResourceAccessStatePending:
-		return []byte(s), nil
-	case DiskResourceAccessStateEnabled:
-		return []byte(s), nil
-	case DiskResourceAccessStateSuspended:
-		return []byte(s), nil
-	case DiskResourceAccessStateReclaimed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskResourceAccessState) UnmarshalText(data []byte) error {
-	switch DiskResourceAccessState(data) {
-	case DiskResourceAccessStatePending:
-		*s = DiskResourceAccessStatePending
-		return nil
-	case DiskResourceAccessStateEnabled:
-		*s = DiskResourceAccessStateEnabled
-		return nil
-	case DiskResourceAccessStateSuspended:
-		*s = DiskResourceAccessStateSuspended
-		return nil
-	case DiskResourceAccessStateReclaimed:
-		*s = DiskResourceAccessStateReclaimed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
-// order was accepted, and the charge for this disk is refunded.
-type DiskResourceFailureReason string
-
-const (
-	DiskResourceFailureReasonOrderDeclined      DiskResourceFailureReason = "order_declined"
-	DiskResourceFailureReasonOrderCanceled      DiskResourceFailureReason = "order_canceled"
-	DiskResourceFailureReasonOrderExpired       DiskResourceFailureReason = "order_expired"
-	DiskResourceFailureReasonCheckoutExpired    DiskResourceFailureReason = "checkout_expired"
-	DiskResourceFailureReasonProvisioningFailed DiskResourceFailureReason = "provisioning_failed"
-)
-
-// AllValues returns all DiskResourceFailureReason values.
-func (DiskResourceFailureReason) AllValues() []DiskResourceFailureReason {
-	return []DiskResourceFailureReason{
-		DiskResourceFailureReasonOrderDeclined,
-		DiskResourceFailureReasonOrderCanceled,
-		DiskResourceFailureReasonOrderExpired,
-		DiskResourceFailureReasonCheckoutExpired,
-		DiskResourceFailureReasonProvisioningFailed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskResourceFailureReason) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskResourceFailureReasonOrderDeclined:
-		return []byte(s), nil
-	case DiskResourceFailureReasonOrderCanceled:
-		return []byte(s), nil
-	case DiskResourceFailureReasonOrderExpired:
-		return []byte(s), nil
-	case DiskResourceFailureReasonCheckoutExpired:
-		return []byte(s), nil
-	case DiskResourceFailureReasonProvisioningFailed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskResourceFailureReason) UnmarshalText(data []byte) error {
-	switch DiskResourceFailureReason(data) {
-	case DiskResourceFailureReasonOrderDeclined:
-		*s = DiskResourceFailureReasonOrderDeclined
-		return nil
-	case DiskResourceFailureReasonOrderCanceled:
-		*s = DiskResourceFailureReasonOrderCanceled
-		return nil
-	case DiskResourceFailureReasonOrderExpired:
-		*s = DiskResourceFailureReasonOrderExpired
-		return nil
-	case DiskResourceFailureReasonCheckoutExpired:
-		*s = DiskResourceFailureReasonCheckoutExpired
-		return nil
-	case DiskResourceFailureReasonProvisioningFailed:
-		*s = DiskResourceFailureReasonProvisioningFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// `pending` until the disk is created, with no storage allocated before the order is accepted and the
-// `create` operation shown while it is created; then `available`, or `in_use` once attached. `failed`
-// means the disk was not created; `failure_reason` states why. `error` means the cloud reports the
-// disk broken.
-type DiskResourceStatus string
-
-const (
-	DiskResourceStatusPending   DiskResourceStatus = "pending"
-	DiskResourceStatusAvailable DiskResourceStatus = "available"
-	DiskResourceStatusInUse     DiskResourceStatus = "in_use"
-	DiskResourceStatusDeleted   DiskResourceStatus = "deleted"
-	DiskResourceStatusFailed    DiskResourceStatus = "failed"
-	DiskResourceStatusError     DiskResourceStatus = "error"
-)
-
-// AllValues returns all DiskResourceStatus values.
-func (DiskResourceStatus) AllValues() []DiskResourceStatus {
-	return []DiskResourceStatus{
-		DiskResourceStatusPending,
-		DiskResourceStatusAvailable,
-		DiskResourceStatusInUse,
-		DiskResourceStatusDeleted,
-		DiskResourceStatusFailed,
-		DiskResourceStatusError,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskResourceStatusPending:
-		return []byte(s), nil
-	case DiskResourceStatusAvailable:
-		return []byte(s), nil
-	case DiskResourceStatusInUse:
-		return []byte(s), nil
-	case DiskResourceStatusDeleted:
-		return []byte(s), nil
-	case DiskResourceStatusFailed:
-		return []byte(s), nil
-	case DiskResourceStatusError:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskResourceStatus) UnmarshalText(data []byte) error {
-	switch DiskResourceStatus(data) {
-	case DiskResourceStatusPending:
-		*s = DiskResourceStatusPending
-		return nil
-	case DiskResourceStatusAvailable:
-		*s = DiskResourceStatusAvailable
-		return nil
-	case DiskResourceStatusInUse:
-		*s = DiskResourceStatusInUse
-		return nil
-	case DiskResourceStatusDeleted:
-		*s = DiskResourceStatusDeleted
-		return nil
-	case DiskResourceStatusFailed:
-		*s = DiskResourceStatusFailed
-		return nil
-	case DiskResourceStatusError:
-		*s = DiskResourceStatusError
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type DiskSnapshotID string
-
-// Ref: #/components/schemas/DiskSnapshotListResponseBody
-type DiskSnapshotListResponseBody struct {
-	Items      []DiskSnapshotResource `json:"items"`
-	Pagination OffsetPagination       `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *DiskSnapshotListResponseBody) GetItems() []DiskSnapshotResource {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *DiskSnapshotListResponseBody) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *DiskSnapshotListResponseBody) SetItems(val []DiskSnapshotResource) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *DiskSnapshotListResponseBody) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
-// An operation still running on this snapshot. It is not a separate resource; once it finishes, the
-// snapshot's `operation` is null again and the snapshot shows the result.
-// Ref: #/components/schemas/DiskSnapshotOperation
-type DiskSnapshotOperation struct {
-	// `restore`: a disk is being reverted to this snapshot (`revert-disk`) or created from it
-	// (`create-disk` with `disk_snapshot_id`).
-	Type      DiskSnapshotOperationType `json:"type"`
-	StartedAt time.Time                 `json:"started_at"`
-}
-
-// GetType returns the value of Type.
-func (s *DiskSnapshotOperation) GetType() DiskSnapshotOperationType {
-	return s.Type
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *DiskSnapshotOperation) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// SetType sets the value of Type.
-func (s *DiskSnapshotOperation) SetType(val DiskSnapshotOperationType) {
-	s.Type = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *DiskSnapshotOperation) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-// `restore`: a disk is being reverted to this snapshot (`revert-disk`) or created from it
-// (`create-disk` with `disk_snapshot_id`).
-type DiskSnapshotOperationType string
-
-const (
-	DiskSnapshotOperationTypeCreate  DiskSnapshotOperationType = "create"
-	DiskSnapshotOperationTypeRestore DiskSnapshotOperationType = "restore"
-	DiskSnapshotOperationTypeDelete  DiskSnapshotOperationType = "delete"
-)
-
-// AllValues returns all DiskSnapshotOperationType values.
-func (DiskSnapshotOperationType) AllValues() []DiskSnapshotOperationType {
-	return []DiskSnapshotOperationType{
-		DiskSnapshotOperationTypeCreate,
-		DiskSnapshotOperationTypeRestore,
-		DiskSnapshotOperationTypeDelete,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskSnapshotOperationType) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskSnapshotOperationTypeCreate:
-		return []byte(s), nil
-	case DiskSnapshotOperationTypeRestore:
-		return []byte(s), nil
-	case DiskSnapshotOperationTypeDelete:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskSnapshotOperationType) UnmarshalText(data []byte) error {
-	switch DiskSnapshotOperationType(data) {
-	case DiskSnapshotOperationTypeCreate:
-		*s = DiskSnapshotOperationTypeCreate
-		return nil
-	case DiskSnapshotOperationTypeRestore:
-		*s = DiskSnapshotOperationTypeRestore
-		return nil
-	case DiskSnapshotOperationTypeDelete:
-		*s = DiskSnapshotOperationTypeDelete
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// A resource a release set releases.
-// Ref: #/components/schemas/DiskSnapshotReleaseResource
-type DiskSnapshotReleaseResource struct {
-	Type DiskSnapshotReleaseResourceType `json:"type"`
-	// The identifier of the resource selected by type.
-	ID DiskSnapshotID `json:"id"`
-	// The current display name of the selected resource.
-	Name string `json:"name"`
-}
-
-// GetType returns the value of Type.
-func (s *DiskSnapshotReleaseResource) GetType() DiskSnapshotReleaseResourceType {
-	return s.Type
-}
-
-// GetID returns the value of ID.
-func (s *DiskSnapshotReleaseResource) GetID() DiskSnapshotID {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *DiskSnapshotReleaseResource) GetName() string {
-	return s.Name
-}
-
-// SetType sets the value of Type.
-func (s *DiskSnapshotReleaseResource) SetType(val DiskSnapshotReleaseResourceType) {
-	s.Type = val
-}
-
-// SetID sets the value of ID.
-func (s *DiskSnapshotReleaseResource) SetID(val DiskSnapshotID) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *DiskSnapshotReleaseResource) SetName(val string) {
-	s.Name = val
-}
-
-type DiskSnapshotReleaseResourceType string
-
-const (
-	DiskSnapshotReleaseResourceTypeDiskSnapshot DiskSnapshotReleaseResourceType = "disk_snapshot"
-)
-
-// AllValues returns all DiskSnapshotReleaseResourceType values.
-func (DiskSnapshotReleaseResourceType) AllValues() []DiskSnapshotReleaseResourceType {
-	return []DiskSnapshotReleaseResourceType{
-		DiskSnapshotReleaseResourceTypeDiskSnapshot,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskSnapshotReleaseResourceType) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskSnapshotReleaseResourceTypeDiskSnapshot:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskSnapshotReleaseResourceType) UnmarshalText(data []byte) error {
-	switch DiskSnapshotReleaseResourceType(data) {
-	case DiskSnapshotReleaseResourceTypeDiskSnapshot:
-		*s = DiskSnapshotReleaseResourceTypeDiskSnapshot
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// A snapshot of a disk. Compute project quotas constrain its count; retained storage is metered
-// independently of that quota.
-// Ref: #/components/schemas/DiskSnapshotResource
-type DiskSnapshotResource struct {
-	// A disk restored from this snapshot must reside in this availability zone.
-	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
-	CreatedAt          time.Time          `json:"created_at"`
-	DiskID             DiskID             `json:"disk_id"`
-	ID                 DiskSnapshotID     `json:"id"`
-	Name               string             `json:"name"`
-	RegionID           RegionID           `json:"region_id"`
-	// Capacity of the source disk when the snapshot was created. A disk restored from it cannot be smaller.
-	SizeGB int64 `json:"size_gb"`
-	// `pending` once a quota slot is reserved and until the snapshot is taken, showing the `create`
-	// operation while it is taken; then `available`. `failed` means the snapshot was not created; its slot
-	// is released once no snapshot data remains. `error` means the cloud reports the snapshot broken.
-	Status DiskSnapshotResourceStatus `json:"status"`
-	// The operation in progress on this snapshot, or null when none is.
-	Operation NilDiskSnapshotOperation `json:"operation"`
-	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
-	// order was accepted, and the charge for this snapshot is refunded.
-	FailureReason NilDiskSnapshotResourceFailureReason `json:"failure_reason"`
-	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
-	// until its checkout completes. Null when the resource was not bought through one.
-	CheckoutSessionID NilUUID `json:"checkout_session_id"`
-	// The Billing order that bought this resource; null until checkout completes.
-	OrderID NilUUID `json:"order_id"`
-	// The Billing order item for this resource.
-	OrderItemID NilUUID `json:"order_item_id"`
-	// The subscription for this resource; its presence alone does not imply delivery.
-	SubscriptionID NilUUID `json:"subscription_id"`
-	// The subscription that pays for this snapshot, with the resource it pays for, so that a cancellation
-	// through Billing can name what it releases. Empty when no subscription pays for it, and once it is
-	// released.
-	ReleaseSet []ReleaseSetItem `json:"release_set"`
-}
-
-// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *DiskSnapshotResource) GetAvailabilityZoneID() AvailabilityZoneID {
-	return s.AvailabilityZoneID
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *DiskSnapshotResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetDiskID returns the value of DiskID.
-func (s *DiskSnapshotResource) GetDiskID() DiskID {
-	return s.DiskID
-}
-
-// GetID returns the value of ID.
-func (s *DiskSnapshotResource) GetID() DiskSnapshotID {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *DiskSnapshotResource) GetName() string {
-	return s.Name
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *DiskSnapshotResource) GetRegionID() RegionID {
-	return s.RegionID
-}
-
-// GetSizeGB returns the value of SizeGB.
-func (s *DiskSnapshotResource) GetSizeGB() int64 {
-	return s.SizeGB
-}
-
-// GetStatus returns the value of Status.
-func (s *DiskSnapshotResource) GetStatus() DiskSnapshotResourceStatus {
-	return s.Status
-}
-
-// GetOperation returns the value of Operation.
-func (s *DiskSnapshotResource) GetOperation() NilDiskSnapshotOperation {
-	return s.Operation
-}
-
-// GetFailureReason returns the value of FailureReason.
-func (s *DiskSnapshotResource) GetFailureReason() NilDiskSnapshotResourceFailureReason {
-	return s.FailureReason
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *DiskSnapshotResource) GetCheckoutSessionID() NilUUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *DiskSnapshotResource) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// GetOrderItemID returns the value of OrderItemID.
-func (s *DiskSnapshotResource) GetOrderItemID() NilUUID {
-	return s.OrderItemID
-}
-
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *DiskSnapshotResource) GetSubscriptionID() NilUUID {
-	return s.SubscriptionID
-}
-
-// GetReleaseSet returns the value of ReleaseSet.
-func (s *DiskSnapshotResource) GetReleaseSet() []ReleaseSetItem {
-	return s.ReleaseSet
-}
-
-// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *DiskSnapshotResource) SetAvailabilityZoneID(val AvailabilityZoneID) {
-	s.AvailabilityZoneID = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *DiskSnapshotResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetDiskID sets the value of DiskID.
-func (s *DiskSnapshotResource) SetDiskID(val DiskID) {
-	s.DiskID = val
-}
-
-// SetID sets the value of ID.
-func (s *DiskSnapshotResource) SetID(val DiskSnapshotID) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *DiskSnapshotResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *DiskSnapshotResource) SetRegionID(val RegionID) {
-	s.RegionID = val
-}
-
-// SetSizeGB sets the value of SizeGB.
-func (s *DiskSnapshotResource) SetSizeGB(val int64) {
-	s.SizeGB = val
-}
-
-// SetStatus sets the value of Status.
-func (s *DiskSnapshotResource) SetStatus(val DiskSnapshotResourceStatus) {
-	s.Status = val
-}
-
-// SetOperation sets the value of Operation.
-func (s *DiskSnapshotResource) SetOperation(val NilDiskSnapshotOperation) {
-	s.Operation = val
-}
-
-// SetFailureReason sets the value of FailureReason.
-func (s *DiskSnapshotResource) SetFailureReason(val NilDiskSnapshotResourceFailureReason) {
-	s.FailureReason = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *DiskSnapshotResource) SetCheckoutSessionID(val NilUUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *DiskSnapshotResource) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-// SetOrderItemID sets the value of OrderItemID.
-func (s *DiskSnapshotResource) SetOrderItemID(val NilUUID) {
-	s.OrderItemID = val
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *DiskSnapshotResource) SetSubscriptionID(val NilUUID) {
-	s.SubscriptionID = val
-}
-
-// SetReleaseSet sets the value of ReleaseSet.
-func (s *DiskSnapshotResource) SetReleaseSet(val []ReleaseSetItem) {
-	s.ReleaseSet = val
-}
-
-// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
-// order was accepted, and the charge for this snapshot is refunded.
-type DiskSnapshotResourceFailureReason string
-
-const (
-	DiskSnapshotResourceFailureReasonOrderDeclined      DiskSnapshotResourceFailureReason = "order_declined"
-	DiskSnapshotResourceFailureReasonOrderCanceled      DiskSnapshotResourceFailureReason = "order_canceled"
-	DiskSnapshotResourceFailureReasonOrderExpired       DiskSnapshotResourceFailureReason = "order_expired"
-	DiskSnapshotResourceFailureReasonCheckoutExpired    DiskSnapshotResourceFailureReason = "checkout_expired"
-	DiskSnapshotResourceFailureReasonProvisioningFailed DiskSnapshotResourceFailureReason = "provisioning_failed"
-)
-
-// AllValues returns all DiskSnapshotResourceFailureReason values.
-func (DiskSnapshotResourceFailureReason) AllValues() []DiskSnapshotResourceFailureReason {
-	return []DiskSnapshotResourceFailureReason{
-		DiskSnapshotResourceFailureReasonOrderDeclined,
-		DiskSnapshotResourceFailureReasonOrderCanceled,
-		DiskSnapshotResourceFailureReasonOrderExpired,
-		DiskSnapshotResourceFailureReasonCheckoutExpired,
-		DiskSnapshotResourceFailureReasonProvisioningFailed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskSnapshotResourceFailureReason) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskSnapshotResourceFailureReasonOrderDeclined:
-		return []byte(s), nil
-	case DiskSnapshotResourceFailureReasonOrderCanceled:
-		return []byte(s), nil
-	case DiskSnapshotResourceFailureReasonOrderExpired:
-		return []byte(s), nil
-	case DiskSnapshotResourceFailureReasonCheckoutExpired:
-		return []byte(s), nil
-	case DiskSnapshotResourceFailureReasonProvisioningFailed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskSnapshotResourceFailureReason) UnmarshalText(data []byte) error {
-	switch DiskSnapshotResourceFailureReason(data) {
-	case DiskSnapshotResourceFailureReasonOrderDeclined:
-		*s = DiskSnapshotResourceFailureReasonOrderDeclined
-		return nil
-	case DiskSnapshotResourceFailureReasonOrderCanceled:
-		*s = DiskSnapshotResourceFailureReasonOrderCanceled
-		return nil
-	case DiskSnapshotResourceFailureReasonOrderExpired:
-		*s = DiskSnapshotResourceFailureReasonOrderExpired
-		return nil
-	case DiskSnapshotResourceFailureReasonCheckoutExpired:
-		*s = DiskSnapshotResourceFailureReasonCheckoutExpired
-		return nil
-	case DiskSnapshotResourceFailureReasonProvisioningFailed:
-		*s = DiskSnapshotResourceFailureReasonProvisioningFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// `pending` once a quota slot is reserved and until the snapshot is taken, showing the `create`
-// operation while it is taken; then `available`. `failed` means the snapshot was not created; its slot
-// is released once no snapshot data remains. `error` means the cloud reports the snapshot broken.
-type DiskSnapshotResourceStatus string
-
-const (
-	DiskSnapshotResourceStatusPending   DiskSnapshotResourceStatus = "pending"
-	DiskSnapshotResourceStatusAvailable DiskSnapshotResourceStatus = "available"
-	DiskSnapshotResourceStatusDeleted   DiskSnapshotResourceStatus = "deleted"
-	DiskSnapshotResourceStatusFailed    DiskSnapshotResourceStatus = "failed"
-	DiskSnapshotResourceStatusError     DiskSnapshotResourceStatus = "error"
-)
-
-// AllValues returns all DiskSnapshotResourceStatus values.
-func (DiskSnapshotResourceStatus) AllValues() []DiskSnapshotResourceStatus {
-	return []DiskSnapshotResourceStatus{
-		DiskSnapshotResourceStatusPending,
-		DiskSnapshotResourceStatusAvailable,
-		DiskSnapshotResourceStatusDeleted,
-		DiskSnapshotResourceStatusFailed,
-		DiskSnapshotResourceStatusError,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskSnapshotResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskSnapshotResourceStatusPending:
-		return []byte(s), nil
-	case DiskSnapshotResourceStatusAvailable:
-		return []byte(s), nil
-	case DiskSnapshotResourceStatusDeleted:
-		return []byte(s), nil
-	case DiskSnapshotResourceStatusFailed:
-		return []byte(s), nil
-	case DiskSnapshotResourceStatusError:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskSnapshotResourceStatus) UnmarshalText(data []byte) error {
-	switch DiskSnapshotResourceStatus(data) {
-	case DiskSnapshotResourceStatusPending:
-		*s = DiskSnapshotResourceStatusPending
-		return nil
-	case DiskSnapshotResourceStatusAvailable:
-		*s = DiskSnapshotResourceStatusAvailable
-		return nil
-	case DiskSnapshotResourceStatusDeleted:
-		*s = DiskSnapshotResourceStatusDeleted
-		return nil
-	case DiskSnapshotResourceStatusFailed:
-		*s = DiskSnapshotResourceStatusFailed
-		return nil
-	case DiskSnapshotResourceStatusError:
-		*s = DiskSnapshotResourceStatusError
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type DiskTypeID string
-
-// Ref: #/components/schemas/DiskTypeListResponseBody
-type DiskTypeListResponseBody struct {
-	Items      []DiskTypeResource `json:"items"`
-	Pagination OffsetPagination   `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *DiskTypeListResponseBody) GetItems() []DiskTypeResource {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *DiskTypeListResponseBody) GetPagination() OffsetPagination {
-	return s.Pagination
-}
+func (*DeleteVolumeResponseBody) deleteVolumeRes() {}
 
-// SetItems sets the value of Items.
-func (s *DiskTypeListResponseBody) SetItems(val []DiskTypeResource) {
-	s.Items = val
+// The snapshot as it is when the deletion is accepted, and the Billing cancellation that releases it
+// when subscriptions pay for it.
+// Ref: #/components/schemas/DeleteVolumeSnapshotResponseBody
+type DeleteVolumeSnapshotResponseBody struct {
+	VolumeSnapshot VolumeSnapshotResource `json:"volume_snapshot"`
+	// The cancellation Compute created for the snapshot's subscriptions; null when none pays for it.
+	Cancellation NilBillingCancellation `json:"cancellation"`
 }
 
-// SetPagination sets the value of Pagination.
-func (s *DiskTypeListResponseBody) SetPagination(val OffsetPagination) {
-	s.Pagination = val
+// GetVolumeSnapshot returns the value of VolumeSnapshot.
+func (s *DeleteVolumeSnapshotResponseBody) GetVolumeSnapshot() VolumeSnapshotResource {
+	return s.VolumeSnapshot
 }
 
-// How fast a disk of this type runs for its size. Alibaba Cloud's ESSD disks have this shape: PL1 is
-// IOPS `min(50000, 1800 + 50 × size_gb)`, and AutoPL's baseline adds a floor,
-// `max(3000, min(50000, 1800 + 50 × size_gb))`.
-//
-// A disk's own performance, computed from these for its size, is on the disk. Growing a disk raises
-// it, and the new performance applies from the disk's next attachment or the next start of its stopped
-// virtual machine.
-// Ref: #/components/schemas/DiskTypePerformance
-type DiskTypePerformance struct {
-	Iops                     PerformanceFormula `json:"iops"`
-	ThroughputBytesPerSecond PerformanceFormula `json:"throughput_bytes_per_second"`
+// GetCancellation returns the value of Cancellation.
+func (s *DeleteVolumeSnapshotResponseBody) GetCancellation() NilBillingCancellation {
+	return s.Cancellation
 }
 
-// GetIops returns the value of Iops.
-func (s *DiskTypePerformance) GetIops() PerformanceFormula {
-	return s.Iops
+// SetVolumeSnapshot sets the value of VolumeSnapshot.
+func (s *DeleteVolumeSnapshotResponseBody) SetVolumeSnapshot(val VolumeSnapshotResource) {
+	s.VolumeSnapshot = val
 }
 
-// GetThroughputBytesPerSecond returns the value of ThroughputBytesPerSecond.
-func (s *DiskTypePerformance) GetThroughputBytesPerSecond() PerformanceFormula {
-	return s.ThroughputBytesPerSecond
+// SetCancellation sets the value of Cancellation.
+func (s *DeleteVolumeSnapshotResponseBody) SetCancellation(val NilBillingCancellation) {
+	s.Cancellation = val
 }
 
-// SetIops sets the value of Iops.
-func (s *DiskTypePerformance) SetIops(val PerformanceFormula) {
-	s.Iops = val
-}
-
-// SetThroughputBytesPerSecond sets the value of ThroughputBytesPerSecond.
-func (s *DiskTypePerformance) SetThroughputBytesPerSecond(val PerformanceFormula) {
-	s.ThroughputBytesPerSecond = val
-}
-
-// Ref: #/components/schemas/DiskTypeResource
-type DiskTypeResource struct {
-	// The availability zone the type belongs to, where a disk of it is created; only a virtual machine of
-	// the same zone can attach it.
-	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
-	// `sold_out` takes no new orders for now while the type stays listed; the disks already of it keep
-	// working.
-	SaleStatus  DiskTypeResourceSaleStatus `json:"sale_status"`
-	ID          DiskTypeID                 `json:"id"`
-	MaxSizeGB   int64                      `json:"max_size_gb"`
-	Media       DiskTypeResourceMedia      `json:"media"`
-	MinSizeGB   int64                      `json:"min_size_gb"`
-	Name        string                     `json:"name"`
-	RegionID    RegionID                   `json:"region_id"`
-	StepGB      int64                      `json:"step_gb"`
-	Performance DiskTypePerformance        `json:"performance"`
-	// The line a disk of this type is, whether bought on its own or as the system disk or a data disk of a
-	// virtual machine. A disk bought on its own is licensed only.
-	Billing BillingComponent `json:"billing"`
-}
-
-// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *DiskTypeResource) GetAvailabilityZoneID() AvailabilityZoneID {
-	return s.AvailabilityZoneID
-}
-
-// GetSaleStatus returns the value of SaleStatus.
-func (s *DiskTypeResource) GetSaleStatus() DiskTypeResourceSaleStatus {
-	return s.SaleStatus
-}
-
-// GetID returns the value of ID.
-func (s *DiskTypeResource) GetID() DiskTypeID {
-	return s.ID
-}
-
-// GetMaxSizeGB returns the value of MaxSizeGB.
-func (s *DiskTypeResource) GetMaxSizeGB() int64 {
-	return s.MaxSizeGB
-}
-
-// GetMedia returns the value of Media.
-func (s *DiskTypeResource) GetMedia() DiskTypeResourceMedia {
-	return s.Media
-}
-
-// GetMinSizeGB returns the value of MinSizeGB.
-func (s *DiskTypeResource) GetMinSizeGB() int64 {
-	return s.MinSizeGB
-}
-
-// GetName returns the value of Name.
-func (s *DiskTypeResource) GetName() string {
-	return s.Name
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *DiskTypeResource) GetRegionID() RegionID {
-	return s.RegionID
-}
-
-// GetStepGB returns the value of StepGB.
-func (s *DiskTypeResource) GetStepGB() int64 {
-	return s.StepGB
-}
-
-// GetPerformance returns the value of Performance.
-func (s *DiskTypeResource) GetPerformance() DiskTypePerformance {
-	return s.Performance
-}
-
-// GetBilling returns the value of Billing.
-func (s *DiskTypeResource) GetBilling() BillingComponent {
-	return s.Billing
-}
-
-// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *DiskTypeResource) SetAvailabilityZoneID(val AvailabilityZoneID) {
-	s.AvailabilityZoneID = val
-}
-
-// SetSaleStatus sets the value of SaleStatus.
-func (s *DiskTypeResource) SetSaleStatus(val DiskTypeResourceSaleStatus) {
-	s.SaleStatus = val
-}
-
-// SetID sets the value of ID.
-func (s *DiskTypeResource) SetID(val DiskTypeID) {
-	s.ID = val
-}
-
-// SetMaxSizeGB sets the value of MaxSizeGB.
-func (s *DiskTypeResource) SetMaxSizeGB(val int64) {
-	s.MaxSizeGB = val
-}
-
-// SetMedia sets the value of Media.
-func (s *DiskTypeResource) SetMedia(val DiskTypeResourceMedia) {
-	s.Media = val
-}
-
-// SetMinSizeGB sets the value of MinSizeGB.
-func (s *DiskTypeResource) SetMinSizeGB(val int64) {
-	s.MinSizeGB = val
-}
-
-// SetName sets the value of Name.
-func (s *DiskTypeResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *DiskTypeResource) SetRegionID(val RegionID) {
-	s.RegionID = val
-}
-
-// SetStepGB sets the value of StepGB.
-func (s *DiskTypeResource) SetStepGB(val int64) {
-	s.StepGB = val
-}
-
-// SetPerformance sets the value of Performance.
-func (s *DiskTypeResource) SetPerformance(val DiskTypePerformance) {
-	s.Performance = val
-}
-
-// SetBilling sets the value of Billing.
-func (s *DiskTypeResource) SetBilling(val BillingComponent) {
-	s.Billing = val
-}
-
-type DiskTypeResourceMedia string
-
-const (
-	DiskTypeResourceMediaSsd  DiskTypeResourceMedia = "ssd"
-	DiskTypeResourceMediaHdd  DiskTypeResourceMedia = "hdd"
-	DiskTypeResourceMediaNvme DiskTypeResourceMedia = "nvme"
-)
-
-// AllValues returns all DiskTypeResourceMedia values.
-func (DiskTypeResourceMedia) AllValues() []DiskTypeResourceMedia {
-	return []DiskTypeResourceMedia{
-		DiskTypeResourceMediaSsd,
-		DiskTypeResourceMediaHdd,
-		DiskTypeResourceMediaNvme,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskTypeResourceMedia) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskTypeResourceMediaSsd:
-		return []byte(s), nil
-	case DiskTypeResourceMediaHdd:
-		return []byte(s), nil
-	case DiskTypeResourceMediaNvme:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskTypeResourceMedia) UnmarshalText(data []byte) error {
-	switch DiskTypeResourceMedia(data) {
-	case DiskTypeResourceMediaSsd:
-		*s = DiskTypeResourceMediaSsd
-		return nil
-	case DiskTypeResourceMediaHdd:
-		*s = DiskTypeResourceMediaHdd
-		return nil
-	case DiskTypeResourceMediaNvme:
-		*s = DiskTypeResourceMediaNvme
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// `sold_out` takes no new orders for now while the type stays listed; the disks already of it keep
-// working.
-type DiskTypeResourceSaleStatus string
-
-const (
-	DiskTypeResourceSaleStatusOnSale  DiskTypeResourceSaleStatus = "on_sale"
-	DiskTypeResourceSaleStatusSoldOut DiskTypeResourceSaleStatus = "sold_out"
-)
-
-// AllValues returns all DiskTypeResourceSaleStatus values.
-func (DiskTypeResourceSaleStatus) AllValues() []DiskTypeResourceSaleStatus {
-	return []DiskTypeResourceSaleStatus{
-		DiskTypeResourceSaleStatusOnSale,
-		DiskTypeResourceSaleStatusSoldOut,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskTypeResourceSaleStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskTypeResourceSaleStatusOnSale:
-		return []byte(s), nil
-	case DiskTypeResourceSaleStatusSoldOut:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskTypeResourceSaleStatus) UnmarshalText(data []byte) error {
-	switch DiskTypeResourceSaleStatus(data) {
-	case DiskTypeResourceSaleStatusOnSale:
-		*s = DiskTypeResourceSaleStatusOnSale
-		return nil
-	case DiskTypeResourceSaleStatusSoldOut:
-		*s = DiskTypeResourceSaleStatusSoldOut
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
+func (*DeleteVolumeSnapshotResponseBody) deleteVolumeSnapshotRes() {}
 
 // One public IP resource, including its bandwidth configuration. Bandwidth has no separate Compute
 // resource ID. Two subscriptions of one order pay for it: the address subscription, always
@@ -4511,10 +2255,10 @@ type ElasticIP struct {
 	// delivery or metering.
 	AddressSubscriptionID NilUUID `json:"address_subscription_id"`
 	// The Billing order item of the bandwidth or traffic.
-	NetworkOrderItemID NilUUID `json:"network_order_item_id"`
+	InternetOrderItemID NilUUID `json:"internet_order_item_id"`
 	// The Billing subscription of the bandwidth or traffic. It may still be pending; its presence does not
 	// imply delivery or metering.
-	NetworkSubscriptionID NilUUID `json:"network_subscription_id"`
+	InternetSubscriptionID NilUUID `json:"internet_subscription_id"`
 	// The subscriptions a cancellation through Billing has to cover to release this elastic IP, both the
 	// address's and the network's, each with the resource it pays for, so that each line of a cancellation
 	// can name what it releases. A subscription that has ended is not listed, and the set is empty when no
@@ -4600,14 +2344,14 @@ func (s *ElasticIP) GetAddressSubscriptionID() NilUUID {
 	return s.AddressSubscriptionID
 }
 
-// GetNetworkOrderItemID returns the value of NetworkOrderItemID.
-func (s *ElasticIP) GetNetworkOrderItemID() NilUUID {
-	return s.NetworkOrderItemID
+// GetInternetOrderItemID returns the value of InternetOrderItemID.
+func (s *ElasticIP) GetInternetOrderItemID() NilUUID {
+	return s.InternetOrderItemID
 }
 
-// GetNetworkSubscriptionID returns the value of NetworkSubscriptionID.
-func (s *ElasticIP) GetNetworkSubscriptionID() NilUUID {
-	return s.NetworkSubscriptionID
+// GetInternetSubscriptionID returns the value of InternetSubscriptionID.
+func (s *ElasticIP) GetInternetSubscriptionID() NilUUID {
+	return s.InternetSubscriptionID
 }
 
 // GetReleaseSet returns the value of ReleaseSet.
@@ -4705,14 +2449,14 @@ func (s *ElasticIP) SetAddressSubscriptionID(val NilUUID) {
 	s.AddressSubscriptionID = val
 }
 
-// SetNetworkOrderItemID sets the value of NetworkOrderItemID.
-func (s *ElasticIP) SetNetworkOrderItemID(val NilUUID) {
-	s.NetworkOrderItemID = val
+// SetInternetOrderItemID sets the value of InternetOrderItemID.
+func (s *ElasticIP) SetInternetOrderItemID(val NilUUID) {
+	s.InternetOrderItemID = val
 }
 
-// SetNetworkSubscriptionID sets the value of NetworkSubscriptionID.
-func (s *ElasticIP) SetNetworkSubscriptionID(val NilUUID) {
-	s.NetworkSubscriptionID = val
+// SetInternetSubscriptionID sets the value of InternetSubscriptionID.
+func (s *ElasticIP) SetInternetSubscriptionID(val NilUUID) {
+	s.InternetSubscriptionID = val
 }
 
 // SetReleaseSet sets the value of ReleaseSet.
@@ -4804,8 +2548,8 @@ type ElasticIPAssociation struct {
 	// The commercial ElasticIP identity. This is not an internal holding ID.
 	ElasticIPID               ElasticIPID               `json:"elastic_ip_id"`
 	NetworkInterfaceAddressID NetworkInterfaceAddressID `json:"network_interface_address_id"`
-	Address                   IPv4HostAddress           `json:"address"`
-	FixedIP                   IPv4HostAddress           `json:"fixed_ip"`
+	PublicAddress             IPv4HostAddress           `json:"public_address"`
+	PrivateAddress            IPv4HostAddress           `json:"private_address"`
 	State                     ElasticIPAssociationState `json:"state"`
 	AssociatedAt              NilDateTime               `json:"associated_at"`
 	DisassociatedAt           NilDateTime               `json:"disassociated_at"`
@@ -4827,14 +2571,14 @@ func (s *ElasticIPAssociation) GetNetworkInterfaceAddressID() NetworkInterfaceAd
 	return s.NetworkInterfaceAddressID
 }
 
-// GetAddress returns the value of Address.
-func (s *ElasticIPAssociation) GetAddress() IPv4HostAddress {
-	return s.Address
+// GetPublicAddress returns the value of PublicAddress.
+func (s *ElasticIPAssociation) GetPublicAddress() IPv4HostAddress {
+	return s.PublicAddress
 }
 
-// GetFixedIP returns the value of FixedIP.
-func (s *ElasticIPAssociation) GetFixedIP() IPv4HostAddress {
-	return s.FixedIP
+// GetPrivateAddress returns the value of PrivateAddress.
+func (s *ElasticIPAssociation) GetPrivateAddress() IPv4HostAddress {
+	return s.PrivateAddress
 }
 
 // GetState returns the value of State.
@@ -4872,14 +2616,14 @@ func (s *ElasticIPAssociation) SetNetworkInterfaceAddressID(val NetworkInterface
 	s.NetworkInterfaceAddressID = val
 }
 
-// SetAddress sets the value of Address.
-func (s *ElasticIPAssociation) SetAddress(val IPv4HostAddress) {
-	s.Address = val
+// SetPublicAddress sets the value of PublicAddress.
+func (s *ElasticIPAssociation) SetPublicAddress(val IPv4HostAddress) {
+	s.PublicAddress = val
 }
 
-// SetFixedIP sets the value of FixedIP.
-func (s *ElasticIPAssociation) SetFixedIP(val IPv4HostAddress) {
-	s.FixedIP = val
+// SetPrivateAddress sets the value of PrivateAddress.
+func (s *ElasticIPAssociation) SetPrivateAddress(val IPv4HostAddress) {
+	s.PrivateAddress = val
 }
 
 // SetState sets the value of State.
@@ -5029,11 +2773,11 @@ type ElasticIPLine struct {
 	// The network line every elastic IP of this line has, which pays its bandwidth, prepaid or used while
 	// associated, or its traffic. Metered, the line's quantity is 1 and the bandwidth or the traffic is
 	// what its meters read, by the elastic IP's `internet_charge_type`.
-	NetworkBilling BillingComponent `json:"network_billing"`
+	InternetBilling BillingComponent `json:"internet_billing"`
 	// The least bandwidth an elastic IP of this line can be bought with, in Mbps.
 	MinBandwidthMbps int64 `json:"min_bandwidth_mbps"`
 	// The most bandwidth an elastic IP of this line can be bought with, in Mbps, at most 1000. An elastic
-	// IP associated with a virtual machine is also held to the machine type's `max_bandwidth_mbps`.
+	// IP associated with an instance is also held to the instance type's `max_bandwidth_mbps`.
 	MaxBandwidthMbps int64 `json:"max_bandwidth_mbps"`
 	// Bandwidth is bought in multiples of this many Mbps, from `min_bandwidth_mbps` to
 	// `max_bandwidth_mbps`, both of which are multiples of it too.
@@ -5073,9 +2817,9 @@ func (s *ElasticIPLine) GetAddressBilling() BillingComponent {
 	return s.AddressBilling
 }
 
-// GetNetworkBilling returns the value of NetworkBilling.
-func (s *ElasticIPLine) GetNetworkBilling() BillingComponent {
-	return s.NetworkBilling
+// GetInternetBilling returns the value of InternetBilling.
+func (s *ElasticIPLine) GetInternetBilling() BillingComponent {
+	return s.InternetBilling
 }
 
 // GetMinBandwidthMbps returns the value of MinBandwidthMbps.
@@ -5138,9 +2882,9 @@ func (s *ElasticIPLine) SetAddressBilling(val BillingComponent) {
 	s.AddressBilling = val
 }
 
-// SetNetworkBilling sets the value of NetworkBilling.
-func (s *ElasticIPLine) SetNetworkBilling(val BillingComponent) {
-	s.NetworkBilling = val
+// SetInternetBilling sets the value of InternetBilling.
+func (s *ElasticIPLine) SetInternetBilling(val BillingComponent) {
+	s.InternetBilling = val
 }
 
 // SetMinBandwidthMbps sets the value of MinBandwidthMbps.
@@ -5618,42 +3362,42 @@ func (s *Error) SetStatus(val int64) {
 	s.Status = val
 }
 
-func (*Error) acceptVirtualPrivateCloudPeeringRes()     {}
-func (*Error) associateElasticIPRes()                   {}
-func (*Error) attachVirtualMachineDiskRes()             {}
-func (*Error) attachVirtualMachineNetworkInterfaceRes() {}
-func (*Error) createDiskBackupRes()                     {}
-func (*Error) createDiskRes()                           {}
-func (*Error) createDiskSnapshotRes()                   {}
-func (*Error) createElasticIPRes()                      {}
-func (*Error) createPrivateImageRes()                   {}
-func (*Error) createVirtualMachineRes()                 {}
-func (*Error) deleteDiskBackupRes()                     {}
-func (*Error) deleteDiskRes()                           {}
-func (*Error) deleteDiskSnapshotRes()                   {}
-func (*Error) deleteElasticIPRes()                      {}
-func (*Error) deleteNetworkInterfaceRes()               {}
-func (*Error) deletePrivateImageRes()                   {}
-func (*Error) deleteVirtualMachineRes()                 {}
-func (*Error) deleteVirtualPrivateCloudPeeringRes()     {}
-func (*Error) deleteVirtualPrivateCloudRes()            {}
-func (*Error) detachVirtualMachineDiskRes()             {}
-func (*Error) detachVirtualMachineNetworkInterfaceRes() {}
-func (*Error) disableVirtualPrivateCloudIpv6Res()       {}
-func (*Error) disassociateElasticIPRes()                {}
-func (*Error) enableVirtualPrivateCloudIpv6Res()        {}
-func (*Error) rebootVirtualMachineRes()                 {}
-func (*Error) rebuildVirtualMachineRes()                {}
-func (*Error) rejectVirtualPrivateCloudPeeringRes()     {}
-func (*Error) rescueVirtualMachineRes()                 {}
-func (*Error) resetVirtualMachinePasswordRes()          {}
-func (*Error) revertDiskRes()                           {}
-func (*Error) startVirtualMachineRes()                  {}
-func (*Error) stopVirtualMachineRes()                   {}
-func (*Error) unrescueVirtualMachineRes()               {}
-func (*Error) updateDiskRes()                           {}
-func (*Error) updateElasticIPRes()                      {}
-func (*Error) updateVirtualMachineRes()                 {}
+func (*Error) acceptVirtualPrivateCloudPeeringRes() {}
+func (*Error) associateElasticIPRes()               {}
+func (*Error) attachInstanceNetworkInterfaceRes()   {}
+func (*Error) attachInstanceVolumeRes()             {}
+func (*Error) createElasticIPRes()                  {}
+func (*Error) createInstanceRes()                   {}
+func (*Error) createPrivateImageRes()               {}
+func (*Error) createVolumeBackupRes()               {}
+func (*Error) createVolumeRes()                     {}
+func (*Error) createVolumeSnapshotRes()             {}
+func (*Error) deleteElasticIPRes()                  {}
+func (*Error) deleteInstanceRes()                   {}
+func (*Error) deleteNetworkInterfaceRes()           {}
+func (*Error) deletePrivateImageRes()               {}
+func (*Error) deleteVirtualPrivateCloudPeeringRes() {}
+func (*Error) deleteVirtualPrivateCloudRes()        {}
+func (*Error) deleteVolumeBackupRes()               {}
+func (*Error) deleteVolumeRes()                     {}
+func (*Error) deleteVolumeSnapshotRes()             {}
+func (*Error) detachInstanceNetworkInterfaceRes()   {}
+func (*Error) detachInstanceVolumeRes()             {}
+func (*Error) disableVirtualPrivateCloudIpv6Res()   {}
+func (*Error) disassociateElasticIPRes()            {}
+func (*Error) enableVirtualPrivateCloudIpv6Res()    {}
+func (*Error) rebootInstanceRes()                   {}
+func (*Error) rebuildInstanceRes()                  {}
+func (*Error) rejectVirtualPrivateCloudPeeringRes() {}
+func (*Error) rescueInstanceRes()                   {}
+func (*Error) resetInstancePasswordRes()            {}
+func (*Error) revertVolumeRes()                     {}
+func (*Error) startInstanceRes()                    {}
+func (*Error) stopInstanceRes()                     {}
+func (*Error) unrescueInstanceRes()                 {}
+func (*Error) updateElasticIPRes()                  {}
+func (*Error) updateInstanceRes()                   {}
+func (*Error) updateVolumeRes()                     {}
 
 // What a given `code` carries alongside the message. The keys depend on the code, and a client that
 // does not recognise one ignores it.
@@ -5694,63 +3438,63 @@ func (s *ErrorStatusCode) SetResponse(val Error) {
 	s.Response = val
 }
 
-// Ref: #/components/schemas/ExistingBootDisk
-type ExistingBootDisk struct {
-	Type ExistingBootDiskType `json:"type"`
-	// A prepared boot disk owned by this project, available, unattached and in the machine type's
-	// availability zone. Only one virtual machine may be created when used.
-	DiskID DiskID `json:"disk_id"`
-	// The existing account used to log in to this disk's operating system.
+// Ref: #/components/schemas/ExistingBootVolume
+type ExistingBootVolume struct {
+	Type ExistingBootVolumeType `json:"type"`
+	// A prepared boot volume owned by this project, available, unattached and in the instance type's
+	// availability zone. Only one instance may be created when used.
+	VolumeID VolumeID `json:"volume_id"`
+	// The existing account used to log in to this volume's operating system.
 	LoginUsername string `json:"login_username"`
 }
 
 // GetType returns the value of Type.
-func (s *ExistingBootDisk) GetType() ExistingBootDiskType {
+func (s *ExistingBootVolume) GetType() ExistingBootVolumeType {
 	return s.Type
 }
 
-// GetDiskID returns the value of DiskID.
-func (s *ExistingBootDisk) GetDiskID() DiskID {
-	return s.DiskID
+// GetVolumeID returns the value of VolumeID.
+func (s *ExistingBootVolume) GetVolumeID() VolumeID {
+	return s.VolumeID
 }
 
 // GetLoginUsername returns the value of LoginUsername.
-func (s *ExistingBootDisk) GetLoginUsername() string {
+func (s *ExistingBootVolume) GetLoginUsername() string {
 	return s.LoginUsername
 }
 
 // SetType sets the value of Type.
-func (s *ExistingBootDisk) SetType(val ExistingBootDiskType) {
+func (s *ExistingBootVolume) SetType(val ExistingBootVolumeType) {
 	s.Type = val
 }
 
-// SetDiskID sets the value of DiskID.
-func (s *ExistingBootDisk) SetDiskID(val DiskID) {
-	s.DiskID = val
+// SetVolumeID sets the value of VolumeID.
+func (s *ExistingBootVolume) SetVolumeID(val VolumeID) {
+	s.VolumeID = val
 }
 
 // SetLoginUsername sets the value of LoginUsername.
-func (s *ExistingBootDisk) SetLoginUsername(val string) {
+func (s *ExistingBootVolume) SetLoginUsername(val string) {
 	s.LoginUsername = val
 }
 
-type ExistingBootDiskType string
+type ExistingBootVolumeType string
 
 const (
-	ExistingBootDiskTypeDisk ExistingBootDiskType = "disk"
+	ExistingBootVolumeTypeVolume ExistingBootVolumeType = "volume"
 )
 
-// AllValues returns all ExistingBootDiskType values.
-func (ExistingBootDiskType) AllValues() []ExistingBootDiskType {
-	return []ExistingBootDiskType{
-		ExistingBootDiskTypeDisk,
+// AllValues returns all ExistingBootVolumeType values.
+func (ExistingBootVolumeType) AllValues() []ExistingBootVolumeType {
+	return []ExistingBootVolumeType{
+		ExistingBootVolumeTypeVolume,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s ExistingBootDiskType) MarshalText() ([]byte, error) {
+func (s ExistingBootVolumeType) MarshalText() ([]byte, error) {
 	switch s {
-	case ExistingBootDiskTypeDisk:
+	case ExistingBootVolumeTypeVolume:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -5758,10 +3502,10 @@ func (s ExistingBootDiskType) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ExistingBootDiskType) UnmarshalText(data []byte) error {
-	switch ExistingBootDiskType(data) {
-	case ExistingBootDiskTypeDisk:
-		*s = ExistingBootDiskTypeDisk
+func (s *ExistingBootVolumeType) UnmarshalText(data []byte) error {
+	switch ExistingBootVolumeType(data) {
+	case ExistingBootVolumeTypeVolume:
+		*s = ExistingBootVolumeTypeVolume
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -5833,8 +3577,8 @@ func (s *ExistingElasticIPType) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/ExistingPrimaryNetworkInterface
 type ExistingPrimaryNetworkInterface struct {
 	Type ExistingPrimaryNetworkInterfaceType `json:"type"`
-	// An unattached network interface of this project in the machine type's region. It keeps its security
-	// groups and any elastic IP associated with it. Only one virtual machine may be created when used.
+	// An unattached network interface of this project in the instance type's region. It keeps its security
+	// groups and any elastic IP associated with it. Only one instance may be created when used.
 	NetworkInterfaceID NetworkInterfaceID `json:"network_interface_id"`
 }
 
@@ -5896,7 +3640,7 @@ func (s *ExistingPrimaryNetworkInterfaceType) UnmarshalText(data []byte) error {
 type FreeSubnetCidr struct {
 	PrefixLength int64 `json:"prefix_length"`
 	// Null when no CIDR of that prefix length is free.
-	Cidr NilString `json:"cidr"`
+	Ipv4Cidr NilString `json:"ipv4_cidr"`
 }
 
 // GetPrefixLength returns the value of PrefixLength.
@@ -5904,9 +3648,9 @@ func (s *FreeSubnetCidr) GetPrefixLength() int64 {
 	return s.PrefixLength
 }
 
-// GetCidr returns the value of Cidr.
-func (s *FreeSubnetCidr) GetCidr() NilString {
-	return s.Cidr
+// GetIpv4Cidr returns the value of Ipv4Cidr.
+func (s *FreeSubnetCidr) GetIpv4Cidr() NilString {
+	return s.Ipv4Cidr
 }
 
 // SetPrefixLength sets the value of PrefixLength.
@@ -5914,9 +3658,9 @@ func (s *FreeSubnetCidr) SetPrefixLength(val int64) {
 	s.PrefixLength = val
 }
 
-// SetCidr sets the value of Cidr.
-func (s *FreeSubnetCidr) SetCidr(val NilString) {
-	s.Cidr = val
+// SetIpv4Cidr sets the value of Ipv4Cidr.
+func (s *FreeSubnetCidr) SetIpv4Cidr(val NilString) {
+	s.Ipv4Cidr = val
 }
 
 // Ref: #/components/schemas/GeneratedPassword
@@ -5972,6 +3716,1660 @@ type IPv4HostAddress string
 
 type ImageID string
 
+// Ref: #/components/schemas/Instance
+type Instance struct {
+	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
+	CreatedAt          time.Time          `json:"created_at"`
+	// Hostname inside the instance; equals the instance id.
+	Hostname string     `json:"hostname"`
+	ID       InstanceID `json:"id"`
+	// Non-empty when the instance was created from an image, public or private. `image_type` says which
+	// collection holds it.
+	ImageID NilImageID `json:"image_id"`
+	// Which collection `image_id` belongs to. `public` means `/public-images`, `private` means
+	// `/private-images`. Null when the instance boots from a volume and therefore has no image.
+	ImageType NilInstanceImageType `json:"image_type"`
+	// The instance type in effect, and the basis for billing.
+	InstanceTypeID InstanceTypeID `json:"instance_type_id"`
+	// IPv6 address of the primary network interface. Assigned automatically once IPv6 is enabled on the
+	// virtual private cloud.
+	Ipv6Address NilString `json:"ipv6_address"`
+	// Your own classification of this instance, as key-value pairs. Empty when never set.
+	Labels InstanceLabels `json:"labels"`
+	// The account to log in as over SSH. The password set at creation belongs to this account.
+	LoginUsername string `json:"login_username"`
+	Name          string `json:"name"`
+	// A free-text note about this instance. Empty when never set.
+	Description string `json:"description"`
+	// Private address of the instance.
+	PrivateIP             NilString                `json:"private_ip"`
+	VirtualPrivateCloudID NilVirtualPrivateCloudID `json:"virtual_private_cloud_id"`
+	// Elastic IPv4 addresses associated with the primary network interface; an empty array when none are
+	// associated.
+	ElasticIPAddresses []string `json:"elastic_ip_addresses"`
+	RegionID           RegionID `json:"region_id"`
+	// `pending` until the instance is created: before the order is accepted no instance exists and
+	// addresses are null, and while it is created it shows the `create` operation. Then `running`.
+	// `failed` means the instance was not created; `failure_reason` states why. The other values are the
+	// state of the instance in the cloud; an operation in progress appears in `operation`, not here.
+	Status       InstanceStatus        `json:"status"`
+	SubnetID     NilSubnetID           `json:"subnet_id"`
+	UpdatedAt    time.Time             `json:"updated_at"`
+	Restrictions []InstanceRestriction `json:"restrictions"`
+	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
+	// order was accepted, and the charge for this instance is refunded.
+	FailureReason NilInstanceFailureReason `json:"failure_reason"`
+	// The operation in progress on this instance, or null when none is.
+	Operation NilInstanceOperation `json:"operation"`
+	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
+	// until its checkout completes. Null when the resource was not bought through one.
+	CheckoutSessionID NilUUID `json:"checkout_session_id"`
+	OrderID           NilUUID `json:"order_id"`
+	// The Billing order item for this resource.
+	OrderItemID NilUUID `json:"order_item_id"`
+	// The Billing subscription associated with this resource. It may still be pending; its presence does
+	// not imply delivery or metering. Null when no subscription is associated.
+	SubscriptionID NilUUID `json:"subscription_id"`
+	// Subscriptions required to release this instance and volumes deleted with it, each with the resource
+	// it pays for, so that each line of a cancellation can name what it releases. Billing determines
+	// cancellation terms. An empty set does not establish refund eligibility.
+	ReleaseSet  []ReleaseSetItem       `json:"release_set"`
+	AccessState NilInstanceAccessState `json:"access_state"`
+	// Non-empty when the instance was created from a volume you already had, instead of from an image.
+	SourceVolumeID NilVolumeID `json:"source_volume_id"`
+	// The launch template the instance was created from; null when none was named. Changing or deleting
+	// the template afterwards changes nothing about the instance.
+	LaunchTemplateID NilLaunchTemplateID `json:"launch_template_id"`
+	// The version of that launch template it was created from; null when none was named.
+	LaunchTemplateVersionNumber NilInt64 `json:"launch_template_version_number"`
+}
+
+// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
+func (s *Instance) GetAvailabilityZoneID() AvailabilityZoneID {
+	return s.AvailabilityZoneID
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *Instance) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetHostname returns the value of Hostname.
+func (s *Instance) GetHostname() string {
+	return s.Hostname
+}
+
+// GetID returns the value of ID.
+func (s *Instance) GetID() InstanceID {
+	return s.ID
+}
+
+// GetImageID returns the value of ImageID.
+func (s *Instance) GetImageID() NilImageID {
+	return s.ImageID
+}
+
+// GetImageType returns the value of ImageType.
+func (s *Instance) GetImageType() NilInstanceImageType {
+	return s.ImageType
+}
+
+// GetInstanceTypeID returns the value of InstanceTypeID.
+func (s *Instance) GetInstanceTypeID() InstanceTypeID {
+	return s.InstanceTypeID
+}
+
+// GetIpv6Address returns the value of Ipv6Address.
+func (s *Instance) GetIpv6Address() NilString {
+	return s.Ipv6Address
+}
+
+// GetLabels returns the value of Labels.
+func (s *Instance) GetLabels() InstanceLabels {
+	return s.Labels
+}
+
+// GetLoginUsername returns the value of LoginUsername.
+func (s *Instance) GetLoginUsername() string {
+	return s.LoginUsername
+}
+
+// GetName returns the value of Name.
+func (s *Instance) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *Instance) GetDescription() string {
+	return s.Description
+}
+
+// GetPrivateIP returns the value of PrivateIP.
+func (s *Instance) GetPrivateIP() NilString {
+	return s.PrivateIP
+}
+
+// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
+func (s *Instance) GetVirtualPrivateCloudID() NilVirtualPrivateCloudID {
+	return s.VirtualPrivateCloudID
+}
+
+// GetElasticIPAddresses returns the value of ElasticIPAddresses.
+func (s *Instance) GetElasticIPAddresses() []string {
+	return s.ElasticIPAddresses
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *Instance) GetRegionID() RegionID {
+	return s.RegionID
+}
+
+// GetStatus returns the value of Status.
+func (s *Instance) GetStatus() InstanceStatus {
+	return s.Status
+}
+
+// GetSubnetID returns the value of SubnetID.
+func (s *Instance) GetSubnetID() NilSubnetID {
+	return s.SubnetID
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *Instance) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// GetRestrictions returns the value of Restrictions.
+func (s *Instance) GetRestrictions() []InstanceRestriction {
+	return s.Restrictions
+}
+
+// GetFailureReason returns the value of FailureReason.
+func (s *Instance) GetFailureReason() NilInstanceFailureReason {
+	return s.FailureReason
+}
+
+// GetOperation returns the value of Operation.
+func (s *Instance) GetOperation() NilInstanceOperation {
+	return s.Operation
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *Instance) GetCheckoutSessionID() NilUUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *Instance) GetOrderID() NilUUID {
+	return s.OrderID
+}
+
+// GetOrderItemID returns the value of OrderItemID.
+func (s *Instance) GetOrderItemID() NilUUID {
+	return s.OrderItemID
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *Instance) GetSubscriptionID() NilUUID {
+	return s.SubscriptionID
+}
+
+// GetReleaseSet returns the value of ReleaseSet.
+func (s *Instance) GetReleaseSet() []ReleaseSetItem {
+	return s.ReleaseSet
+}
+
+// GetAccessState returns the value of AccessState.
+func (s *Instance) GetAccessState() NilInstanceAccessState {
+	return s.AccessState
+}
+
+// GetSourceVolumeID returns the value of SourceVolumeID.
+func (s *Instance) GetSourceVolumeID() NilVolumeID {
+	return s.SourceVolumeID
+}
+
+// GetLaunchTemplateID returns the value of LaunchTemplateID.
+func (s *Instance) GetLaunchTemplateID() NilLaunchTemplateID {
+	return s.LaunchTemplateID
+}
+
+// GetLaunchTemplateVersionNumber returns the value of LaunchTemplateVersionNumber.
+func (s *Instance) GetLaunchTemplateVersionNumber() NilInt64 {
+	return s.LaunchTemplateVersionNumber
+}
+
+// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
+func (s *Instance) SetAvailabilityZoneID(val AvailabilityZoneID) {
+	s.AvailabilityZoneID = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *Instance) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetHostname sets the value of Hostname.
+func (s *Instance) SetHostname(val string) {
+	s.Hostname = val
+}
+
+// SetID sets the value of ID.
+func (s *Instance) SetID(val InstanceID) {
+	s.ID = val
+}
+
+// SetImageID sets the value of ImageID.
+func (s *Instance) SetImageID(val NilImageID) {
+	s.ImageID = val
+}
+
+// SetImageType sets the value of ImageType.
+func (s *Instance) SetImageType(val NilInstanceImageType) {
+	s.ImageType = val
+}
+
+// SetInstanceTypeID sets the value of InstanceTypeID.
+func (s *Instance) SetInstanceTypeID(val InstanceTypeID) {
+	s.InstanceTypeID = val
+}
+
+// SetIpv6Address sets the value of Ipv6Address.
+func (s *Instance) SetIpv6Address(val NilString) {
+	s.Ipv6Address = val
+}
+
+// SetLabels sets the value of Labels.
+func (s *Instance) SetLabels(val InstanceLabels) {
+	s.Labels = val
+}
+
+// SetLoginUsername sets the value of LoginUsername.
+func (s *Instance) SetLoginUsername(val string) {
+	s.LoginUsername = val
+}
+
+// SetName sets the value of Name.
+func (s *Instance) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *Instance) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetPrivateIP sets the value of PrivateIP.
+func (s *Instance) SetPrivateIP(val NilString) {
+	s.PrivateIP = val
+}
+
+// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
+func (s *Instance) SetVirtualPrivateCloudID(val NilVirtualPrivateCloudID) {
+	s.VirtualPrivateCloudID = val
+}
+
+// SetElasticIPAddresses sets the value of ElasticIPAddresses.
+func (s *Instance) SetElasticIPAddresses(val []string) {
+	s.ElasticIPAddresses = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *Instance) SetRegionID(val RegionID) {
+	s.RegionID = val
+}
+
+// SetStatus sets the value of Status.
+func (s *Instance) SetStatus(val InstanceStatus) {
+	s.Status = val
+}
+
+// SetSubnetID sets the value of SubnetID.
+func (s *Instance) SetSubnetID(val NilSubnetID) {
+	s.SubnetID = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *Instance) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+// SetRestrictions sets the value of Restrictions.
+func (s *Instance) SetRestrictions(val []InstanceRestriction) {
+	s.Restrictions = val
+}
+
+// SetFailureReason sets the value of FailureReason.
+func (s *Instance) SetFailureReason(val NilInstanceFailureReason) {
+	s.FailureReason = val
+}
+
+// SetOperation sets the value of Operation.
+func (s *Instance) SetOperation(val NilInstanceOperation) {
+	s.Operation = val
+}
+
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *Instance) SetCheckoutSessionID(val NilUUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *Instance) SetOrderID(val NilUUID) {
+	s.OrderID = val
+}
+
+// SetOrderItemID sets the value of OrderItemID.
+func (s *Instance) SetOrderItemID(val NilUUID) {
+	s.OrderItemID = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *Instance) SetSubscriptionID(val NilUUID) {
+	s.SubscriptionID = val
+}
+
+// SetReleaseSet sets the value of ReleaseSet.
+func (s *Instance) SetReleaseSet(val []ReleaseSetItem) {
+	s.ReleaseSet = val
+}
+
+// SetAccessState sets the value of AccessState.
+func (s *Instance) SetAccessState(val NilInstanceAccessState) {
+	s.AccessState = val
+}
+
+// SetSourceVolumeID sets the value of SourceVolumeID.
+func (s *Instance) SetSourceVolumeID(val NilVolumeID) {
+	s.SourceVolumeID = val
+}
+
+// SetLaunchTemplateID sets the value of LaunchTemplateID.
+func (s *Instance) SetLaunchTemplateID(val NilLaunchTemplateID) {
+	s.LaunchTemplateID = val
+}
+
+// SetLaunchTemplateVersionNumber sets the value of LaunchTemplateVersionNumber.
+func (s *Instance) SetLaunchTemplateVersionNumber(val NilInt64) {
+	s.LaunchTemplateVersionNumber = val
+}
+
+func (*Instance) rebootInstanceRes()   {}
+func (*Instance) startInstanceRes()    {}
+func (*Instance) stopInstanceRes()     {}
+func (*Instance) unrescueInstanceRes() {}
+
+type InstanceAccessState string
+
+const (
+	InstanceAccessStatePending   InstanceAccessState = "pending"
+	InstanceAccessStateEnabled   InstanceAccessState = "enabled"
+	InstanceAccessStateSuspended InstanceAccessState = "suspended"
+	InstanceAccessStateReclaimed InstanceAccessState = "reclaimed"
+)
+
+// AllValues returns all InstanceAccessState values.
+func (InstanceAccessState) AllValues() []InstanceAccessState {
+	return []InstanceAccessState{
+		InstanceAccessStatePending,
+		InstanceAccessStateEnabled,
+		InstanceAccessStateSuspended,
+		InstanceAccessStateReclaimed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InstanceAccessState) MarshalText() ([]byte, error) {
+	switch s {
+	case InstanceAccessStatePending:
+		return []byte(s), nil
+	case InstanceAccessStateEnabled:
+		return []byte(s), nil
+	case InstanceAccessStateSuspended:
+		return []byte(s), nil
+	case InstanceAccessStateReclaimed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InstanceAccessState) UnmarshalText(data []byte) error {
+	switch InstanceAccessState(data) {
+	case InstanceAccessStatePending:
+		*s = InstanceAccessStatePending
+		return nil
+	case InstanceAccessStateEnabled:
+		*s = InstanceAccessStateEnabled
+		return nil
+	case InstanceAccessStateSuspended:
+		*s = InstanceAccessStateSuspended
+		return nil
+	case InstanceAccessStateReclaimed:
+		*s = InstanceAccessStateReclaimed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// An instance; the elastic IP points at the primary private IPv4 address of its primary network
+// interface.
+// Ref: #/components/schemas/InstanceAssociationTarget
+type InstanceAssociationTarget struct {
+	InstanceID InstanceID `json:"instance_id"`
+}
+
+// GetInstanceID returns the value of InstanceID.
+func (s *InstanceAssociationTarget) GetInstanceID() InstanceID {
+	return s.InstanceID
+}
+
+// SetInstanceID sets the value of InstanceID.
+func (s *InstanceAssociationTarget) SetInstanceID(val InstanceID) {
+	s.InstanceID = val
+}
+
+// `new` buys an elastic IP in the instance's order; `existing` associates one you already hold. One
+// address is associated with one interface, so either creates only one instance.
+// Ref: #/components/schemas/InstanceElasticIP
+// InstanceElasticIP represents sum type.
+type InstanceElasticIP struct {
+	// Type selects the active sum variant, switch on this field.
+	Type              InstanceElasticIPType
+	NewElasticIP      NewElasticIP
+	ExistingElasticIP ExistingElasticIP
+}
+
+// InstanceElasticIPType is oneOf type of InstanceElasticIP.
+type InstanceElasticIPType string
+
+// Possible values for InstanceElasticIPType.
+const (
+	NewElasticIPInstanceElasticIP      InstanceElasticIPType = "new"
+	ExistingElasticIPInstanceElasticIP InstanceElasticIPType = "existing"
+)
+
+// IsNewElasticIP reports whether InstanceElasticIP is NewElasticIP.
+func (s InstanceElasticIP) IsNewElasticIP() bool { return s.Type == NewElasticIPInstanceElasticIP }
+
+// IsExistingElasticIP reports whether InstanceElasticIP is ExistingElasticIP.
+func (s InstanceElasticIP) IsExistingElasticIP() bool {
+	return s.Type == ExistingElasticIPInstanceElasticIP
+}
+
+// SetNewElasticIP sets InstanceElasticIP to NewElasticIP.
+func (s *InstanceElasticIP) SetNewElasticIP(v NewElasticIP) {
+	s.Type = NewElasticIPInstanceElasticIP
+	s.NewElasticIP = v
+}
+
+// GetNewElasticIP returns NewElasticIP and true boolean if InstanceElasticIP is NewElasticIP.
+func (s InstanceElasticIP) GetNewElasticIP() (v NewElasticIP, ok bool) {
+	if !s.IsNewElasticIP() {
+		return v, false
+	}
+	return s.NewElasticIP, true
+}
+
+// NewNewElasticIPInstanceElasticIP returns new InstanceElasticIP from NewElasticIP.
+func NewNewElasticIPInstanceElasticIP(v NewElasticIP) InstanceElasticIP {
+	var s InstanceElasticIP
+	s.SetNewElasticIP(v)
+	return s
+}
+
+// SetExistingElasticIP sets InstanceElasticIP to ExistingElasticIP.
+func (s *InstanceElasticIP) SetExistingElasticIP(v ExistingElasticIP) {
+	s.Type = ExistingElasticIPInstanceElasticIP
+	s.ExistingElasticIP = v
+}
+
+// GetExistingElasticIP returns ExistingElasticIP and true boolean if InstanceElasticIP is ExistingElasticIP.
+func (s InstanceElasticIP) GetExistingElasticIP() (v ExistingElasticIP, ok bool) {
+	if !s.IsExistingElasticIP() {
+		return v, false
+	}
+	return s.ExistingElasticIP, true
+}
+
+// NewExistingElasticIPInstanceElasticIP returns new InstanceElasticIP from ExistingElasticIP.
+func NewExistingElasticIPInstanceElasticIP(v ExistingElasticIP) InstanceElasticIP {
+	var s InstanceElasticIP
+	s.SetExistingElasticIP(v)
+	return s
+}
+
+// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
+// order was accepted, and the charge for this instance is refunded.
+type InstanceFailureReason string
+
+const (
+	InstanceFailureReasonOrderDeclined      InstanceFailureReason = "order_declined"
+	InstanceFailureReasonOrderCanceled      InstanceFailureReason = "order_canceled"
+	InstanceFailureReasonOrderExpired       InstanceFailureReason = "order_expired"
+	InstanceFailureReasonCheckoutExpired    InstanceFailureReason = "checkout_expired"
+	InstanceFailureReasonProvisioningFailed InstanceFailureReason = "provisioning_failed"
+)
+
+// AllValues returns all InstanceFailureReason values.
+func (InstanceFailureReason) AllValues() []InstanceFailureReason {
+	return []InstanceFailureReason{
+		InstanceFailureReasonOrderDeclined,
+		InstanceFailureReasonOrderCanceled,
+		InstanceFailureReasonOrderExpired,
+		InstanceFailureReasonCheckoutExpired,
+		InstanceFailureReasonProvisioningFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InstanceFailureReason) MarshalText() ([]byte, error) {
+	switch s {
+	case InstanceFailureReasonOrderDeclined:
+		return []byte(s), nil
+	case InstanceFailureReasonOrderCanceled:
+		return []byte(s), nil
+	case InstanceFailureReasonOrderExpired:
+		return []byte(s), nil
+	case InstanceFailureReasonCheckoutExpired:
+		return []byte(s), nil
+	case InstanceFailureReasonProvisioningFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InstanceFailureReason) UnmarshalText(data []byte) error {
+	switch InstanceFailureReason(data) {
+	case InstanceFailureReasonOrderDeclined:
+		*s = InstanceFailureReasonOrderDeclined
+		return nil
+	case InstanceFailureReasonOrderCanceled:
+		*s = InstanceFailureReasonOrderCanceled
+		return nil
+	case InstanceFailureReasonOrderExpired:
+		*s = InstanceFailureReasonOrderExpired
+		return nil
+	case InstanceFailureReasonCheckoutExpired:
+		*s = InstanceFailureReasonCheckoutExpired
+		return nil
+	case InstanceFailureReasonProvisioningFailed:
+		*s = InstanceFailureReasonProvisioningFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/InstanceFamily
+type InstanceFamily struct {
+	ID       InstanceFamilyID `json:"id"`
+	RegionID RegionID         `json:"region_id"`
+	// The family's name, such as `g7`.
+	Name     string                 `json:"name"`
+	Category InstanceFamilyCategory `json:"category"`
+	// The hardware generation of the family; a higher one is newer hardware.
+	Generation int64 `json:"generation"`
+	// Who makes the CPU the family runs on.
+	CPUVendor InstanceFamilyCPUVendor `json:"cpu_vendor"`
+	// The CPU model, such as `EPYC 9654`; empty when none is stated.
+	CPUModel string `json:"cpu_model"`
+	// `dedicated` gives each vCPU a host thread of its own; `shared` lets the vCPUs of several instances
+	// share host threads.
+	CPUTier InstanceFamilyCPUTier `json:"cpu_tier"`
+}
+
+// GetID returns the value of ID.
+func (s *InstanceFamily) GetID() InstanceFamilyID {
+	return s.ID
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *InstanceFamily) GetRegionID() RegionID {
+	return s.RegionID
+}
+
+// GetName returns the value of Name.
+func (s *InstanceFamily) GetName() string {
+	return s.Name
+}
+
+// GetCategory returns the value of Category.
+func (s *InstanceFamily) GetCategory() InstanceFamilyCategory {
+	return s.Category
+}
+
+// GetGeneration returns the value of Generation.
+func (s *InstanceFamily) GetGeneration() int64 {
+	return s.Generation
+}
+
+// GetCPUVendor returns the value of CPUVendor.
+func (s *InstanceFamily) GetCPUVendor() InstanceFamilyCPUVendor {
+	return s.CPUVendor
+}
+
+// GetCPUModel returns the value of CPUModel.
+func (s *InstanceFamily) GetCPUModel() string {
+	return s.CPUModel
+}
+
+// GetCPUTier returns the value of CPUTier.
+func (s *InstanceFamily) GetCPUTier() InstanceFamilyCPUTier {
+	return s.CPUTier
+}
+
+// SetID sets the value of ID.
+func (s *InstanceFamily) SetID(val InstanceFamilyID) {
+	s.ID = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *InstanceFamily) SetRegionID(val RegionID) {
+	s.RegionID = val
+}
+
+// SetName sets the value of Name.
+func (s *InstanceFamily) SetName(val string) {
+	s.Name = val
+}
+
+// SetCategory sets the value of Category.
+func (s *InstanceFamily) SetCategory(val InstanceFamilyCategory) {
+	s.Category = val
+}
+
+// SetGeneration sets the value of Generation.
+func (s *InstanceFamily) SetGeneration(val int64) {
+	s.Generation = val
+}
+
+// SetCPUVendor sets the value of CPUVendor.
+func (s *InstanceFamily) SetCPUVendor(val InstanceFamilyCPUVendor) {
+	s.CPUVendor = val
+}
+
+// SetCPUModel sets the value of CPUModel.
+func (s *InstanceFamily) SetCPUModel(val string) {
+	s.CPUModel = val
+}
+
+// SetCPUTier sets the value of CPUTier.
+func (s *InstanceFamily) SetCPUTier(val InstanceFamilyCPUTier) {
+	s.CPUTier = val
+}
+
+// `dedicated` gives each vCPU a host thread of its own; `shared` lets the vCPUs of several instances
+// share host threads.
+type InstanceFamilyCPUTier string
+
+const (
+	InstanceFamilyCPUTierDedicated InstanceFamilyCPUTier = "dedicated"
+	InstanceFamilyCPUTierShared    InstanceFamilyCPUTier = "shared"
+)
+
+// AllValues returns all InstanceFamilyCPUTier values.
+func (InstanceFamilyCPUTier) AllValues() []InstanceFamilyCPUTier {
+	return []InstanceFamilyCPUTier{
+		InstanceFamilyCPUTierDedicated,
+		InstanceFamilyCPUTierShared,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InstanceFamilyCPUTier) MarshalText() ([]byte, error) {
+	switch s {
+	case InstanceFamilyCPUTierDedicated:
+		return []byte(s), nil
+	case InstanceFamilyCPUTierShared:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InstanceFamilyCPUTier) UnmarshalText(data []byte) error {
+	switch InstanceFamilyCPUTier(data) {
+	case InstanceFamilyCPUTierDedicated:
+		*s = InstanceFamilyCPUTierDedicated
+		return nil
+	case InstanceFamilyCPUTierShared:
+		*s = InstanceFamilyCPUTierShared
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Who makes the CPU the family runs on.
+type InstanceFamilyCPUVendor string
+
+const (
+	InstanceFamilyCPUVendorIntel InstanceFamilyCPUVendor = "intel"
+	InstanceFamilyCPUVendorAmd   InstanceFamilyCPUVendor = "amd"
+)
+
+// AllValues returns all InstanceFamilyCPUVendor values.
+func (InstanceFamilyCPUVendor) AllValues() []InstanceFamilyCPUVendor {
+	return []InstanceFamilyCPUVendor{
+		InstanceFamilyCPUVendorIntel,
+		InstanceFamilyCPUVendorAmd,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InstanceFamilyCPUVendor) MarshalText() ([]byte, error) {
+	switch s {
+	case InstanceFamilyCPUVendorIntel:
+		return []byte(s), nil
+	case InstanceFamilyCPUVendorAmd:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InstanceFamilyCPUVendor) UnmarshalText(data []byte) error {
+	switch InstanceFamilyCPUVendor(data) {
+	case InstanceFamilyCPUVendorIntel:
+		*s = InstanceFamilyCPUVendorIntel
+		return nil
+	case InstanceFamilyCPUVendorAmd:
+		*s = InstanceFamilyCPUVendorAmd
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// What the family is sized for. `general_purpose` balances vCPU and memory, `compute_optimized` gives
+// less memory per vCPU, and `memory_optimized` more.
+// Ref: #/components/schemas/InstanceFamilyCategory
+type InstanceFamilyCategory string
+
+const (
+	InstanceFamilyCategoryGeneralPurpose   InstanceFamilyCategory = "general_purpose"
+	InstanceFamilyCategoryComputeOptimized InstanceFamilyCategory = "compute_optimized"
+	InstanceFamilyCategoryMemoryOptimized  InstanceFamilyCategory = "memory_optimized"
+)
+
+// AllValues returns all InstanceFamilyCategory values.
+func (InstanceFamilyCategory) AllValues() []InstanceFamilyCategory {
+	return []InstanceFamilyCategory{
+		InstanceFamilyCategoryGeneralPurpose,
+		InstanceFamilyCategoryComputeOptimized,
+		InstanceFamilyCategoryMemoryOptimized,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InstanceFamilyCategory) MarshalText() ([]byte, error) {
+	switch s {
+	case InstanceFamilyCategoryGeneralPurpose:
+		return []byte(s), nil
+	case InstanceFamilyCategoryComputeOptimized:
+		return []byte(s), nil
+	case InstanceFamilyCategoryMemoryOptimized:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InstanceFamilyCategory) UnmarshalText(data []byte) error {
+	switch InstanceFamilyCategory(data) {
+	case InstanceFamilyCategoryGeneralPurpose:
+		*s = InstanceFamilyCategoryGeneralPurpose
+		return nil
+	case InstanceFamilyCategoryComputeOptimized:
+		*s = InstanceFamilyCategoryComputeOptimized
+		return nil
+	case InstanceFamilyCategoryMemoryOptimized:
+		*s = InstanceFamilyCategoryMemoryOptimized
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type InstanceFamilyID string
+
+// Ref: #/components/schemas/InstanceFamilyListResponseBody
+type InstanceFamilyListResponseBody struct {
+	Items      []InstanceFamily `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *InstanceFamilyListResponseBody) GetItems() []InstanceFamily {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *InstanceFamilyListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *InstanceFamilyListResponseBody) SetItems(val []InstanceFamily) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *InstanceFamilyListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+type InstanceID string
+
+// Which collection `image_id` belongs to. `public` means `/public-images`, `private` means
+// `/private-images`. Null when the instance boots from a volume and therefore has no image.
+type InstanceImageType string
+
+const (
+	InstanceImageTypePublic  InstanceImageType = "public"
+	InstanceImageTypePrivate InstanceImageType = "private"
+)
+
+// AllValues returns all InstanceImageType values.
+func (InstanceImageType) AllValues() []InstanceImageType {
+	return []InstanceImageType{
+		InstanceImageTypePublic,
+		InstanceImageTypePrivate,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InstanceImageType) MarshalText() ([]byte, error) {
+	switch s {
+	case InstanceImageTypePublic:
+		return []byte(s), nil
+	case InstanceImageTypePrivate:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InstanceImageType) UnmarshalText(data []byte) error {
+	switch InstanceImageType(data) {
+	case InstanceImageTypePublic:
+		*s = InstanceImageTypePublic
+		return nil
+	case InstanceImageTypePrivate:
+		*s = InstanceImageTypePrivate
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Your own classification of this instance, as key-value pairs. Empty when never set.
+type InstanceLabels map[string]string
+
+func (s *InstanceLabels) init() InstanceLabels {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/InstanceListResponseBody
+type InstanceListResponseBody struct {
+	Items      []Instance       `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *InstanceListResponseBody) GetItems() []Instance {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *InstanceListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *InstanceListResponseBody) SetItems(val []Instance) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *InstanceListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+type InstanceNetworkInterfaceID string
+
+// An operation still running on this instance. It is not a separate resource; once it finishes, the
+// instance's `operation` is null again and the instance shows the result.
+// Ref: #/components/schemas/InstanceOperation
+type InstanceOperation struct {
+	// `create` runs from acceptance of the order until the instance is `running` or `failed`. `suspend`
+	// and `resume` impose and lift a suspension by the platform or for non-payment. `capture_image` holds
+	// the machine while a private image is captured from the volume it boots from; the machine cannot be
+	// resized, rebuilt or released meanwhile. `delete` includes release through a Billing cancellation.
+	Type      InstanceOperationType `json:"type"`
+	StartedAt time.Time             `json:"started_at"`
+}
+
+// GetType returns the value of Type.
+func (s *InstanceOperation) GetType() InstanceOperationType {
+	return s.Type
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *InstanceOperation) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// SetType sets the value of Type.
+func (s *InstanceOperation) SetType(val InstanceOperationType) {
+	s.Type = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *InstanceOperation) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// `create` runs from acceptance of the order until the instance is `running` or `failed`. `suspend`
+// and `resume` impose and lift a suspension by the platform or for non-payment. `capture_image` holds
+// the machine while a private image is captured from the volume it boots from; the machine cannot be
+// resized, rebuilt or released meanwhile. `delete` includes release through a Billing cancellation.
+type InstanceOperationType string
+
+const (
+	InstanceOperationTypeCreate                 InstanceOperationType = "create"
+	InstanceOperationTypeStart                  InstanceOperationType = "start"
+	InstanceOperationTypeStop                   InstanceOperationType = "stop"
+	InstanceOperationTypeReboot                 InstanceOperationType = "reboot"
+	InstanceOperationTypeRebuild                InstanceOperationType = "rebuild"
+	InstanceOperationTypeRescue                 InstanceOperationType = "rescue"
+	InstanceOperationTypeUnrescue               InstanceOperationType = "unrescue"
+	InstanceOperationTypeResize                 InstanceOperationType = "resize"
+	InstanceOperationTypeResetPassword          InstanceOperationType = "reset_password"
+	InstanceOperationTypeAttachVolume           InstanceOperationType = "attach_volume"
+	InstanceOperationTypeDetachVolume           InstanceOperationType = "detach_volume"
+	InstanceOperationTypeAttachNetworkInterface InstanceOperationType = "attach_network_interface"
+	InstanceOperationTypeDetachNetworkInterface InstanceOperationType = "detach_network_interface"
+	InstanceOperationTypeAssociateElasticIP     InstanceOperationType = "associate_elastic_ip"
+	InstanceOperationTypeDisassociateElasticIP  InstanceOperationType = "disassociate_elastic_ip"
+	InstanceOperationTypeCaptureImage           InstanceOperationType = "capture_image"
+	InstanceOperationTypeSuspend                InstanceOperationType = "suspend"
+	InstanceOperationTypeResume                 InstanceOperationType = "resume"
+	InstanceOperationTypeDelete                 InstanceOperationType = "delete"
+)
+
+// AllValues returns all InstanceOperationType values.
+func (InstanceOperationType) AllValues() []InstanceOperationType {
+	return []InstanceOperationType{
+		InstanceOperationTypeCreate,
+		InstanceOperationTypeStart,
+		InstanceOperationTypeStop,
+		InstanceOperationTypeReboot,
+		InstanceOperationTypeRebuild,
+		InstanceOperationTypeRescue,
+		InstanceOperationTypeUnrescue,
+		InstanceOperationTypeResize,
+		InstanceOperationTypeResetPassword,
+		InstanceOperationTypeAttachVolume,
+		InstanceOperationTypeDetachVolume,
+		InstanceOperationTypeAttachNetworkInterface,
+		InstanceOperationTypeDetachNetworkInterface,
+		InstanceOperationTypeAssociateElasticIP,
+		InstanceOperationTypeDisassociateElasticIP,
+		InstanceOperationTypeCaptureImage,
+		InstanceOperationTypeSuspend,
+		InstanceOperationTypeResume,
+		InstanceOperationTypeDelete,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InstanceOperationType) MarshalText() ([]byte, error) {
+	switch s {
+	case InstanceOperationTypeCreate:
+		return []byte(s), nil
+	case InstanceOperationTypeStart:
+		return []byte(s), nil
+	case InstanceOperationTypeStop:
+		return []byte(s), nil
+	case InstanceOperationTypeReboot:
+		return []byte(s), nil
+	case InstanceOperationTypeRebuild:
+		return []byte(s), nil
+	case InstanceOperationTypeRescue:
+		return []byte(s), nil
+	case InstanceOperationTypeUnrescue:
+		return []byte(s), nil
+	case InstanceOperationTypeResize:
+		return []byte(s), nil
+	case InstanceOperationTypeResetPassword:
+		return []byte(s), nil
+	case InstanceOperationTypeAttachVolume:
+		return []byte(s), nil
+	case InstanceOperationTypeDetachVolume:
+		return []byte(s), nil
+	case InstanceOperationTypeAttachNetworkInterface:
+		return []byte(s), nil
+	case InstanceOperationTypeDetachNetworkInterface:
+		return []byte(s), nil
+	case InstanceOperationTypeAssociateElasticIP:
+		return []byte(s), nil
+	case InstanceOperationTypeDisassociateElasticIP:
+		return []byte(s), nil
+	case InstanceOperationTypeCaptureImage:
+		return []byte(s), nil
+	case InstanceOperationTypeSuspend:
+		return []byte(s), nil
+	case InstanceOperationTypeResume:
+		return []byte(s), nil
+	case InstanceOperationTypeDelete:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InstanceOperationType) UnmarshalText(data []byte) error {
+	switch InstanceOperationType(data) {
+	case InstanceOperationTypeCreate:
+		*s = InstanceOperationTypeCreate
+		return nil
+	case InstanceOperationTypeStart:
+		*s = InstanceOperationTypeStart
+		return nil
+	case InstanceOperationTypeStop:
+		*s = InstanceOperationTypeStop
+		return nil
+	case InstanceOperationTypeReboot:
+		*s = InstanceOperationTypeReboot
+		return nil
+	case InstanceOperationTypeRebuild:
+		*s = InstanceOperationTypeRebuild
+		return nil
+	case InstanceOperationTypeRescue:
+		*s = InstanceOperationTypeRescue
+		return nil
+	case InstanceOperationTypeUnrescue:
+		*s = InstanceOperationTypeUnrescue
+		return nil
+	case InstanceOperationTypeResize:
+		*s = InstanceOperationTypeResize
+		return nil
+	case InstanceOperationTypeResetPassword:
+		*s = InstanceOperationTypeResetPassword
+		return nil
+	case InstanceOperationTypeAttachVolume:
+		*s = InstanceOperationTypeAttachVolume
+		return nil
+	case InstanceOperationTypeDetachVolume:
+		*s = InstanceOperationTypeDetachVolume
+		return nil
+	case InstanceOperationTypeAttachNetworkInterface:
+		*s = InstanceOperationTypeAttachNetworkInterface
+		return nil
+	case InstanceOperationTypeDetachNetworkInterface:
+		*s = InstanceOperationTypeDetachNetworkInterface
+		return nil
+	case InstanceOperationTypeAssociateElasticIP:
+		*s = InstanceOperationTypeAssociateElasticIP
+		return nil
+	case InstanceOperationTypeDisassociateElasticIP:
+		*s = InstanceOperationTypeDisassociateElasticIP
+		return nil
+	case InstanceOperationTypeCaptureImage:
+		*s = InstanceOperationTypeCaptureImage
+		return nil
+	case InstanceOperationTypeSuspend:
+		*s = InstanceOperationTypeSuspend
+		return nil
+	case InstanceOperationTypeResume:
+		*s = InstanceOperationTypeResume
+		return nil
+	case InstanceOperationTypeDelete:
+		*s = InstanceOperationTypeDelete
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A resource a release set releases.
+// Ref: #/components/schemas/InstanceReleaseResource
+type InstanceReleaseResource struct {
+	Type InstanceReleaseResourceType `json:"type"`
+	// The identifier of the resource selected by type.
+	ID InstanceID `json:"id"`
+	// The current display name of the selected resource.
+	Name string `json:"name"`
+}
+
+// GetType returns the value of Type.
+func (s *InstanceReleaseResource) GetType() InstanceReleaseResourceType {
+	return s.Type
+}
+
+// GetID returns the value of ID.
+func (s *InstanceReleaseResource) GetID() InstanceID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *InstanceReleaseResource) GetName() string {
+	return s.Name
+}
+
+// SetType sets the value of Type.
+func (s *InstanceReleaseResource) SetType(val InstanceReleaseResourceType) {
+	s.Type = val
+}
+
+// SetID sets the value of ID.
+func (s *InstanceReleaseResource) SetID(val InstanceID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *InstanceReleaseResource) SetName(val string) {
+	s.Name = val
+}
+
+type InstanceReleaseResourceType string
+
+const (
+	InstanceReleaseResourceTypeInstance InstanceReleaseResourceType = "instance"
+)
+
+// AllValues returns all InstanceReleaseResourceType values.
+func (InstanceReleaseResourceType) AllValues() []InstanceReleaseResourceType {
+	return []InstanceReleaseResourceType{
+		InstanceReleaseResourceTypeInstance,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InstanceReleaseResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case InstanceReleaseResourceTypeInstance:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InstanceReleaseResourceType) UnmarshalText(data []byte) error {
+	switch InstanceReleaseResourceType(data) {
+	case InstanceReleaseResourceTypeInstance:
+		*s = InstanceReleaseResourceTypeInstance
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// One hold on the instance. While any holds it, the instance is stopped and refuses being started,
+// rebooted, rebuilt, resized, rescued, having its password reset and running commands, with 409
+// `INSTANCE_SUSPENDED`. Holds are independent: lifting one never lifts another, and once none remains
+// the instance is started again only if a hold stopped it, never one its user stopped.
+// Ref: #/components/schemas/InstanceRestriction
+type InstanceRestriction struct {
+	// Why it is held. `operator_suspended` is a suspension by the platform. `billing_suspended` is the
+	// instance's own subscription suspended for non-payment, and `billing_reclaimed` that subscription
+	// ending, after which the instance is released. `boot_volume_suspended` and `boot_volume_reclaimed`
+	// are the same for the subscription of the volume the instance boots from: that volume is billed
+	// apart, and the instance cannot run without it, so renewing the volume's subscription lifts the hold,
+	// and a reclaimed boot volume is released together with its instance.
+	Reason InstanceRestrictionReason `json:"reason"`
+	// The Billing subscription whose state holds the instance; null for `operator_suspended`.
+	SubscriptionID NilUUID `json:"subscription_id"`
+	// The volume the instance boots from, for `boot_volume_suspended` and `boot_volume_reclaimed`; null
+	// otherwise.
+	VolumeID NilVolumeID `json:"volume_id"`
+	// When the hold began; null when that instant was not recorded.
+	StartedAt NilDateTime `json:"started_at"`
+}
+
+// GetReason returns the value of Reason.
+func (s *InstanceRestriction) GetReason() InstanceRestrictionReason {
+	return s.Reason
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *InstanceRestriction) GetSubscriptionID() NilUUID {
+	return s.SubscriptionID
+}
+
+// GetVolumeID returns the value of VolumeID.
+func (s *InstanceRestriction) GetVolumeID() NilVolumeID {
+	return s.VolumeID
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *InstanceRestriction) GetStartedAt() NilDateTime {
+	return s.StartedAt
+}
+
+// SetReason sets the value of Reason.
+func (s *InstanceRestriction) SetReason(val InstanceRestrictionReason) {
+	s.Reason = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *InstanceRestriction) SetSubscriptionID(val NilUUID) {
+	s.SubscriptionID = val
+}
+
+// SetVolumeID sets the value of VolumeID.
+func (s *InstanceRestriction) SetVolumeID(val NilVolumeID) {
+	s.VolumeID = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *InstanceRestriction) SetStartedAt(val NilDateTime) {
+	s.StartedAt = val
+}
+
+// Why it is held. `operator_suspended` is a suspension by the platform. `billing_suspended` is the
+// instance's own subscription suspended for non-payment, and `billing_reclaimed` that subscription
+// ending, after which the instance is released. `boot_volume_suspended` and `boot_volume_reclaimed`
+// are the same for the subscription of the volume the instance boots from: that volume is billed
+// apart, and the instance cannot run without it, so renewing the volume's subscription lifts the hold,
+// and a reclaimed boot volume is released together with its instance.
+type InstanceRestrictionReason string
+
+const (
+	InstanceRestrictionReasonOperatorSuspended   InstanceRestrictionReason = "operator_suspended"
+	InstanceRestrictionReasonBillingSuspended    InstanceRestrictionReason = "billing_suspended"
+	InstanceRestrictionReasonBillingReclaimed    InstanceRestrictionReason = "billing_reclaimed"
+	InstanceRestrictionReasonBootVolumeSuspended InstanceRestrictionReason = "boot_volume_suspended"
+	InstanceRestrictionReasonBootVolumeReclaimed InstanceRestrictionReason = "boot_volume_reclaimed"
+)
+
+// AllValues returns all InstanceRestrictionReason values.
+func (InstanceRestrictionReason) AllValues() []InstanceRestrictionReason {
+	return []InstanceRestrictionReason{
+		InstanceRestrictionReasonOperatorSuspended,
+		InstanceRestrictionReasonBillingSuspended,
+		InstanceRestrictionReasonBillingReclaimed,
+		InstanceRestrictionReasonBootVolumeSuspended,
+		InstanceRestrictionReasonBootVolumeReclaimed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InstanceRestrictionReason) MarshalText() ([]byte, error) {
+	switch s {
+	case InstanceRestrictionReasonOperatorSuspended:
+		return []byte(s), nil
+	case InstanceRestrictionReasonBillingSuspended:
+		return []byte(s), nil
+	case InstanceRestrictionReasonBillingReclaimed:
+		return []byte(s), nil
+	case InstanceRestrictionReasonBootVolumeSuspended:
+		return []byte(s), nil
+	case InstanceRestrictionReasonBootVolumeReclaimed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InstanceRestrictionReason) UnmarshalText(data []byte) error {
+	switch InstanceRestrictionReason(data) {
+	case InstanceRestrictionReasonOperatorSuspended:
+		*s = InstanceRestrictionReasonOperatorSuspended
+		return nil
+	case InstanceRestrictionReasonBillingSuspended:
+		*s = InstanceRestrictionReasonBillingSuspended
+		return nil
+	case InstanceRestrictionReasonBillingReclaimed:
+		*s = InstanceRestrictionReasonBillingReclaimed
+		return nil
+	case InstanceRestrictionReasonBootVolumeSuspended:
+		*s = InstanceRestrictionReasonBootVolumeSuspended
+		return nil
+	case InstanceRestrictionReasonBootVolumeReclaimed:
+		*s = InstanceRestrictionReasonBootVolumeReclaimed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `pending` until the instance is created: before the order is accepted no instance exists and
+// addresses are null, and while it is created it shows the `create` operation. Then `running`.
+// `failed` means the instance was not created; `failure_reason` states why. The other values are the
+// state of the instance in the cloud; an operation in progress appears in `operation`, not here.
+type InstanceStatus string
+
+const (
+	InstanceStatusPending   InstanceStatus = "pending"
+	InstanceStatusActive    InstanceStatus = "active"
+	InstanceStatusStopped   InstanceStatus = "stopped"
+	InstanceStatusPaused    InstanceStatus = "paused"
+	InstanceStatusSuspended InstanceStatus = "suspended"
+	InstanceStatusRescued   InstanceStatus = "rescued"
+	InstanceStatusDeleted   InstanceStatus = "deleted"
+	InstanceStatusFailed    InstanceStatus = "failed"
+	InstanceStatusError     InstanceStatus = "error"
+)
+
+// AllValues returns all InstanceStatus values.
+func (InstanceStatus) AllValues() []InstanceStatus {
+	return []InstanceStatus{
+		InstanceStatusPending,
+		InstanceStatusActive,
+		InstanceStatusStopped,
+		InstanceStatusPaused,
+		InstanceStatusSuspended,
+		InstanceStatusRescued,
+		InstanceStatusDeleted,
+		InstanceStatusFailed,
+		InstanceStatusError,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InstanceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case InstanceStatusPending:
+		return []byte(s), nil
+	case InstanceStatusActive:
+		return []byte(s), nil
+	case InstanceStatusStopped:
+		return []byte(s), nil
+	case InstanceStatusPaused:
+		return []byte(s), nil
+	case InstanceStatusSuspended:
+		return []byte(s), nil
+	case InstanceStatusRescued:
+		return []byte(s), nil
+	case InstanceStatusDeleted:
+		return []byte(s), nil
+	case InstanceStatusFailed:
+		return []byte(s), nil
+	case InstanceStatusError:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InstanceStatus) UnmarshalText(data []byte) error {
+	switch InstanceStatus(data) {
+	case InstanceStatusPending:
+		*s = InstanceStatusPending
+		return nil
+	case InstanceStatusActive:
+		*s = InstanceStatusActive
+		return nil
+	case InstanceStatusStopped:
+		*s = InstanceStatusStopped
+		return nil
+	case InstanceStatusPaused:
+		*s = InstanceStatusPaused
+		return nil
+	case InstanceStatusSuspended:
+		*s = InstanceStatusSuspended
+		return nil
+	case InstanceStatusRescued:
+		*s = InstanceStatusRescued
+		return nil
+	case InstanceStatusDeleted:
+		*s = InstanceStatusDeleted
+		return nil
+	case InstanceStatusFailed:
+		*s = InstanceStatusFailed
+		return nil
+	case InstanceStatusError:
+		*s = InstanceStatusError
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/InstanceType
+type InstanceType struct {
+	// The availability zone the type belongs to, where an instance of it is created. A resize stays in the
+	// instance's zone, so the target type has to be one of the same zone.
+	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
+	// `sold_out` takes no new orders for now while the type stays listed; the instances already of it keep
+	// working.
+	SaleStatus InstanceTypeSaleStatus `json:"sale_status"`
+	ID         InstanceTypeID         `json:"id"`
+	// The instance family the type is a size of, in the same region. It cannot change.
+	InstanceFamilyID InstanceFamilyID `json:"instance_family_id"`
+	// The machine's network rate, in Mbps. Each network interface of the machine is limited to it in both
+	// directions — per interface rather than shared, so a machine with two interfaces has this rate on
+	// each of them; `max_network_interfaces` says how many it may have. Zero is no limit.
+	//
+	// An elastic IP associated with the machine cannot be bought faster than this rate; asking for more is
+	// refused with `INSTANCE_BANDWIDTH_CEILING`.
+	MaxBandwidthMbps     int64    `json:"max_bandwidth_mbps"`
+	MaxElasticIps        int64    `json:"max_elastic_ips"`
+	MaxNetworkInterfaces int64    `json:"max_network_interfaces"`
+	Name                 string   `json:"name"`
+	MemoryMib            int64    `json:"memory_mib"`
+	RegionID             RegionID `json:"region_id"`
+	Vcpus                int64    `json:"vcpus"`
+	// The line an instance of this type is. The boot volume and data volumes bought with it are lines of
+	// their volume types, and a new elastic IP the two lines of its elastic IP line.
+	Billing BillingComponent `json:"billing"`
+}
+
+// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
+func (s *InstanceType) GetAvailabilityZoneID() AvailabilityZoneID {
+	return s.AvailabilityZoneID
+}
+
+// GetSaleStatus returns the value of SaleStatus.
+func (s *InstanceType) GetSaleStatus() InstanceTypeSaleStatus {
+	return s.SaleStatus
+}
+
+// GetID returns the value of ID.
+func (s *InstanceType) GetID() InstanceTypeID {
+	return s.ID
+}
+
+// GetInstanceFamilyID returns the value of InstanceFamilyID.
+func (s *InstanceType) GetInstanceFamilyID() InstanceFamilyID {
+	return s.InstanceFamilyID
+}
+
+// GetMaxBandwidthMbps returns the value of MaxBandwidthMbps.
+func (s *InstanceType) GetMaxBandwidthMbps() int64 {
+	return s.MaxBandwidthMbps
+}
+
+// GetMaxElasticIps returns the value of MaxElasticIps.
+func (s *InstanceType) GetMaxElasticIps() int64 {
+	return s.MaxElasticIps
+}
+
+// GetMaxNetworkInterfaces returns the value of MaxNetworkInterfaces.
+func (s *InstanceType) GetMaxNetworkInterfaces() int64 {
+	return s.MaxNetworkInterfaces
+}
+
+// GetName returns the value of Name.
+func (s *InstanceType) GetName() string {
+	return s.Name
+}
+
+// GetMemoryMib returns the value of MemoryMib.
+func (s *InstanceType) GetMemoryMib() int64 {
+	return s.MemoryMib
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *InstanceType) GetRegionID() RegionID {
+	return s.RegionID
+}
+
+// GetVcpus returns the value of Vcpus.
+func (s *InstanceType) GetVcpus() int64 {
+	return s.Vcpus
+}
+
+// GetBilling returns the value of Billing.
+func (s *InstanceType) GetBilling() BillingComponent {
+	return s.Billing
+}
+
+// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
+func (s *InstanceType) SetAvailabilityZoneID(val AvailabilityZoneID) {
+	s.AvailabilityZoneID = val
+}
+
+// SetSaleStatus sets the value of SaleStatus.
+func (s *InstanceType) SetSaleStatus(val InstanceTypeSaleStatus) {
+	s.SaleStatus = val
+}
+
+// SetID sets the value of ID.
+func (s *InstanceType) SetID(val InstanceTypeID) {
+	s.ID = val
+}
+
+// SetInstanceFamilyID sets the value of InstanceFamilyID.
+func (s *InstanceType) SetInstanceFamilyID(val InstanceFamilyID) {
+	s.InstanceFamilyID = val
+}
+
+// SetMaxBandwidthMbps sets the value of MaxBandwidthMbps.
+func (s *InstanceType) SetMaxBandwidthMbps(val int64) {
+	s.MaxBandwidthMbps = val
+}
+
+// SetMaxElasticIps sets the value of MaxElasticIps.
+func (s *InstanceType) SetMaxElasticIps(val int64) {
+	s.MaxElasticIps = val
+}
+
+// SetMaxNetworkInterfaces sets the value of MaxNetworkInterfaces.
+func (s *InstanceType) SetMaxNetworkInterfaces(val int64) {
+	s.MaxNetworkInterfaces = val
+}
+
+// SetName sets the value of Name.
+func (s *InstanceType) SetName(val string) {
+	s.Name = val
+}
+
+// SetMemoryMib sets the value of MemoryMib.
+func (s *InstanceType) SetMemoryMib(val int64) {
+	s.MemoryMib = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *InstanceType) SetRegionID(val RegionID) {
+	s.RegionID = val
+}
+
+// SetVcpus sets the value of Vcpus.
+func (s *InstanceType) SetVcpus(val int64) {
+	s.Vcpus = val
+}
+
+// SetBilling sets the value of Billing.
+func (s *InstanceType) SetBilling(val BillingComponent) {
+	s.Billing = val
+}
+
+type InstanceTypeID string
+
+// Ref: #/components/schemas/InstanceTypeListResponseBody
+type InstanceTypeListResponseBody struct {
+	Items      []InstanceType   `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *InstanceTypeListResponseBody) GetItems() []InstanceType {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *InstanceTypeListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *InstanceTypeListResponseBody) SetItems(val []InstanceType) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *InstanceTypeListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// `sold_out` takes no new orders for now while the type stays listed; the instances already of it keep
+// working.
+type InstanceTypeSaleStatus string
+
+const (
+	InstanceTypeSaleStatusOnSale  InstanceTypeSaleStatus = "on_sale"
+	InstanceTypeSaleStatusSoldOut InstanceTypeSaleStatus = "sold_out"
+)
+
+// AllValues returns all InstanceTypeSaleStatus values.
+func (InstanceTypeSaleStatus) AllValues() []InstanceTypeSaleStatus {
+	return []InstanceTypeSaleStatus{
+		InstanceTypeSaleStatusOnSale,
+		InstanceTypeSaleStatusSoldOut,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InstanceTypeSaleStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case InstanceTypeSaleStatusOnSale:
+		return []byte(s), nil
+	case InstanceTypeSaleStatusSoldOut:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InstanceTypeSaleStatus) UnmarshalText(data []byte) error {
+	switch InstanceTypeSaleStatus(data) {
+	case InstanceTypeSaleStatusOnSale:
+		*s = InstanceTypeSaleStatusOnSale
+		return nil
+	case InstanceTypeSaleStatusSoldOut:
+		*s = InstanceTypeSaleStatusSoldOut
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type InstanceVolumeID string
+
 // What the network subscription of an elastic IP charges for. `bandwidth` charges for the bandwidth
 // ceiling, prepaid for a period or by the Mbit/s-second while the address is associated. `traffic`
 // charges for the bytes the address sends upstream, pay-as-you-go only, while the bandwidth is only a
@@ -5979,8 +5377,7 @@ type ImageID string
 // is `off_sale`. Inbound traffic is never charged. Prices are set per currency, so a pay-as-you-go
 // purchase whose account currency has no rate on the line for the chosen type is refused before any
 // order with HTTP 403 `ELASTIC_IP_CHARGE_TYPE_NOT_OFFERED`, whether the elastic IP is bought alone or
-// with a virtual machine. A pay-as-you-go elastic IP can move between the two with
-// `update-elastic-ip`.
+// with an instance. A pay-as-you-go elastic IP can move between the two with `update-elastic-ip`.
 // Ref: #/components/schemas/InternetChargeType
 type InternetChargeType string
 
@@ -6030,11 +5427,11 @@ type LaunchTemplate struct {
 	Name        string           `json:"name"`
 	Description string           `json:"description"`
 	// The version a creation naming no version uses.
-	DefaultVersion int64 `json:"default_version"`
+	DefaultVersionNumber int64 `json:"default_version_number"`
 	// The highest version number the template ever had.
-	LatestVersion int64     `json:"latest_version"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	LatestVersionNumber int64     `json:"latest_version_number"`
+	CreatedAt           time.Time `json:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at"`
 }
 
 // GetID returns the value of ID.
@@ -6057,14 +5454,14 @@ func (s *LaunchTemplate) GetDescription() string {
 	return s.Description
 }
 
-// GetDefaultVersion returns the value of DefaultVersion.
-func (s *LaunchTemplate) GetDefaultVersion() int64 {
-	return s.DefaultVersion
+// GetDefaultVersionNumber returns the value of DefaultVersionNumber.
+func (s *LaunchTemplate) GetDefaultVersionNumber() int64 {
+	return s.DefaultVersionNumber
 }
 
-// GetLatestVersion returns the value of LatestVersion.
-func (s *LaunchTemplate) GetLatestVersion() int64 {
-	return s.LatestVersion
+// GetLatestVersionNumber returns the value of LatestVersionNumber.
+func (s *LaunchTemplate) GetLatestVersionNumber() int64 {
+	return s.LatestVersionNumber
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -6097,14 +5494,14 @@ func (s *LaunchTemplate) SetDescription(val string) {
 	s.Description = val
 }
 
-// SetDefaultVersion sets the value of DefaultVersion.
-func (s *LaunchTemplate) SetDefaultVersion(val int64) {
-	s.DefaultVersion = val
+// SetDefaultVersionNumber sets the value of DefaultVersionNumber.
+func (s *LaunchTemplate) SetDefaultVersionNumber(val int64) {
+	s.DefaultVersionNumber = val
 }
 
-// SetLatestVersion sets the value of LatestVersion.
-func (s *LaunchTemplate) SetLatestVersion(val int64) {
-	s.LatestVersion = val
+// SetLatestVersionNumber sets the value of LatestVersionNumber.
+func (s *LaunchTemplate) SetLatestVersionNumber(val int64) {
+	s.LatestVersionNumber = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -6117,76 +5514,76 @@ func (s *LaunchTemplate) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
 }
 
-// A system disk created from an image for each virtual machine.
-// Ref: #/components/schemas/LaunchTemplateBootDisk
-type LaunchTemplateBootDisk struct {
-	ImageID                 ImageID                                          `json:"image_id"`
-	DiskTypeID              DiskTypeID                                       `json:"disk_type_id"`
-	SizeGB                  int64                                            `json:"size_gb"`
-	OnVirtualMachineRelease OptLaunchTemplateBootDiskOnVirtualMachineRelease `json:"on_virtual_machine_release"`
+// A boot volume created from an image for each instance.
+// Ref: #/components/schemas/LaunchTemplateBootVolume
+type LaunchTemplateBootVolume struct {
+	ImageID           ImageID                                      `json:"image_id"`
+	VolumeTypeID      VolumeTypeID                                 `json:"volume_type_id"`
+	SizeGib           int64                                        `json:"size_gib"`
+	OnInstanceRelease OptLaunchTemplateBootVolumeOnInstanceRelease `json:"on_instance_release"`
 }
 
 // GetImageID returns the value of ImageID.
-func (s *LaunchTemplateBootDisk) GetImageID() ImageID {
+func (s *LaunchTemplateBootVolume) GetImageID() ImageID {
 	return s.ImageID
 }
 
-// GetDiskTypeID returns the value of DiskTypeID.
-func (s *LaunchTemplateBootDisk) GetDiskTypeID() DiskTypeID {
-	return s.DiskTypeID
+// GetVolumeTypeID returns the value of VolumeTypeID.
+func (s *LaunchTemplateBootVolume) GetVolumeTypeID() VolumeTypeID {
+	return s.VolumeTypeID
 }
 
-// GetSizeGB returns the value of SizeGB.
-func (s *LaunchTemplateBootDisk) GetSizeGB() int64 {
-	return s.SizeGB
+// GetSizeGib returns the value of SizeGib.
+func (s *LaunchTemplateBootVolume) GetSizeGib() int64 {
+	return s.SizeGib
 }
 
-// GetOnVirtualMachineRelease returns the value of OnVirtualMachineRelease.
-func (s *LaunchTemplateBootDisk) GetOnVirtualMachineRelease() OptLaunchTemplateBootDiskOnVirtualMachineRelease {
-	return s.OnVirtualMachineRelease
+// GetOnInstanceRelease returns the value of OnInstanceRelease.
+func (s *LaunchTemplateBootVolume) GetOnInstanceRelease() OptLaunchTemplateBootVolumeOnInstanceRelease {
+	return s.OnInstanceRelease
 }
 
 // SetImageID sets the value of ImageID.
-func (s *LaunchTemplateBootDisk) SetImageID(val ImageID) {
+func (s *LaunchTemplateBootVolume) SetImageID(val ImageID) {
 	s.ImageID = val
 }
 
-// SetDiskTypeID sets the value of DiskTypeID.
-func (s *LaunchTemplateBootDisk) SetDiskTypeID(val DiskTypeID) {
-	s.DiskTypeID = val
+// SetVolumeTypeID sets the value of VolumeTypeID.
+func (s *LaunchTemplateBootVolume) SetVolumeTypeID(val VolumeTypeID) {
+	s.VolumeTypeID = val
 }
 
-// SetSizeGB sets the value of SizeGB.
-func (s *LaunchTemplateBootDisk) SetSizeGB(val int64) {
-	s.SizeGB = val
+// SetSizeGib sets the value of SizeGib.
+func (s *LaunchTemplateBootVolume) SetSizeGib(val int64) {
+	s.SizeGib = val
 }
 
-// SetOnVirtualMachineRelease sets the value of OnVirtualMachineRelease.
-func (s *LaunchTemplateBootDisk) SetOnVirtualMachineRelease(val OptLaunchTemplateBootDiskOnVirtualMachineRelease) {
-	s.OnVirtualMachineRelease = val
+// SetOnInstanceRelease sets the value of OnInstanceRelease.
+func (s *LaunchTemplateBootVolume) SetOnInstanceRelease(val OptLaunchTemplateBootVolumeOnInstanceRelease) {
+	s.OnInstanceRelease = val
 }
 
-type LaunchTemplateBootDiskOnVirtualMachineRelease string
+type LaunchTemplateBootVolumeOnInstanceRelease string
 
 const (
-	LaunchTemplateBootDiskOnVirtualMachineReleaseDelete LaunchTemplateBootDiskOnVirtualMachineRelease = "delete"
-	LaunchTemplateBootDiskOnVirtualMachineReleaseDetach LaunchTemplateBootDiskOnVirtualMachineRelease = "detach"
+	LaunchTemplateBootVolumeOnInstanceReleaseDelete LaunchTemplateBootVolumeOnInstanceRelease = "delete"
+	LaunchTemplateBootVolumeOnInstanceReleaseDetach LaunchTemplateBootVolumeOnInstanceRelease = "detach"
 )
 
-// AllValues returns all LaunchTemplateBootDiskOnVirtualMachineRelease values.
-func (LaunchTemplateBootDiskOnVirtualMachineRelease) AllValues() []LaunchTemplateBootDiskOnVirtualMachineRelease {
-	return []LaunchTemplateBootDiskOnVirtualMachineRelease{
-		LaunchTemplateBootDiskOnVirtualMachineReleaseDelete,
-		LaunchTemplateBootDiskOnVirtualMachineReleaseDetach,
+// AllValues returns all LaunchTemplateBootVolumeOnInstanceRelease values.
+func (LaunchTemplateBootVolumeOnInstanceRelease) AllValues() []LaunchTemplateBootVolumeOnInstanceRelease {
+	return []LaunchTemplateBootVolumeOnInstanceRelease{
+		LaunchTemplateBootVolumeOnInstanceReleaseDelete,
+		LaunchTemplateBootVolumeOnInstanceReleaseDetach,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s LaunchTemplateBootDiskOnVirtualMachineRelease) MarshalText() ([]byte, error) {
+func (s LaunchTemplateBootVolumeOnInstanceRelease) MarshalText() ([]byte, error) {
 	switch s {
-	case LaunchTemplateBootDiskOnVirtualMachineReleaseDelete:
+	case LaunchTemplateBootVolumeOnInstanceReleaseDelete:
 		return []byte(s), nil
-	case LaunchTemplateBootDiskOnVirtualMachineReleaseDetach:
+	case LaunchTemplateBootVolumeOnInstanceReleaseDetach:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -6194,78 +5591,78 @@ func (s LaunchTemplateBootDiskOnVirtualMachineRelease) MarshalText() ([]byte, er
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *LaunchTemplateBootDiskOnVirtualMachineRelease) UnmarshalText(data []byte) error {
-	switch LaunchTemplateBootDiskOnVirtualMachineRelease(data) {
-	case LaunchTemplateBootDiskOnVirtualMachineReleaseDelete:
-		*s = LaunchTemplateBootDiskOnVirtualMachineReleaseDelete
+func (s *LaunchTemplateBootVolumeOnInstanceRelease) UnmarshalText(data []byte) error {
+	switch LaunchTemplateBootVolumeOnInstanceRelease(data) {
+	case LaunchTemplateBootVolumeOnInstanceReleaseDelete:
+		*s = LaunchTemplateBootVolumeOnInstanceReleaseDelete
 		return nil
-	case LaunchTemplateBootDiskOnVirtualMachineReleaseDetach:
-		*s = LaunchTemplateBootDiskOnVirtualMachineReleaseDetach
+	case LaunchTemplateBootVolumeOnInstanceReleaseDetach:
+		*s = LaunchTemplateBootVolumeOnInstanceReleaseDetach
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// An empty data disk created with each virtual machine.
-// Ref: #/components/schemas/LaunchTemplateDataDisk
-type LaunchTemplateDataDisk struct {
-	DiskTypeID              DiskTypeID                                       `json:"disk_type_id"`
-	SizeGB                  int64                                            `json:"size_gb"`
-	OnVirtualMachineRelease OptLaunchTemplateDataDiskOnVirtualMachineRelease `json:"on_virtual_machine_release"`
+// An empty data volume created with each instance.
+// Ref: #/components/schemas/LaunchTemplateDataVolume
+type LaunchTemplateDataVolume struct {
+	VolumeTypeID      VolumeTypeID                                 `json:"volume_type_id"`
+	SizeGib           int64                                        `json:"size_gib"`
+	OnInstanceRelease OptLaunchTemplateDataVolumeOnInstanceRelease `json:"on_instance_release"`
 }
 
-// GetDiskTypeID returns the value of DiskTypeID.
-func (s *LaunchTemplateDataDisk) GetDiskTypeID() DiskTypeID {
-	return s.DiskTypeID
+// GetVolumeTypeID returns the value of VolumeTypeID.
+func (s *LaunchTemplateDataVolume) GetVolumeTypeID() VolumeTypeID {
+	return s.VolumeTypeID
 }
 
-// GetSizeGB returns the value of SizeGB.
-func (s *LaunchTemplateDataDisk) GetSizeGB() int64 {
-	return s.SizeGB
+// GetSizeGib returns the value of SizeGib.
+func (s *LaunchTemplateDataVolume) GetSizeGib() int64 {
+	return s.SizeGib
 }
 
-// GetOnVirtualMachineRelease returns the value of OnVirtualMachineRelease.
-func (s *LaunchTemplateDataDisk) GetOnVirtualMachineRelease() OptLaunchTemplateDataDiskOnVirtualMachineRelease {
-	return s.OnVirtualMachineRelease
+// GetOnInstanceRelease returns the value of OnInstanceRelease.
+func (s *LaunchTemplateDataVolume) GetOnInstanceRelease() OptLaunchTemplateDataVolumeOnInstanceRelease {
+	return s.OnInstanceRelease
 }
 
-// SetDiskTypeID sets the value of DiskTypeID.
-func (s *LaunchTemplateDataDisk) SetDiskTypeID(val DiskTypeID) {
-	s.DiskTypeID = val
+// SetVolumeTypeID sets the value of VolumeTypeID.
+func (s *LaunchTemplateDataVolume) SetVolumeTypeID(val VolumeTypeID) {
+	s.VolumeTypeID = val
 }
 
-// SetSizeGB sets the value of SizeGB.
-func (s *LaunchTemplateDataDisk) SetSizeGB(val int64) {
-	s.SizeGB = val
+// SetSizeGib sets the value of SizeGib.
+func (s *LaunchTemplateDataVolume) SetSizeGib(val int64) {
+	s.SizeGib = val
 }
 
-// SetOnVirtualMachineRelease sets the value of OnVirtualMachineRelease.
-func (s *LaunchTemplateDataDisk) SetOnVirtualMachineRelease(val OptLaunchTemplateDataDiskOnVirtualMachineRelease) {
-	s.OnVirtualMachineRelease = val
+// SetOnInstanceRelease sets the value of OnInstanceRelease.
+func (s *LaunchTemplateDataVolume) SetOnInstanceRelease(val OptLaunchTemplateDataVolumeOnInstanceRelease) {
+	s.OnInstanceRelease = val
 }
 
-type LaunchTemplateDataDiskOnVirtualMachineRelease string
+type LaunchTemplateDataVolumeOnInstanceRelease string
 
 const (
-	LaunchTemplateDataDiskOnVirtualMachineReleaseDelete LaunchTemplateDataDiskOnVirtualMachineRelease = "delete"
-	LaunchTemplateDataDiskOnVirtualMachineReleaseDetach LaunchTemplateDataDiskOnVirtualMachineRelease = "detach"
+	LaunchTemplateDataVolumeOnInstanceReleaseDelete LaunchTemplateDataVolumeOnInstanceRelease = "delete"
+	LaunchTemplateDataVolumeOnInstanceReleaseDetach LaunchTemplateDataVolumeOnInstanceRelease = "detach"
 )
 
-// AllValues returns all LaunchTemplateDataDiskOnVirtualMachineRelease values.
-func (LaunchTemplateDataDiskOnVirtualMachineRelease) AllValues() []LaunchTemplateDataDiskOnVirtualMachineRelease {
-	return []LaunchTemplateDataDiskOnVirtualMachineRelease{
-		LaunchTemplateDataDiskOnVirtualMachineReleaseDelete,
-		LaunchTemplateDataDiskOnVirtualMachineReleaseDetach,
+// AllValues returns all LaunchTemplateDataVolumeOnInstanceRelease values.
+func (LaunchTemplateDataVolumeOnInstanceRelease) AllValues() []LaunchTemplateDataVolumeOnInstanceRelease {
+	return []LaunchTemplateDataVolumeOnInstanceRelease{
+		LaunchTemplateDataVolumeOnInstanceReleaseDelete,
+		LaunchTemplateDataVolumeOnInstanceReleaseDetach,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s LaunchTemplateDataDiskOnVirtualMachineRelease) MarshalText() ([]byte, error) {
+func (s LaunchTemplateDataVolumeOnInstanceRelease) MarshalText() ([]byte, error) {
 	switch s {
-	case LaunchTemplateDataDiskOnVirtualMachineReleaseDelete:
+	case LaunchTemplateDataVolumeOnInstanceReleaseDelete:
 		return []byte(s), nil
-	case LaunchTemplateDataDiskOnVirtualMachineReleaseDetach:
+	case LaunchTemplateDataVolumeOnInstanceReleaseDetach:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -6273,21 +5670,21 @@ func (s LaunchTemplateDataDiskOnVirtualMachineRelease) MarshalText() ([]byte, er
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *LaunchTemplateDataDiskOnVirtualMachineRelease) UnmarshalText(data []byte) error {
-	switch LaunchTemplateDataDiskOnVirtualMachineRelease(data) {
-	case LaunchTemplateDataDiskOnVirtualMachineReleaseDelete:
-		*s = LaunchTemplateDataDiskOnVirtualMachineReleaseDelete
+func (s *LaunchTemplateDataVolumeOnInstanceRelease) UnmarshalText(data []byte) error {
+	switch LaunchTemplateDataVolumeOnInstanceRelease(data) {
+	case LaunchTemplateDataVolumeOnInstanceReleaseDelete:
+		*s = LaunchTemplateDataVolumeOnInstanceReleaseDelete
 		return nil
-	case LaunchTemplateDataDiskOnVirtualMachineReleaseDetach:
-		*s = LaunchTemplateDataDiskOnVirtualMachineReleaseDetach
+	case LaunchTemplateDataVolumeOnInstanceReleaseDetach:
+		*s = LaunchTemplateDataVolumeOnInstanceReleaseDetach
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// A new elastic IP bought with each virtual machine. An address you already hold serves one virtual
-// machine, so a template cannot name one.
+// A new elastic IP bought with each instance. An address you already hold serves one instance, so a
+// template cannot name one.
 // Ref: #/components/schemas/LaunchTemplateElasticIP
 type LaunchTemplateElasticIP struct {
 	LineID             ElasticIPLineID       `json:"line_id"`
@@ -6353,8 +5750,8 @@ func (s *LaunchTemplateListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// A new primary network interface for each virtual machine. An interface you already hold serves one
-// virtual machine, so a template cannot name one.
+// A new primary network interface for each instance. An interface you already hold serves one
+// instance, so a template cannot name one.
 // Ref: #/components/schemas/LaunchTemplateNetworkInterface
 type LaunchTemplateNetworkInterface struct {
 	SubnetID         SubnetID          `json:"subnet_id"`
@@ -6384,10 +5781,10 @@ func (s *LaunchTemplateNetworkInterface) SetSecurityGroupIds(val []SecurityGroup
 // The launch template a creation starts from.
 // Ref: #/components/schemas/LaunchTemplateReference
 type LaunchTemplateReference struct {
-	// A launch template of this project in the machine type's region.
+	// A launch template of this project in the instance type's region.
 	LaunchTemplateID LaunchTemplateID `json:"launch_template_id"`
 	// A live version of it; the template's `default_version` when omitted.
-	Version OptInt64 `json:"version"`
+	VersionNumber OptInt64 `json:"version_number"`
 }
 
 // GetLaunchTemplateID returns the value of LaunchTemplateID.
@@ -6395,9 +5792,9 @@ func (s *LaunchTemplateReference) GetLaunchTemplateID() LaunchTemplateID {
 	return s.LaunchTemplateID
 }
 
-// GetVersion returns the value of Version.
-func (s *LaunchTemplateReference) GetVersion() OptInt64 {
-	return s.Version
+// GetVersionNumber returns the value of VersionNumber.
+func (s *LaunchTemplateReference) GetVersionNumber() OptInt64 {
+	return s.VersionNumber
 }
 
 // SetLaunchTemplateID sets the value of LaunchTemplateID.
@@ -6405,26 +5802,26 @@ func (s *LaunchTemplateReference) SetLaunchTemplateID(val LaunchTemplateID) {
 	s.LaunchTemplateID = val
 }
 
-// SetVersion sets the value of Version.
-func (s *LaunchTemplateReference) SetVersion(val OptInt64) {
-	s.Version = val
+// SetVersionNumber sets the value of VersionNumber.
+func (s *LaunchTemplateReference) SetVersionNumber(val OptInt64) {
+	s.VersionNumber = val
 }
 
 // Ref: #/components/schemas/LaunchTemplateVersion
 type LaunchTemplateVersion struct {
-	LaunchTemplateID LaunchTemplateID                  `json:"launch_template_id"`
-	Version          int64                             `json:"version"`
-	Description      string                            `json:"description"`
-	MachineTypeID    NilMachineTypeID                  `json:"machine_type_id"`
-	BootDisk         NilLaunchTemplateBootDisk         `json:"boot_disk"`
-	DataDisks        []LaunchTemplateDataDisk          `json:"data_disks"`
-	NetworkInterface NilLaunchTemplateNetworkInterface `json:"network_interface"`
-	ElasticIP        NilLaunchTemplateElasticIP        `json:"elastic_ip"`
+	LaunchTemplateID   LaunchTemplateID                  `json:"launch_template_id"`
+	VersionNumber      int64                             `json:"version_number"`
+	VersionDescription string                            `json:"version_description"`
+	InstanceTypeID     NilInstanceTypeID                 `json:"instance_type_id"`
+	BootVolume         NilLaunchTemplateBootVolume       `json:"boot_volume"`
+	DataVolumes        []LaunchTemplateDataVolume        `json:"data_volumes"`
+	NetworkInterface   NilLaunchTemplateNetworkInterface `json:"network_interface"`
+	ElasticIP          NilLaunchTemplateElasticIP        `json:"elastic_ip"`
 	// Null when the version describes no labels.
 	Labels NilLaunchTemplateVersionLabels `json:"labels"`
 	// Null when the version describes no note.
-	Notes     NilString `json:"notes"`
-	CreatedAt time.Time `json:"created_at"`
+	Description NilString `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 // GetLaunchTemplateID returns the value of LaunchTemplateID.
@@ -6432,29 +5829,29 @@ func (s *LaunchTemplateVersion) GetLaunchTemplateID() LaunchTemplateID {
 	return s.LaunchTemplateID
 }
 
-// GetVersion returns the value of Version.
-func (s *LaunchTemplateVersion) GetVersion() int64 {
-	return s.Version
+// GetVersionNumber returns the value of VersionNumber.
+func (s *LaunchTemplateVersion) GetVersionNumber() int64 {
+	return s.VersionNumber
 }
 
-// GetDescription returns the value of Description.
-func (s *LaunchTemplateVersion) GetDescription() string {
-	return s.Description
+// GetVersionDescription returns the value of VersionDescription.
+func (s *LaunchTemplateVersion) GetVersionDescription() string {
+	return s.VersionDescription
 }
 
-// GetMachineTypeID returns the value of MachineTypeID.
-func (s *LaunchTemplateVersion) GetMachineTypeID() NilMachineTypeID {
-	return s.MachineTypeID
+// GetInstanceTypeID returns the value of InstanceTypeID.
+func (s *LaunchTemplateVersion) GetInstanceTypeID() NilInstanceTypeID {
+	return s.InstanceTypeID
 }
 
-// GetBootDisk returns the value of BootDisk.
-func (s *LaunchTemplateVersion) GetBootDisk() NilLaunchTemplateBootDisk {
-	return s.BootDisk
+// GetBootVolume returns the value of BootVolume.
+func (s *LaunchTemplateVersion) GetBootVolume() NilLaunchTemplateBootVolume {
+	return s.BootVolume
 }
 
-// GetDataDisks returns the value of DataDisks.
-func (s *LaunchTemplateVersion) GetDataDisks() []LaunchTemplateDataDisk {
-	return s.DataDisks
+// GetDataVolumes returns the value of DataVolumes.
+func (s *LaunchTemplateVersion) GetDataVolumes() []LaunchTemplateDataVolume {
+	return s.DataVolumes
 }
 
 // GetNetworkInterface returns the value of NetworkInterface.
@@ -6472,9 +5869,9 @@ func (s *LaunchTemplateVersion) GetLabels() NilLaunchTemplateVersionLabels {
 	return s.Labels
 }
 
-// GetNotes returns the value of Notes.
-func (s *LaunchTemplateVersion) GetNotes() NilString {
-	return s.Notes
+// GetDescription returns the value of Description.
+func (s *LaunchTemplateVersion) GetDescription() NilString {
+	return s.Description
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -6487,29 +5884,29 @@ func (s *LaunchTemplateVersion) SetLaunchTemplateID(val LaunchTemplateID) {
 	s.LaunchTemplateID = val
 }
 
-// SetVersion sets the value of Version.
-func (s *LaunchTemplateVersion) SetVersion(val int64) {
-	s.Version = val
+// SetVersionNumber sets the value of VersionNumber.
+func (s *LaunchTemplateVersion) SetVersionNumber(val int64) {
+	s.VersionNumber = val
 }
 
-// SetDescription sets the value of Description.
-func (s *LaunchTemplateVersion) SetDescription(val string) {
-	s.Description = val
+// SetVersionDescription sets the value of VersionDescription.
+func (s *LaunchTemplateVersion) SetVersionDescription(val string) {
+	s.VersionDescription = val
 }
 
-// SetMachineTypeID sets the value of MachineTypeID.
-func (s *LaunchTemplateVersion) SetMachineTypeID(val NilMachineTypeID) {
-	s.MachineTypeID = val
+// SetInstanceTypeID sets the value of InstanceTypeID.
+func (s *LaunchTemplateVersion) SetInstanceTypeID(val NilInstanceTypeID) {
+	s.InstanceTypeID = val
 }
 
-// SetBootDisk sets the value of BootDisk.
-func (s *LaunchTemplateVersion) SetBootDisk(val NilLaunchTemplateBootDisk) {
-	s.BootDisk = val
+// SetBootVolume sets the value of BootVolume.
+func (s *LaunchTemplateVersion) SetBootVolume(val NilLaunchTemplateBootVolume) {
+	s.BootVolume = val
 }
 
-// SetDataDisks sets the value of DataDisks.
-func (s *LaunchTemplateVersion) SetDataDisks(val []LaunchTemplateDataDisk) {
-	s.DataDisks = val
+// SetDataVolumes sets the value of DataVolumes.
+func (s *LaunchTemplateVersion) SetDataVolumes(val []LaunchTemplateDataVolume) {
+	s.DataVolumes = val
 }
 
 // SetNetworkInterface sets the value of NetworkInterface.
@@ -6527,9 +5924,9 @@ func (s *LaunchTemplateVersion) SetLabels(val NilLaunchTemplateVersionLabels) {
 	s.Labels = val
 }
 
-// SetNotes sets the value of Notes.
-func (s *LaunchTemplateVersion) SetNotes(val NilString) {
-	s.Notes = val
+// SetDescription sets the value of Description.
+func (s *LaunchTemplateVersion) SetDescription(val NilString) {
+	s.Description = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -6616,340 +6013,10 @@ func (s *ListElasticIPTrafficUsageInterval) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/MachineType
-type MachineType struct {
-	// The availability zone the type belongs to, where a virtual machine of it is created. A resize stays
-	// in the virtual machine's zone, so the target type has to be one of the same zone.
-	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
-	// `sold_out` takes no new orders for now while the type stays listed; the virtual machines already of
-	// it keep working.
-	SaleStatus MachineTypeSaleStatus `json:"sale_status"`
-	// Who makes the CPU the type runs on.
-	CPUVendor MachineTypeCPUVendor `json:"cpu_vendor"`
-	// The CPU model, such as `EPYC 9654`; empty when none is stated.
-	CPUModel string `json:"cpu_model"`
-	// `dedicated` gives each vCPU a host thread of its own; `shared` lets the vCPUs of several machines
-	// share host threads.
-	CPUTier MachineTypeCPUTier `json:"cpu_tier"`
-	ID      MachineTypeID      `json:"id"`
-	// The machine's network rate, in Mbps. Each network interface of the machine is limited to it in both
-	// directions — per interface rather than shared, so a machine with two interfaces has this rate on
-	// each of them; `max_network_interfaces` says how many it may have. Zero is no limit.
-	//
-	// An elastic IP associated with the machine cannot be bought faster than this rate; asking for more is
-	// refused with `VIRTUAL_MACHINE_BANDWIDTH_CEILING`.
-	MaxBandwidthMbps     int64    `json:"max_bandwidth_mbps"`
-	MaxElasticIps        int64    `json:"max_elastic_ips"`
-	MaxNetworkInterfaces int64    `json:"max_network_interfaces"`
-	Name                 string   `json:"name"`
-	RAMMB                int64    `json:"ram_mb"`
-	RegionID             RegionID `json:"region_id"`
-	Vcpus                int64    `json:"vcpus"`
-	// The line a virtual machine of this type is. The system disk and data disks bought with it are lines
-	// of their disk types, and a new elastic IP the two lines of its elastic IP line.
-	Billing BillingComponent `json:"billing"`
-}
-
-// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *MachineType) GetAvailabilityZoneID() AvailabilityZoneID {
-	return s.AvailabilityZoneID
-}
-
-// GetSaleStatus returns the value of SaleStatus.
-func (s *MachineType) GetSaleStatus() MachineTypeSaleStatus {
-	return s.SaleStatus
-}
-
-// GetCPUVendor returns the value of CPUVendor.
-func (s *MachineType) GetCPUVendor() MachineTypeCPUVendor {
-	return s.CPUVendor
-}
-
-// GetCPUModel returns the value of CPUModel.
-func (s *MachineType) GetCPUModel() string {
-	return s.CPUModel
-}
-
-// GetCPUTier returns the value of CPUTier.
-func (s *MachineType) GetCPUTier() MachineTypeCPUTier {
-	return s.CPUTier
-}
-
-// GetID returns the value of ID.
-func (s *MachineType) GetID() MachineTypeID {
-	return s.ID
-}
-
-// GetMaxBandwidthMbps returns the value of MaxBandwidthMbps.
-func (s *MachineType) GetMaxBandwidthMbps() int64 {
-	return s.MaxBandwidthMbps
-}
-
-// GetMaxElasticIps returns the value of MaxElasticIps.
-func (s *MachineType) GetMaxElasticIps() int64 {
-	return s.MaxElasticIps
-}
-
-// GetMaxNetworkInterfaces returns the value of MaxNetworkInterfaces.
-func (s *MachineType) GetMaxNetworkInterfaces() int64 {
-	return s.MaxNetworkInterfaces
-}
-
-// GetName returns the value of Name.
-func (s *MachineType) GetName() string {
-	return s.Name
-}
-
-// GetRAMMB returns the value of RAMMB.
-func (s *MachineType) GetRAMMB() int64 {
-	return s.RAMMB
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *MachineType) GetRegionID() RegionID {
-	return s.RegionID
-}
-
-// GetVcpus returns the value of Vcpus.
-func (s *MachineType) GetVcpus() int64 {
-	return s.Vcpus
-}
-
-// GetBilling returns the value of Billing.
-func (s *MachineType) GetBilling() BillingComponent {
-	return s.Billing
-}
-
-// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *MachineType) SetAvailabilityZoneID(val AvailabilityZoneID) {
-	s.AvailabilityZoneID = val
-}
-
-// SetSaleStatus sets the value of SaleStatus.
-func (s *MachineType) SetSaleStatus(val MachineTypeSaleStatus) {
-	s.SaleStatus = val
-}
-
-// SetCPUVendor sets the value of CPUVendor.
-func (s *MachineType) SetCPUVendor(val MachineTypeCPUVendor) {
-	s.CPUVendor = val
-}
-
-// SetCPUModel sets the value of CPUModel.
-func (s *MachineType) SetCPUModel(val string) {
-	s.CPUModel = val
-}
-
-// SetCPUTier sets the value of CPUTier.
-func (s *MachineType) SetCPUTier(val MachineTypeCPUTier) {
-	s.CPUTier = val
-}
-
-// SetID sets the value of ID.
-func (s *MachineType) SetID(val MachineTypeID) {
-	s.ID = val
-}
-
-// SetMaxBandwidthMbps sets the value of MaxBandwidthMbps.
-func (s *MachineType) SetMaxBandwidthMbps(val int64) {
-	s.MaxBandwidthMbps = val
-}
-
-// SetMaxElasticIps sets the value of MaxElasticIps.
-func (s *MachineType) SetMaxElasticIps(val int64) {
-	s.MaxElasticIps = val
-}
-
-// SetMaxNetworkInterfaces sets the value of MaxNetworkInterfaces.
-func (s *MachineType) SetMaxNetworkInterfaces(val int64) {
-	s.MaxNetworkInterfaces = val
-}
-
-// SetName sets the value of Name.
-func (s *MachineType) SetName(val string) {
-	s.Name = val
-}
-
-// SetRAMMB sets the value of RAMMB.
-func (s *MachineType) SetRAMMB(val int64) {
-	s.RAMMB = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *MachineType) SetRegionID(val RegionID) {
-	s.RegionID = val
-}
-
-// SetVcpus sets the value of Vcpus.
-func (s *MachineType) SetVcpus(val int64) {
-	s.Vcpus = val
-}
-
-// SetBilling sets the value of Billing.
-func (s *MachineType) SetBilling(val BillingComponent) {
-	s.Billing = val
-}
-
-// `dedicated` gives each vCPU a host thread of its own; `shared` lets the vCPUs of several machines
-// share host threads.
-type MachineTypeCPUTier string
-
-const (
-	MachineTypeCPUTierDedicated MachineTypeCPUTier = "dedicated"
-	MachineTypeCPUTierShared    MachineTypeCPUTier = "shared"
-)
-
-// AllValues returns all MachineTypeCPUTier values.
-func (MachineTypeCPUTier) AllValues() []MachineTypeCPUTier {
-	return []MachineTypeCPUTier{
-		MachineTypeCPUTierDedicated,
-		MachineTypeCPUTierShared,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s MachineTypeCPUTier) MarshalText() ([]byte, error) {
-	switch s {
-	case MachineTypeCPUTierDedicated:
-		return []byte(s), nil
-	case MachineTypeCPUTierShared:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *MachineTypeCPUTier) UnmarshalText(data []byte) error {
-	switch MachineTypeCPUTier(data) {
-	case MachineTypeCPUTierDedicated:
-		*s = MachineTypeCPUTierDedicated
-		return nil
-	case MachineTypeCPUTierShared:
-		*s = MachineTypeCPUTierShared
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Who makes the CPU the type runs on.
-type MachineTypeCPUVendor string
-
-const (
-	MachineTypeCPUVendorIntel MachineTypeCPUVendor = "intel"
-	MachineTypeCPUVendorAmd   MachineTypeCPUVendor = "amd"
-)
-
-// AllValues returns all MachineTypeCPUVendor values.
-func (MachineTypeCPUVendor) AllValues() []MachineTypeCPUVendor {
-	return []MachineTypeCPUVendor{
-		MachineTypeCPUVendorIntel,
-		MachineTypeCPUVendorAmd,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s MachineTypeCPUVendor) MarshalText() ([]byte, error) {
-	switch s {
-	case MachineTypeCPUVendorIntel:
-		return []byte(s), nil
-	case MachineTypeCPUVendorAmd:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *MachineTypeCPUVendor) UnmarshalText(data []byte) error {
-	switch MachineTypeCPUVendor(data) {
-	case MachineTypeCPUVendorIntel:
-		*s = MachineTypeCPUVendorIntel
-		return nil
-	case MachineTypeCPUVendorAmd:
-		*s = MachineTypeCPUVendorAmd
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type MachineTypeID string
-
-// Ref: #/components/schemas/MachineTypeListResponseBody
-type MachineTypeListResponseBody struct {
-	Items      []MachineType    `json:"items"`
-	Pagination OffsetPagination `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *MachineTypeListResponseBody) GetItems() []MachineType {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *MachineTypeListResponseBody) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *MachineTypeListResponseBody) SetItems(val []MachineType) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *MachineTypeListResponseBody) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
-// `sold_out` takes no new orders for now while the type stays listed; the virtual machines already of
-// it keep working.
-type MachineTypeSaleStatus string
-
-const (
-	MachineTypeSaleStatusOnSale  MachineTypeSaleStatus = "on_sale"
-	MachineTypeSaleStatusSoldOut MachineTypeSaleStatus = "sold_out"
-)
-
-// AllValues returns all MachineTypeSaleStatus values.
-func (MachineTypeSaleStatus) AllValues() []MachineTypeSaleStatus {
-	return []MachineTypeSaleStatus{
-		MachineTypeSaleStatusOnSale,
-		MachineTypeSaleStatusSoldOut,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s MachineTypeSaleStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case MachineTypeSaleStatusOnSale:
-		return []byte(s), nil
-	case MachineTypeSaleStatusSoldOut:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *MachineTypeSaleStatus) UnmarshalText(data []byte) error {
-	switch MachineTypeSaleStatus(data) {
-	case MachineTypeSaleStatusOnSale:
-		*s = MachineTypeSaleStatusOnSale
-		return nil
-	case MachineTypeSaleStatusSoldOut:
-		*s = MachineTypeSaleStatusSoldOut
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/NetworkInterface
 type NetworkInterface struct {
 	ID                    NetworkInterfaceID    `json:"id"`
-	MAC                   NilString             `json:"mac"`
+	MACAddress            NilString             `json:"mac_address"`
 	Name                  string                `json:"name"`
 	VirtualPrivateCloudID VirtualPrivateCloudID `json:"virtual_private_cloud_id"`
 	// Elastic IPv4 addresses associated with this network interface; an empty array when none are
@@ -6971,9 +6038,9 @@ func (s *NetworkInterface) GetID() NetworkInterfaceID {
 	return s.ID
 }
 
-// GetMAC returns the value of MAC.
-func (s *NetworkInterface) GetMAC() NilString {
-	return s.MAC
+// GetMACAddress returns the value of MACAddress.
+func (s *NetworkInterface) GetMACAddress() NilString {
+	return s.MACAddress
 }
 
 // GetName returns the value of Name.
@@ -7021,9 +6088,9 @@ func (s *NetworkInterface) SetID(val NetworkInterfaceID) {
 	s.ID = val
 }
 
-// SetMAC sets the value of MAC.
-func (s *NetworkInterface) SetMAC(val NilString) {
-	s.MAC = val
+// SetMACAddress sets the value of MACAddress.
+func (s *NetworkInterface) SetMACAddress(val NilString) {
+	s.MACAddress = val
 }
 
 // SetName sets the value of Name.
@@ -7066,17 +6133,17 @@ func (s *NetworkInterface) SetOperation(val NilNetworkInterfaceOperation) {
 	s.Operation = val
 }
 
-func (*NetworkInterface) attachVirtualMachineNetworkInterfaceRes() {}
-func (*NetworkInterface) deleteNetworkInterfaceRes()               {}
-func (*NetworkInterface) detachVirtualMachineNetworkInterfaceRes() {}
+func (*NetworkInterface) attachInstanceNetworkInterfaceRes() {}
+func (*NetworkInterface) deleteNetworkInterfaceRes()         {}
+func (*NetworkInterface) detachInstanceNetworkInterfaceRes() {}
 
 // Ref: #/components/schemas/NetworkInterfaceAddress
 type NetworkInterfaceAddress struct {
 	ID       NetworkInterfaceAddressID `json:"id"`
 	SubnetID SubnetID                  `json:"subnet_id"`
 	Address  string                    `json:"address"`
-	// `primary` is the interface's primary private address, which is the virtual machine's network
-	// location; every other address of the interface is `secondary`.
+	// `primary` is the interface's primary private address, which is the instance's network location;
+	// every other address of the interface is `secondary`.
 	Role       NetworkInterfaceAddressRole  `json:"role"`
 	State      NetworkInterfaceAddressState `json:"state"`
 	AssignedAt NilDateTime                  `json:"assigned_at"`
@@ -7174,8 +6241,8 @@ func (s *NetworkInterfaceAddressAssociationTarget) SetNetworkInterfaceAddressID(
 
 type NetworkInterfaceAddressID string
 
-// `primary` is the interface's primary private address, which is the virtual machine's network
-// location; every other address of the interface is `secondary`.
+// `primary` is the interface's primary private address, which is the instance's network location;
+// every other address of the interface is `secondary`.
 type NetworkInterfaceAddressRole string
 
 const (
@@ -7267,28 +6334,28 @@ func (s *NetworkInterfaceAddressState) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/NetworkInterfaceAttachment
 type NetworkInterfaceAttachment struct {
-	ID                 VirtualMachineNetworkInterfaceID `json:"id"`
-	VirtualMachineID   VirtualMachineID                 `json:"virtual_machine_id"`
-	NetworkInterfaceID NetworkInterfaceID               `json:"network_interface_id"`
-	Role               NetworkInterfaceAttachmentRole   `json:"role"`
-	// What releasing the virtual machine does to this interface. `delete` deletes it together with the
-	// virtual machine; `detach` detaches it and leaves it to you. The primary interface created with the
-	// virtual machine is `delete`; an interface you created yourself is `detach`.
-	OnVirtualMachineRelease NetworkInterfaceAttachmentOnVirtualMachineRelease `json:"on_virtual_machine_release"`
-	State                   NetworkInterfaceAttachmentState                   `json:"state"`
-	AttachedAt              NilDateTime                                       `json:"attached_at"`
-	DetachedAt              NilDateTime                                       `json:"detached_at"`
-	ReleasedAt              NilDateTime                                       `json:"released_at"`
+	ID                 InstanceNetworkInterfaceID     `json:"id"`
+	InstanceID         InstanceID                     `json:"instance_id"`
+	NetworkInterfaceID NetworkInterfaceID             `json:"network_interface_id"`
+	Role               NetworkInterfaceAttachmentRole `json:"role"`
+	// What releasing the instance does to this interface. `delete` deletes it together with the instance;
+	// `detach` detaches it and leaves it to you. The primary interface created with the instance is
+	// `delete`; an interface you created yourself is `detach`.
+	OnInstanceRelease NetworkInterfaceAttachmentOnInstanceRelease `json:"on_instance_release"`
+	State             NetworkInterfaceAttachmentState             `json:"state"`
+	AttachedAt        NilDateTime                                 `json:"attached_at"`
+	DetachedAt        NilDateTime                                 `json:"detached_at"`
+	ReleasedAt        NilDateTime                                 `json:"released_at"`
 }
 
 // GetID returns the value of ID.
-func (s *NetworkInterfaceAttachment) GetID() VirtualMachineNetworkInterfaceID {
+func (s *NetworkInterfaceAttachment) GetID() InstanceNetworkInterfaceID {
 	return s.ID
 }
 
-// GetVirtualMachineID returns the value of VirtualMachineID.
-func (s *NetworkInterfaceAttachment) GetVirtualMachineID() VirtualMachineID {
-	return s.VirtualMachineID
+// GetInstanceID returns the value of InstanceID.
+func (s *NetworkInterfaceAttachment) GetInstanceID() InstanceID {
+	return s.InstanceID
 }
 
 // GetNetworkInterfaceID returns the value of NetworkInterfaceID.
@@ -7301,9 +6368,9 @@ func (s *NetworkInterfaceAttachment) GetRole() NetworkInterfaceAttachmentRole {
 	return s.Role
 }
 
-// GetOnVirtualMachineRelease returns the value of OnVirtualMachineRelease.
-func (s *NetworkInterfaceAttachment) GetOnVirtualMachineRelease() NetworkInterfaceAttachmentOnVirtualMachineRelease {
-	return s.OnVirtualMachineRelease
+// GetOnInstanceRelease returns the value of OnInstanceRelease.
+func (s *NetworkInterfaceAttachment) GetOnInstanceRelease() NetworkInterfaceAttachmentOnInstanceRelease {
+	return s.OnInstanceRelease
 }
 
 // GetState returns the value of State.
@@ -7327,13 +6394,13 @@ func (s *NetworkInterfaceAttachment) GetReleasedAt() NilDateTime {
 }
 
 // SetID sets the value of ID.
-func (s *NetworkInterfaceAttachment) SetID(val VirtualMachineNetworkInterfaceID) {
+func (s *NetworkInterfaceAttachment) SetID(val InstanceNetworkInterfaceID) {
 	s.ID = val
 }
 
-// SetVirtualMachineID sets the value of VirtualMachineID.
-func (s *NetworkInterfaceAttachment) SetVirtualMachineID(val VirtualMachineID) {
-	s.VirtualMachineID = val
+// SetInstanceID sets the value of InstanceID.
+func (s *NetworkInterfaceAttachment) SetInstanceID(val InstanceID) {
+	s.InstanceID = val
 }
 
 // SetNetworkInterfaceID sets the value of NetworkInterfaceID.
@@ -7346,9 +6413,9 @@ func (s *NetworkInterfaceAttachment) SetRole(val NetworkInterfaceAttachmentRole)
 	s.Role = val
 }
 
-// SetOnVirtualMachineRelease sets the value of OnVirtualMachineRelease.
-func (s *NetworkInterfaceAttachment) SetOnVirtualMachineRelease(val NetworkInterfaceAttachmentOnVirtualMachineRelease) {
-	s.OnVirtualMachineRelease = val
+// SetOnInstanceRelease sets the value of OnInstanceRelease.
+func (s *NetworkInterfaceAttachment) SetOnInstanceRelease(val NetworkInterfaceAttachmentOnInstanceRelease) {
+	s.OnInstanceRelease = val
 }
 
 // SetState sets the value of State.
@@ -7397,30 +6464,30 @@ func (s *NetworkInterfaceAttachmentList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// What releasing the virtual machine does to this interface. `delete` deletes it together with the
-// virtual machine; `detach` detaches it and leaves it to you. The primary interface created with the
-// virtual machine is `delete`; an interface you created yourself is `detach`.
-type NetworkInterfaceAttachmentOnVirtualMachineRelease string
+// What releasing the instance does to this interface. `delete` deletes it together with the instance;
+// `detach` detaches it and leaves it to you. The primary interface created with the instance is
+// `delete`; an interface you created yourself is `detach`.
+type NetworkInterfaceAttachmentOnInstanceRelease string
 
 const (
-	NetworkInterfaceAttachmentOnVirtualMachineReleaseDelete NetworkInterfaceAttachmentOnVirtualMachineRelease = "delete"
-	NetworkInterfaceAttachmentOnVirtualMachineReleaseDetach NetworkInterfaceAttachmentOnVirtualMachineRelease = "detach"
+	NetworkInterfaceAttachmentOnInstanceReleaseDelete NetworkInterfaceAttachmentOnInstanceRelease = "delete"
+	NetworkInterfaceAttachmentOnInstanceReleaseDetach NetworkInterfaceAttachmentOnInstanceRelease = "detach"
 )
 
-// AllValues returns all NetworkInterfaceAttachmentOnVirtualMachineRelease values.
-func (NetworkInterfaceAttachmentOnVirtualMachineRelease) AllValues() []NetworkInterfaceAttachmentOnVirtualMachineRelease {
-	return []NetworkInterfaceAttachmentOnVirtualMachineRelease{
-		NetworkInterfaceAttachmentOnVirtualMachineReleaseDelete,
-		NetworkInterfaceAttachmentOnVirtualMachineReleaseDetach,
+// AllValues returns all NetworkInterfaceAttachmentOnInstanceRelease values.
+func (NetworkInterfaceAttachmentOnInstanceRelease) AllValues() []NetworkInterfaceAttachmentOnInstanceRelease {
+	return []NetworkInterfaceAttachmentOnInstanceRelease{
+		NetworkInterfaceAttachmentOnInstanceReleaseDelete,
+		NetworkInterfaceAttachmentOnInstanceReleaseDetach,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s NetworkInterfaceAttachmentOnVirtualMachineRelease) MarshalText() ([]byte, error) {
+func (s NetworkInterfaceAttachmentOnInstanceRelease) MarshalText() ([]byte, error) {
 	switch s {
-	case NetworkInterfaceAttachmentOnVirtualMachineReleaseDelete:
+	case NetworkInterfaceAttachmentOnInstanceReleaseDelete:
 		return []byte(s), nil
-	case NetworkInterfaceAttachmentOnVirtualMachineReleaseDetach:
+	case NetworkInterfaceAttachmentOnInstanceReleaseDetach:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -7428,13 +6495,13 @@ func (s NetworkInterfaceAttachmentOnVirtualMachineRelease) MarshalText() ([]byte
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *NetworkInterfaceAttachmentOnVirtualMachineRelease) UnmarshalText(data []byte) error {
-	switch NetworkInterfaceAttachmentOnVirtualMachineRelease(data) {
-	case NetworkInterfaceAttachmentOnVirtualMachineReleaseDelete:
-		*s = NetworkInterfaceAttachmentOnVirtualMachineReleaseDelete
+func (s *NetworkInterfaceAttachmentOnInstanceRelease) UnmarshalText(data []byte) error {
+	switch NetworkInterfaceAttachmentOnInstanceRelease(data) {
+	case NetworkInterfaceAttachmentOnInstanceReleaseDelete:
+		*s = NetworkInterfaceAttachmentOnInstanceReleaseDelete
 		return nil
-	case NetworkInterfaceAttachmentOnVirtualMachineReleaseDetach:
-		*s = NetworkInterfaceAttachmentOnVirtualMachineReleaseDetach
+	case NetworkInterfaceAttachmentOnInstanceReleaseDetach:
+		*s = NetworkInterfaceAttachmentOnInstanceReleaseDetach
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -7564,8 +6631,8 @@ func (s *NetworkInterfaceListResponseBody) SetPagination(val OffsetPagination) {
 // Ref: #/components/schemas/NetworkInterfaceOperation
 type NetworkInterfaceOperation struct {
 	// `associate_elastic_ip` holds the network interface while an elastic IP is associated with it
-	// directly rather than through a virtual machine. `update_security_groups` replaces its security
-	// groups, `add_address` and `remove_address` change its secondary IPv4 addresses.
+	// directly rather than through an instance. `update_security_groups` replaces its security groups,
+	// `add_address` and `remove_address` change its secondary IPv4 addresses.
 	Type      NetworkInterfaceOperationType `json:"type"`
 	StartedAt time.Time                     `json:"started_at"`
 }
@@ -7591,8 +6658,8 @@ func (s *NetworkInterfaceOperation) SetStartedAt(val time.Time) {
 }
 
 // `associate_elastic_ip` holds the network interface while an elastic IP is associated with it
-// directly rather than through a virtual machine. `update_security_groups` replaces its security
-// groups, `add_address` and `remove_address` change its secondary IPv4 addresses.
+// directly rather than through an instance. `update_security_groups` replaces its security groups,
+// `add_address` and `remove_address` change its secondary IPv4 addresses.
 type NetworkInterfaceOperationType string
 
 const (
@@ -7726,108 +6793,108 @@ func (s *NetworkInterfaceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// A system disk created from an image and recorded in the virtual machine order. Its commercial terms
-// are explicit and its release policy does not override them.
-// Ref: #/components/schemas/NewBootDisk
-type NewBootDisk struct {
-	Type NewBootDiskType `json:"type"`
+// A boot volume created from an image and recorded in the instance order. Its commercial terms are
+// explicit and its release policy does not override them.
+// Ref: #/components/schemas/NewBootVolume
+type NewBootVolume struct {
+	Type NewBootVolumeType `json:"type"`
 	// A public image on sale (`/public-images`), or an available private image of this project
 	// (`/private-images`).
 	ImageID ImageID `json:"image_id"`
-	// A disk type on sale and sold in the virtual machine's availability zone; any disk type boots a
-	// virtual machine.
-	DiskTypeID DiskTypeID `json:"disk_type_id"`
-	SizeGB     int64      `json:"size_gb"`
-	// What releasing the virtual machine does to this disk. `delete` deletes it with the virtual machine;
-	// `detach` keeps it, still billed on its own terms, for you to attach elsewhere or delete.
-	OnVirtualMachineRelease OptNewBootDiskOnVirtualMachineRelease `json:"on_virtual_machine_release"`
+	// A volume type on sale and sold in the instance's availability zone; any volume type boots an
+	// instance.
+	VolumeTypeID VolumeTypeID `json:"volume_type_id"`
+	SizeGib      int64        `json:"size_gib"`
+	// What releasing the instance does to this volume. `delete` deletes it with the instance; `detach`
+	// keeps it, still billed on its own terms, for you to attach elsewhere or delete.
+	OnInstanceRelease OptNewBootVolumeOnInstanceRelease `json:"on_instance_release"`
 	// Its own terms, to choose a different termination policy; `compute.billing` when omitted.
 	Billing OptBillingChoice `json:"billing"`
 }
 
 // GetType returns the value of Type.
-func (s *NewBootDisk) GetType() NewBootDiskType {
+func (s *NewBootVolume) GetType() NewBootVolumeType {
 	return s.Type
 }
 
 // GetImageID returns the value of ImageID.
-func (s *NewBootDisk) GetImageID() ImageID {
+func (s *NewBootVolume) GetImageID() ImageID {
 	return s.ImageID
 }
 
-// GetDiskTypeID returns the value of DiskTypeID.
-func (s *NewBootDisk) GetDiskTypeID() DiskTypeID {
-	return s.DiskTypeID
+// GetVolumeTypeID returns the value of VolumeTypeID.
+func (s *NewBootVolume) GetVolumeTypeID() VolumeTypeID {
+	return s.VolumeTypeID
 }
 
-// GetSizeGB returns the value of SizeGB.
-func (s *NewBootDisk) GetSizeGB() int64 {
-	return s.SizeGB
+// GetSizeGib returns the value of SizeGib.
+func (s *NewBootVolume) GetSizeGib() int64 {
+	return s.SizeGib
 }
 
-// GetOnVirtualMachineRelease returns the value of OnVirtualMachineRelease.
-func (s *NewBootDisk) GetOnVirtualMachineRelease() OptNewBootDiskOnVirtualMachineRelease {
-	return s.OnVirtualMachineRelease
+// GetOnInstanceRelease returns the value of OnInstanceRelease.
+func (s *NewBootVolume) GetOnInstanceRelease() OptNewBootVolumeOnInstanceRelease {
+	return s.OnInstanceRelease
 }
 
 // GetBilling returns the value of Billing.
-func (s *NewBootDisk) GetBilling() OptBillingChoice {
+func (s *NewBootVolume) GetBilling() OptBillingChoice {
 	return s.Billing
 }
 
 // SetType sets the value of Type.
-func (s *NewBootDisk) SetType(val NewBootDiskType) {
+func (s *NewBootVolume) SetType(val NewBootVolumeType) {
 	s.Type = val
 }
 
 // SetImageID sets the value of ImageID.
-func (s *NewBootDisk) SetImageID(val ImageID) {
+func (s *NewBootVolume) SetImageID(val ImageID) {
 	s.ImageID = val
 }
 
-// SetDiskTypeID sets the value of DiskTypeID.
-func (s *NewBootDisk) SetDiskTypeID(val DiskTypeID) {
-	s.DiskTypeID = val
+// SetVolumeTypeID sets the value of VolumeTypeID.
+func (s *NewBootVolume) SetVolumeTypeID(val VolumeTypeID) {
+	s.VolumeTypeID = val
 }
 
-// SetSizeGB sets the value of SizeGB.
-func (s *NewBootDisk) SetSizeGB(val int64) {
-	s.SizeGB = val
+// SetSizeGib sets the value of SizeGib.
+func (s *NewBootVolume) SetSizeGib(val int64) {
+	s.SizeGib = val
 }
 
-// SetOnVirtualMachineRelease sets the value of OnVirtualMachineRelease.
-func (s *NewBootDisk) SetOnVirtualMachineRelease(val OptNewBootDiskOnVirtualMachineRelease) {
-	s.OnVirtualMachineRelease = val
+// SetOnInstanceRelease sets the value of OnInstanceRelease.
+func (s *NewBootVolume) SetOnInstanceRelease(val OptNewBootVolumeOnInstanceRelease) {
+	s.OnInstanceRelease = val
 }
 
 // SetBilling sets the value of Billing.
-func (s *NewBootDisk) SetBilling(val OptBillingChoice) {
+func (s *NewBootVolume) SetBilling(val OptBillingChoice) {
 	s.Billing = val
 }
 
-// What releasing the virtual machine does to this disk. `delete` deletes it with the virtual machine;
-// `detach` keeps it, still billed on its own terms, for you to attach elsewhere or delete.
-type NewBootDiskOnVirtualMachineRelease string
+// What releasing the instance does to this volume. `delete` deletes it with the instance; `detach`
+// keeps it, still billed on its own terms, for you to attach elsewhere or delete.
+type NewBootVolumeOnInstanceRelease string
 
 const (
-	NewBootDiskOnVirtualMachineReleaseDelete NewBootDiskOnVirtualMachineRelease = "delete"
-	NewBootDiskOnVirtualMachineReleaseDetach NewBootDiskOnVirtualMachineRelease = "detach"
+	NewBootVolumeOnInstanceReleaseDelete NewBootVolumeOnInstanceRelease = "delete"
+	NewBootVolumeOnInstanceReleaseDetach NewBootVolumeOnInstanceRelease = "detach"
 )
 
-// AllValues returns all NewBootDiskOnVirtualMachineRelease values.
-func (NewBootDiskOnVirtualMachineRelease) AllValues() []NewBootDiskOnVirtualMachineRelease {
-	return []NewBootDiskOnVirtualMachineRelease{
-		NewBootDiskOnVirtualMachineReleaseDelete,
-		NewBootDiskOnVirtualMachineReleaseDetach,
+// AllValues returns all NewBootVolumeOnInstanceRelease values.
+func (NewBootVolumeOnInstanceRelease) AllValues() []NewBootVolumeOnInstanceRelease {
+	return []NewBootVolumeOnInstanceRelease{
+		NewBootVolumeOnInstanceReleaseDelete,
+		NewBootVolumeOnInstanceReleaseDetach,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s NewBootDiskOnVirtualMachineRelease) MarshalText() ([]byte, error) {
+func (s NewBootVolumeOnInstanceRelease) MarshalText() ([]byte, error) {
 	switch s {
-	case NewBootDiskOnVirtualMachineReleaseDelete:
+	case NewBootVolumeOnInstanceReleaseDelete:
 		return []byte(s), nil
-	case NewBootDiskOnVirtualMachineReleaseDetach:
+	case NewBootVolumeOnInstanceReleaseDetach:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -7835,36 +6902,36 @@ func (s NewBootDiskOnVirtualMachineRelease) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *NewBootDiskOnVirtualMachineRelease) UnmarshalText(data []byte) error {
-	switch NewBootDiskOnVirtualMachineRelease(data) {
-	case NewBootDiskOnVirtualMachineReleaseDelete:
-		*s = NewBootDiskOnVirtualMachineReleaseDelete
+func (s *NewBootVolumeOnInstanceRelease) UnmarshalText(data []byte) error {
+	switch NewBootVolumeOnInstanceRelease(data) {
+	case NewBootVolumeOnInstanceReleaseDelete:
+		*s = NewBootVolumeOnInstanceReleaseDelete
 		return nil
-	case NewBootDiskOnVirtualMachineReleaseDetach:
-		*s = NewBootDiskOnVirtualMachineReleaseDetach
+	case NewBootVolumeOnInstanceReleaseDetach:
+		*s = NewBootVolumeOnInstanceReleaseDetach
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-type NewBootDiskType string
+type NewBootVolumeType string
 
 const (
-	NewBootDiskTypeImage NewBootDiskType = "image"
+	NewBootVolumeTypeImage NewBootVolumeType = "image"
 )
 
-// AllValues returns all NewBootDiskType values.
-func (NewBootDiskType) AllValues() []NewBootDiskType {
-	return []NewBootDiskType{
-		NewBootDiskTypeImage,
+// AllValues returns all NewBootVolumeType values.
+func (NewBootVolumeType) AllValues() []NewBootVolumeType {
+	return []NewBootVolumeType{
+		NewBootVolumeTypeImage,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s NewBootDiskType) MarshalText() ([]byte, error) {
+func (s NewBootVolumeType) MarshalText() ([]byte, error) {
 	switch s {
-	case NewBootDiskTypeImage:
+	case NewBootVolumeTypeImage:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -7872,29 +6939,28 @@ func (s NewBootDiskType) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *NewBootDiskType) UnmarshalText(data []byte) error {
-	switch NewBootDiskType(data) {
-	case NewBootDiskTypeImage:
-		*s = NewBootDiskTypeImage
+func (s *NewBootVolumeType) UnmarshalText(data []byte) error {
+	switch NewBootVolumeType(data) {
+	case NewBootVolumeTypeImage:
+		*s = NewBootVolumeTypeImage
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// The compute capacity requested for each virtual machine in this order.
+// The compute capacity requested for each instance in this order.
 // Ref: #/components/schemas/NewCompute
 type NewCompute struct {
-	// A machine type currently on sale. Required unless the launch template names one.
-	MachineTypeID OptMachineTypeID `json:"machine_type_id"`
-	// The terms of each virtual machine, and the usage type and period every component bought with it
-	// shares.
+	// An instance type currently on sale. Required unless the launch template names one.
+	InstanceTypeID OptInstanceTypeID `json:"instance_type_id"`
+	// The terms of each instance, and the usage type and period every component bought with it shares.
 	Billing BillingChoice `json:"billing"`
 }
 
-// GetMachineTypeID returns the value of MachineTypeID.
-func (s *NewCompute) GetMachineTypeID() OptMachineTypeID {
-	return s.MachineTypeID
+// GetInstanceTypeID returns the value of InstanceTypeID.
+func (s *NewCompute) GetInstanceTypeID() OptInstanceTypeID {
+	return s.InstanceTypeID
 }
 
 // GetBilling returns the value of Billing.
@@ -7902,9 +6968,9 @@ func (s *NewCompute) GetBilling() BillingChoice {
 	return s.Billing
 }
 
-// SetMachineTypeID sets the value of MachineTypeID.
-func (s *NewCompute) SetMachineTypeID(val OptMachineTypeID) {
-	s.MachineTypeID = val
+// SetInstanceTypeID sets the value of InstanceTypeID.
+func (s *NewCompute) SetInstanceTypeID(val OptInstanceTypeID) {
+	s.InstanceTypeID = val
 }
 
 // SetBilling sets the value of Billing.
@@ -7912,85 +6978,85 @@ func (s *NewCompute) SetBilling(val BillingChoice) {
 	s.Billing = val
 }
 
-// An empty data disk created in the virtual machine's availability zone. Its terms follow the rule
-// shared by every component of the purchase, so a pay-as-you-go virtual machine gets pay-as-you-go
-// data disks, which stay pay-as-you-go once detached.
-// Ref: #/components/schemas/NewDataDisk
-type NewDataDisk struct {
-	// A disk type on sale and sold in the virtual machine's availability zone.
-	DiskTypeID DiskTypeID `json:"disk_type_id"`
-	// Within the disk type's `min_size_gb` and `max_size_gb` and a multiple of its `step_gb`.
-	SizeGB int64 `json:"size_gb"`
-	// What releasing the virtual machine does to this disk. `delete` deletes it with the virtual machine;
-	// `detach` keeps it, still billed on its own terms, for you to attach elsewhere or delete.
-	OnVirtualMachineRelease OptNewDataDiskOnVirtualMachineRelease `json:"on_virtual_machine_release"`
+// An empty data volume created in the instance's availability zone. Its terms follow the rule shared
+// by every component of the purchase, so a pay-as-you-go instance gets pay-as-you-go data volumes,
+// which stay pay-as-you-go once detached.
+// Ref: #/components/schemas/NewDataVolume
+type NewDataVolume struct {
+	// A volume type on sale and sold in the instance's availability zone.
+	VolumeTypeID VolumeTypeID `json:"volume_type_id"`
+	// Within the volume type's `min_size_gib` and `max_size_gib` and a multiple of its `size_step_gib`.
+	SizeGib int64 `json:"size_gib"`
+	// What releasing the instance does to this volume. `delete` deletes it with the instance; `detach`
+	// keeps it, still billed on its own terms, for you to attach elsewhere or delete.
+	OnInstanceRelease OptNewDataVolumeOnInstanceRelease `json:"on_instance_release"`
 	// Its own terms, to choose a different termination policy; `compute.billing` when omitted.
 	Billing OptBillingChoice `json:"billing"`
 }
 
-// GetDiskTypeID returns the value of DiskTypeID.
-func (s *NewDataDisk) GetDiskTypeID() DiskTypeID {
-	return s.DiskTypeID
+// GetVolumeTypeID returns the value of VolumeTypeID.
+func (s *NewDataVolume) GetVolumeTypeID() VolumeTypeID {
+	return s.VolumeTypeID
 }
 
-// GetSizeGB returns the value of SizeGB.
-func (s *NewDataDisk) GetSizeGB() int64 {
-	return s.SizeGB
+// GetSizeGib returns the value of SizeGib.
+func (s *NewDataVolume) GetSizeGib() int64 {
+	return s.SizeGib
 }
 
-// GetOnVirtualMachineRelease returns the value of OnVirtualMachineRelease.
-func (s *NewDataDisk) GetOnVirtualMachineRelease() OptNewDataDiskOnVirtualMachineRelease {
-	return s.OnVirtualMachineRelease
+// GetOnInstanceRelease returns the value of OnInstanceRelease.
+func (s *NewDataVolume) GetOnInstanceRelease() OptNewDataVolumeOnInstanceRelease {
+	return s.OnInstanceRelease
 }
 
 // GetBilling returns the value of Billing.
-func (s *NewDataDisk) GetBilling() OptBillingChoice {
+func (s *NewDataVolume) GetBilling() OptBillingChoice {
 	return s.Billing
 }
 
-// SetDiskTypeID sets the value of DiskTypeID.
-func (s *NewDataDisk) SetDiskTypeID(val DiskTypeID) {
-	s.DiskTypeID = val
+// SetVolumeTypeID sets the value of VolumeTypeID.
+func (s *NewDataVolume) SetVolumeTypeID(val VolumeTypeID) {
+	s.VolumeTypeID = val
 }
 
-// SetSizeGB sets the value of SizeGB.
-func (s *NewDataDisk) SetSizeGB(val int64) {
-	s.SizeGB = val
+// SetSizeGib sets the value of SizeGib.
+func (s *NewDataVolume) SetSizeGib(val int64) {
+	s.SizeGib = val
 }
 
-// SetOnVirtualMachineRelease sets the value of OnVirtualMachineRelease.
-func (s *NewDataDisk) SetOnVirtualMachineRelease(val OptNewDataDiskOnVirtualMachineRelease) {
-	s.OnVirtualMachineRelease = val
+// SetOnInstanceRelease sets the value of OnInstanceRelease.
+func (s *NewDataVolume) SetOnInstanceRelease(val OptNewDataVolumeOnInstanceRelease) {
+	s.OnInstanceRelease = val
 }
 
 // SetBilling sets the value of Billing.
-func (s *NewDataDisk) SetBilling(val OptBillingChoice) {
+func (s *NewDataVolume) SetBilling(val OptBillingChoice) {
 	s.Billing = val
 }
 
-// What releasing the virtual machine does to this disk. `delete` deletes it with the virtual machine;
-// `detach` keeps it, still billed on its own terms, for you to attach elsewhere or delete.
-type NewDataDiskOnVirtualMachineRelease string
+// What releasing the instance does to this volume. `delete` deletes it with the instance; `detach`
+// keeps it, still billed on its own terms, for you to attach elsewhere or delete.
+type NewDataVolumeOnInstanceRelease string
 
 const (
-	NewDataDiskOnVirtualMachineReleaseDelete NewDataDiskOnVirtualMachineRelease = "delete"
-	NewDataDiskOnVirtualMachineReleaseDetach NewDataDiskOnVirtualMachineRelease = "detach"
+	NewDataVolumeOnInstanceReleaseDelete NewDataVolumeOnInstanceRelease = "delete"
+	NewDataVolumeOnInstanceReleaseDetach NewDataVolumeOnInstanceRelease = "detach"
 )
 
-// AllValues returns all NewDataDiskOnVirtualMachineRelease values.
-func (NewDataDiskOnVirtualMachineRelease) AllValues() []NewDataDiskOnVirtualMachineRelease {
-	return []NewDataDiskOnVirtualMachineRelease{
-		NewDataDiskOnVirtualMachineReleaseDelete,
-		NewDataDiskOnVirtualMachineReleaseDetach,
+// AllValues returns all NewDataVolumeOnInstanceRelease values.
+func (NewDataVolumeOnInstanceRelease) AllValues() []NewDataVolumeOnInstanceRelease {
+	return []NewDataVolumeOnInstanceRelease{
+		NewDataVolumeOnInstanceReleaseDelete,
+		NewDataVolumeOnInstanceReleaseDetach,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s NewDataDiskOnVirtualMachineRelease) MarshalText() ([]byte, error) {
+func (s NewDataVolumeOnInstanceRelease) MarshalText() ([]byte, error) {
 	switch s {
-	case NewDataDiskOnVirtualMachineReleaseDelete:
+	case NewDataVolumeOnInstanceReleaseDelete:
 		return []byte(s), nil
-	case NewDataDiskOnVirtualMachineReleaseDetach:
+	case NewDataVolumeOnInstanceReleaseDetach:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -7998,20 +7064,20 @@ func (s NewDataDiskOnVirtualMachineRelease) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *NewDataDiskOnVirtualMachineRelease) UnmarshalText(data []byte) error {
-	switch NewDataDiskOnVirtualMachineRelease(data) {
-	case NewDataDiskOnVirtualMachineReleaseDelete:
-		*s = NewDataDiskOnVirtualMachineReleaseDelete
+func (s *NewDataVolumeOnInstanceRelease) UnmarshalText(data []byte) error {
+	switch NewDataVolumeOnInstanceRelease(data) {
+	case NewDataVolumeOnInstanceReleaseDelete:
+		*s = NewDataVolumeOnInstanceReleaseDelete
 		return nil
-	case NewDataDiskOnVirtualMachineReleaseDetach:
-		*s = NewDataDiskOnVirtualMachineReleaseDetach
+	case NewDataVolumeOnInstanceReleaseDetach:
+		*s = NewDataVolumeOnInstanceReleaseDetach
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// One IPv4 elastic IP created with this bandwidth configuration in the virtual machine's order.
+// One IPv4 elastic IP created with this bandwidth configuration in the instance's order.
 // Ref: #/components/schemas/NewElasticIP
 type NewElasticIP struct {
 	Type   NewElasticIPType `json:"type"`
@@ -8110,41 +7176,40 @@ func (s *NewElasticIPType) UnmarshalText(data []byte) error {
 	}
 }
 
-// What a version describes. Every part is optional; a virtual machine created from the version
-// supplies what is left out and may override what is given.
+// What a version describes. Every part is optional; an instance created from the version supplies what
+// is left out and may override what is given.
 // Ref: #/components/schemas/NewLaunchTemplateVersion
 type NewLaunchTemplateVersion struct {
-	Description OptString `json:"description"`
-	// The machine type, which also names the availability zone a virtual machine of the version is created
-	// in.
-	MachineTypeID    OptMachineTypeID                  `json:"machine_type_id"`
-	BootDisk         OptLaunchTemplateBootDisk         `json:"boot_disk"`
-	DataDisks        []LaunchTemplateDataDisk          `json:"data_disks"`
+	VersionDescription OptString `json:"version_description"`
+	// The instance type, which also names the availability zone an instance of the version is created in.
+	InstanceTypeID   OptInstanceTypeID                 `json:"instance_type_id"`
+	BootVolume       OptLaunchTemplateBootVolume       `json:"boot_volume"`
+	DataVolumes      []LaunchTemplateDataVolume        `json:"data_volumes"`
 	NetworkInterface OptLaunchTemplateNetworkInterface `json:"network_interface"`
 	ElasticIP        OptLaunchTemplateElasticIP        `json:"elastic_ip"`
 	// A key may not contain a colon, whitespace or control characters.
-	Labels OptNewLaunchTemplateVersionLabels `json:"labels"`
-	Notes  OptString                         `json:"notes"`
+	Labels      OptNewLaunchTemplateVersionLabels `json:"labels"`
+	Description OptString                         `json:"description"`
 }
 
-// GetDescription returns the value of Description.
-func (s *NewLaunchTemplateVersion) GetDescription() OptString {
-	return s.Description
+// GetVersionDescription returns the value of VersionDescription.
+func (s *NewLaunchTemplateVersion) GetVersionDescription() OptString {
+	return s.VersionDescription
 }
 
-// GetMachineTypeID returns the value of MachineTypeID.
-func (s *NewLaunchTemplateVersion) GetMachineTypeID() OptMachineTypeID {
-	return s.MachineTypeID
+// GetInstanceTypeID returns the value of InstanceTypeID.
+func (s *NewLaunchTemplateVersion) GetInstanceTypeID() OptInstanceTypeID {
+	return s.InstanceTypeID
 }
 
-// GetBootDisk returns the value of BootDisk.
-func (s *NewLaunchTemplateVersion) GetBootDisk() OptLaunchTemplateBootDisk {
-	return s.BootDisk
+// GetBootVolume returns the value of BootVolume.
+func (s *NewLaunchTemplateVersion) GetBootVolume() OptLaunchTemplateBootVolume {
+	return s.BootVolume
 }
 
-// GetDataDisks returns the value of DataDisks.
-func (s *NewLaunchTemplateVersion) GetDataDisks() []LaunchTemplateDataDisk {
-	return s.DataDisks
+// GetDataVolumes returns the value of DataVolumes.
+func (s *NewLaunchTemplateVersion) GetDataVolumes() []LaunchTemplateDataVolume {
+	return s.DataVolumes
 }
 
 // GetNetworkInterface returns the value of NetworkInterface.
@@ -8162,29 +7227,29 @@ func (s *NewLaunchTemplateVersion) GetLabels() OptNewLaunchTemplateVersionLabels
 	return s.Labels
 }
 
-// GetNotes returns the value of Notes.
-func (s *NewLaunchTemplateVersion) GetNotes() OptString {
-	return s.Notes
+// GetDescription returns the value of Description.
+func (s *NewLaunchTemplateVersion) GetDescription() OptString {
+	return s.Description
 }
 
-// SetDescription sets the value of Description.
-func (s *NewLaunchTemplateVersion) SetDescription(val OptString) {
-	s.Description = val
+// SetVersionDescription sets the value of VersionDescription.
+func (s *NewLaunchTemplateVersion) SetVersionDescription(val OptString) {
+	s.VersionDescription = val
 }
 
-// SetMachineTypeID sets the value of MachineTypeID.
-func (s *NewLaunchTemplateVersion) SetMachineTypeID(val OptMachineTypeID) {
-	s.MachineTypeID = val
+// SetInstanceTypeID sets the value of InstanceTypeID.
+func (s *NewLaunchTemplateVersion) SetInstanceTypeID(val OptInstanceTypeID) {
+	s.InstanceTypeID = val
 }
 
-// SetBootDisk sets the value of BootDisk.
-func (s *NewLaunchTemplateVersion) SetBootDisk(val OptLaunchTemplateBootDisk) {
-	s.BootDisk = val
+// SetBootVolume sets the value of BootVolume.
+func (s *NewLaunchTemplateVersion) SetBootVolume(val OptLaunchTemplateBootVolume) {
+	s.BootVolume = val
 }
 
-// SetDataDisks sets the value of DataDisks.
-func (s *NewLaunchTemplateVersion) SetDataDisks(val []LaunchTemplateDataDisk) {
-	s.DataDisks = val
+// SetDataVolumes sets the value of DataVolumes.
+func (s *NewLaunchTemplateVersion) SetDataVolumes(val []LaunchTemplateDataVolume) {
+	s.DataVolumes = val
 }
 
 // SetNetworkInterface sets the value of NetworkInterface.
@@ -8202,9 +7267,9 @@ func (s *NewLaunchTemplateVersion) SetLabels(val OptNewLaunchTemplateVersionLabe
 	s.Labels = val
 }
 
-// SetNotes sets the value of Notes.
-func (s *NewLaunchTemplateVersion) SetNotes(val OptString) {
-	s.Notes = val
+// SetDescription sets the value of Description.
+func (s *NewLaunchTemplateVersion) SetDescription(val OptString) {
+	s.Description = val
 }
 
 // A key may not contain a colon, whitespace or control characters.
@@ -8222,7 +7287,7 @@ func (s *NewLaunchTemplateVersionLabels) init() NewLaunchTemplateVersionLabels {
 // Ref: #/components/schemas/NewPrimaryNetworkInterface
 type NewPrimaryNetworkInterface struct {
 	Type NewPrimaryNetworkInterfaceType `json:"type"`
-	// The subnet the interface is created in, in the machine type's region.
+	// The subnet the interface is created in, in the instance type's region.
 	SubnetID SubnetID `json:"subnet_id"`
 	// The security groups of the interface, of the subnet's virtual private cloud. The default security
 	// group is not applied automatically.
@@ -8377,456 +7442,6 @@ func (o NilDateTime) Get() (v time.Time, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilDateTime) Or(d time.Time) time.Time {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilDiskAttachment returns new NilDiskAttachment with value set to v.
-func NewNilDiskAttachment(v DiskAttachment) NilDiskAttachment {
-	return NilDiskAttachment{
-		Value: v,
-	}
-}
-
-// NilDiskAttachment is nullable DiskAttachment.
-type NilDiskAttachment struct {
-	Value DiskAttachment
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilDiskAttachment) SetTo(v DiskAttachment) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilDiskAttachment) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilDiskAttachment) SetToNull() {
-	o.Null = true
-	var v DiskAttachment
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilDiskAttachment) Get() (v DiskAttachment, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilDiskAttachment) Or(d DiskAttachment) DiskAttachment {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilDiskBackupOperation returns new NilDiskBackupOperation with value set to v.
-func NewNilDiskBackupOperation(v DiskBackupOperation) NilDiskBackupOperation {
-	return NilDiskBackupOperation{
-		Value: v,
-	}
-}
-
-// NilDiskBackupOperation is nullable DiskBackupOperation.
-type NilDiskBackupOperation struct {
-	Value DiskBackupOperation
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilDiskBackupOperation) SetTo(v DiskBackupOperation) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilDiskBackupOperation) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilDiskBackupOperation) SetToNull() {
-	o.Null = true
-	var v DiskBackupOperation
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilDiskBackupOperation) Get() (v DiskBackupOperation, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilDiskBackupOperation) Or(d DiskBackupOperation) DiskBackupOperation {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilDiskBackupResourceFailureReason returns new NilDiskBackupResourceFailureReason with value set to v.
-func NewNilDiskBackupResourceFailureReason(v DiskBackupResourceFailureReason) NilDiskBackupResourceFailureReason {
-	return NilDiskBackupResourceFailureReason{
-		Value: v,
-	}
-}
-
-// NilDiskBackupResourceFailureReason is nullable DiskBackupResourceFailureReason.
-type NilDiskBackupResourceFailureReason struct {
-	Value DiskBackupResourceFailureReason
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilDiskBackupResourceFailureReason) SetTo(v DiskBackupResourceFailureReason) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilDiskBackupResourceFailureReason) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilDiskBackupResourceFailureReason) SetToNull() {
-	o.Null = true
-	var v DiskBackupResourceFailureReason
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilDiskBackupResourceFailureReason) Get() (v DiskBackupResourceFailureReason, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilDiskBackupResourceFailureReason) Or(d DiskBackupResourceFailureReason) DiskBackupResourceFailureReason {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilDiskID returns new NilDiskID with value set to v.
-func NewNilDiskID(v DiskID) NilDiskID {
-	return NilDiskID{
-		Value: v,
-	}
-}
-
-// NilDiskID is nullable DiskID.
-type NilDiskID struct {
-	Value DiskID
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilDiskID) SetTo(v DiskID) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilDiskID) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilDiskID) SetToNull() {
-	o.Null = true
-	var v DiskID
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilDiskID) Get() (v DiskID, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilDiskID) Or(d DiskID) DiskID {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilDiskOperation returns new NilDiskOperation with value set to v.
-func NewNilDiskOperation(v DiskOperation) NilDiskOperation {
-	return NilDiskOperation{
-		Value: v,
-	}
-}
-
-// NilDiskOperation is nullable DiskOperation.
-type NilDiskOperation struct {
-	Value DiskOperation
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilDiskOperation) SetTo(v DiskOperation) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilDiskOperation) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilDiskOperation) SetToNull() {
-	o.Null = true
-	var v DiskOperation
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilDiskOperation) Get() (v DiskOperation, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilDiskOperation) Or(d DiskOperation) DiskOperation {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilDiskPerformance returns new NilDiskPerformance with value set to v.
-func NewNilDiskPerformance(v DiskPerformance) NilDiskPerformance {
-	return NilDiskPerformance{
-		Value: v,
-	}
-}
-
-// NilDiskPerformance is nullable DiskPerformance.
-type NilDiskPerformance struct {
-	Value DiskPerformance
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilDiskPerformance) SetTo(v DiskPerformance) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilDiskPerformance) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilDiskPerformance) SetToNull() {
-	o.Null = true
-	var v DiskPerformance
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilDiskPerformance) Get() (v DiskPerformance, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilDiskPerformance) Or(d DiskPerformance) DiskPerformance {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilDiskResourceAccessState returns new NilDiskResourceAccessState with value set to v.
-func NewNilDiskResourceAccessState(v DiskResourceAccessState) NilDiskResourceAccessState {
-	return NilDiskResourceAccessState{
-		Value: v,
-	}
-}
-
-// NilDiskResourceAccessState is nullable DiskResourceAccessState.
-type NilDiskResourceAccessState struct {
-	Value DiskResourceAccessState
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilDiskResourceAccessState) SetTo(v DiskResourceAccessState) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilDiskResourceAccessState) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilDiskResourceAccessState) SetToNull() {
-	o.Null = true
-	var v DiskResourceAccessState
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilDiskResourceAccessState) Get() (v DiskResourceAccessState, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilDiskResourceAccessState) Or(d DiskResourceAccessState) DiskResourceAccessState {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilDiskResourceFailureReason returns new NilDiskResourceFailureReason with value set to v.
-func NewNilDiskResourceFailureReason(v DiskResourceFailureReason) NilDiskResourceFailureReason {
-	return NilDiskResourceFailureReason{
-		Value: v,
-	}
-}
-
-// NilDiskResourceFailureReason is nullable DiskResourceFailureReason.
-type NilDiskResourceFailureReason struct {
-	Value DiskResourceFailureReason
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilDiskResourceFailureReason) SetTo(v DiskResourceFailureReason) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilDiskResourceFailureReason) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilDiskResourceFailureReason) SetToNull() {
-	o.Null = true
-	var v DiskResourceFailureReason
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilDiskResourceFailureReason) Get() (v DiskResourceFailureReason, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilDiskResourceFailureReason) Or(d DiskResourceFailureReason) DiskResourceFailureReason {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilDiskSnapshotOperation returns new NilDiskSnapshotOperation with value set to v.
-func NewNilDiskSnapshotOperation(v DiskSnapshotOperation) NilDiskSnapshotOperation {
-	return NilDiskSnapshotOperation{
-		Value: v,
-	}
-}
-
-// NilDiskSnapshotOperation is nullable DiskSnapshotOperation.
-type NilDiskSnapshotOperation struct {
-	Value DiskSnapshotOperation
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilDiskSnapshotOperation) SetTo(v DiskSnapshotOperation) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilDiskSnapshotOperation) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilDiskSnapshotOperation) SetToNull() {
-	o.Null = true
-	var v DiskSnapshotOperation
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilDiskSnapshotOperation) Get() (v DiskSnapshotOperation, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilDiskSnapshotOperation) Or(d DiskSnapshotOperation) DiskSnapshotOperation {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilDiskSnapshotResourceFailureReason returns new NilDiskSnapshotResourceFailureReason with value set to v.
-func NewNilDiskSnapshotResourceFailureReason(v DiskSnapshotResourceFailureReason) NilDiskSnapshotResourceFailureReason {
-	return NilDiskSnapshotResourceFailureReason{
-		Value: v,
-	}
-}
-
-// NilDiskSnapshotResourceFailureReason is nullable DiskSnapshotResourceFailureReason.
-type NilDiskSnapshotResourceFailureReason struct {
-	Value DiskSnapshotResourceFailureReason
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilDiskSnapshotResourceFailureReason) SetTo(v DiskSnapshotResourceFailureReason) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilDiskSnapshotResourceFailureReason) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilDiskSnapshotResourceFailureReason) SetToNull() {
-	o.Null = true
-	var v DiskSnapshotResourceFailureReason
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilDiskSnapshotResourceFailureReason) Get() (v DiskSnapshotResourceFailureReason, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilDiskSnapshotResourceFailureReason) Or(d DiskSnapshotResourceFailureReason) DiskSnapshotResourceFailureReason {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9103,6 +7718,231 @@ func (o NilImageID) Or(d ImageID) ImageID {
 	return d
 }
 
+// NewNilInstanceAccessState returns new NilInstanceAccessState with value set to v.
+func NewNilInstanceAccessState(v InstanceAccessState) NilInstanceAccessState {
+	return NilInstanceAccessState{
+		Value: v,
+	}
+}
+
+// NilInstanceAccessState is nullable InstanceAccessState.
+type NilInstanceAccessState struct {
+	Value InstanceAccessState
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilInstanceAccessState) SetTo(v InstanceAccessState) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilInstanceAccessState) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilInstanceAccessState) SetToNull() {
+	o.Null = true
+	var v InstanceAccessState
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilInstanceAccessState) Get() (v InstanceAccessState, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilInstanceAccessState) Or(d InstanceAccessState) InstanceAccessState {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilInstanceFailureReason returns new NilInstanceFailureReason with value set to v.
+func NewNilInstanceFailureReason(v InstanceFailureReason) NilInstanceFailureReason {
+	return NilInstanceFailureReason{
+		Value: v,
+	}
+}
+
+// NilInstanceFailureReason is nullable InstanceFailureReason.
+type NilInstanceFailureReason struct {
+	Value InstanceFailureReason
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilInstanceFailureReason) SetTo(v InstanceFailureReason) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilInstanceFailureReason) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilInstanceFailureReason) SetToNull() {
+	o.Null = true
+	var v InstanceFailureReason
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilInstanceFailureReason) Get() (v InstanceFailureReason, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilInstanceFailureReason) Or(d InstanceFailureReason) InstanceFailureReason {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilInstanceImageType returns new NilInstanceImageType with value set to v.
+func NewNilInstanceImageType(v InstanceImageType) NilInstanceImageType {
+	return NilInstanceImageType{
+		Value: v,
+	}
+}
+
+// NilInstanceImageType is nullable InstanceImageType.
+type NilInstanceImageType struct {
+	Value InstanceImageType
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilInstanceImageType) SetTo(v InstanceImageType) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilInstanceImageType) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilInstanceImageType) SetToNull() {
+	o.Null = true
+	var v InstanceImageType
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilInstanceImageType) Get() (v InstanceImageType, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilInstanceImageType) Or(d InstanceImageType) InstanceImageType {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilInstanceOperation returns new NilInstanceOperation with value set to v.
+func NewNilInstanceOperation(v InstanceOperation) NilInstanceOperation {
+	return NilInstanceOperation{
+		Value: v,
+	}
+}
+
+// NilInstanceOperation is nullable InstanceOperation.
+type NilInstanceOperation struct {
+	Value InstanceOperation
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilInstanceOperation) SetTo(v InstanceOperation) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilInstanceOperation) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilInstanceOperation) SetToNull() {
+	o.Null = true
+	var v InstanceOperation
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilInstanceOperation) Get() (v InstanceOperation, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilInstanceOperation) Or(d InstanceOperation) InstanceOperation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilInstanceTypeID returns new NilInstanceTypeID with value set to v.
+func NewNilInstanceTypeID(v InstanceTypeID) NilInstanceTypeID {
+	return NilInstanceTypeID{
+		Value: v,
+	}
+}
+
+// NilInstanceTypeID is nullable InstanceTypeID.
+type NilInstanceTypeID struct {
+	Value InstanceTypeID
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilInstanceTypeID) SetTo(v InstanceTypeID) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilInstanceTypeID) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilInstanceTypeID) SetToNull() {
+	o.Null = true
+	var v InstanceTypeID
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilInstanceTypeID) Get() (v InstanceTypeID, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilInstanceTypeID) Or(d InstanceTypeID) InstanceTypeID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilInt64 returns new NilInt64 with value set to v.
 func NewNilInt64(v int64) NilInt64 {
 	return NilInt64{
@@ -9148,37 +7988,37 @@ func (o NilInt64) Or(d int64) int64 {
 	return d
 }
 
-// NewNilLaunchTemplateBootDisk returns new NilLaunchTemplateBootDisk with value set to v.
-func NewNilLaunchTemplateBootDisk(v LaunchTemplateBootDisk) NilLaunchTemplateBootDisk {
-	return NilLaunchTemplateBootDisk{
+// NewNilLaunchTemplateBootVolume returns new NilLaunchTemplateBootVolume with value set to v.
+func NewNilLaunchTemplateBootVolume(v LaunchTemplateBootVolume) NilLaunchTemplateBootVolume {
+	return NilLaunchTemplateBootVolume{
 		Value: v,
 	}
 }
 
-// NilLaunchTemplateBootDisk is nullable LaunchTemplateBootDisk.
-type NilLaunchTemplateBootDisk struct {
-	Value LaunchTemplateBootDisk
+// NilLaunchTemplateBootVolume is nullable LaunchTemplateBootVolume.
+type NilLaunchTemplateBootVolume struct {
+	Value LaunchTemplateBootVolume
 	Null  bool
 }
 
 // SetTo sets value to v.
-func (o *NilLaunchTemplateBootDisk) SetTo(v LaunchTemplateBootDisk) {
+func (o *NilLaunchTemplateBootVolume) SetTo(v LaunchTemplateBootVolume) {
 	o.Null = false
 	o.Value = v
 }
 
 // IsNull returns true if value is Null.
-func (o NilLaunchTemplateBootDisk) IsNull() bool { return o.Null }
+func (o NilLaunchTemplateBootVolume) IsNull() bool { return o.Null }
 
 // SetToNull sets value to null.
-func (o *NilLaunchTemplateBootDisk) SetToNull() {
+func (o *NilLaunchTemplateBootVolume) SetToNull() {
 	o.Null = true
-	var v LaunchTemplateBootDisk
+	var v LaunchTemplateBootVolume
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o NilLaunchTemplateBootDisk) Get() (v LaunchTemplateBootDisk, ok bool) {
+func (o NilLaunchTemplateBootVolume) Get() (v LaunchTemplateBootVolume, ok bool) {
 	if o.Null {
 		return v, false
 	}
@@ -9186,7 +8026,7 @@ func (o NilLaunchTemplateBootDisk) Get() (v LaunchTemplateBootDisk, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o NilLaunchTemplateBootDisk) Or(d LaunchTemplateBootDisk) LaunchTemplateBootDisk {
+func (o NilLaunchTemplateBootVolume) Or(d LaunchTemplateBootVolume) LaunchTemplateBootVolume {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9367,51 +8207,6 @@ func (o NilLaunchTemplateVersionLabels) Get() (v LaunchTemplateVersionLabels, ok
 
 // Or returns value if set, or given parameter if does not.
 func (o NilLaunchTemplateVersionLabels) Or(d LaunchTemplateVersionLabels) LaunchTemplateVersionLabels {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilMachineTypeID returns new NilMachineTypeID with value set to v.
-func NewNilMachineTypeID(v MachineTypeID) NilMachineTypeID {
-	return NilMachineTypeID{
-		Value: v,
-	}
-}
-
-// NilMachineTypeID is nullable MachineTypeID.
-type NilMachineTypeID struct {
-	Value MachineTypeID
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilMachineTypeID) SetTo(v MachineTypeID) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilMachineTypeID) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilMachineTypeID) SetToNull() {
-	o.Null = true
-	var v MachineTypeID
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilMachineTypeID) Get() (v MachineTypeID, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilMachineTypeID) Or(d MachineTypeID) MachineTypeID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9778,186 +8573,6 @@ func (o NilUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
-// NewNilVirtualMachineAccessState returns new NilVirtualMachineAccessState with value set to v.
-func NewNilVirtualMachineAccessState(v VirtualMachineAccessState) NilVirtualMachineAccessState {
-	return NilVirtualMachineAccessState{
-		Value: v,
-	}
-}
-
-// NilVirtualMachineAccessState is nullable VirtualMachineAccessState.
-type NilVirtualMachineAccessState struct {
-	Value VirtualMachineAccessState
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilVirtualMachineAccessState) SetTo(v VirtualMachineAccessState) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilVirtualMachineAccessState) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilVirtualMachineAccessState) SetToNull() {
-	o.Null = true
-	var v VirtualMachineAccessState
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilVirtualMachineAccessState) Get() (v VirtualMachineAccessState, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilVirtualMachineAccessState) Or(d VirtualMachineAccessState) VirtualMachineAccessState {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilVirtualMachineFailureReason returns new NilVirtualMachineFailureReason with value set to v.
-func NewNilVirtualMachineFailureReason(v VirtualMachineFailureReason) NilVirtualMachineFailureReason {
-	return NilVirtualMachineFailureReason{
-		Value: v,
-	}
-}
-
-// NilVirtualMachineFailureReason is nullable VirtualMachineFailureReason.
-type NilVirtualMachineFailureReason struct {
-	Value VirtualMachineFailureReason
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilVirtualMachineFailureReason) SetTo(v VirtualMachineFailureReason) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilVirtualMachineFailureReason) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilVirtualMachineFailureReason) SetToNull() {
-	o.Null = true
-	var v VirtualMachineFailureReason
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilVirtualMachineFailureReason) Get() (v VirtualMachineFailureReason, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilVirtualMachineFailureReason) Or(d VirtualMachineFailureReason) VirtualMachineFailureReason {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilVirtualMachineImageType returns new NilVirtualMachineImageType with value set to v.
-func NewNilVirtualMachineImageType(v VirtualMachineImageType) NilVirtualMachineImageType {
-	return NilVirtualMachineImageType{
-		Value: v,
-	}
-}
-
-// NilVirtualMachineImageType is nullable VirtualMachineImageType.
-type NilVirtualMachineImageType struct {
-	Value VirtualMachineImageType
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilVirtualMachineImageType) SetTo(v VirtualMachineImageType) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilVirtualMachineImageType) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilVirtualMachineImageType) SetToNull() {
-	o.Null = true
-	var v VirtualMachineImageType
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilVirtualMachineImageType) Get() (v VirtualMachineImageType, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilVirtualMachineImageType) Or(d VirtualMachineImageType) VirtualMachineImageType {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilVirtualMachineOperation returns new NilVirtualMachineOperation with value set to v.
-func NewNilVirtualMachineOperation(v VirtualMachineOperation) NilVirtualMachineOperation {
-	return NilVirtualMachineOperation{
-		Value: v,
-	}
-}
-
-// NilVirtualMachineOperation is nullable VirtualMachineOperation.
-type NilVirtualMachineOperation struct {
-	Value VirtualMachineOperation
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilVirtualMachineOperation) SetTo(v VirtualMachineOperation) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilVirtualMachineOperation) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilVirtualMachineOperation) SetToNull() {
-	o.Null = true
-	var v VirtualMachineOperation
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilVirtualMachineOperation) Get() (v VirtualMachineOperation, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilVirtualMachineOperation) Or(d VirtualMachineOperation) VirtualMachineOperation {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewNilVirtualPrivateCloudID returns new NilVirtualPrivateCloudID with value set to v.
 func NewNilVirtualPrivateCloudID(v VirtualPrivateCloudID) NilVirtualPrivateCloudID {
 	return NilVirtualPrivateCloudID{
@@ -10132,6 +8747,456 @@ func (o NilVirtualPrivateCloudPeeringOperation) Get() (v VirtualPrivateCloudPeer
 
 // Or returns value if set, or given parameter if does not.
 func (o NilVirtualPrivateCloudPeeringOperation) Or(d VirtualPrivateCloudPeeringOperation) VirtualPrivateCloudPeeringOperation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilVolumeAttachment returns new NilVolumeAttachment with value set to v.
+func NewNilVolumeAttachment(v VolumeAttachment) NilVolumeAttachment {
+	return NilVolumeAttachment{
+		Value: v,
+	}
+}
+
+// NilVolumeAttachment is nullable VolumeAttachment.
+type NilVolumeAttachment struct {
+	Value VolumeAttachment
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilVolumeAttachment) SetTo(v VolumeAttachment) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilVolumeAttachment) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilVolumeAttachment) SetToNull() {
+	o.Null = true
+	var v VolumeAttachment
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilVolumeAttachment) Get() (v VolumeAttachment, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilVolumeAttachment) Or(d VolumeAttachment) VolumeAttachment {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilVolumeBackupOperation returns new NilVolumeBackupOperation with value set to v.
+func NewNilVolumeBackupOperation(v VolumeBackupOperation) NilVolumeBackupOperation {
+	return NilVolumeBackupOperation{
+		Value: v,
+	}
+}
+
+// NilVolumeBackupOperation is nullable VolumeBackupOperation.
+type NilVolumeBackupOperation struct {
+	Value VolumeBackupOperation
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilVolumeBackupOperation) SetTo(v VolumeBackupOperation) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilVolumeBackupOperation) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilVolumeBackupOperation) SetToNull() {
+	o.Null = true
+	var v VolumeBackupOperation
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilVolumeBackupOperation) Get() (v VolumeBackupOperation, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilVolumeBackupOperation) Or(d VolumeBackupOperation) VolumeBackupOperation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilVolumeBackupResourceFailureReason returns new NilVolumeBackupResourceFailureReason with value set to v.
+func NewNilVolumeBackupResourceFailureReason(v VolumeBackupResourceFailureReason) NilVolumeBackupResourceFailureReason {
+	return NilVolumeBackupResourceFailureReason{
+		Value: v,
+	}
+}
+
+// NilVolumeBackupResourceFailureReason is nullable VolumeBackupResourceFailureReason.
+type NilVolumeBackupResourceFailureReason struct {
+	Value VolumeBackupResourceFailureReason
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilVolumeBackupResourceFailureReason) SetTo(v VolumeBackupResourceFailureReason) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilVolumeBackupResourceFailureReason) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilVolumeBackupResourceFailureReason) SetToNull() {
+	o.Null = true
+	var v VolumeBackupResourceFailureReason
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilVolumeBackupResourceFailureReason) Get() (v VolumeBackupResourceFailureReason, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilVolumeBackupResourceFailureReason) Or(d VolumeBackupResourceFailureReason) VolumeBackupResourceFailureReason {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilVolumeID returns new NilVolumeID with value set to v.
+func NewNilVolumeID(v VolumeID) NilVolumeID {
+	return NilVolumeID{
+		Value: v,
+	}
+}
+
+// NilVolumeID is nullable VolumeID.
+type NilVolumeID struct {
+	Value VolumeID
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilVolumeID) SetTo(v VolumeID) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilVolumeID) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilVolumeID) SetToNull() {
+	o.Null = true
+	var v VolumeID
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilVolumeID) Get() (v VolumeID, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilVolumeID) Or(d VolumeID) VolumeID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilVolumeOperation returns new NilVolumeOperation with value set to v.
+func NewNilVolumeOperation(v VolumeOperation) NilVolumeOperation {
+	return NilVolumeOperation{
+		Value: v,
+	}
+}
+
+// NilVolumeOperation is nullable VolumeOperation.
+type NilVolumeOperation struct {
+	Value VolumeOperation
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilVolumeOperation) SetTo(v VolumeOperation) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilVolumeOperation) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilVolumeOperation) SetToNull() {
+	o.Null = true
+	var v VolumeOperation
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilVolumeOperation) Get() (v VolumeOperation, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilVolumeOperation) Or(d VolumeOperation) VolumeOperation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilVolumePerformance returns new NilVolumePerformance with value set to v.
+func NewNilVolumePerformance(v VolumePerformance) NilVolumePerformance {
+	return NilVolumePerformance{
+		Value: v,
+	}
+}
+
+// NilVolumePerformance is nullable VolumePerformance.
+type NilVolumePerformance struct {
+	Value VolumePerformance
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilVolumePerformance) SetTo(v VolumePerformance) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilVolumePerformance) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilVolumePerformance) SetToNull() {
+	o.Null = true
+	var v VolumePerformance
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilVolumePerformance) Get() (v VolumePerformance, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilVolumePerformance) Or(d VolumePerformance) VolumePerformance {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilVolumeResourceAccessState returns new NilVolumeResourceAccessState with value set to v.
+func NewNilVolumeResourceAccessState(v VolumeResourceAccessState) NilVolumeResourceAccessState {
+	return NilVolumeResourceAccessState{
+		Value: v,
+	}
+}
+
+// NilVolumeResourceAccessState is nullable VolumeResourceAccessState.
+type NilVolumeResourceAccessState struct {
+	Value VolumeResourceAccessState
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilVolumeResourceAccessState) SetTo(v VolumeResourceAccessState) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilVolumeResourceAccessState) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilVolumeResourceAccessState) SetToNull() {
+	o.Null = true
+	var v VolumeResourceAccessState
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilVolumeResourceAccessState) Get() (v VolumeResourceAccessState, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilVolumeResourceAccessState) Or(d VolumeResourceAccessState) VolumeResourceAccessState {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilVolumeResourceFailureReason returns new NilVolumeResourceFailureReason with value set to v.
+func NewNilVolumeResourceFailureReason(v VolumeResourceFailureReason) NilVolumeResourceFailureReason {
+	return NilVolumeResourceFailureReason{
+		Value: v,
+	}
+}
+
+// NilVolumeResourceFailureReason is nullable VolumeResourceFailureReason.
+type NilVolumeResourceFailureReason struct {
+	Value VolumeResourceFailureReason
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilVolumeResourceFailureReason) SetTo(v VolumeResourceFailureReason) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilVolumeResourceFailureReason) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilVolumeResourceFailureReason) SetToNull() {
+	o.Null = true
+	var v VolumeResourceFailureReason
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilVolumeResourceFailureReason) Get() (v VolumeResourceFailureReason, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilVolumeResourceFailureReason) Or(d VolumeResourceFailureReason) VolumeResourceFailureReason {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilVolumeSnapshotOperation returns new NilVolumeSnapshotOperation with value set to v.
+func NewNilVolumeSnapshotOperation(v VolumeSnapshotOperation) NilVolumeSnapshotOperation {
+	return NilVolumeSnapshotOperation{
+		Value: v,
+	}
+}
+
+// NilVolumeSnapshotOperation is nullable VolumeSnapshotOperation.
+type NilVolumeSnapshotOperation struct {
+	Value VolumeSnapshotOperation
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilVolumeSnapshotOperation) SetTo(v VolumeSnapshotOperation) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilVolumeSnapshotOperation) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilVolumeSnapshotOperation) SetToNull() {
+	o.Null = true
+	var v VolumeSnapshotOperation
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilVolumeSnapshotOperation) Get() (v VolumeSnapshotOperation, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilVolumeSnapshotOperation) Or(d VolumeSnapshotOperation) VolumeSnapshotOperation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilVolumeSnapshotResourceFailureReason returns new NilVolumeSnapshotResourceFailureReason with value set to v.
+func NewNilVolumeSnapshotResourceFailureReason(v VolumeSnapshotResourceFailureReason) NilVolumeSnapshotResourceFailureReason {
+	return NilVolumeSnapshotResourceFailureReason{
+		Value: v,
+	}
+}
+
+// NilVolumeSnapshotResourceFailureReason is nullable VolumeSnapshotResourceFailureReason.
+type NilVolumeSnapshotResourceFailureReason struct {
+	Value VolumeSnapshotResourceFailureReason
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilVolumeSnapshotResourceFailureReason) SetTo(v VolumeSnapshotResourceFailureReason) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilVolumeSnapshotResourceFailureReason) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilVolumeSnapshotResourceFailureReason) SetToNull() {
+	o.Null = true
+	var v VolumeSnapshotResourceFailureReason
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilVolumeSnapshotResourceFailureReason) Get() (v VolumeSnapshotResourceFailureReason, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilVolumeSnapshotResourceFailureReason) Or(d VolumeSnapshotResourceFailureReason) VolumeSnapshotResourceFailureReason {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -10693,38 +9758,38 @@ func (o OptBool) Or(d bool) bool {
 	return d
 }
 
-// NewOptBootDisk returns new OptBootDisk with value set to v.
-func NewOptBootDisk(v BootDisk) OptBootDisk {
-	return OptBootDisk{
+// NewOptBootVolume returns new OptBootVolume with value set to v.
+func NewOptBootVolume(v BootVolume) OptBootVolume {
+	return OptBootVolume{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptBootDisk is optional BootDisk.
-type OptBootDisk struct {
-	Value BootDisk
+// OptBootVolume is optional BootVolume.
+type OptBootVolume struct {
+	Value BootVolume
 	Set   bool
 }
 
-// IsSet returns true if OptBootDisk was set.
-func (o OptBootDisk) IsSet() bool { return o.Set }
+// IsSet returns true if OptBootVolume was set.
+func (o OptBootVolume) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptBootDisk) Reset() {
-	var v BootDisk
+func (o *OptBootVolume) Reset() {
+	var v BootVolume
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptBootDisk) SetTo(v BootDisk) {
+func (o *OptBootVolume) SetTo(v BootVolume) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptBootDisk) Get() (v BootDisk, ok bool) {
+func (o OptBootVolume) Get() (v BootVolume, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -10732,7 +9797,7 @@ func (o OptBootDisk) Get() (v BootDisk, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptBootDisk) Or(d BootDisk) BootDisk {
+func (o OptBootVolume) Or(d BootVolume) BootVolume {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -10877,38 +9942,38 @@ func (o OptCheckoutOptionsMode) Or(d CheckoutOptionsMode) CheckoutOptionsMode {
 	return d
 }
 
-// NewOptCreateVirtualMachineRequestBodyLabels returns new OptCreateVirtualMachineRequestBodyLabels with value set to v.
-func NewOptCreateVirtualMachineRequestBodyLabels(v CreateVirtualMachineRequestBodyLabels) OptCreateVirtualMachineRequestBodyLabels {
-	return OptCreateVirtualMachineRequestBodyLabels{
+// NewOptCreateInstanceRequestBodyLabels returns new OptCreateInstanceRequestBodyLabels with value set to v.
+func NewOptCreateInstanceRequestBodyLabels(v CreateInstanceRequestBodyLabels) OptCreateInstanceRequestBodyLabels {
+	return OptCreateInstanceRequestBodyLabels{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptCreateVirtualMachineRequestBodyLabels is optional CreateVirtualMachineRequestBodyLabels.
-type OptCreateVirtualMachineRequestBodyLabels struct {
-	Value CreateVirtualMachineRequestBodyLabels
+// OptCreateInstanceRequestBodyLabels is optional CreateInstanceRequestBodyLabels.
+type OptCreateInstanceRequestBodyLabels struct {
+	Value CreateInstanceRequestBodyLabels
 	Set   bool
 }
 
-// IsSet returns true if OptCreateVirtualMachineRequestBodyLabels was set.
-func (o OptCreateVirtualMachineRequestBodyLabels) IsSet() bool { return o.Set }
+// IsSet returns true if OptCreateInstanceRequestBodyLabels was set.
+func (o OptCreateInstanceRequestBodyLabels) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptCreateVirtualMachineRequestBodyLabels) Reset() {
-	var v CreateVirtualMachineRequestBodyLabels
+func (o *OptCreateInstanceRequestBodyLabels) Reset() {
+	var v CreateInstanceRequestBodyLabels
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptCreateVirtualMachineRequestBodyLabels) SetTo(v CreateVirtualMachineRequestBodyLabels) {
+func (o *OptCreateInstanceRequestBodyLabels) SetTo(v CreateInstanceRequestBodyLabels) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptCreateVirtualMachineRequestBodyLabels) Get() (v CreateVirtualMachineRequestBodyLabels, ok bool) {
+func (o OptCreateInstanceRequestBodyLabels) Get() (v CreateInstanceRequestBodyLabels, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -10916,7 +9981,7 @@ func (o OptCreateVirtualMachineRequestBodyLabels) Get() (v CreateVirtualMachineR
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptCreateVirtualMachineRequestBodyLabels) Or(d CreateVirtualMachineRequestBodyLabels) CreateVirtualMachineRequestBodyLabels {
+func (o OptCreateInstanceRequestBodyLabels) Or(d CreateInstanceRequestBodyLabels) CreateInstanceRequestBodyLabels {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -10963,190 +10028,6 @@ func (o OptDateTime) Get() (v time.Time, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptDateTime) Or(d time.Time) time.Time {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptDiskBackupID returns new OptDiskBackupID with value set to v.
-func NewOptDiskBackupID(v DiskBackupID) OptDiskBackupID {
-	return OptDiskBackupID{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptDiskBackupID is optional DiskBackupID.
-type OptDiskBackupID struct {
-	Value DiskBackupID
-	Set   bool
-}
-
-// IsSet returns true if OptDiskBackupID was set.
-func (o OptDiskBackupID) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptDiskBackupID) Reset() {
-	var v DiskBackupID
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptDiskBackupID) SetTo(v DiskBackupID) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptDiskBackupID) Get() (v DiskBackupID, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptDiskBackupID) Or(d DiskBackupID) DiskBackupID {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptDiskID returns new OptDiskID with value set to v.
-func NewOptDiskID(v DiskID) OptDiskID {
-	return OptDiskID{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptDiskID is optional DiskID.
-type OptDiskID struct {
-	Value DiskID
-	Set   bool
-}
-
-// IsSet returns true if OptDiskID was set.
-func (o OptDiskID) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptDiskID) Reset() {
-	var v DiskID
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptDiskID) SetTo(v DiskID) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptDiskID) Get() (v DiskID, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptDiskID) Or(d DiskID) DiskID {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptDiskSnapshotID returns new OptDiskSnapshotID with value set to v.
-func NewOptDiskSnapshotID(v DiskSnapshotID) OptDiskSnapshotID {
-	return OptDiskSnapshotID{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptDiskSnapshotID is optional DiskSnapshotID.
-type OptDiskSnapshotID struct {
-	Value DiskSnapshotID
-	Set   bool
-}
-
-// IsSet returns true if OptDiskSnapshotID was set.
-func (o OptDiskSnapshotID) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptDiskSnapshotID) Reset() {
-	var v DiskSnapshotID
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptDiskSnapshotID) SetTo(v DiskSnapshotID) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptDiskSnapshotID) Get() (v DiskSnapshotID, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptDiskSnapshotID) Or(d DiskSnapshotID) DiskSnapshotID {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptDiskTypeID returns new OptDiskTypeID with value set to v.
-func NewOptDiskTypeID(v DiskTypeID) OptDiskTypeID {
-	return OptDiskTypeID{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptDiskTypeID is optional DiskTypeID.
-type OptDiskTypeID struct {
-	Value DiskTypeID
-	Set   bool
-}
-
-// IsSet returns true if OptDiskTypeID was set.
-func (o OptDiskTypeID) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptDiskTypeID) Reset() {
-	var v DiskTypeID
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptDiskTypeID) SetTo(v DiskTypeID) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptDiskTypeID) Get() (v DiskTypeID, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptDiskTypeID) Or(d DiskTypeID) DiskTypeID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -11245,6 +10126,144 @@ func (o OptIPv4HostAddress) Or(d IPv4HostAddress) IPv4HostAddress {
 	return d
 }
 
+// NewOptInstanceElasticIP returns new OptInstanceElasticIP with value set to v.
+func NewOptInstanceElasticIP(v InstanceElasticIP) OptInstanceElasticIP {
+	return OptInstanceElasticIP{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInstanceElasticIP is optional InstanceElasticIP.
+type OptInstanceElasticIP struct {
+	Value InstanceElasticIP
+	Set   bool
+}
+
+// IsSet returns true if OptInstanceElasticIP was set.
+func (o OptInstanceElasticIP) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInstanceElasticIP) Reset() {
+	var v InstanceElasticIP
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInstanceElasticIP) SetTo(v InstanceElasticIP) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInstanceElasticIP) Get() (v InstanceElasticIP, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInstanceElasticIP) Or(d InstanceElasticIP) InstanceElasticIP {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptInstanceFamilyID returns new OptInstanceFamilyID with value set to v.
+func NewOptInstanceFamilyID(v InstanceFamilyID) OptInstanceFamilyID {
+	return OptInstanceFamilyID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInstanceFamilyID is optional InstanceFamilyID.
+type OptInstanceFamilyID struct {
+	Value InstanceFamilyID
+	Set   bool
+}
+
+// IsSet returns true if OptInstanceFamilyID was set.
+func (o OptInstanceFamilyID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInstanceFamilyID) Reset() {
+	var v InstanceFamilyID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInstanceFamilyID) SetTo(v InstanceFamilyID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInstanceFamilyID) Get() (v InstanceFamilyID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInstanceFamilyID) Or(d InstanceFamilyID) InstanceFamilyID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptInstanceTypeID returns new OptInstanceTypeID with value set to v.
+func NewOptInstanceTypeID(v InstanceTypeID) OptInstanceTypeID {
+	return OptInstanceTypeID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInstanceTypeID is optional InstanceTypeID.
+type OptInstanceTypeID struct {
+	Value InstanceTypeID
+	Set   bool
+}
+
+// IsSet returns true if OptInstanceTypeID was set.
+func (o OptInstanceTypeID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInstanceTypeID) Reset() {
+	var v InstanceTypeID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInstanceTypeID) SetTo(v InstanceTypeID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInstanceTypeID) Get() (v InstanceTypeID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInstanceTypeID) Or(d InstanceTypeID) InstanceTypeID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptInt64 returns new OptInt64 with value set to v.
 func NewOptInt64(v int64) OptInt64 {
 	return OptInt64{
@@ -11337,38 +10356,38 @@ func (o OptInternetChargeType) Or(d InternetChargeType) InternetChargeType {
 	return d
 }
 
-// NewOptLaunchTemplateBootDisk returns new OptLaunchTemplateBootDisk with value set to v.
-func NewOptLaunchTemplateBootDisk(v LaunchTemplateBootDisk) OptLaunchTemplateBootDisk {
-	return OptLaunchTemplateBootDisk{
+// NewOptLaunchTemplateBootVolume returns new OptLaunchTemplateBootVolume with value set to v.
+func NewOptLaunchTemplateBootVolume(v LaunchTemplateBootVolume) OptLaunchTemplateBootVolume {
+	return OptLaunchTemplateBootVolume{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptLaunchTemplateBootDisk is optional LaunchTemplateBootDisk.
-type OptLaunchTemplateBootDisk struct {
-	Value LaunchTemplateBootDisk
+// OptLaunchTemplateBootVolume is optional LaunchTemplateBootVolume.
+type OptLaunchTemplateBootVolume struct {
+	Value LaunchTemplateBootVolume
 	Set   bool
 }
 
-// IsSet returns true if OptLaunchTemplateBootDisk was set.
-func (o OptLaunchTemplateBootDisk) IsSet() bool { return o.Set }
+// IsSet returns true if OptLaunchTemplateBootVolume was set.
+func (o OptLaunchTemplateBootVolume) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptLaunchTemplateBootDisk) Reset() {
-	var v LaunchTemplateBootDisk
+func (o *OptLaunchTemplateBootVolume) Reset() {
+	var v LaunchTemplateBootVolume
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptLaunchTemplateBootDisk) SetTo(v LaunchTemplateBootDisk) {
+func (o *OptLaunchTemplateBootVolume) SetTo(v LaunchTemplateBootVolume) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptLaunchTemplateBootDisk) Get() (v LaunchTemplateBootDisk, ok bool) {
+func (o OptLaunchTemplateBootVolume) Get() (v LaunchTemplateBootVolume, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -11376,45 +10395,45 @@ func (o OptLaunchTemplateBootDisk) Get() (v LaunchTemplateBootDisk, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptLaunchTemplateBootDisk) Or(d LaunchTemplateBootDisk) LaunchTemplateBootDisk {
+func (o OptLaunchTemplateBootVolume) Or(d LaunchTemplateBootVolume) LaunchTemplateBootVolume {
 	if v, ok := o.Get(); ok {
 		return v
 	}
 	return d
 }
 
-// NewOptLaunchTemplateBootDiskOnVirtualMachineRelease returns new OptLaunchTemplateBootDiskOnVirtualMachineRelease with value set to v.
-func NewOptLaunchTemplateBootDiskOnVirtualMachineRelease(v LaunchTemplateBootDiskOnVirtualMachineRelease) OptLaunchTemplateBootDiskOnVirtualMachineRelease {
-	return OptLaunchTemplateBootDiskOnVirtualMachineRelease{
+// NewOptLaunchTemplateBootVolumeOnInstanceRelease returns new OptLaunchTemplateBootVolumeOnInstanceRelease with value set to v.
+func NewOptLaunchTemplateBootVolumeOnInstanceRelease(v LaunchTemplateBootVolumeOnInstanceRelease) OptLaunchTemplateBootVolumeOnInstanceRelease {
+	return OptLaunchTemplateBootVolumeOnInstanceRelease{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptLaunchTemplateBootDiskOnVirtualMachineRelease is optional LaunchTemplateBootDiskOnVirtualMachineRelease.
-type OptLaunchTemplateBootDiskOnVirtualMachineRelease struct {
-	Value LaunchTemplateBootDiskOnVirtualMachineRelease
+// OptLaunchTemplateBootVolumeOnInstanceRelease is optional LaunchTemplateBootVolumeOnInstanceRelease.
+type OptLaunchTemplateBootVolumeOnInstanceRelease struct {
+	Value LaunchTemplateBootVolumeOnInstanceRelease
 	Set   bool
 }
 
-// IsSet returns true if OptLaunchTemplateBootDiskOnVirtualMachineRelease was set.
-func (o OptLaunchTemplateBootDiskOnVirtualMachineRelease) IsSet() bool { return o.Set }
+// IsSet returns true if OptLaunchTemplateBootVolumeOnInstanceRelease was set.
+func (o OptLaunchTemplateBootVolumeOnInstanceRelease) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptLaunchTemplateBootDiskOnVirtualMachineRelease) Reset() {
-	var v LaunchTemplateBootDiskOnVirtualMachineRelease
+func (o *OptLaunchTemplateBootVolumeOnInstanceRelease) Reset() {
+	var v LaunchTemplateBootVolumeOnInstanceRelease
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptLaunchTemplateBootDiskOnVirtualMachineRelease) SetTo(v LaunchTemplateBootDiskOnVirtualMachineRelease) {
+func (o *OptLaunchTemplateBootVolumeOnInstanceRelease) SetTo(v LaunchTemplateBootVolumeOnInstanceRelease) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptLaunchTemplateBootDiskOnVirtualMachineRelease) Get() (v LaunchTemplateBootDiskOnVirtualMachineRelease, ok bool) {
+func (o OptLaunchTemplateBootVolumeOnInstanceRelease) Get() (v LaunchTemplateBootVolumeOnInstanceRelease, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -11422,45 +10441,45 @@ func (o OptLaunchTemplateBootDiskOnVirtualMachineRelease) Get() (v LaunchTemplat
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptLaunchTemplateBootDiskOnVirtualMachineRelease) Or(d LaunchTemplateBootDiskOnVirtualMachineRelease) LaunchTemplateBootDiskOnVirtualMachineRelease {
+func (o OptLaunchTemplateBootVolumeOnInstanceRelease) Or(d LaunchTemplateBootVolumeOnInstanceRelease) LaunchTemplateBootVolumeOnInstanceRelease {
 	if v, ok := o.Get(); ok {
 		return v
 	}
 	return d
 }
 
-// NewOptLaunchTemplateDataDiskOnVirtualMachineRelease returns new OptLaunchTemplateDataDiskOnVirtualMachineRelease with value set to v.
-func NewOptLaunchTemplateDataDiskOnVirtualMachineRelease(v LaunchTemplateDataDiskOnVirtualMachineRelease) OptLaunchTemplateDataDiskOnVirtualMachineRelease {
-	return OptLaunchTemplateDataDiskOnVirtualMachineRelease{
+// NewOptLaunchTemplateDataVolumeOnInstanceRelease returns new OptLaunchTemplateDataVolumeOnInstanceRelease with value set to v.
+func NewOptLaunchTemplateDataVolumeOnInstanceRelease(v LaunchTemplateDataVolumeOnInstanceRelease) OptLaunchTemplateDataVolumeOnInstanceRelease {
+	return OptLaunchTemplateDataVolumeOnInstanceRelease{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptLaunchTemplateDataDiskOnVirtualMachineRelease is optional LaunchTemplateDataDiskOnVirtualMachineRelease.
-type OptLaunchTemplateDataDiskOnVirtualMachineRelease struct {
-	Value LaunchTemplateDataDiskOnVirtualMachineRelease
+// OptLaunchTemplateDataVolumeOnInstanceRelease is optional LaunchTemplateDataVolumeOnInstanceRelease.
+type OptLaunchTemplateDataVolumeOnInstanceRelease struct {
+	Value LaunchTemplateDataVolumeOnInstanceRelease
 	Set   bool
 }
 
-// IsSet returns true if OptLaunchTemplateDataDiskOnVirtualMachineRelease was set.
-func (o OptLaunchTemplateDataDiskOnVirtualMachineRelease) IsSet() bool { return o.Set }
+// IsSet returns true if OptLaunchTemplateDataVolumeOnInstanceRelease was set.
+func (o OptLaunchTemplateDataVolumeOnInstanceRelease) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptLaunchTemplateDataDiskOnVirtualMachineRelease) Reset() {
-	var v LaunchTemplateDataDiskOnVirtualMachineRelease
+func (o *OptLaunchTemplateDataVolumeOnInstanceRelease) Reset() {
+	var v LaunchTemplateDataVolumeOnInstanceRelease
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptLaunchTemplateDataDiskOnVirtualMachineRelease) SetTo(v LaunchTemplateDataDiskOnVirtualMachineRelease) {
+func (o *OptLaunchTemplateDataVolumeOnInstanceRelease) SetTo(v LaunchTemplateDataVolumeOnInstanceRelease) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptLaunchTemplateDataDiskOnVirtualMachineRelease) Get() (v LaunchTemplateDataDiskOnVirtualMachineRelease, ok bool) {
+func (o OptLaunchTemplateDataVolumeOnInstanceRelease) Get() (v LaunchTemplateDataVolumeOnInstanceRelease, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -11468,7 +10487,7 @@ func (o OptLaunchTemplateDataDiskOnVirtualMachineRelease) Get() (v LaunchTemplat
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptLaunchTemplateDataDiskOnVirtualMachineRelease) Or(d LaunchTemplateDataDiskOnVirtualMachineRelease) LaunchTemplateDataDiskOnVirtualMachineRelease {
+func (o OptLaunchTemplateDataVolumeOnInstanceRelease) Or(d LaunchTemplateDataVolumeOnInstanceRelease) LaunchTemplateDataVolumeOnInstanceRelease {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -11659,38 +10678,38 @@ func (o OptListElasticIPTrafficUsageInterval) Or(d ListElasticIPTrafficUsageInte
 	return d
 }
 
-// NewOptMachineTypeID returns new OptMachineTypeID with value set to v.
-func NewOptMachineTypeID(v MachineTypeID) OptMachineTypeID {
-	return OptMachineTypeID{
+// NewOptNewBootVolumeOnInstanceRelease returns new OptNewBootVolumeOnInstanceRelease with value set to v.
+func NewOptNewBootVolumeOnInstanceRelease(v NewBootVolumeOnInstanceRelease) OptNewBootVolumeOnInstanceRelease {
+	return OptNewBootVolumeOnInstanceRelease{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptMachineTypeID is optional MachineTypeID.
-type OptMachineTypeID struct {
-	Value MachineTypeID
+// OptNewBootVolumeOnInstanceRelease is optional NewBootVolumeOnInstanceRelease.
+type OptNewBootVolumeOnInstanceRelease struct {
+	Value NewBootVolumeOnInstanceRelease
 	Set   bool
 }
 
-// IsSet returns true if OptMachineTypeID was set.
-func (o OptMachineTypeID) IsSet() bool { return o.Set }
+// IsSet returns true if OptNewBootVolumeOnInstanceRelease was set.
+func (o OptNewBootVolumeOnInstanceRelease) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptMachineTypeID) Reset() {
-	var v MachineTypeID
+func (o *OptNewBootVolumeOnInstanceRelease) Reset() {
+	var v NewBootVolumeOnInstanceRelease
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptMachineTypeID) SetTo(v MachineTypeID) {
+func (o *OptNewBootVolumeOnInstanceRelease) SetTo(v NewBootVolumeOnInstanceRelease) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptMachineTypeID) Get() (v MachineTypeID, ok bool) {
+func (o OptNewBootVolumeOnInstanceRelease) Get() (v NewBootVolumeOnInstanceRelease, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -11698,45 +10717,45 @@ func (o OptMachineTypeID) Get() (v MachineTypeID, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptMachineTypeID) Or(d MachineTypeID) MachineTypeID {
+func (o OptNewBootVolumeOnInstanceRelease) Or(d NewBootVolumeOnInstanceRelease) NewBootVolumeOnInstanceRelease {
 	if v, ok := o.Get(); ok {
 		return v
 	}
 	return d
 }
 
-// NewOptNewBootDiskOnVirtualMachineRelease returns new OptNewBootDiskOnVirtualMachineRelease with value set to v.
-func NewOptNewBootDiskOnVirtualMachineRelease(v NewBootDiskOnVirtualMachineRelease) OptNewBootDiskOnVirtualMachineRelease {
-	return OptNewBootDiskOnVirtualMachineRelease{
+// NewOptNewDataVolumeOnInstanceRelease returns new OptNewDataVolumeOnInstanceRelease with value set to v.
+func NewOptNewDataVolumeOnInstanceRelease(v NewDataVolumeOnInstanceRelease) OptNewDataVolumeOnInstanceRelease {
+	return OptNewDataVolumeOnInstanceRelease{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptNewBootDiskOnVirtualMachineRelease is optional NewBootDiskOnVirtualMachineRelease.
-type OptNewBootDiskOnVirtualMachineRelease struct {
-	Value NewBootDiskOnVirtualMachineRelease
+// OptNewDataVolumeOnInstanceRelease is optional NewDataVolumeOnInstanceRelease.
+type OptNewDataVolumeOnInstanceRelease struct {
+	Value NewDataVolumeOnInstanceRelease
 	Set   bool
 }
 
-// IsSet returns true if OptNewBootDiskOnVirtualMachineRelease was set.
-func (o OptNewBootDiskOnVirtualMachineRelease) IsSet() bool { return o.Set }
+// IsSet returns true if OptNewDataVolumeOnInstanceRelease was set.
+func (o OptNewDataVolumeOnInstanceRelease) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptNewBootDiskOnVirtualMachineRelease) Reset() {
-	var v NewBootDiskOnVirtualMachineRelease
+func (o *OptNewDataVolumeOnInstanceRelease) Reset() {
+	var v NewDataVolumeOnInstanceRelease
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptNewBootDiskOnVirtualMachineRelease) SetTo(v NewBootDiskOnVirtualMachineRelease) {
+func (o *OptNewDataVolumeOnInstanceRelease) SetTo(v NewDataVolumeOnInstanceRelease) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptNewBootDiskOnVirtualMachineRelease) Get() (v NewBootDiskOnVirtualMachineRelease, ok bool) {
+func (o OptNewDataVolumeOnInstanceRelease) Get() (v NewDataVolumeOnInstanceRelease, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -11744,53 +10763,7 @@ func (o OptNewBootDiskOnVirtualMachineRelease) Get() (v NewBootDiskOnVirtualMach
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptNewBootDiskOnVirtualMachineRelease) Or(d NewBootDiskOnVirtualMachineRelease) NewBootDiskOnVirtualMachineRelease {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptNewDataDiskOnVirtualMachineRelease returns new OptNewDataDiskOnVirtualMachineRelease with value set to v.
-func NewOptNewDataDiskOnVirtualMachineRelease(v NewDataDiskOnVirtualMachineRelease) OptNewDataDiskOnVirtualMachineRelease {
-	return OptNewDataDiskOnVirtualMachineRelease{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNewDataDiskOnVirtualMachineRelease is optional NewDataDiskOnVirtualMachineRelease.
-type OptNewDataDiskOnVirtualMachineRelease struct {
-	Value NewDataDiskOnVirtualMachineRelease
-	Set   bool
-}
-
-// IsSet returns true if OptNewDataDiskOnVirtualMachineRelease was set.
-func (o OptNewDataDiskOnVirtualMachineRelease) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNewDataDiskOnVirtualMachineRelease) Reset() {
-	var v NewDataDiskOnVirtualMachineRelease
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptNewDataDiskOnVirtualMachineRelease) SetTo(v NewDataDiskOnVirtualMachineRelease) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNewDataDiskOnVirtualMachineRelease) Get() (v NewDataDiskOnVirtualMachineRelease, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNewDataDiskOnVirtualMachineRelease) Or(d NewDataDiskOnVirtualMachineRelease) NewDataDiskOnVirtualMachineRelease {
+func (o OptNewDataVolumeOnInstanceRelease) Or(d NewDataVolumeOnInstanceRelease) NewDataVolumeOnInstanceRelease {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -12119,38 +11092,38 @@ func (o OptURI) Or(d url.URL) url.URL {
 	return d
 }
 
-// NewOptUpdateVirtualMachineRequestBodyLabels returns new OptUpdateVirtualMachineRequestBodyLabels with value set to v.
-func NewOptUpdateVirtualMachineRequestBodyLabels(v UpdateVirtualMachineRequestBodyLabels) OptUpdateVirtualMachineRequestBodyLabels {
-	return OptUpdateVirtualMachineRequestBodyLabels{
+// NewOptUpdateInstanceRequestBodyLabels returns new OptUpdateInstanceRequestBodyLabels with value set to v.
+func NewOptUpdateInstanceRequestBodyLabels(v UpdateInstanceRequestBodyLabels) OptUpdateInstanceRequestBodyLabels {
+	return OptUpdateInstanceRequestBodyLabels{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptUpdateVirtualMachineRequestBodyLabels is optional UpdateVirtualMachineRequestBodyLabels.
-type OptUpdateVirtualMachineRequestBodyLabels struct {
-	Value UpdateVirtualMachineRequestBodyLabels
+// OptUpdateInstanceRequestBodyLabels is optional UpdateInstanceRequestBodyLabels.
+type OptUpdateInstanceRequestBodyLabels struct {
+	Value UpdateInstanceRequestBodyLabels
 	Set   bool
 }
 
-// IsSet returns true if OptUpdateVirtualMachineRequestBodyLabels was set.
-func (o OptUpdateVirtualMachineRequestBodyLabels) IsSet() bool { return o.Set }
+// IsSet returns true if OptUpdateInstanceRequestBodyLabels was set.
+func (o OptUpdateInstanceRequestBodyLabels) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptUpdateVirtualMachineRequestBodyLabels) Reset() {
-	var v UpdateVirtualMachineRequestBodyLabels
+func (o *OptUpdateInstanceRequestBodyLabels) Reset() {
+	var v UpdateInstanceRequestBodyLabels
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptUpdateVirtualMachineRequestBodyLabels) SetTo(v UpdateVirtualMachineRequestBodyLabels) {
+func (o *OptUpdateInstanceRequestBodyLabels) SetTo(v UpdateInstanceRequestBodyLabels) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptUpdateVirtualMachineRequestBodyLabels) Get() (v UpdateVirtualMachineRequestBodyLabels, ok bool) {
+func (o OptUpdateInstanceRequestBodyLabels) Get() (v UpdateInstanceRequestBodyLabels, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -12158,53 +11131,7 @@ func (o OptUpdateVirtualMachineRequestBodyLabels) Get() (v UpdateVirtualMachineR
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptUpdateVirtualMachineRequestBodyLabels) Or(d UpdateVirtualMachineRequestBodyLabels) UpdateVirtualMachineRequestBodyLabels {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptVirtualMachineElasticIP returns new OptVirtualMachineElasticIP with value set to v.
-func NewOptVirtualMachineElasticIP(v VirtualMachineElasticIP) OptVirtualMachineElasticIP {
-	return OptVirtualMachineElasticIP{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptVirtualMachineElasticIP is optional VirtualMachineElasticIP.
-type OptVirtualMachineElasticIP struct {
-	Value VirtualMachineElasticIP
-	Set   bool
-}
-
-// IsSet returns true if OptVirtualMachineElasticIP was set.
-func (o OptVirtualMachineElasticIP) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptVirtualMachineElasticIP) Reset() {
-	var v VirtualMachineElasticIP
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptVirtualMachineElasticIP) SetTo(v VirtualMachineElasticIP) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptVirtualMachineElasticIP) Get() (v VirtualMachineElasticIP, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptVirtualMachineElasticIP) Or(d VirtualMachineElasticIP) VirtualMachineElasticIP {
+func (o OptUpdateInstanceRequestBodyLabels) Or(d UpdateInstanceRequestBodyLabels) UpdateInstanceRequestBodyLabels {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -12251,6 +11178,190 @@ func (o OptVirtualPrivateCloudID) Get() (v VirtualPrivateCloudID, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptVirtualPrivateCloudID) Or(d VirtualPrivateCloudID) VirtualPrivateCloudID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptVolumeBackupID returns new OptVolumeBackupID with value set to v.
+func NewOptVolumeBackupID(v VolumeBackupID) OptVolumeBackupID {
+	return OptVolumeBackupID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptVolumeBackupID is optional VolumeBackupID.
+type OptVolumeBackupID struct {
+	Value VolumeBackupID
+	Set   bool
+}
+
+// IsSet returns true if OptVolumeBackupID was set.
+func (o OptVolumeBackupID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptVolumeBackupID) Reset() {
+	var v VolumeBackupID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptVolumeBackupID) SetTo(v VolumeBackupID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptVolumeBackupID) Get() (v VolumeBackupID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptVolumeBackupID) Or(d VolumeBackupID) VolumeBackupID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptVolumeID returns new OptVolumeID with value set to v.
+func NewOptVolumeID(v VolumeID) OptVolumeID {
+	return OptVolumeID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptVolumeID is optional VolumeID.
+type OptVolumeID struct {
+	Value VolumeID
+	Set   bool
+}
+
+// IsSet returns true if OptVolumeID was set.
+func (o OptVolumeID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptVolumeID) Reset() {
+	var v VolumeID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptVolumeID) SetTo(v VolumeID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptVolumeID) Get() (v VolumeID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptVolumeID) Or(d VolumeID) VolumeID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptVolumeSnapshotID returns new OptVolumeSnapshotID with value set to v.
+func NewOptVolumeSnapshotID(v VolumeSnapshotID) OptVolumeSnapshotID {
+	return OptVolumeSnapshotID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptVolumeSnapshotID is optional VolumeSnapshotID.
+type OptVolumeSnapshotID struct {
+	Value VolumeSnapshotID
+	Set   bool
+}
+
+// IsSet returns true if OptVolumeSnapshotID was set.
+func (o OptVolumeSnapshotID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptVolumeSnapshotID) Reset() {
+	var v VolumeSnapshotID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptVolumeSnapshotID) SetTo(v VolumeSnapshotID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptVolumeSnapshotID) Get() (v VolumeSnapshotID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptVolumeSnapshotID) Or(d VolumeSnapshotID) VolumeSnapshotID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptVolumeTypeID returns new OptVolumeTypeID with value set to v.
+func NewOptVolumeTypeID(v VolumeTypeID) OptVolumeTypeID {
+	return OptVolumeTypeID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptVolumeTypeID is optional VolumeTypeID.
+type OptVolumeTypeID struct {
+	Value VolumeTypeID
+	Set   bool
+}
+
+// IsSet returns true if OptVolumeTypeID was set.
+func (o OptVolumeTypeID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptVolumeTypeID) Reset() {
+	var v VolumeTypeID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptVolumeTypeID) SetTo(v VolumeTypeID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptVolumeTypeID) Get() (v VolumeTypeID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptVolumeTypeID) Or(d VolumeTypeID) VolumeTypeID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -12327,8 +11438,8 @@ func NewSuppliedPasswordPasswordChoice(v SuppliedPassword) PasswordChoice {
 	return s
 }
 
-// One performance metric of a disk type for a disk of `size_gb`,
-// `max(min, min(max, base + size_gb × per_gib))`. A `per_gib` of zero is a fixed performance, and a
+// One performance metric of a volume type for a volume of `size_gib`,
+// `max(min, min(max, base + size_gib × per_gib))`. A `per_gib` of zero is a fixed performance, and a
 // `min` of zero is no floor.
 // Ref: #/components/schemas/PerformanceFormula
 type PerformanceFormula struct {
@@ -12378,9 +11489,9 @@ func (s *PerformanceFormula) SetMax(val int64) {
 	s.Max = val
 }
 
-// The virtual machine's primary network interface, its network location. `new` creates one in a
-// subnet, deleted with the virtual machine; `existing` uses one you already hold, detached and kept
-// when the virtual machine is released.
+// The instance's primary network interface, its network location. `new` creates one in a subnet,
+// deleted with the instance; `existing` uses one you already hold, detached and kept when the instance
+// is released.
 // Ref: #/components/schemas/PrimaryNetworkInterface
 // PrimaryNetworkInterface represents sum type.
 type PrimaryNetworkInterface struct {
@@ -12636,8 +11747,8 @@ func (s *PrivateImageReleaseResourceType) UnmarshalText(data []byte) error {
 	}
 }
 
-// An image this project captured from one of its virtual machines, used to install virtual machines of
-// this project. Its storage is billed only to this project.
+// An image this project captured from one of its instances, used to install instances of this project.
+// Its storage is billed only to this project.
 // Ref: #/components/schemas/PrivateImageResource
 type PrivateImageResource struct {
 	ID           ImageID  `json:"id"`
@@ -12648,25 +11759,24 @@ type PrivateImageResource struct {
 	Architecture string   `json:"architecture"`
 	// The account this image lets you log in as. The password set at creation belongs to this account.
 	LoginUsername string `json:"login_username"`
-	// The system disk of a virtual machine created from this image cannot be smaller than this.
-	MinDiskGB int64 `json:"min_disk_gb"`
-	// The machine type of a virtual machine created from this image must have at least this much memory.
-	MinRAMMB int64 `json:"min_ram_mb"`
-	// False means a new password can only be set by rebuilding a virtual machine created from this image.
+	// The boot volume of an instance created from this image cannot be smaller than this.
+	MinVolumeSizeGib int64 `json:"min_volume_size_gib"`
+	// The instance type of an instance created from this image must have at least this much memory.
+	MinMemoryMib int64 `json:"min_memory_mib"`
+	// False means a new password can only be set by rebuilding an instance created from this image.
 	SupportsPasswordReset bool `json:"supports_password_reset"`
-	// Only available images can install virtual machines. A capture is pending until it finishes and shows
-	// the `create` operation while it runs, then becomes available. Failed means no usable image was
-	// produced; failure describes the outcome. Error means the image service broke the image or no longer
-	// holds it, and nothing can be installed from it.
+	// Only available images can install instances. A capture is pending until it finishes and shows the
+	// `create` operation while it runs, then becomes available. Failed means no usable image was produced;
+	// failure describes the outcome. Error means the image service broke the image or no longer holds it,
+	// and nothing can be installed from it.
 	Status PrivateImageResourceStatus `json:"status"`
 	// Details of why the capture failed; non-empty only when `status` is `failed`.
 	Failure NilString `json:"failure"`
 	// Storage occupied by the project image, in bytes. Zero until the capture reports its size.
 	SizeBytes int64 `json:"size_bytes"`
-	// The virtual machine this image was captured from. The image remains usable after that virtual
-	// machine is released.
-	SourceVirtualMachineID VirtualMachineID `json:"source_virtual_machine_id"`
-	CreatedAt              time.Time        `json:"created_at"`
+	// The instance this image was captured from. The image remains usable after that instance is released.
+	SourceInstanceID InstanceID `json:"source_instance_id"`
+	CreatedAt        time.Time  `json:"created_at"`
 	// The operation in progress on this image, or null when none is.
 	Operation NilPrivateImageOperation `json:"operation"`
 	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
@@ -12723,14 +11833,14 @@ func (s *PrivateImageResource) GetLoginUsername() string {
 	return s.LoginUsername
 }
 
-// GetMinDiskGB returns the value of MinDiskGB.
-func (s *PrivateImageResource) GetMinDiskGB() int64 {
-	return s.MinDiskGB
+// GetMinVolumeSizeGib returns the value of MinVolumeSizeGib.
+func (s *PrivateImageResource) GetMinVolumeSizeGib() int64 {
+	return s.MinVolumeSizeGib
 }
 
-// GetMinRAMMB returns the value of MinRAMMB.
-func (s *PrivateImageResource) GetMinRAMMB() int64 {
-	return s.MinRAMMB
+// GetMinMemoryMib returns the value of MinMemoryMib.
+func (s *PrivateImageResource) GetMinMemoryMib() int64 {
+	return s.MinMemoryMib
 }
 
 // GetSupportsPasswordReset returns the value of SupportsPasswordReset.
@@ -12753,9 +11863,9 @@ func (s *PrivateImageResource) GetSizeBytes() int64 {
 	return s.SizeBytes
 }
 
-// GetSourceVirtualMachineID returns the value of SourceVirtualMachineID.
-func (s *PrivateImageResource) GetSourceVirtualMachineID() VirtualMachineID {
-	return s.SourceVirtualMachineID
+// GetSourceInstanceID returns the value of SourceInstanceID.
+func (s *PrivateImageResource) GetSourceInstanceID() InstanceID {
+	return s.SourceInstanceID
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -12833,14 +11943,14 @@ func (s *PrivateImageResource) SetLoginUsername(val string) {
 	s.LoginUsername = val
 }
 
-// SetMinDiskGB sets the value of MinDiskGB.
-func (s *PrivateImageResource) SetMinDiskGB(val int64) {
-	s.MinDiskGB = val
+// SetMinVolumeSizeGib sets the value of MinVolumeSizeGib.
+func (s *PrivateImageResource) SetMinVolumeSizeGib(val int64) {
+	s.MinVolumeSizeGib = val
 }
 
-// SetMinRAMMB sets the value of MinRAMMB.
-func (s *PrivateImageResource) SetMinRAMMB(val int64) {
-	s.MinRAMMB = val
+// SetMinMemoryMib sets the value of MinMemoryMib.
+func (s *PrivateImageResource) SetMinMemoryMib(val int64) {
+	s.MinMemoryMib = val
 }
 
 // SetSupportsPasswordReset sets the value of SupportsPasswordReset.
@@ -12863,9 +11973,9 @@ func (s *PrivateImageResource) SetSizeBytes(val int64) {
 	s.SizeBytes = val
 }
 
-// SetSourceVirtualMachineID sets the value of SourceVirtualMachineID.
-func (s *PrivateImageResource) SetSourceVirtualMachineID(val VirtualMachineID) {
-	s.SourceVirtualMachineID = val
+// SetSourceInstanceID sets the value of SourceInstanceID.
+func (s *PrivateImageResource) SetSourceInstanceID(val InstanceID) {
+	s.SourceInstanceID = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -12973,10 +12083,10 @@ func (s *PrivateImageResourceFailureReason) UnmarshalText(data []byte) error {
 	}
 }
 
-// Only available images can install virtual machines. A capture is pending until it finishes and shows
-// the `create` operation while it runs, then becomes available. Failed means no usable image was
-// produced; failure describes the outcome. Error means the image service broke the image or no longer
-// holds it, and nothing can be installed from it.
+// Only available images can install instances. A capture is pending until it finishes and shows the
+// `create` operation while it runs, then becomes available. Failed means no usable image was produced;
+// failure describes the outcome. Error means the image service broke the image or no longer holds it,
+// and nothing can be installed from it.
 type PrivateImageResourceStatus string
 
 const (
@@ -13152,8 +12262,8 @@ func (s *PublicImageListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// A platform image offered to every project to install a virtual machine. It carries no ownership and
-// no billing; its storage is the platform's.
+// A platform image offered to every project to install an instance. It carries no ownership and no
+// billing; its storage is the platform's.
 // Ref: #/components/schemas/PublicImageResource
 type PublicImageResource struct {
 	ID           ImageID  `json:"id"`
@@ -13164,15 +12274,15 @@ type PublicImageResource struct {
 	Architecture string   `json:"architecture"`
 	// The account this image lets you log in as. The password set at creation belongs to this account.
 	LoginUsername string `json:"login_username"`
-	// The system disk of a virtual machine created from this image cannot be smaller than this.
-	MinDiskGB int64 `json:"min_disk_gb"`
-	// The machine type of a virtual machine created from this image must have at least this much memory.
-	MinRAMMB int64 `json:"min_ram_mb"`
-	// False means a new password can only be set by rebuilding a virtual machine created from this image.
+	// The boot volume of an instance created from this image cannot be smaller than this.
+	MinVolumeSizeGib int64 `json:"min_volume_size_gib"`
+	// The instance type of an instance created from this image must have at least this much memory.
+	MinMemoryMib int64 `json:"min_memory_mib"`
+	// False means a new password can only be set by rebuilding an instance created from this image.
 	SupportsPasswordReset bool `json:"supports_password_reset"`
-	// `on_sale` images can install new virtual machines. `off_sale` means the platform withdrew the image:
-	// it stops new purchases only, and virtual machines already running it keep running and can still be
-	// rebuilt onto it.
+	// `on_sale` images can install new instances. `off_sale` means the platform withdrew the image: it
+	// stops new purchases only, and instances already running it keep running and can still be rebuilt
+	// onto it.
 	SaleStatus PublicImageResourceSaleStatus `json:"sale_status"`
 	CreatedAt  time.Time                     `json:"created_at"`
 }
@@ -13212,14 +12322,14 @@ func (s *PublicImageResource) GetLoginUsername() string {
 	return s.LoginUsername
 }
 
-// GetMinDiskGB returns the value of MinDiskGB.
-func (s *PublicImageResource) GetMinDiskGB() int64 {
-	return s.MinDiskGB
+// GetMinVolumeSizeGib returns the value of MinVolumeSizeGib.
+func (s *PublicImageResource) GetMinVolumeSizeGib() int64 {
+	return s.MinVolumeSizeGib
 }
 
-// GetMinRAMMB returns the value of MinRAMMB.
-func (s *PublicImageResource) GetMinRAMMB() int64 {
-	return s.MinRAMMB
+// GetMinMemoryMib returns the value of MinMemoryMib.
+func (s *PublicImageResource) GetMinMemoryMib() int64 {
+	return s.MinMemoryMib
 }
 
 // GetSupportsPasswordReset returns the value of SupportsPasswordReset.
@@ -13272,14 +12382,14 @@ func (s *PublicImageResource) SetLoginUsername(val string) {
 	s.LoginUsername = val
 }
 
-// SetMinDiskGB sets the value of MinDiskGB.
-func (s *PublicImageResource) SetMinDiskGB(val int64) {
-	s.MinDiskGB = val
+// SetMinVolumeSizeGib sets the value of MinVolumeSizeGib.
+func (s *PublicImageResource) SetMinVolumeSizeGib(val int64) {
+	s.MinVolumeSizeGib = val
 }
 
-// SetMinRAMMB sets the value of MinRAMMB.
-func (s *PublicImageResource) SetMinRAMMB(val int64) {
-	s.MinRAMMB = val
+// SetMinMemoryMib sets the value of MinMemoryMib.
+func (s *PublicImageResource) SetMinMemoryMib(val int64) {
+	s.MinMemoryMib = val
 }
 
 // SetSupportsPasswordReset sets the value of SupportsPasswordReset.
@@ -13297,9 +12407,9 @@ func (s *PublicImageResource) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
 }
 
-// `on_sale` images can install new virtual machines. `off_sale` means the platform withdrew the image:
-// it stops new purchases only, and virtual machines already running it keep running and can still be
-// rebuilt onto it.
+// `on_sale` images can install new instances. `off_sale` means the platform withdrew the image: it
+// stops new purchases only, and instances already running it keep running and can still be rebuilt
+// onto it.
 type PublicImageResourceSaleStatus string
 
 const (
@@ -13341,47 +12451,47 @@ func (s *PublicImageResourceSaleStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// The resource or capacity constrained by a project quota in a region. Platform defaults:
-// virtual_machines=5; vcpus=16; memory_mib=32768; disks=20; disk_gib=500; virtual_private_clouds=3;
-// subnets=20; network_interfaces=20; elastic_ips=3; security_groups=10; security_group_rules=100;
-// snapshots=20; backups=20; private_images=10. memory_mib is measured in MiB and disk_gib in GiB. A
-// zero limit permits no additional capacity; it is not unlimited.
+// The resource or capacity constrained by a project quota in a region. Platform defaults: instances=5;
+// vcpus=16; memory_mib=32768; volumes=20; volume_gib=500; virtual_private_clouds=3; subnets=20;
+// network_interfaces=20; elastic_ips=3; security_groups=10; security_group_rules=100; snapshots=20;
+// backups=20; private_images=10. memory_mib is measured in MiB and volume_gib in GiB. A zero limit
+// permits no additional capacity; it is not unlimited.
 // Ref: #/components/schemas/QuotaResourceType
 type QuotaResourceType string
 
 const (
-	QuotaResourceTypeVirtualMachines            QuotaResourceType = "virtual_machines"
+	QuotaResourceTypeInstances                  QuotaResourceType = "instances"
 	QuotaResourceTypeVcpus                      QuotaResourceType = "vcpus"
 	QuotaResourceTypeMemoryMib                  QuotaResourceType = "memory_mib"
-	QuotaResourceTypeDisks                      QuotaResourceType = "disks"
-	QuotaResourceTypeDiskGib                    QuotaResourceType = "disk_gib"
+	QuotaResourceTypeVolumes                    QuotaResourceType = "volumes"
+	QuotaResourceTypeVolumeGib                  QuotaResourceType = "volume_gib"
 	QuotaResourceTypeVirtualPrivateClouds       QuotaResourceType = "virtual_private_clouds"
 	QuotaResourceTypeVirtualPrivateCloudSubnets QuotaResourceType = "virtual-private-cloud-subnets"
 	QuotaResourceTypeNetworkInterfaces          QuotaResourceType = "network_interfaces"
 	QuotaResourceTypeElasticIps                 QuotaResourceType = "elastic_ips"
 	QuotaResourceTypeSecurityGroups             QuotaResourceType = "security_groups"
 	QuotaResourceTypeSecurityGroupRules         QuotaResourceType = "security_group_rules"
-	QuotaResourceTypeDiskSnapshots              QuotaResourceType = "disk-snapshots"
-	QuotaResourceTypeDiskBackups                QuotaResourceType = "disk_backups"
+	QuotaResourceTypeVolumeSnapshots            QuotaResourceType = "volume-snapshots"
+	QuotaResourceTypeVolumeBackups              QuotaResourceType = "volume_backups"
 	QuotaResourceTypePrivateImages              QuotaResourceType = "private_images"
 )
 
 // AllValues returns all QuotaResourceType values.
 func (QuotaResourceType) AllValues() []QuotaResourceType {
 	return []QuotaResourceType{
-		QuotaResourceTypeVirtualMachines,
+		QuotaResourceTypeInstances,
 		QuotaResourceTypeVcpus,
 		QuotaResourceTypeMemoryMib,
-		QuotaResourceTypeDisks,
-		QuotaResourceTypeDiskGib,
+		QuotaResourceTypeVolumes,
+		QuotaResourceTypeVolumeGib,
 		QuotaResourceTypeVirtualPrivateClouds,
 		QuotaResourceTypeVirtualPrivateCloudSubnets,
 		QuotaResourceTypeNetworkInterfaces,
 		QuotaResourceTypeElasticIps,
 		QuotaResourceTypeSecurityGroups,
 		QuotaResourceTypeSecurityGroupRules,
-		QuotaResourceTypeDiskSnapshots,
-		QuotaResourceTypeDiskBackups,
+		QuotaResourceTypeVolumeSnapshots,
+		QuotaResourceTypeVolumeBackups,
 		QuotaResourceTypePrivateImages,
 	}
 }
@@ -13389,15 +12499,15 @@ func (QuotaResourceType) AllValues() []QuotaResourceType {
 // MarshalText implements encoding.TextMarshaler.
 func (s QuotaResourceType) MarshalText() ([]byte, error) {
 	switch s {
-	case QuotaResourceTypeVirtualMachines:
+	case QuotaResourceTypeInstances:
 		return []byte(s), nil
 	case QuotaResourceTypeVcpus:
 		return []byte(s), nil
 	case QuotaResourceTypeMemoryMib:
 		return []byte(s), nil
-	case QuotaResourceTypeDisks:
+	case QuotaResourceTypeVolumes:
 		return []byte(s), nil
-	case QuotaResourceTypeDiskGib:
+	case QuotaResourceTypeVolumeGib:
 		return []byte(s), nil
 	case QuotaResourceTypeVirtualPrivateClouds:
 		return []byte(s), nil
@@ -13411,9 +12521,9 @@ func (s QuotaResourceType) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case QuotaResourceTypeSecurityGroupRules:
 		return []byte(s), nil
-	case QuotaResourceTypeDiskSnapshots:
+	case QuotaResourceTypeVolumeSnapshots:
 		return []byte(s), nil
-	case QuotaResourceTypeDiskBackups:
+	case QuotaResourceTypeVolumeBackups:
 		return []byte(s), nil
 	case QuotaResourceTypePrivateImages:
 		return []byte(s), nil
@@ -13425,8 +12535,8 @@ func (s QuotaResourceType) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *QuotaResourceType) UnmarshalText(data []byte) error {
 	switch QuotaResourceType(data) {
-	case QuotaResourceTypeVirtualMachines:
-		*s = QuotaResourceTypeVirtualMachines
+	case QuotaResourceTypeInstances:
+		*s = QuotaResourceTypeInstances
 		return nil
 	case QuotaResourceTypeVcpus:
 		*s = QuotaResourceTypeVcpus
@@ -13434,11 +12544,11 @@ func (s *QuotaResourceType) UnmarshalText(data []byte) error {
 	case QuotaResourceTypeMemoryMib:
 		*s = QuotaResourceTypeMemoryMib
 		return nil
-	case QuotaResourceTypeDisks:
-		*s = QuotaResourceTypeDisks
+	case QuotaResourceTypeVolumes:
+		*s = QuotaResourceTypeVolumes
 		return nil
-	case QuotaResourceTypeDiskGib:
-		*s = QuotaResourceTypeDiskGib
+	case QuotaResourceTypeVolumeGib:
+		*s = QuotaResourceTypeVolumeGib
 		return nil
 	case QuotaResourceTypeVirtualPrivateClouds:
 		*s = QuotaResourceTypeVirtualPrivateClouds
@@ -13458,11 +12568,11 @@ func (s *QuotaResourceType) UnmarshalText(data []byte) error {
 	case QuotaResourceTypeSecurityGroupRules:
 		*s = QuotaResourceTypeSecurityGroupRules
 		return nil
-	case QuotaResourceTypeDiskSnapshots:
-		*s = QuotaResourceTypeDiskSnapshots
+	case QuotaResourceTypeVolumeSnapshots:
+		*s = QuotaResourceTypeVolumeSnapshots
 		return nil
-	case QuotaResourceTypeDiskBackups:
-		*s = QuotaResourceTypeDiskBackups
+	case QuotaResourceTypeVolumeBackups:
+		*s = QuotaResourceTypeVolumeBackups
 		return nil
 	case QuotaResourceTypePrivateImages:
 		*s = QuotaResourceTypePrivateImages
@@ -13516,27 +12626,27 @@ func (s *QuotaSource) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/RebootVirtualMachineRequestBody
-type RebootVirtualMachineRequestBody struct {
+// Ref: #/components/schemas/RebootInstanceRequestBody
+type RebootInstanceRequestBody struct {
 	// A forced reboot does not wait for the operating system to shut down and unwritten data is lost; use
 	// it when the system is unresponsive. False when omitted.
 	Force OptBool `json:"force"`
 }
 
 // GetForce returns the value of Force.
-func (s *RebootVirtualMachineRequestBody) GetForce() OptBool {
+func (s *RebootInstanceRequestBody) GetForce() OptBool {
 	return s.Force
 }
 
 // SetForce sets the value of Force.
-func (s *RebootVirtualMachineRequestBody) SetForce(val OptBool) {
+func (s *RebootInstanceRequestBody) SetForce(val OptBool) {
 	s.Force = val
 }
 
-// Ref: #/components/schemas/RebuildVirtualMachineRequestBody
-type RebuildVirtualMachineRequestBody struct {
-	// A public image (`/public-images`), which must be on sale unless it is the one this virtual machine
-	// already runs, or an available private image of this project (`/private-images`).
+// Ref: #/components/schemas/RebuildInstanceRequestBody
+type RebuildInstanceRequestBody struct {
+	// A public image (`/public-images`), which must be on sale unless it is the one this instance already
+	// runs, or an available private image of this project (`/private-images`).
 	ImageID ImageID `json:"image_id"`
 	// The login account's password on the reinstalled system. Omitted, only the SSH public keys of the
 	// project log in.
@@ -13544,54 +12654,54 @@ type RebuildVirtualMachineRequestBody struct {
 }
 
 // GetImageID returns the value of ImageID.
-func (s *RebuildVirtualMachineRequestBody) GetImageID() ImageID {
+func (s *RebuildInstanceRequestBody) GetImageID() ImageID {
 	return s.ImageID
 }
 
 // GetPassword returns the value of Password.
-func (s *RebuildVirtualMachineRequestBody) GetPassword() OptPasswordChoice {
+func (s *RebuildInstanceRequestBody) GetPassword() OptPasswordChoice {
 	return s.Password
 }
 
 // SetImageID sets the value of ImageID.
-func (s *RebuildVirtualMachineRequestBody) SetImageID(val ImageID) {
+func (s *RebuildInstanceRequestBody) SetImageID(val ImageID) {
 	s.ImageID = val
 }
 
 // SetPassword sets the value of Password.
-func (s *RebuildVirtualMachineRequestBody) SetPassword(val OptPasswordChoice) {
+func (s *RebuildInstanceRequestBody) SetPassword(val OptPasswordChoice) {
 	s.Password = val
 }
 
-// Ref: #/components/schemas/RebuildVirtualMachineResponseBody
-type RebuildVirtualMachineResponseBody struct {
-	VirtualMachine VirtualMachine `json:"virtual_machine"`
+// Ref: #/components/schemas/RebuildInstanceResponseBody
+type RebuildInstanceResponseBody struct {
+	Instance Instance `json:"instance"`
 	// The password the platform generated, returned only in this response; store it immediately. Null when
 	// the password was supplied or none was asked for.
 	Password NilString `json:"password"`
 }
 
-// GetVirtualMachine returns the value of VirtualMachine.
-func (s *RebuildVirtualMachineResponseBody) GetVirtualMachine() VirtualMachine {
-	return s.VirtualMachine
+// GetInstance returns the value of Instance.
+func (s *RebuildInstanceResponseBody) GetInstance() Instance {
+	return s.Instance
 }
 
 // GetPassword returns the value of Password.
-func (s *RebuildVirtualMachineResponseBody) GetPassword() NilString {
+func (s *RebuildInstanceResponseBody) GetPassword() NilString {
 	return s.Password
 }
 
-// SetVirtualMachine sets the value of VirtualMachine.
-func (s *RebuildVirtualMachineResponseBody) SetVirtualMachine(val VirtualMachine) {
-	s.VirtualMachine = val
+// SetInstance sets the value of Instance.
+func (s *RebuildInstanceResponseBody) SetInstance(val Instance) {
+	s.Instance = val
 }
 
 // SetPassword sets the value of Password.
-func (s *RebuildVirtualMachineResponseBody) SetPassword(val NilString) {
+func (s *RebuildInstanceResponseBody) SetPassword(val NilString) {
 	s.Password = val
 }
 
-func (*RebuildVirtualMachineResponseBody) rebuildVirtualMachineRes() {}
+func (*RebuildInstanceResponseBody) rebuildInstanceRes() {}
 
 type RegionID string
 
@@ -13632,9 +12742,9 @@ type RegionResource struct {
 	Code string   `json:"code"`
 	ID   RegionID `json:"id"`
 	// The line every snapshot in this region is, metered on the size it stores.
-	DiskSnapshotBilling BillingComponent `json:"disk_snapshot_billing"`
-	// The line every disk backup in this region is, metered on the size it stores.
-	DiskBackupBilling BillingComponent `json:"disk_backup_billing"`
+	VolumeSnapshotBilling BillingComponent `json:"volume_snapshot_billing"`
+	// The line every volume backup in this region is, metered on the size it stores.
+	VolumeBackupBilling BillingComponent `json:"volume_backup_billing"`
 	// The line every private image in this region is, metered on the size it stores.
 	PrivateImageBilling BillingComponent `json:"private_image_billing"`
 }
@@ -13659,14 +12769,14 @@ func (s *RegionResource) GetID() RegionID {
 	return s.ID
 }
 
-// GetDiskSnapshotBilling returns the value of DiskSnapshotBilling.
-func (s *RegionResource) GetDiskSnapshotBilling() BillingComponent {
-	return s.DiskSnapshotBilling
+// GetVolumeSnapshotBilling returns the value of VolumeSnapshotBilling.
+func (s *RegionResource) GetVolumeSnapshotBilling() BillingComponent {
+	return s.VolumeSnapshotBilling
 }
 
-// GetDiskBackupBilling returns the value of DiskBackupBilling.
-func (s *RegionResource) GetDiskBackupBilling() BillingComponent {
-	return s.DiskBackupBilling
+// GetVolumeBackupBilling returns the value of VolumeBackupBilling.
+func (s *RegionResource) GetVolumeBackupBilling() BillingComponent {
+	return s.VolumeBackupBilling
 }
 
 // GetPrivateImageBilling returns the value of PrivateImageBilling.
@@ -13694,14 +12804,14 @@ func (s *RegionResource) SetID(val RegionID) {
 	s.ID = val
 }
 
-// SetDiskSnapshotBilling sets the value of DiskSnapshotBilling.
-func (s *RegionResource) SetDiskSnapshotBilling(val BillingComponent) {
-	s.DiskSnapshotBilling = val
+// SetVolumeSnapshotBilling sets the value of VolumeSnapshotBilling.
+func (s *RegionResource) SetVolumeSnapshotBilling(val BillingComponent) {
+	s.VolumeSnapshotBilling = val
 }
 
-// SetDiskBackupBilling sets the value of DiskBackupBilling.
-func (s *RegionResource) SetDiskBackupBilling(val BillingComponent) {
-	s.DiskBackupBilling = val
+// SetVolumeBackupBilling sets the value of VolumeBackupBilling.
+func (s *RegionResource) SetVolumeBackupBilling(val BillingComponent) {
+	s.VolumeBackupBilling = val
 }
 
 // SetPrivateImageBilling sets the value of PrivateImageBilling.
@@ -13715,11 +12825,11 @@ func (s *RegionResource) SetPrivateImageBilling(val BillingComponent) {
 type ReleaseResource struct {
 	// Type selects the active sum variant, switch on this field.
 	Type                          ReleaseResourceType
-	VirtualMachineReleaseResource VirtualMachineReleaseResource
-	DiskReleaseResource           DiskReleaseResource
+	InstanceReleaseResource       InstanceReleaseResource
+	VolumeReleaseResource         VolumeReleaseResource
 	ElasticIPReleaseResource      ElasticIPReleaseResource
-	DiskSnapshotReleaseResource   DiskSnapshotReleaseResource
-	DiskBackupReleaseResource     DiskBackupReleaseResource
+	VolumeSnapshotReleaseResource VolumeSnapshotReleaseResource
+	VolumeBackupReleaseResource   VolumeBackupReleaseResource
 	PrivateImageReleaseResource   PrivateImageReleaseResource
 }
 
@@ -13728,22 +12838,22 @@ type ReleaseResourceType string
 
 // Possible values for ReleaseResourceType.
 const (
-	VirtualMachineReleaseResourceReleaseResource ReleaseResourceType = "virtual_machine"
-	DiskReleaseResourceReleaseResource           ReleaseResourceType = "disk"
+	InstanceReleaseResourceReleaseResource       ReleaseResourceType = "instance"
+	VolumeReleaseResourceReleaseResource         ReleaseResourceType = "volume"
 	ElasticIPReleaseResourceReleaseResource      ReleaseResourceType = "elastic_ip"
-	DiskSnapshotReleaseResourceReleaseResource   ReleaseResourceType = "snapshot"
-	DiskBackupReleaseResourceReleaseResource     ReleaseResourceType = "disk_backup"
+	VolumeSnapshotReleaseResourceReleaseResource ReleaseResourceType = "snapshot"
+	VolumeBackupReleaseResourceReleaseResource   ReleaseResourceType = "volume_backup"
 	PrivateImageReleaseResourceReleaseResource   ReleaseResourceType = "private_image"
 )
 
-// IsVirtualMachineReleaseResource reports whether ReleaseResource is VirtualMachineReleaseResource.
-func (s ReleaseResource) IsVirtualMachineReleaseResource() bool {
-	return s.Type == VirtualMachineReleaseResourceReleaseResource
+// IsInstanceReleaseResource reports whether ReleaseResource is InstanceReleaseResource.
+func (s ReleaseResource) IsInstanceReleaseResource() bool {
+	return s.Type == InstanceReleaseResourceReleaseResource
 }
 
-// IsDiskReleaseResource reports whether ReleaseResource is DiskReleaseResource.
-func (s ReleaseResource) IsDiskReleaseResource() bool {
-	return s.Type == DiskReleaseResourceReleaseResource
+// IsVolumeReleaseResource reports whether ReleaseResource is VolumeReleaseResource.
+func (s ReleaseResource) IsVolumeReleaseResource() bool {
+	return s.Type == VolumeReleaseResourceReleaseResource
 }
 
 // IsElasticIPReleaseResource reports whether ReleaseResource is ElasticIPReleaseResource.
@@ -13751,14 +12861,14 @@ func (s ReleaseResource) IsElasticIPReleaseResource() bool {
 	return s.Type == ElasticIPReleaseResourceReleaseResource
 }
 
-// IsDiskSnapshotReleaseResource reports whether ReleaseResource is DiskSnapshotReleaseResource.
-func (s ReleaseResource) IsDiskSnapshotReleaseResource() bool {
-	return s.Type == DiskSnapshotReleaseResourceReleaseResource
+// IsVolumeSnapshotReleaseResource reports whether ReleaseResource is VolumeSnapshotReleaseResource.
+func (s ReleaseResource) IsVolumeSnapshotReleaseResource() bool {
+	return s.Type == VolumeSnapshotReleaseResourceReleaseResource
 }
 
-// IsDiskBackupReleaseResource reports whether ReleaseResource is DiskBackupReleaseResource.
-func (s ReleaseResource) IsDiskBackupReleaseResource() bool {
-	return s.Type == DiskBackupReleaseResourceReleaseResource
+// IsVolumeBackupReleaseResource reports whether ReleaseResource is VolumeBackupReleaseResource.
+func (s ReleaseResource) IsVolumeBackupReleaseResource() bool {
+	return s.Type == VolumeBackupReleaseResourceReleaseResource
 }
 
 // IsPrivateImageReleaseResource reports whether ReleaseResource is PrivateImageReleaseResource.
@@ -13766,45 +12876,45 @@ func (s ReleaseResource) IsPrivateImageReleaseResource() bool {
 	return s.Type == PrivateImageReleaseResourceReleaseResource
 }
 
-// SetVirtualMachineReleaseResource sets ReleaseResource to VirtualMachineReleaseResource.
-func (s *ReleaseResource) SetVirtualMachineReleaseResource(v VirtualMachineReleaseResource) {
-	s.Type = VirtualMachineReleaseResourceReleaseResource
-	s.VirtualMachineReleaseResource = v
+// SetInstanceReleaseResource sets ReleaseResource to InstanceReleaseResource.
+func (s *ReleaseResource) SetInstanceReleaseResource(v InstanceReleaseResource) {
+	s.Type = InstanceReleaseResourceReleaseResource
+	s.InstanceReleaseResource = v
 }
 
-// GetVirtualMachineReleaseResource returns VirtualMachineReleaseResource and true boolean if ReleaseResource is VirtualMachineReleaseResource.
-func (s ReleaseResource) GetVirtualMachineReleaseResource() (v VirtualMachineReleaseResource, ok bool) {
-	if !s.IsVirtualMachineReleaseResource() {
+// GetInstanceReleaseResource returns InstanceReleaseResource and true boolean if ReleaseResource is InstanceReleaseResource.
+func (s ReleaseResource) GetInstanceReleaseResource() (v InstanceReleaseResource, ok bool) {
+	if !s.IsInstanceReleaseResource() {
 		return v, false
 	}
-	return s.VirtualMachineReleaseResource, true
+	return s.InstanceReleaseResource, true
 }
 
-// NewVirtualMachineReleaseResourceReleaseResource returns new ReleaseResource from VirtualMachineReleaseResource.
-func NewVirtualMachineReleaseResourceReleaseResource(v VirtualMachineReleaseResource) ReleaseResource {
+// NewInstanceReleaseResourceReleaseResource returns new ReleaseResource from InstanceReleaseResource.
+func NewInstanceReleaseResourceReleaseResource(v InstanceReleaseResource) ReleaseResource {
 	var s ReleaseResource
-	s.SetVirtualMachineReleaseResource(v)
+	s.SetInstanceReleaseResource(v)
 	return s
 }
 
-// SetDiskReleaseResource sets ReleaseResource to DiskReleaseResource.
-func (s *ReleaseResource) SetDiskReleaseResource(v DiskReleaseResource) {
-	s.Type = DiskReleaseResourceReleaseResource
-	s.DiskReleaseResource = v
+// SetVolumeReleaseResource sets ReleaseResource to VolumeReleaseResource.
+func (s *ReleaseResource) SetVolumeReleaseResource(v VolumeReleaseResource) {
+	s.Type = VolumeReleaseResourceReleaseResource
+	s.VolumeReleaseResource = v
 }
 
-// GetDiskReleaseResource returns DiskReleaseResource and true boolean if ReleaseResource is DiskReleaseResource.
-func (s ReleaseResource) GetDiskReleaseResource() (v DiskReleaseResource, ok bool) {
-	if !s.IsDiskReleaseResource() {
+// GetVolumeReleaseResource returns VolumeReleaseResource and true boolean if ReleaseResource is VolumeReleaseResource.
+func (s ReleaseResource) GetVolumeReleaseResource() (v VolumeReleaseResource, ok bool) {
+	if !s.IsVolumeReleaseResource() {
 		return v, false
 	}
-	return s.DiskReleaseResource, true
+	return s.VolumeReleaseResource, true
 }
 
-// NewDiskReleaseResourceReleaseResource returns new ReleaseResource from DiskReleaseResource.
-func NewDiskReleaseResourceReleaseResource(v DiskReleaseResource) ReleaseResource {
+// NewVolumeReleaseResourceReleaseResource returns new ReleaseResource from VolumeReleaseResource.
+func NewVolumeReleaseResourceReleaseResource(v VolumeReleaseResource) ReleaseResource {
 	var s ReleaseResource
-	s.SetDiskReleaseResource(v)
+	s.SetVolumeReleaseResource(v)
 	return s
 }
 
@@ -13829,45 +12939,45 @@ func NewElasticIPReleaseResourceReleaseResource(v ElasticIPReleaseResource) Rele
 	return s
 }
 
-// SetDiskSnapshotReleaseResource sets ReleaseResource to DiskSnapshotReleaseResource.
-func (s *ReleaseResource) SetDiskSnapshotReleaseResource(v DiskSnapshotReleaseResource) {
-	s.Type = DiskSnapshotReleaseResourceReleaseResource
-	s.DiskSnapshotReleaseResource = v
+// SetVolumeSnapshotReleaseResource sets ReleaseResource to VolumeSnapshotReleaseResource.
+func (s *ReleaseResource) SetVolumeSnapshotReleaseResource(v VolumeSnapshotReleaseResource) {
+	s.Type = VolumeSnapshotReleaseResourceReleaseResource
+	s.VolumeSnapshotReleaseResource = v
 }
 
-// GetDiskSnapshotReleaseResource returns DiskSnapshotReleaseResource and true boolean if ReleaseResource is DiskSnapshotReleaseResource.
-func (s ReleaseResource) GetDiskSnapshotReleaseResource() (v DiskSnapshotReleaseResource, ok bool) {
-	if !s.IsDiskSnapshotReleaseResource() {
+// GetVolumeSnapshotReleaseResource returns VolumeSnapshotReleaseResource and true boolean if ReleaseResource is VolumeSnapshotReleaseResource.
+func (s ReleaseResource) GetVolumeSnapshotReleaseResource() (v VolumeSnapshotReleaseResource, ok bool) {
+	if !s.IsVolumeSnapshotReleaseResource() {
 		return v, false
 	}
-	return s.DiskSnapshotReleaseResource, true
+	return s.VolumeSnapshotReleaseResource, true
 }
 
-// NewDiskSnapshotReleaseResourceReleaseResource returns new ReleaseResource from DiskSnapshotReleaseResource.
-func NewDiskSnapshotReleaseResourceReleaseResource(v DiskSnapshotReleaseResource) ReleaseResource {
+// NewVolumeSnapshotReleaseResourceReleaseResource returns new ReleaseResource from VolumeSnapshotReleaseResource.
+func NewVolumeSnapshotReleaseResourceReleaseResource(v VolumeSnapshotReleaseResource) ReleaseResource {
 	var s ReleaseResource
-	s.SetDiskSnapshotReleaseResource(v)
+	s.SetVolumeSnapshotReleaseResource(v)
 	return s
 }
 
-// SetDiskBackupReleaseResource sets ReleaseResource to DiskBackupReleaseResource.
-func (s *ReleaseResource) SetDiskBackupReleaseResource(v DiskBackupReleaseResource) {
-	s.Type = DiskBackupReleaseResourceReleaseResource
-	s.DiskBackupReleaseResource = v
+// SetVolumeBackupReleaseResource sets ReleaseResource to VolumeBackupReleaseResource.
+func (s *ReleaseResource) SetVolumeBackupReleaseResource(v VolumeBackupReleaseResource) {
+	s.Type = VolumeBackupReleaseResourceReleaseResource
+	s.VolumeBackupReleaseResource = v
 }
 
-// GetDiskBackupReleaseResource returns DiskBackupReleaseResource and true boolean if ReleaseResource is DiskBackupReleaseResource.
-func (s ReleaseResource) GetDiskBackupReleaseResource() (v DiskBackupReleaseResource, ok bool) {
-	if !s.IsDiskBackupReleaseResource() {
+// GetVolumeBackupReleaseResource returns VolumeBackupReleaseResource and true boolean if ReleaseResource is VolumeBackupReleaseResource.
+func (s ReleaseResource) GetVolumeBackupReleaseResource() (v VolumeBackupReleaseResource, ok bool) {
+	if !s.IsVolumeBackupReleaseResource() {
 		return v, false
 	}
-	return s.DiskBackupReleaseResource, true
+	return s.VolumeBackupReleaseResource, true
 }
 
-// NewDiskBackupReleaseResourceReleaseResource returns new ReleaseResource from DiskBackupReleaseResource.
-func NewDiskBackupReleaseResourceReleaseResource(v DiskBackupReleaseResource) ReleaseResource {
+// NewVolumeBackupReleaseResourceReleaseResource returns new ReleaseResource from VolumeBackupReleaseResource.
+func NewVolumeBackupReleaseResourceReleaseResource(v VolumeBackupReleaseResource) ReleaseResource {
 	var s ReleaseResource
-	s.SetDiskBackupReleaseResource(v)
+	s.SetVolumeBackupReleaseResource(v)
 	return s
 }
 
@@ -13919,88 +13029,88 @@ func (s *ReleaseSetItem) SetResource(val ReleaseResource) {
 	s.Resource = val
 }
 
-// Ref: #/components/schemas/RescueVirtualMachineRequestBody
-type RescueVirtualMachineRequestBody struct {
+// Ref: #/components/schemas/RescueInstanceRequestBody
+type RescueInstanceRequestBody struct {
 	// Password for the rescue environment. Generate and retain a strong password before calling.
 	Password string `json:"password"`
 }
 
 // GetPassword returns the value of Password.
-func (s *RescueVirtualMachineRequestBody) GetPassword() string {
+func (s *RescueInstanceRequestBody) GetPassword() string {
 	return s.Password
 }
 
 // SetPassword sets the value of Password.
-func (s *RescueVirtualMachineRequestBody) SetPassword(val string) {
+func (s *RescueInstanceRequestBody) SetPassword(val string) {
 	s.Password = val
 }
 
-// Ref: #/components/schemas/RescueVirtualMachineResponseBody
-type RescueVirtualMachineResponseBody struct {
+// Ref: #/components/schemas/RescueInstanceResponseBody
+type RescueInstanceResponseBody struct {
 	// Login account in the temporary rescue environment.
-	LoginUsername  string         `json:"login_username"`
-	VirtualMachine VirtualMachine `json:"virtual_machine"`
+	LoginUsername string   `json:"login_username"`
+	Instance      Instance `json:"instance"`
 }
 
 // GetLoginUsername returns the value of LoginUsername.
-func (s *RescueVirtualMachineResponseBody) GetLoginUsername() string {
+func (s *RescueInstanceResponseBody) GetLoginUsername() string {
 	return s.LoginUsername
 }
 
-// GetVirtualMachine returns the value of VirtualMachine.
-func (s *RescueVirtualMachineResponseBody) GetVirtualMachine() VirtualMachine {
-	return s.VirtualMachine
+// GetInstance returns the value of Instance.
+func (s *RescueInstanceResponseBody) GetInstance() Instance {
+	return s.Instance
 }
 
 // SetLoginUsername sets the value of LoginUsername.
-func (s *RescueVirtualMachineResponseBody) SetLoginUsername(val string) {
+func (s *RescueInstanceResponseBody) SetLoginUsername(val string) {
 	s.LoginUsername = val
 }
 
-// SetVirtualMachine sets the value of VirtualMachine.
-func (s *RescueVirtualMachineResponseBody) SetVirtualMachine(val VirtualMachine) {
-	s.VirtualMachine = val
+// SetInstance sets the value of Instance.
+func (s *RescueInstanceResponseBody) SetInstance(val Instance) {
+	s.Instance = val
 }
 
-func (*RescueVirtualMachineResponseBody) rescueVirtualMachineRes() {}
+func (*RescueInstanceResponseBody) rescueInstanceRes() {}
 
-// Ref: #/components/schemas/ResetVirtualMachinePasswordResponseBody
-type ResetVirtualMachinePasswordResponseBody struct {
+// Ref: #/components/schemas/ResetInstancePasswordResponseBody
+type ResetInstancePasswordResponseBody struct {
 	// The password the platform generated, returned only in this response; null when the password was
 	// supplied.
 	Password NilString `json:"password"`
 }
 
 // GetPassword returns the value of Password.
-func (s *ResetVirtualMachinePasswordResponseBody) GetPassword() NilString {
+func (s *ResetInstancePasswordResponseBody) GetPassword() NilString {
 	return s.Password
 }
 
 // SetPassword sets the value of Password.
-func (s *ResetVirtualMachinePasswordResponseBody) SetPassword(val NilString) {
+func (s *ResetInstancePasswordResponseBody) SetPassword(val NilString) {
 	s.Password = val
 }
 
-func (*ResetVirtualMachinePasswordResponseBody) resetVirtualMachinePasswordRes() {}
+func (*ResetInstancePasswordResponseBody) resetInstancePasswordRes() {}
 
-// Ref: #/components/schemas/RevertDiskRequestBody
-type RevertDiskRequestBody struct {
-	// Must be the most recent snapshot of the disk.
-	DiskSnapshotID DiskSnapshotID `json:"disk_snapshot_id"`
+// Ref: #/components/schemas/RevertVolumeRequestBody
+type RevertVolumeRequestBody struct {
+	// Must be the most recent snapshot of the volume.
+	VolumeSnapshotID VolumeSnapshotID `json:"volume_snapshot_id"`
 }
 
-// GetDiskSnapshotID returns the value of DiskSnapshotID.
-func (s *RevertDiskRequestBody) GetDiskSnapshotID() DiskSnapshotID {
-	return s.DiskSnapshotID
+// GetVolumeSnapshotID returns the value of VolumeSnapshotID.
+func (s *RevertVolumeRequestBody) GetVolumeSnapshotID() VolumeSnapshotID {
+	return s.VolumeSnapshotID
 }
 
-// SetDiskSnapshotID sets the value of DiskSnapshotID.
-func (s *RevertDiskRequestBody) SetDiskSnapshotID(val DiskSnapshotID) {
-	s.DiskSnapshotID = val
+// SetVolumeSnapshotID sets the value of VolumeSnapshotID.
+func (s *RevertVolumeRequestBody) SetVolumeSnapshotID(val VolumeSnapshotID) {
+	s.VolumeSnapshotID = val
 }
 
-// Ref: #/components/schemas/RunVirtualMachineCommandRequestBody
-type RunVirtualMachineCommandRequestBody struct {
+// Ref: #/components/schemas/RunInstanceCommandRequestBody
+type RunInstanceCommandRequestBody struct {
 	// Run by the login shell, so pipes, redirection and `&&` work. It cannot read standard input.
 	Command string `json:"command"`
 	// Kill the command after this long. 60 when omitted.
@@ -14008,27 +13118,27 @@ type RunVirtualMachineCommandRequestBody struct {
 }
 
 // GetCommand returns the value of Command.
-func (s *RunVirtualMachineCommandRequestBody) GetCommand() string {
+func (s *RunInstanceCommandRequestBody) GetCommand() string {
 	return s.Command
 }
 
 // GetTimeoutSeconds returns the value of TimeoutSeconds.
-func (s *RunVirtualMachineCommandRequestBody) GetTimeoutSeconds() OptInt64 {
+func (s *RunInstanceCommandRequestBody) GetTimeoutSeconds() OptInt64 {
 	return s.TimeoutSeconds
 }
 
 // SetCommand sets the value of Command.
-func (s *RunVirtualMachineCommandRequestBody) SetCommand(val string) {
+func (s *RunInstanceCommandRequestBody) SetCommand(val string) {
 	s.Command = val
 }
 
 // SetTimeoutSeconds sets the value of TimeoutSeconds.
-func (s *RunVirtualMachineCommandRequestBody) SetTimeoutSeconds(val OptInt64) {
+func (s *RunInstanceCommandRequestBody) SetTimeoutSeconds(val OptInt64) {
 	s.TimeoutSeconds = val
 }
 
-// Ref: #/components/schemas/RunVirtualMachineCommandResponseBody
-type RunVirtualMachineCommandResponseBody struct {
+// Ref: #/components/schemas/RunInstanceCommandResponseBody
+type RunInstanceCommandResponseBody struct {
 	// What the command exited with, 0 being success. Any other value is the command's own verdict and
 	// still arrives as a 200. Null when it was killed rather than exiting on its own, which includes the
 	// timeout — null is the absence of a verdict, not a successful one.
@@ -14042,52 +13152,52 @@ type RunVirtualMachineCommandResponseBody struct {
 }
 
 // GetExitCode returns the value of ExitCode.
-func (s *RunVirtualMachineCommandResponseBody) GetExitCode() NilInt64 {
+func (s *RunInstanceCommandResponseBody) GetExitCode() NilInt64 {
 	return s.ExitCode
 }
 
 // GetStderr returns the value of Stderr.
-func (s *RunVirtualMachineCommandResponseBody) GetStderr() string {
+func (s *RunInstanceCommandResponseBody) GetStderr() string {
 	return s.Stderr
 }
 
 // GetStdout returns the value of Stdout.
-func (s *RunVirtualMachineCommandResponseBody) GetStdout() string {
+func (s *RunInstanceCommandResponseBody) GetStdout() string {
 	return s.Stdout
 }
 
 // GetTimedOut returns the value of TimedOut.
-func (s *RunVirtualMachineCommandResponseBody) GetTimedOut() bool {
+func (s *RunInstanceCommandResponseBody) GetTimedOut() bool {
 	return s.TimedOut
 }
 
 // GetTruncated returns the value of Truncated.
-func (s *RunVirtualMachineCommandResponseBody) GetTruncated() bool {
+func (s *RunInstanceCommandResponseBody) GetTruncated() bool {
 	return s.Truncated
 }
 
 // SetExitCode sets the value of ExitCode.
-func (s *RunVirtualMachineCommandResponseBody) SetExitCode(val NilInt64) {
+func (s *RunInstanceCommandResponseBody) SetExitCode(val NilInt64) {
 	s.ExitCode = val
 }
 
 // SetStderr sets the value of Stderr.
-func (s *RunVirtualMachineCommandResponseBody) SetStderr(val string) {
+func (s *RunInstanceCommandResponseBody) SetStderr(val string) {
 	s.Stderr = val
 }
 
 // SetStdout sets the value of Stdout.
-func (s *RunVirtualMachineCommandResponseBody) SetStdout(val string) {
+func (s *RunInstanceCommandResponseBody) SetStdout(val string) {
 	s.Stdout = val
 }
 
 // SetTimedOut sets the value of TimedOut.
-func (s *RunVirtualMachineCommandResponseBody) SetTimedOut(val bool) {
+func (s *RunInstanceCommandResponseBody) SetTimedOut(val bool) {
 	s.TimedOut = val
 }
 
 // SetTruncated sets the value of Truncated.
-func (s *RunVirtualMachineCommandResponseBody) SetTruncated(val bool) {
+func (s *RunInstanceCommandResponseBody) SetTruncated(val bool) {
 	s.Truncated = val
 }
 
@@ -14241,9 +13351,9 @@ type SecurityGroupRule struct {
 	// The last port, or the ICMP code when the protocol is ICMP. Null for every port.
 	PortRangeMax NilInt64 `json:"port_range_max"`
 	// Null for every address.
-	RemoteIPPrefix NilString `json:"remote_ip_prefix"`
-	Description    string    `json:"description"`
-	CreatedAt      time.Time `json:"created_at"`
+	RemoteCidr  NilString `json:"remote_cidr"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 // GetID returns the value of ID.
@@ -14281,9 +13391,9 @@ func (s *SecurityGroupRule) GetPortRangeMax() NilInt64 {
 	return s.PortRangeMax
 }
 
-// GetRemoteIPPrefix returns the value of RemoteIPPrefix.
-func (s *SecurityGroupRule) GetRemoteIPPrefix() NilString {
-	return s.RemoteIPPrefix
+// GetRemoteCidr returns the value of RemoteCidr.
+func (s *SecurityGroupRule) GetRemoteCidr() NilString {
+	return s.RemoteCidr
 }
 
 // GetDescription returns the value of Description.
@@ -14331,9 +13441,9 @@ func (s *SecurityGroupRule) SetPortRangeMax(val NilInt64) {
 	s.PortRangeMax = val
 }
 
-// SetRemoteIPPrefix sets the value of RemoteIPPrefix.
-func (s *SecurityGroupRule) SetRemoteIPPrefix(val NilString) {
-	s.RemoteIPPrefix = val
+// SetRemoteCidr sets the value of RemoteCidr.
+func (s *SecurityGroupRule) SetRemoteCidr(val NilString) {
+	s.RemoteCidr = val
 }
 
 // SetDescription sets the value of Description.
@@ -14437,7 +13547,7 @@ type SubnetID string
 type SuppliedPassword struct {
 	Type SuppliedPasswordType `json:"type"`
 	// 12 to 128 characters with at least three of lowercase letters, uppercase letters, digits and
-	// symbols, otherwise refused with `VIRTUAL_MACHINE_PASSWORD_TOO_WEAK`.
+	// symbols, otherwise refused with `INSTANCE_PASSWORD_TOO_WEAK`.
 	Value string `json:"value"`
 }
 
@@ -14604,160 +13714,6 @@ func (s *TrafficUsageListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-type UpdateDiskAccepted UpdateDiskResponseBody
-
-func (*UpdateDiskAccepted) updateDiskRes() {}
-
-// The mutable fields of a disk backup. At least one must be given.
-// Ref: #/components/schemas/UpdateDiskBackupRequestBody
-type UpdateDiskBackupRequestBody struct {
-	Name OptString `json:"name"`
-}
-
-// GetName returns the value of Name.
-func (s *UpdateDiskBackupRequestBody) GetName() OptString {
-	return s.Name
-}
-
-// SetName sets the value of Name.
-func (s *UpdateDiskBackupRequestBody) SetName(val OptString) {
-	s.Name = val
-}
-
-type UpdateDiskOK UpdateDiskResponseBody
-
-func (*UpdateDiskOK) updateDiskRes() {}
-
-// The mutable fields of a disk, all optional, at least one required. `size_gb` and `disk_type_id` are
-// operational fields and cannot be combined with each other or with `name`; such a request is refused
-// with 422 `UPDATE_FIELDS_COMBINED`.
-// Ref: #/components/schemas/UpdateDiskRequestBody
-type UpdateDiskRequestBody struct {
-	Name OptString `json:"name"`
-	// The new capacity. Must be larger than the current capacity.
-	SizeGB OptInt64 `json:"size_gb"`
-	// The disk type to move the detached disk to, at its current capacity.
-	DiskTypeID OptDiskTypeID `json:"disk_type_id"`
-	// The `proration_date` of the Billing quote for this change, so that the order is priced from the same
-	// instant. Only with `size_gb` or `disk_type_id`, and only for automatic checkout; deferred checkout
-	// is priced when the customer completes it. Defaults to the time of the request; it must be a whole
-	// second, not in the future and at most 10 minutes old, otherwise the request is refused with
-	// `BILLING_CHANGE_INVALID`.
-	ProrationDate OptDateTime `json:"proration_date"`
-	// How the purchase of the `size_gb` or `disk_type_id` change is checked out. Only with one of them.
-	Checkout OptCheckoutOptions `json:"checkout"`
-}
-
-// GetName returns the value of Name.
-func (s *UpdateDiskRequestBody) GetName() OptString {
-	return s.Name
-}
-
-// GetSizeGB returns the value of SizeGB.
-func (s *UpdateDiskRequestBody) GetSizeGB() OptInt64 {
-	return s.SizeGB
-}
-
-// GetDiskTypeID returns the value of DiskTypeID.
-func (s *UpdateDiskRequestBody) GetDiskTypeID() OptDiskTypeID {
-	return s.DiskTypeID
-}
-
-// GetProrationDate returns the value of ProrationDate.
-func (s *UpdateDiskRequestBody) GetProrationDate() OptDateTime {
-	return s.ProrationDate
-}
-
-// GetCheckout returns the value of Checkout.
-func (s *UpdateDiskRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
-}
-
-// SetName sets the value of Name.
-func (s *UpdateDiskRequestBody) SetName(val OptString) {
-	s.Name = val
-}
-
-// SetSizeGB sets the value of SizeGB.
-func (s *UpdateDiskRequestBody) SetSizeGB(val OptInt64) {
-	s.SizeGB = val
-}
-
-// SetDiskTypeID sets the value of DiskTypeID.
-func (s *UpdateDiskRequestBody) SetDiskTypeID(val OptDiskTypeID) {
-	s.DiskTypeID = val
-}
-
-// SetProrationDate sets the value of ProrationDate.
-func (s *UpdateDiskRequestBody) SetProrationDate(val OptDateTime) {
-	s.ProrationDate = val
-}
-
-// SetCheckout sets the value of Checkout.
-func (s *UpdateDiskRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
-}
-
-// The disk and, when the update placed a Billing order, the Checkout Session for it. After a resize
-// the disk is still at its current size until the change is applied. Returned with 200 when only
-// descriptive fields changed and with 202 when an operation started.
-// Ref: #/components/schemas/UpdateDiskResponseBody
-type UpdateDiskResponseBody struct {
-	Disk DiskResource `json:"disk"`
-	// The Billing Checkout Session of the purchase; null when the update placed no order. With deferred
-	// checkout, the customer completes it in Billing.
-	CheckoutSessionID NilUUID `json:"checkout_session_id"`
-	// The order created when checkout completes, at once for automatic checkout; null until then and when
-	// the update placed no order.
-	OrderID NilUUID `json:"order_id"`
-}
-
-// GetDisk returns the value of Disk.
-func (s *UpdateDiskResponseBody) GetDisk() DiskResource {
-	return s.Disk
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *UpdateDiskResponseBody) GetCheckoutSessionID() NilUUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *UpdateDiskResponseBody) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// SetDisk sets the value of Disk.
-func (s *UpdateDiskResponseBody) SetDisk(val DiskResource) {
-	s.Disk = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *UpdateDiskResponseBody) SetCheckoutSessionID(val NilUUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *UpdateDiskResponseBody) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-// The mutable fields of a snapshot. At least one must be given.
-// Ref: #/components/schemas/UpdateDiskSnapshotRequestBody
-type UpdateDiskSnapshotRequestBody struct {
-	Name OptString `json:"name"`
-}
-
-// GetName returns the value of Name.
-func (s *UpdateDiskSnapshotRequestBody) GetName() OptString {
-	return s.Name
-}
-
-// SetName sets the value of Name.
-func (s *UpdateDiskSnapshotRequestBody) SetName(val OptString) {
-	s.Name = val
-}
-
 type UpdateElasticIPAccepted UpdateElasticIPResponseBody
 
 func (*UpdateElasticIPAccepted) updateElasticIPRes() {}
@@ -14884,13 +13840,165 @@ func (s *UpdateElasticIPResponseBody) SetOrderID(val NilUUID) {
 	s.OrderID = val
 }
 
+type UpdateInstanceAccepted UpdateInstanceResponseBody
+
+func (*UpdateInstanceAccepted) updateInstanceRes() {}
+
+type UpdateInstanceOK UpdateInstanceResponseBody
+
+func (*UpdateInstanceOK) updateInstanceRes() {}
+
+// The mutable fields of an instance, all optional, at least one required. `instance_type_id` is an
+// operational field: it starts a workflow and cannot be combined with any other field; such a request
+// is refused with 422 `UPDATE_FIELDS_COMBINED`.
+// Ref: #/components/schemas/UpdateInstanceRequestBody
+type UpdateInstanceRequestBody struct {
+	Name OptString `json:"name"`
+	// The complete set of labels. Whatever is absent here is removed; send an empty object to clear them
+	// all. A key may not contain a colon, whitespace or control characters.
+	Labels OptUpdateInstanceRequestBodyLabels `json:"labels"`
+	// The complete note. Send an empty string to clear it.
+	Description OptString `json:"description"`
+	// The instance type to resize to. It has to be on sale, in the instance's region and of its
+	// availability zone (422 `INSTANCE_RESIZE_OTHER_AVAILABILITY_ZONE`), and it has to have room for one
+	// more machine of it (409 `INSTANCE_TYPE_SOLD_OUT`, `INSTANCE_TYPE_CAPACITY_REACHED` or
+	// `INSTANCE_TYPE_NO_HOST_ROOM`). Operational field; the change is purchased through Billing.
+	InstanceTypeID OptInstanceTypeID `json:"instance_type_id"`
+	// The `proration_date` of the Billing quote for this change, so that the order is priced from the same
+	// instant. Only with `instance_type_id`, and only for automatic checkout; deferred checkout is priced
+	// when the customer completes it. Defaults to the time of the request; it must be a whole second, not
+	// in the future and at most 10 minutes old, otherwise the request is refused with
+	// `BILLING_CHANGE_INVALID`.
+	ProrationDate OptDateTime `json:"proration_date"`
+	// How the purchase of the `instance_type_id` change is checked out. Only with `instance_type_id`.
+	Checkout OptCheckoutOptions `json:"checkout"`
+}
+
+// GetName returns the value of Name.
+func (s *UpdateInstanceRequestBody) GetName() OptString {
+	return s.Name
+}
+
+// GetLabels returns the value of Labels.
+func (s *UpdateInstanceRequestBody) GetLabels() OptUpdateInstanceRequestBodyLabels {
+	return s.Labels
+}
+
+// GetDescription returns the value of Description.
+func (s *UpdateInstanceRequestBody) GetDescription() OptString {
+	return s.Description
+}
+
+// GetInstanceTypeID returns the value of InstanceTypeID.
+func (s *UpdateInstanceRequestBody) GetInstanceTypeID() OptInstanceTypeID {
+	return s.InstanceTypeID
+}
+
+// GetProrationDate returns the value of ProrationDate.
+func (s *UpdateInstanceRequestBody) GetProrationDate() OptDateTime {
+	return s.ProrationDate
+}
+
+// GetCheckout returns the value of Checkout.
+func (s *UpdateInstanceRequestBody) GetCheckout() OptCheckoutOptions {
+	return s.Checkout
+}
+
+// SetName sets the value of Name.
+func (s *UpdateInstanceRequestBody) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetLabels sets the value of Labels.
+func (s *UpdateInstanceRequestBody) SetLabels(val OptUpdateInstanceRequestBodyLabels) {
+	s.Labels = val
+}
+
+// SetDescription sets the value of Description.
+func (s *UpdateInstanceRequestBody) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetInstanceTypeID sets the value of InstanceTypeID.
+func (s *UpdateInstanceRequestBody) SetInstanceTypeID(val OptInstanceTypeID) {
+	s.InstanceTypeID = val
+}
+
+// SetProrationDate sets the value of ProrationDate.
+func (s *UpdateInstanceRequestBody) SetProrationDate(val OptDateTime) {
+	s.ProrationDate = val
+}
+
+// SetCheckout sets the value of Checkout.
+func (s *UpdateInstanceRequestBody) SetCheckout(val OptCheckoutOptions) {
+	s.Checkout = val
+}
+
+// The complete set of labels. Whatever is absent here is removed; send an empty object to clear them
+// all. A key may not contain a colon, whitespace or control characters.
+type UpdateInstanceRequestBodyLabels map[string]string
+
+func (s *UpdateInstanceRequestBodyLabels) init() UpdateInstanceRequestBodyLabels {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+// The instance and, when the update placed a Billing order, the Checkout Session for it. After a
+// resize the instance is still on its current type, keeps its ID, and its current subscription remains
+// in force until the resize is applied. Returned with 200 when only descriptive fields changed and
+// with 202 when an operation started.
+// Ref: #/components/schemas/UpdateInstanceResponseBody
+type UpdateInstanceResponseBody struct {
+	Instance Instance `json:"instance"`
+	// The Billing Checkout Session of the purchase; null when the update placed no order. With deferred
+	// checkout, the customer completes it in Billing.
+	CheckoutSessionID NilUUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then and when
+	// the update placed no order.
+	OrderID NilUUID `json:"order_id"`
+}
+
+// GetInstance returns the value of Instance.
+func (s *UpdateInstanceResponseBody) GetInstance() Instance {
+	return s.Instance
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *UpdateInstanceResponseBody) GetCheckoutSessionID() NilUUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *UpdateInstanceResponseBody) GetOrderID() NilUUID {
+	return s.OrderID
+}
+
+// SetInstance sets the value of Instance.
+func (s *UpdateInstanceResponseBody) SetInstance(val Instance) {
+	s.Instance = val
+}
+
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *UpdateInstanceResponseBody) SetCheckoutSessionID(val NilUUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *UpdateInstanceResponseBody) SetOrderID(val NilUUID) {
+	s.OrderID = val
+}
+
 // The fields to change, at least one.
 // Ref: #/components/schemas/UpdateLaunchTemplateRequestBody
 type UpdateLaunchTemplateRequestBody struct {
 	Name        OptString `json:"name"`
 	Description OptString `json:"description"`
 	// A live version of this template.
-	DefaultVersion OptInt64 `json:"default_version"`
+	DefaultVersionNumber OptInt64 `json:"default_version_number"`
 }
 
 // GetName returns the value of Name.
@@ -14903,9 +14011,9 @@ func (s *UpdateLaunchTemplateRequestBody) GetDescription() OptString {
 	return s.Description
 }
 
-// GetDefaultVersion returns the value of DefaultVersion.
-func (s *UpdateLaunchTemplateRequestBody) GetDefaultVersion() OptInt64 {
-	return s.DefaultVersion
+// GetDefaultVersionNumber returns the value of DefaultVersionNumber.
+func (s *UpdateLaunchTemplateRequestBody) GetDefaultVersionNumber() OptInt64 {
+	return s.DefaultVersionNumber
 }
 
 // SetName sets the value of Name.
@@ -14918,9 +14026,9 @@ func (s *UpdateLaunchTemplateRequestBody) SetDescription(val OptString) {
 	s.Description = val
 }
 
-// SetDefaultVersion sets the value of DefaultVersion.
-func (s *UpdateLaunchTemplateRequestBody) SetDefaultVersion(val OptInt64) {
-	s.DefaultVersion = val
+// SetDefaultVersionNumber sets the value of DefaultVersionNumber.
+func (s *UpdateLaunchTemplateRequestBody) SetDefaultVersionNumber(val OptInt64) {
+	s.DefaultVersionNumber = val
 }
 
 type UpdateNetworkInterfaceAccepted NetworkInterface
@@ -15000,158 +14108,6 @@ func (s *UpdateSecurityGroupRequestBody) SetDescription(val OptString) {
 	s.Description = val
 }
 
-type UpdateVirtualMachineAccepted UpdateVirtualMachineResponseBody
-
-func (*UpdateVirtualMachineAccepted) updateVirtualMachineRes() {}
-
-type UpdateVirtualMachineOK UpdateVirtualMachineResponseBody
-
-func (*UpdateVirtualMachineOK) updateVirtualMachineRes() {}
-
-// The mutable fields of a virtual machine, all optional, at least one required. `machine_type_id` is
-// an operational field: it starts a workflow and cannot be combined with any other field; such a
-// request is refused with 422 `UPDATE_FIELDS_COMBINED`.
-// Ref: #/components/schemas/UpdateVirtualMachineRequestBody
-type UpdateVirtualMachineRequestBody struct {
-	Name OptString `json:"name"`
-	// The complete set of labels. Whatever is absent here is removed; send an empty object to clear them
-	// all. A key may not contain a colon, whitespace or control characters.
-	Labels OptUpdateVirtualMachineRequestBodyLabels `json:"labels"`
-	// The complete note. Send an empty string to clear it.
-	Notes OptString `json:"notes"`
-	// The machine type to resize to. It has to be on sale, in the virtual machine's region and of its
-	// availability zone (422 `VIRTUAL_MACHINE_RESIZE_OTHER_AVAILABILITY_ZONE`), and it has to have room
-	// for one more machine of it (409 `MACHINE_TYPE_SOLD_OUT`, `MACHINE_TYPE_CAPACITY_REACHED` or
-	// `MACHINE_TYPE_NO_HOST_ROOM`). Operational field; the change is purchased through Billing.
-	MachineTypeID OptMachineTypeID `json:"machine_type_id"`
-	// The `proration_date` of the Billing quote for this change, so that the order is priced from the same
-	// instant. Only with `machine_type_id`, and only for automatic checkout; deferred checkout is priced
-	// when the customer completes it. Defaults to the time of the request; it must be a whole second, not
-	// in the future and at most 10 minutes old, otherwise the request is refused with
-	// `BILLING_CHANGE_INVALID`.
-	ProrationDate OptDateTime `json:"proration_date"`
-	// How the purchase of the `machine_type_id` change is checked out. Only with `machine_type_id`.
-	Checkout OptCheckoutOptions `json:"checkout"`
-}
-
-// GetName returns the value of Name.
-func (s *UpdateVirtualMachineRequestBody) GetName() OptString {
-	return s.Name
-}
-
-// GetLabels returns the value of Labels.
-func (s *UpdateVirtualMachineRequestBody) GetLabels() OptUpdateVirtualMachineRequestBodyLabels {
-	return s.Labels
-}
-
-// GetNotes returns the value of Notes.
-func (s *UpdateVirtualMachineRequestBody) GetNotes() OptString {
-	return s.Notes
-}
-
-// GetMachineTypeID returns the value of MachineTypeID.
-func (s *UpdateVirtualMachineRequestBody) GetMachineTypeID() OptMachineTypeID {
-	return s.MachineTypeID
-}
-
-// GetProrationDate returns the value of ProrationDate.
-func (s *UpdateVirtualMachineRequestBody) GetProrationDate() OptDateTime {
-	return s.ProrationDate
-}
-
-// GetCheckout returns the value of Checkout.
-func (s *UpdateVirtualMachineRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
-}
-
-// SetName sets the value of Name.
-func (s *UpdateVirtualMachineRequestBody) SetName(val OptString) {
-	s.Name = val
-}
-
-// SetLabels sets the value of Labels.
-func (s *UpdateVirtualMachineRequestBody) SetLabels(val OptUpdateVirtualMachineRequestBodyLabels) {
-	s.Labels = val
-}
-
-// SetNotes sets the value of Notes.
-func (s *UpdateVirtualMachineRequestBody) SetNotes(val OptString) {
-	s.Notes = val
-}
-
-// SetMachineTypeID sets the value of MachineTypeID.
-func (s *UpdateVirtualMachineRequestBody) SetMachineTypeID(val OptMachineTypeID) {
-	s.MachineTypeID = val
-}
-
-// SetProrationDate sets the value of ProrationDate.
-func (s *UpdateVirtualMachineRequestBody) SetProrationDate(val OptDateTime) {
-	s.ProrationDate = val
-}
-
-// SetCheckout sets the value of Checkout.
-func (s *UpdateVirtualMachineRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
-}
-
-// The complete set of labels. Whatever is absent here is removed; send an empty object to clear them
-// all. A key may not contain a colon, whitespace or control characters.
-type UpdateVirtualMachineRequestBodyLabels map[string]string
-
-func (s *UpdateVirtualMachineRequestBodyLabels) init() UpdateVirtualMachineRequestBodyLabels {
-	m := *s
-	if m == nil {
-		m = map[string]string{}
-		*s = m
-	}
-	return m
-}
-
-// The virtual machine and, when the update placed a Billing order, the Checkout Session for it. After
-// a resize the virtual machine is still on its current type, keeps its ID, and its current
-// subscription remains in force until the resize is applied. Returned with 200 when only descriptive
-// fields changed and with 202 when an operation started.
-// Ref: #/components/schemas/UpdateVirtualMachineResponseBody
-type UpdateVirtualMachineResponseBody struct {
-	VirtualMachine VirtualMachine `json:"virtual_machine"`
-	// The Billing Checkout Session of the purchase; null when the update placed no order. With deferred
-	// checkout, the customer completes it in Billing.
-	CheckoutSessionID NilUUID `json:"checkout_session_id"`
-	// The order created when checkout completes, at once for automatic checkout; null until then and when
-	// the update placed no order.
-	OrderID NilUUID `json:"order_id"`
-}
-
-// GetVirtualMachine returns the value of VirtualMachine.
-func (s *UpdateVirtualMachineResponseBody) GetVirtualMachine() VirtualMachine {
-	return s.VirtualMachine
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *UpdateVirtualMachineResponseBody) GetCheckoutSessionID() NilUUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *UpdateVirtualMachineResponseBody) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// SetVirtualMachine sets the value of VirtualMachine.
-func (s *UpdateVirtualMachineResponseBody) SetVirtualMachine(val VirtualMachine) {
-	s.VirtualMachine = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *UpdateVirtualMachineResponseBody) SetCheckoutSessionID(val NilUUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *UpdateVirtualMachineResponseBody) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
 // Ref: #/components/schemas/UpdateVirtualPrivateCloudRequestBody
 type UpdateVirtualPrivateCloudRequestBody struct {
 	Name OptString `json:"name"`
@@ -15182,1185 +14138,158 @@ func (s *UpdateVirtualPrivateCloudSubnetRequestBody) SetName(val OptString) {
 	s.Name = val
 }
 
-// Ref: #/components/schemas/VirtualMachine
-type VirtualMachine struct {
-	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
-	CreatedAt          time.Time          `json:"created_at"`
-	// Hostname inside the virtual machine; equals the virtual machine id.
-	Hostname string           `json:"hostname"`
-	ID       VirtualMachineID `json:"id"`
-	// Non-empty when the virtual machine was created from an image, public or private. `image_type` says
-	// which collection holds it.
-	ImageID NilImageID `json:"image_id"`
-	// Which collection `image_id` belongs to. `public` means `/public-images`, `private` means
-	// `/private-images`. Null when the virtual machine boots from a disk and therefore has no image.
-	ImageType NilVirtualMachineImageType `json:"image_type"`
-	// The machine type in effect, and the basis for billing.
-	MachineTypeID MachineTypeID `json:"machine_type_id"`
-	// IPv6 address of the primary network interface. Assigned automatically once IPv6 is enabled on the
-	// virtual private cloud.
-	Ipv6Address NilString `json:"ipv6_address"`
-	// Your own classification of this virtual machine, as key-value pairs. Empty when never set.
-	Labels VirtualMachineLabels `json:"labels"`
-	// The account to log in as over SSH. The password set at creation belongs to this account.
-	LoginUsername string `json:"login_username"`
-	Name          string `json:"name"`
-	// A free-text note about this virtual machine. Empty when never set.
-	Notes string `json:"notes"`
-	// Private address of the virtual machine.
-	PrivateIP             NilString                `json:"private_ip"`
-	VirtualPrivateCloudID NilVirtualPrivateCloudID `json:"virtual_private_cloud_id"`
-	// Elastic IPv4 addresses associated with the primary network interface; an empty array when none are
-	// associated.
-	ElasticIPAddresses []string `json:"elastic_ip_addresses"`
-	RegionID           RegionID `json:"region_id"`
-	// `pending` until the virtual machine is created: before the order is accepted no virtual machine
-	// exists and addresses are null, and while it is created it shows the `create` operation. Then
-	// `active`. `failed` means the virtual machine was not created; `failure_reason` states why. The other
-	// values are the state of the virtual machine in the cloud; an operation in progress appears in
-	// `operation`, not here.
-	Status       VirtualMachineStatus        `json:"status"`
-	SubnetID     NilSubnetID                 `json:"subnet_id"`
-	UpdatedAt    time.Time                   `json:"updated_at"`
-	Restrictions []VirtualMachineRestriction `json:"restrictions"`
-	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
-	// order was accepted, and the charge for this virtual machine is refunded.
-	FailureReason NilVirtualMachineFailureReason `json:"failure_reason"`
-	// The operation in progress on this virtual machine, or null when none is.
-	Operation NilVirtualMachineOperation `json:"operation"`
-	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
-	// until its checkout completes. Null when the resource was not bought through one.
-	CheckoutSessionID NilUUID `json:"checkout_session_id"`
-	OrderID           NilUUID `json:"order_id"`
-	// The Billing order item for this resource.
-	OrderItemID NilUUID `json:"order_item_id"`
-	// The Billing subscription associated with this resource. It may still be pending; its presence does
-	// not imply delivery or metering. Null when no subscription is associated.
-	SubscriptionID NilUUID `json:"subscription_id"`
-	// Subscriptions required to release this virtual machine and disks deleted with it, each with the
-	// resource it pays for, so that each line of a cancellation can name what it releases. Billing
-	// determines cancellation terms. An empty set does not establish refund eligibility.
-	ReleaseSet  []ReleaseSetItem             `json:"release_set"`
-	AccessState NilVirtualMachineAccessState `json:"access_state"`
-	// Non-empty when the virtual machine was created from a disk you already had, instead of from an image.
-	SourceDiskID NilDiskID `json:"source_disk_id"`
-	// The launch template the virtual machine was created from; null when none was named. Changing or
-	// deleting the template afterwards changes nothing about the virtual machine.
-	LaunchTemplateID NilLaunchTemplateID `json:"launch_template_id"`
-	// The version of that launch template it was created from; null when none was named.
-	LaunchTemplateVersion NilInt64 `json:"launch_template_version"`
-}
+type UpdateVolumeAccepted UpdateVolumeResponseBody
 
-// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *VirtualMachine) GetAvailabilityZoneID() AvailabilityZoneID {
-	return s.AvailabilityZoneID
-}
+func (*UpdateVolumeAccepted) updateVolumeRes() {}
 
-// GetCreatedAt returns the value of CreatedAt.
-func (s *VirtualMachine) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetHostname returns the value of Hostname.
-func (s *VirtualMachine) GetHostname() string {
-	return s.Hostname
-}
-
-// GetID returns the value of ID.
-func (s *VirtualMachine) GetID() VirtualMachineID {
-	return s.ID
-}
-
-// GetImageID returns the value of ImageID.
-func (s *VirtualMachine) GetImageID() NilImageID {
-	return s.ImageID
-}
-
-// GetImageType returns the value of ImageType.
-func (s *VirtualMachine) GetImageType() NilVirtualMachineImageType {
-	return s.ImageType
-}
-
-// GetMachineTypeID returns the value of MachineTypeID.
-func (s *VirtualMachine) GetMachineTypeID() MachineTypeID {
-	return s.MachineTypeID
-}
-
-// GetIpv6Address returns the value of Ipv6Address.
-func (s *VirtualMachine) GetIpv6Address() NilString {
-	return s.Ipv6Address
-}
-
-// GetLabels returns the value of Labels.
-func (s *VirtualMachine) GetLabels() VirtualMachineLabels {
-	return s.Labels
-}
-
-// GetLoginUsername returns the value of LoginUsername.
-func (s *VirtualMachine) GetLoginUsername() string {
-	return s.LoginUsername
+// The mutable fields of a volume backup. At least one must be given.
+// Ref: #/components/schemas/UpdateVolumeBackupRequestBody
+type UpdateVolumeBackupRequestBody struct {
+	Name OptString `json:"name"`
 }
 
 // GetName returns the value of Name.
-func (s *VirtualMachine) GetName() string {
+func (s *UpdateVolumeBackupRequestBody) GetName() OptString {
 	return s.Name
 }
 
-// GetNotes returns the value of Notes.
-func (s *VirtualMachine) GetNotes() string {
-	return s.Notes
+// SetName sets the value of Name.
+func (s *UpdateVolumeBackupRequestBody) SetName(val OptString) {
+	s.Name = val
 }
 
-// GetPrivateIP returns the value of PrivateIP.
-func (s *VirtualMachine) GetPrivateIP() NilString {
-	return s.PrivateIP
+type UpdateVolumeOK UpdateVolumeResponseBody
+
+func (*UpdateVolumeOK) updateVolumeRes() {}
+
+// The mutable fields of a volume, all optional, at least one required. `size_gib` and `volume_type_id`
+// are operational fields and cannot be combined with each other or with `name`; such a request is
+// refused with 422 `UPDATE_FIELDS_COMBINED`.
+// Ref: #/components/schemas/UpdateVolumeRequestBody
+type UpdateVolumeRequestBody struct {
+	Name OptString `json:"name"`
+	// The new capacity. Must be larger than the current capacity.
+	SizeGib OptInt64 `json:"size_gib"`
+	// The volume type to move the detached volume to, at its current capacity.
+	VolumeTypeID OptVolumeTypeID `json:"volume_type_id"`
+	// The `proration_date` of the Billing quote for this change, so that the order is priced from the same
+	// instant. Only with `size_gib` or `volume_type_id`, and only for automatic checkout; deferred
+	// checkout is priced when the customer completes it. Defaults to the time of the request; it must be a
+	// whole second, not in the future and at most 10 minutes old, otherwise the request is refused with
+	// `BILLING_CHANGE_INVALID`.
+	ProrationDate OptDateTime `json:"proration_date"`
+	// How the purchase of the `size_gib` or `volume_type_id` change is checked out. Only with one of them.
+	Checkout OptCheckoutOptions `json:"checkout"`
 }
 
-// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
-func (s *VirtualMachine) GetVirtualPrivateCloudID() NilVirtualPrivateCloudID {
-	return s.VirtualPrivateCloudID
+// GetName returns the value of Name.
+func (s *UpdateVolumeRequestBody) GetName() OptString {
+	return s.Name
 }
 
-// GetElasticIPAddresses returns the value of ElasticIPAddresses.
-func (s *VirtualMachine) GetElasticIPAddresses() []string {
-	return s.ElasticIPAddresses
+// GetSizeGib returns the value of SizeGib.
+func (s *UpdateVolumeRequestBody) GetSizeGib() OptInt64 {
+	return s.SizeGib
 }
 
-// GetRegionID returns the value of RegionID.
-func (s *VirtualMachine) GetRegionID() RegionID {
-	return s.RegionID
+// GetVolumeTypeID returns the value of VolumeTypeID.
+func (s *UpdateVolumeRequestBody) GetVolumeTypeID() OptVolumeTypeID {
+	return s.VolumeTypeID
 }
 
-// GetStatus returns the value of Status.
-func (s *VirtualMachine) GetStatus() VirtualMachineStatus {
-	return s.Status
+// GetProrationDate returns the value of ProrationDate.
+func (s *UpdateVolumeRequestBody) GetProrationDate() OptDateTime {
+	return s.ProrationDate
 }
 
-// GetSubnetID returns the value of SubnetID.
-func (s *VirtualMachine) GetSubnetID() NilSubnetID {
-	return s.SubnetID
+// GetCheckout returns the value of Checkout.
+func (s *UpdateVolumeRequestBody) GetCheckout() OptCheckoutOptions {
+	return s.Checkout
 }
 
-// GetUpdatedAt returns the value of UpdatedAt.
-func (s *VirtualMachine) GetUpdatedAt() time.Time {
-	return s.UpdatedAt
+// SetName sets the value of Name.
+func (s *UpdateVolumeRequestBody) SetName(val OptString) {
+	s.Name = val
 }
 
-// GetRestrictions returns the value of Restrictions.
-func (s *VirtualMachine) GetRestrictions() []VirtualMachineRestriction {
-	return s.Restrictions
+// SetSizeGib sets the value of SizeGib.
+func (s *UpdateVolumeRequestBody) SetSizeGib(val OptInt64) {
+	s.SizeGib = val
 }
 
-// GetFailureReason returns the value of FailureReason.
-func (s *VirtualMachine) GetFailureReason() NilVirtualMachineFailureReason {
-	return s.FailureReason
+// SetVolumeTypeID sets the value of VolumeTypeID.
+func (s *UpdateVolumeRequestBody) SetVolumeTypeID(val OptVolumeTypeID) {
+	s.VolumeTypeID = val
 }
 
-// GetOperation returns the value of Operation.
-func (s *VirtualMachine) GetOperation() NilVirtualMachineOperation {
-	return s.Operation
+// SetProrationDate sets the value of ProrationDate.
+func (s *UpdateVolumeRequestBody) SetProrationDate(val OptDateTime) {
+	s.ProrationDate = val
+}
+
+// SetCheckout sets the value of Checkout.
+func (s *UpdateVolumeRequestBody) SetCheckout(val OptCheckoutOptions) {
+	s.Checkout = val
+}
+
+// The volume and, when the update placed a Billing order, the Checkout Session for it. After a resize
+// the volume is still at its current size until the change is applied. Returned with 200 when only
+// descriptive fields changed and with 202 when an operation started.
+// Ref: #/components/schemas/UpdateVolumeResponseBody
+type UpdateVolumeResponseBody struct {
+	Volume VolumeResource `json:"volume"`
+	// The Billing Checkout Session of the purchase; null when the update placed no order. With deferred
+	// checkout, the customer completes it in Billing.
+	CheckoutSessionID NilUUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then and when
+	// the update placed no order.
+	OrderID NilUUID `json:"order_id"`
+}
+
+// GetVolume returns the value of Volume.
+func (s *UpdateVolumeResponseBody) GetVolume() VolumeResource {
+	return s.Volume
 }
 
 // GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *VirtualMachine) GetCheckoutSessionID() NilUUID {
+func (s *UpdateVolumeResponseBody) GetCheckoutSessionID() NilUUID {
 	return s.CheckoutSessionID
 }
 
 // GetOrderID returns the value of OrderID.
-func (s *VirtualMachine) GetOrderID() NilUUID {
+func (s *UpdateVolumeResponseBody) GetOrderID() NilUUID {
 	return s.OrderID
 }
 
-// GetOrderItemID returns the value of OrderItemID.
-func (s *VirtualMachine) GetOrderItemID() NilUUID {
-	return s.OrderItemID
-}
-
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *VirtualMachine) GetSubscriptionID() NilUUID {
-	return s.SubscriptionID
-}
-
-// GetReleaseSet returns the value of ReleaseSet.
-func (s *VirtualMachine) GetReleaseSet() []ReleaseSetItem {
-	return s.ReleaseSet
-}
-
-// GetAccessState returns the value of AccessState.
-func (s *VirtualMachine) GetAccessState() NilVirtualMachineAccessState {
-	return s.AccessState
-}
-
-// GetSourceDiskID returns the value of SourceDiskID.
-func (s *VirtualMachine) GetSourceDiskID() NilDiskID {
-	return s.SourceDiskID
-}
-
-// GetLaunchTemplateID returns the value of LaunchTemplateID.
-func (s *VirtualMachine) GetLaunchTemplateID() NilLaunchTemplateID {
-	return s.LaunchTemplateID
-}
-
-// GetLaunchTemplateVersion returns the value of LaunchTemplateVersion.
-func (s *VirtualMachine) GetLaunchTemplateVersion() NilInt64 {
-	return s.LaunchTemplateVersion
-}
-
-// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *VirtualMachine) SetAvailabilityZoneID(val AvailabilityZoneID) {
-	s.AvailabilityZoneID = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *VirtualMachine) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetHostname sets the value of Hostname.
-func (s *VirtualMachine) SetHostname(val string) {
-	s.Hostname = val
-}
-
-// SetID sets the value of ID.
-func (s *VirtualMachine) SetID(val VirtualMachineID) {
-	s.ID = val
-}
-
-// SetImageID sets the value of ImageID.
-func (s *VirtualMachine) SetImageID(val NilImageID) {
-	s.ImageID = val
-}
-
-// SetImageType sets the value of ImageType.
-func (s *VirtualMachine) SetImageType(val NilVirtualMachineImageType) {
-	s.ImageType = val
-}
-
-// SetMachineTypeID sets the value of MachineTypeID.
-func (s *VirtualMachine) SetMachineTypeID(val MachineTypeID) {
-	s.MachineTypeID = val
-}
-
-// SetIpv6Address sets the value of Ipv6Address.
-func (s *VirtualMachine) SetIpv6Address(val NilString) {
-	s.Ipv6Address = val
-}
-
-// SetLabels sets the value of Labels.
-func (s *VirtualMachine) SetLabels(val VirtualMachineLabels) {
-	s.Labels = val
-}
-
-// SetLoginUsername sets the value of LoginUsername.
-func (s *VirtualMachine) SetLoginUsername(val string) {
-	s.LoginUsername = val
-}
-
-// SetName sets the value of Name.
-func (s *VirtualMachine) SetName(val string) {
-	s.Name = val
-}
-
-// SetNotes sets the value of Notes.
-func (s *VirtualMachine) SetNotes(val string) {
-	s.Notes = val
-}
-
-// SetPrivateIP sets the value of PrivateIP.
-func (s *VirtualMachine) SetPrivateIP(val NilString) {
-	s.PrivateIP = val
-}
-
-// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
-func (s *VirtualMachine) SetVirtualPrivateCloudID(val NilVirtualPrivateCloudID) {
-	s.VirtualPrivateCloudID = val
-}
-
-// SetElasticIPAddresses sets the value of ElasticIPAddresses.
-func (s *VirtualMachine) SetElasticIPAddresses(val []string) {
-	s.ElasticIPAddresses = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *VirtualMachine) SetRegionID(val RegionID) {
-	s.RegionID = val
-}
-
-// SetStatus sets the value of Status.
-func (s *VirtualMachine) SetStatus(val VirtualMachineStatus) {
-	s.Status = val
-}
-
-// SetSubnetID sets the value of SubnetID.
-func (s *VirtualMachine) SetSubnetID(val NilSubnetID) {
-	s.SubnetID = val
-}
-
-// SetUpdatedAt sets the value of UpdatedAt.
-func (s *VirtualMachine) SetUpdatedAt(val time.Time) {
-	s.UpdatedAt = val
-}
-
-// SetRestrictions sets the value of Restrictions.
-func (s *VirtualMachine) SetRestrictions(val []VirtualMachineRestriction) {
-	s.Restrictions = val
-}
-
-// SetFailureReason sets the value of FailureReason.
-func (s *VirtualMachine) SetFailureReason(val NilVirtualMachineFailureReason) {
-	s.FailureReason = val
-}
-
-// SetOperation sets the value of Operation.
-func (s *VirtualMachine) SetOperation(val NilVirtualMachineOperation) {
-	s.Operation = val
+// SetVolume sets the value of Volume.
+func (s *UpdateVolumeResponseBody) SetVolume(val VolumeResource) {
+	s.Volume = val
 }
 
 // SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *VirtualMachine) SetCheckoutSessionID(val NilUUID) {
+func (s *UpdateVolumeResponseBody) SetCheckoutSessionID(val NilUUID) {
 	s.CheckoutSessionID = val
 }
 
 // SetOrderID sets the value of OrderID.
-func (s *VirtualMachine) SetOrderID(val NilUUID) {
+func (s *UpdateVolumeResponseBody) SetOrderID(val NilUUID) {
 	s.OrderID = val
 }
 
-// SetOrderItemID sets the value of OrderItemID.
-func (s *VirtualMachine) SetOrderItemID(val NilUUID) {
-	s.OrderItemID = val
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *VirtualMachine) SetSubscriptionID(val NilUUID) {
-	s.SubscriptionID = val
-}
-
-// SetReleaseSet sets the value of ReleaseSet.
-func (s *VirtualMachine) SetReleaseSet(val []ReleaseSetItem) {
-	s.ReleaseSet = val
-}
-
-// SetAccessState sets the value of AccessState.
-func (s *VirtualMachine) SetAccessState(val NilVirtualMachineAccessState) {
-	s.AccessState = val
-}
-
-// SetSourceDiskID sets the value of SourceDiskID.
-func (s *VirtualMachine) SetSourceDiskID(val NilDiskID) {
-	s.SourceDiskID = val
-}
-
-// SetLaunchTemplateID sets the value of LaunchTemplateID.
-func (s *VirtualMachine) SetLaunchTemplateID(val NilLaunchTemplateID) {
-	s.LaunchTemplateID = val
-}
-
-// SetLaunchTemplateVersion sets the value of LaunchTemplateVersion.
-func (s *VirtualMachine) SetLaunchTemplateVersion(val NilInt64) {
-	s.LaunchTemplateVersion = val
-}
-
-func (*VirtualMachine) rebootVirtualMachineRes()   {}
-func (*VirtualMachine) startVirtualMachineRes()    {}
-func (*VirtualMachine) stopVirtualMachineRes()     {}
-func (*VirtualMachine) unrescueVirtualMachineRes() {}
-
-type VirtualMachineAccessState string
-
-const (
-	VirtualMachineAccessStatePending   VirtualMachineAccessState = "pending"
-	VirtualMachineAccessStateEnabled   VirtualMachineAccessState = "enabled"
-	VirtualMachineAccessStateSuspended VirtualMachineAccessState = "suspended"
-	VirtualMachineAccessStateReclaimed VirtualMachineAccessState = "reclaimed"
-)
-
-// AllValues returns all VirtualMachineAccessState values.
-func (VirtualMachineAccessState) AllValues() []VirtualMachineAccessState {
-	return []VirtualMachineAccessState{
-		VirtualMachineAccessStatePending,
-		VirtualMachineAccessStateEnabled,
-		VirtualMachineAccessStateSuspended,
-		VirtualMachineAccessStateReclaimed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s VirtualMachineAccessState) MarshalText() ([]byte, error) {
-	switch s {
-	case VirtualMachineAccessStatePending:
-		return []byte(s), nil
-	case VirtualMachineAccessStateEnabled:
-		return []byte(s), nil
-	case VirtualMachineAccessStateSuspended:
-		return []byte(s), nil
-	case VirtualMachineAccessStateReclaimed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *VirtualMachineAccessState) UnmarshalText(data []byte) error {
-	switch VirtualMachineAccessState(data) {
-	case VirtualMachineAccessStatePending:
-		*s = VirtualMachineAccessStatePending
-		return nil
-	case VirtualMachineAccessStateEnabled:
-		*s = VirtualMachineAccessStateEnabled
-		return nil
-	case VirtualMachineAccessStateSuspended:
-		*s = VirtualMachineAccessStateSuspended
-		return nil
-	case VirtualMachineAccessStateReclaimed:
-		*s = VirtualMachineAccessStateReclaimed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// A virtual machine; the elastic IP points at the primary private IPv4 address of its primary network
-// interface.
-// Ref: #/components/schemas/VirtualMachineAssociationTarget
-type VirtualMachineAssociationTarget struct {
-	VirtualMachineID VirtualMachineID `json:"virtual_machine_id"`
-}
-
-// GetVirtualMachineID returns the value of VirtualMachineID.
-func (s *VirtualMachineAssociationTarget) GetVirtualMachineID() VirtualMachineID {
-	return s.VirtualMachineID
-}
-
-// SetVirtualMachineID sets the value of VirtualMachineID.
-func (s *VirtualMachineAssociationTarget) SetVirtualMachineID(val VirtualMachineID) {
-	s.VirtualMachineID = val
-}
-
-type VirtualMachineDiskID string
-
-// `new` buys an elastic IP in the virtual machine's order; `existing` associates one you already hold.
-// One address is associated with one interface, so either creates only one virtual machine.
-// Ref: #/components/schemas/VirtualMachineElasticIP
-// VirtualMachineElasticIP represents sum type.
-type VirtualMachineElasticIP struct {
-	// Type selects the active sum variant, switch on this field.
-	Type              VirtualMachineElasticIPType
-	NewElasticIP      NewElasticIP
-	ExistingElasticIP ExistingElasticIP
-}
-
-// VirtualMachineElasticIPType is oneOf type of VirtualMachineElasticIP.
-type VirtualMachineElasticIPType string
-
-// Possible values for VirtualMachineElasticIPType.
-const (
-	NewElasticIPVirtualMachineElasticIP      VirtualMachineElasticIPType = "new"
-	ExistingElasticIPVirtualMachineElasticIP VirtualMachineElasticIPType = "existing"
-)
-
-// IsNewElasticIP reports whether VirtualMachineElasticIP is NewElasticIP.
-func (s VirtualMachineElasticIP) IsNewElasticIP() bool {
-	return s.Type == NewElasticIPVirtualMachineElasticIP
-}
-
-// IsExistingElasticIP reports whether VirtualMachineElasticIP is ExistingElasticIP.
-func (s VirtualMachineElasticIP) IsExistingElasticIP() bool {
-	return s.Type == ExistingElasticIPVirtualMachineElasticIP
-}
-
-// SetNewElasticIP sets VirtualMachineElasticIP to NewElasticIP.
-func (s *VirtualMachineElasticIP) SetNewElasticIP(v NewElasticIP) {
-	s.Type = NewElasticIPVirtualMachineElasticIP
-	s.NewElasticIP = v
-}
-
-// GetNewElasticIP returns NewElasticIP and true boolean if VirtualMachineElasticIP is NewElasticIP.
-func (s VirtualMachineElasticIP) GetNewElasticIP() (v NewElasticIP, ok bool) {
-	if !s.IsNewElasticIP() {
-		return v, false
-	}
-	return s.NewElasticIP, true
-}
-
-// NewNewElasticIPVirtualMachineElasticIP returns new VirtualMachineElasticIP from NewElasticIP.
-func NewNewElasticIPVirtualMachineElasticIP(v NewElasticIP) VirtualMachineElasticIP {
-	var s VirtualMachineElasticIP
-	s.SetNewElasticIP(v)
-	return s
-}
-
-// SetExistingElasticIP sets VirtualMachineElasticIP to ExistingElasticIP.
-func (s *VirtualMachineElasticIP) SetExistingElasticIP(v ExistingElasticIP) {
-	s.Type = ExistingElasticIPVirtualMachineElasticIP
-	s.ExistingElasticIP = v
-}
-
-// GetExistingElasticIP returns ExistingElasticIP and true boolean if VirtualMachineElasticIP is ExistingElasticIP.
-func (s VirtualMachineElasticIP) GetExistingElasticIP() (v ExistingElasticIP, ok bool) {
-	if !s.IsExistingElasticIP() {
-		return v, false
-	}
-	return s.ExistingElasticIP, true
-}
-
-// NewExistingElasticIPVirtualMachineElasticIP returns new VirtualMachineElasticIP from ExistingElasticIP.
-func NewExistingElasticIPVirtualMachineElasticIP(v ExistingElasticIP) VirtualMachineElasticIP {
-	var s VirtualMachineElasticIP
-	s.SetExistingElasticIP(v)
-	return s
-}
-
-// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
-// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
-// order was accepted, and the charge for this virtual machine is refunded.
-type VirtualMachineFailureReason string
-
-const (
-	VirtualMachineFailureReasonOrderDeclined      VirtualMachineFailureReason = "order_declined"
-	VirtualMachineFailureReasonOrderCanceled      VirtualMachineFailureReason = "order_canceled"
-	VirtualMachineFailureReasonOrderExpired       VirtualMachineFailureReason = "order_expired"
-	VirtualMachineFailureReasonCheckoutExpired    VirtualMachineFailureReason = "checkout_expired"
-	VirtualMachineFailureReasonProvisioningFailed VirtualMachineFailureReason = "provisioning_failed"
-)
-
-// AllValues returns all VirtualMachineFailureReason values.
-func (VirtualMachineFailureReason) AllValues() []VirtualMachineFailureReason {
-	return []VirtualMachineFailureReason{
-		VirtualMachineFailureReasonOrderDeclined,
-		VirtualMachineFailureReasonOrderCanceled,
-		VirtualMachineFailureReasonOrderExpired,
-		VirtualMachineFailureReasonCheckoutExpired,
-		VirtualMachineFailureReasonProvisioningFailed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s VirtualMachineFailureReason) MarshalText() ([]byte, error) {
-	switch s {
-	case VirtualMachineFailureReasonOrderDeclined:
-		return []byte(s), nil
-	case VirtualMachineFailureReasonOrderCanceled:
-		return []byte(s), nil
-	case VirtualMachineFailureReasonOrderExpired:
-		return []byte(s), nil
-	case VirtualMachineFailureReasonCheckoutExpired:
-		return []byte(s), nil
-	case VirtualMachineFailureReasonProvisioningFailed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *VirtualMachineFailureReason) UnmarshalText(data []byte) error {
-	switch VirtualMachineFailureReason(data) {
-	case VirtualMachineFailureReasonOrderDeclined:
-		*s = VirtualMachineFailureReasonOrderDeclined
-		return nil
-	case VirtualMachineFailureReasonOrderCanceled:
-		*s = VirtualMachineFailureReasonOrderCanceled
-		return nil
-	case VirtualMachineFailureReasonOrderExpired:
-		*s = VirtualMachineFailureReasonOrderExpired
-		return nil
-	case VirtualMachineFailureReasonCheckoutExpired:
-		*s = VirtualMachineFailureReasonCheckoutExpired
-		return nil
-	case VirtualMachineFailureReasonProvisioningFailed:
-		*s = VirtualMachineFailureReasonProvisioningFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type VirtualMachineID string
-
-// Which collection `image_id` belongs to. `public` means `/public-images`, `private` means
-// `/private-images`. Null when the virtual machine boots from a disk and therefore has no image.
-type VirtualMachineImageType string
-
-const (
-	VirtualMachineImageTypePublic  VirtualMachineImageType = "public"
-	VirtualMachineImageTypePrivate VirtualMachineImageType = "private"
-)
-
-// AllValues returns all VirtualMachineImageType values.
-func (VirtualMachineImageType) AllValues() []VirtualMachineImageType {
-	return []VirtualMachineImageType{
-		VirtualMachineImageTypePublic,
-		VirtualMachineImageTypePrivate,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s VirtualMachineImageType) MarshalText() ([]byte, error) {
-	switch s {
-	case VirtualMachineImageTypePublic:
-		return []byte(s), nil
-	case VirtualMachineImageTypePrivate:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *VirtualMachineImageType) UnmarshalText(data []byte) error {
-	switch VirtualMachineImageType(data) {
-	case VirtualMachineImageTypePublic:
-		*s = VirtualMachineImageTypePublic
-		return nil
-	case VirtualMachineImageTypePrivate:
-		*s = VirtualMachineImageTypePrivate
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Your own classification of this virtual machine, as key-value pairs. Empty when never set.
-type VirtualMachineLabels map[string]string
-
-func (s *VirtualMachineLabels) init() VirtualMachineLabels {
-	m := *s
-	if m == nil {
-		m = map[string]string{}
-		*s = m
-	}
-	return m
-}
-
-// Ref: #/components/schemas/VirtualMachineListResponseBody
-type VirtualMachineListResponseBody struct {
-	Items      []VirtualMachine `json:"items"`
-	Pagination OffsetPagination `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *VirtualMachineListResponseBody) GetItems() []VirtualMachine {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *VirtualMachineListResponseBody) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *VirtualMachineListResponseBody) SetItems(val []VirtualMachine) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *VirtualMachineListResponseBody) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
-type VirtualMachineNetworkInterfaceID string
-
-// An operation still running on this virtual machine. It is not a separate resource; once it finishes,
-// the virtual machine's `operation` is null again and the virtual machine shows the result.
-// Ref: #/components/schemas/VirtualMachineOperation
-type VirtualMachineOperation struct {
-	// `create` runs from acceptance of the order until the virtual machine is `active` or `failed`.
-	// `suspend` and `resume` impose and lift a suspension by the platform or for non-payment.
-	// `capture_image` holds the machine while a private image is captured from the disk it boots from; the
-	// machine cannot be resized, rebuilt or released meanwhile. `delete` includes release through a
-	// Billing cancellation.
-	Type      VirtualMachineOperationType `json:"type"`
-	StartedAt time.Time                   `json:"started_at"`
-}
-
-// GetType returns the value of Type.
-func (s *VirtualMachineOperation) GetType() VirtualMachineOperationType {
-	return s.Type
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *VirtualMachineOperation) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// SetType sets the value of Type.
-func (s *VirtualMachineOperation) SetType(val VirtualMachineOperationType) {
-	s.Type = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *VirtualMachineOperation) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-// `create` runs from acceptance of the order until the virtual machine is `active` or `failed`.
-// `suspend` and `resume` impose and lift a suspension by the platform or for non-payment.
-// `capture_image` holds the machine while a private image is captured from the disk it boots from; the
-// machine cannot be resized, rebuilt or released meanwhile. `delete` includes release through a
-// Billing cancellation.
-type VirtualMachineOperationType string
-
-const (
-	VirtualMachineOperationTypeCreate                 VirtualMachineOperationType = "create"
-	VirtualMachineOperationTypeStart                  VirtualMachineOperationType = "start"
-	VirtualMachineOperationTypeStop                   VirtualMachineOperationType = "stop"
-	VirtualMachineOperationTypeReboot                 VirtualMachineOperationType = "reboot"
-	VirtualMachineOperationTypeRebuild                VirtualMachineOperationType = "rebuild"
-	VirtualMachineOperationTypeRescue                 VirtualMachineOperationType = "rescue"
-	VirtualMachineOperationTypeUnrescue               VirtualMachineOperationType = "unrescue"
-	VirtualMachineOperationTypeResize                 VirtualMachineOperationType = "resize"
-	VirtualMachineOperationTypeResetPassword          VirtualMachineOperationType = "reset_password"
-	VirtualMachineOperationTypeAttachDisk             VirtualMachineOperationType = "attach_disk"
-	VirtualMachineOperationTypeDetachDisk             VirtualMachineOperationType = "detach_disk"
-	VirtualMachineOperationTypeAttachNetworkInterface VirtualMachineOperationType = "attach_network_interface"
-	VirtualMachineOperationTypeDetachNetworkInterface VirtualMachineOperationType = "detach_network_interface"
-	VirtualMachineOperationTypeAssociateElasticIP     VirtualMachineOperationType = "associate_elastic_ip"
-	VirtualMachineOperationTypeDisassociateElasticIP  VirtualMachineOperationType = "disassociate_elastic_ip"
-	VirtualMachineOperationTypeCaptureImage           VirtualMachineOperationType = "capture_image"
-	VirtualMachineOperationTypeSuspend                VirtualMachineOperationType = "suspend"
-	VirtualMachineOperationTypeResume                 VirtualMachineOperationType = "resume"
-	VirtualMachineOperationTypeDelete                 VirtualMachineOperationType = "delete"
-)
-
-// AllValues returns all VirtualMachineOperationType values.
-func (VirtualMachineOperationType) AllValues() []VirtualMachineOperationType {
-	return []VirtualMachineOperationType{
-		VirtualMachineOperationTypeCreate,
-		VirtualMachineOperationTypeStart,
-		VirtualMachineOperationTypeStop,
-		VirtualMachineOperationTypeReboot,
-		VirtualMachineOperationTypeRebuild,
-		VirtualMachineOperationTypeRescue,
-		VirtualMachineOperationTypeUnrescue,
-		VirtualMachineOperationTypeResize,
-		VirtualMachineOperationTypeResetPassword,
-		VirtualMachineOperationTypeAttachDisk,
-		VirtualMachineOperationTypeDetachDisk,
-		VirtualMachineOperationTypeAttachNetworkInterface,
-		VirtualMachineOperationTypeDetachNetworkInterface,
-		VirtualMachineOperationTypeAssociateElasticIP,
-		VirtualMachineOperationTypeDisassociateElasticIP,
-		VirtualMachineOperationTypeCaptureImage,
-		VirtualMachineOperationTypeSuspend,
-		VirtualMachineOperationTypeResume,
-		VirtualMachineOperationTypeDelete,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s VirtualMachineOperationType) MarshalText() ([]byte, error) {
-	switch s {
-	case VirtualMachineOperationTypeCreate:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeStart:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeStop:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeReboot:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeRebuild:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeRescue:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeUnrescue:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeResize:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeResetPassword:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeAttachDisk:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeDetachDisk:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeAttachNetworkInterface:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeDetachNetworkInterface:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeAssociateElasticIP:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeDisassociateElasticIP:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeCaptureImage:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeSuspend:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeResume:
-		return []byte(s), nil
-	case VirtualMachineOperationTypeDelete:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *VirtualMachineOperationType) UnmarshalText(data []byte) error {
-	switch VirtualMachineOperationType(data) {
-	case VirtualMachineOperationTypeCreate:
-		*s = VirtualMachineOperationTypeCreate
-		return nil
-	case VirtualMachineOperationTypeStart:
-		*s = VirtualMachineOperationTypeStart
-		return nil
-	case VirtualMachineOperationTypeStop:
-		*s = VirtualMachineOperationTypeStop
-		return nil
-	case VirtualMachineOperationTypeReboot:
-		*s = VirtualMachineOperationTypeReboot
-		return nil
-	case VirtualMachineOperationTypeRebuild:
-		*s = VirtualMachineOperationTypeRebuild
-		return nil
-	case VirtualMachineOperationTypeRescue:
-		*s = VirtualMachineOperationTypeRescue
-		return nil
-	case VirtualMachineOperationTypeUnrescue:
-		*s = VirtualMachineOperationTypeUnrescue
-		return nil
-	case VirtualMachineOperationTypeResize:
-		*s = VirtualMachineOperationTypeResize
-		return nil
-	case VirtualMachineOperationTypeResetPassword:
-		*s = VirtualMachineOperationTypeResetPassword
-		return nil
-	case VirtualMachineOperationTypeAttachDisk:
-		*s = VirtualMachineOperationTypeAttachDisk
-		return nil
-	case VirtualMachineOperationTypeDetachDisk:
-		*s = VirtualMachineOperationTypeDetachDisk
-		return nil
-	case VirtualMachineOperationTypeAttachNetworkInterface:
-		*s = VirtualMachineOperationTypeAttachNetworkInterface
-		return nil
-	case VirtualMachineOperationTypeDetachNetworkInterface:
-		*s = VirtualMachineOperationTypeDetachNetworkInterface
-		return nil
-	case VirtualMachineOperationTypeAssociateElasticIP:
-		*s = VirtualMachineOperationTypeAssociateElasticIP
-		return nil
-	case VirtualMachineOperationTypeDisassociateElasticIP:
-		*s = VirtualMachineOperationTypeDisassociateElasticIP
-		return nil
-	case VirtualMachineOperationTypeCaptureImage:
-		*s = VirtualMachineOperationTypeCaptureImage
-		return nil
-	case VirtualMachineOperationTypeSuspend:
-		*s = VirtualMachineOperationTypeSuspend
-		return nil
-	case VirtualMachineOperationTypeResume:
-		*s = VirtualMachineOperationTypeResume
-		return nil
-	case VirtualMachineOperationTypeDelete:
-		*s = VirtualMachineOperationTypeDelete
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// A resource a release set releases.
-// Ref: #/components/schemas/VirtualMachineReleaseResource
-type VirtualMachineReleaseResource struct {
-	Type VirtualMachineReleaseResourceType `json:"type"`
-	// The identifier of the resource selected by type.
-	ID VirtualMachineID `json:"id"`
-	// The current display name of the selected resource.
-	Name string `json:"name"`
-}
-
-// GetType returns the value of Type.
-func (s *VirtualMachineReleaseResource) GetType() VirtualMachineReleaseResourceType {
-	return s.Type
-}
-
-// GetID returns the value of ID.
-func (s *VirtualMachineReleaseResource) GetID() VirtualMachineID {
-	return s.ID
+// The mutable fields of a snapshot. At least one must be given.
+// Ref: #/components/schemas/UpdateVolumeSnapshotRequestBody
+type UpdateVolumeSnapshotRequestBody struct {
+	Name OptString `json:"name"`
 }
 
 // GetName returns the value of Name.
-func (s *VirtualMachineReleaseResource) GetName() string {
+func (s *UpdateVolumeSnapshotRequestBody) GetName() OptString {
 	return s.Name
 }
 
-// SetType sets the value of Type.
-func (s *VirtualMachineReleaseResource) SetType(val VirtualMachineReleaseResourceType) {
-	s.Type = val
-}
-
-// SetID sets the value of ID.
-func (s *VirtualMachineReleaseResource) SetID(val VirtualMachineID) {
-	s.ID = val
-}
-
 // SetName sets the value of Name.
-func (s *VirtualMachineReleaseResource) SetName(val string) {
+func (s *UpdateVolumeSnapshotRequestBody) SetName(val OptString) {
 	s.Name = val
-}
-
-type VirtualMachineReleaseResourceType string
-
-const (
-	VirtualMachineReleaseResourceTypeVirtualMachine VirtualMachineReleaseResourceType = "virtual_machine"
-)
-
-// AllValues returns all VirtualMachineReleaseResourceType values.
-func (VirtualMachineReleaseResourceType) AllValues() []VirtualMachineReleaseResourceType {
-	return []VirtualMachineReleaseResourceType{
-		VirtualMachineReleaseResourceTypeVirtualMachine,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s VirtualMachineReleaseResourceType) MarshalText() ([]byte, error) {
-	switch s {
-	case VirtualMachineReleaseResourceTypeVirtualMachine:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *VirtualMachineReleaseResourceType) UnmarshalText(data []byte) error {
-	switch VirtualMachineReleaseResourceType(data) {
-	case VirtualMachineReleaseResourceTypeVirtualMachine:
-		*s = VirtualMachineReleaseResourceTypeVirtualMachine
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// One hold on the virtual machine. While any holds it, the virtual machine is stopped and refuses
-// being started, rebooted, rebuilt, resized, rescued, having its password reset and running commands,
-// with 409 `VIRTUAL_MACHINE_SUSPENDED`. Holds are independent: lifting one never lifts another, and
-// once none remains the virtual machine is started again only if a hold stopped it, never one its user
-// stopped.
-// Ref: #/components/schemas/VirtualMachineRestriction
-type VirtualMachineRestriction struct {
-	// Why it is held. `operator_suspended` is a suspension by the platform. `billing_suspended` is the
-	// virtual machine's own subscription suspended for non-payment, and `billing_reclaimed` that
-	// subscription ending, after which the virtual machine is released. `boot_disk_suspended` and
-	// `boot_disk_reclaimed` are the same for the subscription of the disk the virtual machine boots from:
-	// that disk is billed apart, and the virtual machine cannot run without it, so renewing the disk's
-	// subscription lifts the hold, and a reclaimed boot disk is released together with its virtual
-	// machine.
-	Reason VirtualMachineRestrictionReason `json:"reason"`
-	// The Billing subscription whose state holds the virtual machine; null for `operator_suspended`.
-	SubscriptionID NilUUID `json:"subscription_id"`
-	// The disk the virtual machine boots from, for `boot_disk_suspended` and `boot_disk_reclaimed`; null
-	// otherwise.
-	DiskID NilDiskID `json:"disk_id"`
-	// When the hold began; null when that instant was not recorded.
-	StartedAt NilDateTime `json:"started_at"`
-}
-
-// GetReason returns the value of Reason.
-func (s *VirtualMachineRestriction) GetReason() VirtualMachineRestrictionReason {
-	return s.Reason
-}
-
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *VirtualMachineRestriction) GetSubscriptionID() NilUUID {
-	return s.SubscriptionID
-}
-
-// GetDiskID returns the value of DiskID.
-func (s *VirtualMachineRestriction) GetDiskID() NilDiskID {
-	return s.DiskID
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *VirtualMachineRestriction) GetStartedAt() NilDateTime {
-	return s.StartedAt
-}
-
-// SetReason sets the value of Reason.
-func (s *VirtualMachineRestriction) SetReason(val VirtualMachineRestrictionReason) {
-	s.Reason = val
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *VirtualMachineRestriction) SetSubscriptionID(val NilUUID) {
-	s.SubscriptionID = val
-}
-
-// SetDiskID sets the value of DiskID.
-func (s *VirtualMachineRestriction) SetDiskID(val NilDiskID) {
-	s.DiskID = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *VirtualMachineRestriction) SetStartedAt(val NilDateTime) {
-	s.StartedAt = val
-}
-
-// Why it is held. `operator_suspended` is a suspension by the platform. `billing_suspended` is the
-// virtual machine's own subscription suspended for non-payment, and `billing_reclaimed` that
-// subscription ending, after which the virtual machine is released. `boot_disk_suspended` and
-// `boot_disk_reclaimed` are the same for the subscription of the disk the virtual machine boots from:
-// that disk is billed apart, and the virtual machine cannot run without it, so renewing the disk's
-// subscription lifts the hold, and a reclaimed boot disk is released together with its virtual
-// machine.
-type VirtualMachineRestrictionReason string
-
-const (
-	VirtualMachineRestrictionReasonOperatorSuspended VirtualMachineRestrictionReason = "operator_suspended"
-	VirtualMachineRestrictionReasonBillingSuspended  VirtualMachineRestrictionReason = "billing_suspended"
-	VirtualMachineRestrictionReasonBillingReclaimed  VirtualMachineRestrictionReason = "billing_reclaimed"
-	VirtualMachineRestrictionReasonBootDiskSuspended VirtualMachineRestrictionReason = "boot_disk_suspended"
-	VirtualMachineRestrictionReasonBootDiskReclaimed VirtualMachineRestrictionReason = "boot_disk_reclaimed"
-)
-
-// AllValues returns all VirtualMachineRestrictionReason values.
-func (VirtualMachineRestrictionReason) AllValues() []VirtualMachineRestrictionReason {
-	return []VirtualMachineRestrictionReason{
-		VirtualMachineRestrictionReasonOperatorSuspended,
-		VirtualMachineRestrictionReasonBillingSuspended,
-		VirtualMachineRestrictionReasonBillingReclaimed,
-		VirtualMachineRestrictionReasonBootDiskSuspended,
-		VirtualMachineRestrictionReasonBootDiskReclaimed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s VirtualMachineRestrictionReason) MarshalText() ([]byte, error) {
-	switch s {
-	case VirtualMachineRestrictionReasonOperatorSuspended:
-		return []byte(s), nil
-	case VirtualMachineRestrictionReasonBillingSuspended:
-		return []byte(s), nil
-	case VirtualMachineRestrictionReasonBillingReclaimed:
-		return []byte(s), nil
-	case VirtualMachineRestrictionReasonBootDiskSuspended:
-		return []byte(s), nil
-	case VirtualMachineRestrictionReasonBootDiskReclaimed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *VirtualMachineRestrictionReason) UnmarshalText(data []byte) error {
-	switch VirtualMachineRestrictionReason(data) {
-	case VirtualMachineRestrictionReasonOperatorSuspended:
-		*s = VirtualMachineRestrictionReasonOperatorSuspended
-		return nil
-	case VirtualMachineRestrictionReasonBillingSuspended:
-		*s = VirtualMachineRestrictionReasonBillingSuspended
-		return nil
-	case VirtualMachineRestrictionReasonBillingReclaimed:
-		*s = VirtualMachineRestrictionReasonBillingReclaimed
-		return nil
-	case VirtualMachineRestrictionReasonBootDiskSuspended:
-		*s = VirtualMachineRestrictionReasonBootDiskSuspended
-		return nil
-	case VirtualMachineRestrictionReasonBootDiskReclaimed:
-		*s = VirtualMachineRestrictionReasonBootDiskReclaimed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// `pending` until the virtual machine is created: before the order is accepted no virtual machine
-// exists and addresses are null, and while it is created it shows the `create` operation. Then
-// `active`. `failed` means the virtual machine was not created; `failure_reason` states why. The other
-// values are the state of the virtual machine in the cloud; an operation in progress appears in
-// `operation`, not here.
-type VirtualMachineStatus string
-
-const (
-	VirtualMachineStatusPending   VirtualMachineStatus = "pending"
-	VirtualMachineStatusActive    VirtualMachineStatus = "active"
-	VirtualMachineStatusStopped   VirtualMachineStatus = "stopped"
-	VirtualMachineStatusPaused    VirtualMachineStatus = "paused"
-	VirtualMachineStatusSuspended VirtualMachineStatus = "suspended"
-	VirtualMachineStatusRescued   VirtualMachineStatus = "rescued"
-	VirtualMachineStatusDeleted   VirtualMachineStatus = "deleted"
-	VirtualMachineStatusFailed    VirtualMachineStatus = "failed"
-	VirtualMachineStatusError     VirtualMachineStatus = "error"
-)
-
-// AllValues returns all VirtualMachineStatus values.
-func (VirtualMachineStatus) AllValues() []VirtualMachineStatus {
-	return []VirtualMachineStatus{
-		VirtualMachineStatusPending,
-		VirtualMachineStatusActive,
-		VirtualMachineStatusStopped,
-		VirtualMachineStatusPaused,
-		VirtualMachineStatusSuspended,
-		VirtualMachineStatusRescued,
-		VirtualMachineStatusDeleted,
-		VirtualMachineStatusFailed,
-		VirtualMachineStatusError,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s VirtualMachineStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case VirtualMachineStatusPending:
-		return []byte(s), nil
-	case VirtualMachineStatusActive:
-		return []byte(s), nil
-	case VirtualMachineStatusStopped:
-		return []byte(s), nil
-	case VirtualMachineStatusPaused:
-		return []byte(s), nil
-	case VirtualMachineStatusSuspended:
-		return []byte(s), nil
-	case VirtualMachineStatusRescued:
-		return []byte(s), nil
-	case VirtualMachineStatusDeleted:
-		return []byte(s), nil
-	case VirtualMachineStatusFailed:
-		return []byte(s), nil
-	case VirtualMachineStatusError:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *VirtualMachineStatus) UnmarshalText(data []byte) error {
-	switch VirtualMachineStatus(data) {
-	case VirtualMachineStatusPending:
-		*s = VirtualMachineStatusPending
-		return nil
-	case VirtualMachineStatusActive:
-		*s = VirtualMachineStatusActive
-		return nil
-	case VirtualMachineStatusStopped:
-		*s = VirtualMachineStatusStopped
-		return nil
-	case VirtualMachineStatusPaused:
-		*s = VirtualMachineStatusPaused
-		return nil
-	case VirtualMachineStatusSuspended:
-		*s = VirtualMachineStatusSuspended
-		return nil
-	case VirtualMachineStatusRescued:
-		*s = VirtualMachineStatusRescued
-		return nil
-	case VirtualMachineStatusDeleted:
-		*s = VirtualMachineStatusDeleted
-		return nil
-	case VirtualMachineStatusFailed:
-		*s = VirtualMachineStatusFailed
-		return nil
-	case VirtualMachineStatusError:
-		*s = VirtualMachineStatusError
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Ref: #/components/schemas/VirtualPrivateCloud
@@ -16368,13 +14297,13 @@ type VirtualPrivateCloud struct {
 	ID       VirtualPrivateCloudID `json:"id"`
 	RegionID RegionID              `json:"region_id"`
 	Name     string                `json:"name"`
-	Cidr     string                `json:"cidr"`
+	Ipv4Cidr string                `json:"ipv4_cidr"`
 	// The /56 routed to the virtual private cloud, from which each of its subnets takes a /64; null while
 	// IPv6 is not enabled.
 	Ipv6Cidr NilString `json:"ipv6_cidr"`
 	// `available` from creation: the network and router are created in the backend by the first member
 	// that needs them, so a virtual private cloud nothing uses holds no capacity there. `failed` means the
-	// cloud reports the network broken; virtual machines cannot be created in it then and are refused with
+	// cloud reports the network broken; instances cannot be created in it then and are refused with
 	// `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE`. `deleting` from the moment its deletion began until it is gone:
 	// subnets, security groups and routes in it can no longer be created, changed or deleted, and are
 	// refused with `VIRTUAL_PRIVATE_CLOUD_DELETING`. A deletion that stopped before the end leaves it
@@ -16401,9 +14330,9 @@ func (s *VirtualPrivateCloud) GetName() string {
 	return s.Name
 }
 
-// GetCidr returns the value of Cidr.
-func (s *VirtualPrivateCloud) GetCidr() string {
-	return s.Cidr
+// GetIpv4Cidr returns the value of Ipv4Cidr.
+func (s *VirtualPrivateCloud) GetIpv4Cidr() string {
+	return s.Ipv4Cidr
 }
 
 // GetIpv6Cidr returns the value of Ipv6Cidr.
@@ -16446,9 +14375,9 @@ func (s *VirtualPrivateCloud) SetName(val string) {
 	s.Name = val
 }
 
-// SetCidr sets the value of Cidr.
-func (s *VirtualPrivateCloud) SetCidr(val string) {
-	s.Cidr = val
+// SetIpv4Cidr sets the value of Ipv4Cidr.
+func (s *VirtualPrivateCloud) SetIpv4Cidr(val string) {
+	s.Ipv4Cidr = val
 }
 
 // SetIpv6Cidr sets the value of Ipv6Cidr.
@@ -16983,10 +14912,10 @@ type VirtualPrivateCloudRouteResource struct {
 	ID                    VirtualPrivateCloudRouteID   `json:"id"`
 	VirtualPrivateCloudID VirtualPrivateCloudID        `json:"virtual_private_cloud_id"`
 	Type                  VirtualPrivateCloudRouteType `json:"type"`
-	Destination           string                       `json:"destination"`
+	DestinationCidr       string                       `json:"destination_cidr"`
 	// The private address traffic is sent to. Null for a peering route, whose next hop is the platform's
 	// side of the peering link.
-	Nexthop NilString `json:"nexthop"`
+	NextHopAddress NilString `json:"next_hop_address"`
 	// The peering that wrote the route, null for a tenant route.
 	VirtualPrivateCloudPeeringID NilVirtualPrivateCloudPeeringID `json:"virtual_private_cloud_peering_id"`
 	Description                  string                          `json:"description"`
@@ -17008,14 +14937,14 @@ func (s *VirtualPrivateCloudRouteResource) GetType() VirtualPrivateCloudRouteTyp
 	return s.Type
 }
 
-// GetDestination returns the value of Destination.
-func (s *VirtualPrivateCloudRouteResource) GetDestination() string {
-	return s.Destination
+// GetDestinationCidr returns the value of DestinationCidr.
+func (s *VirtualPrivateCloudRouteResource) GetDestinationCidr() string {
+	return s.DestinationCidr
 }
 
-// GetNexthop returns the value of Nexthop.
-func (s *VirtualPrivateCloudRouteResource) GetNexthop() NilString {
-	return s.Nexthop
+// GetNextHopAddress returns the value of NextHopAddress.
+func (s *VirtualPrivateCloudRouteResource) GetNextHopAddress() NilString {
+	return s.NextHopAddress
 }
 
 // GetVirtualPrivateCloudPeeringID returns the value of VirtualPrivateCloudPeeringID.
@@ -17048,14 +14977,14 @@ func (s *VirtualPrivateCloudRouteResource) SetType(val VirtualPrivateCloudRouteT
 	s.Type = val
 }
 
-// SetDestination sets the value of Destination.
-func (s *VirtualPrivateCloudRouteResource) SetDestination(val string) {
-	s.Destination = val
+// SetDestinationCidr sets the value of DestinationCidr.
+func (s *VirtualPrivateCloudRouteResource) SetDestinationCidr(val string) {
+	s.DestinationCidr = val
 }
 
-// SetNexthop sets the value of Nexthop.
-func (s *VirtualPrivateCloudRouteResource) SetNexthop(val NilString) {
-	s.Nexthop = val
+// SetNextHopAddress sets the value of NextHopAddress.
+func (s *VirtualPrivateCloudRouteResource) SetNextHopAddress(val NilString) {
+	s.NextHopAddress = val
 }
 
 // SetVirtualPrivateCloudPeeringID sets the value of VirtualPrivateCloudPeeringID.
@@ -17119,7 +15048,7 @@ func (s *VirtualPrivateCloudRouteType) UnmarshalText(data []byte) error {
 
 // `available` from creation: the network and router are created in the backend by the first member
 // that needs them, so a virtual private cloud nothing uses holds no capacity there. `failed` means the
-// cloud reports the network broken; virtual machines cannot be created in it then and are refused with
+// cloud reports the network broken; instances cannot be created in it then and are refused with
 // `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE`. `deleting` from the moment its deletion began until it is gone:
 // subnets, security groups and routes in it can no longer be created, changed or deleted, and are
 // refused with `VIRTUAL_PRIVATE_CLOUD_DELETING`. A deletion that stopped before the end leaves it
@@ -17178,17 +15107,17 @@ type VirtualPrivateCloudSubnet struct {
 	VirtualPrivateCloudID VirtualPrivateCloudID `json:"virtual_private_cloud_id"`
 	Name                  string                `json:"name"`
 	// The subnet's IPv4 range.
-	Cidr string `json:"cidr"`
+	Ipv4Cidr string `json:"ipv4_cidr"`
 	// The IPv4 gateway address of the subnet.
-	GatewayIP NilString `json:"gateway_ip"`
+	Ipv4GatewayAddress NilString `json:"ipv4_gateway_address"`
 	// The subnet's /64, from the virtual private cloud's /56; null while IPv6 is not enabled on the
 	// virtual private cloud. A network interface created in the subnet takes an address of it that is
 	// never handed out again within the subnet.
 	Ipv6Cidr NilString `json:"ipv6_cidr"`
 	// The IPv6 gateway address of the subnet, the first address of its /64; null without IPv6.
-	Ipv6GatewayIP NilString `json:"ipv6_gateway_ip"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	Ipv6GatewayAddress NilString `json:"ipv6_gateway_address"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 // GetID returns the value of ID.
@@ -17206,14 +15135,14 @@ func (s *VirtualPrivateCloudSubnet) GetName() string {
 	return s.Name
 }
 
-// GetCidr returns the value of Cidr.
-func (s *VirtualPrivateCloudSubnet) GetCidr() string {
-	return s.Cidr
+// GetIpv4Cidr returns the value of Ipv4Cidr.
+func (s *VirtualPrivateCloudSubnet) GetIpv4Cidr() string {
+	return s.Ipv4Cidr
 }
 
-// GetGatewayIP returns the value of GatewayIP.
-func (s *VirtualPrivateCloudSubnet) GetGatewayIP() NilString {
-	return s.GatewayIP
+// GetIpv4GatewayAddress returns the value of Ipv4GatewayAddress.
+func (s *VirtualPrivateCloudSubnet) GetIpv4GatewayAddress() NilString {
+	return s.Ipv4GatewayAddress
 }
 
 // GetIpv6Cidr returns the value of Ipv6Cidr.
@@ -17221,9 +15150,9 @@ func (s *VirtualPrivateCloudSubnet) GetIpv6Cidr() NilString {
 	return s.Ipv6Cidr
 }
 
-// GetIpv6GatewayIP returns the value of Ipv6GatewayIP.
-func (s *VirtualPrivateCloudSubnet) GetIpv6GatewayIP() NilString {
-	return s.Ipv6GatewayIP
+// GetIpv6GatewayAddress returns the value of Ipv6GatewayAddress.
+func (s *VirtualPrivateCloudSubnet) GetIpv6GatewayAddress() NilString {
+	return s.Ipv6GatewayAddress
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -17251,14 +15180,14 @@ func (s *VirtualPrivateCloudSubnet) SetName(val string) {
 	s.Name = val
 }
 
-// SetCidr sets the value of Cidr.
-func (s *VirtualPrivateCloudSubnet) SetCidr(val string) {
-	s.Cidr = val
+// SetIpv4Cidr sets the value of Ipv4Cidr.
+func (s *VirtualPrivateCloudSubnet) SetIpv4Cidr(val string) {
+	s.Ipv4Cidr = val
 }
 
-// SetGatewayIP sets the value of GatewayIP.
-func (s *VirtualPrivateCloudSubnet) SetGatewayIP(val NilString) {
-	s.GatewayIP = val
+// SetIpv4GatewayAddress sets the value of Ipv4GatewayAddress.
+func (s *VirtualPrivateCloudSubnet) SetIpv4GatewayAddress(val NilString) {
+	s.Ipv4GatewayAddress = val
 }
 
 // SetIpv6Cidr sets the value of Ipv6Cidr.
@@ -17266,9 +15195,9 @@ func (s *VirtualPrivateCloudSubnet) SetIpv6Cidr(val NilString) {
 	s.Ipv6Cidr = val
 }
 
-// SetIpv6GatewayIP sets the value of Ipv6GatewayIP.
-func (s *VirtualPrivateCloudSubnet) SetIpv6GatewayIP(val NilString) {
-	s.Ipv6GatewayIP = val
+// SetIpv6GatewayAddress sets the value of Ipv6GatewayAddress.
+func (s *VirtualPrivateCloudSubnet) SetIpv6GatewayAddress(val NilString) {
+	s.Ipv6GatewayAddress = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -17305,4 +15234,2257 @@ func (s *VirtualPrivateCloudSubnetListResponseBody) SetItems(val []VirtualPrivat
 // SetPagination sets the value of Pagination.
 func (s *VirtualPrivateCloudSubnetListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
+}
+
+// Ref: #/components/schemas/VolumeAttachment
+type VolumeAttachment struct {
+	ID         InstanceVolumeID     `json:"id"`
+	InstanceID InstanceID           `json:"instance_id"`
+	VolumeID   VolumeID             `json:"volume_id"`
+	Role       VolumeAttachmentRole `json:"role"`
+	// What releasing the instance does to this volume. `delete` deletes it together with the instance;
+	// `detach` detaches it and leaves it to you. A volume you attached, or booted the instance from, is
+	// `detach`; a volume bought with the instance follows the choice made when it was bought.
+	OnInstanceRelease VolumeAttachmentOnInstanceRelease `json:"on_instance_release"`
+	State             VolumeAttachmentState             `json:"state"`
+	AttachedAt        NilDateTime                       `json:"attached_at"`
+	DetachedAt        NilDateTime                       `json:"detached_at"`
+	ReleasedAt        NilDateTime                       `json:"released_at"`
+	Device            NilString                         `json:"device"`
+	// The volume's performance in effect on this attachment, as it was when the attachment was made. Null
+	// until the attachment is made.
+	Performance NilVolumePerformance `json:"performance"`
+}
+
+// GetID returns the value of ID.
+func (s *VolumeAttachment) GetID() InstanceVolumeID {
+	return s.ID
+}
+
+// GetInstanceID returns the value of InstanceID.
+func (s *VolumeAttachment) GetInstanceID() InstanceID {
+	return s.InstanceID
+}
+
+// GetVolumeID returns the value of VolumeID.
+func (s *VolumeAttachment) GetVolumeID() VolumeID {
+	return s.VolumeID
+}
+
+// GetRole returns the value of Role.
+func (s *VolumeAttachment) GetRole() VolumeAttachmentRole {
+	return s.Role
+}
+
+// GetOnInstanceRelease returns the value of OnInstanceRelease.
+func (s *VolumeAttachment) GetOnInstanceRelease() VolumeAttachmentOnInstanceRelease {
+	return s.OnInstanceRelease
+}
+
+// GetState returns the value of State.
+func (s *VolumeAttachment) GetState() VolumeAttachmentState {
+	return s.State
+}
+
+// GetAttachedAt returns the value of AttachedAt.
+func (s *VolumeAttachment) GetAttachedAt() NilDateTime {
+	return s.AttachedAt
+}
+
+// GetDetachedAt returns the value of DetachedAt.
+func (s *VolumeAttachment) GetDetachedAt() NilDateTime {
+	return s.DetachedAt
+}
+
+// GetReleasedAt returns the value of ReleasedAt.
+func (s *VolumeAttachment) GetReleasedAt() NilDateTime {
+	return s.ReleasedAt
+}
+
+// GetDevice returns the value of Device.
+func (s *VolumeAttachment) GetDevice() NilString {
+	return s.Device
+}
+
+// GetPerformance returns the value of Performance.
+func (s *VolumeAttachment) GetPerformance() NilVolumePerformance {
+	return s.Performance
+}
+
+// SetID sets the value of ID.
+func (s *VolumeAttachment) SetID(val InstanceVolumeID) {
+	s.ID = val
+}
+
+// SetInstanceID sets the value of InstanceID.
+func (s *VolumeAttachment) SetInstanceID(val InstanceID) {
+	s.InstanceID = val
+}
+
+// SetVolumeID sets the value of VolumeID.
+func (s *VolumeAttachment) SetVolumeID(val VolumeID) {
+	s.VolumeID = val
+}
+
+// SetRole sets the value of Role.
+func (s *VolumeAttachment) SetRole(val VolumeAttachmentRole) {
+	s.Role = val
+}
+
+// SetOnInstanceRelease sets the value of OnInstanceRelease.
+func (s *VolumeAttachment) SetOnInstanceRelease(val VolumeAttachmentOnInstanceRelease) {
+	s.OnInstanceRelease = val
+}
+
+// SetState sets the value of State.
+func (s *VolumeAttachment) SetState(val VolumeAttachmentState) {
+	s.State = val
+}
+
+// SetAttachedAt sets the value of AttachedAt.
+func (s *VolumeAttachment) SetAttachedAt(val NilDateTime) {
+	s.AttachedAt = val
+}
+
+// SetDetachedAt sets the value of DetachedAt.
+func (s *VolumeAttachment) SetDetachedAt(val NilDateTime) {
+	s.DetachedAt = val
+}
+
+// SetReleasedAt sets the value of ReleasedAt.
+func (s *VolumeAttachment) SetReleasedAt(val NilDateTime) {
+	s.ReleasedAt = val
+}
+
+// SetDevice sets the value of Device.
+func (s *VolumeAttachment) SetDevice(val NilString) {
+	s.Device = val
+}
+
+// SetPerformance sets the value of Performance.
+func (s *VolumeAttachment) SetPerformance(val NilVolumePerformance) {
+	s.Performance = val
+}
+
+// Ref: #/components/schemas/VolumeAttachmentList
+type VolumeAttachmentList struct {
+	Items      []VolumeAttachment `json:"items"`
+	Pagination OffsetPagination   `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *VolumeAttachmentList) GetItems() []VolumeAttachment {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *VolumeAttachmentList) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *VolumeAttachmentList) SetItems(val []VolumeAttachment) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *VolumeAttachmentList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// What releasing the instance does to this volume. `delete` deletes it together with the instance;
+// `detach` detaches it and leaves it to you. A volume you attached, or booted the instance from, is
+// `detach`; a volume bought with the instance follows the choice made when it was bought.
+type VolumeAttachmentOnInstanceRelease string
+
+const (
+	VolumeAttachmentOnInstanceReleaseDelete VolumeAttachmentOnInstanceRelease = "delete"
+	VolumeAttachmentOnInstanceReleaseDetach VolumeAttachmentOnInstanceRelease = "detach"
+)
+
+// AllValues returns all VolumeAttachmentOnInstanceRelease values.
+func (VolumeAttachmentOnInstanceRelease) AllValues() []VolumeAttachmentOnInstanceRelease {
+	return []VolumeAttachmentOnInstanceRelease{
+		VolumeAttachmentOnInstanceReleaseDelete,
+		VolumeAttachmentOnInstanceReleaseDetach,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeAttachmentOnInstanceRelease) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeAttachmentOnInstanceReleaseDelete:
+		return []byte(s), nil
+	case VolumeAttachmentOnInstanceReleaseDetach:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeAttachmentOnInstanceRelease) UnmarshalText(data []byte) error {
+	switch VolumeAttachmentOnInstanceRelease(data) {
+	case VolumeAttachmentOnInstanceReleaseDelete:
+		*s = VolumeAttachmentOnInstanceReleaseDelete
+		return nil
+	case VolumeAttachmentOnInstanceReleaseDetach:
+		*s = VolumeAttachmentOnInstanceReleaseDetach
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type VolumeAttachmentRole string
+
+const (
+	VolumeAttachmentRoleBoot VolumeAttachmentRole = "boot"
+	VolumeAttachmentRoleData VolumeAttachmentRole = "data"
+)
+
+// AllValues returns all VolumeAttachmentRole values.
+func (VolumeAttachmentRole) AllValues() []VolumeAttachmentRole {
+	return []VolumeAttachmentRole{
+		VolumeAttachmentRoleBoot,
+		VolumeAttachmentRoleData,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeAttachmentRole) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeAttachmentRoleBoot:
+		return []byte(s), nil
+	case VolumeAttachmentRoleData:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeAttachmentRole) UnmarshalText(data []byte) error {
+	switch VolumeAttachmentRole(data) {
+	case VolumeAttachmentRoleBoot:
+		*s = VolumeAttachmentRoleBoot
+		return nil
+	case VolumeAttachmentRoleData:
+		*s = VolumeAttachmentRoleData
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type VolumeAttachmentState string
+
+const (
+	VolumeAttachmentStateReserved VolumeAttachmentState = "reserved"
+	VolumeAttachmentStateAttached VolumeAttachmentState = "attached"
+	VolumeAttachmentStateReleased VolumeAttachmentState = "released"
+)
+
+// AllValues returns all VolumeAttachmentState values.
+func (VolumeAttachmentState) AllValues() []VolumeAttachmentState {
+	return []VolumeAttachmentState{
+		VolumeAttachmentStateReserved,
+		VolumeAttachmentStateAttached,
+		VolumeAttachmentStateReleased,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeAttachmentState) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeAttachmentStateReserved:
+		return []byte(s), nil
+	case VolumeAttachmentStateAttached:
+		return []byte(s), nil
+	case VolumeAttachmentStateReleased:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeAttachmentState) UnmarshalText(data []byte) error {
+	switch VolumeAttachmentState(data) {
+	case VolumeAttachmentStateReserved:
+		*s = VolumeAttachmentStateReserved
+		return nil
+	case VolumeAttachmentStateAttached:
+		*s = VolumeAttachmentStateAttached
+		return nil
+	case VolumeAttachmentStateReleased:
+		*s = VolumeAttachmentStateReleased
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type VolumeBackupID string
+
+// Ref: #/components/schemas/VolumeBackupListResponseBody
+type VolumeBackupListResponseBody struct {
+	Items      []VolumeBackupResource `json:"items"`
+	Pagination OffsetPagination       `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *VolumeBackupListResponseBody) GetItems() []VolumeBackupResource {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *VolumeBackupListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *VolumeBackupListResponseBody) SetItems(val []VolumeBackupResource) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *VolumeBackupListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// An operation still running on this backup. It is not a separate resource; once it finishes, the
+// backup's `operation` is null again and the backup shows the result.
+// Ref: #/components/schemas/VolumeBackupOperation
+type VolumeBackupOperation struct {
+	// `restore`: a volume is being created from this backup with `volume_backup_id` on `create-volume`.
+	Type      VolumeBackupOperationType `json:"type"`
+	StartedAt time.Time                 `json:"started_at"`
+}
+
+// GetType returns the value of Type.
+func (s *VolumeBackupOperation) GetType() VolumeBackupOperationType {
+	return s.Type
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *VolumeBackupOperation) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// SetType sets the value of Type.
+func (s *VolumeBackupOperation) SetType(val VolumeBackupOperationType) {
+	s.Type = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *VolumeBackupOperation) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// `restore`: a volume is being created from this backup with `volume_backup_id` on `create-volume`.
+type VolumeBackupOperationType string
+
+const (
+	VolumeBackupOperationTypeCreate  VolumeBackupOperationType = "create"
+	VolumeBackupOperationTypeRestore VolumeBackupOperationType = "restore"
+	VolumeBackupOperationTypeDelete  VolumeBackupOperationType = "delete"
+)
+
+// AllValues returns all VolumeBackupOperationType values.
+func (VolumeBackupOperationType) AllValues() []VolumeBackupOperationType {
+	return []VolumeBackupOperationType{
+		VolumeBackupOperationTypeCreate,
+		VolumeBackupOperationTypeRestore,
+		VolumeBackupOperationTypeDelete,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeBackupOperationType) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeBackupOperationTypeCreate:
+		return []byte(s), nil
+	case VolumeBackupOperationTypeRestore:
+		return []byte(s), nil
+	case VolumeBackupOperationTypeDelete:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeBackupOperationType) UnmarshalText(data []byte) error {
+	switch VolumeBackupOperationType(data) {
+	case VolumeBackupOperationTypeCreate:
+		*s = VolumeBackupOperationTypeCreate
+		return nil
+	case VolumeBackupOperationTypeRestore:
+		*s = VolumeBackupOperationTypeRestore
+		return nil
+	case VolumeBackupOperationTypeDelete:
+		*s = VolumeBackupOperationTypeDelete
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A resource a release set releases.
+// Ref: #/components/schemas/VolumeBackupReleaseResource
+type VolumeBackupReleaseResource struct {
+	Type VolumeBackupReleaseResourceType `json:"type"`
+	// The identifier of the resource selected by type.
+	ID VolumeBackupID `json:"id"`
+	// The current display name of the selected resource.
+	Name string `json:"name"`
+}
+
+// GetType returns the value of Type.
+func (s *VolumeBackupReleaseResource) GetType() VolumeBackupReleaseResourceType {
+	return s.Type
+}
+
+// GetID returns the value of ID.
+func (s *VolumeBackupReleaseResource) GetID() VolumeBackupID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *VolumeBackupReleaseResource) GetName() string {
+	return s.Name
+}
+
+// SetType sets the value of Type.
+func (s *VolumeBackupReleaseResource) SetType(val VolumeBackupReleaseResourceType) {
+	s.Type = val
+}
+
+// SetID sets the value of ID.
+func (s *VolumeBackupReleaseResource) SetID(val VolumeBackupID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *VolumeBackupReleaseResource) SetName(val string) {
+	s.Name = val
+}
+
+type VolumeBackupReleaseResourceType string
+
+const (
+	VolumeBackupReleaseResourceTypeVolumeBackup VolumeBackupReleaseResourceType = "volume_backup"
+)
+
+// AllValues returns all VolumeBackupReleaseResourceType values.
+func (VolumeBackupReleaseResourceType) AllValues() []VolumeBackupReleaseResourceType {
+	return []VolumeBackupReleaseResourceType{
+		VolumeBackupReleaseResourceTypeVolumeBackup,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeBackupReleaseResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeBackupReleaseResourceTypeVolumeBackup:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeBackupReleaseResourceType) UnmarshalText(data []byte) error {
+	switch VolumeBackupReleaseResourceType(data) {
+	case VolumeBackupReleaseResourceTypeVolumeBackup:
+		*s = VolumeBackupReleaseResourceTypeVolumeBackup
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A retained copy of a volume, restorable after its source volume is deleted. Compute project quotas
+// constrain its count; retained storage is metered independently.
+// Ref: #/components/schemas/VolumeBackupResource
+type VolumeBackupResource struct {
+	CreatedAt time.Time      `json:"created_at"`
+	ID        VolumeBackupID `json:"id"`
+	Name      string         `json:"name"`
+	RegionID  RegionID       `json:"region_id"`
+	// Capacity of the source volume when the backup was created. A restored volume cannot be smaller than
+	// this.
+	SizeGib int64 `json:"size_gib"`
+	// The capacity metered for this backup, in GiB: the size of the source volume when the backup was
+	// taken. Usage is this capacity multiplied by the time the backup is retained.
+	CapacityGib int64 `json:"capacity_gib"`
+	// The volume this backup was taken from. The backup remains usable after that volume is deleted.
+	SourceVolumeID VolumeID `json:"source_volume_id"`
+	// `pending` from the purchase until the backup is taken, then `available`; while it is taken the
+	// backup shows the `create` operation. `failed` means the backup was not created.
+	Status VolumeBackupResourceStatus `json:"status"`
+	// The operation in progress on this backup, or null when none is.
+	Operation NilVolumeBackupOperation `json:"operation"`
+	// Availability zone of the source volume. A restore may target another zone in the same region.
+	SourceAvailabilityZoneID AvailabilityZoneID `json:"source_availability_zone_id"`
+	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
+	// order was accepted, and the charge for this backup is refunded.
+	FailureReason NilVolumeBackupResourceFailureReason `json:"failure_reason"`
+	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
+	// until its checkout completes. Null when the resource was not bought through one.
+	CheckoutSessionID NilUUID `json:"checkout_session_id"`
+	// The Billing order that bought this resource; null until checkout completes.
+	OrderID NilUUID `json:"order_id"`
+	// The Billing order item for this resource.
+	OrderItemID NilUUID `json:"order_item_id"`
+	// The subscription for this resource; its presence alone does not imply delivery.
+	SubscriptionID NilUUID `json:"subscription_id"`
+	// The subscription that pays for this volume backup, with the resource it pays for, so that a
+	// cancellation through Billing can name what it releases. Empty when no subscription pays for it, and
+	// once it is released.
+	ReleaseSet []ReleaseSetItem `json:"release_set"`
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *VolumeBackupResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetID returns the value of ID.
+func (s *VolumeBackupResource) GetID() VolumeBackupID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *VolumeBackupResource) GetName() string {
+	return s.Name
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *VolumeBackupResource) GetRegionID() RegionID {
+	return s.RegionID
+}
+
+// GetSizeGib returns the value of SizeGib.
+func (s *VolumeBackupResource) GetSizeGib() int64 {
+	return s.SizeGib
+}
+
+// GetCapacityGib returns the value of CapacityGib.
+func (s *VolumeBackupResource) GetCapacityGib() int64 {
+	return s.CapacityGib
+}
+
+// GetSourceVolumeID returns the value of SourceVolumeID.
+func (s *VolumeBackupResource) GetSourceVolumeID() VolumeID {
+	return s.SourceVolumeID
+}
+
+// GetStatus returns the value of Status.
+func (s *VolumeBackupResource) GetStatus() VolumeBackupResourceStatus {
+	return s.Status
+}
+
+// GetOperation returns the value of Operation.
+func (s *VolumeBackupResource) GetOperation() NilVolumeBackupOperation {
+	return s.Operation
+}
+
+// GetSourceAvailabilityZoneID returns the value of SourceAvailabilityZoneID.
+func (s *VolumeBackupResource) GetSourceAvailabilityZoneID() AvailabilityZoneID {
+	return s.SourceAvailabilityZoneID
+}
+
+// GetFailureReason returns the value of FailureReason.
+func (s *VolumeBackupResource) GetFailureReason() NilVolumeBackupResourceFailureReason {
+	return s.FailureReason
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *VolumeBackupResource) GetCheckoutSessionID() NilUUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *VolumeBackupResource) GetOrderID() NilUUID {
+	return s.OrderID
+}
+
+// GetOrderItemID returns the value of OrderItemID.
+func (s *VolumeBackupResource) GetOrderItemID() NilUUID {
+	return s.OrderItemID
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *VolumeBackupResource) GetSubscriptionID() NilUUID {
+	return s.SubscriptionID
+}
+
+// GetReleaseSet returns the value of ReleaseSet.
+func (s *VolumeBackupResource) GetReleaseSet() []ReleaseSetItem {
+	return s.ReleaseSet
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *VolumeBackupResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetID sets the value of ID.
+func (s *VolumeBackupResource) SetID(val VolumeBackupID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *VolumeBackupResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *VolumeBackupResource) SetRegionID(val RegionID) {
+	s.RegionID = val
+}
+
+// SetSizeGib sets the value of SizeGib.
+func (s *VolumeBackupResource) SetSizeGib(val int64) {
+	s.SizeGib = val
+}
+
+// SetCapacityGib sets the value of CapacityGib.
+func (s *VolumeBackupResource) SetCapacityGib(val int64) {
+	s.CapacityGib = val
+}
+
+// SetSourceVolumeID sets the value of SourceVolumeID.
+func (s *VolumeBackupResource) SetSourceVolumeID(val VolumeID) {
+	s.SourceVolumeID = val
+}
+
+// SetStatus sets the value of Status.
+func (s *VolumeBackupResource) SetStatus(val VolumeBackupResourceStatus) {
+	s.Status = val
+}
+
+// SetOperation sets the value of Operation.
+func (s *VolumeBackupResource) SetOperation(val NilVolumeBackupOperation) {
+	s.Operation = val
+}
+
+// SetSourceAvailabilityZoneID sets the value of SourceAvailabilityZoneID.
+func (s *VolumeBackupResource) SetSourceAvailabilityZoneID(val AvailabilityZoneID) {
+	s.SourceAvailabilityZoneID = val
+}
+
+// SetFailureReason sets the value of FailureReason.
+func (s *VolumeBackupResource) SetFailureReason(val NilVolumeBackupResourceFailureReason) {
+	s.FailureReason = val
+}
+
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *VolumeBackupResource) SetCheckoutSessionID(val NilUUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *VolumeBackupResource) SetOrderID(val NilUUID) {
+	s.OrderID = val
+}
+
+// SetOrderItemID sets the value of OrderItemID.
+func (s *VolumeBackupResource) SetOrderItemID(val NilUUID) {
+	s.OrderItemID = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *VolumeBackupResource) SetSubscriptionID(val NilUUID) {
+	s.SubscriptionID = val
+}
+
+// SetReleaseSet sets the value of ReleaseSet.
+func (s *VolumeBackupResource) SetReleaseSet(val []ReleaseSetItem) {
+	s.ReleaseSet = val
+}
+
+// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
+// order was accepted, and the charge for this backup is refunded.
+type VolumeBackupResourceFailureReason string
+
+const (
+	VolumeBackupResourceFailureReasonOrderDeclined      VolumeBackupResourceFailureReason = "order_declined"
+	VolumeBackupResourceFailureReasonOrderCanceled      VolumeBackupResourceFailureReason = "order_canceled"
+	VolumeBackupResourceFailureReasonOrderExpired       VolumeBackupResourceFailureReason = "order_expired"
+	VolumeBackupResourceFailureReasonCheckoutExpired    VolumeBackupResourceFailureReason = "checkout_expired"
+	VolumeBackupResourceFailureReasonProvisioningFailed VolumeBackupResourceFailureReason = "provisioning_failed"
+)
+
+// AllValues returns all VolumeBackupResourceFailureReason values.
+func (VolumeBackupResourceFailureReason) AllValues() []VolumeBackupResourceFailureReason {
+	return []VolumeBackupResourceFailureReason{
+		VolumeBackupResourceFailureReasonOrderDeclined,
+		VolumeBackupResourceFailureReasonOrderCanceled,
+		VolumeBackupResourceFailureReasonOrderExpired,
+		VolumeBackupResourceFailureReasonCheckoutExpired,
+		VolumeBackupResourceFailureReasonProvisioningFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeBackupResourceFailureReason) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeBackupResourceFailureReasonOrderDeclined:
+		return []byte(s), nil
+	case VolumeBackupResourceFailureReasonOrderCanceled:
+		return []byte(s), nil
+	case VolumeBackupResourceFailureReasonOrderExpired:
+		return []byte(s), nil
+	case VolumeBackupResourceFailureReasonCheckoutExpired:
+		return []byte(s), nil
+	case VolumeBackupResourceFailureReasonProvisioningFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeBackupResourceFailureReason) UnmarshalText(data []byte) error {
+	switch VolumeBackupResourceFailureReason(data) {
+	case VolumeBackupResourceFailureReasonOrderDeclined:
+		*s = VolumeBackupResourceFailureReasonOrderDeclined
+		return nil
+	case VolumeBackupResourceFailureReasonOrderCanceled:
+		*s = VolumeBackupResourceFailureReasonOrderCanceled
+		return nil
+	case VolumeBackupResourceFailureReasonOrderExpired:
+		*s = VolumeBackupResourceFailureReasonOrderExpired
+		return nil
+	case VolumeBackupResourceFailureReasonCheckoutExpired:
+		*s = VolumeBackupResourceFailureReasonCheckoutExpired
+		return nil
+	case VolumeBackupResourceFailureReasonProvisioningFailed:
+		*s = VolumeBackupResourceFailureReasonProvisioningFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `pending` from the purchase until the backup is taken, then `available`; while it is taken the
+// backup shows the `create` operation. `failed` means the backup was not created.
+type VolumeBackupResourceStatus string
+
+const (
+	VolumeBackupResourceStatusPending   VolumeBackupResourceStatus = "pending"
+	VolumeBackupResourceStatusAvailable VolumeBackupResourceStatus = "available"
+	VolumeBackupResourceStatusDeleted   VolumeBackupResourceStatus = "deleted"
+	VolumeBackupResourceStatusFailed    VolumeBackupResourceStatus = "failed"
+	VolumeBackupResourceStatusError     VolumeBackupResourceStatus = "error"
+)
+
+// AllValues returns all VolumeBackupResourceStatus values.
+func (VolumeBackupResourceStatus) AllValues() []VolumeBackupResourceStatus {
+	return []VolumeBackupResourceStatus{
+		VolumeBackupResourceStatusPending,
+		VolumeBackupResourceStatusAvailable,
+		VolumeBackupResourceStatusDeleted,
+		VolumeBackupResourceStatusFailed,
+		VolumeBackupResourceStatusError,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeBackupResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeBackupResourceStatusPending:
+		return []byte(s), nil
+	case VolumeBackupResourceStatusAvailable:
+		return []byte(s), nil
+	case VolumeBackupResourceStatusDeleted:
+		return []byte(s), nil
+	case VolumeBackupResourceStatusFailed:
+		return []byte(s), nil
+	case VolumeBackupResourceStatusError:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeBackupResourceStatus) UnmarshalText(data []byte) error {
+	switch VolumeBackupResourceStatus(data) {
+	case VolumeBackupResourceStatusPending:
+		*s = VolumeBackupResourceStatusPending
+		return nil
+	case VolumeBackupResourceStatusAvailable:
+		*s = VolumeBackupResourceStatusAvailable
+		return nil
+	case VolumeBackupResourceStatusDeleted:
+		*s = VolumeBackupResourceStatusDeleted
+		return nil
+	case VolumeBackupResourceStatusFailed:
+		*s = VolumeBackupResourceStatusFailed
+		return nil
+	case VolumeBackupResourceStatusError:
+		*s = VolumeBackupResourceStatusError
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type VolumeID string
+
+// Ref: #/components/schemas/VolumeListResponseBody
+type VolumeListResponseBody struct {
+	Items      []VolumeResource `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *VolumeListResponseBody) GetItems() []VolumeResource {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *VolumeListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *VolumeListResponseBody) SetItems(val []VolumeResource) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *VolumeListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// An operation still running on this volume. It is not a separate resource; once it finishes, the
+// volume's `operation` is null again and the volume shows the result.
+// Ref: #/components/schemas/VolumeOperation
+type VolumeOperation struct {
+	// `attach` and `detach` accompany the instance's `attach_volume` and `detach_volume` operations.
+	// `delete` includes release through a Billing cancellation and deletion with an instance.
+	Type      VolumeOperationType `json:"type"`
+	StartedAt time.Time           `json:"started_at"`
+}
+
+// GetType returns the value of Type.
+func (s *VolumeOperation) GetType() VolumeOperationType {
+	return s.Type
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *VolumeOperation) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// SetType sets the value of Type.
+func (s *VolumeOperation) SetType(val VolumeOperationType) {
+	s.Type = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *VolumeOperation) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// `attach` and `detach` accompany the instance's `attach_volume` and `detach_volume` operations.
+// `delete` includes release through a Billing cancellation and deletion with an instance.
+type VolumeOperationType string
+
+const (
+	VolumeOperationTypeCreate  VolumeOperationType = "create"
+	VolumeOperationTypeResize  VolumeOperationType = "resize"
+	VolumeOperationTypeRetype  VolumeOperationType = "retype"
+	VolumeOperationTypeRevert  VolumeOperationType = "revert"
+	VolumeOperationTypeAttach  VolumeOperationType = "attach"
+	VolumeOperationTypeDetach  VolumeOperationType = "detach"
+	VolumeOperationTypeSuspend VolumeOperationType = "suspend"
+	VolumeOperationTypeResume  VolumeOperationType = "resume"
+	VolumeOperationTypeDelete  VolumeOperationType = "delete"
+)
+
+// AllValues returns all VolumeOperationType values.
+func (VolumeOperationType) AllValues() []VolumeOperationType {
+	return []VolumeOperationType{
+		VolumeOperationTypeCreate,
+		VolumeOperationTypeResize,
+		VolumeOperationTypeRetype,
+		VolumeOperationTypeRevert,
+		VolumeOperationTypeAttach,
+		VolumeOperationTypeDetach,
+		VolumeOperationTypeSuspend,
+		VolumeOperationTypeResume,
+		VolumeOperationTypeDelete,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeOperationType) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeOperationTypeCreate:
+		return []byte(s), nil
+	case VolumeOperationTypeResize:
+		return []byte(s), nil
+	case VolumeOperationTypeRetype:
+		return []byte(s), nil
+	case VolumeOperationTypeRevert:
+		return []byte(s), nil
+	case VolumeOperationTypeAttach:
+		return []byte(s), nil
+	case VolumeOperationTypeDetach:
+		return []byte(s), nil
+	case VolumeOperationTypeSuspend:
+		return []byte(s), nil
+	case VolumeOperationTypeResume:
+		return []byte(s), nil
+	case VolumeOperationTypeDelete:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeOperationType) UnmarshalText(data []byte) error {
+	switch VolumeOperationType(data) {
+	case VolumeOperationTypeCreate:
+		*s = VolumeOperationTypeCreate
+		return nil
+	case VolumeOperationTypeResize:
+		*s = VolumeOperationTypeResize
+		return nil
+	case VolumeOperationTypeRetype:
+		*s = VolumeOperationTypeRetype
+		return nil
+	case VolumeOperationTypeRevert:
+		*s = VolumeOperationTypeRevert
+		return nil
+	case VolumeOperationTypeAttach:
+		*s = VolumeOperationTypeAttach
+		return nil
+	case VolumeOperationTypeDetach:
+		*s = VolumeOperationTypeDetach
+		return nil
+	case VolumeOperationTypeSuspend:
+		*s = VolumeOperationTypeSuspend
+		return nil
+	case VolumeOperationTypeResume:
+		*s = VolumeOperationTypeResume
+		return nil
+	case VolumeOperationTypeDelete:
+		*s = VolumeOperationTypeDelete
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A volume's limits.
+// Ref: #/components/schemas/VolumePerformance
+type VolumePerformance struct {
+	Iops                     int64 `json:"iops"`
+	ThroughputBytesPerSecond int64 `json:"throughput_bytes_per_second"`
+}
+
+// GetIops returns the value of Iops.
+func (s *VolumePerformance) GetIops() int64 {
+	return s.Iops
+}
+
+// GetThroughputBytesPerSecond returns the value of ThroughputBytesPerSecond.
+func (s *VolumePerformance) GetThroughputBytesPerSecond() int64 {
+	return s.ThroughputBytesPerSecond
+}
+
+// SetIops sets the value of Iops.
+func (s *VolumePerformance) SetIops(val int64) {
+	s.Iops = val
+}
+
+// SetThroughputBytesPerSecond sets the value of ThroughputBytesPerSecond.
+func (s *VolumePerformance) SetThroughputBytesPerSecond(val int64) {
+	s.ThroughputBytesPerSecond = val
+}
+
+// A resource a release set releases.
+// Ref: #/components/schemas/VolumeReleaseResource
+type VolumeReleaseResource struct {
+	Type VolumeReleaseResourceType `json:"type"`
+	// The identifier of the resource selected by type.
+	ID VolumeID `json:"id"`
+	// The current display name of the selected resource.
+	Name string `json:"name"`
+}
+
+// GetType returns the value of Type.
+func (s *VolumeReleaseResource) GetType() VolumeReleaseResourceType {
+	return s.Type
+}
+
+// GetID returns the value of ID.
+func (s *VolumeReleaseResource) GetID() VolumeID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *VolumeReleaseResource) GetName() string {
+	return s.Name
+}
+
+// SetType sets the value of Type.
+func (s *VolumeReleaseResource) SetType(val VolumeReleaseResourceType) {
+	s.Type = val
+}
+
+// SetID sets the value of ID.
+func (s *VolumeReleaseResource) SetID(val VolumeID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *VolumeReleaseResource) SetName(val string) {
+	s.Name = val
+}
+
+type VolumeReleaseResourceType string
+
+const (
+	VolumeReleaseResourceTypeVolume VolumeReleaseResourceType = "volume"
+)
+
+// AllValues returns all VolumeReleaseResourceType values.
+func (VolumeReleaseResourceType) AllValues() []VolumeReleaseResourceType {
+	return []VolumeReleaseResourceType{
+		VolumeReleaseResourceTypeVolume,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeReleaseResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeReleaseResourceTypeVolume:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeReleaseResourceType) UnmarshalText(data []byte) error {
+	switch VolumeReleaseResourceType(data) {
+	case VolumeReleaseResourceTypeVolume:
+		*s = VolumeReleaseResourceTypeVolume
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/VolumeResource
+type VolumeResource struct {
+	// Availability zone the volume actually resides in. An instance must be in the same zone to attach it.
+	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
+	CreatedAt          time.Time          `json:"created_at"`
+	VolumeTypeID       VolumeTypeID       `json:"volume_type_id"`
+	ID                 VolumeID           `json:"id"`
+	Name               string             `json:"name"`
+	RegionID           RegionID           `json:"region_id"`
+	SizeGib            int64              `json:"size_gib"`
+	Performance        VolumePerformance  `json:"performance"`
+	// `pending` until the volume is created, with no storage allocated before the order is accepted and
+	// the `create` operation shown while it is created; then `available`, or `in_use` once attached.
+	// `failed` means the volume was not created; `failure_reason` states why. `error` means the cloud
+	// reports the volume broken.
+	Status VolumeResourceStatus `json:"status"`
+	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
+	// until its checkout completes. Null when the resource was not bought through one.
+	CheckoutSessionID NilUUID `json:"checkout_session_id"`
+	OrderID           NilUUID `json:"order_id"`
+	// The Billing order item for this resource.
+	OrderItemID NilUUID `json:"order_item_id"`
+	// The Billing subscription associated with this resource. It may still be pending; its presence does
+	// not imply delivery or metering. Null when no subscription is associated.
+	SubscriptionID NilUUID `json:"subscription_id"`
+	// The subscriptions a cancellation through Billing has to cover to release this volume: its own, each
+	// with the resource it pays for, so that each line of a cancellation can name what it releases.
+	// Snapshots have no individual subscriptions. A boot volume is released only with its instance, so for
+	// a boot volume the set is that of the instance. Subscriptions that have ended are not listed, and the
+	// set is empty when no subscription pays for any of them.
+	ReleaseSet  []ReleaseSetItem             `json:"release_set"`
+	AccessState NilVolumeResourceAccessState `json:"access_state"`
+	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
+	// order was accepted, and the charge for this volume is refunded.
+	FailureReason NilVolumeResourceFailureReason `json:"failure_reason"`
+	// The operation in progress on this volume, or null when none is.
+	Operation  NilVolumeOperation  `json:"operation"`
+	Attachment NilVolumeAttachment `json:"attachment"`
+}
+
+// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
+func (s *VolumeResource) GetAvailabilityZoneID() AvailabilityZoneID {
+	return s.AvailabilityZoneID
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *VolumeResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetVolumeTypeID returns the value of VolumeTypeID.
+func (s *VolumeResource) GetVolumeTypeID() VolumeTypeID {
+	return s.VolumeTypeID
+}
+
+// GetID returns the value of ID.
+func (s *VolumeResource) GetID() VolumeID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *VolumeResource) GetName() string {
+	return s.Name
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *VolumeResource) GetRegionID() RegionID {
+	return s.RegionID
+}
+
+// GetSizeGib returns the value of SizeGib.
+func (s *VolumeResource) GetSizeGib() int64 {
+	return s.SizeGib
+}
+
+// GetPerformance returns the value of Performance.
+func (s *VolumeResource) GetPerformance() VolumePerformance {
+	return s.Performance
+}
+
+// GetStatus returns the value of Status.
+func (s *VolumeResource) GetStatus() VolumeResourceStatus {
+	return s.Status
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *VolumeResource) GetCheckoutSessionID() NilUUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *VolumeResource) GetOrderID() NilUUID {
+	return s.OrderID
+}
+
+// GetOrderItemID returns the value of OrderItemID.
+func (s *VolumeResource) GetOrderItemID() NilUUID {
+	return s.OrderItemID
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *VolumeResource) GetSubscriptionID() NilUUID {
+	return s.SubscriptionID
+}
+
+// GetReleaseSet returns the value of ReleaseSet.
+func (s *VolumeResource) GetReleaseSet() []ReleaseSetItem {
+	return s.ReleaseSet
+}
+
+// GetAccessState returns the value of AccessState.
+func (s *VolumeResource) GetAccessState() NilVolumeResourceAccessState {
+	return s.AccessState
+}
+
+// GetFailureReason returns the value of FailureReason.
+func (s *VolumeResource) GetFailureReason() NilVolumeResourceFailureReason {
+	return s.FailureReason
+}
+
+// GetOperation returns the value of Operation.
+func (s *VolumeResource) GetOperation() NilVolumeOperation {
+	return s.Operation
+}
+
+// GetAttachment returns the value of Attachment.
+func (s *VolumeResource) GetAttachment() NilVolumeAttachment {
+	return s.Attachment
+}
+
+// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
+func (s *VolumeResource) SetAvailabilityZoneID(val AvailabilityZoneID) {
+	s.AvailabilityZoneID = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *VolumeResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetVolumeTypeID sets the value of VolumeTypeID.
+func (s *VolumeResource) SetVolumeTypeID(val VolumeTypeID) {
+	s.VolumeTypeID = val
+}
+
+// SetID sets the value of ID.
+func (s *VolumeResource) SetID(val VolumeID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *VolumeResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *VolumeResource) SetRegionID(val RegionID) {
+	s.RegionID = val
+}
+
+// SetSizeGib sets the value of SizeGib.
+func (s *VolumeResource) SetSizeGib(val int64) {
+	s.SizeGib = val
+}
+
+// SetPerformance sets the value of Performance.
+func (s *VolumeResource) SetPerformance(val VolumePerformance) {
+	s.Performance = val
+}
+
+// SetStatus sets the value of Status.
+func (s *VolumeResource) SetStatus(val VolumeResourceStatus) {
+	s.Status = val
+}
+
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *VolumeResource) SetCheckoutSessionID(val NilUUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *VolumeResource) SetOrderID(val NilUUID) {
+	s.OrderID = val
+}
+
+// SetOrderItemID sets the value of OrderItemID.
+func (s *VolumeResource) SetOrderItemID(val NilUUID) {
+	s.OrderItemID = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *VolumeResource) SetSubscriptionID(val NilUUID) {
+	s.SubscriptionID = val
+}
+
+// SetReleaseSet sets the value of ReleaseSet.
+func (s *VolumeResource) SetReleaseSet(val []ReleaseSetItem) {
+	s.ReleaseSet = val
+}
+
+// SetAccessState sets the value of AccessState.
+func (s *VolumeResource) SetAccessState(val NilVolumeResourceAccessState) {
+	s.AccessState = val
+}
+
+// SetFailureReason sets the value of FailureReason.
+func (s *VolumeResource) SetFailureReason(val NilVolumeResourceFailureReason) {
+	s.FailureReason = val
+}
+
+// SetOperation sets the value of Operation.
+func (s *VolumeResource) SetOperation(val NilVolumeOperation) {
+	s.Operation = val
+}
+
+// SetAttachment sets the value of Attachment.
+func (s *VolumeResource) SetAttachment(val NilVolumeAttachment) {
+	s.Attachment = val
+}
+
+func (*VolumeResource) attachInstanceVolumeRes() {}
+func (*VolumeResource) detachInstanceVolumeRes() {}
+func (*VolumeResource) revertVolumeRes()         {}
+
+type VolumeResourceAccessState string
+
+const (
+	VolumeResourceAccessStatePending   VolumeResourceAccessState = "pending"
+	VolumeResourceAccessStateEnabled   VolumeResourceAccessState = "enabled"
+	VolumeResourceAccessStateSuspended VolumeResourceAccessState = "suspended"
+	VolumeResourceAccessStateReclaimed VolumeResourceAccessState = "reclaimed"
+)
+
+// AllValues returns all VolumeResourceAccessState values.
+func (VolumeResourceAccessState) AllValues() []VolumeResourceAccessState {
+	return []VolumeResourceAccessState{
+		VolumeResourceAccessStatePending,
+		VolumeResourceAccessStateEnabled,
+		VolumeResourceAccessStateSuspended,
+		VolumeResourceAccessStateReclaimed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeResourceAccessState) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeResourceAccessStatePending:
+		return []byte(s), nil
+	case VolumeResourceAccessStateEnabled:
+		return []byte(s), nil
+	case VolumeResourceAccessStateSuspended:
+		return []byte(s), nil
+	case VolumeResourceAccessStateReclaimed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeResourceAccessState) UnmarshalText(data []byte) error {
+	switch VolumeResourceAccessState(data) {
+	case VolumeResourceAccessStatePending:
+		*s = VolumeResourceAccessStatePending
+		return nil
+	case VolumeResourceAccessStateEnabled:
+		*s = VolumeResourceAccessStateEnabled
+		return nil
+	case VolumeResourceAccessStateSuspended:
+		*s = VolumeResourceAccessStateSuspended
+		return nil
+	case VolumeResourceAccessStateReclaimed:
+		*s = VolumeResourceAccessStateReclaimed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
+// order was accepted, and the charge for this volume is refunded.
+type VolumeResourceFailureReason string
+
+const (
+	VolumeResourceFailureReasonOrderDeclined      VolumeResourceFailureReason = "order_declined"
+	VolumeResourceFailureReasonOrderCanceled      VolumeResourceFailureReason = "order_canceled"
+	VolumeResourceFailureReasonOrderExpired       VolumeResourceFailureReason = "order_expired"
+	VolumeResourceFailureReasonCheckoutExpired    VolumeResourceFailureReason = "checkout_expired"
+	VolumeResourceFailureReasonProvisioningFailed VolumeResourceFailureReason = "provisioning_failed"
+)
+
+// AllValues returns all VolumeResourceFailureReason values.
+func (VolumeResourceFailureReason) AllValues() []VolumeResourceFailureReason {
+	return []VolumeResourceFailureReason{
+		VolumeResourceFailureReasonOrderDeclined,
+		VolumeResourceFailureReasonOrderCanceled,
+		VolumeResourceFailureReasonOrderExpired,
+		VolumeResourceFailureReasonCheckoutExpired,
+		VolumeResourceFailureReasonProvisioningFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeResourceFailureReason) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeResourceFailureReasonOrderDeclined:
+		return []byte(s), nil
+	case VolumeResourceFailureReasonOrderCanceled:
+		return []byte(s), nil
+	case VolumeResourceFailureReasonOrderExpired:
+		return []byte(s), nil
+	case VolumeResourceFailureReasonCheckoutExpired:
+		return []byte(s), nil
+	case VolumeResourceFailureReasonProvisioningFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeResourceFailureReason) UnmarshalText(data []byte) error {
+	switch VolumeResourceFailureReason(data) {
+	case VolumeResourceFailureReasonOrderDeclined:
+		*s = VolumeResourceFailureReasonOrderDeclined
+		return nil
+	case VolumeResourceFailureReasonOrderCanceled:
+		*s = VolumeResourceFailureReasonOrderCanceled
+		return nil
+	case VolumeResourceFailureReasonOrderExpired:
+		*s = VolumeResourceFailureReasonOrderExpired
+		return nil
+	case VolumeResourceFailureReasonCheckoutExpired:
+		*s = VolumeResourceFailureReasonCheckoutExpired
+		return nil
+	case VolumeResourceFailureReasonProvisioningFailed:
+		*s = VolumeResourceFailureReasonProvisioningFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `pending` until the volume is created, with no storage allocated before the order is accepted and
+// the `create` operation shown while it is created; then `available`, or `in_use` once attached.
+// `failed` means the volume was not created; `failure_reason` states why. `error` means the cloud
+// reports the volume broken.
+type VolumeResourceStatus string
+
+const (
+	VolumeResourceStatusPending   VolumeResourceStatus = "pending"
+	VolumeResourceStatusAvailable VolumeResourceStatus = "available"
+	VolumeResourceStatusInUse     VolumeResourceStatus = "in_use"
+	VolumeResourceStatusDeleted   VolumeResourceStatus = "deleted"
+	VolumeResourceStatusFailed    VolumeResourceStatus = "failed"
+	VolumeResourceStatusError     VolumeResourceStatus = "error"
+)
+
+// AllValues returns all VolumeResourceStatus values.
+func (VolumeResourceStatus) AllValues() []VolumeResourceStatus {
+	return []VolumeResourceStatus{
+		VolumeResourceStatusPending,
+		VolumeResourceStatusAvailable,
+		VolumeResourceStatusInUse,
+		VolumeResourceStatusDeleted,
+		VolumeResourceStatusFailed,
+		VolumeResourceStatusError,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeResourceStatusPending:
+		return []byte(s), nil
+	case VolumeResourceStatusAvailable:
+		return []byte(s), nil
+	case VolumeResourceStatusInUse:
+		return []byte(s), nil
+	case VolumeResourceStatusDeleted:
+		return []byte(s), nil
+	case VolumeResourceStatusFailed:
+		return []byte(s), nil
+	case VolumeResourceStatusError:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeResourceStatus) UnmarshalText(data []byte) error {
+	switch VolumeResourceStatus(data) {
+	case VolumeResourceStatusPending:
+		*s = VolumeResourceStatusPending
+		return nil
+	case VolumeResourceStatusAvailable:
+		*s = VolumeResourceStatusAvailable
+		return nil
+	case VolumeResourceStatusInUse:
+		*s = VolumeResourceStatusInUse
+		return nil
+	case VolumeResourceStatusDeleted:
+		*s = VolumeResourceStatusDeleted
+		return nil
+	case VolumeResourceStatusFailed:
+		*s = VolumeResourceStatusFailed
+		return nil
+	case VolumeResourceStatusError:
+		*s = VolumeResourceStatusError
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type VolumeSnapshotID string
+
+// Ref: #/components/schemas/VolumeSnapshotListResponseBody
+type VolumeSnapshotListResponseBody struct {
+	Items      []VolumeSnapshotResource `json:"items"`
+	Pagination OffsetPagination         `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *VolumeSnapshotListResponseBody) GetItems() []VolumeSnapshotResource {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *VolumeSnapshotListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *VolumeSnapshotListResponseBody) SetItems(val []VolumeSnapshotResource) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *VolumeSnapshotListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// An operation still running on this snapshot. It is not a separate resource; once it finishes, the
+// snapshot's `operation` is null again and the snapshot shows the result.
+// Ref: #/components/schemas/VolumeSnapshotOperation
+type VolumeSnapshotOperation struct {
+	// `restore`: a volume is being reverted to this snapshot (`revert-volume`) or created from it
+	// (`create-volume` with `volume_snapshot_id`).
+	Type      VolumeSnapshotOperationType `json:"type"`
+	StartedAt time.Time                   `json:"started_at"`
+}
+
+// GetType returns the value of Type.
+func (s *VolumeSnapshotOperation) GetType() VolumeSnapshotOperationType {
+	return s.Type
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *VolumeSnapshotOperation) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// SetType sets the value of Type.
+func (s *VolumeSnapshotOperation) SetType(val VolumeSnapshotOperationType) {
+	s.Type = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *VolumeSnapshotOperation) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// `restore`: a volume is being reverted to this snapshot (`revert-volume`) or created from it
+// (`create-volume` with `volume_snapshot_id`).
+type VolumeSnapshotOperationType string
+
+const (
+	VolumeSnapshotOperationTypeCreate  VolumeSnapshotOperationType = "create"
+	VolumeSnapshotOperationTypeRestore VolumeSnapshotOperationType = "restore"
+	VolumeSnapshotOperationTypeDelete  VolumeSnapshotOperationType = "delete"
+)
+
+// AllValues returns all VolumeSnapshotOperationType values.
+func (VolumeSnapshotOperationType) AllValues() []VolumeSnapshotOperationType {
+	return []VolumeSnapshotOperationType{
+		VolumeSnapshotOperationTypeCreate,
+		VolumeSnapshotOperationTypeRestore,
+		VolumeSnapshotOperationTypeDelete,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeSnapshotOperationType) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeSnapshotOperationTypeCreate:
+		return []byte(s), nil
+	case VolumeSnapshotOperationTypeRestore:
+		return []byte(s), nil
+	case VolumeSnapshotOperationTypeDelete:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeSnapshotOperationType) UnmarshalText(data []byte) error {
+	switch VolumeSnapshotOperationType(data) {
+	case VolumeSnapshotOperationTypeCreate:
+		*s = VolumeSnapshotOperationTypeCreate
+		return nil
+	case VolumeSnapshotOperationTypeRestore:
+		*s = VolumeSnapshotOperationTypeRestore
+		return nil
+	case VolumeSnapshotOperationTypeDelete:
+		*s = VolumeSnapshotOperationTypeDelete
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A resource a release set releases.
+// Ref: #/components/schemas/VolumeSnapshotReleaseResource
+type VolumeSnapshotReleaseResource struct {
+	Type VolumeSnapshotReleaseResourceType `json:"type"`
+	// The identifier of the resource selected by type.
+	ID VolumeSnapshotID `json:"id"`
+	// The current display name of the selected resource.
+	Name string `json:"name"`
+}
+
+// GetType returns the value of Type.
+func (s *VolumeSnapshotReleaseResource) GetType() VolumeSnapshotReleaseResourceType {
+	return s.Type
+}
+
+// GetID returns the value of ID.
+func (s *VolumeSnapshotReleaseResource) GetID() VolumeSnapshotID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *VolumeSnapshotReleaseResource) GetName() string {
+	return s.Name
+}
+
+// SetType sets the value of Type.
+func (s *VolumeSnapshotReleaseResource) SetType(val VolumeSnapshotReleaseResourceType) {
+	s.Type = val
+}
+
+// SetID sets the value of ID.
+func (s *VolumeSnapshotReleaseResource) SetID(val VolumeSnapshotID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *VolumeSnapshotReleaseResource) SetName(val string) {
+	s.Name = val
+}
+
+type VolumeSnapshotReleaseResourceType string
+
+const (
+	VolumeSnapshotReleaseResourceTypeVolumeSnapshot VolumeSnapshotReleaseResourceType = "volume_snapshot"
+)
+
+// AllValues returns all VolumeSnapshotReleaseResourceType values.
+func (VolumeSnapshotReleaseResourceType) AllValues() []VolumeSnapshotReleaseResourceType {
+	return []VolumeSnapshotReleaseResourceType{
+		VolumeSnapshotReleaseResourceTypeVolumeSnapshot,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeSnapshotReleaseResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeSnapshotReleaseResourceTypeVolumeSnapshot:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeSnapshotReleaseResourceType) UnmarshalText(data []byte) error {
+	switch VolumeSnapshotReleaseResourceType(data) {
+	case VolumeSnapshotReleaseResourceTypeVolumeSnapshot:
+		*s = VolumeSnapshotReleaseResourceTypeVolumeSnapshot
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A snapshot of a volume. Compute project quotas constrain its count; retained storage is metered
+// independently of that quota.
+// Ref: #/components/schemas/VolumeSnapshotResource
+type VolumeSnapshotResource struct {
+	// A volume restored from this snapshot must reside in this availability zone.
+	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
+	CreatedAt          time.Time          `json:"created_at"`
+	VolumeID           VolumeID           `json:"volume_id"`
+	ID                 VolumeSnapshotID   `json:"id"`
+	Name               string             `json:"name"`
+	RegionID           RegionID           `json:"region_id"`
+	// Capacity of the source volume when the snapshot was created. A volume restored from it cannot be
+	// smaller.
+	SizeGib int64 `json:"size_gib"`
+	// `pending` once a quota slot is reserved and until the snapshot is taken, showing the `create`
+	// operation while it is taken; then `available`. `failed` means the snapshot was not created; its slot
+	// is released once no snapshot data remains. `error` means the cloud reports the snapshot broken.
+	Status VolumeSnapshotResourceStatus `json:"status"`
+	// The operation in progress on this snapshot, or null when none is.
+	Operation NilVolumeSnapshotOperation `json:"operation"`
+	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
+	// order was accepted, and the charge for this snapshot is refunded.
+	FailureReason NilVolumeSnapshotResourceFailureReason `json:"failure_reason"`
+	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
+	// until its checkout completes. Null when the resource was not bought through one.
+	CheckoutSessionID NilUUID `json:"checkout_session_id"`
+	// The Billing order that bought this resource; null until checkout completes.
+	OrderID NilUUID `json:"order_id"`
+	// The Billing order item for this resource.
+	OrderItemID NilUUID `json:"order_item_id"`
+	// The subscription for this resource; its presence alone does not imply delivery.
+	SubscriptionID NilUUID `json:"subscription_id"`
+	// The subscription that pays for this snapshot, with the resource it pays for, so that a cancellation
+	// through Billing can name what it releases. Empty when no subscription pays for it, and once it is
+	// released.
+	ReleaseSet []ReleaseSetItem `json:"release_set"`
+}
+
+// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
+func (s *VolumeSnapshotResource) GetAvailabilityZoneID() AvailabilityZoneID {
+	return s.AvailabilityZoneID
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *VolumeSnapshotResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetVolumeID returns the value of VolumeID.
+func (s *VolumeSnapshotResource) GetVolumeID() VolumeID {
+	return s.VolumeID
+}
+
+// GetID returns the value of ID.
+func (s *VolumeSnapshotResource) GetID() VolumeSnapshotID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *VolumeSnapshotResource) GetName() string {
+	return s.Name
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *VolumeSnapshotResource) GetRegionID() RegionID {
+	return s.RegionID
+}
+
+// GetSizeGib returns the value of SizeGib.
+func (s *VolumeSnapshotResource) GetSizeGib() int64 {
+	return s.SizeGib
+}
+
+// GetStatus returns the value of Status.
+func (s *VolumeSnapshotResource) GetStatus() VolumeSnapshotResourceStatus {
+	return s.Status
+}
+
+// GetOperation returns the value of Operation.
+func (s *VolumeSnapshotResource) GetOperation() NilVolumeSnapshotOperation {
+	return s.Operation
+}
+
+// GetFailureReason returns the value of FailureReason.
+func (s *VolumeSnapshotResource) GetFailureReason() NilVolumeSnapshotResourceFailureReason {
+	return s.FailureReason
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *VolumeSnapshotResource) GetCheckoutSessionID() NilUUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *VolumeSnapshotResource) GetOrderID() NilUUID {
+	return s.OrderID
+}
+
+// GetOrderItemID returns the value of OrderItemID.
+func (s *VolumeSnapshotResource) GetOrderItemID() NilUUID {
+	return s.OrderItemID
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *VolumeSnapshotResource) GetSubscriptionID() NilUUID {
+	return s.SubscriptionID
+}
+
+// GetReleaseSet returns the value of ReleaseSet.
+func (s *VolumeSnapshotResource) GetReleaseSet() []ReleaseSetItem {
+	return s.ReleaseSet
+}
+
+// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
+func (s *VolumeSnapshotResource) SetAvailabilityZoneID(val AvailabilityZoneID) {
+	s.AvailabilityZoneID = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *VolumeSnapshotResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetVolumeID sets the value of VolumeID.
+func (s *VolumeSnapshotResource) SetVolumeID(val VolumeID) {
+	s.VolumeID = val
+}
+
+// SetID sets the value of ID.
+func (s *VolumeSnapshotResource) SetID(val VolumeSnapshotID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *VolumeSnapshotResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *VolumeSnapshotResource) SetRegionID(val RegionID) {
+	s.RegionID = val
+}
+
+// SetSizeGib sets the value of SizeGib.
+func (s *VolumeSnapshotResource) SetSizeGib(val int64) {
+	s.SizeGib = val
+}
+
+// SetStatus sets the value of Status.
+func (s *VolumeSnapshotResource) SetStatus(val VolumeSnapshotResourceStatus) {
+	s.Status = val
+}
+
+// SetOperation sets the value of Operation.
+func (s *VolumeSnapshotResource) SetOperation(val NilVolumeSnapshotOperation) {
+	s.Operation = val
+}
+
+// SetFailureReason sets the value of FailureReason.
+func (s *VolumeSnapshotResource) SetFailureReason(val NilVolumeSnapshotResourceFailureReason) {
+	s.FailureReason = val
+}
+
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *VolumeSnapshotResource) SetCheckoutSessionID(val NilUUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *VolumeSnapshotResource) SetOrderID(val NilUUID) {
+	s.OrderID = val
+}
+
+// SetOrderItemID sets the value of OrderItemID.
+func (s *VolumeSnapshotResource) SetOrderItemID(val NilUUID) {
+	s.OrderItemID = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *VolumeSnapshotResource) SetSubscriptionID(val NilUUID) {
+	s.SubscriptionID = val
+}
+
+// SetReleaseSet sets the value of ReleaseSet.
+func (s *VolumeSnapshotResource) SetReleaseSet(val []ReleaseSetItem) {
+	s.ReleaseSet = val
+}
+
+// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
+// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
+// order was accepted, and the charge for this snapshot is refunded.
+type VolumeSnapshotResourceFailureReason string
+
+const (
+	VolumeSnapshotResourceFailureReasonOrderDeclined      VolumeSnapshotResourceFailureReason = "order_declined"
+	VolumeSnapshotResourceFailureReasonOrderCanceled      VolumeSnapshotResourceFailureReason = "order_canceled"
+	VolumeSnapshotResourceFailureReasonOrderExpired       VolumeSnapshotResourceFailureReason = "order_expired"
+	VolumeSnapshotResourceFailureReasonCheckoutExpired    VolumeSnapshotResourceFailureReason = "checkout_expired"
+	VolumeSnapshotResourceFailureReasonProvisioningFailed VolumeSnapshotResourceFailureReason = "provisioning_failed"
+)
+
+// AllValues returns all VolumeSnapshotResourceFailureReason values.
+func (VolumeSnapshotResourceFailureReason) AllValues() []VolumeSnapshotResourceFailureReason {
+	return []VolumeSnapshotResourceFailureReason{
+		VolumeSnapshotResourceFailureReasonOrderDeclined,
+		VolumeSnapshotResourceFailureReasonOrderCanceled,
+		VolumeSnapshotResourceFailureReasonOrderExpired,
+		VolumeSnapshotResourceFailureReasonCheckoutExpired,
+		VolumeSnapshotResourceFailureReasonProvisioningFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeSnapshotResourceFailureReason) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeSnapshotResourceFailureReasonOrderDeclined:
+		return []byte(s), nil
+	case VolumeSnapshotResourceFailureReasonOrderCanceled:
+		return []byte(s), nil
+	case VolumeSnapshotResourceFailureReasonOrderExpired:
+		return []byte(s), nil
+	case VolumeSnapshotResourceFailureReasonCheckoutExpired:
+		return []byte(s), nil
+	case VolumeSnapshotResourceFailureReasonProvisioningFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeSnapshotResourceFailureReason) UnmarshalText(data []byte) error {
+	switch VolumeSnapshotResourceFailureReason(data) {
+	case VolumeSnapshotResourceFailureReasonOrderDeclined:
+		*s = VolumeSnapshotResourceFailureReasonOrderDeclined
+		return nil
+	case VolumeSnapshotResourceFailureReasonOrderCanceled:
+		*s = VolumeSnapshotResourceFailureReasonOrderCanceled
+		return nil
+	case VolumeSnapshotResourceFailureReasonOrderExpired:
+		*s = VolumeSnapshotResourceFailureReasonOrderExpired
+		return nil
+	case VolumeSnapshotResourceFailureReasonCheckoutExpired:
+		*s = VolumeSnapshotResourceFailureReasonCheckoutExpired
+		return nil
+	case VolumeSnapshotResourceFailureReasonProvisioningFailed:
+		*s = VolumeSnapshotResourceFailureReasonProvisioningFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `pending` once a quota slot is reserved and until the snapshot is taken, showing the `create`
+// operation while it is taken; then `available`. `failed` means the snapshot was not created; its slot
+// is released once no snapshot data remains. `error` means the cloud reports the snapshot broken.
+type VolumeSnapshotResourceStatus string
+
+const (
+	VolumeSnapshotResourceStatusPending   VolumeSnapshotResourceStatus = "pending"
+	VolumeSnapshotResourceStatusAvailable VolumeSnapshotResourceStatus = "available"
+	VolumeSnapshotResourceStatusDeleted   VolumeSnapshotResourceStatus = "deleted"
+	VolumeSnapshotResourceStatusFailed    VolumeSnapshotResourceStatus = "failed"
+	VolumeSnapshotResourceStatusError     VolumeSnapshotResourceStatus = "error"
+)
+
+// AllValues returns all VolumeSnapshotResourceStatus values.
+func (VolumeSnapshotResourceStatus) AllValues() []VolumeSnapshotResourceStatus {
+	return []VolumeSnapshotResourceStatus{
+		VolumeSnapshotResourceStatusPending,
+		VolumeSnapshotResourceStatusAvailable,
+		VolumeSnapshotResourceStatusDeleted,
+		VolumeSnapshotResourceStatusFailed,
+		VolumeSnapshotResourceStatusError,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeSnapshotResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeSnapshotResourceStatusPending:
+		return []byte(s), nil
+	case VolumeSnapshotResourceStatusAvailable:
+		return []byte(s), nil
+	case VolumeSnapshotResourceStatusDeleted:
+		return []byte(s), nil
+	case VolumeSnapshotResourceStatusFailed:
+		return []byte(s), nil
+	case VolumeSnapshotResourceStatusError:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeSnapshotResourceStatus) UnmarshalText(data []byte) error {
+	switch VolumeSnapshotResourceStatus(data) {
+	case VolumeSnapshotResourceStatusPending:
+		*s = VolumeSnapshotResourceStatusPending
+		return nil
+	case VolumeSnapshotResourceStatusAvailable:
+		*s = VolumeSnapshotResourceStatusAvailable
+		return nil
+	case VolumeSnapshotResourceStatusDeleted:
+		*s = VolumeSnapshotResourceStatusDeleted
+		return nil
+	case VolumeSnapshotResourceStatusFailed:
+		*s = VolumeSnapshotResourceStatusFailed
+		return nil
+	case VolumeSnapshotResourceStatusError:
+		*s = VolumeSnapshotResourceStatusError
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type VolumeTypeID string
+
+// Ref: #/components/schemas/VolumeTypeListResponseBody
+type VolumeTypeListResponseBody struct {
+	Items      []VolumeTypeResource `json:"items"`
+	Pagination OffsetPagination     `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *VolumeTypeListResponseBody) GetItems() []VolumeTypeResource {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *VolumeTypeListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *VolumeTypeListResponseBody) SetItems(val []VolumeTypeResource) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *VolumeTypeListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// How fast a volume of this type runs for its size. Alibaba Cloud's ESSD volumes have this shape: PL1
+// is IOPS `min(50000, 1800 + 50 × size_gib)`, and AutoPL's baseline adds a floor,
+// `max(3000, min(50000, 1800 + 50 × size_gib))`.
+//
+// A volume's own performance, computed from these for its size, is on the volume. Growing a volume
+// raises it, and the new performance applies from the volume's next attachment or the next start of
+// its stopped instance.
+// Ref: #/components/schemas/VolumeTypePerformance
+type VolumeTypePerformance struct {
+	Iops                     PerformanceFormula `json:"iops"`
+	ThroughputBytesPerSecond PerformanceFormula `json:"throughput_bytes_per_second"`
+}
+
+// GetIops returns the value of Iops.
+func (s *VolumeTypePerformance) GetIops() PerformanceFormula {
+	return s.Iops
+}
+
+// GetThroughputBytesPerSecond returns the value of ThroughputBytesPerSecond.
+func (s *VolumeTypePerformance) GetThroughputBytesPerSecond() PerformanceFormula {
+	return s.ThroughputBytesPerSecond
+}
+
+// SetIops sets the value of Iops.
+func (s *VolumeTypePerformance) SetIops(val PerformanceFormula) {
+	s.Iops = val
+}
+
+// SetThroughputBytesPerSecond sets the value of ThroughputBytesPerSecond.
+func (s *VolumeTypePerformance) SetThroughputBytesPerSecond(val PerformanceFormula) {
+	s.ThroughputBytesPerSecond = val
+}
+
+// Ref: #/components/schemas/VolumeTypeResource
+type VolumeTypeResource struct {
+	// The availability zone the type belongs to, where a volume of it is created; only an instance of the
+	// same zone can attach it.
+	AvailabilityZoneID AvailabilityZoneID `json:"availability_zone_id"`
+	// `sold_out` takes no new orders for now while the type stays listed; the volumes already of it keep
+	// working.
+	SaleStatus  VolumeTypeResourceSaleStatus `json:"sale_status"`
+	ID          VolumeTypeID                 `json:"id"`
+	MaxSizeGib  int64                        `json:"max_size_gib"`
+	Medium      VolumeTypeResourceMedium     `json:"medium"`
+	MinSizeGib  int64                        `json:"min_size_gib"`
+	Name        string                       `json:"name"`
+	RegionID    RegionID                     `json:"region_id"`
+	SizeStepGib int64                        `json:"size_step_gib"`
+	Performance VolumeTypePerformance        `json:"performance"`
+	// The line a volume of this type is, whether bought on its own or as the boot volume or a data volume
+	// of an instance. A volume bought on its own is licensed only.
+	Billing BillingComponent `json:"billing"`
+}
+
+// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
+func (s *VolumeTypeResource) GetAvailabilityZoneID() AvailabilityZoneID {
+	return s.AvailabilityZoneID
+}
+
+// GetSaleStatus returns the value of SaleStatus.
+func (s *VolumeTypeResource) GetSaleStatus() VolumeTypeResourceSaleStatus {
+	return s.SaleStatus
+}
+
+// GetID returns the value of ID.
+func (s *VolumeTypeResource) GetID() VolumeTypeID {
+	return s.ID
+}
+
+// GetMaxSizeGib returns the value of MaxSizeGib.
+func (s *VolumeTypeResource) GetMaxSizeGib() int64 {
+	return s.MaxSizeGib
+}
+
+// GetMedium returns the value of Medium.
+func (s *VolumeTypeResource) GetMedium() VolumeTypeResourceMedium {
+	return s.Medium
+}
+
+// GetMinSizeGib returns the value of MinSizeGib.
+func (s *VolumeTypeResource) GetMinSizeGib() int64 {
+	return s.MinSizeGib
+}
+
+// GetName returns the value of Name.
+func (s *VolumeTypeResource) GetName() string {
+	return s.Name
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *VolumeTypeResource) GetRegionID() RegionID {
+	return s.RegionID
+}
+
+// GetSizeStepGib returns the value of SizeStepGib.
+func (s *VolumeTypeResource) GetSizeStepGib() int64 {
+	return s.SizeStepGib
+}
+
+// GetPerformance returns the value of Performance.
+func (s *VolumeTypeResource) GetPerformance() VolumeTypePerformance {
+	return s.Performance
+}
+
+// GetBilling returns the value of Billing.
+func (s *VolumeTypeResource) GetBilling() BillingComponent {
+	return s.Billing
+}
+
+// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
+func (s *VolumeTypeResource) SetAvailabilityZoneID(val AvailabilityZoneID) {
+	s.AvailabilityZoneID = val
+}
+
+// SetSaleStatus sets the value of SaleStatus.
+func (s *VolumeTypeResource) SetSaleStatus(val VolumeTypeResourceSaleStatus) {
+	s.SaleStatus = val
+}
+
+// SetID sets the value of ID.
+func (s *VolumeTypeResource) SetID(val VolumeTypeID) {
+	s.ID = val
+}
+
+// SetMaxSizeGib sets the value of MaxSizeGib.
+func (s *VolumeTypeResource) SetMaxSizeGib(val int64) {
+	s.MaxSizeGib = val
+}
+
+// SetMedium sets the value of Medium.
+func (s *VolumeTypeResource) SetMedium(val VolumeTypeResourceMedium) {
+	s.Medium = val
+}
+
+// SetMinSizeGib sets the value of MinSizeGib.
+func (s *VolumeTypeResource) SetMinSizeGib(val int64) {
+	s.MinSizeGib = val
+}
+
+// SetName sets the value of Name.
+func (s *VolumeTypeResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *VolumeTypeResource) SetRegionID(val RegionID) {
+	s.RegionID = val
+}
+
+// SetSizeStepGib sets the value of SizeStepGib.
+func (s *VolumeTypeResource) SetSizeStepGib(val int64) {
+	s.SizeStepGib = val
+}
+
+// SetPerformance sets the value of Performance.
+func (s *VolumeTypeResource) SetPerformance(val VolumeTypePerformance) {
+	s.Performance = val
+}
+
+// SetBilling sets the value of Billing.
+func (s *VolumeTypeResource) SetBilling(val BillingComponent) {
+	s.Billing = val
+}
+
+type VolumeTypeResourceMedium string
+
+const (
+	VolumeTypeResourceMediumSsd  VolumeTypeResourceMedium = "ssd"
+	VolumeTypeResourceMediumHdd  VolumeTypeResourceMedium = "hdd"
+	VolumeTypeResourceMediumNvme VolumeTypeResourceMedium = "nvme"
+)
+
+// AllValues returns all VolumeTypeResourceMedium values.
+func (VolumeTypeResourceMedium) AllValues() []VolumeTypeResourceMedium {
+	return []VolumeTypeResourceMedium{
+		VolumeTypeResourceMediumSsd,
+		VolumeTypeResourceMediumHdd,
+		VolumeTypeResourceMediumNvme,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeTypeResourceMedium) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeTypeResourceMediumSsd:
+		return []byte(s), nil
+	case VolumeTypeResourceMediumHdd:
+		return []byte(s), nil
+	case VolumeTypeResourceMediumNvme:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeTypeResourceMedium) UnmarshalText(data []byte) error {
+	switch VolumeTypeResourceMedium(data) {
+	case VolumeTypeResourceMediumSsd:
+		*s = VolumeTypeResourceMediumSsd
+		return nil
+	case VolumeTypeResourceMediumHdd:
+		*s = VolumeTypeResourceMediumHdd
+		return nil
+	case VolumeTypeResourceMediumNvme:
+		*s = VolumeTypeResourceMediumNvme
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `sold_out` takes no new orders for now while the type stays listed; the volumes already of it keep
+// working.
+type VolumeTypeResourceSaleStatus string
+
+const (
+	VolumeTypeResourceSaleStatusOnSale  VolumeTypeResourceSaleStatus = "on_sale"
+	VolumeTypeResourceSaleStatusSoldOut VolumeTypeResourceSaleStatus = "sold_out"
+)
+
+// AllValues returns all VolumeTypeResourceSaleStatus values.
+func (VolumeTypeResourceSaleStatus) AllValues() []VolumeTypeResourceSaleStatus {
+	return []VolumeTypeResourceSaleStatus{
+		VolumeTypeResourceSaleStatusOnSale,
+		VolumeTypeResourceSaleStatusSoldOut,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VolumeTypeResourceSaleStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case VolumeTypeResourceSaleStatusOnSale:
+		return []byte(s), nil
+	case VolumeTypeResourceSaleStatusSoldOut:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VolumeTypeResourceSaleStatus) UnmarshalText(data []byte) error {
+	switch VolumeTypeResourceSaleStatus(data) {
+	case VolumeTypeResourceSaleStatusOnSale:
+		*s = VolumeTypeResourceSaleStatusOnSale
+		return nil
+	case VolumeTypeResourceSaleStatusSoldOut:
+		*s = VolumeTypeResourceSaleStatusSoldOut
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }

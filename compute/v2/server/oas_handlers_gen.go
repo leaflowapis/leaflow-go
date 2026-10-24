@@ -239,23 +239,23 @@ func (s *Server) handleAcceptVirtualPrivateCloudPeeringRequest(args [1]string, a
 
 // handleAssociateElasticIPRequest handles associate-elastic-ip operation.
 //
-// Points the elastic IP at a target: a virtual machine, which means the primary private IPv4 address
-// of its primary network interface, or a network interface address (`network_interface_address_id`)
-// given directly. Exactly one of `virtual_machine_id` and `network_interface_address_id`. A network
-// interface address must be an assigned, unreleased IPv4 address on a network interface in this
-// project and region; IPv6 addresses are rejected.
+// Points the elastic IP at a target: an instance, which means the primary private IPv4 address of its
+// primary network interface, or a network interface address (`network_interface_address_id`) given
+// directly. Exactly one of `instance_id` and `network_interface_address_id`. A network interface
+// address must be an assigned, unreleased IPv4 address on a network interface in this project and
+// region; IPv6 addresses are rejected.
 //
 // The target becomes what the elastic IP points at. Repeating the request for the target it already
 // points at changes nothing; an elastic IP associated with another target is refused with
 // `ELASTIC_IP_ALREADY_ASSOCIATED` (409), and is moved by disassociating it first, so that the moment
 // traffic stops reaching the old target is one the caller chose. The elastic IP shows the `associate`
-// operation until the association is confirmed, and with a virtual machine as the target that virtual
-// machine shows the `associate_elastic_ip` operation as well, so the virtual machine must not have
-// another operation in progress.
+// operation until the association is confirmed, and with an instance as the target that instance shows
+// the `associate_elastic_ip` operation as well, so the instance must not have another operation in
+// progress.
 //
-// The elastic IP must be in the same region as the target. With a virtual machine as the target, the
-// elastic IP's `bandwidth_mbps` must not exceed the `max_bandwidth_mbps` of that virtual machine's
-// type; a higher limit is refused with `VIRTUAL_MACHINE_BANDWIDTH_CEILING`.
+// The elastic IP must be in the same region as the target. With an instance as the target, the elastic
+// IP's `bandwidth_mbps` must not exceed the `max_bandwidth_mbps` of that instance's type; a higher
+// limit is refused with `INSTANCE_BANDWIDTH_CEILING`.
 //
 // POST /api/v2/elastic-ips/{elasticIpId}:associate
 func (s *Server) handleAssociateElasticIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -468,27 +468,26 @@ func (s *Server) handleAssociateElasticIPRequest(args [1]string, argsEscaped boo
 	}
 }
 
-// handleAttachVirtualMachineDiskRequest handles attach-virtual-machine-disk operation.
+// handleAttachInstanceNetworkInterfaceRequest handles attach-instance-network-interface operation.
 //
-// The disk must be in the same region and availability zone as the virtual machine. Returns the disk;
-// the virtual machine shows the `attach_disk` operation and the disk the `attach` operation until the
-// attachment is confirmed. Partition the disk and mount the file system inside the virtual machine
-// once it is attached.
+// Returns the network interface; the instance shows the `attach_network_interface` operation and the
+// interface the `attach` operation until the attachment is confirmed. The instance has to be running;
+// a stopped one holds no host and is refused with 409 `INSTANCE_NOT_RUNNING`.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}/disks
-func (s *Server) handleAttachVirtualMachineDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v2/instances/{instanceId}/network-interfaces
+func (s *Server) handleAttachInstanceNetworkInterfaceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("attach-virtual-machine-disk"),
+		otelogen.OperationID("attach-instance-network-interface"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}/disks"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}/network-interfaces"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), AttachVirtualMachineDiskOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), AttachInstanceNetworkInterfaceOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -543,15 +542,15 @@ func (s *Server) handleAttachVirtualMachineDiskRequest(args [1]string, argsEscap
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: AttachVirtualMachineDiskOperation,
-			ID:   "attach-virtual-machine-disk",
+			Name: AttachInstanceNetworkInterfaceOperation,
+			ID:   "attach-instance-network-interface",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, AttachVirtualMachineDiskOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, AttachInstanceNetworkInterfaceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -593,7 +592,7 @@ func (s *Server) handleAttachVirtualMachineDiskRequest(args [1]string, argsEscap
 			return
 		}
 	}
-	params, err := decodeAttachVirtualMachineDiskParams(args, argsEscaped, r)
+	params, err := decodeAttachInstanceNetworkInterfaceParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -605,7 +604,7 @@ func (s *Server) handleAttachVirtualMachineDiskRequest(args [1]string, argsEscap
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeAttachVirtualMachineDiskRequest(r)
+	request, rawBody, close, err := s.decodeAttachInstanceNetworkInterfaceRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -621,245 +620,28 @@ func (s *Server) handleAttachVirtualMachineDiskRequest(args [1]string, argsEscap
 		}
 	}()
 
-	var response AttachVirtualMachineDiskRes
+	var response AttachInstanceNetworkInterfaceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    AttachVirtualMachineDiskOperation,
-			OperationSummary: "Attach a disk",
-			OperationID:      "attach-virtual-machine-disk",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "virtualMachineId",
-					In:   "path",
-				}: params.VirtualMachineId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *AttachDiskRequestBody
-			Params   = AttachVirtualMachineDiskParams
-			Response = AttachVirtualMachineDiskRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackAttachVirtualMachineDiskParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.AttachVirtualMachineDisk(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.AttachVirtualMachineDisk(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeAttachVirtualMachineDiskResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleAttachVirtualMachineNetworkInterfaceRequest handles attach-virtual-machine-network-interface operation.
-//
-// Returns the network interface; the virtual machine shows the `attach_network_interface` operation
-// and the interface the `attach` operation until the attachment is confirmed. The virtual machine has
-// to be running; a stopped one holds no host and is refused with 409 `VIRTUAL_MACHINE_NOT_RUNNING`.
-//
-// POST /api/v2/virtual-machines/{virtualMachineId}/network-interfaces
-func (s *Server) handleAttachVirtualMachineNetworkInterfaceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("attach-virtual-machine-network-interface"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}/network-interfaces"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), AttachVirtualMachineNetworkInterfaceOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: AttachVirtualMachineNetworkInterfaceOperation,
-			ID:   "attach-virtual-machine-network-interface",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, AttachVirtualMachineNetworkInterfaceOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeAttachVirtualMachineNetworkInterfaceParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeAttachVirtualMachineNetworkInterfaceRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response AttachVirtualMachineNetworkInterfaceRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    AttachVirtualMachineNetworkInterfaceOperation,
+			OperationName:    AttachInstanceNetworkInterfaceOperation,
 			OperationSummary: "Attach a network interface",
-			OperationID:      "attach-virtual-machine-network-interface",
+			OperationID:      "attach-instance-network-interface",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "virtualMachineId",
+					Name: "instanceId",
 					In:   "path",
-				}: params.VirtualMachineId,
+				}: params.InstanceId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = *AttachNetworkInterfaceRequestBody
-			Params   = AttachVirtualMachineNetworkInterfaceParams
-			Response = AttachVirtualMachineNetworkInterfaceRes
+			Params   = AttachInstanceNetworkInterfaceParams
+			Response = AttachInstanceNetworkInterfaceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -868,14 +650,14 @@ func (s *Server) handleAttachVirtualMachineNetworkInterfaceRequest(args [1]strin
 		](
 			m,
 			mreq,
-			unpackAttachVirtualMachineNetworkInterfaceParams,
+			unpackAttachInstanceNetworkInterfaceParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.AttachVirtualMachineNetworkInterface(ctx, request, params)
+				response, err = s.h.AttachInstanceNetworkInterface(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.AttachVirtualMachineNetworkInterface(ctx, request, params)
+		response, err = s.h.AttachInstanceNetworkInterface(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -894,7 +676,7 @@ func (s *Server) handleAttachVirtualMachineNetworkInterfaceRequest(args [1]strin
 		return
 	}
 
-	if err := encodeAttachVirtualMachineNetworkInterfaceResponse(response, w, span); err != nil {
+	if err := encodeAttachInstanceNetworkInterfaceResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -903,57 +685,27 @@ func (s *Server) handleAttachVirtualMachineNetworkInterfaceRequest(args [1]strin
 	}
 }
 
-// handleCreateDiskRequest handles create-disk operation.
+// handleAttachInstanceVolumeRequest handles attach-instance-volume operation.
 //
-// The disk is created in the availability zone of its disk type, and only a virtual machine in the
-// same zone can attach it.
+// The volume must be in the same region and availability zone as the instance. Returns the volume; the
+// instance shows the `attach_volume` operation and the volume the `attach` operation until the
+// attachment is confirmed. Partition the volume and mount the file system inside the instance once it
+// is attached.
 //
-// The type has to have room for it, checked before anything is ordered: refused with 409
-// `DISK_TYPE_SOLD_OUT` when the type takes no new disks for now, `DISK_TYPE_CAPACITY_REACHED` when
-// what is sold of it is used up, and `DISK_TYPE_NO_POOL_ROOM` when the storage of its zone cannot take
-// the disk. Two orders placed at the same moment can both pass; the one that finds the type full when
-// its order is accepted is not created and is refunded, ending `failed` with `provisioning_failed`.
-//
-// The disk is empty, or is restored from exactly one source: `disk_snapshot_id` or `disk_backup_id`.
-// Giving both is refused with 422 `DISK_SOURCE_CONFLICT`. A restore is a purchase of a new disk; the
-// source disk is unaffected and need not still exist.
-//
-//   - From a snapshot, the disk type has to be of the snapshot's availability zone (422
-//     `DISK_SNAPSHOT_OTHER_AVAILABILITY_ZONE`), because a snapshot lives in the same storage pool as
-//     its source and restores only into its own zone. `size_gb` is required and must be no smaller than
-//     the snapshot.
-//   - From a disk backup, the disk type may be of any zone of the backup's region, because a backup is
-//     an independent copy in different storage. `size_gb` matches the size of the backup when omitted,
-//     and when given it must not be smaller than the backup. The disk cannot be attached until it is
-//     `available`.
-//
-// A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still
-// resolves. Types that are off sale do not appear in the disk type listing; disks already bought on
-// one keep working and can still be resized.
-//
-// A disk bought on its own is licensed: `billing.usage_type` `metered` is refused with
-// `DISK_USAGE_TYPE_UNAVAILABLE`. A disk created with a virtual machine follows the machine's terms
-// instead and may be metered.
-//
-// The disk shows the `create` operation from the moment its Checkout Session is created until it is
-// delivered or its checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
-//
-// POST /api/v2/disks
-func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v2/instances/{instanceId}/volumes
+func (s *Server) handleAttachInstanceVolumeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-disk"),
+		otelogen.OperationID("attach-instance-volume"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v2/disks"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}/volumes"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateDiskOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), AttachInstanceVolumeOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -1008,15 +760,15 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: CreateDiskOperation,
-			ID:   "create-disk",
+			Name: AttachInstanceVolumeOperation,
+			ID:   "attach-instance-volume",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateDiskOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, AttachInstanceVolumeOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -1058,9 +810,19 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 			return
 		}
 	}
+	params, err := decodeAttachInstanceVolumeParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateDiskRequest(r)
+	request, rawBody, close, err := s.decodeAttachInstanceVolumeRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -1076,23 +838,28 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response CreateDiskRes
+	var response AttachInstanceVolumeRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    CreateDiskOperation,
-			OperationSummary: "Create a disk",
-			OperationID:      "create-disk",
+			OperationName:    AttachInstanceVolumeOperation,
+			OperationSummary: "Attach a volume",
+			OperationID:      "attach-instance-volume",
 			Body:             request,
 			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
+			Params: middleware.Parameters{
+				{
+					Name: "instanceId",
+					In:   "path",
+				}: params.InstanceId,
+			},
+			Raw: r,
 		}
 
 		type (
-			Request  = *CreateDiskRequestBody
-			Params   = struct{}
-			Response = CreateDiskRes
+			Request  = *AttachVolumeRequestBody
+			Params   = AttachInstanceVolumeParams
+			Response = AttachInstanceVolumeRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1101,14 +868,14 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 		](
 			m,
 			mreq,
-			nil,
+			unpackAttachInstanceVolumeParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateDisk(ctx, request)
+				response, err = s.h.AttachInstanceVolume(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.CreateDisk(ctx, request)
+		response, err = s.h.AttachInstanceVolume(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -1127,434 +894,7 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 		return
 	}
 
-	if err := encodeCreateDiskResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCreateDiskBackupRequest handles create-disk-backup operation.
-//
-// Creates a backup of the disk. It remains restorable after the source disk is deleted and may be
-// restored to another availability zone in the same region, by creating a disk with `disk_backup_id`
-// (`create-disk`). A running virtual machine may produce a file-system-inconsistent backup. Pending
-// backups count toward Compute project quotas until cleanup is confirmed.
-//
-// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
-// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
-// backup is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
-// the customer completes checkout in Billing. The source and project quotas are checked before the
-// Checkout Session is created, and a refused request creates nothing.
-//
-// The backup shows the `create` operation from the moment its Checkout Session is created until it is
-// delivered or its checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
-//
-// POST /api/v2/disk-backups
-func (s *Server) handleCreateDiskBackupRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-disk-backup"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v2/disk-backups"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateDiskBackupOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreateDiskBackupOperation,
-			ID:   "create-disk-backup",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateDiskBackupOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateDiskBackupRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response CreateDiskBackupRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreateDiskBackupOperation,
-			OperationSummary: "Create a disk backup",
-			OperationID:      "create-disk-backup",
-			Body:             request,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = *CreateDiskBackupRequestBody
-			Params   = struct{}
-			Response = CreateDiskBackupRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateDiskBackup(ctx, request)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreateDiskBackup(ctx, request)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreateDiskBackupResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCreateDiskSnapshotRequest handles create-disk-snapshot operation.
-//
-// Creates a snapshot of the disk. A running virtual machine may produce a file-system-inconsistent
-// snapshot; flush pending writes first. A system disk cannot be reverted while attached. Pending
-// snapshots count toward Compute project quotas until creation fails and cleanup is confirmed.
-//
-// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
-// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
-// snapshot is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
-// the customer completes checkout in Billing. The source and project quotas are checked before the
-// Checkout Session is created, and a refused request creates nothing.
-//
-// The snapshot shows the `create` operation from the moment its Checkout Session is created until it
-// is delivered or its checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
-//
-// POST /api/v2/disk-snapshots
-func (s *Server) handleCreateDiskSnapshotRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-disk-snapshot"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v2/disk-snapshots"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateDiskSnapshotOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreateDiskSnapshotOperation,
-			ID:   "create-disk-snapshot",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateDiskSnapshotOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateDiskSnapshotRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response CreateDiskSnapshotRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreateDiskSnapshotOperation,
-			OperationSummary: "Create a snapshot",
-			OperationID:      "create-disk-snapshot",
-			Body:             request,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = *CreateDiskSnapshotRequestBody
-			Params   = struct{}
-			Response = CreateDiskSnapshotRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateDiskSnapshot(ctx, request)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreateDiskSnapshot(ctx, request)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreateDiskSnapshotResponse(response, w, span); err != nil {
+	if err := encodeAttachInstanceVolumeResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -1573,8 +913,8 @@ func (s *Server) handleCreateDiskSnapshotRequest(args [0]string, argsEscaped boo
 // no longer available then, the elastic IP ends `failed` with `provisioning_failed` and its charge is
 // refunded.
 //
-// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to virtual machines by the
-// virtual private cloud; enable IPv6 on that network instead.
+// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the virtual
+// private cloud; enable IPv6 on that network instead.
 //
 // Allocation does not select or create a virtual private cloud. A later association selects an
 // assigned network-interface address; Compute then establishes the required network connectivity.
@@ -1780,16 +1120,264 @@ func (s *Server) handleCreateElasticIPRequest(args [0]string, argsEscaped bool, 
 	}
 }
 
+// handleCreateInstanceRequest handles create-instance operation.
+//
+// Creates a Billing Checkout Session, including for metered terms, and returns one `pending` instance
+// per requested instance with it. Each new component carries its own commercial terms; their usage
+// type and period must match. A pending instance has no server, boot volume or address, and is not
+// metered.
+//
+// Creation starts once Billing accepts the order: the instance stays `pending` with the `create`
+// operation while it is created, then becomes `running`. With automatic checkout, insufficient funds
+// refuse the request and nothing is created. With deferred checkout, the instances stay `pending`
+// until the customer completes checkout in Billing and the order is paid; an expired Checkout Session,
+// or a canceled or expired order, leaves them `failed` with `checkout_expired`, `order_canceled` or
+// `order_expired`. Do not submit another creation request after paying. After an uncertain response,
+// look the Checkout Session up in Billing before submitting again.
+//
+// The instances are created in the availability zone of their instance type, and the volumes bought
+// with them have to be of volume types of that zone (422 `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`). The
+// types have to have room for all of them, checked before anything is ordered: refused with 409
+// `INSTANCE_TYPE_SOLD_OUT` or `VOLUME_TYPE_SOLD_OUT` when a type takes no new orders for now,
+// `INSTANCE_TYPE_CAPACITY_REACHED` or `VOLUME_TYPE_CAPACITY_REACHED` when what is sold of it is used
+// up, `INSTANCE_TYPE_NO_HOST_ROOM` when no host of the zone can take the machine, and
+// `VOLUME_TYPE_NO_POOL_ROOM` when the storage of the zone cannot take the boot volume. Two orders
+// placed at the same moment can both pass; an instance that finds a type full when its order is
+// accepted is not created and is refunded, ending `failed` with `provisioning_failed`.
+//
+// Choose an image or existing volume through boot_volume, and exactly one of network_interface_id or
+// subnet_id. Existing network interfaces, boot volumes or elastic IPs require count=1. They are not
+// held while the instance is pending; if one is no longer usable when the order is accepted, the
+// instance ends `failed` with `provisioning_failed`. Image boots require boot_volume; existing volumes
+// retain their own subscription. Instances, volumes and public IPs keep their own subscription items
+// on the same order.
+//
+// Instances of one request succeed or fail individually. Each instance, with its boot volume, network
+// interface and elastic IP, is created or fails as a whole. Instances that were created are kept; each
+// failed instance ends `failed` with `provisioning_failed`, its part of the order is refunded, and the
+// order then ends `partially_completed`. An instance is delivered whole or not at all: when the
+// customer cancels any of its order items before the order is accepted, it is not created, its
+// remaining items are canceled and refunded, and it ends `failed` with `order_canceled`. Each instance
+// is named after this request with a number appended.
+//
+// The network is checked before the Checkout Session is created, and a request it refuses orders and
+// charges nothing. It is refused with `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE` when the virtual private
+// cloud's `status` is not `available`, `VIRTUAL_PRIVATE_CLOUD_SUBNET_UNAVAILABLE` or
+// `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready,
+// `SECURITY_GROUP_OTHER_VIRTUAL_PRIVATE_CLOUD` when a security group belongs to another virtual
+// private cloud, and `NETWORK_INTERFACE_UNAVAILABLE` when the port's `status` is not `available`.
+// `meta` names the resource.
+//
+// Each instance shows the `create` operation from the moment the Checkout Session is created until it
+// is delivered or the checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its release with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
+//
+// POST /api/v2/instances
+func (s *Server) handleCreateInstanceRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-instance"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v2/instances"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateInstanceOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateInstanceOperation,
+			ID:   "create-instance",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateInstanceOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateInstanceRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response CreateInstanceRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateInstanceOperation,
+			OperationSummary: "Create instances",
+			OperationID:      "create-instance",
+			Body:             request,
+			RawBody:          rawBody,
+			Params:           middleware.Parameters{},
+			Raw:              r,
+		}
+
+		type (
+			Request  = *CreateInstanceRequestBody
+			Params   = struct{}
+			Response = CreateInstanceRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			nil,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateInstance(ctx, request)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateInstance(ctx, request)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateInstanceResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleCreateLaunchTemplateRequest handles create-launch-template operation.
 //
 // Creates a launch template with its first version, which becomes its default. A launch template
-// describes how to create virtual machines in one region, and creating a virtual machine can name it
+// describes how to create instances in one region, and creating an instance can name it
 // (`launch_template`) instead of repeating every part. It costs nothing.
 //
 // A template holds no billing terms, checkout options or password: those belong to each purchase. What
-// a version names is checked when a virtual machine is created from it, against the catalog as it is
-// then, so a version naming an image retired since is refused at that creation as any creation would
-// be.
+// a version names is checked when an instance is created from it, against the catalog as it is then,
+// so a version naming an image retired since is refused at that creation as any creation would be.
 //
 // A project holds at most 100 launch templates in a region (`LAUNCH_TEMPLATE_LIMIT`), and names are
 // unique among them (`LAUNCH_TEMPLATE_EXISTS`).
@@ -1993,8 +1581,8 @@ func (s *Server) handleCreateLaunchTemplateRequest(args [0]string, argsEscaped b
 // handleCreateLaunchTemplateVersionRequest handles create-launch-template-version operation.
 //
 // Adds a version, numbered after every version the template ever had, so a deleted version's number is
-// never reused. It does not become the default by itself; set `default_version` on the template for
-// that. A template holds at most 100 live versions (`LAUNCH_TEMPLATE_VERSION_LIMIT`).
+// never reused. It does not become the default by itself; set `default_version_number` on the template
+// for that. A template holds at most 100 live versions (`LAUNCH_TEMPLATE_VERSION_LIMIT`).
 //
 // POST /api/v2/launch-templates/{launchTemplateId}/versions
 func (s *Server) handleCreateLaunchTemplateVersionRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2209,8 +1797,8 @@ func (s *Server) handleCreateLaunchTemplateVersionRequest(args [1]string, argsEs
 
 // handleCreateNetworkInterfaceRequest handles create-network-interface operation.
 //
-// The new network interface is not attached to any virtual machine. Primary network interfaces are not
-// created here; they are created with the virtual machine.
+// The new network interface is not attached to any instance. Primary network interfaces are not
+// created here; they are created with the instance.
 //
 // POST /api/v2/network-interfaces
 func (s *Server) handleCreateNetworkInterfaceRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2418,11 +2006,10 @@ func (s *Server) handleCreateNetworkInterfaceRequest(args [0]string, argsEscaped
 // The operating system has to be configured to use it: DHCP hands out only the primary address.
 // Changing the addresses of a network interface in use may briefly interrupt its traffic.
 //
-// A network interface holds at most its virtual machine's machine type's
-// `max_ipv4_per_network_interface` IPv4 addresses while attached, and 50 otherwise (409
-// `NETWORK_INTERFACE_ADDRESS_CEILING`). An address already in use in the subnet is refused with 409
-// `NETWORK_INTERFACE_ADDRESS_ALREADY_TAKEN`, a full subnet with 409
-// `NETWORK_INTERFACE_SUBNET_EXHAUSTED`.
+// A network interface holds at most its instance's instance type's `max_ipv4_per_network_interface`
+// IPv4 addresses while attached, and 50 otherwise (409 `NETWORK_INTERFACE_ADDRESS_CEILING`). An
+// address already in use in the subnet is refused with 409 `NETWORK_INTERFACE_ADDRESS_ALREADY_TAKEN`,
+// a full subnet with 409 `NETWORK_INTERFACE_SUBNET_EXHAUSTED`.
 //
 // POST /api/v2/network-interfaces/{networkInterfaceId}/addresses
 func (s *Server) handleCreateNetworkInterfaceAddressRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2637,9 +2224,9 @@ func (s *Server) handleCreateNetworkInterfaceAddressRequest(args [1]string, args
 
 // handleCreatePrivateImageRequest handles create-private-image operation.
 //
-// Creates a project image from the virtual machine system disk, excluding data disks. Stop the virtual
-// machine first for file-system consistency. The virtual machine cannot be released while its source
-// disk is being captured. Compute project quotas are enforced independently of billing.
+// Creates a project image from the instance boot volume, excluding data volumes. Stop the instance
+// first for file-system consistency. The instance cannot be released while its source volume is being
+// captured. Compute project quotas are enforced independently of billing.
 //
 // It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
 // through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
@@ -2793,7 +2380,7 @@ func (s *Server) handleCreatePrivateImageRequest(args [0]string, argsEscaped boo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreatePrivateImageOperation,
-			OperationSummary: "Capture a virtual machine as a private image",
+			OperationSummary: "Capture an instance as a private image",
 			OperationID:      "create-private-image",
 			Body:             request,
 			RawBody:          rawBody,
@@ -3260,255 +2847,6 @@ func (s *Server) handleCreateSecurityGroupRuleRequest(args [1]string, argsEscape
 	}
 
 	if err := encodeCreateSecurityGroupRuleResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCreateVirtualMachineRequest handles create-virtual-machine operation.
-//
-// Creates a Billing Checkout Session, including for metered terms, and returns one `pending` virtual
-// machine per requested virtual machine with it. Each new component carries its own commercial terms;
-// their usage type and period must match. A pending virtual machine has no server, system disk or
-// address, and is not metered.
-//
-// Creation starts once Billing accepts the order: the virtual machine stays `pending` with the
-// `create` operation while it is created, then becomes `active`. With automatic checkout, insufficient
-// funds refuse the request and nothing is created. With deferred checkout, the virtual machines stay
-// `pending` until the customer completes checkout in Billing and the order is paid; an expired
-// Checkout Session, or a canceled or expired order, leaves them `failed` with `checkout_expired`,
-// `order_canceled` or `order_expired`. Do not submit another creation request after paying. After an
-// uncertain response, look the Checkout Session up in Billing before submitting again.
-//
-// The virtual machines are created in the availability zone of their machine type, and the disks
-// bought with them have to be of disk types of that zone (422 `DISK_TYPE_OTHER_AVAILABILITY_ZONE`).
-// The types have to have room for all of them, checked before anything is ordered: refused with 409
-// `MACHINE_TYPE_SOLD_OUT` or `DISK_TYPE_SOLD_OUT` when a type takes no new orders for now,
-// `MACHINE_TYPE_CAPACITY_REACHED` or `DISK_TYPE_CAPACITY_REACHED` when what is sold of it is used up,
-// `MACHINE_TYPE_NO_HOST_ROOM` when no host of the zone can take the machine, and
-// `DISK_TYPE_NO_POOL_ROOM` when the storage of the zone cannot take the system disk. Two orders placed
-// at the same moment can both pass; a virtual machine that finds a type full when its order is
-// accepted is not created and is refunded, ending `failed` with `provisioning_failed`.
-//
-// Choose an image or existing disk through boot_disk, and exactly one of network_interface_id or
-// subnet_id. Existing network interfaces, boot disks or elastic IPs require count=1. They are not held
-// while the virtual machine is pending; if one is no longer usable when the order is accepted, the
-// virtual machine ends `failed` with `provisioning_failed`. Image boots require boot_disk; existing
-// disks retain their own subscription. Virtual machines, disks and public IPs keep their own
-// subscription items on the same order.
-//
-// Virtual machines of one request succeed or fail individually. Each virtual machine, with its system
-// disk, network interface and elastic IP, is created or fails as a whole. Virtual machines that were
-// created are kept; each failed virtual machine ends `failed` with `provisioning_failed`, its part of
-// the order is refunded, and the order then ends `partially_completed`. A virtual machine is delivered
-// whole or not at all: when the customer cancels any of its order items before the order is accepted,
-// it is not created, its remaining items are canceled and refunded, and it ends `failed` with
-// `order_canceled`. Each virtual machine is named after this request with a number appended.
-//
-// The network is checked before the Checkout Session is created, and a request it refuses orders and
-// charges nothing. It is refused with `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE` when the virtual private
-// cloud's `status` is not `available`, `VIRTUAL_PRIVATE_CLOUD_SUBNET_UNAVAILABLE` or
-// `SECURITY_GROUP_UNAVAILABLE` when the subnet or a security group is not ready,
-// `SECURITY_GROUP_OTHER_VIRTUAL_PRIVATE_CLOUD` when a security group belongs to another virtual
-// private cloud, and `NETWORK_INTERFACE_UNAVAILABLE` when the port's `status` is not `available`.
-// `meta` names the resource.
-//
-// Each virtual machine shows the `create` operation from the moment the Checkout Session is created
-// until it is delivered or the checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its release with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
-//
-// POST /api/v2/virtual-machines
-func (s *Server) handleCreateVirtualMachineRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateVirtualMachineOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreateVirtualMachineOperation,
-			ID:   "create-virtual-machine",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateVirtualMachineOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateVirtualMachineRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response CreateVirtualMachineRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreateVirtualMachineOperation,
-			OperationSummary: "Create virtual machines",
-			OperationID:      "create-virtual-machine",
-			Body:             request,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = *CreateVirtualMachineRequestBody
-			Params   = struct{}
-			Response = CreateVirtualMachineRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateVirtualMachine(ctx, request)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreateVirtualMachine(ctx, request)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreateVirtualMachineResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -4356,35 +3694,58 @@ func (s *Server) handleCreateVirtualPrivateCloudSubnetRequest(args [1]string, ar
 	}
 }
 
-// handleDeleteDiskRequest handles delete-disk operation.
+// handleCreateVolumeRequest handles create-volume operation.
 //
-// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+// The volume is created in the availability zone of its volume type, and only an instance in the same
+// zone can attach it.
 //
-// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
-// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
-// checkout created one. Expire the session or cancel the order in Billing instead.
+// The type has to have room for it, checked before anything is ordered: refused with 409
+// `VOLUME_TYPE_SOLD_OUT` when the type takes no new volumes for now, `VOLUME_TYPE_CAPACITY_REACHED`
+// when what is sold of it is used up, and `VOLUME_TYPE_NO_POOL_ROOM` when the storage of its zone
+// cannot take the volume. Two orders placed at the same moment can both pass; the one that finds the
+// type full when its order is accepted is not created and is refunded, ending `failed` with
+// `provisioning_failed`.
 //
-// While subscriptions pay for the disk (those in its `release_set`), deleting it cancels them rather
-// than being refused: Compute creates one Billing cancellation for the whole set and answers with it
-// in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a licensed
-// subscription being refunded under its terms, and `period_end` keeps the disk working until
-// `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
-// again, whatever mode is asked for.
+// The volume is empty, or is restored from exactly one source: `volume_snapshot_id` or
+// `volume_backup_id`. Giving both is refused with 422 `VOLUME_SOURCE_CONFLICT`. A restore is a
+// purchase of a new volume; the source volume is unaffected and need not still exist.
 //
-// DELETE /api/v2/disks/{diskId}
-func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+//   - From a snapshot, the volume type has to be of the snapshot's availability zone (422
+//     `VOLUME_SNAPSHOT_OTHER_AVAILABILITY_ZONE`), because a snapshot lives in the same storage pool as
+//     its source and restores only into its own zone. `size_gib` is required and must be no smaller
+//     than the snapshot.
+//   - From a volume backup, the volume type may be of any zone of the backup's region, because a backup
+//     is an independent copy in different storage. `size_gib` matches the size of the backup when
+//     omitted, and when given it must not be smaller than the backup. The volume cannot be attached
+//     until it is `available`.
+//
+// A volume type that is off sale is rejected with `VOLUME_TYPE_OFF_SALE`, even though its identifier
+// still resolves. Types that are off sale do not appear in the volume type listing; volumes already
+// bought on one keep working and can still be resized.
+//
+// A volume bought on its own is licensed: `billing.usage_type` `metered` is refused with
+// `VOLUME_USAGE_TYPE_UNAVAILABLE`. A volume created with an instance follows the machine's terms
+// instead and may be metered.
+//
+// The volume shows the `create` operation from the moment its Checkout Session is created until it is
+// delivered or its checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
+//
+// POST /api/v2/volumes
+func (s *Server) handleCreateVolumeRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-disk"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v2/disks/{diskId}"),
+		otelogen.OperationID("create-volume"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v2/volumes"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteDiskOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateVolumeOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -4439,15 +3800,15 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: DeleteDiskOperation,
-			ID:   "delete-disk",
+			Name: CreateVolumeOperation,
+			ID:   "create-volume",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteDiskOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateVolumeOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -4489,45 +3850,41 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 			return
 		}
 	}
-	params, err := decodeDeleteDiskParams(args, argsEscaped, r)
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateVolumeRequest(r)
 	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
+		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
 			Err:              err,
 		}
-		defer recordError("DecodeParams", err)
+		defer recordError("DecodeRequest", err)
 		s.cfg.ErrorHandler(ctx, w, r, err)
 		return
 	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
 
-	var rawBody []byte
-
-	var response DeleteDiskRes
+	var response CreateVolumeRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    DeleteDiskOperation,
-			OperationSummary: "Delete a disk",
-			OperationID:      "delete-disk",
-			Body:             nil,
+			OperationName:    CreateVolumeOperation,
+			OperationSummary: "Create a volume",
+			OperationID:      "create-volume",
+			Body:             request,
 			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "diskId",
-					In:   "path",
-				}: params.DiskId,
-				{
-					Name: "cancellation_mode",
-					In:   "query",
-				}: params.CancellationMode,
-			},
-			Raw: r,
+			Params:           middleware.Parameters{},
+			Raw:              r,
 		}
 
 		type (
-			Request  = struct{}
-			Params   = DeleteDiskParams
-			Response = DeleteDiskRes
+			Request  = *CreateVolumeRequestBody
+			Params   = struct{}
+			Response = CreateVolumeRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -4536,14 +3893,14 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 		](
 			m,
 			mreq,
-			unpackDeleteDiskParams,
+			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DeleteDisk(ctx, params)
+				response, err = s.h.CreateVolume(ctx, request)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.DeleteDisk(ctx, params)
+		response, err = s.h.CreateVolume(ctx, request)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -4562,7 +3919,7 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 		return
 	}
 
-	if err := encodeDeleteDiskResponse(response, w, span); err != nil {
+	if err := encodeCreateVolumeResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -4571,40 +3928,38 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 	}
 }
 
-// handleDeleteDiskBackupRequest handles delete-disk-backup operation.
+// handleCreateVolumeBackupRequest handles create-volume-backup operation.
 //
-// Independent of the source disk: deletion succeeds whether or not that disk still exists. Metering of
-// the backup ends once it is deleted.
+// Creates a backup of the volume. It remains restorable after the source volume is deleted and may be
+// restored to another availability zone in the same region, by creating a volume with
+// `volume_backup_id` (`create-volume`). A running instance may produce a file-system-inconsistent
+// backup. Pending backups count toward Compute project quotas until cleanup is confirmed.
 //
-// Quota capacity and storage metering are released only after cleanup is confirmed.
+// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
+// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
+// backup is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
+// the customer completes checkout in Billing. The source and project quotas are checked before the
+// Checkout Session is created, and a refused request creates nothing.
 //
-// A resource whose purchase still awaits checkout or payment is refused with
-// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
-// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
-// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
-// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+// The backup shows the `create` operation from the moment its Checkout Session is created until it is
+// delivered or its checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
 //
-// While subscriptions pay for the disk backup (those in its `release_set`), deleting it cancels them
-// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the disk backup working
-// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
-// with it again, whatever mode is asked for.
-//
-// DELETE /api/v2/disk-backups/{diskBackupId}
-func (s *Server) handleDeleteDiskBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v2/volume-backups
+func (s *Server) handleCreateVolumeBackupRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-disk-backup"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v2/disk-backups/{diskBackupId}"),
+		otelogen.OperationID("create-volume-backup"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v2/volume-backups"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteDiskBackupOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateVolumeBackupOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -4659,15 +4014,15 @@ func (s *Server) handleDeleteDiskBackupRequest(args [1]string, argsEscaped bool,
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: DeleteDiskBackupOperation,
-			ID:   "delete-disk-backup",
+			Name: CreateVolumeBackupOperation,
+			ID:   "create-volume-backup",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteDiskBackupOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateVolumeBackupOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -4709,45 +4064,41 @@ func (s *Server) handleDeleteDiskBackupRequest(args [1]string, argsEscaped bool,
 			return
 		}
 	}
-	params, err := decodeDeleteDiskBackupParams(args, argsEscaped, r)
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateVolumeBackupRequest(r)
 	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
+		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
 			Err:              err,
 		}
-		defer recordError("DecodeParams", err)
+		defer recordError("DecodeRequest", err)
 		s.cfg.ErrorHandler(ctx, w, r, err)
 		return
 	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
 
-	var rawBody []byte
-
-	var response DeleteDiskBackupRes
+	var response CreateVolumeBackupRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    DeleteDiskBackupOperation,
-			OperationSummary: "Delete a disk backup",
-			OperationID:      "delete-disk-backup",
-			Body:             nil,
+			OperationName:    CreateVolumeBackupOperation,
+			OperationSummary: "Create a volume backup",
+			OperationID:      "create-volume-backup",
+			Body:             request,
 			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "diskBackupId",
-					In:   "path",
-				}: params.DiskBackupId,
-				{
-					Name: "cancellation_mode",
-					In:   "query",
-				}: params.CancellationMode,
-			},
-			Raw: r,
+			Params:           middleware.Parameters{},
+			Raw:              r,
 		}
 
 		type (
-			Request  = struct{}
-			Params   = DeleteDiskBackupParams
-			Response = DeleteDiskBackupRes
+			Request  = *CreateVolumeBackupRequestBody
+			Params   = struct{}
+			Response = CreateVolumeBackupRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -4756,14 +4107,14 @@ func (s *Server) handleDeleteDiskBackupRequest(args [1]string, argsEscaped bool,
 		](
 			m,
 			mreq,
-			unpackDeleteDiskBackupParams,
+			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DeleteDiskBackup(ctx, params)
+				response, err = s.h.CreateVolumeBackup(ctx, request)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.DeleteDiskBackup(ctx, params)
+		response, err = s.h.CreateVolumeBackup(ctx, request)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -4782,7 +4133,7 @@ func (s *Server) handleDeleteDiskBackupRequest(args [1]string, argsEscaped bool,
 		return
 	}
 
-	if err := encodeDeleteDiskBackupResponse(response, w, span); err != nil {
+	if err := encodeCreateVolumeBackupResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -4791,38 +4142,37 @@ func (s *Server) handleDeleteDiskBackupRequest(args [1]string, argsEscaped bool,
 	}
 }
 
-// handleDeleteDiskSnapshotRequest handles delete-disk-snapshot operation.
+// handleCreateVolumeSnapshotRequest handles create-volume-snapshot operation.
 //
-// Deletes this resource. Quota capacity and storage metering are released only after cleanup is
-// confirmed.
+// Creates a snapshot of the volume. A running instance may produce a file-system-inconsistent
+// snapshot; flush pending writes first. A boot volume cannot be reverted while attached. Pending
+// snapshots count toward Compute project quotas until creation fails and cleanup is confirmed.
 //
-// A resource whose purchase still awaits checkout or payment is refused with
-// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
-// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
-// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
-// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+// It is metered by the hour on a subscription of its own and takes no billing choice. It is bought
+// through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
+// snapshot is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
+// the customer completes checkout in Billing. The source and project quotas are checked before the
+// Checkout Session is created, and a refused request creates nothing.
 //
-// While subscriptions pay for the snapshot (those in its `release_set`), deleting it cancels them
-// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the snapshot working
-// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
-// with it again, whatever mode is asked for.
+// The snapshot shows the `create` operation from the moment its Checkout Session is created until it
+// is delivered or its checkout or order ends. Every other operation on it is refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
+// purchase awaits checkout or payment.
 //
-// DELETE /api/v2/disk-snapshots/{diskSnapshotId}
-func (s *Server) handleDeleteDiskSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v2/volume-snapshots
+func (s *Server) handleCreateVolumeSnapshotRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-disk-snapshot"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v2/disk-snapshots/{diskSnapshotId}"),
+		otelogen.OperationID("create-volume-snapshot"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v2/volume-snapshots"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteDiskSnapshotOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateVolumeSnapshotOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -4877,15 +4227,15 @@ func (s *Server) handleDeleteDiskSnapshotRequest(args [1]string, argsEscaped boo
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: DeleteDiskSnapshotOperation,
-			ID:   "delete-disk-snapshot",
+			Name: CreateVolumeSnapshotOperation,
+			ID:   "create-volume-snapshot",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteDiskSnapshotOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateVolumeSnapshotOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -4927,45 +4277,41 @@ func (s *Server) handleDeleteDiskSnapshotRequest(args [1]string, argsEscaped boo
 			return
 		}
 	}
-	params, err := decodeDeleteDiskSnapshotParams(args, argsEscaped, r)
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateVolumeSnapshotRequest(r)
 	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
+		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
 			Err:              err,
 		}
-		defer recordError("DecodeParams", err)
+		defer recordError("DecodeRequest", err)
 		s.cfg.ErrorHandler(ctx, w, r, err)
 		return
 	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
 
-	var rawBody []byte
-
-	var response DeleteDiskSnapshotRes
+	var response CreateVolumeSnapshotRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    DeleteDiskSnapshotOperation,
-			OperationSummary: "Delete a snapshot",
-			OperationID:      "delete-disk-snapshot",
-			Body:             nil,
+			OperationName:    CreateVolumeSnapshotOperation,
+			OperationSummary: "Create a snapshot",
+			OperationID:      "create-volume-snapshot",
+			Body:             request,
 			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "diskSnapshotId",
-					In:   "path",
-				}: params.DiskSnapshotId,
-				{
-					Name: "cancellation_mode",
-					In:   "query",
-				}: params.CancellationMode,
-			},
-			Raw: r,
+			Params:           middleware.Parameters{},
+			Raw:              r,
 		}
 
 		type (
-			Request  = struct{}
-			Params   = DeleteDiskSnapshotParams
-			Response = DeleteDiskSnapshotRes
+			Request  = *CreateVolumeSnapshotRequestBody
+			Params   = struct{}
+			Response = CreateVolumeSnapshotRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -4974,14 +4320,14 @@ func (s *Server) handleDeleteDiskSnapshotRequest(args [1]string, argsEscaped boo
 		](
 			m,
 			mreq,
-			unpackDeleteDiskSnapshotParams,
+			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DeleteDiskSnapshot(ctx, params)
+				response, err = s.h.CreateVolumeSnapshot(ctx, request)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.DeleteDiskSnapshot(ctx, params)
+		response, err = s.h.CreateVolumeSnapshot(ctx, request)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -5000,7 +4346,7 @@ func (s *Server) handleDeleteDiskSnapshotRequest(args [1]string, argsEscaped boo
 		return
 	}
 
-	if err := encodeDeleteDiskSnapshotResponse(response, w, span); err != nil {
+	if err := encodeCreateVolumeSnapshotResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -5226,10 +4572,230 @@ func (s *Server) handleDeleteElasticIPRequest(args [1]string, argsEscaped bool, 
 	}
 }
 
+// handleDeleteInstanceRequest handles delete-instance operation.
+//
+// The boot volume is deleted with the instance, and snapshots created from the boot volume are deleted
+// with it. Data volumes are detached and kept, and their snapshots and backups are unaffected. The
+// primary network interface is released with the instance.
+//
+// An instance being captured as a private image cannot be released. Wait for the capture to finish, or
+// delete that image first.
+//
+// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
+// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
+// checkout created one. Expire the session or cancel the order in Billing instead.
+//
+// While subscriptions pay for the instance (those in its `release_set`), deleting it cancels them
+// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the instance working
+// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+// with it again, whatever mode is asked for.
+//
+// DELETE /api/v2/instances/{instanceId}
+func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-instance"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteInstanceOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: DeleteInstanceOperation,
+			ID:   "delete-instance",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteInstanceOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeDeleteInstanceParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response DeleteInstanceRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    DeleteInstanceOperation,
+			OperationSummary: "Release an instance",
+			OperationID:      "delete-instance",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "instanceId",
+					In:   "path",
+				}: params.InstanceId,
+				{
+					Name: "cancellation_mode",
+					In:   "query",
+				}: params.CancellationMode,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = DeleteInstanceParams
+			Response = DeleteInstanceRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackDeleteInstanceParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.DeleteInstance(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.DeleteInstance(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeDeleteInstanceResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleDeleteLaunchTemplateRequest handles delete-launch-template operation.
 //
-// Deletes the template with every version. Virtual machines created from it are not affected and keep
-// naming the version they were created from.
+// Deletes the template with every version. Instances created from it are not affected and keep naming
+// the version they were created from.
 //
 // DELETE /api/v2/launch-templates/{launchTemplateId}
 func (s *Server) handleDeleteLaunchTemplateRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5432,14 +4998,14 @@ func (s *Server) handleDeleteLaunchTemplateRequest(args [1]string, argsEscaped b
 // The default version cannot be deleted (`LAUNCH_TEMPLATE_VERSION_DEFAULT`); make another version the
 // default first.
 //
-// DELETE /api/v2/launch-templates/{launchTemplateId}/versions/{version}
+// DELETE /api/v2/launch-templates/{launchTemplateId}/versions/{versionNumber}
 func (s *Server) handleDeleteLaunchTemplateVersionRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-launch-template-version"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v2/launch-templates/{launchTemplateId}/versions/{version}"),
+		semconv.HTTPRouteKey.String("/api/v2/launch-templates/{launchTemplateId}/versions/{versionNumber}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -5578,9 +5144,9 @@ func (s *Server) handleDeleteLaunchTemplateVersionRequest(args [2]string, argsEs
 					In:   "path",
 				}: params.LaunchTemplateId,
 				{
-					Name: "version",
+					Name: "versionNumber",
 					In:   "path",
-				}: params.Version,
+				}: params.VersionNumber,
 			},
 			Raw: r,
 		}
@@ -5634,8 +5200,8 @@ func (s *Server) handleDeleteLaunchTemplateVersionRequest(args [2]string, argsEs
 
 // handleDeleteNetworkInterfaceRequest handles delete-network-interface operation.
 //
-// The primary network interface cannot be deleted on its own, as it is released with the virtual
-// machine. A network interface still attached to a virtual machine cannot be deleted either.
+// The primary network interface cannot be deleted on its own, as it is released with the instance. A
+// network interface still attached to an instance cannot be deleted either.
 //
 // DELETE /api/v2/network-interfaces/{networkInterfaceId}
 func (s *Server) handleDeleteNetworkInterfaceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6045,8 +5611,8 @@ func (s *Server) handleDeleteNetworkInterfaceAddressRequest(args [2]string, args
 // Deletes a private image of this project; any other image, public images included, is reported as not
 // found.
 //
-// Deletion is rejected while virtual machines created from the image still exist, as they need it in
-// order to be rebuilt.
+// Deletion is rejected while instances created from the image still exist, as they need it in order to
+// be rebuilt.
 //
 // An image whose capture has not finished can be deleted; the capture is aborted. This is the one
 // operation accepted while the `create` operation is in progress.
@@ -6671,230 +6237,10 @@ func (s *Server) handleDeleteSecurityGroupRuleRequest(args [2]string, argsEscape
 	}
 }
 
-// handleDeleteVirtualMachineRequest handles delete-virtual-machine operation.
-//
-// The system disk is deleted with the virtual machine, and snapshots created from the system disk are
-// deleted with it. Data disks are detached and kept, and their snapshots and backups are unaffected.
-// The primary network interface is released with the virtual machine.
-//
-// A virtual machine being captured as a private image cannot be released. Wait for the capture to
-// finish, or delete that image first.
-//
-// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
-// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
-// checkout created one. Expire the session or cancel the order in Billing instead.
-//
-// While subscriptions pay for the virtual machine (those in its `release_set`), deleting it cancels
-// them rather than being refused: Compute creates one Billing cancellation for the whole set and
-// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
-// now, a licensed subscription being refunded under its terms, and `period_end` keeps the virtual
-// machine working until `scheduled_at` and releases it then. Asking again while that cancellation is
-// pending answers with it again, whatever mode is asked for.
-//
-// DELETE /api/v2/virtual-machines/{virtualMachineId}
-func (s *Server) handleDeleteVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteVirtualMachineOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: DeleteVirtualMachineOperation,
-			ID:   "delete-virtual-machine",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteVirtualMachineOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeDeleteVirtualMachineParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response DeleteVirtualMachineRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    DeleteVirtualMachineOperation,
-			OperationSummary: "Release a virtual machine",
-			OperationID:      "delete-virtual-machine",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "virtualMachineId",
-					In:   "path",
-				}: params.VirtualMachineId,
-				{
-					Name: "cancellation_mode",
-					In:   "query",
-				}: params.CancellationMode,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = DeleteVirtualMachineParams
-			Response = DeleteVirtualMachineRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackDeleteVirtualMachineParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DeleteVirtualMachine(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.DeleteVirtualMachine(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeDeleteVirtualMachineResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleDeleteVirtualPrivateCloudRequest handles delete-virtual-private-cloud operation.
 //
-// Deletion is rejected while virtual machines or network interfaces remain in the network. Its
-// subnets, routes, security groups and IPv6 configuration are removed with it.
+// Deletion is rejected while instances or network interfaces remain in the network. Its subnets,
+// routes, security groups and IPv6 configuration are removed with it.
 //
 // DELETE /api/v2/virtual-private-clouds/{virtualPrivateCloudId}
 func (s *Server) handleDeleteVirtualPrivateCloudRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -7702,33 +7048,35 @@ func (s *Server) handleDeleteVirtualPrivateCloudSubnetRequest(args [2]string, ar
 	}
 }
 
-// handleDetachVirtualMachineDiskRequest handles detach-virtual-machine-disk operation.
+// handleDeleteVolumeRequest handles delete-volume operation.
 //
-// Unmount the device inside the virtual machine before calling this endpoint. Forcibly detaching a
-// file system that is being written to corrupts data.
+// Deletion is rejected while the volume is attached, or while snapshots created from it still exist.
 //
-// The disk the virtual machine boots from cannot be detached, whether it is the system disk bought
-// with the virtual machine or a disk supplied as the existing boot_disk at launch. Such a request is
-// refused with `VIRTUAL_MACHINE_BOOT_DISK_LOCKED` and changes nothing; releasing the virtual machine
-// is what frees that disk.
+// Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
+// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
+// checkout created one. Expire the session or cancel the order in Billing instead.
 //
-// Returns the disk; the virtual machine shows the `detach_disk` operation and the disk the `detach`
-// operation until the disk is detached.
+// While subscriptions pay for the volume (those in its `release_set`), deleting it cancels them rather
+// than being refused: Compute creates one Billing cancellation for the whole set and answers with it
+// in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a licensed
+// subscription being refunded under its terms, and `period_end` keeps the volume working until
+// `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
+// again, whatever mode is asked for.
 //
-// DELETE /api/v2/virtual-machines/{virtualMachineId}/disks/{diskId}
-func (s *Server) handleDetachVirtualMachineDiskRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// DELETE /api/v2/volumes/{volumeId}
+func (s *Server) handleDeleteVolumeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("detach-virtual-machine-disk"),
+		otelogen.OperationID("delete-volume"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}/disks/{diskId}"),
+		semconv.HTTPRouteKey.String("/api/v2/volumes/{volumeId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DetachVirtualMachineDiskOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteVolumeOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -7783,15 +7131,15 @@ func (s *Server) handleDetachVirtualMachineDiskRequest(args [2]string, argsEscap
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: DetachVirtualMachineDiskOperation,
-			ID:   "detach-virtual-machine-disk",
+			Name: DeleteVolumeOperation,
+			ID:   "delete-volume",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, DetachVirtualMachineDiskOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteVolumeOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -7833,7 +7181,7 @@ func (s *Server) handleDetachVirtualMachineDiskRequest(args [2]string, argsEscap
 			return
 		}
 	}
-	params, err := decodeDetachVirtualMachineDiskParams(args, argsEscaped, r)
+	params, err := decodeDeleteVolumeParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -7846,32 +7194,32 @@ func (s *Server) handleDetachVirtualMachineDiskRequest(args [2]string, argsEscap
 
 	var rawBody []byte
 
-	var response DetachVirtualMachineDiskRes
+	var response DeleteVolumeRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    DetachVirtualMachineDiskOperation,
-			OperationSummary: "Detach a disk",
-			OperationID:      "detach-virtual-machine-disk",
+			OperationName:    DeleteVolumeOperation,
+			OperationSummary: "Delete a volume",
+			OperationID:      "delete-volume",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "virtualMachineId",
+					Name: "volumeId",
 					In:   "path",
-				}: params.VirtualMachineId,
+				}: params.VolumeId,
 				{
-					Name: "diskId",
-					In:   "path",
-				}: params.DiskId,
+					Name: "cancellation_mode",
+					In:   "query",
+				}: params.CancellationMode,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = DetachVirtualMachineDiskParams
-			Response = DetachVirtualMachineDiskRes
+			Params   = DeleteVolumeParams
+			Response = DeleteVolumeRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -7880,14 +7228,14 @@ func (s *Server) handleDetachVirtualMachineDiskRequest(args [2]string, argsEscap
 		](
 			m,
 			mreq,
-			unpackDetachVirtualMachineDiskParams,
+			unpackDeleteVolumeParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DetachVirtualMachineDisk(ctx, params)
+				response, err = s.h.DeleteVolume(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.DetachVirtualMachineDisk(ctx, params)
+		response, err = s.h.DeleteVolume(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -7906,7 +7254,7 @@ func (s *Server) handleDetachVirtualMachineDiskRequest(args [2]string, argsEscap
 		return
 	}
 
-	if err := encodeDetachVirtualMachineDiskResponse(response, w, span); err != nil {
+	if err := encodeDeleteVolumeResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -7915,29 +7263,40 @@ func (s *Server) handleDetachVirtualMachineDiskRequest(args [2]string, argsEscap
 	}
 }
 
-// handleDetachVirtualMachineNetworkInterfaceRequest handles detach-virtual-machine-network-interface operation.
+// handleDeleteVolumeBackupRequest handles delete-volume-backup operation.
 //
-// The primary network interface cannot be detached; the virtual machine would lose its network
-// address. The virtual machine has to be running; a stopped one holds no host and is refused with 409
-// `VIRTUAL_MACHINE_NOT_RUNNING`.
+// Independent of the source volume: deletion succeeds whether or not that volume still exists.
+// Metering of the backup ends once it is deleted.
 //
-// Returns the network interface; the virtual machine shows the `detach_network_interface` operation
-// and the interface the `detach` operation until it is detached.
+// Quota capacity and storage metering are released only after cleanup is confirmed.
 //
-// DELETE /api/v2/virtual-machines/{virtualMachineId}/network-interfaces/{networkInterfaceId}
-func (s *Server) handleDetachVirtualMachineNetworkInterfaceRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// A resource whose purchase still awaits checkout or payment is refused with
+// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
+// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
+// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
+// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+//
+// While subscriptions pay for the volume backup (those in its `release_set`), deleting it cancels them
+// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the volume backup
+// working until `scheduled_at` and releases it then. Asking again while that cancellation is pending
+// answers with it again, whatever mode is asked for.
+//
+// DELETE /api/v2/volume-backups/{volumeBackupId}
+func (s *Server) handleDeleteVolumeBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("detach-virtual-machine-network-interface"),
+		otelogen.OperationID("delete-volume-backup"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}/network-interfaces/{networkInterfaceId}"),
+		semconv.HTTPRouteKey.String("/api/v2/volume-backups/{volumeBackupId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DetachVirtualMachineNetworkInterfaceOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteVolumeBackupOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -7992,15 +7351,15 @@ func (s *Server) handleDetachVirtualMachineNetworkInterfaceRequest(args [2]strin
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: DetachVirtualMachineNetworkInterfaceOperation,
-			ID:   "detach-virtual-machine-network-interface",
+			Name: DeleteVolumeBackupOperation,
+			ID:   "delete-volume-backup",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, DetachVirtualMachineNetworkInterfaceOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteVolumeBackupOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -8042,7 +7401,7 @@ func (s *Server) handleDetachVirtualMachineNetworkInterfaceRequest(args [2]strin
 			return
 		}
 	}
-	params, err := decodeDetachVirtualMachineNetworkInterfaceParams(args, argsEscaped, r)
+	params, err := decodeDeleteVolumeBackupParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -8055,20 +7414,447 @@ func (s *Server) handleDetachVirtualMachineNetworkInterfaceRequest(args [2]strin
 
 	var rawBody []byte
 
-	var response DetachVirtualMachineNetworkInterfaceRes
+	var response DeleteVolumeBackupRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    DetachVirtualMachineNetworkInterfaceOperation,
-			OperationSummary: "Detach a network interface",
-			OperationID:      "detach-virtual-machine-network-interface",
+			OperationName:    DeleteVolumeBackupOperation,
+			OperationSummary: "Delete a volume backup",
+			OperationID:      "delete-volume-backup",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "virtualMachineId",
+					Name: "volumeBackupId",
 					In:   "path",
-				}: params.VirtualMachineId,
+				}: params.VolumeBackupId,
+				{
+					Name: "cancellation_mode",
+					In:   "query",
+				}: params.CancellationMode,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = DeleteVolumeBackupParams
+			Response = DeleteVolumeBackupRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackDeleteVolumeBackupParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.DeleteVolumeBackup(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.DeleteVolumeBackup(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeDeleteVolumeBackupResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleDeleteVolumeSnapshotRequest handles delete-volume-snapshot operation.
+//
+// Deletes this resource. Quota capacity and storage metering are released only after cleanup is
+// confirmed.
+//
+// A resource whose purchase still awaits checkout or payment is refused with
+// `COMPUTE_PURCHASE_PENDING`; `meta.checkout_session_id` names its Checkout Session and
+// `meta.order_id` its order once checkout created one. Expire the session or cancel the order in
+// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
+// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
+//
+// While subscriptions pay for the snapshot (those in its `release_set`), deleting it cancels them
+// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed subscription being refunded under its terms, and `period_end` keeps the snapshot working
+// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
+// with it again, whatever mode is asked for.
+//
+// DELETE /api/v2/volume-snapshots/{volumeSnapshotId}
+func (s *Server) handleDeleteVolumeSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-volume-snapshot"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/api/v2/volume-snapshots/{volumeSnapshotId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteVolumeSnapshotOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: DeleteVolumeSnapshotOperation,
+			ID:   "delete-volume-snapshot",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DeleteVolumeSnapshotOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeDeleteVolumeSnapshotParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response DeleteVolumeSnapshotRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    DeleteVolumeSnapshotOperation,
+			OperationSummary: "Delete a snapshot",
+			OperationID:      "delete-volume-snapshot",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "volumeSnapshotId",
+					In:   "path",
+				}: params.VolumeSnapshotId,
+				{
+					Name: "cancellation_mode",
+					In:   "query",
+				}: params.CancellationMode,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = DeleteVolumeSnapshotParams
+			Response = DeleteVolumeSnapshotRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackDeleteVolumeSnapshotParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.DeleteVolumeSnapshot(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.DeleteVolumeSnapshot(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeDeleteVolumeSnapshotResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleDetachInstanceNetworkInterfaceRequest handles detach-instance-network-interface operation.
+//
+// The primary network interface cannot be detached; the instance would lose its network address. The
+// instance has to be running; a stopped one holds no host and is refused with 409
+// `INSTANCE_NOT_RUNNING`.
+//
+// Returns the network interface; the instance shows the `detach_network_interface` operation and the
+// interface the `detach` operation until it is detached.
+//
+// DELETE /api/v2/instances/{instanceId}/network-interfaces/{networkInterfaceId}
+func (s *Server) handleDetachInstanceNetworkInterfaceRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("detach-instance-network-interface"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}/network-interfaces/{networkInterfaceId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DetachInstanceNetworkInterfaceOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: DetachInstanceNetworkInterfaceOperation,
+			ID:   "detach-instance-network-interface",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DetachInstanceNetworkInterfaceOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeDetachInstanceNetworkInterfaceParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response DetachInstanceNetworkInterfaceRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    DetachInstanceNetworkInterfaceOperation,
+			OperationSummary: "Detach a network interface",
+			OperationID:      "detach-instance-network-interface",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "instanceId",
+					In:   "path",
+				}: params.InstanceId,
 				{
 					Name: "networkInterfaceId",
 					In:   "path",
@@ -8079,8 +7865,8 @@ func (s *Server) handleDetachVirtualMachineNetworkInterfaceRequest(args [2]strin
 
 		type (
 			Request  = struct{}
-			Params   = DetachVirtualMachineNetworkInterfaceParams
-			Response = DetachVirtualMachineNetworkInterfaceRes
+			Params   = DetachInstanceNetworkInterfaceParams
+			Response = DetachInstanceNetworkInterfaceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -8089,14 +7875,14 @@ func (s *Server) handleDetachVirtualMachineNetworkInterfaceRequest(args [2]strin
 		](
 			m,
 			mreq,
-			unpackDetachVirtualMachineNetworkInterfaceParams,
+			unpackDetachInstanceNetworkInterfaceParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DetachVirtualMachineNetworkInterface(ctx, params)
+				response, err = s.h.DetachInstanceNetworkInterface(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.DetachVirtualMachineNetworkInterface(ctx, params)
+		response, err = s.h.DetachInstanceNetworkInterface(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -8115,7 +7901,219 @@ func (s *Server) handleDetachVirtualMachineNetworkInterfaceRequest(args [2]strin
 		return
 	}
 
-	if err := encodeDetachVirtualMachineNetworkInterfaceResponse(response, w, span); err != nil {
+	if err := encodeDetachInstanceNetworkInterfaceResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleDetachInstanceVolumeRequest handles detach-instance-volume operation.
+//
+// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
+// system that is being written to corrupts data.
+//
+// The volume the instance boots from cannot be detached, whether it is the boot volume bought with the
+// instance or a volume supplied as the existing boot_volume at launch. Such a request is refused with
+// `INSTANCE_BOOT_VOLUME_LOCKED` and changes nothing; releasing the instance is what frees that volume.
+//
+// Returns the volume; the instance shows the `detach_volume` operation and the volume the `detach`
+// operation until the volume is detached.
+//
+// DELETE /api/v2/instances/{instanceId}/volumes/{volumeId}
+func (s *Server) handleDetachInstanceVolumeRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("detach-instance-volume"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}/volumes/{volumeId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DetachInstanceVolumeOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: DetachInstanceVolumeOperation,
+			ID:   "detach-instance-volume",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, DetachInstanceVolumeOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeDetachInstanceVolumeParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response DetachInstanceVolumeRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    DetachInstanceVolumeOperation,
+			OperationSummary: "Detach a volume",
+			OperationID:      "detach-instance-volume",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "instanceId",
+					In:   "path",
+				}: params.InstanceId,
+				{
+					Name: "volumeId",
+					In:   "path",
+				}: params.VolumeId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = DetachInstanceVolumeParams
+			Response = DetachInstanceVolumeRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackDetachInstanceVolumeParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.DetachInstanceVolume(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.DetachInstanceVolume(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeDetachInstanceVolumeResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -8328,8 +8326,8 @@ func (s *Server) handleDisableVirtualPrivateCloudIpv6Request(args [1]string, arg
 // handleDisassociateElasticIPRequest handles disassociate-elastic-ip operation.
 //
 // The address remains held by the project and simply no longer points at any network interface. The
-// elastic IP shows the `disassociate` operation until the change is confirmed, and a virtual machine
-// whose primary interface it pointed at shows the `disassociate_elastic_ip` operation. Removing an
+// elastic IP shows the `disassociate` operation until the change is confirmed, and an instance whose
+// primary interface it pointed at shows the `disassociate_elastic_ip` operation. Removing an
 // association that does not exist is refused with 404 `ELASTIC_IP_NOT_ASSOCIATED`.
 //
 // POST /api/v2/elastic-ips/{elasticIpId}:disassociate
@@ -8736,7 +8734,7 @@ func (s *Server) handleEnableVirtualPrivateCloudIpv6Request(args [1]string, args
 
 // handleGetAvailabilityZoneRequest handles get-availability-zone operation.
 //
-// A disk and a virtual machine must reside in the same availability zone to be attached.
+// A volume and an instance must reside in the same availability zone to be attached.
 //
 // GET /api/v2/availability-zones/{availabilityZoneId}
 func (s *Server) handleGetAvailabilityZoneRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8927,809 +8925,6 @@ func (s *Server) handleGetAvailabilityZoneRequest(args [1]string, argsEscaped bo
 	}
 
 	if err := encodeGetAvailabilityZoneResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleGetDiskRequest handles get-disk operation.
-//
-// Returns the stored state of the disk; it does not query the cloud.
-//
-// GET /api/v2/disks/{diskId}
-func (s *Server) handleGetDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-disk"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v2/disks/{diskId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetDiskOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetDiskOperation,
-			ID:   "get-disk",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetDiskOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetDiskParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *DiskResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetDiskOperation,
-			OperationSummary: "Retrieve a disk",
-			OperationID:      "get-disk",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "diskId",
-					In:   "path",
-				}: params.DiskId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetDiskParams
-			Response = *DiskResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetDiskParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetDisk(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetDisk(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetDiskResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleGetDiskBackupRequest handles get-disk-backup operation.
-//
-// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
-// progress.
-//
-// GET /api/v2/disk-backups/{diskBackupId}
-func (s *Server) handleGetDiskBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-disk-backup"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v2/disk-backups/{diskBackupId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetDiskBackupOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetDiskBackupOperation,
-			ID:   "get-disk-backup",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetDiskBackupOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetDiskBackupParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *DiskBackupResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetDiskBackupOperation,
-			OperationSummary: "Retrieve a disk backup",
-			OperationID:      "get-disk-backup",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "diskBackupId",
-					In:   "path",
-				}: params.DiskBackupId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetDiskBackupParams
-			Response = *DiskBackupResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetDiskBackupParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetDiskBackup(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetDiskBackup(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetDiskBackupResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleGetDiskSnapshotRequest handles get-disk-snapshot operation.
-//
-// Retrieve a snapshot.
-//
-// GET /api/v2/disk-snapshots/{diskSnapshotId}
-func (s *Server) handleGetDiskSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-disk-snapshot"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v2/disk-snapshots/{diskSnapshotId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetDiskSnapshotOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetDiskSnapshotOperation,
-			ID:   "get-disk-snapshot",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetDiskSnapshotOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetDiskSnapshotParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *DiskSnapshotResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetDiskSnapshotOperation,
-			OperationSummary: "Retrieve a snapshot",
-			OperationID:      "get-disk-snapshot",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "diskSnapshotId",
-					In:   "path",
-				}: params.DiskSnapshotId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetDiskSnapshotParams
-			Response = *DiskSnapshotResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetDiskSnapshotParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetDiskSnapshot(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetDiskSnapshot(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetDiskSnapshotResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleGetDiskTypeRequest handles get-disk-type operation.
-//
-// Retrieve capacity and performance constraints for an existing disk, including types withdrawn from
-// sale.
-//
-// GET /api/v2/disk-types/{diskTypeId}
-func (s *Server) handleGetDiskTypeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-disk-type"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v2/disk-types/{diskTypeId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetDiskTypeOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetDiskTypeOperation,
-			ID:   "get-disk-type",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetDiskTypeOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{},
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetDiskTypeParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *DiskTypeResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetDiskTypeOperation,
-			OperationSummary: "Get a disk type",
-			OperationID:      "get-disk-type",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "diskTypeId",
-					In:   "path",
-				}: params.DiskTypeId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetDiskTypeParams
-			Response = *DiskTypeResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetDiskTypeParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetDiskType(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetDiskType(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetDiskTypeResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -10344,6 +9539,816 @@ func (s *Server) handleGetElasticIPLineRequest(args [1]string, argsEscaped bool,
 	}
 }
 
+// handleGetInstanceRequest handles get-instance operation.
+//
+// Returns the stored state of the instance; it does not query the cloud. Use it to poll creation
+// progress.
+//
+// GET /api/v2/instances/{instanceId}
+func (s *Server) handleGetInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-instance"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetInstanceOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetInstanceOperation,
+			ID:   "get-instance",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetInstanceOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetInstanceParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *Instance
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetInstanceOperation,
+			OperationSummary: "Retrieve an instance",
+			OperationID:      "get-instance",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "instanceId",
+					In:   "path",
+				}: params.InstanceId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetInstanceParams
+			Response = *Instance
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetInstanceParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetInstance(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetInstance(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetInstanceResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleGetInstanceConsoleRequest handles get-instance-console operation.
+//
+// The instance's VNC console, operated from a browser through a noVNC client. It does not require the
+// instance to be reachable over the network, which makes it usable when a network misconfiguration
+// prevents login.
+//
+// The returned address is single-use and expires within minutes. Every request issues a new address,
+// so request one before each use and do not cache the response.
+//
+// GET /api/v2/instances/{instanceId}/console
+func (s *Server) handleGetInstanceConsoleRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-instance-console"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}/console"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetInstanceConsoleOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetInstanceConsoleOperation,
+			ID:   "get-instance-console",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetInstanceConsoleOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetInstanceConsoleParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *ConsoleResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetInstanceConsoleOperation,
+			OperationSummary: "Retrieve a VNC console",
+			OperationID:      "get-instance-console",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "instanceId",
+					In:   "path",
+				}: params.InstanceId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetInstanceConsoleParams
+			Response = *ConsoleResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetInstanceConsoleParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetInstanceConsole(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetInstanceConsole(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetInstanceConsoleResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleGetInstanceFamilyRequest handles get-instance-family operation.
+//
+// Returns an instance family under the same rule as listing; a family with no instance type on sale or
+// sold out returns 404.
+//
+// GET /api/v2/instance-families/{instanceFamilyId}
+func (s *Server) handleGetInstanceFamilyRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-instance-family"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v2/instance-families/{instanceFamilyId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetInstanceFamilyOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetInstanceFamilyOperation,
+			ID:   "get-instance-family",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetInstanceFamilyOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{},
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetInstanceFamilyParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *InstanceFamily
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetInstanceFamilyOperation,
+			OperationSummary: "Get an instance family",
+			OperationID:      "get-instance-family",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "instanceFamilyId",
+					In:   "path",
+				}: params.InstanceFamilyId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetInstanceFamilyParams
+			Response = *InstanceFamily
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetInstanceFamilyParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetInstanceFamily(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetInstanceFamily(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetInstanceFamilyResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleGetInstanceTypeRequest handles get-instance-type operation.
+//
+// Returns an instance type on sale or sold out, under the same access rules as listing. Off-sale,
+// retired or absent types return 404.
+//
+// GET /api/v2/instance-types/{instanceTypeId}
+func (s *Server) handleGetInstanceTypeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-instance-type"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v2/instance-types/{instanceTypeId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetInstanceTypeOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetInstanceTypeOperation,
+			ID:   "get-instance-type",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetInstanceTypeOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{},
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetInstanceTypeParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *InstanceType
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetInstanceTypeOperation,
+			OperationSummary: "Get an instance type",
+			OperationID:      "get-instance-type",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "instanceTypeId",
+					In:   "path",
+				}: params.InstanceTypeId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetInstanceTypeParams
+			Response = *InstanceType
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetInstanceTypeParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetInstanceType(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetInstanceType(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetInstanceTypeResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleGetLaunchTemplateRequest handles get-launch-template operation.
 //
 // Get a launch template.
@@ -10548,14 +10553,14 @@ func (s *Server) handleGetLaunchTemplateRequest(args [1]string, argsEscaped bool
 //
 // Get a launch template version.
 //
-// GET /api/v2/launch-templates/{launchTemplateId}/versions/{version}
+// GET /api/v2/launch-templates/{launchTemplateId}/versions/{versionNumber}
 func (s *Server) handleGetLaunchTemplateVersionRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-launch-template-version"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v2/launch-templates/{launchTemplateId}/versions/{version}"),
+		semconv.HTTPRouteKey.String("/api/v2/launch-templates/{launchTemplateId}/versions/{versionNumber}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -10694,9 +10699,9 @@ func (s *Server) handleGetLaunchTemplateVersionRequest(args [2]string, argsEscap
 					In:   "path",
 				}: params.LaunchTemplateId,
 				{
-					Name: "version",
+					Name: "versionNumber",
 					In:   "path",
-				}: params.Version,
+				}: params.VersionNumber,
 			},
 			Raw: r,
 		}
@@ -10740,208 +10745,6 @@ func (s *Server) handleGetLaunchTemplateVersionRequest(args [2]string, argsEscap
 	}
 
 	if err := encodeGetLaunchTemplateVersionResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleGetMachineTypeRequest handles get-machine-type operation.
-//
-// Returns a machine type on sale or sold out, under the same access rules as listing. Off-sale,
-// retired or absent types return 404.
-//
-// GET /api/v2/machine-types/{machineTypeId}
-func (s *Server) handleGetMachineTypeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-machine-type"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v2/machine-types/{machineTypeId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetMachineTypeOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetMachineTypeOperation,
-			ID:   "get-machine-type",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetMachineTypeOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{},
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetMachineTypeParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *MachineType
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetMachineTypeOperation,
-			OperationSummary: "Get a machine type",
-			OperationID:      "get-machine-type",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "machineTypeId",
-					In:   "path",
-				}: params.MachineTypeId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetMachineTypeParams
-			Response = *MachineType
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetMachineTypeParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetMachineType(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetMachineType(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetMachineTypeResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -11556,9 +11359,9 @@ func (s *Server) handleGetPrivateImageRequest(args [1]string, argsEscaped bool, 
 // handleGetPublicImageRequest handles get-public-image operation.
 //
 // Returns a public image, on sale or withdrawn. A withdrawn image (`sale_status` is `off_sale`) is
-// still returned because virtual machines may keep running it; it cannot be chosen for a new virtual
-// machine and can only be rebuilt onto by a virtual machine that already runs it. A private image id
-// is reported as not found here; use `/private-images`.
+// still returned because instances may keep running it; it cannot be chosen for a new instance and can
+// only be rebuilt onto by an instance that already runs it. A private image id is reported as not
+// found here; use `/private-images`.
 //
 // GET /api/v2/public-images/{publicImageId}
 func (s *Server) handleGetPublicImageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -12560,412 +12363,6 @@ func (s *Server) handleGetSecurityGroupRuleRequest(args [2]string, argsEscaped b
 	}
 
 	if err := encodeGetSecurityGroupRuleResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleGetVirtualMachineRequest handles get-virtual-machine operation.
-//
-// Returns the stored state of the virtual machine; it does not query the cloud. Use it to poll
-// creation progress.
-//
-// GET /api/v2/virtual-machines/{virtualMachineId}
-func (s *Server) handleGetVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetVirtualMachineOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetVirtualMachineOperation,
-			ID:   "get-virtual-machine",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetVirtualMachineOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetVirtualMachineParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *VirtualMachine
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetVirtualMachineOperation,
-			OperationSummary: "Retrieve a virtual machine",
-			OperationID:      "get-virtual-machine",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "virtualMachineId",
-					In:   "path",
-				}: params.VirtualMachineId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetVirtualMachineParams
-			Response = *VirtualMachine
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetVirtualMachineParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetVirtualMachine(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetVirtualMachine(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetVirtualMachineResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleGetVirtualMachineConsoleRequest handles get-virtual-machine-console operation.
-//
-// The virtual machine's VNC console, operated from a browser through a noVNC client. It does not
-// require the virtual machine to be reachable over the network, which makes it usable when a network
-// misconfiguration prevents login.
-//
-// The returned address is single-use and expires within minutes. Every request issues a new address,
-// so request one before each use and do not cache the response.
-//
-// GET /api/v2/virtual-machines/{virtualMachineId}/console
-func (s *Server) handleGetVirtualMachineConsoleRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-virtual-machine-console"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}/console"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetVirtualMachineConsoleOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetVirtualMachineConsoleOperation,
-			ID:   "get-virtual-machine-console",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetVirtualMachineConsoleOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetVirtualMachineConsoleParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *ConsoleResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetVirtualMachineConsoleOperation,
-			OperationSummary: "Retrieve a VNC console",
-			OperationID:      "get-virtual-machine-console",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "virtualMachineId",
-					In:   "path",
-				}: params.VirtualMachineId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetVirtualMachineConsoleParams
-			Response = *ConsoleResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetVirtualMachineConsoleParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetVirtualMachineConsole(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetVirtualMachineConsole(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetVirtualMachineConsoleResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -13987,10 +13384,813 @@ func (s *Server) handleGetVirtualPrivateCloudSubnetRequest(args [2]string, argsE
 	}
 }
 
+// handleGetVolumeRequest handles get-volume operation.
+//
+// Returns the stored state of the volume; it does not query the cloud.
+//
+// GET /api/v2/volumes/{volumeId}
+func (s *Server) handleGetVolumeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-volume"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v2/volumes/{volumeId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetVolumeOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetVolumeOperation,
+			ID:   "get-volume",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetVolumeOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetVolumeParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *VolumeResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetVolumeOperation,
+			OperationSummary: "Retrieve a volume",
+			OperationID:      "get-volume",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "volumeId",
+					In:   "path",
+				}: params.VolumeId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetVolumeParams
+			Response = *VolumeResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetVolumeParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetVolume(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetVolume(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetVolumeResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleGetVolumeBackupRequest handles get-volume-backup operation.
+//
+// Returns the stored state of the backup; it does not query the cloud. Use it to poll creation
+// progress.
+//
+// GET /api/v2/volume-backups/{volumeBackupId}
+func (s *Server) handleGetVolumeBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-volume-backup"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v2/volume-backups/{volumeBackupId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetVolumeBackupOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetVolumeBackupOperation,
+			ID:   "get-volume-backup",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetVolumeBackupOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetVolumeBackupParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *VolumeBackupResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetVolumeBackupOperation,
+			OperationSummary: "Retrieve a volume backup",
+			OperationID:      "get-volume-backup",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "volumeBackupId",
+					In:   "path",
+				}: params.VolumeBackupId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetVolumeBackupParams
+			Response = *VolumeBackupResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetVolumeBackupParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetVolumeBackup(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetVolumeBackup(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetVolumeBackupResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleGetVolumeSnapshotRequest handles get-volume-snapshot operation.
+//
+// Retrieve a snapshot.
+//
+// GET /api/v2/volume-snapshots/{volumeSnapshotId}
+func (s *Server) handleGetVolumeSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-volume-snapshot"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v2/volume-snapshots/{volumeSnapshotId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetVolumeSnapshotOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetVolumeSnapshotOperation,
+			ID:   "get-volume-snapshot",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetVolumeSnapshotOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetVolumeSnapshotParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *VolumeSnapshotResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetVolumeSnapshotOperation,
+			OperationSummary: "Retrieve a snapshot",
+			OperationID:      "get-volume-snapshot",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "volumeSnapshotId",
+					In:   "path",
+				}: params.VolumeSnapshotId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetVolumeSnapshotParams
+			Response = *VolumeSnapshotResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetVolumeSnapshotParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetVolumeSnapshot(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetVolumeSnapshot(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetVolumeSnapshotResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleGetVolumeTypeRequest handles get-volume-type operation.
+//
+// Retrieve capacity and performance constraints for an existing volume, including types withdrawn from
+// sale.
+//
+// GET /api/v2/volume-types/{volumeTypeId}
+func (s *Server) handleGetVolumeTypeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-volume-type"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v2/volume-types/{volumeTypeId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetVolumeTypeOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetVolumeTypeOperation,
+			ID:   "get-volume-type",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetVolumeTypeOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{},
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetVolumeTypeParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *VolumeTypeResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetVolumeTypeOperation,
+			OperationSummary: "Get a volume type",
+			OperationID:      "get-volume-type",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "volumeTypeId",
+					In:   "path",
+				}: params.VolumeTypeId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetVolumeTypeParams
+			Response = *VolumeTypeResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetVolumeTypeParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetVolumeType(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetVolumeType(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetVolumeTypeResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleListAvailabilityZonesRequest handles list-availability-zones operation.
 //
-// A disk and a virtual machine must reside in the same availability zone to be attached. Confirm the
-// zone before creating either. Without `region_id`, the zones of every region are listed.
+// A volume and an instance must reside in the same availability zone to be attached. Confirm the zone
+// before creating either. Without `region_id`, the zones of every region are listed.
 //
 // GET /api/v2/availability-zones
 func (s *Server) handleListAvailabilityZonesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -14189,850 +14389,6 @@ func (s *Server) handleListAvailabilityZonesRequest(args [0]string, argsEscaped 
 	}
 
 	if err := encodeListAvailabilityZonesResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListDiskBackupsRequest handles list-disk-backups operation.
-//
-// List disk backups.
-//
-// GET /api/v2/disk-backups
-func (s *Server) handleListDiskBackupsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-disk-backups"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v2/disk-backups"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListDiskBackupsOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListDiskBackupsOperation,
-			ID:   "list-disk-backups",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListDiskBackupsOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListDiskBackupsParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *DiskBackupListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListDiskBackupsOperation,
-			OperationSummary: "List disk backups",
-			OperationID:      "list-disk-backups",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "disk_id",
-					In:   "query",
-				}: params.DiskID,
-				{
-					Name: "page",
-					In:   "query",
-				}: params.Page,
-				{
-					Name: "page_size",
-					In:   "query",
-				}: params.PageSize,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListDiskBackupsParams
-			Response = *DiskBackupListResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListDiskBackupsParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListDiskBackups(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListDiskBackups(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListDiskBackupsResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListDiskSnapshotsRequest handles list-disk-snapshots operation.
-//
-// List snapshots.
-//
-// GET /api/v2/disk-snapshots
-func (s *Server) handleListDiskSnapshotsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-disk-snapshots"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v2/disk-snapshots"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListDiskSnapshotsOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListDiskSnapshotsOperation,
-			ID:   "list-disk-snapshots",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListDiskSnapshotsOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListDiskSnapshotsParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *DiskSnapshotListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListDiskSnapshotsOperation,
-			OperationSummary: "List snapshots",
-			OperationID:      "list-disk-snapshots",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "disk_id",
-					In:   "query",
-				}: params.DiskID,
-				{
-					Name: "page",
-					In:   "query",
-				}: params.Page,
-				{
-					Name: "page_size",
-					In:   "query",
-				}: params.PageSize,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListDiskSnapshotsParams
-			Response = *DiskSnapshotListResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListDiskSnapshotsParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListDiskSnapshots(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListDiskSnapshots(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListDiskSnapshotsResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListDiskTypesRequest handles list-disk-types operation.
-//
-// Disk types on sale are listed, and sold-out ones with `sale_status` `sold_out`. Any of them boots a
-// virtual machine of its zone, holds data or takes a restore. A withdrawn one disappears from here and
-// can no longer be bought, while the disks already on it keep working and can still be resized.
-//
-// GET /api/v2/disk-types
-func (s *Server) handleListDiskTypesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-disk-types"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v2/disk-types"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListDiskTypesOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListDiskTypesOperation,
-			ID:   "list-disk-types",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListDiskTypesOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{},
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListDiskTypesParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *DiskTypeListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListDiskTypesOperation,
-			OperationSummary: "List disk types on sale",
-			OperationID:      "list-disk-types",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "region_id",
-					In:   "query",
-				}: params.RegionID,
-				{
-					Name: "availability_zone_id",
-					In:   "query",
-				}: params.AvailabilityZoneID,
-				{
-					Name: "page",
-					In:   "query",
-				}: params.Page,
-				{
-					Name: "page_size",
-					In:   "query",
-				}: params.PageSize,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListDiskTypesParams
-			Response = *DiskTypeListResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListDiskTypesParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListDiskTypes(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListDiskTypes(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListDiskTypesResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListDisksRequest handles list-disks operation.
-//
-// When both `region_id` and `availability_zone_id` are supplied, only disks attachable to a virtual
-// machine at that location are returned.
-//
-// GET /api/v2/disks
-func (s *Server) handleListDisksRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-disks"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v2/disks"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListDisksOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListDisksOperation,
-			ID:   "list-disks",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListDisksOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListDisksParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *DiskListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListDisksOperation,
-			OperationSummary: "List disks",
-			OperationID:      "list-disks",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "region_id",
-					In:   "query",
-				}: params.RegionID,
-				{
-					Name: "availability_zone_id",
-					In:   "query",
-				}: params.AvailabilityZoneID,
-				{
-					Name: "page",
-					In:   "query",
-				}: params.Page,
-				{
-					Name: "page_size",
-					In:   "query",
-				}: params.PageSize,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListDisksParams
-			Response = *DiskListResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListDisksParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListDisks(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListDisks(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListDisksResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -15688,6 +15044,1060 @@ func (s *Server) handleListElasticIpsRequest(args [0]string, argsEscaped bool, w
 	}
 }
 
+// handleListInstanceFamiliesRequest handles list-instance-families operation.
+//
+// An instance family is one hardware line of a region, such as `g7`, and its instance types are its
+// sizes in each availability zone. A family shows here while it has an instance type on sale or sold
+// out.
+//
+// GET /api/v2/instance-families
+func (s *Server) handleListInstanceFamiliesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-instance-families"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v2/instance-families"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListInstanceFamiliesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListInstanceFamiliesOperation,
+			ID:   "list-instance-families",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListInstanceFamiliesOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{},
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListInstanceFamiliesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *InstanceFamilyListResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListInstanceFamiliesOperation,
+			OperationSummary: "List instance families",
+			OperationID:      "list-instance-families",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "region_id",
+					In:   "query",
+				}: params.RegionID,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListInstanceFamiliesParams
+			Response = *InstanceFamilyListResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListInstanceFamiliesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListInstanceFamilies(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListInstanceFamilies(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListInstanceFamiliesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListInstanceNetworkInterfacesRequest handles list-instance-network-interfaces operation.
+//
+// List the network interfaces of an instance.
+//
+// GET /api/v2/instances/{instanceId}/network-interfaces
+func (s *Server) handleListInstanceNetworkInterfacesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-instance-network-interfaces"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}/network-interfaces"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListInstanceNetworkInterfacesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListInstanceNetworkInterfacesOperation,
+			ID:   "list-instance-network-interfaces",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListInstanceNetworkInterfacesOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListInstanceNetworkInterfacesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *NetworkInterfaceAttachmentList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListInstanceNetworkInterfacesOperation,
+			OperationSummary: "List the network interfaces of an instance",
+			OperationID:      "list-instance-network-interfaces",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "instanceId",
+					In:   "path",
+				}: params.InstanceId,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListInstanceNetworkInterfacesParams
+			Response = *NetworkInterfaceAttachmentList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListInstanceNetworkInterfacesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListInstanceNetworkInterfaces(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListInstanceNetworkInterfaces(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListInstanceNetworkInterfacesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListInstanceTypesRequest handles list-instance-types operation.
+//
+// Instance types on sale are listed, and sold-out ones with `sale_status` `sold_out`. A withdrawn one
+// disappears from here and can no longer be ordered, while the instances already running it keep
+// running.
+//
+// GET /api/v2/instance-types
+func (s *Server) handleListInstanceTypesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-instance-types"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v2/instance-types"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListInstanceTypesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListInstanceTypesOperation,
+			ID:   "list-instance-types",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListInstanceTypesOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{},
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListInstanceTypesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *InstanceTypeListResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListInstanceTypesOperation,
+			OperationSummary: "List instance types on sale",
+			OperationID:      "list-instance-types",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "region_id",
+					In:   "query",
+				}: params.RegionID,
+				{
+					Name: "instance_family_id",
+					In:   "query",
+				}: params.InstanceFamilyID,
+				{
+					Name: "availability_zone_id",
+					In:   "query",
+				}: params.AvailabilityZoneID,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListInstanceTypesParams
+			Response = *InstanceTypeListResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListInstanceTypesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListInstanceTypes(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListInstanceTypes(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListInstanceTypesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListInstanceVolumesRequest handles list-instance-volumes operation.
+//
+// List the volumes attached to an instance.
+//
+// GET /api/v2/instances/{instanceId}/volumes
+func (s *Server) handleListInstanceVolumesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-instance-volumes"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}/volumes"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListInstanceVolumesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListInstanceVolumesOperation,
+			ID:   "list-instance-volumes",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListInstanceVolumesOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListInstanceVolumesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *VolumeAttachmentList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListInstanceVolumesOperation,
+			OperationSummary: "List the volumes attached to an instance",
+			OperationID:      "list-instance-volumes",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "instanceId",
+					In:   "path",
+				}: params.InstanceId,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListInstanceVolumesParams
+			Response = *VolumeAttachmentList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListInstanceVolumesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListInstanceVolumes(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListInstanceVolumes(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListInstanceVolumesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListInstancesRequest handles list-instances operation.
+//
+// Every instance in the project, newest first, in their stored state.
+//
+// GET /api/v2/instances
+func (s *Server) handleListInstancesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-instances"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v2/instances"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListInstancesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListInstancesOperation,
+			ID:   "list-instances",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListInstancesOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListInstancesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *InstanceListResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListInstancesOperation,
+			OperationSummary: "List instances",
+			OperationID:      "list-instances",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "label",
+					In:   "query",
+				}: params.Label,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListInstancesParams
+			Response = *InstanceListResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListInstancesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListInstances(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListInstances(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListInstancesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleListLaunchTemplateVersionsRequest handles list-launch-template-versions operation.
 //
 // Newest first.
@@ -16104,221 +16514,6 @@ func (s *Server) handleListLaunchTemplatesRequest(args [0]string, argsEscaped bo
 	}
 }
 
-// handleListMachineTypesRequest handles list-machine-types operation.
-//
-// Machine types on sale are listed, and sold-out ones with `sale_status` `sold_out`. A withdrawn one
-// disappears from here and can no longer be ordered, while the virtual machines already running it
-// keep running.
-//
-// GET /api/v2/machine-types
-func (s *Server) handleListMachineTypesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-machine-types"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v2/machine-types"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListMachineTypesOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListMachineTypesOperation,
-			ID:   "list-machine-types",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListMachineTypesOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{},
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListMachineTypesParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *MachineTypeListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListMachineTypesOperation,
-			OperationSummary: "List machine types on sale",
-			OperationID:      "list-machine-types",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "region_id",
-					In:   "query",
-				}: params.RegionID,
-				{
-					Name: "availability_zone_id",
-					In:   "query",
-				}: params.AvailabilityZoneID,
-				{
-					Name: "page",
-					In:   "query",
-				}: params.Page,
-				{
-					Name: "page_size",
-					In:   "query",
-				}: params.PageSize,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListMachineTypesParams
-			Response = *MachineTypeListResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListMachineTypesParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListMachineTypes(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListMachineTypes(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListMachineTypesResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleListNetworkInterfacesRequest handles list-network-interfaces operation.
 //
 // List network interfaces.
@@ -16530,7 +16725,7 @@ func (s *Server) handleListNetworkInterfacesRequest(args [0]string, argsEscaped 
 //
 // Operations performed by the platform are included, but the individual operator is not disclosed and
 // `actor_type` is `platform`. Suspension for non-payment and bans for abuse are examples: the time at
-// which a virtual machine was stopped by the platform is needed, whereas the operator is internal
+// which an instance was stopped by the platform is needed, whereas the operator is internal
 // information.
 //
 // Fields such as passwords are replaced with a placeholder as the record is written and never appear
@@ -16745,11 +16940,11 @@ func (s *Server) handleListOperationLogsRequest(args [0]string, argsEscaped bool
 // Lists the private images of this project, newest first, in every status: including while a capture
 // is in progress and after it failed. Private images of other projects are never listed.
 //
-// A private image is usable only by the project that captured it from one of its virtual machines. Its
+// A private image is usable only by the project that captured it from one of its instances. Its
 // storage is metered by the hour on a subscription of the project.
 //
-// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
-// memory of the selected machine type cannot boot; filter the options accordingly. Public images are
+// An image can only be used in the region that holds it. An image whose `min_memory_mib` exceeds the
+// memory of the selected instance type cannot boot; filter the options accordingly. Public images are
 // in `/public-images`.
 //
 // GET /api/v2/private-images
@@ -16959,14 +17154,14 @@ func (s *Server) handleListPrivateImagesRequest(args [0]string, argsEscaped bool
 // handleListPublicImagesRequest handles list-public-images operation.
 //
 // Lists the platform's public images that are on sale. A public image is offered to every project. One
-// the platform withdraws disappears from here and can no longer install new virtual machines, while
-// the virtual machines already running it keep running and can still be rebuilt onto it; retrieve it
-// by id to see it.
+// the platform withdraws disappears from here and can no longer install new instances, while the
+// instances already running it keep running and can still be rebuilt onto it; retrieve it by id to see
+// it.
 //
-// An image can only be used in the region that holds it. An image whose `min_ram_mb` exceeds the
-// memory of the selected machine type cannot boot; filter the options accordingly.
+// An image can only be used in the region that holds it. An image whose `min_memory_mib` exceeds the
+// memory of the selected instance type cannot boot; filter the options accordingly.
 //
-// Images this project captured from its own virtual machines are in `/private-images`.
+// Images this project captured from its own instances are in `/private-images`.
 //
 // GET /api/v2/public-images
 func (s *Server) handleListPublicImagesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -18010,630 +18205,6 @@ func (s *Server) handleListSecurityGroupsRequest(args [0]string, argsEscaped boo
 	}
 }
 
-// handleListVirtualMachineDisksRequest handles list-virtual-machine-disks operation.
-//
-// List the disks attached to a virtual machine.
-//
-// GET /api/v2/virtual-machines/{virtualMachineId}/disks
-func (s *Server) handleListVirtualMachineDisksRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-virtual-machine-disks"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}/disks"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListVirtualMachineDisksOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListVirtualMachineDisksOperation,
-			ID:   "list-virtual-machine-disks",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListVirtualMachineDisksOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListVirtualMachineDisksParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *DiskAttachmentList
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListVirtualMachineDisksOperation,
-			OperationSummary: "List the disks attached to a virtual machine",
-			OperationID:      "list-virtual-machine-disks",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "virtualMachineId",
-					In:   "path",
-				}: params.VirtualMachineId,
-				{
-					Name: "page",
-					In:   "query",
-				}: params.Page,
-				{
-					Name: "page_size",
-					In:   "query",
-				}: params.PageSize,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListVirtualMachineDisksParams
-			Response = *DiskAttachmentList
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListVirtualMachineDisksParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListVirtualMachineDisks(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListVirtualMachineDisks(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListVirtualMachineDisksResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListVirtualMachineNetworkInterfacesRequest handles list-virtual-machine-network-interfaces operation.
-//
-// List the network interfaces of a virtual machine.
-//
-// GET /api/v2/virtual-machines/{virtualMachineId}/network-interfaces
-func (s *Server) handleListVirtualMachineNetworkInterfacesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-virtual-machine-network-interfaces"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}/network-interfaces"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListVirtualMachineNetworkInterfacesOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListVirtualMachineNetworkInterfacesOperation,
-			ID:   "list-virtual-machine-network-interfaces",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListVirtualMachineNetworkInterfacesOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListVirtualMachineNetworkInterfacesParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *NetworkInterfaceAttachmentList
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListVirtualMachineNetworkInterfacesOperation,
-			OperationSummary: "List the network interfaces of a virtual machine",
-			OperationID:      "list-virtual-machine-network-interfaces",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "virtualMachineId",
-					In:   "path",
-				}: params.VirtualMachineId,
-				{
-					Name: "page",
-					In:   "query",
-				}: params.Page,
-				{
-					Name: "page_size",
-					In:   "query",
-				}: params.PageSize,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListVirtualMachineNetworkInterfacesParams
-			Response = *NetworkInterfaceAttachmentList
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListVirtualMachineNetworkInterfacesParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListVirtualMachineNetworkInterfaces(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListVirtualMachineNetworkInterfaces(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListVirtualMachineNetworkInterfacesResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListVirtualMachinesRequest handles list-virtual-machines operation.
-//
-// Every virtual machine in the project, newest first, in their stored state.
-//
-// GET /api/v2/virtual-machines
-func (s *Server) handleListVirtualMachinesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-virtual-machines"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListVirtualMachinesOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListVirtualMachinesOperation,
-			ID:   "list-virtual-machines",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListVirtualMachinesOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListVirtualMachinesParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *VirtualMachineListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListVirtualMachinesOperation,
-			OperationSummary: "List virtual machines",
-			OperationID:      "list-virtual-machines",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "label",
-					In:   "query",
-				}: params.Label,
-				{
-					Name: "page",
-					In:   "query",
-				}: params.Page,
-				{
-					Name: "page_size",
-					In:   "query",
-				}: params.PageSize,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListVirtualMachinesParams
-			Response = *VirtualMachineListResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListVirtualMachinesParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListVirtualMachines(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListVirtualMachines(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListVirtualMachinesResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleListVirtualPrivateCloudPeeringsRequest handles list-virtual-private-cloud-peerings operation.
 //
 // List peerings.
@@ -19465,35 +19036,24 @@ func (s *Server) handleListVirtualPrivateCloudsRequest(args [0]string, argsEscap
 	}
 }
 
-// handleRebootVirtualMachineRequest handles reboot-virtual-machine operation.
+// handleListVolumeBackupsRequest handles list-volume-backups operation.
 //
-// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+// List volume backups.
 //
-// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
-// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
-//
-// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft
-// reboot the virtual machine never carried out. Any other request for an operation, including a second
-// soft reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
-//
-// A virtual machine suspended by the platform must be unsuspended first.
-//
-// The virtual machine shows the `reboot` operation until the reboot has finished.
-//
-// POST /api/v2/virtual-machines/{virtualMachineId}:reboot
-func (s *Server) handleRebootVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v2/volume-backups
+func (s *Server) handleListVolumeBackupsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("reboot-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}:reboot"),
+		otelogen.OperationID("list-volume-backups"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v2/volume-backups"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), RebootVirtualMachineOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListVolumeBackupsOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -19548,15 +19108,15 @@ func (s *Server) handleRebootVirtualMachineRequest(args [1]string, argsEscaped b
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: RebootVirtualMachineOperation,
-			ID:   "reboot-virtual-machine",
+			Name: ListVolumeBackupsOperation,
+			ID:   "list-volume-backups",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, RebootVirtualMachineOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListVolumeBackupsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -19598,7 +19158,7 @@ func (s *Server) handleRebootVirtualMachineRequest(args [1]string, argsEscaped b
 			return
 		}
 	}
-	params, err := decodeRebootVirtualMachineParams(args, argsEscaped, r)
+	params, err := decodeListVolumeBackupsParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -19610,44 +19170,37 @@ func (s *Server) handleRebootVirtualMachineRequest(args [1]string, argsEscaped b
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeRebootVirtualMachineRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
 
-	var response RebootVirtualMachineRes
+	var response *VolumeBackupListResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    RebootVirtualMachineOperation,
-			OperationSummary: "Reboot a virtual machine",
-			OperationID:      "reboot-virtual-machine",
-			Body:             request,
+			OperationName:    ListVolumeBackupsOperation,
+			OperationSummary: "List volume backups",
+			OperationID:      "list-volume-backups",
+			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "virtualMachineId",
-					In:   "path",
-				}: params.VirtualMachineId,
+					Name: "volume_id",
+					In:   "query",
+				}: params.VolumeID,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *RebootVirtualMachineRequestBody
-			Params   = RebootVirtualMachineParams
-			Response = RebootVirtualMachineRes
+			Request  = struct{}
+			Params   = ListVolumeBackupsParams
+			Response = *VolumeBackupListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -19656,14 +19209,14 @@ func (s *Server) handleRebootVirtualMachineRequest(args [1]string, argsEscaped b
 		](
 			m,
 			mreq,
-			unpackRebootVirtualMachineParams,
+			unpackListVolumeBackupsParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.RebootVirtualMachine(ctx, request, params)
+				response, err = s.h.ListVolumeBackups(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.RebootVirtualMachine(ctx, request, params)
+		response, err = s.h.ListVolumeBackups(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -19682,7 +19235,7 @@ func (s *Server) handleRebootVirtualMachineRequest(args [1]string, argsEscaped b
 		return
 	}
 
-	if err := encodeRebootVirtualMachineResponse(response, w, span); err != nil {
+	if err := encodeListVolumeBackupsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -19691,35 +19244,24 @@ func (s *Server) handleRebootVirtualMachineRequest(args [1]string, argsEscaped b
 	}
 }
 
-// handleRebuildVirtualMachineRequest handles rebuild-virtual-machine operation.
+// handleListVolumeSnapshotsRequest handles list-volume-snapshots operation.
 //
-// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
+// List snapshots.
 //
-// The virtual machine has to be running; a stopped one holds no host and is refused with 409
-// `VIRTUAL_MACHINE_NOT_RUNNING`. Start it first; a virtual machine whose operating system no longer
-// boots still starts.
-//
-// The image this virtual machine already runs is accepted even after the platform has withdrawn it,
-// since rebuilding is the only way back into a virtual machine broken from the inside. Any other
-// withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new
-// order.
-//
-// The virtual machine shows the `rebuild` operation until the rebuild has finished.
-//
-// POST /api/v2/virtual-machines/{virtualMachineId}:rebuild
-func (s *Server) handleRebuildVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v2/volume-snapshots
+func (s *Server) handleListVolumeSnapshotsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rebuild-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}:rebuild"),
+		otelogen.OperationID("list-volume-snapshots"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v2/volume-snapshots"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), RebuildVirtualMachineOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListVolumeSnapshotsOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -19774,15 +19316,15 @@ func (s *Server) handleRebuildVirtualMachineRequest(args [1]string, argsEscaped 
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: RebuildVirtualMachineOperation,
-			ID:   "rebuild-virtual-machine",
+			Name: ListVolumeSnapshotsOperation,
+			ID:   "list-volume-snapshots",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, RebuildVirtualMachineOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListVolumeSnapshotsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -19824,7 +19366,7 @@ func (s *Server) handleRebuildVirtualMachineRequest(args [1]string, argsEscaped 
 			return
 		}
 	}
-	params, err := decodeRebuildVirtualMachineParams(args, argsEscaped, r)
+	params, err := decodeListVolumeSnapshotsParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -19836,44 +19378,37 @@ func (s *Server) handleRebuildVirtualMachineRequest(args [1]string, argsEscaped 
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeRebuildVirtualMachineRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
 
-	var response RebuildVirtualMachineRes
+	var response *VolumeSnapshotListResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    RebuildVirtualMachineOperation,
-			OperationSummary: "Rebuild a virtual machine",
-			OperationID:      "rebuild-virtual-machine",
-			Body:             request,
+			OperationName:    ListVolumeSnapshotsOperation,
+			OperationSummary: "List snapshots",
+			OperationID:      "list-volume-snapshots",
+			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "virtualMachineId",
-					In:   "path",
-				}: params.VirtualMachineId,
+					Name: "volume_id",
+					In:   "query",
+				}: params.VolumeID,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *RebuildVirtualMachineRequestBody
-			Params   = RebuildVirtualMachineParams
-			Response = RebuildVirtualMachineRes
+			Request  = struct{}
+			Params   = ListVolumeSnapshotsParams
+			Response = *VolumeSnapshotListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -19882,14 +19417,14 @@ func (s *Server) handleRebuildVirtualMachineRequest(args [1]string, argsEscaped 
 		](
 			m,
 			mreq,
-			unpackRebuildVirtualMachineParams,
+			unpackListVolumeSnapshotsParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.RebuildVirtualMachine(ctx, request, params)
+				response, err = s.h.ListVolumeSnapshots(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.RebuildVirtualMachine(ctx, request, params)
+		response, err = s.h.ListVolumeSnapshots(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -19908,7 +19443,886 @@ func (s *Server) handleRebuildVirtualMachineRequest(args [1]string, argsEscaped 
 		return
 	}
 
-	if err := encodeRebuildVirtualMachineResponse(response, w, span); err != nil {
+	if err := encodeListVolumeSnapshotsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListVolumeTypesRequest handles list-volume-types operation.
+//
+// Volume types on sale are listed, and sold-out ones with `sale_status` `sold_out`. Any of them boots
+// an instance of its zone, holds data or takes a restore. A withdrawn one disappears from here and can
+// no longer be bought, while the volumes already on it keep working and can still be resized.
+//
+// GET /api/v2/volume-types
+func (s *Server) handleListVolumeTypesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-volume-types"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v2/volume-types"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListVolumeTypesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListVolumeTypesOperation,
+			ID:   "list-volume-types",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListVolumeTypesOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{},
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListVolumeTypesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *VolumeTypeListResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListVolumeTypesOperation,
+			OperationSummary: "List volume types on sale",
+			OperationID:      "list-volume-types",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "region_id",
+					In:   "query",
+				}: params.RegionID,
+				{
+					Name: "availability_zone_id",
+					In:   "query",
+				}: params.AvailabilityZoneID,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListVolumeTypesParams
+			Response = *VolumeTypeListResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListVolumeTypesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListVolumeTypes(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListVolumeTypes(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListVolumeTypesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListVolumesRequest handles list-volumes operation.
+//
+// When both `region_id` and `availability_zone_id` are supplied, only volumes attachable to an
+// instance at that location are returned.
+//
+// GET /api/v2/volumes
+func (s *Server) handleListVolumesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-volumes"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v2/volumes"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListVolumesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListVolumesOperation,
+			ID:   "list-volumes",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ListVolumesOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListVolumesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *VolumeListResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListVolumesOperation,
+			OperationSummary: "List volumes",
+			OperationID:      "list-volumes",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "region_id",
+					In:   "query",
+				}: params.RegionID,
+				{
+					Name: "availability_zone_id",
+					In:   "query",
+				}: params.AvailabilityZoneID,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListVolumesParams
+			Response = *VolumeListResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListVolumesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListVolumes(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListVolumes(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListVolumesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleRebootInstanceRequest handles reboot-instance operation.
+//
+// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+//
+// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
+// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
+//
+// A forced reboot is accepted while a soft reboot is in progress, which is the way out of a soft
+// reboot the instance never carried out. Any other request for an operation, including a second soft
+// reboot, is refused with `COMPUTE_RESOURCE_BUSY` while the reboot is in progress.
+//
+// An instance suspended by the platform must be unsuspended first.
+//
+// The instance shows the `reboot` operation until the reboot has finished.
+//
+// POST /api/v2/instances/{instanceId}:reboot
+func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("reboot-instance"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}:reboot"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RebootInstanceOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: RebootInstanceOperation,
+			ID:   "reboot-instance",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RebootInstanceOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeRebootInstanceParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeRebootInstanceRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response RebootInstanceRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    RebootInstanceOperation,
+			OperationSummary: "Reboot an instance",
+			OperationID:      "reboot-instance",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "instanceId",
+					In:   "path",
+				}: params.InstanceId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *RebootInstanceRequestBody
+			Params   = RebootInstanceParams
+			Response = RebootInstanceRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackRebootInstanceParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.RebootInstance(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.RebootInstance(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeRebootInstanceResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleRebuildInstanceRequest handles rebuild-instance operation.
+//
+// All data on the boot volume is erased and cannot be recovered. Attached data volumes are unaffected.
+//
+// The instance has to be running; a stopped one holds no host and is refused with 409
+// `INSTANCE_NOT_RUNNING`. Start it first; an instance whose operating system no longer boots still
+// starts.
+//
+// The image this instance already runs is accepted even after the platform has withdrawn it, since
+// rebuilding is the only way back into an instance broken from the inside. Any other withdrawn image
+// is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
+//
+// The instance shows the `rebuild` operation until the rebuild has finished.
+//
+// POST /api/v2/instances/{instanceId}:rebuild
+func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("rebuild-instance"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}:rebuild"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RebuildInstanceOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: RebuildInstanceOperation,
+			ID:   "rebuild-instance",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RebuildInstanceOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeRebuildInstanceParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeRebuildInstanceRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response RebuildInstanceRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    RebuildInstanceOperation,
+			OperationSummary: "Rebuild an instance",
+			OperationID:      "rebuild-instance",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "instanceId",
+					In:   "path",
+				}: params.InstanceId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *RebuildInstanceRequestBody
+			Params   = RebuildInstanceParams
+			Response = RebuildInstanceRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackRebuildInstanceParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.RebuildInstance(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.RebuildInstance(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeRebuildInstanceResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -20120,31 +20534,31 @@ func (s *Server) handleRejectVirtualPrivateCloudPeeringRequest(args [1]string, a
 	}
 }
 
-// handleRescueVirtualMachineRequest handles rescue-virtual-machine operation.
+// handleRescueInstanceRequest handles rescue-instance operation.
 //
-// Boots a temporary rescue environment while retaining the original system disk. Starting, stopping,
-// changing `machine_type_id`, rebuilding and resetting the password are unavailable in rescue mode. A
-// stopped virtual machine holds no host and is refused with 409 `VIRTUAL_MACHINE_NOT_RUNNING`; start
-// it first, which works even when its operating system no longer boots.
+// Boots a temporary rescue environment while retaining the original boot volume. Starting, stopping,
+// changing `instance_type_id`, rebuilding and resetting the password are unavailable in rescue mode. A
+// stopped instance holds no host and is refused with 409 `INSTANCE_NOT_RUNNING`; start it first, which
+// works even when its operating system no longer boots.
 //
 // The request does not name an image. The rescue image is the region's enabled rescue image for the
-// architecture of the virtual machine's system disk. A region and architecture with no enabled rescue
-// image is refused with `RESCUE_IMAGE_NOT_CONFIGURED` (409).
+// architecture of the instance's boot volume. A region and architecture with no enabled rescue image
+// is refused with `RESCUE_IMAGE_NOT_CONFIGURED` (409).
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:rescue
-func (s *Server) handleRescueVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v2/instances/{instanceId}:rescue
+func (s *Server) handleRescueInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rescue-virtual-machine"),
+		otelogen.OperationID("rescue-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}:rescue"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}:rescue"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), RescueVirtualMachineOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RescueInstanceOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -20199,15 +20613,15 @@ func (s *Server) handleRescueVirtualMachineRequest(args [1]string, argsEscaped b
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: RescueVirtualMachineOperation,
-			ID:   "rescue-virtual-machine",
+			Name: RescueInstanceOperation,
+			ID:   "rescue-instance",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, RescueVirtualMachineOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RescueInstanceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -20249,7 +20663,7 @@ func (s *Server) handleRescueVirtualMachineRequest(args [1]string, argsEscaped b
 			return
 		}
 	}
-	params, err := decodeRescueVirtualMachineParams(args, argsEscaped, r)
+	params, err := decodeRescueInstanceParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -20261,7 +20675,7 @@ func (s *Server) handleRescueVirtualMachineRequest(args [1]string, argsEscaped b
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeRescueVirtualMachineRequest(r)
+	request, rawBody, close, err := s.decodeRescueInstanceRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -20277,28 +20691,28 @@ func (s *Server) handleRescueVirtualMachineRequest(args [1]string, argsEscaped b
 		}
 	}()
 
-	var response RescueVirtualMachineRes
+	var response RescueInstanceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    RescueVirtualMachineOperation,
-			OperationSummary: "Put a virtual machine into rescue mode",
-			OperationID:      "rescue-virtual-machine",
+			OperationName:    RescueInstanceOperation,
+			OperationSummary: "Put an instance into rescue mode",
+			OperationID:      "rescue-instance",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "virtualMachineId",
+					Name: "instanceId",
 					In:   "path",
-				}: params.VirtualMachineId,
+				}: params.InstanceId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *RescueVirtualMachineRequestBody
-			Params   = RescueVirtualMachineParams
-			Response = RescueVirtualMachineRes
+			Request  = *RescueInstanceRequestBody
+			Params   = RescueInstanceParams
+			Response = RescueInstanceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -20307,14 +20721,14 @@ func (s *Server) handleRescueVirtualMachineRequest(args [1]string, argsEscaped b
 		](
 			m,
 			mreq,
-			unpackRescueVirtualMachineParams,
+			unpackRescueInstanceParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.RescueVirtualMachine(ctx, request, params)
+				response, err = s.h.RescueInstance(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.RescueVirtualMachine(ctx, request, params)
+		response, err = s.h.RescueInstance(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -20333,7 +20747,7 @@ func (s *Server) handleRescueVirtualMachineRequest(args [1]string, argsEscaped b
 		return
 	}
 
-	if err := encodeRescueVirtualMachineResponse(response, w, span); err != nil {
+	if err := encodeRescueInstanceResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -20342,32 +20756,31 @@ func (s *Server) handleRescueVirtualMachineRequest(args [1]string, argsEscaped b
 	}
 }
 
-// handleResetVirtualMachinePasswordRequest handles reset-virtual-machine-password operation.
+// handleResetInstancePasswordRequest handles reset-instance-password operation.
 //
 // Sets the password of the login account (`login_username`) without a reboot; root is never given one.
-// The virtual machine must be running.
+// The instance must be running.
 //
 // Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
-// password can then only be set by rebuilding the virtual machine, which erases all data on the system
-// disk.
+// password can then only be set by rebuilding the instance, which erases all data on the boot volume.
 //
 // The request is also rejected when the image is marked as supported but the corresponding component
-// has been removed or stopped inside the virtual machine.
+// has been removed or stopped inside the instance.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:resetPassword
-func (s *Server) handleResetVirtualMachinePasswordRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v2/instances/{instanceId}:resetPassword
+func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("reset-virtual-machine-password"),
+		otelogen.OperationID("reset-instance-password"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}:resetPassword"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}:resetPassword"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ResetVirtualMachinePasswordOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ResetInstancePasswordOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -20422,15 +20835,15 @@ func (s *Server) handleResetVirtualMachinePasswordRequest(args [1]string, argsEs
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ResetVirtualMachinePasswordOperation,
-			ID:   "reset-virtual-machine-password",
+			Name: ResetInstancePasswordOperation,
+			ID:   "reset-instance-password",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, ResetVirtualMachinePasswordOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ResetInstancePasswordOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -20472,7 +20885,7 @@ func (s *Server) handleResetVirtualMachinePasswordRequest(args [1]string, argsEs
 			return
 		}
 	}
-	params, err := decodeResetVirtualMachinePasswordParams(args, argsEscaped, r)
+	params, err := decodeResetInstancePasswordParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -20484,7 +20897,7 @@ func (s *Server) handleResetVirtualMachinePasswordRequest(args [1]string, argsEs
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeResetVirtualMachinePasswordRequest(r)
+	request, rawBody, close, err := s.decodeResetInstancePasswordRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -20500,28 +20913,28 @@ func (s *Server) handleResetVirtualMachinePasswordRequest(args [1]string, argsEs
 		}
 	}()
 
-	var response ResetVirtualMachinePasswordRes
+	var response ResetInstancePasswordRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ResetVirtualMachinePasswordOperation,
+			OperationName:    ResetInstancePasswordOperation,
 			OperationSummary: "Reset the login password",
-			OperationID:      "reset-virtual-machine-password",
+			OperationID:      "reset-instance-password",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "virtualMachineId",
+					Name: "instanceId",
 					In:   "path",
-				}: params.VirtualMachineId,
+				}: params.InstanceId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = PasswordChoice
-			Params   = ResetVirtualMachinePasswordParams
-			Response = ResetVirtualMachinePasswordRes
+			Params   = ResetInstancePasswordParams
+			Response = ResetInstancePasswordRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -20530,14 +20943,14 @@ func (s *Server) handleResetVirtualMachinePasswordRequest(args [1]string, argsEs
 		](
 			m,
 			mreq,
-			unpackResetVirtualMachinePasswordParams,
+			unpackResetInstancePasswordParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ResetVirtualMachinePassword(ctx, request, params)
+				response, err = s.h.ResetInstancePassword(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ResetVirtualMachinePassword(ctx, request, params)
+		response, err = s.h.ResetInstancePassword(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -20556,7 +20969,7 @@ func (s *Server) handleResetVirtualMachinePasswordRequest(args [1]string, argsEs
 		return
 	}
 
-	if err := encodeResetVirtualMachinePasswordResponse(response, w, span); err != nil {
+	if err := encodeResetInstancePasswordResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -20565,33 +20978,33 @@ func (s *Server) handleResetVirtualMachinePasswordRequest(args [1]string, argsEs
 	}
 }
 
-// handleRevertDiskRequest handles revert-disk operation.
+// handleRevertVolumeRequest handles revert-volume operation.
 //
-// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
-// moment is lost and cannot be recovered.
+// Restores the contents of the volume to the moment the snapshot was taken. All data written after
+// that moment is lost and cannot be recovered.
 //
-// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
-// must be detached from its virtual machine first; and a disk resized since the snapshot was taken
-// cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a
-// new disk from the snapshot instead.
+// Three restrictions apply: only the most recent snapshot of the volume can be reverted to; the volume
+// must be detached from its instance first; and a volume resized since the snapshot was taken cannot
+// be reverted. To return to an earlier point in time, or to keep the existing volume, create a new
+// volume from the snapshot instead.
 //
-// The revert is a request of its own rather than a state of the disk: the response is the disk, which
-// shows the `revert` operation until the revert is complete.
+// The revert is a request of its own rather than a state of the volume: the response is the volume,
+// which shows the `revert` operation until the revert is complete.
 //
-// POST /api/v2/disks/{diskId}:revert
-func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v2/volumes/{volumeId}:revert
+func (s *Server) handleRevertVolumeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("revert-disk"),
+		otelogen.OperationID("revert-volume"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v2/disks/{diskId}:revert"),
+		semconv.HTTPRouteKey.String("/api/v2/volumes/{volumeId}:revert"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), RevertDiskOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RevertVolumeOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -20646,15 +21059,15 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: RevertDiskOperation,
-			ID:   "revert-disk",
+			Name: RevertVolumeOperation,
+			ID:   "revert-volume",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, RevertDiskOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RevertVolumeOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -20696,7 +21109,7 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 			return
 		}
 	}
-	params, err := decodeRevertDiskParams(args, argsEscaped, r)
+	params, err := decodeRevertVolumeParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -20708,7 +21121,7 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeRevertDiskRequest(r)
+	request, rawBody, close, err := s.decodeRevertVolumeRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -20724,28 +21137,28 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response RevertDiskRes
+	var response RevertVolumeRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    RevertDiskOperation,
-			OperationSummary: "Revert a disk to a snapshot",
-			OperationID:      "revert-disk",
+			OperationName:    RevertVolumeOperation,
+			OperationSummary: "Revert a volume to a snapshot",
+			OperationID:      "revert-volume",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "diskId",
+					Name: "volumeId",
 					In:   "path",
-				}: params.DiskId,
+				}: params.VolumeId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *RevertDiskRequestBody
-			Params   = RevertDiskParams
-			Response = RevertDiskRes
+			Request  = *RevertVolumeRequestBody
+			Params   = RevertVolumeParams
+			Response = RevertVolumeRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -20754,14 +21167,14 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 		](
 			m,
 			mreq,
-			unpackRevertDiskParams,
+			unpackRevertVolumeParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.RevertDisk(ctx, request, params)
+				response, err = s.h.RevertVolume(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.RevertDisk(ctx, request, params)
+		response, err = s.h.RevertVolume(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -20780,7 +21193,7 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 		return
 	}
 
-	if err := encodeRevertDiskResponse(response, w, span); err != nil {
+	if err := encodeRevertVolumeResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -20789,7 +21202,7 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 	}
 }
 
-// handleRunVirtualMachineCommandRequest handles run-virtual-machine-command operation.
+// handleRunInstanceCommandRequest handles run-instance-command operation.
 //
 // Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
 // standard input and no way to answer a prompt: a command that waits for input produces nothing and is
@@ -20800,39 +21213,39 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 // that matches nothing exits 1 and is a perfectly successful call.
 //
 // The status therefore answers a different question — did the command run at all. A non-2xx means it
-// did not, and nothing about the virtual machine was changed by this request: it was suspended, not
-// running or had no elastic IP associated; or it refused the platform key; or the connection could not
-// be opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
+// did not, and nothing about the instance was changed by this request: it was suspended, not running
+// or had no elastic IP associated; or it refused the platform key; or the connection could not be
+// opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
 //
-// Three conditions must hold; the virtual machine is unreachable otherwise:
+// Three conditions must hold; the instance is unreachable otherwise:
 //
-//   - it is `active`
+//   - it is `running`
 //   - an elastic IP is associated with it, since this endpoint connects over the public internet
 //   - its security group permits inbound TCP 22
 //
-// Authentication uses the key the platform attaches to every virtual machine at creation, so nothing
-// has to be set up first. The virtual machine must have applied that key at first boot, which images
-// without a full cloud-init do not do.
+// Authentication uses the key the platform attaches to every instance at creation, so nothing has to
+// be set up first. The instance must have applied that key at first boot, which images without a full
+// cloud-init do not do.
 //
-// Do not pass secrets in the command. Read them from a file on the virtual machine instead: neither
-// the command nor its output is a confidential channel.
+// Do not pass secrets in the command. Read them from a file on the instance instead: neither the
+// command nor its output is a confidential channel.
 //
 // Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:runCommand
-func (s *Server) handleRunVirtualMachineCommandRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v2/instances/{instanceId}:runCommand
+func (s *Server) handleRunInstanceCommandRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("run-virtual-machine-command"),
+		otelogen.OperationID("run-instance-command"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}:runCommand"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}:runCommand"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), RunVirtualMachineCommandOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RunInstanceCommandOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -20887,15 +21300,15 @@ func (s *Server) handleRunVirtualMachineCommandRequest(args [1]string, argsEscap
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: RunVirtualMachineCommandOperation,
-			ID:   "run-virtual-machine-command",
+			Name: RunInstanceCommandOperation,
+			ID:   "run-instance-command",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, RunVirtualMachineCommandOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RunInstanceCommandOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -20937,7 +21350,7 @@ func (s *Server) handleRunVirtualMachineCommandRequest(args [1]string, argsEscap
 			return
 		}
 	}
-	params, err := decodeRunVirtualMachineCommandParams(args, argsEscaped, r)
+	params, err := decodeRunInstanceCommandParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -20949,7 +21362,7 @@ func (s *Server) handleRunVirtualMachineCommandRequest(args [1]string, argsEscap
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeRunVirtualMachineCommandRequest(r)
+	request, rawBody, close, err := s.decodeRunInstanceCommandRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -20965,28 +21378,28 @@ func (s *Server) handleRunVirtualMachineCommandRequest(args [1]string, argsEscap
 		}
 	}()
 
-	var response *RunVirtualMachineCommandResponseBody
+	var response *RunInstanceCommandResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    RunVirtualMachineCommandOperation,
-			OperationSummary: "Run a command on a virtual machine",
-			OperationID:      "run-virtual-machine-command",
+			OperationName:    RunInstanceCommandOperation,
+			OperationSummary: "Run a command on an instance",
+			OperationID:      "run-instance-command",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "virtualMachineId",
+					Name: "instanceId",
 					In:   "path",
-				}: params.VirtualMachineId,
+				}: params.InstanceId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *RunVirtualMachineCommandRequestBody
-			Params   = RunVirtualMachineCommandParams
-			Response = *RunVirtualMachineCommandResponseBody
+			Request  = *RunInstanceCommandRequestBody
+			Params   = RunInstanceCommandParams
+			Response = *RunInstanceCommandResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -20995,14 +21408,14 @@ func (s *Server) handleRunVirtualMachineCommandRequest(args [1]string, argsEscap
 		](
 			m,
 			mreq,
-			unpackRunVirtualMachineCommandParams,
+			unpackRunInstanceCommandParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.RunVirtualMachineCommand(ctx, request, params)
+				response, err = s.h.RunInstanceCommand(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.RunVirtualMachineCommand(ctx, request, params)
+		response, err = s.h.RunInstanceCommand(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -21021,7 +21434,7 @@ func (s *Server) handleRunVirtualMachineCommandRequest(args [1]string, argsEscap
 		return
 	}
 
-	if err := encodeRunVirtualMachineCommandResponse(response, w, span); err != nil {
+	if err := encodeRunInstanceCommandResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -21030,33 +21443,33 @@ func (s *Server) handleRunVirtualMachineCommandRequest(args [1]string, argsEscap
 	}
 }
 
-// handleStartVirtualMachineRequest handles start-virtual-machine operation.
+// handleStartInstanceRequest handles start-instance operation.
 //
-// Places the virtual machine on a host of its availability zone again; outstanding restrictions can
-// prevent starting. When no host of the zone has room for it now, the request is refused with 409
-// `VIRTUAL_MACHINE_START_NO_HOST_ROOM` and the virtual machine stays stopped; try again later. Another
-// start can take the room after the request was accepted, and the start then ends with the virtual
-// machine still stopped. It shows the `start` operation until it is running or the start has failed.
+// Places the instance on a host of its availability zone again; outstanding restrictions can prevent
+// starting. When no host of the zone has room for it now, the request is refused with 409
+// `INSTANCE_START_NO_HOST_ROOM` and the instance stays stopped; try again later. Another start can
+// take the room after the request was accepted, and the start then ends with the instance still
+// stopped. It shows the `start` operation until it is running or the start has failed.
 //
-// Starting connects its disks afresh, so a disk grown while attached runs at the performance of its
-// new size from the next start after a stop. A virtual machine powered off from inside its operating
-// system keeps its host and starts on it again; stop it with `:stop` first for its disks to be
-// connected afresh. Starting a running virtual machine changes nothing.
+// Starting connects its volumes afresh, so a volume grown while attached runs at the performance of
+// its new size from the next start after a stop. An instance powered off from inside its operating
+// system keeps its host and starts on it again; stop it with `:stop` first for its volumes to be
+// connected afresh. Starting a running instance changes nothing.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:start
-func (s *Server) handleStartVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v2/instances/{instanceId}:start
+func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("start-virtual-machine"),
+		otelogen.OperationID("start-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}:start"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}:start"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), StartVirtualMachineOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), StartInstanceOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -21111,15 +21524,15 @@ func (s *Server) handleStartVirtualMachineRequest(args [1]string, argsEscaped bo
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: StartVirtualMachineOperation,
-			ID:   "start-virtual-machine",
+			Name: StartInstanceOperation,
+			ID:   "start-instance",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, StartVirtualMachineOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, StartInstanceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -21161,7 +21574,7 @@ func (s *Server) handleStartVirtualMachineRequest(args [1]string, argsEscaped bo
 			return
 		}
 	}
-	params, err := decodeStartVirtualMachineParams(args, argsEscaped, r)
+	params, err := decodeStartInstanceParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -21174,28 +21587,28 @@ func (s *Server) handleStartVirtualMachineRequest(args [1]string, argsEscaped bo
 
 	var rawBody []byte
 
-	var response StartVirtualMachineRes
+	var response StartInstanceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    StartVirtualMachineOperation,
-			OperationSummary: "Start a virtual machine",
-			OperationID:      "start-virtual-machine",
+			OperationName:    StartInstanceOperation,
+			OperationSummary: "Start an instance",
+			OperationID:      "start-instance",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "virtualMachineId",
+					Name: "instanceId",
 					In:   "path",
-				}: params.VirtualMachineId,
+				}: params.InstanceId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = StartVirtualMachineParams
-			Response = StartVirtualMachineRes
+			Params   = StartInstanceParams
+			Response = StartInstanceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -21204,14 +21617,14 @@ func (s *Server) handleStartVirtualMachineRequest(args [1]string, argsEscaped bo
 		](
 			m,
 			mreq,
-			unpackStartVirtualMachineParams,
+			unpackStartInstanceParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.StartVirtualMachine(ctx, params)
+				response, err = s.h.StartInstance(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.StartVirtualMachine(ctx, params)
+		response, err = s.h.StartInstance(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -21230,7 +21643,7 @@ func (s *Server) handleStartVirtualMachineRequest(args [1]string, argsEscaped bo
 		return
 	}
 
-	if err := encodeStartVirtualMachineResponse(response, w, span); err != nil {
+	if err := encodeStartInstanceResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -21239,31 +21652,31 @@ func (s *Server) handleStartVirtualMachineRequest(args [1]string, argsEscaped bo
 	}
 }
 
-// handleStopVirtualMachineRequest handles stop-virtual-machine operation.
+// handleStopInstanceRequest handles stop-instance operation.
 //
-// Stops the virtual machine and releases its host, as on AWS and Alibaba Cloud: a stopped virtual
-// machine keeps its disks, network interfaces, addresses and quota, holds no vCPU or memory, and is
-// not charged for compute. It shows the `stop` operation until it is stopped. Stopping a stopped
-// virtual machine changes nothing.
+// Stops the instance and releases its host, as on AWS and Alibaba Cloud: a stopped instance keeps its
+// volumes, network interfaces, addresses and quota, holds no vCPU or memory, and is not charged for
+// compute. It shows the `stop` operation until it is stopped. Stopping a stopped instance changes
+// nothing.
 //
-// A stopped virtual machine holds no host, so changing `machine_type_id`, rebuilding it, rescuing it
-// and attaching or detaching a network interface are refused with 409 `VIRTUAL_MACHINE_NOT_RUNNING`
-// until it is started. Disks can be attached and detached while it is stopped.
+// A stopped instance holds no host, so changing `instance_type_id`, rebuilding it, rescuing it and
+// attaching or detaching a network interface are refused with 409 `INSTANCE_NOT_RUNNING` until it is
+// started. Volumes can be attached and detached while it is stopped.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:stop
-func (s *Server) handleStopVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v2/instances/{instanceId}:stop
+func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("stop-virtual-machine"),
+		otelogen.OperationID("stop-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}:stop"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}:stop"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), StopVirtualMachineOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), StopInstanceOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -21318,15 +21731,15 @@ func (s *Server) handleStopVirtualMachineRequest(args [1]string, argsEscaped boo
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: StopVirtualMachineOperation,
-			ID:   "stop-virtual-machine",
+			Name: StopInstanceOperation,
+			ID:   "stop-instance",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, StopVirtualMachineOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, StopInstanceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -21368,7 +21781,7 @@ func (s *Server) handleStopVirtualMachineRequest(args [1]string, argsEscaped boo
 			return
 		}
 	}
-	params, err := decodeStopVirtualMachineParams(args, argsEscaped, r)
+	params, err := decodeStopInstanceParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -21381,28 +21794,28 @@ func (s *Server) handleStopVirtualMachineRequest(args [1]string, argsEscaped boo
 
 	var rawBody []byte
 
-	var response StopVirtualMachineRes
+	var response StopInstanceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    StopVirtualMachineOperation,
-			OperationSummary: "Stop a virtual machine",
-			OperationID:      "stop-virtual-machine",
+			OperationName:    StopInstanceOperation,
+			OperationSummary: "Stop an instance",
+			OperationID:      "stop-instance",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "virtualMachineId",
+					Name: "instanceId",
 					In:   "path",
-				}: params.VirtualMachineId,
+				}: params.InstanceId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = StopVirtualMachineParams
-			Response = StopVirtualMachineRes
+			Params   = StopInstanceParams
+			Response = StopInstanceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -21411,14 +21824,14 @@ func (s *Server) handleStopVirtualMachineRequest(args [1]string, argsEscaped boo
 		](
 			m,
 			mreq,
-			unpackStopVirtualMachineParams,
+			unpackStopInstanceParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.StopVirtualMachine(ctx, params)
+				response, err = s.h.StopInstance(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.StopVirtualMachine(ctx, params)
+		response, err = s.h.StopInstance(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -21437,7 +21850,7 @@ func (s *Server) handleStopVirtualMachineRequest(args [1]string, argsEscaped boo
 		return
 	}
 
-	if err := encodeStopVirtualMachineResponse(response, w, span); err != nil {
+	if err := encodeStopInstanceResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -21446,25 +21859,25 @@ func (s *Server) handleStopVirtualMachineRequest(args [1]string, argsEscaped boo
 	}
 }
 
-// handleUnrescueVirtualMachineRequest handles unrescue-virtual-machine operation.
+// handleUnrescueInstanceRequest handles unrescue-instance operation.
 //
-// Restores boot from the original system disk. Completion is shown by the virtual machine state, and
-// the virtual machine shows the `unrescue` operation until then.
+// Restores boot from the original boot volume. Completion is shown by the instance state, and the
+// instance shows the `unrescue` operation until then.
 //
-// POST /api/v2/virtual-machines/{virtualMachineId}:unrescue
-func (s *Server) handleUnrescueVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v2/instances/{instanceId}:unrescue
+func (s *Server) handleUnrescueInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("unrescue-virtual-machine"),
+		otelogen.OperationID("unrescue-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}:unrescue"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}:unrescue"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), UnrescueVirtualMachineOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), UnrescueInstanceOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -21519,15 +21932,15 @@ func (s *Server) handleUnrescueVirtualMachineRequest(args [1]string, argsEscaped
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: UnrescueVirtualMachineOperation,
-			ID:   "unrescue-virtual-machine",
+			Name: UnrescueInstanceOperation,
+			ID:   "unrescue-instance",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, UnrescueVirtualMachineOperation, r)
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, UnrescueInstanceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -21569,7 +21982,7 @@ func (s *Server) handleUnrescueVirtualMachineRequest(args [1]string, argsEscaped
 			return
 		}
 	}
-	params, err := decodeUnrescueVirtualMachineParams(args, argsEscaped, r)
+	params, err := decodeUnrescueInstanceParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -21582,28 +21995,28 @@ func (s *Server) handleUnrescueVirtualMachineRequest(args [1]string, argsEscaped
 
 	var rawBody []byte
 
-	var response UnrescueVirtualMachineRes
+	var response UnrescueInstanceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    UnrescueVirtualMachineOperation,
-			OperationSummary: "Take a virtual machine out of rescue mode",
-			OperationID:      "unrescue-virtual-machine",
+			OperationName:    UnrescueInstanceOperation,
+			OperationSummary: "Take an instance out of rescue mode",
+			OperationID:      "unrescue-instance",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "virtualMachineId",
+					Name: "instanceId",
 					In:   "path",
-				}: params.VirtualMachineId,
+				}: params.InstanceId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = UnrescueVirtualMachineParams
-			Response = UnrescueVirtualMachineRes
+			Params   = UnrescueInstanceParams
+			Response = UnrescueInstanceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -21612,14 +22025,14 @@ func (s *Server) handleUnrescueVirtualMachineRequest(args [1]string, argsEscaped
 		](
 			m,
 			mreq,
-			unpackUnrescueVirtualMachineParams,
+			unpackUnrescueInstanceParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.UnrescueVirtualMachine(ctx, params)
+				response, err = s.h.UnrescueInstance(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.UnrescueVirtualMachine(ctx, params)
+		response, err = s.h.UnrescueInstance(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -21638,689 +22051,7 @@ func (s *Server) handleUnrescueVirtualMachineRequest(args [1]string, argsEscaped
 		return
 	}
 
-	if err := encodeUnrescueVirtualMachineResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleUpdateDiskRequest handles update-disk operation.
-//
-// Changes the name, the capacity or the disk type. The availability zone is immutable.
-//
-// `size_gb` and `disk_type_id` are operational fields: each starts a change and cannot be combined
-// with any other field in the same request, including the other one. Such a request is refused with
-// 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside a change that was then refused
-// would leave the request half applied. `checkout` and `proration_date` belong to the purchase of the
-// change and are accepted only together with one of them.
-//
-// Renaming is not an operation and is accepted at any time. It returns 200 with `checkout_session_id`
-// and `order_id` null.
-//
-// Resizing accepts only an increase; a smaller `size_gb` is refused with `DISK_CANNOT_SHRINK` (422),
-// since a file system cannot be shrunk from outside the virtual machine. It returns 202 with the disk
-// and the Checkout Session for the resize, which keeps the disk's usage type and period. The disk
-// shows the `resize` operation until the resize is applied, its Checkout Session expires or its order
-// is canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
-// meanwhile. The disk keeps its current size until the resize is applied; once `size_gb` shows the new
-// size, extend the file system inside the virtual machine. If checkout is not completed, the order is
-// not accepted or the resize fails, the disk keeps its size and Billing shows the outcome.
-//
-// Changing the type moves the disk to another disk type at the same capacity, priced as that type, and
-// returns 202 with the disk and the Checkout Session for the change, which keeps the disk's usage type
-// and period. The disk has to be detached (409 `DISK_RETYPE_ATTACHED`), so a system disk cannot change
-// its type. The target has to be on sale (`DISK_TYPE_OFF_SALE`), in the disk's region (422
-// `DISK_RETYPE_OTHER_REGION`), of the disk's availability zone (422
-// `DISK_TYPE_OTHER_AVAILABILITY_ZONE`) with room for the disk (409 `DISK_TYPE_SOLD_OUT`,
-// `DISK_TYPE_CAPACITY_REACHED`, `DISK_TYPE_NO_POOL_ROOM`), admit the disk's capacity (422
-// `DISK_SIZE_OUT_OF_RANGE`, `DISK_SIZE_NOT_ON_STEP`) and differ from the current one (422
-// `DISK_RETYPE_SAME_TYPE`). The disk shows the `retype` operation until the change is applied, its
-// Checkout Session expires or its order is canceled. A target on the same storage backend takes effect
-// at once; one on another backend copies the disk's data there first, which takes longer the larger
-// the disk is. The disk keeps its type until `disk_type_id` shows the new one, and its `performance`
-// follows from then on; a change that did not take effect leaves the disk as it was and is refunded.
-//
-// An attached disk, including a system disk, can be resized. The capacity is usable at once, and the
-// disk's `performance` shows what its type gives the new size. That performance applies from the
-// disk's next attachment, or the next start of its stopped virtual machine: the storage reads a disk's
-// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
-//
-// PATCH /api/v2/disks/{diskId}
-func (s *Server) handleUpdateDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-disk"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.HTTPRouteKey.String("/api/v2/disks/{diskId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateDiskOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: UpdateDiskOperation,
-			ID:   "update-disk",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, UpdateDiskOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeUpdateDiskParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeUpdateDiskRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response UpdateDiskRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    UpdateDiskOperation,
-			OperationSummary: "Update a disk",
-			OperationID:      "update-disk",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "diskId",
-					In:   "path",
-				}: params.DiskId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *UpdateDiskRequestBody
-			Params   = UpdateDiskParams
-			Response = UpdateDiskRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackUpdateDiskParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.UpdateDisk(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.UpdateDisk(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeUpdateDiskResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleUpdateDiskBackupRequest handles update-disk-backup operation.
-//
-// Changes the name only. A backup's source disk and capacity cannot be changed.
-//
-// PATCH /api/v2/disk-backups/{diskBackupId}
-func (s *Server) handleUpdateDiskBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-disk-backup"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.HTTPRouteKey.String("/api/v2/disk-backups/{diskBackupId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateDiskBackupOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: UpdateDiskBackupOperation,
-			ID:   "update-disk-backup",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, UpdateDiskBackupOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeUpdateDiskBackupParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeUpdateDiskBackupRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *DiskBackupResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    UpdateDiskBackupOperation,
-			OperationSummary: "Update a disk backup",
-			OperationID:      "update-disk-backup",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "diskBackupId",
-					In:   "path",
-				}: params.DiskBackupId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *UpdateDiskBackupRequestBody
-			Params   = UpdateDiskBackupParams
-			Response = *DiskBackupResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackUpdateDiskBackupParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.UpdateDiskBackup(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.UpdateDiskBackup(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeUpdateDiskBackupResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleUpdateDiskSnapshotRequest handles update-disk-snapshot operation.
-//
-// Changes the name only. A snapshot's source disk and capacity cannot be changed.
-//
-// PATCH /api/v2/disk-snapshots/{diskSnapshotId}
-func (s *Server) handleUpdateDiskSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-disk-snapshot"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.HTTPRouteKey.String("/api/v2/disk-snapshots/{diskSnapshotId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateDiskSnapshotOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: UpdateDiskSnapshotOperation,
-			ID:   "update-disk-snapshot",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, UpdateDiskSnapshotOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeUpdateDiskSnapshotParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeUpdateDiskSnapshotRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *DiskSnapshotResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    UpdateDiskSnapshotOperation,
-			OperationSummary: "Update a snapshot",
-			OperationID:      "update-disk-snapshot",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "diskSnapshotId",
-					In:   "path",
-				}: params.DiskSnapshotId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *UpdateDiskSnapshotRequestBody
-			Params   = UpdateDiskSnapshotParams
-			Response = *DiskSnapshotResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackUpdateDiskSnapshotParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.UpdateDiskSnapshot(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.UpdateDiskSnapshot(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeUpdateDiskSnapshotResponse(response, w, span); err != nil {
+	if err := encodeUnrescueInstanceResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -22361,10 +22092,9 @@ func (s *Server) handleUpdateDiskSnapshotRequest(args [1]string, argsEscaped boo
 // operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit
 // stays in effect until the change is applied.
 //
-// While the address is associated with a virtual machine, the limit must not exceed the
-// `max_bandwidth_mbps` of that virtual machine's type; a higher limit is refused with
-// `VIRTUAL_MACHINE_BANDWIDTH_CEILING`. The limit of an address that is not associated is checked when
-// the address is associated with a virtual machine.
+// While the address is associated with an instance, the limit must not exceed the `max_bandwidth_mbps`
+// of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of
+// an address that is not associated is checked when the address is associated with an instance.
 //
 // PATCH /api/v2/elastic-ips/{elasticIpId}
 func (s *Server) handleUpdateElasticIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -22569,6 +22299,256 @@ func (s *Server) handleUpdateElasticIPRequest(args [1]string, argsEscaped bool, 
 	}
 
 	if err := encodeUpdateElasticIPResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleUpdateInstanceRequest handles update-instance operation.
+//
+// Changes the descriptive fields (`name`, `labels`, `notes`) or the operational field
+// `instance_type_id`. All fields are optional and at least one is required. Starting and stopping are
+// the `:start` and `:stop` methods.
+//
+// `instance_type_id` starts a workflow and cannot be combined with any other field in the same
+// request. Such a request is refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that
+// committed beside a change that was then refused would leave the request half applied. `checkout` and
+// `proration_date` belong to the purchase of the `instance_type_id` change and are accepted only
+// together with it.
+//
+// Descriptive fields are not operations and are accepted at any time, whatever the instance is doing.
+// The request returns 200 with `checkout_session_id` and `order_id` null.
+//
+//   - `name` changes the display name only. The hostname inside the instance is unchanged; it equals
+//     the instance id.
+//   - `labels` records what this instance is for, as key-value pairs. Nothing on the platform reads
+//     them. The whole set is replaced: whatever is absent from the request is removed, and an empty
+//     object clears them all. Do not put credentials here. Labels are visible to platform operators.
+//   - `notes` is a free-text note about this instance: what it runs, and what to be careful about
+//     before touching it. The whole note is replaced; send an empty string to clear it. Do not put
+//     credentials here. The note is visible to platform operators.
+//
+// `instance_type_id` resizes a running instance, which restarts once during the resize, and returns
+// 202 with the instance and the Checkout Session for the change, including for metered terms. The
+// instance keeps its usage type and period, priced with the target type's matching option; a target
+// type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts once
+// Billing accepts the order. Do not submit the change again after paying. After an uncertain response,
+// look the Checkout Session up in Billing before submitting again.
+//
+// The instance shows the `resize` operation until the resize is applied, its Checkout Session expires
+// or its order is canceled, so other operations and a second resize are refused with
+// `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new
+// type takes effect, and is billed from then on, when `instance_type_id` shows it. If checkout is not
+// completed, the order is not accepted or the resize fails, the instance keeps its current type and
+// Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
+// previous type, submit another resize.
+//
+// PATCH /api/v2/instances/{instanceId}
+func (s *Server) handleUpdateInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-instance"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateInstanceOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: UpdateInstanceOperation,
+			ID:   "update-instance",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, UpdateInstanceOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeUpdateInstanceParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeUpdateInstanceRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response UpdateInstanceRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    UpdateInstanceOperation,
+			OperationSummary: "Update an instance",
+			OperationID:      "update-instance",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "instanceId",
+					In:   "path",
+				}: params.InstanceId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *UpdateInstanceRequestBody
+			Params   = UpdateInstanceParams
+			Response = UpdateInstanceRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackUpdateInstanceParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.UpdateInstance(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.UpdateInstance(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeUpdateInstanceResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -22801,8 +22781,8 @@ func (s *Server) handleUpdateLaunchTemplateRequest(args [1]string, argsEscaped b
 //
 //   - `name` is not an operation, is accepted at any time and answers 200.
 //   - `security_group_ids` is the complete new set, one to five groups of the network interface's
-//     virtual private cloud; groups left out are removed. It applies to traffic of the running virtual
-//     machine as soon as it is in place, and answers 202 with the network interface showing the
+//     virtual private cloud; groups left out are removed. It applies to traffic of the running instance
+//     as soon as it is in place, and answers 202 with the network interface showing the
 //     `update_security_groups` operation until then.
 //
 // Secondary IPv4 addresses are added and removed under
@@ -23451,256 +23431,6 @@ func (s *Server) handleUpdateSecurityGroupRequest(args [1]string, argsEscaped bo
 	}
 }
 
-// handleUpdateVirtualMachineRequest handles update-virtual-machine operation.
-//
-// Changes the descriptive fields (`name`, `labels`, `notes`) or the operational field
-// `machine_type_id`. All fields are optional and at least one is required. Starting and stopping are
-// the `:start` and `:stop` methods.
-//
-// `machine_type_id` starts a workflow and cannot be combined with any other field in the same request.
-// Such a request is refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside
-// a change that was then refused would leave the request half applied. `checkout` and `proration_date`
-// belong to the purchase of the `machine_type_id` change and are accepted only together with it.
-//
-// Descriptive fields are not operations and are accepted at any time, whatever the virtual machine is
-// doing. The request returns 200 with `checkout_session_id` and `order_id` null.
-//
-//   - `name` changes the display name only. The hostname inside the virtual machine is unchanged; it
-//     equals the virtual machine id.
-//   - `labels` records what this virtual machine is for, as key-value pairs. Nothing on the platform
-//     reads them. The whole set is replaced: whatever is absent from the request is removed, and an
-//     empty object clears them all. Do not put credentials here. Labels are visible to platform
-//     operators.
-//   - `notes` is a free-text note about this virtual machine: what it runs, and what to be careful
-//     about before touching it. The whole note is replaced; send an empty string to clear it. Do not
-//     put credentials here. The note is visible to platform operators.
-//
-// `machine_type_id` resizes a running virtual machine, which restarts once during the resize, and
-// returns 202 with the virtual machine and the Checkout Session for the change, including for metered
-// terms. The virtual machine keeps its usage type and period, priced with the target type's matching
-// option; a target type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. The
-// resize starts once Billing accepts the order. Do not submit the change again after paying. After an
-// uncertain response, look the Checkout Session up in Billing before submitting again.
-//
-// The virtual machine shows the `resize` operation until the resize is applied, its Checkout Session
-// expires or its order is canceled, so other operations and a second resize are refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new
-// type takes effect, and is billed from then on, when `machine_type_id` shows it. If checkout is not
-// completed, the order is not accepted or the resize fails, the virtual machine keeps its current type
-// and Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
-// previous type, submit another resize.
-//
-// PATCH /api/v2/virtual-machines/{virtualMachineId}
-func (s *Server) handleUpdateVirtualMachineRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-virtual-machine"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.HTTPRouteKey.String("/api/v2/virtual-machines/{virtualMachineId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateVirtualMachineOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: UpdateVirtualMachineOperation,
-			ID:   "update-virtual-machine",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, UpdateVirtualMachineOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeUpdateVirtualMachineParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeUpdateVirtualMachineRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response UpdateVirtualMachineRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    UpdateVirtualMachineOperation,
-			OperationSummary: "Update a virtual machine",
-			OperationID:      "update-virtual-machine",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "virtualMachineId",
-					In:   "path",
-				}: params.VirtualMachineId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *UpdateVirtualMachineRequestBody
-			Params   = UpdateVirtualMachineParams
-			Response = UpdateVirtualMachineRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackUpdateVirtualMachineParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.UpdateVirtualMachine(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.UpdateVirtualMachine(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeUpdateVirtualMachineResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleUpdateVirtualPrivateCloudRequest handles update-virtual-private-cloud operation.
 //
 // Only the name can change. The CIDR is fixed for the network's life, because every subnet and address
@@ -24129,6 +23859,689 @@ func (s *Server) handleUpdateVirtualPrivateCloudSubnetRequest(args [2]string, ar
 	}
 
 	if err := encodeUpdateVirtualPrivateCloudSubnetResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleUpdateVolumeRequest handles update-volume operation.
+//
+// Changes the name, the capacity or the volume type. The availability zone is immutable.
+//
+// `size_gib` and `volume_type_id` are operational fields: each starts a change and cannot be combined
+// with any other field in the same request, including the other one. Such a request is refused with
+// 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside a change that was then refused
+// would leave the request half applied. `checkout` and `proration_date` belong to the purchase of the
+// change and are accepted only together with one of them.
+//
+// Renaming is not an operation and is accepted at any time. It returns 200 with `checkout_session_id`
+// and `order_id` null.
+//
+// Resizing accepts only an increase; a smaller `size_gib` is refused with `VOLUME_CANNOT_SHRINK`
+// (422), since a file system cannot be shrunk from outside the instance. It returns 202 with the
+// volume and the Checkout Session for the resize, which keeps the volume's usage type and period. The
+// volume shows the `resize` operation until the resize is applied, its Checkout Session expires or its
+// order is canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
+// meanwhile. The volume keeps its current size until the resize is applied; once `size_gib` shows the
+// new size, extend the file system inside the instance. If checkout is not completed, the order is not
+// accepted or the resize fails, the volume keeps its size and Billing shows the outcome.
+//
+// Changing the type moves the volume to another volume type at the same capacity, priced as that type,
+// and returns 202 with the volume and the Checkout Session for the change, which keeps the volume's
+// usage type and period. The volume has to be detached (409 `VOLUME_RETYPE_ATTACHED`), so a boot
+// volume cannot change its type. The target has to be on sale (`VOLUME_TYPE_OFF_SALE`), in the
+// volume's region (422 `VOLUME_RETYPE_OTHER_REGION`), of the volume's availability zone (422
+// `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`) with room for the volume (409 `VOLUME_TYPE_SOLD_OUT`,
+// `VOLUME_TYPE_CAPACITY_REACHED`, `VOLUME_TYPE_NO_POOL_ROOM`), admit the volume's capacity (422
+// `VOLUME_SIZE_OUT_OF_RANGE`, `VOLUME_SIZE_NOT_ON_STEP`) and differ from the current one (422
+// `VOLUME_RETYPE_SAME_TYPE`). The volume shows the `retype` operation until the change is applied, its
+// Checkout Session expires or its order is canceled. A target on the same storage backend takes effect
+// at once; one on another backend copies the volume's data there first, which takes longer the larger
+// the volume is. The volume keeps its type until `volume_type_id` shows the new one, and its
+// `performance` follows from then on; a change that did not take effect leaves the volume as it was
+// and is refunded.
+//
+// An attached volume, including a boot volume, can be resized. The capacity is usable at once, and the
+// volume's `performance` shows what its type gives the new size. That performance applies from the
+// volume's next attachment, or the next start of its stopped instance: the storage reads a volume's
+// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
+//
+// PATCH /api/v2/volumes/{volumeId}
+func (s *Server) handleUpdateVolumeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-volume"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.HTTPRouteKey.String("/api/v2/volumes/{volumeId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateVolumeOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: UpdateVolumeOperation,
+			ID:   "update-volume",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, UpdateVolumeOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeUpdateVolumeParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeUpdateVolumeRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response UpdateVolumeRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    UpdateVolumeOperation,
+			OperationSummary: "Update a volume",
+			OperationID:      "update-volume",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "volumeId",
+					In:   "path",
+				}: params.VolumeId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *UpdateVolumeRequestBody
+			Params   = UpdateVolumeParams
+			Response = UpdateVolumeRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackUpdateVolumeParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.UpdateVolume(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.UpdateVolume(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeUpdateVolumeResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleUpdateVolumeBackupRequest handles update-volume-backup operation.
+//
+// Changes the name only. A backup's source volume and capacity cannot be changed.
+//
+// PATCH /api/v2/volume-backups/{volumeBackupId}
+func (s *Server) handleUpdateVolumeBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-volume-backup"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.HTTPRouteKey.String("/api/v2/volume-backups/{volumeBackupId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateVolumeBackupOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: UpdateVolumeBackupOperation,
+			ID:   "update-volume-backup",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, UpdateVolumeBackupOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeUpdateVolumeBackupParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeUpdateVolumeBackupRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *VolumeBackupResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    UpdateVolumeBackupOperation,
+			OperationSummary: "Update a volume backup",
+			OperationID:      "update-volume-backup",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "volumeBackupId",
+					In:   "path",
+				}: params.VolumeBackupId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *UpdateVolumeBackupRequestBody
+			Params   = UpdateVolumeBackupParams
+			Response = *VolumeBackupResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackUpdateVolumeBackupParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.UpdateVolumeBackup(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.UpdateVolumeBackup(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeUpdateVolumeBackupResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleUpdateVolumeSnapshotRequest handles update-volume-snapshot operation.
+//
+// Changes the name only. A snapshot's source volume and capacity cannot be changed.
+//
+// PATCH /api/v2/volume-snapshots/{volumeSnapshotId}
+func (s *Server) handleUpdateVolumeSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-volume-snapshot"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.HTTPRouteKey.String("/api/v2/volume-snapshots/{volumeSnapshotId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateVolumeSnapshotOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: UpdateVolumeSnapshotOperation,
+			ID:   "update-volume-snapshot",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, UpdateVolumeSnapshotOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeUpdateVolumeSnapshotParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeUpdateVolumeSnapshotRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *VolumeSnapshotResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    UpdateVolumeSnapshotOperation,
+			OperationSummary: "Update a snapshot",
+			OperationID:      "update-volume-snapshot",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "volumeSnapshotId",
+					In:   "path",
+				}: params.VolumeSnapshotId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *UpdateVolumeSnapshotRequestBody
+			Params   = UpdateVolumeSnapshotParams
+			Response = *VolumeSnapshotResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackUpdateVolumeSnapshotParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.UpdateVolumeSnapshot(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.UpdateVolumeSnapshot(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeUpdateVolumeSnapshotResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
