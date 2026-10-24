@@ -12452,10 +12452,11 @@ func (s *PublicImageResourceSaleStatus) UnmarshalText(data []byte) error {
 }
 
 // The resource or capacity constrained by a project quota in a region. Platform defaults: instances=5;
-// vcpus=16; memory_mib=32768; volumes=20; volume_gib=500; virtual_private_clouds=3; subnets=20;
-// network_interfaces=20; elastic_ips=3; security_groups=10; security_group_rules=100; snapshots=20;
-// backups=20; private_images=10. memory_mib is measured in MiB and volume_gib in GiB. A zero limit
-// permits no additional capacity; it is not unlimited.
+// vcpus=16; memory_mib=32768; volumes=20; volume_gib=500; virtual_private_clouds=3;
+// virtual_private_cloud_subnets=20; network_interfaces=20; elastic_ips=3; security_groups=10;
+// security_group_rules=100; volume_snapshots=20; volume_backups=20; private_images=10. memory_mib is
+// measured in MiB and volume_gib in GiB. A zero limit permits no additional capacity; it is not
+// unlimited.
 // Ref: #/components/schemas/QuotaResourceType
 type QuotaResourceType string
 
@@ -12466,12 +12467,12 @@ const (
 	QuotaResourceTypeVolumes                    QuotaResourceType = "volumes"
 	QuotaResourceTypeVolumeGib                  QuotaResourceType = "volume_gib"
 	QuotaResourceTypeVirtualPrivateClouds       QuotaResourceType = "virtual_private_clouds"
-	QuotaResourceTypeVirtualPrivateCloudSubnets QuotaResourceType = "virtual-private-cloud-subnets"
+	QuotaResourceTypeVirtualPrivateCloudSubnets QuotaResourceType = "virtual_private_cloud_subnets"
 	QuotaResourceTypeNetworkInterfaces          QuotaResourceType = "network_interfaces"
 	QuotaResourceTypeElasticIps                 QuotaResourceType = "elastic_ips"
 	QuotaResourceTypeSecurityGroups             QuotaResourceType = "security_groups"
 	QuotaResourceTypeSecurityGroupRules         QuotaResourceType = "security_group_rules"
-	QuotaResourceTypeVolumeSnapshots            QuotaResourceType = "volume-snapshots"
+	QuotaResourceTypeVolumeSnapshots            QuotaResourceType = "volume_snapshots"
 	QuotaResourceTypeVolumeBackups              QuotaResourceType = "volume_backups"
 	QuotaResourceTypePrivateImages              QuotaResourceType = "private_images"
 )

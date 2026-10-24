@@ -7235,7 +7235,7 @@ func (s QuotaResourceType) Validate() error {
 		return nil
 	case "virtual_private_clouds":
 		return nil
-	case "virtual-private-cloud-subnets":
+	case "virtual_private_cloud_subnets":
 		return nil
 	case "network_interfaces":
 		return nil
@@ -7245,7 +7245,7 @@ func (s QuotaResourceType) Validate() error {
 		return nil
 	case "security_group_rules":
 		return nil
-	case "volume-snapshots":
+	case "volume_snapshots":
 		return nil
 	case "volume_backups":
 		return nil
