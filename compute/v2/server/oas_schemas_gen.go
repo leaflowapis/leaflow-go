@@ -5062,7 +5062,7 @@ type InstanceStatus string
 
 const (
 	InstanceStatusPending   InstanceStatus = "pending"
-	InstanceStatusActive    InstanceStatus = "active"
+	InstanceStatusRunning   InstanceStatus = "running"
 	InstanceStatusStopped   InstanceStatus = "stopped"
 	InstanceStatusPaused    InstanceStatus = "paused"
 	InstanceStatusSuspended InstanceStatus = "suspended"
@@ -5076,7 +5076,7 @@ const (
 func (InstanceStatus) AllValues() []InstanceStatus {
 	return []InstanceStatus{
 		InstanceStatusPending,
-		InstanceStatusActive,
+		InstanceStatusRunning,
 		InstanceStatusStopped,
 		InstanceStatusPaused,
 		InstanceStatusSuspended,
@@ -5092,7 +5092,7 @@ func (s InstanceStatus) MarshalText() ([]byte, error) {
 	switch s {
 	case InstanceStatusPending:
 		return []byte(s), nil
-	case InstanceStatusActive:
+	case InstanceStatusRunning:
 		return []byte(s), nil
 	case InstanceStatusStopped:
 		return []byte(s), nil
@@ -5119,8 +5119,8 @@ func (s *InstanceStatus) UnmarshalText(data []byte) error {
 	case InstanceStatusPending:
 		*s = InstanceStatusPending
 		return nil
-	case InstanceStatusActive:
-		*s = InstanceStatusActive
+	case InstanceStatusRunning:
+		*s = InstanceStatusRunning
 		return nil
 	case InstanceStatusStopped:
 		*s = InstanceStatusStopped

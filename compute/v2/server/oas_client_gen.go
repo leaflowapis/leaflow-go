@@ -64,8 +64,9 @@ type Invoker interface {
 	// AttachInstanceNetworkInterface invokes attach-instance-network-interface operation.
 	//
 	// Returns the network interface; the instance shows the `attach_network_interface` operation and the
-	// interface the `attach` operation until the attachment is confirmed. The instance has to be running;
-	// a stopped one holds no host and is refused with 409 `INSTANCE_NOT_RUNNING`.
+	// interface the `attach` operation until the attachment is confirmed. The instance has to be running
+	// or stopped; one stopped by the legacy stop, which released its host, is refused with 409
+	// `INSTANCE_SHELVED`.
 	//
 	// POST /api/v2/instances/{instanceId}/network-interfaces
 	AttachInstanceNetworkInterface(ctx context.Context, request *AttachNetworkInterfaceRequestBody, params AttachInstanceNetworkInterfaceParams) (AttachInstanceNetworkInterfaceRes, error)
@@ -552,8 +553,8 @@ type Invoker interface {
 	// DetachInstanceNetworkInterface invokes detach-instance-network-interface operation.
 	//
 	// The primary network interface cannot be detached; the instance would lose its network address. The
-	// instance has to be running; a stopped one holds no host and is refused with 409
-	// `INSTANCE_NOT_RUNNING`.
+	// instance has to be running or stopped; one stopped by the legacy stop, which released its host, is
+	// refused with 409 `INSTANCE_SHELVED`.
 	//
 	// Returns the network interface; the instance shows the `detach_network_interface` operation and the
 	// interface the `detach` operation until it is detached.
@@ -1021,9 +1022,9 @@ type Invoker interface {
 	//
 	// All data on the boot volume is erased and cannot be recovered. Attached data volumes are unaffected.
 	//
-	// The instance has to be running; a stopped one holds no host and is refused with 409
-	// `INSTANCE_NOT_RUNNING`. Start it first; an instance whose operating system no longer boots still
-	// starts.
+	// The instance has to be running or stopped. An instance stopped by the legacy stop, which released
+	// its host, is refused with 409 `INSTANCE_SHELVED`; start it once first, which works even when its
+	// operating system no longer boots.
 	//
 	// The image this instance already runs is accepted even after the platform has withdrawn it, since
 	// rebuilding is the only way back into an instance broken from the inside. Any other withdrawn image
@@ -1046,8 +1047,8 @@ type Invoker interface {
 	//
 	// Boots a temporary rescue environment while retaining the original boot volume. Starting, stopping,
 	// changing `instance_type_id`, rebuilding and resetting the password are unavailable in rescue mode. A
-	// stopped instance holds no host and is refused with 409 `INSTANCE_NOT_RUNNING`; start it first, which
-	// works even when its operating system no longer boots.
+	// stopped instance is refused with 409 `INSTANCE_NOT_RUNNING`; start it first, which works even when
+	// its operating system no longer boots.
 	//
 	// The request does not name an image. The rescue image is the region's enabled rescue image for the
 	// architecture of the instance's boot volume. A region and architecture with no enabled rescue image
@@ -1117,29 +1118,31 @@ type Invoker interface {
 	RunInstanceCommand(ctx context.Context, request *RunInstanceCommandRequestBody, params RunInstanceCommandParams) (*RunInstanceCommandResponseBody, error)
 	// StartInstance invokes start-instance operation.
 	//
-	// Places the instance on a host of its availability zone again; outstanding restrictions can prevent
-	// starting. When no host of the zone has room for it now, the request is refused with 409
-	// `INSTANCE_START_NO_HOST_ROOM` and the instance stays stopped; try again later. Another start can
-	// take the room after the request was accepted, and the start then ends with the instance still
-	// stopped. It shows the `start` operation until it is running or the start has failed.
+	// Boots the stopped instance on the host it kept; outstanding restrictions can prevent starting. It
+	// shows the `start` operation until it is running or the start has failed. Starting a running instance
+	// changes nothing.
 	//
-	// Starting connects its volumes afresh, so a volume grown while attached runs at the performance of
-	// its new size from the next start after a stop. An instance powered off from inside its operating
-	// system keeps its host and starts on it again; stop it with `:stop` first for its volumes to be
-	// connected afresh. Starting a running instance changes nothing.
+	// When its boot volume grew since it was last connected, the start connects its volumes afresh so that
+	// the boot volume runs at the performance of its new size: the instance is taken off its host for that
+	// moment and placed again. Only then can the start find no room in the zone; it is refused with 409
+	// `INSTANCE_START_NO_HOST_ROOM`, or ends with the instance still stopped, and can be tried again
+	// later. An instance stopped by the legacy stop, which released its host, is placed again the same
+	// way.
 	//
 	// POST /api/v2/instances/{instanceId}:start
 	StartInstance(ctx context.Context, params StartInstanceParams) (StartInstanceRes, error)
 	// StopInstance invokes stop-instance operation.
 	//
-	// Stops the instance and releases its host, as on AWS and Alibaba Cloud: a stopped instance keeps its
-	// volumes, network interfaces, addresses and quota, holds no vCPU or memory, and is not charged for
-	// compute. It shows the `stop` operation until it is stopped. Stopping a stopped instance changes
-	// nothing.
+	// Shuts the instance down on its host, as Alibaba Cloud's ordinary stop does: it keeps its volumes,
+	// network interfaces, addresses and quota, and the vCPU and memory of its host stay reserved for it,
+	// so it starts again without asking for room. A metered instance keeps being charged for compute while
+	// stopped; its volumes and elastic IPs are charged as always. An instance stopped by a suspension, for
+	// non-payment or by the platform, is not charged for compute while the suspension lasts. It shows the
+	// `stop` operation until it is stopped. Stopping a stopped instance changes nothing.
 	//
-	// A stopped instance holds no host, so changing `instance_type_id`, rebuilding it, rescuing it and
-	// attaching or detaching a network interface are refused with 409 `INSTANCE_NOT_RUNNING` until it is
-	// started. Volumes can be attached and detached while it is stopped.
+	// Changing `instance_type_id` is done on a stopped instance and only then. A stopped instance can also
+	// be rebuilt and have network interfaces and volumes attached and detached; rescuing it needs it
+	// running.
 	//
 	// POST /api/v2/instances/{instanceId}:stop
 	StopInstance(ctx context.Context, params StopInstanceParams) (StopInstanceRes, error)
@@ -1212,12 +1215,20 @@ type Invoker interface {
 	//    before touching it. The whole note is replaced; send an empty string to clear it. Do not put
 	//    credentials here. The note is visible to platform operators.
 	//
-	// `instance_type_id` resizes a running instance, which restarts once during the resize, and returns
-	// 202 with the instance and the Checkout Session for the change, including for metered terms. The
-	// instance keeps its usage type and period, priced with the target type's matching option; a target
-	// type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts once
-	// Billing accepts the order. Do not submit the change again after paying. After an uncertain response,
-	// look the Checkout Session up in Billing before submitting again.
+	// `instance_type_id` changes the instance's type cold: the instance has to be stopped, and is refused
+	// with 409 `INSTANCE_RESIZE_REQUIRES_STOP` otherwise. Its operating system is not booted for the
+	// change, and it is still stopped once the change is applied; start it when you are ready. An instance
+	// stopped by the legacy stop, which released its host, is refused with 409 `INSTANCE_SHELVED`; start
+	// it once and stop it again. A target type that cannot hold what the instance already uses is refused
+	// before anything is ordered: fewer network interfaces than are attached with 409
+	// `INSTANCE_RESIZE_NETWORK_INTERFACES_EXCEED`, fewer elastic IPs than are associated with 409
+	// `INSTANCE_RESIZE_ELASTIC_IPS_EXCEED`, and less purchasable bandwidth than an associated elastic IP
+	// has with 409 `INSTANCE_BANDWIDTH_CEILING` naming it in `meta.elastic_ip_id`. The request returns 202
+	// with the instance and the Checkout Session for the change, including for metered terms. The instance
+	// keeps its usage type and period, priced with the target type's matching option; a target type
+	// without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing
+	// accepts the order. Do not submit the change again after paying. After an uncertain response, look
+	// the Checkout Session up in Billing before submitting again.
 	//
 	// The instance shows the `resize` operation until the resize is applied, its Checkout Session expires
 	// or its order is canceled, so other operations and a second resize are refused with
@@ -1685,8 +1696,9 @@ func (c *Client) sendAssociateElasticIP(ctx context.Context, request AssociateEl
 // AttachInstanceNetworkInterface invokes attach-instance-network-interface operation.
 //
 // Returns the network interface; the instance shows the `attach_network_interface` operation and the
-// interface the `attach` operation until the attachment is confirmed. The instance has to be running;
-// a stopped one holds no host and is refused with 409 `INSTANCE_NOT_RUNNING`.
+// interface the `attach` operation until the attachment is confirmed. The instance has to be running
+// or stopped; one stopped by the legacy stop, which released its host, is refused with 409
+// `INSTANCE_SHELVED`.
 //
 // POST /api/v2/instances/{instanceId}/network-interfaces
 func (c *Client) AttachInstanceNetworkInterface(ctx context.Context, request *AttachNetworkInterfaceRequestBody, params AttachInstanceNetworkInterfaceParams) (AttachInstanceNetworkInterfaceRes, error) {
@@ -6750,8 +6762,8 @@ func (c *Client) sendDeleteVolumeSnapshot(ctx context.Context, params DeleteVolu
 // DetachInstanceNetworkInterface invokes detach-instance-network-interface operation.
 //
 // The primary network interface cannot be detached; the instance would lose its network address. The
-// instance has to be running; a stopped one holds no host and is refused with 409
-// `INSTANCE_NOT_RUNNING`.
+// instance has to be running or stopped; one stopped by the legacy stop, which released its host, is
+// refused with 409 `INSTANCE_SHELVED`.
 //
 // Returns the network interface; the instance shows the `detach_network_interface` operation and the
 // interface the `detach` operation until it is detached.
@@ -16183,9 +16195,9 @@ func (c *Client) sendRebootInstance(ctx context.Context, request *RebootInstance
 //
 // All data on the boot volume is erased and cannot be recovered. Attached data volumes are unaffected.
 //
-// The instance has to be running; a stopped one holds no host and is refused with 409
-// `INSTANCE_NOT_RUNNING`. Start it first; an instance whose operating system no longer boots still
-// starts.
+// The instance has to be running or stopped. An instance stopped by the legacy stop, which released
+// its host, is refused with 409 `INSTANCE_SHELVED`; start it once first, which works even when its
+// operating system no longer boots.
 //
 // The image this instance already runs is accepted even after the platform has withdrawn it, since
 // rebuilding is the only way back into an instance broken from the inside. Any other withdrawn image
@@ -16478,8 +16490,8 @@ func (c *Client) sendRejectVirtualPrivateCloudPeering(ctx context.Context, param
 //
 // Boots a temporary rescue environment while retaining the original boot volume. Starting, stopping,
 // changing `instance_type_id`, rebuilding and resetting the password are unavailable in rescue mode. A
-// stopped instance holds no host and is refused with 409 `INSTANCE_NOT_RUNNING`; start it first, which
-// works even when its operating system no longer boots.
+// stopped instance is refused with 409 `INSTANCE_NOT_RUNNING`; start it first, which works even when
+// its operating system no longer boots.
 //
 // The request does not name an image. The rescue image is the region's enabled rescue image for the
 // architecture of the instance's boot volume. A region and architecture with no enabled rescue image
@@ -17113,16 +17125,16 @@ func (c *Client) sendRunInstanceCommand(ctx context.Context, request *RunInstanc
 
 // StartInstance invokes start-instance operation.
 //
-// Places the instance on a host of its availability zone again; outstanding restrictions can prevent
-// starting. When no host of the zone has room for it now, the request is refused with 409
-// `INSTANCE_START_NO_HOST_ROOM` and the instance stays stopped; try again later. Another start can
-// take the room after the request was accepted, and the start then ends with the instance still
-// stopped. It shows the `start` operation until it is running or the start has failed.
+// Boots the stopped instance on the host it kept; outstanding restrictions can prevent starting. It
+// shows the `start` operation until it is running or the start has failed. Starting a running instance
+// changes nothing.
 //
-// Starting connects its volumes afresh, so a volume grown while attached runs at the performance of
-// its new size from the next start after a stop. An instance powered off from inside its operating
-// system keeps its host and starts on it again; stop it with `:stop` first for its volumes to be
-// connected afresh. Starting a running instance changes nothing.
+// When its boot volume grew since it was last connected, the start connects its volumes afresh so that
+// the boot volume runs at the performance of its new size: the instance is taken off its host for that
+// moment and placed again. Only then can the start find no room in the zone; it is refused with 409
+// `INSTANCE_START_NO_HOST_ROOM`, or ends with the instance still stopped, and can be tried again
+// later. An instance stopped by the legacy stop, which released its host, is placed again the same
+// way.
 //
 // POST /api/v2/instances/{instanceId}:start
 func (c *Client) StartInstance(ctx context.Context, params StartInstanceParams) (StartInstanceRes, error) {
@@ -17257,14 +17269,16 @@ func (c *Client) sendStartInstance(ctx context.Context, params StartInstancePara
 
 // StopInstance invokes stop-instance operation.
 //
-// Stops the instance and releases its host, as on AWS and Alibaba Cloud: a stopped instance keeps its
-// volumes, network interfaces, addresses and quota, holds no vCPU or memory, and is not charged for
-// compute. It shows the `stop` operation until it is stopped. Stopping a stopped instance changes
-// nothing.
+// Shuts the instance down on its host, as Alibaba Cloud's ordinary stop does: it keeps its volumes,
+// network interfaces, addresses and quota, and the vCPU and memory of its host stay reserved for it,
+// so it starts again without asking for room. A metered instance keeps being charged for compute while
+// stopped; its volumes and elastic IPs are charged as always. An instance stopped by a suspension, for
+// non-payment or by the platform, is not charged for compute while the suspension lasts. It shows the
+// `stop` operation until it is stopped. Stopping a stopped instance changes nothing.
 //
-// A stopped instance holds no host, so changing `instance_type_id`, rebuilding it, rescuing it and
-// attaching or detaching a network interface are refused with 409 `INSTANCE_NOT_RUNNING` until it is
-// started. Volumes can be attached and detached while it is stopped.
+// Changing `instance_type_id` is done on a stopped instance and only then. A stopped instance can also
+// be rebuilt and have network interfaces and volumes attached and detached; rescuing it needs it
+// running.
 //
 // POST /api/v2/instances/{instanceId}:stop
 func (c *Client) StopInstance(ctx context.Context, params StopInstanceParams) (StopInstanceRes, error) {
@@ -17735,12 +17749,20 @@ func (c *Client) sendUpdateElasticIP(ctx context.Context, request *UpdateElastic
 //     before touching it. The whole note is replaced; send an empty string to clear it. Do not put
 //     credentials here. The note is visible to platform operators.
 //
-// `instance_type_id` resizes a running instance, which restarts once during the resize, and returns
-// 202 with the instance and the Checkout Session for the change, including for metered terms. The
-// instance keeps its usage type and period, priced with the target type's matching option; a target
-// type without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts once
-// Billing accepts the order. Do not submit the change again after paying. After an uncertain response,
-// look the Checkout Session up in Billing before submitting again.
+// `instance_type_id` changes the instance's type cold: the instance has to be stopped, and is refused
+// with 409 `INSTANCE_RESIZE_REQUIRES_STOP` otherwise. Its operating system is not booted for the
+// change, and it is still stopped once the change is applied; start it when you are ready. An instance
+// stopped by the legacy stop, which released its host, is refused with 409 `INSTANCE_SHELVED`; start
+// it once and stop it again. A target type that cannot hold what the instance already uses is refused
+// before anything is ordered: fewer network interfaces than are attached with 409
+// `INSTANCE_RESIZE_NETWORK_INTERFACES_EXCEED`, fewer elastic IPs than are associated with 409
+// `INSTANCE_RESIZE_ELASTIC_IPS_EXCEED`, and less purchasable bandwidth than an associated elastic IP
+// has with 409 `INSTANCE_BANDWIDTH_CEILING` naming it in `meta.elastic_ip_id`. The request returns 202
+// with the instance and the Checkout Session for the change, including for metered terms. The instance
+// keeps its usage type and period, priced with the target type's matching option; a target type
+// without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing
+// accepts the order. Do not submit the change again after paying. After an uncertain response, look
+// the Checkout Session up in Billing before submitting again.
 //
 // The instance shows the `resize` operation until the resize is applied, its Checkout Session expires
 // or its order is canceled, so other operations and a second resize are refused with

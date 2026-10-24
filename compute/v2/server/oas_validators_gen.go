@@ -4324,7 +4324,7 @@ func (s InstanceStatus) Validate() error {
 	switch s {
 	case "pending":
 		return nil
-	case "active":
+	case "running":
 		return nil
 	case "stopped":
 		return nil

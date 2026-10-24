@@ -10964,8 +10964,8 @@ func (s *InstanceStatus) Decode(d *jx.Decoder) error {
 	switch InstanceStatus(v) {
 	case InstanceStatusPending:
 		*s = InstanceStatusPending
-	case InstanceStatusActive:
-		*s = InstanceStatusActive
+	case InstanceStatusRunning:
+		*s = InstanceStatusRunning
 	case InstanceStatusStopped:
 		*s = InstanceStatusStopped
 	case InstanceStatusPaused:
