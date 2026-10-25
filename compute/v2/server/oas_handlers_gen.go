@@ -35,11 +35,11 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 
 // handleAcceptVirtualPrivateCloudPeeringRequest handles accept-virtual-private-cloud-peering operation.
 //
-// Starts the provisioning of the connectivity; the peering shows the `provision` operation until it is
-// `active`. It does not change security groups or provide transitive routing. Only the accepter
-// project may decide; the requester project is refused, because a peering would otherwise be accepted
-// by the party who asked for it. The decision is made once: a peering whose `acceptance` is no longer
-// `pending` refuses both methods.
+// Starts the provisioning of the connectivity; the peering is `provisioning` until it is `active`. It
+// does not change security groups or provide transitive routing. Only the accepter project may decide;
+// the requester project is refused, because a peering would otherwise be accepted by the party who
+// asked for it. The decision is made once: a peering whose `acceptance` is no longer `pending` refuses
+// both methods.
 //
 // POST /api/v2/virtual-private-cloud-peerings/{virtualPrivateCloudPeeringId}:accept
 func (s *Server) handleAcceptVirtualPrivateCloudPeeringRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -248,10 +248,9 @@ func (s *Server) handleAcceptVirtualPrivateCloudPeeringRequest(args [1]string, a
 // The target becomes what the elastic IP points at. Repeating the request for the target it already
 // points at changes nothing; an elastic IP associated with another target is refused with
 // `ELASTIC_IP_ALREADY_ASSOCIATED` (409), and is moved by disassociating it first, so that the moment
-// traffic stops reaching the old target is one the caller chose. The elastic IP shows the `associate`
-// operation until the association is confirmed, and with an instance as the target that instance shows
-// the `associate_elastic_ip` operation as well, so the instance must not have another operation in
-// progress.
+// traffic stops reaching the old target is one the caller chose. The elastic IP is `associating` until
+// the association is confirmed, and with an instance as the target that instance is
+// `associating_elastic_ip` as well, so the instance must not have another operation in progress.
 //
 // The elastic IP must be in the same region as the target. With an instance as the target, the elastic
 // IP's `bandwidth_mbps` must not exceed the `max_bandwidth_mbps` of that instance's type; a higher
@@ -470,10 +469,9 @@ func (s *Server) handleAssociateElasticIPRequest(args [1]string, argsEscaped boo
 
 // handleAttachInstanceNetworkInterfaceRequest handles attach-instance-network-interface operation.
 //
-// Returns the network interface; the instance shows the `attach_network_interface` operation and the
-// interface the `attach` operation until the attachment is confirmed. The instance has to be running
-// or stopped; one stopped by the legacy stop, which released its host, is refused with 409
-// `INSTANCE_SHELVED`.
+// Returns the network interface; the instance is `attaching_network_interface` and the interface is
+// `attaching` until the attachment is confirmed. The instance has to be running or stopped; one
+// stopped by the legacy stop, which released its host, is refused with 409 `INSTANCE_SHELVED`.
 //
 // POST /api/v2/instances/{instanceId}/network-interfaces
 func (s *Server) handleAttachInstanceNetworkInterfaceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -689,9 +687,8 @@ func (s *Server) handleAttachInstanceNetworkInterfaceRequest(args [1]string, arg
 // handleAttachInstanceVolumeRequest handles attach-instance-volume operation.
 //
 // The volume must be in the same region and availability zone as the instance. Returns the volume; the
-// instance shows the `attach_volume` operation and the volume the `attach` operation until the
-// attachment is confirmed. Partition the volume and mount the file system inside the instance once it
-// is attached.
+// instance is `attaching_volume` and the volume is `attaching` until the attachment is confirmed.
+// Partition the volume and mount the file system inside the instance once it is attached.
 //
 // POST /api/v2/instances/{instanceId}/volumes
 func (s *Server) handleAttachInstanceVolumeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -925,10 +922,10 @@ func (s *Server) handleAttachInstanceVolumeRequest(args [1]string, argsEscaped b
 // Allocation does not select or create a virtual private cloud. A later association selects an
 // assigned network-interface address; Compute then establishes the required network connectivity.
 //
-// The elastic IP shows the `create` operation from the moment its Checkout Session is created until it
-// is delivered or its checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
+// The elastic IP is `pending` from the moment its Checkout Session is created until it is delivered or
+// its checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
+// meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its purchase awaits checkout or
+// payment.
 //
 // POST /api/v2/elastic-ips
 func (s *Server) handleCreateElasticIPRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1133,13 +1130,13 @@ func (s *Server) handleCreateElasticIPRequest(args [0]string, argsEscaped bool, 
 // type and period must match. A pending instance has no server, boot volume or address, and is not
 // metered.
 //
-// Creation starts once Billing accepts the order: the instance stays `pending` with the `create`
-// operation while it is created, then becomes `running`. With automatic checkout, insufficient funds
-// refuse the request and nothing is created. With deferred checkout, the instances stay `pending`
-// until the customer completes checkout in Billing and the order is paid; an expired Checkout Session,
-// or a canceled or expired order, leaves them `failed` with `checkout_expired`, `order_canceled` or
-// `order_expired`. Do not submit another creation request after paying. After an uncertain response,
-// look the Checkout Session up in Billing before submitting again.
+// Creation starts once Billing accepts the order: the instance stays `pending` while it is created,
+// then becomes `running`. With automatic checkout, insufficient funds refuse the request and nothing
+// is created. With deferred checkout, the instances stay `pending` until the customer completes
+// checkout in Billing and the order is paid; an expired Checkout Session, or a canceled or expired
+// order, leaves them `failed` with `checkout_expired`, `order_canceled` or `order_expired`. Do not
+// submit another creation request after paying. After an uncertain response, look the Checkout Session
+// up in Billing before submitting again.
 //
 // The instances are created in the availability zone of their instance type, and the volumes bought
 // with them have to be of volume types of that zone (422 `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`). The
@@ -1176,10 +1173,10 @@ func (s *Server) handleCreateElasticIPRequest(args [0]string, argsEscaped bool, 
 // private cloud, and `NETWORK_INTERFACE_UNAVAILABLE` when the port's `status` is not `available`.
 // `meta` names the resource.
 //
-// Each instance shows the `create` operation from the moment the Checkout Session is created until it
-// is delivered or the checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its release with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
+// Each instance is `pending` from the moment the Checkout Session is created until it is delivered or
+// the checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
+// meanwhile, and its release with `COMPUTE_PURCHASE_PENDING` while its purchase awaits checkout or
+// payment.
 //
 // POST /api/v2/instances
 func (s *Server) handleCreateInstanceRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2007,9 +2004,9 @@ func (s *Server) handleCreateNetworkInterfaceRequest(args [0]string, argsEscaped
 // handleCreateNetworkInterfaceAddressRequest handles create-network-interface-address operation.
 //
 // Adds an IPv4 address in the network interface's subnet, given or chosen by the network, and answers
-// 202 with the network interface showing the `add_address` operation until the address is in place; it
-// then appears among `addresses` with `role` `secondary`. An elastic IP can be associated with it like
-// the primary address.
+// 202 with the network interface `adding_address` until the address is in place; it then appears among
+// `addresses` with `role` `secondary`. An elastic IP can be associated with it like the primary
+// address.
 //
 // The operating system has to be configured to use it: DHCP hands out only the primary address.
 // Changing the addresses of a network interface in use may briefly interrupt its traffic.
@@ -2246,10 +2243,9 @@ func (s *Server) handleCreateNetworkInterfaceAddressRequest(args [1]string, args
 // `pending` until the customer completes checkout in Billing. The source and project quotas are
 // checked before the Checkout Session is created, and a refused request creates nothing.
 //
-// The image shows the `create` operation from the moment its Checkout Session is created until it is
-// delivered or its checkout or order ends. While its purchase awaits checkout or payment its deletion
-// is refused with `COMPUTE_PURCHASE_PENDING`; once the capture runs, deletion is the one operation it
-// accepts.
+// The image is `pending` from the moment its Checkout Session is created until it is delivered or its
+// checkout or order ends. While its purchase awaits checkout or payment its deletion is refused with
+// `COMPUTE_PURCHASE_PENDING`; once the capture runs, deletion is the one operation it accepts.
 //
 // POST /api/v2/private-images
 func (s *Server) handleCreatePrivateImageRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3739,10 +3735,10 @@ func (s *Server) handleCreateVirtualPrivateCloudSubnetRequest(args [1]string, ar
 // `VOLUME_USAGE_TYPE_UNAVAILABLE`. A volume created with an instance follows the machine's terms
 // instead and may be metered.
 //
-// The volume shows the `create` operation from the moment its Checkout Session is created until it is
-// delivered or its checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
+// The volume is `pending` from the moment its Checkout Session is created until it is delivered or its
+// checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
+// meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its purchase awaits checkout or
+// payment.
 //
 // POST /api/v2/volumes
 func (s *Server) handleCreateVolumeRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3953,10 +3949,10 @@ func (s *Server) handleCreateVolumeRequest(args [0]string, argsEscaped bool, w h
 // the customer completes checkout in Billing. The source and project quotas are checked before the
 // Checkout Session is created, and a refused request creates nothing.
 //
-// The backup shows the `create` operation from the moment its Checkout Session is created until it is
-// delivered or its checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
+// The backup is `pending` from the moment its Checkout Session is created until it is delivered or its
+// checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
+// meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its purchase awaits checkout or
+// payment.
 //
 // POST /api/v2/volume-backups
 func (s *Server) handleCreateVolumeBackupRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4166,10 +4162,10 @@ func (s *Server) handleCreateVolumeBackupRequest(args [0]string, argsEscaped boo
 // the customer completes checkout in Billing. The source and project quotas are checked before the
 // Checkout Session is created, and a refused request creates nothing.
 //
-// The snapshot shows the `create` operation from the moment its Checkout Session is created until it
-// is delivered or its checkout or order ends. Every other operation on it is refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its
-// purchase awaits checkout or payment.
+// The snapshot is `pending` from the moment its Checkout Session is created until it is delivered or
+// its checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
+// meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its purchase awaits checkout or
+// payment.
 //
 // POST /api/v2/volume-snapshots
 func (s *Server) handleCreateVolumeSnapshotRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4369,9 +4365,9 @@ func (s *Server) handleCreateVolumeSnapshotRequest(args [0]string, argsEscaped b
 
 // handleDeleteElasticIPRequest handles delete-elastic-ip operation.
 //
-// Releases the elastic IP after dissociating it. The elastic IP shows the `delete` operation until
-// cleanup is confirmed; the address then immediately returns to available inventory, with no cooldown
-// period. Deleting the association or replacing it alone does not release the address.
+// Releases the elastic IP after dissociating it. The elastic IP is `deleting` until cleanup is
+// confirmed; the address then immediately returns to available inventory, with no cooldown period.
+// Deleting the association or replacing it alone does not release the address.
 //
 // Refused with `COMPUTE_PURCHASE_PENDING` while the purchase that created it still awaits checkout or
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
@@ -5413,10 +5409,10 @@ func (s *Server) handleDeleteNetworkInterfaceRequest(args [1]string, argsEscaped
 
 // handleDeleteNetworkInterfaceAddressRequest handles delete-network-interface-address operation.
 //
-// Removes a secondary IPv4 address and answers 202 with the network interface showing the
-// `remove_address` operation until it is gone. The primary address goes only with the network
-// interface (409 `NETWORK_INTERFACE_ADDRESS_PRIMARY`), and an address an elastic IP is associated with
-// is refused until it is disassociated (409 `NETWORK_INTERFACE_ADDRESS_ASSOCIATED`).
+// Removes a secondary IPv4 address and answers 202 with the network interface `removing_address` until
+// it is gone. The primary address goes only with the network interface (409
+// `NETWORK_INTERFACE_ADDRESS_PRIMARY`), and an address an elastic IP is associated with is refused
+// until it is disassociated (409 `NETWORK_INTERFACE_ADDRESS_ASSOCIATED`).
 //
 // DELETE /api/v2/network-interfaces/{networkInterfaceId}/addresses/{addressId}
 func (s *Server) handleDeleteNetworkInterfaceAddressRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5627,7 +5623,7 @@ func (s *Server) handleDeleteNetworkInterfaceAddressRequest(args [2]string, args
 // be rebuilt.
 //
 // An image whose capture has not finished can be deleted; the capture is aborted. This is the one
-// operation accepted while the `create` operation is in progress.
+// operation accepted while its status is `pending`.
 //
 // Quota capacity and storage metering are released only after cleanup is confirmed.
 //
@@ -7719,8 +7715,8 @@ func (s *Server) handleDeleteVolumeSnapshotRequest(args [1]string, argsEscaped b
 // instance has to be running or stopped; one stopped by the legacy stop, which released its host, is
 // refused with 409 `INSTANCE_SHELVED`.
 //
-// Returns the network interface; the instance shows the `detach_network_interface` operation and the
-// interface the `detach` operation until it is detached.
+// Returns the network interface; the instance is `detaching_network_interface` and the interface is
+// `detaching` until it is detached.
 //
 // DELETE /api/v2/instances/{instanceId}/network-interfaces/{networkInterfaceId}
 func (s *Server) handleDetachInstanceNetworkInterfaceRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -7931,8 +7927,8 @@ func (s *Server) handleDetachInstanceNetworkInterfaceRequest(args [2]string, arg
 // instance or a volume supplied as the existing boot_volume at launch. Such a request is refused with
 // `INSTANCE_BOOT_VOLUME_LOCKED` and changes nothing; releasing the instance is what frees that volume.
 //
-// Returns the volume; the instance shows the `detach_volume` operation and the volume the `detach`
-// operation until the volume is detached.
+// Returns the volume; the instance is `detaching_volume` and the volume is `detaching` until the
+// volume is detached.
 //
 // DELETE /api/v2/instances/{instanceId}/volumes/{volumeId}
 func (s *Server) handleDetachInstanceVolumeRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8338,9 +8334,9 @@ func (s *Server) handleDisableVirtualPrivateCloudIpv6Request(args [1]string, arg
 // handleDisassociateElasticIPRequest handles disassociate-elastic-ip operation.
 //
 // The address remains held by the project and simply no longer points at any network interface. The
-// elastic IP shows the `disassociate` operation until the change is confirmed, and an instance whose
-// primary interface it pointed at shows the `disassociate_elastic_ip` operation. Removing an
-// association that does not exist is refused with 404 `ELASTIC_IP_NOT_ASSOCIATED`.
+// elastic IP is `disassociating` until the change is confirmed, and an instance whose primary
+// interface it pointed at is `disassociating_elastic_ip`. Removing an association that does not exist
+// is refused with 404 `ELASTIC_IP_NOT_ASSOCIATED`.
 //
 // POST /api/v2/elastic-ips/{elasticIpId}:disassociate
 func (s *Server) handleDisassociateElasticIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -19905,7 +19901,7 @@ func (s *Server) handleListVolumesRequest(args [0]string, argsEscaped bool, w ht
 //
 // An instance suspended by the platform must be unsuspended first.
 //
-// The instance shows the `reboot` operation until the reboot has finished.
+// The instance is `rebooting` until the reboot has finished.
 //
 // POST /api/v2/instances/{instanceId}:reboot
 func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -20130,7 +20126,7 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 // rebuilding is the only way back into an instance broken from the inside. Any other withdrawn image
 // is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 //
-// The instance shows the `rebuild` operation until the rebuild has finished.
+// The instance is `rebuilding` until the rebuild has finished.
 //
 // POST /api/v2/instances/{instanceId}:rebuild
 func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -20561,8 +20557,8 @@ func (s *Server) handleRejectVirtualPrivateCloudPeeringRequest(args [1]string, a
 // suspension that begins in rescue mode takes the instance out of rescue before stopping it, and
 // starting it again once the suspension ends boots its own system.
 //
-// A rescue the compute service could not boot ends the `rescue` operation and leaves the instance as
-// it was, or in `error`; request it again or reboot the instance.
+// A rescue the compute service could not boot leaves the instance as it was, or in `error`; request it
+// again or reboot the instance.
 //
 // The request does not name an image. The rescue image is the region's enabled rescue image for the
 // architecture of the instance's boot volume. A region and architecture with no enabled rescue image
@@ -21012,7 +21008,7 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 // volume from the snapshot instead.
 //
 // The revert is a request of its own rather than a state of the volume: the response is the volume,
-// which shows the `revert` operation until the revert is complete.
+// which is `reverting` until the revert is complete.
 //
 // POST /api/v2/volumes/{volumeId}:revert
 func (s *Server) handleRevertVolumeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -21468,9 +21464,8 @@ func (s *Server) handleRunInstanceCommandRequest(args [1]string, argsEscaped boo
 
 // handleStartInstanceRequest handles start-instance operation.
 //
-// Boots the stopped instance on the host it kept; outstanding restrictions can prevent starting. It
-// shows the `start` operation until it is running or the start has failed. Starting a running instance
-// changes nothing.
+// Boots the stopped instance on the host it kept; outstanding restrictions can prevent starting. It is
+// `starting` until it is running or the start has failed. Starting a running instance changes nothing.
 //
 // When its boot volume grew since it was last connected, the start connects its volumes afresh so that
 // the boot volume runs at the performance of its new size: the instance is taken off its host for that
@@ -21681,8 +21676,8 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 // network interfaces, addresses and quota, and the vCPU and memory of its host stay reserved for it,
 // so it starts again without asking for room. A metered instance keeps being charged for compute while
 // stopped; its volumes and elastic IPs are charged as always. An instance stopped by a suspension, for
-// non-payment or by the platform, is not charged for compute while the suspension lasts. It shows the
-// `stop` operation until it is stopped. Stopping a stopped instance changes nothing.
+// non-payment or by the platform, is not charged for compute while the suspension lasts. It is
+// `stopping` until it is stopped. Stopping a stopped instance changes nothing.
 //
 // Changing `instance_type_id` is done on a stopped instance and only then. A stopped instance can also
 // be rebuilt and have network interfaces and volumes attached and detached; rescuing it needs it
@@ -21887,7 +21882,7 @@ func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w h
 // handleUnrescueInstanceRequest handles unrescue-instance operation.
 //
 // Restores boot from the original boot volume. Completion is shown by the instance state, and the
-// instance shows the `unrescue` operation until then.
+// instance is `unrescuing` until then.
 //
 // POST /api/v2/instances/{instanceId}:unrescue
 func (s *Server) handleUnrescueInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -22110,12 +22105,12 @@ func (s *Server) handleUnrescueInstanceRequest(args [1]string, argsEscaped bool,
 //     the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
 //     `ELASTIC_IP_CHECKOUT_UNUSED`.
 //
-// A change of `internet_charge_type` needs no checkout and shows the `update_internet_charge_type`
-// operation until it is applied; see the field.
+// A change of `internet_charge_type` needs no checkout and is `updating_internet_charge_type` until it
+// is applied; see the field.
 //
-// The elastic IP shows the `update_bandwidth` operation until the change is applied or ends, so other
-// operations and a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit
-// stays in effect until the change is applied.
+// The elastic IP is `updating_bandwidth` until the change is applied or ends, so other operations and
+// a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in
+// effect until the change is applied.
 //
 // While the address is associated with an instance, the limit must not exceed the `max_bandwidth_mbps`
 // of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of
@@ -22371,13 +22366,13 @@ func (s *Server) handleUpdateElasticIPRequest(args [1]string, argsEscaped bool, 
 // accepts the order. Do not submit the change again after paying. After an uncertain response, look
 // the Checkout Session up in Billing before submitting again.
 //
-// The instance shows the `resize` operation until the resize is applied, its Checkout Session expires
-// or its order is canceled, so other operations and a second resize are refused with
-// `COMPUTE_RESOURCE_BUSY` meanwhile. It keeps its current type until the resize is applied; the new
-// type takes effect, and is billed from then on, when `instance_type_id` shows it. If checkout is not
-// completed, the order is not accepted or the resize fails, the instance keeps its current type and
-// Billing shows the outcome. A completed resize is final and cannot be reverted; to return to the
-// previous type, submit another resize.
+// The instance is `resizing` until the resize is applied, its Checkout Session expires or its order is
+// canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
+// meanwhile. It keeps its current type until the resize is applied; the new type takes effect, and is
+// billed from then on, when `instance_type_id` shows it. If checkout is not completed, the order is
+// not accepted or the resize fails, the instance keeps its current type and Billing shows the outcome.
+// A completed resize is final and cannot be reverted; to return to the previous type, submit another
+// resize.
 //
 // PATCH /api/v2/instances/{instanceId}
 func (s *Server) handleUpdateInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -22815,8 +22810,8 @@ func (s *Server) handleUpdateLaunchTemplateRequest(args [1]string, argsEscaped b
 //   - `name` is not an operation, is accepted at any time and answers 200.
 //   - `security_group_ids` is the complete new set, one to five groups of the network interface's
 //     virtual private cloud; groups left out are removed. It applies to traffic of the running instance
-//     as soon as it is in place, and answers 202 with the network interface showing the
-//     `update_security_groups` operation until then.
+//     as soon as it is in place, and answers 202 with the network interface `updating_security_groups`
+//     until then.
 //
 // Secondary IPv4 addresses are added and removed under
 // `/network-interfaces/{networkInterfaceId}/addresses`.
@@ -23916,8 +23911,8 @@ func (s *Server) handleUpdateVirtualPrivateCloudSubnetRequest(args [2]string, ar
 // Resizing accepts only an increase; a smaller `size_gib` is refused with `VOLUME_CANNOT_SHRINK`
 // (422), since a file system cannot be shrunk from outside the instance. It returns 202 with the
 // volume and the Checkout Session for the resize, which keeps the volume's usage type and period. The
-// volume shows the `resize` operation until the resize is applied, its Checkout Session expires or its
-// order is canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
+// volume is `resizing` until the resize is applied, its Checkout Session expires or its order is
+// canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
 // meanwhile. The volume keeps its current size until the resize is applied; once `size_gib` shows the
 // new size, extend the file system inside the instance. If checkout is not completed, the order is not
 // accepted or the resize fails, the volume keeps its size and Billing shows the outcome.
@@ -23930,12 +23925,11 @@ func (s *Server) handleUpdateVirtualPrivateCloudSubnetRequest(args [2]string, ar
 // `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`) with room for the volume (409 `VOLUME_TYPE_SOLD_OUT`,
 // `VOLUME_TYPE_CAPACITY_REACHED`, `VOLUME_TYPE_NO_POOL_ROOM`), admit the volume's capacity (422
 // `VOLUME_SIZE_OUT_OF_RANGE`, `VOLUME_SIZE_NOT_ON_STEP`) and differ from the current one (422
-// `VOLUME_RETYPE_SAME_TYPE`). The volume shows the `retype` operation until the change is applied, its
-// Checkout Session expires or its order is canceled. A target on the same storage backend takes effect
-// at once; one on another backend copies the volume's data there first, which takes longer the larger
-// the volume is. The volume keeps its type until `volume_type_id` shows the new one, and its
-// `performance` follows from then on; a change that did not take effect leaves the volume as it was
-// and is refunded.
+// `VOLUME_RETYPE_SAME_TYPE`). The volume is `retyping` until the change is applied, its Checkout
+// Session expires or its order is canceled. A target on the same storage backend takes effect at once;
+// one on another backend copies the volume's data there first, which takes longer the larger the
+// volume is. The volume keeps its type until `volume_type_id` shows the new one, and its `performance`
+// follows from then on; a change that did not take effect leaves the volume as it was and is refunded.
 //
 // An attached volume, including a boot volume, can be resized. The capacity is usable at once, and the
 // volume's `performance` shows what its type gives the new size. That performance applies from the

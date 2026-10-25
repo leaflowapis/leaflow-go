@@ -2642,24 +2642,6 @@ func (s *ElasticIP) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.Operation.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "operation",
-			Error: err,
-		})
-	}
-	if err := func() error {
 		if value, ok := s.Association.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
@@ -3109,52 +3091,6 @@ func (s *ElasticIPListResponseBody) Validate() error {
 	return nil
 }
 
-func (s *ElasticIPOperation) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Type.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "type",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s ElasticIPOperationType) Validate() error {
-	switch s {
-	case "create":
-		return nil
-	case "associate":
-		return nil
-	case "disassociate":
-		return nil
-	case "update_bandwidth":
-		return nil
-	case "update_internet_charge_type":
-		return nil
-	case "suspend":
-		return nil
-	case "resume":
-		return nil
-	case "delete":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
 func (s *ElasticIPReleaseResource) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -3209,6 +3145,20 @@ func (s ElasticIPStatus) Validate() error {
 	case "failed":
 		return nil
 	case "error":
+		return nil
+	case "associating":
+		return nil
+	case "disassociating":
+		return nil
+	case "updating_bandwidth":
+		return nil
+	case "updating_internet_charge_type":
+		return nil
+	case "suspending":
+		return nil
+	case "resuming":
+		return nil
+	case "deleting":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -3672,24 +3622,6 @@ func (s *Instance) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "failure_reason",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.Operation.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "operation",
 			Error: err,
 		})
 	}
@@ -4162,74 +4094,6 @@ func (s InstanceNetworkInterfaceID) Validate() error {
 	return nil
 }
 
-func (s *InstanceOperation) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Type.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "type",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s InstanceOperationType) Validate() error {
-	switch s {
-	case "create":
-		return nil
-	case "start":
-		return nil
-	case "stop":
-		return nil
-	case "reboot":
-		return nil
-	case "rebuild":
-		return nil
-	case "rescue":
-		return nil
-	case "unrescue":
-		return nil
-	case "resize":
-		return nil
-	case "reset_password":
-		return nil
-	case "attach_volume":
-		return nil
-	case "detach_volume":
-		return nil
-	case "attach_network_interface":
-		return nil
-	case "detach_network_interface":
-		return nil
-	case "associate_elastic_ip":
-		return nil
-	case "disassociate_elastic_ip":
-		return nil
-	case "capture_image":
-		return nil
-	case "suspend":
-		return nil
-	case "resume":
-		return nil
-	case "delete":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
 func (s *InstanceReleaseResource) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -4350,6 +4214,42 @@ func (s InstanceStatus) Validate() error {
 	case "failed":
 		return nil
 	case "error":
+		return nil
+	case "starting":
+		return nil
+	case "stopping":
+		return nil
+	case "rebooting":
+		return nil
+	case "rebuilding":
+		return nil
+	case "rescuing":
+		return nil
+	case "unrescuing":
+		return nil
+	case "resizing":
+		return nil
+	case "resetting_password":
+		return nil
+	case "attaching_volume":
+		return nil
+	case "detaching_volume":
+		return nil
+	case "attaching_network_interface":
+		return nil
+	case "detaching_network_interface":
+		return nil
+	case "associating_elastic_ip":
+		return nil
+	case "disassociating_elastic_ip":
+		return nil
+	case "capturing_image":
+		return nil
+	case "suspending":
+		return nil
+	case "resuming":
+		return nil
+	case "deleting":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -5276,24 +5176,6 @@ func (s *NetworkInterface) Validate() error {
 			Error: err,
 		})
 	}
-	if err := func() error {
-		if value, ok := s.Operation.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "operation",
-			Error: err,
-		})
-	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -5678,52 +5560,6 @@ func (s *NetworkInterfaceListResponseBody) Validate() error {
 	return nil
 }
 
-func (s *NetworkInterfaceOperation) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Type.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "type",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s NetworkInterfaceOperationType) Validate() error {
-	switch s {
-	case "create":
-		return nil
-	case "attach":
-		return nil
-	case "detach":
-		return nil
-	case "associate_elastic_ip":
-		return nil
-	case "update_security_groups":
-		return nil
-	case "add_address":
-		return nil
-	case "remove_address":
-		return nil
-	case "delete":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
 func (s NetworkInterfaceStatus) Validate() error {
 	switch s {
 	case "pending":
@@ -5731,6 +5567,20 @@ func (s NetworkInterfaceStatus) Validate() error {
 	case "available":
 		return nil
 	case "error":
+		return nil
+	case "attaching":
+		return nil
+	case "detaching":
+		return nil
+	case "associating_elastic_ip":
+		return nil
+	case "updating_security_groups":
+		return nil
+	case "adding_address":
+		return nil
+	case "removing_address":
+		return nil
+	case "deleting":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -6727,44 +6577,6 @@ func (s *PrivateImageListResponseBody) Validate() error {
 	return nil
 }
 
-func (s *PrivateImageOperation) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Type.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "type",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s PrivateImageOperationType) Validate() error {
-	switch s {
-	case "create":
-		return nil
-	case "suspend":
-		return nil
-	case "resume":
-		return nil
-	case "delete":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
 func (s *PrivateImageReleaseResource) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -6882,24 +6694,6 @@ func (s *PrivateImageResource) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.Operation.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "operation",
-			Error: err,
-		})
-	}
-	if err := func() error {
 		if value, ok := s.FailureReason.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
@@ -6979,6 +6773,12 @@ func (s PrivateImageResourceStatus) Validate() error {
 	case "failed":
 		return nil
 	case "error":
+		return nil
+	case "suspending":
+		return nil
+	case "resuming":
+		return nil
+	case "deleting":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -9102,24 +8902,6 @@ func (s *VirtualPrivateCloud) Validate() error {
 			Error: err,
 		})
 	}
-	if err := func() error {
-		if value, ok := s.Operation.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "operation",
-			Error: err,
-		})
-	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -9217,44 +8999,6 @@ func (s *VirtualPrivateCloudListResponseBody) Validate() error {
 	return nil
 }
 
-func (s *VirtualPrivateCloudOperation) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Type.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "type",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s VirtualPrivateCloudOperationType) Validate() error {
-	switch s {
-	case "create":
-		return nil
-	case "enable_ipv6":
-		return nil
-	case "disable_ipv6":
-		return nil
-	case "delete":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
 func (s VirtualPrivateCloudPeeringID) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
@@ -9324,40 +9068,6 @@ func (s *VirtualPrivateCloudPeeringListResponseBody) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
-}
-
-func (s *VirtualPrivateCloudPeeringOperation) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Type.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "type",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s VirtualPrivateCloudPeeringOperationType) Validate() error {
-	switch s {
-	case "provision":
-		return nil
-	case "delete":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
 }
 
 func (s *VirtualPrivateCloudPeeringResource) Validate() error {
@@ -9432,24 +9142,6 @@ func (s *VirtualPrivateCloudPeeringResource) Validate() error {
 			Error: err,
 		})
 	}
-	if err := func() error {
-		if value, ok := s.Operation.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "operation",
-			Error: err,
-		})
-	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -9478,6 +9170,8 @@ func (s VirtualPrivateCloudPeeringResourceStatus) Validate() error {
 	case "deleted":
 		return nil
 	case "failed":
+		return nil
+	case "provisioning":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -9636,6 +9330,12 @@ func (s VirtualPrivateCloudStatus) Validate() error {
 	case "deleting":
 		return nil
 	case "failed":
+		return nil
+	case "creating":
+		return nil
+	case "enabling_ipv6":
+		return nil
+	case "disabling_ipv6":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -9959,42 +9659,6 @@ func (s *VolumeBackupListResponseBody) Validate() error {
 	return nil
 }
 
-func (s *VolumeBackupOperation) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Type.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "type",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s VolumeBackupOperationType) Validate() error {
-	switch s {
-	case "create":
-		return nil
-	case "restore":
-		return nil
-	case "delete":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
 func (s *VolumeBackupReleaseResource) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -10085,24 +9749,6 @@ func (s *VolumeBackupResource) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "status",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.Operation.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "operation",
 			Error: err,
 		})
 	}
@@ -10198,6 +9844,10 @@ func (s VolumeBackupResourceStatus) Validate() error {
 		return nil
 	case "error":
 		return nil
+	case "restoring":
+		return nil
+	case "deleting":
+		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}
@@ -10269,54 +9919,6 @@ func (s *VolumeListResponseBody) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
-}
-
-func (s *VolumeOperation) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Type.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "type",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s VolumeOperationType) Validate() error {
-	switch s {
-	case "create":
-		return nil
-	case "resize":
-		return nil
-	case "retype":
-		return nil
-	case "revert":
-		return nil
-	case "attach":
-		return nil
-	case "detach":
-		return nil
-	case "suspend":
-		return nil
-	case "resume":
-		return nil
-	case "delete":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
 }
 
 func (s *VolumeReleaseResource) Validate() error {
@@ -10488,24 +10090,6 @@ func (s *VolumeResource) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.Operation.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "operation",
-			Error: err,
-		})
-	}
-	if err := func() error {
 		if value, ok := s.Attachment.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
@@ -10574,6 +10158,22 @@ func (s VolumeResourceStatus) Validate() error {
 	case "failed":
 		return nil
 	case "error":
+		return nil
+	case "resizing":
+		return nil
+	case "retyping":
+		return nil
+	case "reverting":
+		return nil
+	case "attaching":
+		return nil
+	case "detaching":
+		return nil
+	case "suspending":
+		return nil
+	case "resuming":
+		return nil
+	case "deleting":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -10646,42 +10246,6 @@ func (s *VolumeSnapshotListResponseBody) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
-}
-
-func (s *VolumeSnapshotOperation) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Type.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "type",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s VolumeSnapshotOperationType) Validate() error {
-	switch s {
-	case "create":
-		return nil
-	case "restore":
-		return nil
-	case "delete":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
 }
 
 func (s *VolumeSnapshotReleaseResource) Validate() error {
@@ -10789,24 +10353,6 @@ func (s *VolumeSnapshotResource) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.Operation.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "operation",
-			Error: err,
-		})
-	}
-	if err := func() error {
 		if value, ok := s.FailureReason.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
@@ -10886,6 +10432,10 @@ func (s VolumeSnapshotResourceStatus) Validate() error {
 	case "failed":
 		return nil
 	case "error":
+		return nil
+	case "restoring":
+		return nil
+	case "deleting":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

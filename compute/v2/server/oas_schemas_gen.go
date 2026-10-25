@@ -2259,9 +2259,11 @@ type ElasticIP struct {
 	ID            ElasticIPID     `json:"id"`
 	LineID        ElasticIPLineID `json:"line_id"`
 	RegionID      RegionID        `json:"region_id"`
-	// `pending` until the address is created, with no address allocated before the order is accepted and
-	// the `create` operation shown while it is created; then `available`. `failed` means no address was
-	// allocated; `failure_reason` states why.
+	// `pending` until the address is created, with no address allocated before the order is accepted; then
+	// `available`. `failed` means no address was allocated; `failure_reason` states why. A value naming an
+	// operation in progress (`associating`, `disassociating`, `updating_bandwidth`,
+	// `updating_internet_charge_type`, `suspending`, `resuming`, `deleting`) is shown while that operation
+	// runs; the elastic IP refuses another operation until it ends.
 	Status ElasticIPStatus `json:"status"`
 	// The Billing Checkout Session that bought this resource; `order_id` and the order items stay null
 	// until its checkout completes. Null when the resource was not bought through one.
@@ -2287,9 +2289,7 @@ type ElasticIP struct {
 	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
 	// order was accepted, and the charge for this elastic IP is refunded.
 	FailureReason NilElasticIPFailureReason `json:"failure_reason"`
-	// The operation in progress on this elastic IP, or null when none is.
-	Operation   NilElasticIPOperation   `json:"operation"`
-	Association NilElasticIPAssociation `json:"association"`
+	Association   NilElasticIPAssociation   `json:"association"`
 }
 
 // GetInternetChargeType returns the value of InternetChargeType.
@@ -2385,11 +2385,6 @@ func (s *ElasticIP) GetAccessState() NilElasticIPAccessState {
 // GetFailureReason returns the value of FailureReason.
 func (s *ElasticIP) GetFailureReason() NilElasticIPFailureReason {
 	return s.FailureReason
-}
-
-// GetOperation returns the value of Operation.
-func (s *ElasticIP) GetOperation() NilElasticIPOperation {
-	return s.Operation
 }
 
 // GetAssociation returns the value of Association.
@@ -2490,11 +2485,6 @@ func (s *ElasticIP) SetAccessState(val NilElasticIPAccessState) {
 // SetFailureReason sets the value of FailureReason.
 func (s *ElasticIP) SetFailureReason(val NilElasticIPFailureReason) {
 	s.FailureReason = val
-}
-
-// SetOperation sets the value of Operation.
-func (s *ElasticIP) SetOperation(val NilElasticIPOperation) {
-	s.Operation = val
 }
 
 // SetAssociation sets the value of Association.
@@ -3067,117 +3057,6 @@ func (s *ElasticIPListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// An operation still running on this elastic IP. It is not a separate resource; once it finishes, the
-// elastic IP's `operation` is null again and the elastic IP shows the result.
-// Ref: #/components/schemas/ElasticIPOperation
-type ElasticIPOperation struct {
-	Type      ElasticIPOperationType `json:"type"`
-	StartedAt time.Time              `json:"started_at"`
-}
-
-// GetType returns the value of Type.
-func (s *ElasticIPOperation) GetType() ElasticIPOperationType {
-	return s.Type
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *ElasticIPOperation) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// SetType sets the value of Type.
-func (s *ElasticIPOperation) SetType(val ElasticIPOperationType) {
-	s.Type = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *ElasticIPOperation) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-type ElasticIPOperationType string
-
-const (
-	ElasticIPOperationTypeCreate                   ElasticIPOperationType = "create"
-	ElasticIPOperationTypeAssociate                ElasticIPOperationType = "associate"
-	ElasticIPOperationTypeDisassociate             ElasticIPOperationType = "disassociate"
-	ElasticIPOperationTypeUpdateBandwidth          ElasticIPOperationType = "update_bandwidth"
-	ElasticIPOperationTypeUpdateInternetChargeType ElasticIPOperationType = "update_internet_charge_type"
-	ElasticIPOperationTypeSuspend                  ElasticIPOperationType = "suspend"
-	ElasticIPOperationTypeResume                   ElasticIPOperationType = "resume"
-	ElasticIPOperationTypeDelete                   ElasticIPOperationType = "delete"
-)
-
-// AllValues returns all ElasticIPOperationType values.
-func (ElasticIPOperationType) AllValues() []ElasticIPOperationType {
-	return []ElasticIPOperationType{
-		ElasticIPOperationTypeCreate,
-		ElasticIPOperationTypeAssociate,
-		ElasticIPOperationTypeDisassociate,
-		ElasticIPOperationTypeUpdateBandwidth,
-		ElasticIPOperationTypeUpdateInternetChargeType,
-		ElasticIPOperationTypeSuspend,
-		ElasticIPOperationTypeResume,
-		ElasticIPOperationTypeDelete,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ElasticIPOperationType) MarshalText() ([]byte, error) {
-	switch s {
-	case ElasticIPOperationTypeCreate:
-		return []byte(s), nil
-	case ElasticIPOperationTypeAssociate:
-		return []byte(s), nil
-	case ElasticIPOperationTypeDisassociate:
-		return []byte(s), nil
-	case ElasticIPOperationTypeUpdateBandwidth:
-		return []byte(s), nil
-	case ElasticIPOperationTypeUpdateInternetChargeType:
-		return []byte(s), nil
-	case ElasticIPOperationTypeSuspend:
-		return []byte(s), nil
-	case ElasticIPOperationTypeResume:
-		return []byte(s), nil
-	case ElasticIPOperationTypeDelete:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ElasticIPOperationType) UnmarshalText(data []byte) error {
-	switch ElasticIPOperationType(data) {
-	case ElasticIPOperationTypeCreate:
-		*s = ElasticIPOperationTypeCreate
-		return nil
-	case ElasticIPOperationTypeAssociate:
-		*s = ElasticIPOperationTypeAssociate
-		return nil
-	case ElasticIPOperationTypeDisassociate:
-		*s = ElasticIPOperationTypeDisassociate
-		return nil
-	case ElasticIPOperationTypeUpdateBandwidth:
-		*s = ElasticIPOperationTypeUpdateBandwidth
-		return nil
-	case ElasticIPOperationTypeUpdateInternetChargeType:
-		*s = ElasticIPOperationTypeUpdateInternetChargeType
-		return nil
-	case ElasticIPOperationTypeSuspend:
-		*s = ElasticIPOperationTypeSuspend
-		return nil
-	case ElasticIPOperationTypeResume:
-		*s = ElasticIPOperationTypeResume
-		return nil
-	case ElasticIPOperationTypeDelete:
-		*s = ElasticIPOperationTypeDelete
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // A resource a release set releases.
 // Ref: #/components/schemas/ElasticIPReleaseResource
 type ElasticIPReleaseResource struct {
@@ -3252,17 +3131,26 @@ func (s *ElasticIPReleaseResourceType) UnmarshalText(data []byte) error {
 	}
 }
 
-// `pending` until the address is created, with no address allocated before the order is accepted and
-// the `create` operation shown while it is created; then `available`. `failed` means no address was
-// allocated; `failure_reason` states why.
+// `pending` until the address is created, with no address allocated before the order is accepted; then
+// `available`. `failed` means no address was allocated; `failure_reason` states why. A value naming an
+// operation in progress (`associating`, `disassociating`, `updating_bandwidth`,
+// `updating_internet_charge_type`, `suspending`, `resuming`, `deleting`) is shown while that operation
+// runs; the elastic IP refuses another operation until it ends.
 type ElasticIPStatus string
 
 const (
-	ElasticIPStatusPending   ElasticIPStatus = "pending"
-	ElasticIPStatusAvailable ElasticIPStatus = "available"
-	ElasticIPStatusDeleted   ElasticIPStatus = "deleted"
-	ElasticIPStatusFailed    ElasticIPStatus = "failed"
-	ElasticIPStatusError     ElasticIPStatus = "error"
+	ElasticIPStatusPending                    ElasticIPStatus = "pending"
+	ElasticIPStatusAvailable                  ElasticIPStatus = "available"
+	ElasticIPStatusDeleted                    ElasticIPStatus = "deleted"
+	ElasticIPStatusFailed                     ElasticIPStatus = "failed"
+	ElasticIPStatusError                      ElasticIPStatus = "error"
+	ElasticIPStatusAssociating                ElasticIPStatus = "associating"
+	ElasticIPStatusDisassociating             ElasticIPStatus = "disassociating"
+	ElasticIPStatusUpdatingBandwidth          ElasticIPStatus = "updating_bandwidth"
+	ElasticIPStatusUpdatingInternetChargeType ElasticIPStatus = "updating_internet_charge_type"
+	ElasticIPStatusSuspending                 ElasticIPStatus = "suspending"
+	ElasticIPStatusResuming                   ElasticIPStatus = "resuming"
+	ElasticIPStatusDeleting                   ElasticIPStatus = "deleting"
 )
 
 // AllValues returns all ElasticIPStatus values.
@@ -3273,6 +3161,13 @@ func (ElasticIPStatus) AllValues() []ElasticIPStatus {
 		ElasticIPStatusDeleted,
 		ElasticIPStatusFailed,
 		ElasticIPStatusError,
+		ElasticIPStatusAssociating,
+		ElasticIPStatusDisassociating,
+		ElasticIPStatusUpdatingBandwidth,
+		ElasticIPStatusUpdatingInternetChargeType,
+		ElasticIPStatusSuspending,
+		ElasticIPStatusResuming,
+		ElasticIPStatusDeleting,
 	}
 }
 
@@ -3288,6 +3183,20 @@ func (s ElasticIPStatus) MarshalText() ([]byte, error) {
 	case ElasticIPStatusFailed:
 		return []byte(s), nil
 	case ElasticIPStatusError:
+		return []byte(s), nil
+	case ElasticIPStatusAssociating:
+		return []byte(s), nil
+	case ElasticIPStatusDisassociating:
+		return []byte(s), nil
+	case ElasticIPStatusUpdatingBandwidth:
+		return []byte(s), nil
+	case ElasticIPStatusUpdatingInternetChargeType:
+		return []byte(s), nil
+	case ElasticIPStatusSuspending:
+		return []byte(s), nil
+	case ElasticIPStatusResuming:
+		return []byte(s), nil
+	case ElasticIPStatusDeleting:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -3311,6 +3220,27 @@ func (s *ElasticIPStatus) UnmarshalText(data []byte) error {
 		return nil
 	case ElasticIPStatusError:
 		*s = ElasticIPStatusError
+		return nil
+	case ElasticIPStatusAssociating:
+		*s = ElasticIPStatusAssociating
+		return nil
+	case ElasticIPStatusDisassociating:
+		*s = ElasticIPStatusDisassociating
+		return nil
+	case ElasticIPStatusUpdatingBandwidth:
+		*s = ElasticIPStatusUpdatingBandwidth
+		return nil
+	case ElasticIPStatusUpdatingInternetChargeType:
+		*s = ElasticIPStatusUpdatingInternetChargeType
+		return nil
+	case ElasticIPStatusSuspending:
+		*s = ElasticIPStatusSuspending
+		return nil
+	case ElasticIPStatusResuming:
+		*s = ElasticIPStatusResuming
+		return nil
+	case ElasticIPStatusDeleting:
+		*s = ElasticIPStatusDeleting
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -3857,9 +3787,13 @@ type Instance struct {
 	ElasticIPAddresses []string `json:"elastic_ip_addresses"`
 	RegionID           RegionID `json:"region_id"`
 	// `pending` until the instance is created: before the order is accepted no instance exists and
-	// addresses are null, and while it is created it shows the `create` operation. Then `running`.
-	// `failed` means the instance was not created; `failure_reason` states why. The other values are the
-	// state of the instance in the cloud; an operation in progress appears in `operation`, not here.
+	// addresses are null. Then `running`. `failed` means the instance was not created; `failure_reason`
+	// states why. The other values are the state of the instance in the cloud. A value naming an operation
+	// in progress (`starting`, `stopping`, `rebooting`, `rebuilding`, `rescuing`, `unrescuing`,
+	// `resizing`, `resetting_password`, `attaching_volume`, `detaching_volume`,
+	// `attaching_network_interface`, `detaching_network_interface`, `associating_elastic_ip`,
+	// `disassociating_elastic_ip`, `capturing_image`, `suspending`, `resuming`, `deleting`) is shown while
+	// that operation runs; the instance refuses another operation until it ends.
 	Status       InstanceStatus        `json:"status"`
 	SubnetID     NilSubnetID           `json:"subnet_id"`
 	UpdatedAt    time.Time             `json:"updated_at"`
@@ -3868,8 +3802,6 @@ type Instance struct {
 	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
 	// order was accepted, and the charge for this instance is refunded.
 	FailureReason NilInstanceFailureReason `json:"failure_reason"`
-	// The operation in progress on this instance, or null when none is.
-	Operation NilInstanceOperation `json:"operation"`
 	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
 	// until its checkout completes. Null when the resource was not bought through one.
 	CheckoutSessionID NilUUID `json:"checkout_session_id"`
@@ -3996,11 +3928,6 @@ func (s *Instance) GetRestrictions() []InstanceRestriction {
 // GetFailureReason returns the value of FailureReason.
 func (s *Instance) GetFailureReason() NilInstanceFailureReason {
 	return s.FailureReason
-}
-
-// GetOperation returns the value of Operation.
-func (s *Instance) GetOperation() NilInstanceOperation {
-	return s.Operation
 }
 
 // GetCheckoutSessionID returns the value of CheckoutSessionID.
@@ -4151,11 +4078,6 @@ func (s *Instance) SetRestrictions(val []InstanceRestriction) {
 // SetFailureReason sets the value of FailureReason.
 func (s *Instance) SetFailureReason(val NilInstanceFailureReason) {
 	s.FailureReason = val
-}
-
-// SetOperation sets the value of Operation.
-func (s *Instance) SetOperation(val NilInstanceOperation) {
-	s.Operation = val
 }
 
 // SetCheckoutSessionID sets the value of CheckoutSessionID.
@@ -4762,202 +4684,6 @@ func (s *InstanceListResponseBody) SetPagination(val OffsetPagination) {
 
 type InstanceNetworkInterfaceID string
 
-// An operation still running on this instance. It is not a separate resource; once it finishes, the
-// instance's `operation` is null again and the instance shows the result.
-// Ref: #/components/schemas/InstanceOperation
-type InstanceOperation struct {
-	// `create` runs from acceptance of the order until the instance is `running` or `failed`. `suspend`
-	// and `resume` impose and lift a suspension by the platform or for non-payment. `capture_image` holds
-	// the machine while a private image is captured from the volume it boots from; the machine cannot be
-	// resized, rebuilt or released meanwhile. `delete` includes release through a Billing cancellation.
-	Type      InstanceOperationType `json:"type"`
-	StartedAt time.Time             `json:"started_at"`
-}
-
-// GetType returns the value of Type.
-func (s *InstanceOperation) GetType() InstanceOperationType {
-	return s.Type
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *InstanceOperation) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// SetType sets the value of Type.
-func (s *InstanceOperation) SetType(val InstanceOperationType) {
-	s.Type = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *InstanceOperation) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-// `create` runs from acceptance of the order until the instance is `running` or `failed`. `suspend`
-// and `resume` impose and lift a suspension by the platform or for non-payment. `capture_image` holds
-// the machine while a private image is captured from the volume it boots from; the machine cannot be
-// resized, rebuilt or released meanwhile. `delete` includes release through a Billing cancellation.
-type InstanceOperationType string
-
-const (
-	InstanceOperationTypeCreate                 InstanceOperationType = "create"
-	InstanceOperationTypeStart                  InstanceOperationType = "start"
-	InstanceOperationTypeStop                   InstanceOperationType = "stop"
-	InstanceOperationTypeReboot                 InstanceOperationType = "reboot"
-	InstanceOperationTypeRebuild                InstanceOperationType = "rebuild"
-	InstanceOperationTypeRescue                 InstanceOperationType = "rescue"
-	InstanceOperationTypeUnrescue               InstanceOperationType = "unrescue"
-	InstanceOperationTypeResize                 InstanceOperationType = "resize"
-	InstanceOperationTypeResetPassword          InstanceOperationType = "reset_password"
-	InstanceOperationTypeAttachVolume           InstanceOperationType = "attach_volume"
-	InstanceOperationTypeDetachVolume           InstanceOperationType = "detach_volume"
-	InstanceOperationTypeAttachNetworkInterface InstanceOperationType = "attach_network_interface"
-	InstanceOperationTypeDetachNetworkInterface InstanceOperationType = "detach_network_interface"
-	InstanceOperationTypeAssociateElasticIP     InstanceOperationType = "associate_elastic_ip"
-	InstanceOperationTypeDisassociateElasticIP  InstanceOperationType = "disassociate_elastic_ip"
-	InstanceOperationTypeCaptureImage           InstanceOperationType = "capture_image"
-	InstanceOperationTypeSuspend                InstanceOperationType = "suspend"
-	InstanceOperationTypeResume                 InstanceOperationType = "resume"
-	InstanceOperationTypeDelete                 InstanceOperationType = "delete"
-)
-
-// AllValues returns all InstanceOperationType values.
-func (InstanceOperationType) AllValues() []InstanceOperationType {
-	return []InstanceOperationType{
-		InstanceOperationTypeCreate,
-		InstanceOperationTypeStart,
-		InstanceOperationTypeStop,
-		InstanceOperationTypeReboot,
-		InstanceOperationTypeRebuild,
-		InstanceOperationTypeRescue,
-		InstanceOperationTypeUnrescue,
-		InstanceOperationTypeResize,
-		InstanceOperationTypeResetPassword,
-		InstanceOperationTypeAttachVolume,
-		InstanceOperationTypeDetachVolume,
-		InstanceOperationTypeAttachNetworkInterface,
-		InstanceOperationTypeDetachNetworkInterface,
-		InstanceOperationTypeAssociateElasticIP,
-		InstanceOperationTypeDisassociateElasticIP,
-		InstanceOperationTypeCaptureImage,
-		InstanceOperationTypeSuspend,
-		InstanceOperationTypeResume,
-		InstanceOperationTypeDelete,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s InstanceOperationType) MarshalText() ([]byte, error) {
-	switch s {
-	case InstanceOperationTypeCreate:
-		return []byte(s), nil
-	case InstanceOperationTypeStart:
-		return []byte(s), nil
-	case InstanceOperationTypeStop:
-		return []byte(s), nil
-	case InstanceOperationTypeReboot:
-		return []byte(s), nil
-	case InstanceOperationTypeRebuild:
-		return []byte(s), nil
-	case InstanceOperationTypeRescue:
-		return []byte(s), nil
-	case InstanceOperationTypeUnrescue:
-		return []byte(s), nil
-	case InstanceOperationTypeResize:
-		return []byte(s), nil
-	case InstanceOperationTypeResetPassword:
-		return []byte(s), nil
-	case InstanceOperationTypeAttachVolume:
-		return []byte(s), nil
-	case InstanceOperationTypeDetachVolume:
-		return []byte(s), nil
-	case InstanceOperationTypeAttachNetworkInterface:
-		return []byte(s), nil
-	case InstanceOperationTypeDetachNetworkInterface:
-		return []byte(s), nil
-	case InstanceOperationTypeAssociateElasticIP:
-		return []byte(s), nil
-	case InstanceOperationTypeDisassociateElasticIP:
-		return []byte(s), nil
-	case InstanceOperationTypeCaptureImage:
-		return []byte(s), nil
-	case InstanceOperationTypeSuspend:
-		return []byte(s), nil
-	case InstanceOperationTypeResume:
-		return []byte(s), nil
-	case InstanceOperationTypeDelete:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *InstanceOperationType) UnmarshalText(data []byte) error {
-	switch InstanceOperationType(data) {
-	case InstanceOperationTypeCreate:
-		*s = InstanceOperationTypeCreate
-		return nil
-	case InstanceOperationTypeStart:
-		*s = InstanceOperationTypeStart
-		return nil
-	case InstanceOperationTypeStop:
-		*s = InstanceOperationTypeStop
-		return nil
-	case InstanceOperationTypeReboot:
-		*s = InstanceOperationTypeReboot
-		return nil
-	case InstanceOperationTypeRebuild:
-		*s = InstanceOperationTypeRebuild
-		return nil
-	case InstanceOperationTypeRescue:
-		*s = InstanceOperationTypeRescue
-		return nil
-	case InstanceOperationTypeUnrescue:
-		*s = InstanceOperationTypeUnrescue
-		return nil
-	case InstanceOperationTypeResize:
-		*s = InstanceOperationTypeResize
-		return nil
-	case InstanceOperationTypeResetPassword:
-		*s = InstanceOperationTypeResetPassword
-		return nil
-	case InstanceOperationTypeAttachVolume:
-		*s = InstanceOperationTypeAttachVolume
-		return nil
-	case InstanceOperationTypeDetachVolume:
-		*s = InstanceOperationTypeDetachVolume
-		return nil
-	case InstanceOperationTypeAttachNetworkInterface:
-		*s = InstanceOperationTypeAttachNetworkInterface
-		return nil
-	case InstanceOperationTypeDetachNetworkInterface:
-		*s = InstanceOperationTypeDetachNetworkInterface
-		return nil
-	case InstanceOperationTypeAssociateElasticIP:
-		*s = InstanceOperationTypeAssociateElasticIP
-		return nil
-	case InstanceOperationTypeDisassociateElasticIP:
-		*s = InstanceOperationTypeDisassociateElasticIP
-		return nil
-	case InstanceOperationTypeCaptureImage:
-		*s = InstanceOperationTypeCaptureImage
-		return nil
-	case InstanceOperationTypeSuspend:
-		*s = InstanceOperationTypeSuspend
-		return nil
-	case InstanceOperationTypeResume:
-		*s = InstanceOperationTypeResume
-		return nil
-	case InstanceOperationTypeDelete:
-		*s = InstanceOperationTypeDelete
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // A resource a release set releases.
 // Ref: #/components/schemas/InstanceReleaseResource
 type InstanceReleaseResource struct {
@@ -5163,21 +4889,43 @@ func (s *InstanceRestrictionReason) UnmarshalText(data []byte) error {
 }
 
 // `pending` until the instance is created: before the order is accepted no instance exists and
-// addresses are null, and while it is created it shows the `create` operation. Then `running`.
-// `failed` means the instance was not created; `failure_reason` states why. The other values are the
-// state of the instance in the cloud; an operation in progress appears in `operation`, not here.
+// addresses are null. Then `running`. `failed` means the instance was not created; `failure_reason`
+// states why. The other values are the state of the instance in the cloud. A value naming an operation
+// in progress (`starting`, `stopping`, `rebooting`, `rebuilding`, `rescuing`, `unrescuing`,
+// `resizing`, `resetting_password`, `attaching_volume`, `detaching_volume`,
+// `attaching_network_interface`, `detaching_network_interface`, `associating_elastic_ip`,
+// `disassociating_elastic_ip`, `capturing_image`, `suspending`, `resuming`, `deleting`) is shown while
+// that operation runs; the instance refuses another operation until it ends.
 type InstanceStatus string
 
 const (
-	InstanceStatusPending   InstanceStatus = "pending"
-	InstanceStatusRunning   InstanceStatus = "running"
-	InstanceStatusStopped   InstanceStatus = "stopped"
-	InstanceStatusPaused    InstanceStatus = "paused"
-	InstanceStatusSuspended InstanceStatus = "suspended"
-	InstanceStatusRescued   InstanceStatus = "rescued"
-	InstanceStatusDeleted   InstanceStatus = "deleted"
-	InstanceStatusFailed    InstanceStatus = "failed"
-	InstanceStatusError     InstanceStatus = "error"
+	InstanceStatusPending                   InstanceStatus = "pending"
+	InstanceStatusRunning                   InstanceStatus = "running"
+	InstanceStatusStopped                   InstanceStatus = "stopped"
+	InstanceStatusPaused                    InstanceStatus = "paused"
+	InstanceStatusSuspended                 InstanceStatus = "suspended"
+	InstanceStatusRescued                   InstanceStatus = "rescued"
+	InstanceStatusDeleted                   InstanceStatus = "deleted"
+	InstanceStatusFailed                    InstanceStatus = "failed"
+	InstanceStatusError                     InstanceStatus = "error"
+	InstanceStatusStarting                  InstanceStatus = "starting"
+	InstanceStatusStopping                  InstanceStatus = "stopping"
+	InstanceStatusRebooting                 InstanceStatus = "rebooting"
+	InstanceStatusRebuilding                InstanceStatus = "rebuilding"
+	InstanceStatusRescuing                  InstanceStatus = "rescuing"
+	InstanceStatusUnrescuing                InstanceStatus = "unrescuing"
+	InstanceStatusResizing                  InstanceStatus = "resizing"
+	InstanceStatusResettingPassword         InstanceStatus = "resetting_password"
+	InstanceStatusAttachingVolume           InstanceStatus = "attaching_volume"
+	InstanceStatusDetachingVolume           InstanceStatus = "detaching_volume"
+	InstanceStatusAttachingNetworkInterface InstanceStatus = "attaching_network_interface"
+	InstanceStatusDetachingNetworkInterface InstanceStatus = "detaching_network_interface"
+	InstanceStatusAssociatingElasticIP      InstanceStatus = "associating_elastic_ip"
+	InstanceStatusDisassociatingElasticIP   InstanceStatus = "disassociating_elastic_ip"
+	InstanceStatusCapturingImage            InstanceStatus = "capturing_image"
+	InstanceStatusSuspending                InstanceStatus = "suspending"
+	InstanceStatusResuming                  InstanceStatus = "resuming"
+	InstanceStatusDeleting                  InstanceStatus = "deleting"
 )
 
 // AllValues returns all InstanceStatus values.
@@ -5192,6 +4940,24 @@ func (InstanceStatus) AllValues() []InstanceStatus {
 		InstanceStatusDeleted,
 		InstanceStatusFailed,
 		InstanceStatusError,
+		InstanceStatusStarting,
+		InstanceStatusStopping,
+		InstanceStatusRebooting,
+		InstanceStatusRebuilding,
+		InstanceStatusRescuing,
+		InstanceStatusUnrescuing,
+		InstanceStatusResizing,
+		InstanceStatusResettingPassword,
+		InstanceStatusAttachingVolume,
+		InstanceStatusDetachingVolume,
+		InstanceStatusAttachingNetworkInterface,
+		InstanceStatusDetachingNetworkInterface,
+		InstanceStatusAssociatingElasticIP,
+		InstanceStatusDisassociatingElasticIP,
+		InstanceStatusCapturingImage,
+		InstanceStatusSuspending,
+		InstanceStatusResuming,
+		InstanceStatusDeleting,
 	}
 }
 
@@ -5215,6 +4981,42 @@ func (s InstanceStatus) MarshalText() ([]byte, error) {
 	case InstanceStatusFailed:
 		return []byte(s), nil
 	case InstanceStatusError:
+		return []byte(s), nil
+	case InstanceStatusStarting:
+		return []byte(s), nil
+	case InstanceStatusStopping:
+		return []byte(s), nil
+	case InstanceStatusRebooting:
+		return []byte(s), nil
+	case InstanceStatusRebuilding:
+		return []byte(s), nil
+	case InstanceStatusRescuing:
+		return []byte(s), nil
+	case InstanceStatusUnrescuing:
+		return []byte(s), nil
+	case InstanceStatusResizing:
+		return []byte(s), nil
+	case InstanceStatusResettingPassword:
+		return []byte(s), nil
+	case InstanceStatusAttachingVolume:
+		return []byte(s), nil
+	case InstanceStatusDetachingVolume:
+		return []byte(s), nil
+	case InstanceStatusAttachingNetworkInterface:
+		return []byte(s), nil
+	case InstanceStatusDetachingNetworkInterface:
+		return []byte(s), nil
+	case InstanceStatusAssociatingElasticIP:
+		return []byte(s), nil
+	case InstanceStatusDisassociatingElasticIP:
+		return []byte(s), nil
+	case InstanceStatusCapturingImage:
+		return []byte(s), nil
+	case InstanceStatusSuspending:
+		return []byte(s), nil
+	case InstanceStatusResuming:
+		return []byte(s), nil
+	case InstanceStatusDeleting:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -5250,6 +5052,60 @@ func (s *InstanceStatus) UnmarshalText(data []byte) error {
 		return nil
 	case InstanceStatusError:
 		*s = InstanceStatusError
+		return nil
+	case InstanceStatusStarting:
+		*s = InstanceStatusStarting
+		return nil
+	case InstanceStatusStopping:
+		*s = InstanceStatusStopping
+		return nil
+	case InstanceStatusRebooting:
+		*s = InstanceStatusRebooting
+		return nil
+	case InstanceStatusRebuilding:
+		*s = InstanceStatusRebuilding
+		return nil
+	case InstanceStatusRescuing:
+		*s = InstanceStatusRescuing
+		return nil
+	case InstanceStatusUnrescuing:
+		*s = InstanceStatusUnrescuing
+		return nil
+	case InstanceStatusResizing:
+		*s = InstanceStatusResizing
+		return nil
+	case InstanceStatusResettingPassword:
+		*s = InstanceStatusResettingPassword
+		return nil
+	case InstanceStatusAttachingVolume:
+		*s = InstanceStatusAttachingVolume
+		return nil
+	case InstanceStatusDetachingVolume:
+		*s = InstanceStatusDetachingVolume
+		return nil
+	case InstanceStatusAttachingNetworkInterface:
+		*s = InstanceStatusAttachingNetworkInterface
+		return nil
+	case InstanceStatusDetachingNetworkInterface:
+		*s = InstanceStatusDetachingNetworkInterface
+		return nil
+	case InstanceStatusAssociatingElasticIP:
+		*s = InstanceStatusAssociatingElasticIP
+		return nil
+	case InstanceStatusDisassociatingElasticIP:
+		*s = InstanceStatusDisassociatingElasticIP
+		return nil
+	case InstanceStatusCapturingImage:
+		*s = InstanceStatusCapturingImage
+		return nil
+	case InstanceStatusSuspending:
+		*s = InstanceStatusSuspending
+		return nil
+	case InstanceStatusResuming:
+		*s = InstanceStatusResuming
+		return nil
+	case InstanceStatusDeleting:
+		*s = InstanceStatusDeleting
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -6135,10 +5991,11 @@ type NetworkInterface struct {
 	Addresses        []NetworkInterfaceAddress     `json:"addresses"`
 	Attachment       NilNetworkInterfaceAttachment `json:"attachment"`
 	// `pending` until the interface is created, then `available`. `error` means its creation failed or the
-	// cloud reports it broken; delete it and create another.
+	// cloud reports it broken; delete it and create another. A value naming an operation in progress
+	// (`attaching`, `detaching`, `associating_elastic_ip`, `updating_security_groups`, `adding_address`,
+	// `removing_address`, `deleting`) is shown while that operation runs; the interface refuses another
+	// operation until it ends.
 	Status NetworkInterfaceStatus `json:"status"`
-	// The operation in progress on this network interface, or null when none is.
-	Operation NilNetworkInterfaceOperation `json:"operation"`
 }
 
 // GetID returns the value of ID.
@@ -6186,11 +6043,6 @@ func (s *NetworkInterface) GetStatus() NetworkInterfaceStatus {
 	return s.Status
 }
 
-// GetOperation returns the value of Operation.
-func (s *NetworkInterface) GetOperation() NilNetworkInterfaceOperation {
-	return s.Operation
-}
-
 // SetID sets the value of ID.
 func (s *NetworkInterface) SetID(val NetworkInterfaceID) {
 	s.ID = val
@@ -6234,11 +6086,6 @@ func (s *NetworkInterface) SetAttachment(val NilNetworkInterfaceAttachment) {
 // SetStatus sets the value of Status.
 func (s *NetworkInterface) SetStatus(val NetworkInterfaceStatus) {
 	s.Status = val
-}
-
-// SetOperation sets the value of Operation.
-func (s *NetworkInterface) SetOperation(val NilNetworkInterfaceOperation) {
-	s.Operation = val
 }
 
 func (*NetworkInterface) attachInstanceNetworkInterfaceRes() {}
@@ -6733,132 +6580,24 @@ func (s *NetworkInterfaceListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// An operation still running on this network interface. It is not a separate resource; once it
-// finishes, the network interface's `operation` is null again and the network interface shows the
-// result.
-// Ref: #/components/schemas/NetworkInterfaceOperation
-type NetworkInterfaceOperation struct {
-	// `associate_elastic_ip` holds the network interface while an elastic IP is associated with it
-	// directly rather than through an instance. `update_security_groups` replaces its security groups,
-	// `add_address` and `remove_address` change its secondary IPv4 addresses.
-	Type      NetworkInterfaceOperationType `json:"type"`
-	StartedAt time.Time                     `json:"started_at"`
-}
-
-// GetType returns the value of Type.
-func (s *NetworkInterfaceOperation) GetType() NetworkInterfaceOperationType {
-	return s.Type
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *NetworkInterfaceOperation) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// SetType sets the value of Type.
-func (s *NetworkInterfaceOperation) SetType(val NetworkInterfaceOperationType) {
-	s.Type = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *NetworkInterfaceOperation) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-// `associate_elastic_ip` holds the network interface while an elastic IP is associated with it
-// directly rather than through an instance. `update_security_groups` replaces its security groups,
-// `add_address` and `remove_address` change its secondary IPv4 addresses.
-type NetworkInterfaceOperationType string
-
-const (
-	NetworkInterfaceOperationTypeCreate               NetworkInterfaceOperationType = "create"
-	NetworkInterfaceOperationTypeAttach               NetworkInterfaceOperationType = "attach"
-	NetworkInterfaceOperationTypeDetach               NetworkInterfaceOperationType = "detach"
-	NetworkInterfaceOperationTypeAssociateElasticIP   NetworkInterfaceOperationType = "associate_elastic_ip"
-	NetworkInterfaceOperationTypeUpdateSecurityGroups NetworkInterfaceOperationType = "update_security_groups"
-	NetworkInterfaceOperationTypeAddAddress           NetworkInterfaceOperationType = "add_address"
-	NetworkInterfaceOperationTypeRemoveAddress        NetworkInterfaceOperationType = "remove_address"
-	NetworkInterfaceOperationTypeDelete               NetworkInterfaceOperationType = "delete"
-)
-
-// AllValues returns all NetworkInterfaceOperationType values.
-func (NetworkInterfaceOperationType) AllValues() []NetworkInterfaceOperationType {
-	return []NetworkInterfaceOperationType{
-		NetworkInterfaceOperationTypeCreate,
-		NetworkInterfaceOperationTypeAttach,
-		NetworkInterfaceOperationTypeDetach,
-		NetworkInterfaceOperationTypeAssociateElasticIP,
-		NetworkInterfaceOperationTypeUpdateSecurityGroups,
-		NetworkInterfaceOperationTypeAddAddress,
-		NetworkInterfaceOperationTypeRemoveAddress,
-		NetworkInterfaceOperationTypeDelete,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s NetworkInterfaceOperationType) MarshalText() ([]byte, error) {
-	switch s {
-	case NetworkInterfaceOperationTypeCreate:
-		return []byte(s), nil
-	case NetworkInterfaceOperationTypeAttach:
-		return []byte(s), nil
-	case NetworkInterfaceOperationTypeDetach:
-		return []byte(s), nil
-	case NetworkInterfaceOperationTypeAssociateElasticIP:
-		return []byte(s), nil
-	case NetworkInterfaceOperationTypeUpdateSecurityGroups:
-		return []byte(s), nil
-	case NetworkInterfaceOperationTypeAddAddress:
-		return []byte(s), nil
-	case NetworkInterfaceOperationTypeRemoveAddress:
-		return []byte(s), nil
-	case NetworkInterfaceOperationTypeDelete:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *NetworkInterfaceOperationType) UnmarshalText(data []byte) error {
-	switch NetworkInterfaceOperationType(data) {
-	case NetworkInterfaceOperationTypeCreate:
-		*s = NetworkInterfaceOperationTypeCreate
-		return nil
-	case NetworkInterfaceOperationTypeAttach:
-		*s = NetworkInterfaceOperationTypeAttach
-		return nil
-	case NetworkInterfaceOperationTypeDetach:
-		*s = NetworkInterfaceOperationTypeDetach
-		return nil
-	case NetworkInterfaceOperationTypeAssociateElasticIP:
-		*s = NetworkInterfaceOperationTypeAssociateElasticIP
-		return nil
-	case NetworkInterfaceOperationTypeUpdateSecurityGroups:
-		*s = NetworkInterfaceOperationTypeUpdateSecurityGroups
-		return nil
-	case NetworkInterfaceOperationTypeAddAddress:
-		*s = NetworkInterfaceOperationTypeAddAddress
-		return nil
-	case NetworkInterfaceOperationTypeRemoveAddress:
-		*s = NetworkInterfaceOperationTypeRemoveAddress
-		return nil
-	case NetworkInterfaceOperationTypeDelete:
-		*s = NetworkInterfaceOperationTypeDelete
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // `pending` until the interface is created, then `available`. `error` means its creation failed or the
-// cloud reports it broken; delete it and create another.
+// cloud reports it broken; delete it and create another. A value naming an operation in progress
+// (`attaching`, `detaching`, `associating_elastic_ip`, `updating_security_groups`, `adding_address`,
+// `removing_address`, `deleting`) is shown while that operation runs; the interface refuses another
+// operation until it ends.
 type NetworkInterfaceStatus string
 
 const (
-	NetworkInterfaceStatusPending   NetworkInterfaceStatus = "pending"
-	NetworkInterfaceStatusAvailable NetworkInterfaceStatus = "available"
-	NetworkInterfaceStatusError     NetworkInterfaceStatus = "error"
+	NetworkInterfaceStatusPending                NetworkInterfaceStatus = "pending"
+	NetworkInterfaceStatusAvailable              NetworkInterfaceStatus = "available"
+	NetworkInterfaceStatusError                  NetworkInterfaceStatus = "error"
+	NetworkInterfaceStatusAttaching              NetworkInterfaceStatus = "attaching"
+	NetworkInterfaceStatusDetaching              NetworkInterfaceStatus = "detaching"
+	NetworkInterfaceStatusAssociatingElasticIP   NetworkInterfaceStatus = "associating_elastic_ip"
+	NetworkInterfaceStatusUpdatingSecurityGroups NetworkInterfaceStatus = "updating_security_groups"
+	NetworkInterfaceStatusAddingAddress          NetworkInterfaceStatus = "adding_address"
+	NetworkInterfaceStatusRemovingAddress        NetworkInterfaceStatus = "removing_address"
+	NetworkInterfaceStatusDeleting               NetworkInterfaceStatus = "deleting"
 )
 
 // AllValues returns all NetworkInterfaceStatus values.
@@ -6867,6 +6606,13 @@ func (NetworkInterfaceStatus) AllValues() []NetworkInterfaceStatus {
 		NetworkInterfaceStatusPending,
 		NetworkInterfaceStatusAvailable,
 		NetworkInterfaceStatusError,
+		NetworkInterfaceStatusAttaching,
+		NetworkInterfaceStatusDetaching,
+		NetworkInterfaceStatusAssociatingElasticIP,
+		NetworkInterfaceStatusUpdatingSecurityGroups,
+		NetworkInterfaceStatusAddingAddress,
+		NetworkInterfaceStatusRemovingAddress,
+		NetworkInterfaceStatusDeleting,
 	}
 }
 
@@ -6878,6 +6624,20 @@ func (s NetworkInterfaceStatus) MarshalText() ([]byte, error) {
 	case NetworkInterfaceStatusAvailable:
 		return []byte(s), nil
 	case NetworkInterfaceStatusError:
+		return []byte(s), nil
+	case NetworkInterfaceStatusAttaching:
+		return []byte(s), nil
+	case NetworkInterfaceStatusDetaching:
+		return []byte(s), nil
+	case NetworkInterfaceStatusAssociatingElasticIP:
+		return []byte(s), nil
+	case NetworkInterfaceStatusUpdatingSecurityGroups:
+		return []byte(s), nil
+	case NetworkInterfaceStatusAddingAddress:
+		return []byte(s), nil
+	case NetworkInterfaceStatusRemovingAddress:
+		return []byte(s), nil
+	case NetworkInterfaceStatusDeleting:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -6895,6 +6655,27 @@ func (s *NetworkInterfaceStatus) UnmarshalText(data []byte) error {
 		return nil
 	case NetworkInterfaceStatusError:
 		*s = NetworkInterfaceStatusError
+		return nil
+	case NetworkInterfaceStatusAttaching:
+		*s = NetworkInterfaceStatusAttaching
+		return nil
+	case NetworkInterfaceStatusDetaching:
+		*s = NetworkInterfaceStatusDetaching
+		return nil
+	case NetworkInterfaceStatusAssociatingElasticIP:
+		*s = NetworkInterfaceStatusAssociatingElasticIP
+		return nil
+	case NetworkInterfaceStatusUpdatingSecurityGroups:
+		*s = NetworkInterfaceStatusUpdatingSecurityGroups
+		return nil
+	case NetworkInterfaceStatusAddingAddress:
+		*s = NetworkInterfaceStatusAddingAddress
+		return nil
+	case NetworkInterfaceStatusRemovingAddress:
+		*s = NetworkInterfaceStatusRemovingAddress
+		return nil
+	case NetworkInterfaceStatusDeleting:
+		*s = NetworkInterfaceStatusDeleting
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -7691,51 +7472,6 @@ func (o NilElasticIPFailureReason) Or(d ElasticIPFailureReason) ElasticIPFailure
 	return d
 }
 
-// NewNilElasticIPOperation returns new NilElasticIPOperation with value set to v.
-func NewNilElasticIPOperation(v ElasticIPOperation) NilElasticIPOperation {
-	return NilElasticIPOperation{
-		Value: v,
-	}
-}
-
-// NilElasticIPOperation is nullable ElasticIPOperation.
-type NilElasticIPOperation struct {
-	Value ElasticIPOperation
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilElasticIPOperation) SetTo(v ElasticIPOperation) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilElasticIPOperation) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilElasticIPOperation) SetToNull() {
-	o.Null = true
-	var v ElasticIPOperation
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilElasticIPOperation) Get() (v ElasticIPOperation, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilElasticIPOperation) Or(d ElasticIPOperation) ElasticIPOperation {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewNilIPv4HostAddress returns new NilIPv4HostAddress with value set to v.
 func NewNilIPv4HostAddress(v IPv4HostAddress) NilIPv4HostAddress {
 	return NilIPv4HostAddress{
@@ -7955,51 +7691,6 @@ func (o NilInstanceImageType) Get() (v InstanceImageType, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilInstanceImageType) Or(d InstanceImageType) InstanceImageType {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilInstanceOperation returns new NilInstanceOperation with value set to v.
-func NewNilInstanceOperation(v InstanceOperation) NilInstanceOperation {
-	return NilInstanceOperation{
-		Value: v,
-	}
-}
-
-// NilInstanceOperation is nullable InstanceOperation.
-type NilInstanceOperation struct {
-	Value InstanceOperation
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilInstanceOperation) SetTo(v InstanceOperation) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilInstanceOperation) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilInstanceOperation) SetToNull() {
-	o.Null = true
-	var v InstanceOperation
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilInstanceOperation) Get() (v InstanceOperation, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilInstanceOperation) Or(d InstanceOperation) InstanceOperation {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -8366,96 +8057,6 @@ func (o NilNetworkInterfaceAttachment) Or(d NetworkInterfaceAttachment) NetworkI
 	return d
 }
 
-// NewNilNetworkInterfaceOperation returns new NilNetworkInterfaceOperation with value set to v.
-func NewNilNetworkInterfaceOperation(v NetworkInterfaceOperation) NilNetworkInterfaceOperation {
-	return NilNetworkInterfaceOperation{
-		Value: v,
-	}
-}
-
-// NilNetworkInterfaceOperation is nullable NetworkInterfaceOperation.
-type NilNetworkInterfaceOperation struct {
-	Value NetworkInterfaceOperation
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilNetworkInterfaceOperation) SetTo(v NetworkInterfaceOperation) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilNetworkInterfaceOperation) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilNetworkInterfaceOperation) SetToNull() {
-	o.Null = true
-	var v NetworkInterfaceOperation
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilNetworkInterfaceOperation) Get() (v NetworkInterfaceOperation, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilNetworkInterfaceOperation) Or(d NetworkInterfaceOperation) NetworkInterfaceOperation {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilPrivateImageOperation returns new NilPrivateImageOperation with value set to v.
-func NewNilPrivateImageOperation(v PrivateImageOperation) NilPrivateImageOperation {
-	return NilPrivateImageOperation{
-		Value: v,
-	}
-}
-
-// NilPrivateImageOperation is nullable PrivateImageOperation.
-type NilPrivateImageOperation struct {
-	Value PrivateImageOperation
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilPrivateImageOperation) SetTo(v PrivateImageOperation) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilPrivateImageOperation) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilPrivateImageOperation) SetToNull() {
-	o.Null = true
-	var v PrivateImageOperation
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilPrivateImageOperation) Get() (v PrivateImageOperation, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilPrivateImageOperation) Or(d PrivateImageOperation) PrivateImageOperation {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewNilPrivateImageResourceFailureReason returns new NilPrivateImageResourceFailureReason with value set to v.
 func NewNilPrivateImageResourceFailureReason(v PrivateImageResourceFailureReason) NilPrivateImageResourceFailureReason {
 	return NilPrivateImageResourceFailureReason{
@@ -8726,51 +8327,6 @@ func (o NilVirtualPrivateCloudID) Or(d VirtualPrivateCloudID) VirtualPrivateClou
 	return d
 }
 
-// NewNilVirtualPrivateCloudOperation returns new NilVirtualPrivateCloudOperation with value set to v.
-func NewNilVirtualPrivateCloudOperation(v VirtualPrivateCloudOperation) NilVirtualPrivateCloudOperation {
-	return NilVirtualPrivateCloudOperation{
-		Value: v,
-	}
-}
-
-// NilVirtualPrivateCloudOperation is nullable VirtualPrivateCloudOperation.
-type NilVirtualPrivateCloudOperation struct {
-	Value VirtualPrivateCloudOperation
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilVirtualPrivateCloudOperation) SetTo(v VirtualPrivateCloudOperation) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilVirtualPrivateCloudOperation) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilVirtualPrivateCloudOperation) SetToNull() {
-	o.Null = true
-	var v VirtualPrivateCloudOperation
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilVirtualPrivateCloudOperation) Get() (v VirtualPrivateCloudOperation, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilVirtualPrivateCloudOperation) Or(d VirtualPrivateCloudOperation) VirtualPrivateCloudOperation {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewNilVirtualPrivateCloudPeeringID returns new NilVirtualPrivateCloudPeeringID with value set to v.
 func NewNilVirtualPrivateCloudPeeringID(v VirtualPrivateCloudPeeringID) NilVirtualPrivateCloudPeeringID {
 	return NilVirtualPrivateCloudPeeringID{
@@ -8816,51 +8372,6 @@ func (o NilVirtualPrivateCloudPeeringID) Or(d VirtualPrivateCloudPeeringID) Virt
 	return d
 }
 
-// NewNilVirtualPrivateCloudPeeringOperation returns new NilVirtualPrivateCloudPeeringOperation with value set to v.
-func NewNilVirtualPrivateCloudPeeringOperation(v VirtualPrivateCloudPeeringOperation) NilVirtualPrivateCloudPeeringOperation {
-	return NilVirtualPrivateCloudPeeringOperation{
-		Value: v,
-	}
-}
-
-// NilVirtualPrivateCloudPeeringOperation is nullable VirtualPrivateCloudPeeringOperation.
-type NilVirtualPrivateCloudPeeringOperation struct {
-	Value VirtualPrivateCloudPeeringOperation
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilVirtualPrivateCloudPeeringOperation) SetTo(v VirtualPrivateCloudPeeringOperation) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilVirtualPrivateCloudPeeringOperation) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilVirtualPrivateCloudPeeringOperation) SetToNull() {
-	o.Null = true
-	var v VirtualPrivateCloudPeeringOperation
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilVirtualPrivateCloudPeeringOperation) Get() (v VirtualPrivateCloudPeeringOperation, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilVirtualPrivateCloudPeeringOperation) Or(d VirtualPrivateCloudPeeringOperation) VirtualPrivateCloudPeeringOperation {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewNilVolumeAttachment returns new NilVolumeAttachment with value set to v.
 func NewNilVolumeAttachment(v VolumeAttachment) NilVolumeAttachment {
 	return NilVolumeAttachment{
@@ -8900,51 +8411,6 @@ func (o NilVolumeAttachment) Get() (v VolumeAttachment, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilVolumeAttachment) Or(d VolumeAttachment) VolumeAttachment {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilVolumeBackupOperation returns new NilVolumeBackupOperation with value set to v.
-func NewNilVolumeBackupOperation(v VolumeBackupOperation) NilVolumeBackupOperation {
-	return NilVolumeBackupOperation{
-		Value: v,
-	}
-}
-
-// NilVolumeBackupOperation is nullable VolumeBackupOperation.
-type NilVolumeBackupOperation struct {
-	Value VolumeBackupOperation
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilVolumeBackupOperation) SetTo(v VolumeBackupOperation) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilVolumeBackupOperation) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilVolumeBackupOperation) SetToNull() {
-	o.Null = true
-	var v VolumeBackupOperation
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilVolumeBackupOperation) Get() (v VolumeBackupOperation, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilVolumeBackupOperation) Or(d VolumeBackupOperation) VolumeBackupOperation {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9035,51 +8501,6 @@ func (o NilVolumeID) Get() (v VolumeID, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilVolumeID) Or(d VolumeID) VolumeID {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilVolumeOperation returns new NilVolumeOperation with value set to v.
-func NewNilVolumeOperation(v VolumeOperation) NilVolumeOperation {
-	return NilVolumeOperation{
-		Value: v,
-	}
-}
-
-// NilVolumeOperation is nullable VolumeOperation.
-type NilVolumeOperation struct {
-	Value VolumeOperation
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilVolumeOperation) SetTo(v VolumeOperation) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilVolumeOperation) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilVolumeOperation) SetToNull() {
-	o.Null = true
-	var v VolumeOperation
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilVolumeOperation) Get() (v VolumeOperation, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilVolumeOperation) Or(d VolumeOperation) VolumeOperation {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9215,51 +8636,6 @@ func (o NilVolumeResourceFailureReason) Get() (v VolumeResourceFailureReason, ok
 
 // Or returns value if set, or given parameter if does not.
 func (o NilVolumeResourceFailureReason) Or(d VolumeResourceFailureReason) VolumeResourceFailureReason {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilVolumeSnapshotOperation returns new NilVolumeSnapshotOperation with value set to v.
-func NewNilVolumeSnapshotOperation(v VolumeSnapshotOperation) NilVolumeSnapshotOperation {
-	return NilVolumeSnapshotOperation{
-		Value: v,
-	}
-}
-
-// NilVolumeSnapshotOperation is nullable VolumeSnapshotOperation.
-type NilVolumeSnapshotOperation struct {
-	Value VolumeSnapshotOperation
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilVolumeSnapshotOperation) SetTo(v VolumeSnapshotOperation) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilVolumeSnapshotOperation) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilVolumeSnapshotOperation) SetToNull() {
-	o.Null = true
-	var v VolumeSnapshotOperation
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilVolumeSnapshotOperation) Get() (v VolumeSnapshotOperation, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilVolumeSnapshotOperation) Or(d VolumeSnapshotOperation) VolumeSnapshotOperation {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -11696,91 +11072,6 @@ func (s *PrivateImageListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// An operation still running on this image. It is not a separate resource; once it finishes, the
-// image's `operation` is null again and the image shows the result.
-// Ref: #/components/schemas/PrivateImageOperation
-type PrivateImageOperation struct {
-	// `create` is the capture of a private image.
-	Type      PrivateImageOperationType `json:"type"`
-	StartedAt time.Time                 `json:"started_at"`
-}
-
-// GetType returns the value of Type.
-func (s *PrivateImageOperation) GetType() PrivateImageOperationType {
-	return s.Type
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *PrivateImageOperation) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// SetType sets the value of Type.
-func (s *PrivateImageOperation) SetType(val PrivateImageOperationType) {
-	s.Type = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *PrivateImageOperation) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-// `create` is the capture of a private image.
-type PrivateImageOperationType string
-
-const (
-	PrivateImageOperationTypeCreate  PrivateImageOperationType = "create"
-	PrivateImageOperationTypeSuspend PrivateImageOperationType = "suspend"
-	PrivateImageOperationTypeResume  PrivateImageOperationType = "resume"
-	PrivateImageOperationTypeDelete  PrivateImageOperationType = "delete"
-)
-
-// AllValues returns all PrivateImageOperationType values.
-func (PrivateImageOperationType) AllValues() []PrivateImageOperationType {
-	return []PrivateImageOperationType{
-		PrivateImageOperationTypeCreate,
-		PrivateImageOperationTypeSuspend,
-		PrivateImageOperationTypeResume,
-		PrivateImageOperationTypeDelete,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PrivateImageOperationType) MarshalText() ([]byte, error) {
-	switch s {
-	case PrivateImageOperationTypeCreate:
-		return []byte(s), nil
-	case PrivateImageOperationTypeSuspend:
-		return []byte(s), nil
-	case PrivateImageOperationTypeResume:
-		return []byte(s), nil
-	case PrivateImageOperationTypeDelete:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PrivateImageOperationType) UnmarshalText(data []byte) error {
-	switch PrivateImageOperationType(data) {
-	case PrivateImageOperationTypeCreate:
-		*s = PrivateImageOperationTypeCreate
-		return nil
-	case PrivateImageOperationTypeSuspend:
-		*s = PrivateImageOperationTypeSuspend
-		return nil
-	case PrivateImageOperationTypeResume:
-		*s = PrivateImageOperationTypeResume
-		return nil
-	case PrivateImageOperationTypeDelete:
-		*s = PrivateImageOperationTypeDelete
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // A resource a release set releases.
 // Ref: #/components/schemas/PrivateImageReleaseResource
 type PrivateImageReleaseResource struct {
@@ -11875,10 +11166,11 @@ type PrivateImageResource struct {
 	MinMemoryMib int64 `json:"min_memory_mib"`
 	// False means a new password can only be set by rebuilding an instance created from this image.
 	SupportsPasswordReset bool `json:"supports_password_reset"`
-	// Only available images can install instances. A capture is pending until it finishes and shows the
-	// `create` operation while it runs, then becomes available. Failed means no usable image was produced;
-	// failure describes the outcome. Error means the image service broke the image or no longer holds it,
-	// and nothing can be installed from it.
+	// Only available images can install instances. A capture is pending until it finishes, then becomes
+	// available. Failed means no usable image was produced; failure describes the outcome. Error means the
+	// image service broke the image or no longer holds it, and nothing can be installed from it. A value
+	// naming an operation in progress (`suspending`, `resuming`, `deleting`) is shown while that operation
+	// runs.
 	Status PrivateImageResourceStatus `json:"status"`
 	// Details of why the capture failed; non-empty only when `status` is `failed`.
 	Failure NilString `json:"failure"`
@@ -11895,8 +11187,6 @@ type PrivateImageResource struct {
 	// The instance this image was captured from. The image remains usable after that instance is released.
 	SourceInstanceID InstanceID `json:"source_instance_id"`
 	CreatedAt        time.Time  `json:"created_at"`
-	// The operation in progress on this image, or null when none is.
-	Operation NilPrivateImageOperation `json:"operation"`
 	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
 	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
 	// order was accepted, and the charge for this image is refunded.
@@ -11994,11 +11284,6 @@ func (s *PrivateImageResource) GetSourceInstanceID() InstanceID {
 // GetCreatedAt returns the value of CreatedAt.
 func (s *PrivateImageResource) GetCreatedAt() time.Time {
 	return s.CreatedAt
-}
-
-// GetOperation returns the value of Operation.
-func (s *PrivateImageResource) GetOperation() NilPrivateImageOperation {
-	return s.Operation
 }
 
 // GetFailureReason returns the value of FailureReason.
@@ -12111,11 +11396,6 @@ func (s *PrivateImageResource) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
 }
 
-// SetOperation sets the value of Operation.
-func (s *PrivateImageResource) SetOperation(val NilPrivateImageOperation) {
-	s.Operation = val
-}
-
 // SetFailureReason sets the value of FailureReason.
 func (s *PrivateImageResource) SetFailureReason(val NilPrivateImageResourceFailureReason) {
 	s.FailureReason = val
@@ -12211,18 +11491,22 @@ func (s *PrivateImageResourceFailureReason) UnmarshalText(data []byte) error {
 	}
 }
 
-// Only available images can install instances. A capture is pending until it finishes and shows the
-// `create` operation while it runs, then becomes available. Failed means no usable image was produced;
-// failure describes the outcome. Error means the image service broke the image or no longer holds it,
-// and nothing can be installed from it.
+// Only available images can install instances. A capture is pending until it finishes, then becomes
+// available. Failed means no usable image was produced; failure describes the outcome. Error means the
+// image service broke the image or no longer holds it, and nothing can be installed from it. A value
+// naming an operation in progress (`suspending`, `resuming`, `deleting`) is shown while that operation
+// runs.
 type PrivateImageResourceStatus string
 
 const (
-	PrivateImageResourceStatusPending   PrivateImageResourceStatus = "pending"
-	PrivateImageResourceStatusAvailable PrivateImageResourceStatus = "available"
-	PrivateImageResourceStatusDeleted   PrivateImageResourceStatus = "deleted"
-	PrivateImageResourceStatusFailed    PrivateImageResourceStatus = "failed"
-	PrivateImageResourceStatusError     PrivateImageResourceStatus = "error"
+	PrivateImageResourceStatusPending    PrivateImageResourceStatus = "pending"
+	PrivateImageResourceStatusAvailable  PrivateImageResourceStatus = "available"
+	PrivateImageResourceStatusDeleted    PrivateImageResourceStatus = "deleted"
+	PrivateImageResourceStatusFailed     PrivateImageResourceStatus = "failed"
+	PrivateImageResourceStatusError      PrivateImageResourceStatus = "error"
+	PrivateImageResourceStatusSuspending PrivateImageResourceStatus = "suspending"
+	PrivateImageResourceStatusResuming   PrivateImageResourceStatus = "resuming"
+	PrivateImageResourceStatusDeleting   PrivateImageResourceStatus = "deleting"
 )
 
 // AllValues returns all PrivateImageResourceStatus values.
@@ -12233,6 +11517,9 @@ func (PrivateImageResourceStatus) AllValues() []PrivateImageResourceStatus {
 		PrivateImageResourceStatusDeleted,
 		PrivateImageResourceStatusFailed,
 		PrivateImageResourceStatusError,
+		PrivateImageResourceStatusSuspending,
+		PrivateImageResourceStatusResuming,
+		PrivateImageResourceStatusDeleting,
 	}
 }
 
@@ -12248,6 +11535,12 @@ func (s PrivateImageResourceStatus) MarshalText() ([]byte, error) {
 	case PrivateImageResourceStatusFailed:
 		return []byte(s), nil
 	case PrivateImageResourceStatusError:
+		return []byte(s), nil
+	case PrivateImageResourceStatusSuspending:
+		return []byte(s), nil
+	case PrivateImageResourceStatusResuming:
+		return []byte(s), nil
+	case PrivateImageResourceStatusDeleting:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -12271,6 +11564,15 @@ func (s *PrivateImageResourceStatus) UnmarshalText(data []byte) error {
 		return nil
 	case PrivateImageResourceStatusError:
 		*s = PrivateImageResourceStatusError
+		return nil
+	case PrivateImageResourceStatusSuspending:
+		*s = PrivateImageResourceStatusSuspending
+		return nil
+	case PrivateImageResourceStatusResuming:
+		*s = PrivateImageResourceStatusResuming
+		return nil
+	case PrivateImageResourceStatusDeleting:
+		*s = PrivateImageResourceStatusDeleting
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -14437,12 +13739,11 @@ type VirtualPrivateCloud struct {
 	// `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE`. `deleting` from the moment its deletion began until it is gone:
 	// subnets, security groups and routes in it can no longer be created, changed or deleted, and are
 	// refused with `VIRTUAL_PRIVATE_CLOUD_DELETING`. A deletion that stopped before the end leaves it
-	// `deleting` with no operation, and deleting it again resumes from where it stopped.
-	Status VirtualPrivateCloudStatus `json:"status"`
-	// The operation in progress on this virtual private cloud, or null when none is.
-	Operation NilVirtualPrivateCloudOperation `json:"operation"`
-	CreatedAt time.Time                       `json:"created_at"`
-	UpdatedAt time.Time                       `json:"updated_at"`
+	// `deleting`, and deleting it again resumes from where it stopped. `creating`, `enabling_ipv6` and
+	// `disabling_ipv6` name operations in progress; the network refuses another operation until they end.
+	Status    VirtualPrivateCloudStatus `json:"status"`
+	CreatedAt time.Time                 `json:"created_at"`
+	UpdatedAt time.Time                 `json:"updated_at"`
 }
 
 // GetID returns the value of ID.
@@ -14473,11 +13774,6 @@ func (s *VirtualPrivateCloud) GetIpv6Cidr() NilString {
 // GetStatus returns the value of Status.
 func (s *VirtualPrivateCloud) GetStatus() VirtualPrivateCloudStatus {
 	return s.Status
-}
-
-// GetOperation returns the value of Operation.
-func (s *VirtualPrivateCloud) GetOperation() NilVirtualPrivateCloudOperation {
-	return s.Operation
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -14518,11 +13814,6 @@ func (s *VirtualPrivateCloud) SetIpv6Cidr(val NilString) {
 // SetStatus sets the value of Status.
 func (s *VirtualPrivateCloud) SetStatus(val VirtualPrivateCloudStatus) {
 	s.Status = val
-}
-
-// SetOperation sets the value of Operation.
-func (s *VirtualPrivateCloud) SetOperation(val NilVirtualPrivateCloudOperation) {
-	s.Operation = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -14569,90 +13860,6 @@ func (s *VirtualPrivateCloudListResponseBody) SetPagination(val OffsetPagination
 	s.Pagination = val
 }
 
-// An operation still running on this virtual private cloud. It is not a separate resource; once it
-// finishes, the virtual private cloud's `operation` is null again and the virtual private cloud shows
-// the result.
-// Ref: #/components/schemas/VirtualPrivateCloudOperation
-type VirtualPrivateCloudOperation struct {
-	Type      VirtualPrivateCloudOperationType `json:"type"`
-	StartedAt time.Time                        `json:"started_at"`
-}
-
-// GetType returns the value of Type.
-func (s *VirtualPrivateCloudOperation) GetType() VirtualPrivateCloudOperationType {
-	return s.Type
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *VirtualPrivateCloudOperation) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// SetType sets the value of Type.
-func (s *VirtualPrivateCloudOperation) SetType(val VirtualPrivateCloudOperationType) {
-	s.Type = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *VirtualPrivateCloudOperation) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-type VirtualPrivateCloudOperationType string
-
-const (
-	VirtualPrivateCloudOperationTypeCreate      VirtualPrivateCloudOperationType = "create"
-	VirtualPrivateCloudOperationTypeEnableIpv6  VirtualPrivateCloudOperationType = "enable_ipv6"
-	VirtualPrivateCloudOperationTypeDisableIpv6 VirtualPrivateCloudOperationType = "disable_ipv6"
-	VirtualPrivateCloudOperationTypeDelete      VirtualPrivateCloudOperationType = "delete"
-)
-
-// AllValues returns all VirtualPrivateCloudOperationType values.
-func (VirtualPrivateCloudOperationType) AllValues() []VirtualPrivateCloudOperationType {
-	return []VirtualPrivateCloudOperationType{
-		VirtualPrivateCloudOperationTypeCreate,
-		VirtualPrivateCloudOperationTypeEnableIpv6,
-		VirtualPrivateCloudOperationTypeDisableIpv6,
-		VirtualPrivateCloudOperationTypeDelete,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s VirtualPrivateCloudOperationType) MarshalText() ([]byte, error) {
-	switch s {
-	case VirtualPrivateCloudOperationTypeCreate:
-		return []byte(s), nil
-	case VirtualPrivateCloudOperationTypeEnableIpv6:
-		return []byte(s), nil
-	case VirtualPrivateCloudOperationTypeDisableIpv6:
-		return []byte(s), nil
-	case VirtualPrivateCloudOperationTypeDelete:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *VirtualPrivateCloudOperationType) UnmarshalText(data []byte) error {
-	switch VirtualPrivateCloudOperationType(data) {
-	case VirtualPrivateCloudOperationTypeCreate:
-		*s = VirtualPrivateCloudOperationTypeCreate
-		return nil
-	case VirtualPrivateCloudOperationTypeEnableIpv6:
-		*s = VirtualPrivateCloudOperationTypeEnableIpv6
-		return nil
-	case VirtualPrivateCloudOperationTypeDisableIpv6:
-		*s = VirtualPrivateCloudOperationTypeDisableIpv6
-		return nil
-	case VirtualPrivateCloudOperationTypeDelete:
-		*s = VirtualPrivateCloudOperationTypeDelete
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 type VirtualPrivateCloudPeeringID string
 
 // Ref: #/components/schemas/VirtualPrivateCloudPeeringListResponseBody
@@ -14681,77 +13888,6 @@ func (s *VirtualPrivateCloudPeeringListResponseBody) SetPagination(val OffsetPag
 	s.Pagination = val
 }
 
-// An operation still running on this peering. It is not a separate resource; once it finishes, the
-// peering's `operation` is null again and the peering shows the result.
-// Ref: #/components/schemas/VirtualPrivateCloudPeeringOperation
-type VirtualPrivateCloudPeeringOperation struct {
-	// `provision` runs after the peering is accepted, until it is `active`.
-	Type      VirtualPrivateCloudPeeringOperationType `json:"type"`
-	StartedAt time.Time                               `json:"started_at"`
-}
-
-// GetType returns the value of Type.
-func (s *VirtualPrivateCloudPeeringOperation) GetType() VirtualPrivateCloudPeeringOperationType {
-	return s.Type
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *VirtualPrivateCloudPeeringOperation) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// SetType sets the value of Type.
-func (s *VirtualPrivateCloudPeeringOperation) SetType(val VirtualPrivateCloudPeeringOperationType) {
-	s.Type = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *VirtualPrivateCloudPeeringOperation) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-// `provision` runs after the peering is accepted, until it is `active`.
-type VirtualPrivateCloudPeeringOperationType string
-
-const (
-	VirtualPrivateCloudPeeringOperationTypeProvision VirtualPrivateCloudPeeringOperationType = "provision"
-	VirtualPrivateCloudPeeringOperationTypeDelete    VirtualPrivateCloudPeeringOperationType = "delete"
-)
-
-// AllValues returns all VirtualPrivateCloudPeeringOperationType values.
-func (VirtualPrivateCloudPeeringOperationType) AllValues() []VirtualPrivateCloudPeeringOperationType {
-	return []VirtualPrivateCloudPeeringOperationType{
-		VirtualPrivateCloudPeeringOperationTypeProvision,
-		VirtualPrivateCloudPeeringOperationTypeDelete,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s VirtualPrivateCloudPeeringOperationType) MarshalText() ([]byte, error) {
-	switch s {
-	case VirtualPrivateCloudPeeringOperationTypeProvision:
-		return []byte(s), nil
-	case VirtualPrivateCloudPeeringOperationTypeDelete:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *VirtualPrivateCloudPeeringOperationType) UnmarshalText(data []byte) error {
-	switch VirtualPrivateCloudPeeringOperationType(data) {
-	case VirtualPrivateCloudPeeringOperationTypeProvision:
-		*s = VirtualPrivateCloudPeeringOperationTypeProvision
-		return nil
-	case VirtualPrivateCloudPeeringOperationTypeDelete:
-		*s = VirtualPrivateCloudPeeringOperationTypeDelete
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/VirtualPrivateCloudPeeringResource
 type VirtualPrivateCloudPeeringResource struct {
 	ID                             VirtualPrivateCloudPeeringID `json:"id"`
@@ -14766,14 +13902,12 @@ type VirtualPrivateCloudPeeringResource struct {
 	// `deleted`.
 	Acceptance VirtualPrivateCloudPeeringResourceAcceptance `json:"acceptance"`
 	// `pending` until the connectivity exists: while acceptance is pending, and after it is accepted while
-	// the `provision` operation builds the link. Then `active`. `failed` means the link could not be
-	// built; `failure_reason` states why. `deleted` once deleted or rejected.
+	// the link is built (`provisioning`). Then `active`. `failed` means the link could not be built;
+	// `failure_reason` states why. `deleted` once deleted or rejected.
 	Status    VirtualPrivateCloudPeeringResourceStatus `json:"status"`
 	CreatedAt time.Time                                `json:"created_at"`
 	// Why provisioning failed; null unless `status` is `failed`.
 	FailureReason NilString `json:"failure_reason"`
-	// The operation in progress on this peering, or null when none is.
-	Operation NilVirtualPrivateCloudPeeringOperation `json:"operation"`
 }
 
 // GetID returns the value of ID.
@@ -14831,11 +13965,6 @@ func (s *VirtualPrivateCloudPeeringResource) GetFailureReason() NilString {
 	return s.FailureReason
 }
 
-// GetOperation returns the value of Operation.
-func (s *VirtualPrivateCloudPeeringResource) GetOperation() NilVirtualPrivateCloudPeeringOperation {
-	return s.Operation
-}
-
 // SetID sets the value of ID.
 func (s *VirtualPrivateCloudPeeringResource) SetID(val VirtualPrivateCloudPeeringID) {
 	s.ID = val
@@ -14889,11 +14018,6 @@ func (s *VirtualPrivateCloudPeeringResource) SetCreatedAt(val time.Time) {
 // SetFailureReason sets the value of FailureReason.
 func (s *VirtualPrivateCloudPeeringResource) SetFailureReason(val NilString) {
 	s.FailureReason = val
-}
-
-// SetOperation sets the value of Operation.
-func (s *VirtualPrivateCloudPeeringResource) SetOperation(val NilVirtualPrivateCloudPeeringOperation) {
-	s.Operation = val
 }
 
 func (*VirtualPrivateCloudPeeringResource) acceptVirtualPrivateCloudPeeringRes() {}
@@ -14952,15 +14076,16 @@ func (s *VirtualPrivateCloudPeeringResourceAcceptance) UnmarshalText(data []byte
 }
 
 // `pending` until the connectivity exists: while acceptance is pending, and after it is accepted while
-// the `provision` operation builds the link. Then `active`. `failed` means the link could not be
-// built; `failure_reason` states why. `deleted` once deleted or rejected.
+// the link is built (`provisioning`). Then `active`. `failed` means the link could not be built;
+// `failure_reason` states why. `deleted` once deleted or rejected.
 type VirtualPrivateCloudPeeringResourceStatus string
 
 const (
-	VirtualPrivateCloudPeeringResourceStatusPending VirtualPrivateCloudPeeringResourceStatus = "pending"
-	VirtualPrivateCloudPeeringResourceStatusActive  VirtualPrivateCloudPeeringResourceStatus = "active"
-	VirtualPrivateCloudPeeringResourceStatusDeleted VirtualPrivateCloudPeeringResourceStatus = "deleted"
-	VirtualPrivateCloudPeeringResourceStatusFailed  VirtualPrivateCloudPeeringResourceStatus = "failed"
+	VirtualPrivateCloudPeeringResourceStatusPending      VirtualPrivateCloudPeeringResourceStatus = "pending"
+	VirtualPrivateCloudPeeringResourceStatusActive       VirtualPrivateCloudPeeringResourceStatus = "active"
+	VirtualPrivateCloudPeeringResourceStatusDeleted      VirtualPrivateCloudPeeringResourceStatus = "deleted"
+	VirtualPrivateCloudPeeringResourceStatusFailed       VirtualPrivateCloudPeeringResourceStatus = "failed"
+	VirtualPrivateCloudPeeringResourceStatusProvisioning VirtualPrivateCloudPeeringResourceStatus = "provisioning"
 )
 
 // AllValues returns all VirtualPrivateCloudPeeringResourceStatus values.
@@ -14970,6 +14095,7 @@ func (VirtualPrivateCloudPeeringResourceStatus) AllValues() []VirtualPrivateClou
 		VirtualPrivateCloudPeeringResourceStatusActive,
 		VirtualPrivateCloudPeeringResourceStatusDeleted,
 		VirtualPrivateCloudPeeringResourceStatusFailed,
+		VirtualPrivateCloudPeeringResourceStatusProvisioning,
 	}
 }
 
@@ -14983,6 +14109,8 @@ func (s VirtualPrivateCloudPeeringResourceStatus) MarshalText() ([]byte, error) 
 	case VirtualPrivateCloudPeeringResourceStatusDeleted:
 		return []byte(s), nil
 	case VirtualPrivateCloudPeeringResourceStatusFailed:
+		return []byte(s), nil
+	case VirtualPrivateCloudPeeringResourceStatusProvisioning:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -15003,6 +14131,9 @@ func (s *VirtualPrivateCloudPeeringResourceStatus) UnmarshalText(data []byte) er
 		return nil
 	case VirtualPrivateCloudPeeringResourceStatusFailed:
 		*s = VirtualPrivateCloudPeeringResourceStatusFailed
+		return nil
+	case VirtualPrivateCloudPeeringResourceStatusProvisioning:
+		*s = VirtualPrivateCloudPeeringResourceStatusProvisioning
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -15182,13 +14313,17 @@ func (s *VirtualPrivateCloudRouteType) UnmarshalText(data []byte) error {
 // `VIRTUAL_PRIVATE_CLOUD_UNAVAILABLE`. `deleting` from the moment its deletion began until it is gone:
 // subnets, security groups and routes in it can no longer be created, changed or deleted, and are
 // refused with `VIRTUAL_PRIVATE_CLOUD_DELETING`. A deletion that stopped before the end leaves it
-// `deleting` with no operation, and deleting it again resumes from where it stopped.
+// `deleting`, and deleting it again resumes from where it stopped. `creating`, `enabling_ipv6` and
+// `disabling_ipv6` name operations in progress; the network refuses another operation until they end.
 type VirtualPrivateCloudStatus string
 
 const (
-	VirtualPrivateCloudStatusAvailable VirtualPrivateCloudStatus = "available"
-	VirtualPrivateCloudStatusDeleting  VirtualPrivateCloudStatus = "deleting"
-	VirtualPrivateCloudStatusFailed    VirtualPrivateCloudStatus = "failed"
+	VirtualPrivateCloudStatusAvailable     VirtualPrivateCloudStatus = "available"
+	VirtualPrivateCloudStatusDeleting      VirtualPrivateCloudStatus = "deleting"
+	VirtualPrivateCloudStatusFailed        VirtualPrivateCloudStatus = "failed"
+	VirtualPrivateCloudStatusCreating      VirtualPrivateCloudStatus = "creating"
+	VirtualPrivateCloudStatusEnablingIpv6  VirtualPrivateCloudStatus = "enabling_ipv6"
+	VirtualPrivateCloudStatusDisablingIpv6 VirtualPrivateCloudStatus = "disabling_ipv6"
 )
 
 // AllValues returns all VirtualPrivateCloudStatus values.
@@ -15197,6 +14332,9 @@ func (VirtualPrivateCloudStatus) AllValues() []VirtualPrivateCloudStatus {
 		VirtualPrivateCloudStatusAvailable,
 		VirtualPrivateCloudStatusDeleting,
 		VirtualPrivateCloudStatusFailed,
+		VirtualPrivateCloudStatusCreating,
+		VirtualPrivateCloudStatusEnablingIpv6,
+		VirtualPrivateCloudStatusDisablingIpv6,
 	}
 }
 
@@ -15208,6 +14346,12 @@ func (s VirtualPrivateCloudStatus) MarshalText() ([]byte, error) {
 	case VirtualPrivateCloudStatusDeleting:
 		return []byte(s), nil
 	case VirtualPrivateCloudStatusFailed:
+		return []byte(s), nil
+	case VirtualPrivateCloudStatusCreating:
+		return []byte(s), nil
+	case VirtualPrivateCloudStatusEnablingIpv6:
+		return []byte(s), nil
+	case VirtualPrivateCloudStatusDisablingIpv6:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -15225,6 +14369,15 @@ func (s *VirtualPrivateCloudStatus) UnmarshalText(data []byte) error {
 		return nil
 	case VirtualPrivateCloudStatusFailed:
 		*s = VirtualPrivateCloudStatusFailed
+		return nil
+	case VirtualPrivateCloudStatusCreating:
+		*s = VirtualPrivateCloudStatusCreating
+		return nil
+	case VirtualPrivateCloudStatusEnablingIpv6:
+		*s = VirtualPrivateCloudStatusEnablingIpv6
+		return nil
+	case VirtualPrivateCloudStatusDisablingIpv6:
+		*s = VirtualPrivateCloudStatusDisablingIpv6
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -15683,84 +14836,6 @@ func (s *VolumeBackupListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// An operation still running on this backup. It is not a separate resource; once it finishes, the
-// backup's `operation` is null again and the backup shows the result.
-// Ref: #/components/schemas/VolumeBackupOperation
-type VolumeBackupOperation struct {
-	// `restore`: a volume is being created from this backup with `volume_backup_id` on `create-volume`.
-	Type      VolumeBackupOperationType `json:"type"`
-	StartedAt time.Time                 `json:"started_at"`
-}
-
-// GetType returns the value of Type.
-func (s *VolumeBackupOperation) GetType() VolumeBackupOperationType {
-	return s.Type
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *VolumeBackupOperation) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// SetType sets the value of Type.
-func (s *VolumeBackupOperation) SetType(val VolumeBackupOperationType) {
-	s.Type = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *VolumeBackupOperation) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-// `restore`: a volume is being created from this backup with `volume_backup_id` on `create-volume`.
-type VolumeBackupOperationType string
-
-const (
-	VolumeBackupOperationTypeCreate  VolumeBackupOperationType = "create"
-	VolumeBackupOperationTypeRestore VolumeBackupOperationType = "restore"
-	VolumeBackupOperationTypeDelete  VolumeBackupOperationType = "delete"
-)
-
-// AllValues returns all VolumeBackupOperationType values.
-func (VolumeBackupOperationType) AllValues() []VolumeBackupOperationType {
-	return []VolumeBackupOperationType{
-		VolumeBackupOperationTypeCreate,
-		VolumeBackupOperationTypeRestore,
-		VolumeBackupOperationTypeDelete,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s VolumeBackupOperationType) MarshalText() ([]byte, error) {
-	switch s {
-	case VolumeBackupOperationTypeCreate:
-		return []byte(s), nil
-	case VolumeBackupOperationTypeRestore:
-		return []byte(s), nil
-	case VolumeBackupOperationTypeDelete:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *VolumeBackupOperationType) UnmarshalText(data []byte) error {
-	switch VolumeBackupOperationType(data) {
-	case VolumeBackupOperationTypeCreate:
-		*s = VolumeBackupOperationTypeCreate
-		return nil
-	case VolumeBackupOperationTypeRestore:
-		*s = VolumeBackupOperationTypeRestore
-		return nil
-	case VolumeBackupOperationTypeDelete:
-		*s = VolumeBackupOperationTypeDelete
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // A resource a release set releases.
 // Ref: #/components/schemas/VolumeBackupReleaseResource
 type VolumeBackupReleaseResource struct {
@@ -15851,11 +14926,10 @@ type VolumeBackupResource struct {
 	CapacityGib int64 `json:"capacity_gib"`
 	// The volume this backup was taken from. The backup remains usable after that volume is deleted.
 	SourceVolumeID VolumeID `json:"source_volume_id"`
-	// `pending` from the purchase until the backup is taken, then `available`; while it is taken the
-	// backup shows the `create` operation. `failed` means the backup was not created.
+	// `pending` from the purchase until the backup is taken, then `available`. `failed` means the backup
+	// was not created. A value naming an operation in progress (`restoring`, `deleting`) is shown while
+	// that operation runs; the backup refuses another operation until it ends.
 	Status VolumeBackupResourceStatus `json:"status"`
-	// The operation in progress on this backup, or null when none is.
-	Operation NilVolumeBackupOperation `json:"operation"`
 	// Availability zone of the source volume. A restore may target another zone in the same region.
 	SourceAvailabilityZoneID AvailabilityZoneID `json:"source_availability_zone_id"`
 	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
@@ -15915,11 +14989,6 @@ func (s *VolumeBackupResource) GetSourceVolumeID() VolumeID {
 // GetStatus returns the value of Status.
 func (s *VolumeBackupResource) GetStatus() VolumeBackupResourceStatus {
 	return s.Status
-}
-
-// GetOperation returns the value of Operation.
-func (s *VolumeBackupResource) GetOperation() NilVolumeBackupOperation {
-	return s.Operation
 }
 
 // GetSourceAvailabilityZoneID returns the value of SourceAvailabilityZoneID.
@@ -15995,11 +15064,6 @@ func (s *VolumeBackupResource) SetSourceVolumeID(val VolumeID) {
 // SetStatus sets the value of Status.
 func (s *VolumeBackupResource) SetStatus(val VolumeBackupResourceStatus) {
 	s.Status = val
-}
-
-// SetOperation sets the value of Operation.
-func (s *VolumeBackupResource) SetOperation(val NilVolumeBackupOperation) {
-	s.Operation = val
 }
 
 // SetSourceAvailabilityZoneID sets the value of SourceAvailabilityZoneID.
@@ -16102,8 +15166,9 @@ func (s *VolumeBackupResourceFailureReason) UnmarshalText(data []byte) error {
 	}
 }
 
-// `pending` from the purchase until the backup is taken, then `available`; while it is taken the
-// backup shows the `create` operation. `failed` means the backup was not created.
+// `pending` from the purchase until the backup is taken, then `available`. `failed` means the backup
+// was not created. A value naming an operation in progress (`restoring`, `deleting`) is shown while
+// that operation runs; the backup refuses another operation until it ends.
 type VolumeBackupResourceStatus string
 
 const (
@@ -16112,6 +15177,8 @@ const (
 	VolumeBackupResourceStatusDeleted   VolumeBackupResourceStatus = "deleted"
 	VolumeBackupResourceStatusFailed    VolumeBackupResourceStatus = "failed"
 	VolumeBackupResourceStatusError     VolumeBackupResourceStatus = "error"
+	VolumeBackupResourceStatusRestoring VolumeBackupResourceStatus = "restoring"
+	VolumeBackupResourceStatusDeleting  VolumeBackupResourceStatus = "deleting"
 )
 
 // AllValues returns all VolumeBackupResourceStatus values.
@@ -16122,6 +15189,8 @@ func (VolumeBackupResourceStatus) AllValues() []VolumeBackupResourceStatus {
 		VolumeBackupResourceStatusDeleted,
 		VolumeBackupResourceStatusFailed,
 		VolumeBackupResourceStatusError,
+		VolumeBackupResourceStatusRestoring,
+		VolumeBackupResourceStatusDeleting,
 	}
 }
 
@@ -16137,6 +15206,10 @@ func (s VolumeBackupResourceStatus) MarshalText() ([]byte, error) {
 	case VolumeBackupResourceStatusFailed:
 		return []byte(s), nil
 	case VolumeBackupResourceStatusError:
+		return []byte(s), nil
+	case VolumeBackupResourceStatusRestoring:
+		return []byte(s), nil
+	case VolumeBackupResourceStatusDeleting:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -16160,6 +15233,12 @@ func (s *VolumeBackupResourceStatus) UnmarshalText(data []byte) error {
 		return nil
 	case VolumeBackupResourceStatusError:
 		*s = VolumeBackupResourceStatusError
+		return nil
+	case VolumeBackupResourceStatusRestoring:
+		*s = VolumeBackupResourceStatusRestoring
+		return nil
+	case VolumeBackupResourceStatusDeleting:
+		*s = VolumeBackupResourceStatusDeleting
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -16192,128 +15271,6 @@ func (s *VolumeListResponseBody) SetItems(val []VolumeResource) {
 // SetPagination sets the value of Pagination.
 func (s *VolumeListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
-}
-
-// An operation still running on this volume. It is not a separate resource; once it finishes, the
-// volume's `operation` is null again and the volume shows the result.
-// Ref: #/components/schemas/VolumeOperation
-type VolumeOperation struct {
-	// `attach` and `detach` accompany the instance's `attach_volume` and `detach_volume` operations.
-	// `delete` includes release through a Billing cancellation and deletion with an instance.
-	Type      VolumeOperationType `json:"type"`
-	StartedAt time.Time           `json:"started_at"`
-}
-
-// GetType returns the value of Type.
-func (s *VolumeOperation) GetType() VolumeOperationType {
-	return s.Type
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *VolumeOperation) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// SetType sets the value of Type.
-func (s *VolumeOperation) SetType(val VolumeOperationType) {
-	s.Type = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *VolumeOperation) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-// `attach` and `detach` accompany the instance's `attach_volume` and `detach_volume` operations.
-// `delete` includes release through a Billing cancellation and deletion with an instance.
-type VolumeOperationType string
-
-const (
-	VolumeOperationTypeCreate  VolumeOperationType = "create"
-	VolumeOperationTypeResize  VolumeOperationType = "resize"
-	VolumeOperationTypeRetype  VolumeOperationType = "retype"
-	VolumeOperationTypeRevert  VolumeOperationType = "revert"
-	VolumeOperationTypeAttach  VolumeOperationType = "attach"
-	VolumeOperationTypeDetach  VolumeOperationType = "detach"
-	VolumeOperationTypeSuspend VolumeOperationType = "suspend"
-	VolumeOperationTypeResume  VolumeOperationType = "resume"
-	VolumeOperationTypeDelete  VolumeOperationType = "delete"
-)
-
-// AllValues returns all VolumeOperationType values.
-func (VolumeOperationType) AllValues() []VolumeOperationType {
-	return []VolumeOperationType{
-		VolumeOperationTypeCreate,
-		VolumeOperationTypeResize,
-		VolumeOperationTypeRetype,
-		VolumeOperationTypeRevert,
-		VolumeOperationTypeAttach,
-		VolumeOperationTypeDetach,
-		VolumeOperationTypeSuspend,
-		VolumeOperationTypeResume,
-		VolumeOperationTypeDelete,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s VolumeOperationType) MarshalText() ([]byte, error) {
-	switch s {
-	case VolumeOperationTypeCreate:
-		return []byte(s), nil
-	case VolumeOperationTypeResize:
-		return []byte(s), nil
-	case VolumeOperationTypeRetype:
-		return []byte(s), nil
-	case VolumeOperationTypeRevert:
-		return []byte(s), nil
-	case VolumeOperationTypeAttach:
-		return []byte(s), nil
-	case VolumeOperationTypeDetach:
-		return []byte(s), nil
-	case VolumeOperationTypeSuspend:
-		return []byte(s), nil
-	case VolumeOperationTypeResume:
-		return []byte(s), nil
-	case VolumeOperationTypeDelete:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *VolumeOperationType) UnmarshalText(data []byte) error {
-	switch VolumeOperationType(data) {
-	case VolumeOperationTypeCreate:
-		*s = VolumeOperationTypeCreate
-		return nil
-	case VolumeOperationTypeResize:
-		*s = VolumeOperationTypeResize
-		return nil
-	case VolumeOperationTypeRetype:
-		*s = VolumeOperationTypeRetype
-		return nil
-	case VolumeOperationTypeRevert:
-		*s = VolumeOperationTypeRevert
-		return nil
-	case VolumeOperationTypeAttach:
-		*s = VolumeOperationTypeAttach
-		return nil
-	case VolumeOperationTypeDetach:
-		*s = VolumeOperationTypeDetach
-		return nil
-	case VolumeOperationTypeSuspend:
-		*s = VolumeOperationTypeSuspend
-		return nil
-	case VolumeOperationTypeResume:
-		*s = VolumeOperationTypeResume
-		return nil
-	case VolumeOperationTypeDelete:
-		*s = VolumeOperationTypeDelete
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // A volume's limits.
@@ -16428,10 +15385,11 @@ type VolumeResource struct {
 	RegionID           RegionID           `json:"region_id"`
 	SizeGib            int64              `json:"size_gib"`
 	Performance        VolumePerformance  `json:"performance"`
-	// `pending` until the volume is created, with no storage allocated before the order is accepted and
-	// the `create` operation shown while it is created; then `available`, or `in_use` once attached.
-	// `failed` means the volume was not created; `failure_reason` states why. `error` means the cloud
-	// reports the volume broken.
+	// `pending` until the volume is created, with no storage allocated before the order is accepted; then
+	// `available`, or `in_use` once attached. `failed` means the volume was not created; `failure_reason`
+	// states why. `error` means the cloud reports the volume broken. A value naming an operation in
+	// progress (`resizing`, `retyping`, `reverting`, `attaching`, `detaching`, `suspending`, `resuming`,
+	// `deleting`) is shown while that operation runs; the volume refuses another operation until it ends.
 	Status VolumeResourceStatus `json:"status"`
 	// The Billing Checkout Session that bought this resource; `order_id` and `order_item_id` stay null
 	// until its checkout completes. Null when the resource was not bought through one.
@@ -16453,9 +15411,7 @@ type VolumeResource struct {
 	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
 	// order was accepted, and the charge for this volume is refunded.
 	FailureReason NilVolumeResourceFailureReason `json:"failure_reason"`
-	// The operation in progress on this volume, or null when none is.
-	Operation  NilVolumeOperation  `json:"operation"`
-	Attachment NilVolumeAttachment `json:"attachment"`
+	Attachment    NilVolumeAttachment            `json:"attachment"`
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
@@ -16536,11 +15492,6 @@ func (s *VolumeResource) GetAccessState() NilVolumeResourceAccessState {
 // GetFailureReason returns the value of FailureReason.
 func (s *VolumeResource) GetFailureReason() NilVolumeResourceFailureReason {
 	return s.FailureReason
-}
-
-// GetOperation returns the value of Operation.
-func (s *VolumeResource) GetOperation() NilVolumeOperation {
-	return s.Operation
 }
 
 // GetAttachment returns the value of Attachment.
@@ -16626,11 +15577,6 @@ func (s *VolumeResource) SetAccessState(val NilVolumeResourceAccessState) {
 // SetFailureReason sets the value of FailureReason.
 func (s *VolumeResource) SetFailureReason(val NilVolumeResourceFailureReason) {
 	s.FailureReason = val
-}
-
-// SetOperation sets the value of Operation.
-func (s *VolumeResource) SetOperation(val NilVolumeOperation) {
-	s.Operation = val
 }
 
 // SetAttachment sets the value of Attachment.
@@ -16762,19 +15708,28 @@ func (s *VolumeResourceFailureReason) UnmarshalText(data []byte) error {
 	}
 }
 
-// `pending` until the volume is created, with no storage allocated before the order is accepted and
-// the `create` operation shown while it is created; then `available`, or `in_use` once attached.
-// `failed` means the volume was not created; `failure_reason` states why. `error` means the cloud
-// reports the volume broken.
+// `pending` until the volume is created, with no storage allocated before the order is accepted; then
+// `available`, or `in_use` once attached. `failed` means the volume was not created; `failure_reason`
+// states why. `error` means the cloud reports the volume broken. A value naming an operation in
+// progress (`resizing`, `retyping`, `reverting`, `attaching`, `detaching`, `suspending`, `resuming`,
+// `deleting`) is shown while that operation runs; the volume refuses another operation until it ends.
 type VolumeResourceStatus string
 
 const (
-	VolumeResourceStatusPending   VolumeResourceStatus = "pending"
-	VolumeResourceStatusAvailable VolumeResourceStatus = "available"
-	VolumeResourceStatusInUse     VolumeResourceStatus = "in_use"
-	VolumeResourceStatusDeleted   VolumeResourceStatus = "deleted"
-	VolumeResourceStatusFailed    VolumeResourceStatus = "failed"
-	VolumeResourceStatusError     VolumeResourceStatus = "error"
+	VolumeResourceStatusPending    VolumeResourceStatus = "pending"
+	VolumeResourceStatusAvailable  VolumeResourceStatus = "available"
+	VolumeResourceStatusInUse      VolumeResourceStatus = "in_use"
+	VolumeResourceStatusDeleted    VolumeResourceStatus = "deleted"
+	VolumeResourceStatusFailed     VolumeResourceStatus = "failed"
+	VolumeResourceStatusError      VolumeResourceStatus = "error"
+	VolumeResourceStatusResizing   VolumeResourceStatus = "resizing"
+	VolumeResourceStatusRetyping   VolumeResourceStatus = "retyping"
+	VolumeResourceStatusReverting  VolumeResourceStatus = "reverting"
+	VolumeResourceStatusAttaching  VolumeResourceStatus = "attaching"
+	VolumeResourceStatusDetaching  VolumeResourceStatus = "detaching"
+	VolumeResourceStatusSuspending VolumeResourceStatus = "suspending"
+	VolumeResourceStatusResuming   VolumeResourceStatus = "resuming"
+	VolumeResourceStatusDeleting   VolumeResourceStatus = "deleting"
 )
 
 // AllValues returns all VolumeResourceStatus values.
@@ -16786,6 +15741,14 @@ func (VolumeResourceStatus) AllValues() []VolumeResourceStatus {
 		VolumeResourceStatusDeleted,
 		VolumeResourceStatusFailed,
 		VolumeResourceStatusError,
+		VolumeResourceStatusResizing,
+		VolumeResourceStatusRetyping,
+		VolumeResourceStatusReverting,
+		VolumeResourceStatusAttaching,
+		VolumeResourceStatusDetaching,
+		VolumeResourceStatusSuspending,
+		VolumeResourceStatusResuming,
+		VolumeResourceStatusDeleting,
 	}
 }
 
@@ -16803,6 +15766,22 @@ func (s VolumeResourceStatus) MarshalText() ([]byte, error) {
 	case VolumeResourceStatusFailed:
 		return []byte(s), nil
 	case VolumeResourceStatusError:
+		return []byte(s), nil
+	case VolumeResourceStatusResizing:
+		return []byte(s), nil
+	case VolumeResourceStatusRetyping:
+		return []byte(s), nil
+	case VolumeResourceStatusReverting:
+		return []byte(s), nil
+	case VolumeResourceStatusAttaching:
+		return []byte(s), nil
+	case VolumeResourceStatusDetaching:
+		return []byte(s), nil
+	case VolumeResourceStatusSuspending:
+		return []byte(s), nil
+	case VolumeResourceStatusResuming:
+		return []byte(s), nil
+	case VolumeResourceStatusDeleting:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -16829,6 +15808,30 @@ func (s *VolumeResourceStatus) UnmarshalText(data []byte) error {
 		return nil
 	case VolumeResourceStatusError:
 		*s = VolumeResourceStatusError
+		return nil
+	case VolumeResourceStatusResizing:
+		*s = VolumeResourceStatusResizing
+		return nil
+	case VolumeResourceStatusRetyping:
+		*s = VolumeResourceStatusRetyping
+		return nil
+	case VolumeResourceStatusReverting:
+		*s = VolumeResourceStatusReverting
+		return nil
+	case VolumeResourceStatusAttaching:
+		*s = VolumeResourceStatusAttaching
+		return nil
+	case VolumeResourceStatusDetaching:
+		*s = VolumeResourceStatusDetaching
+		return nil
+	case VolumeResourceStatusSuspending:
+		*s = VolumeResourceStatusSuspending
+		return nil
+	case VolumeResourceStatusResuming:
+		*s = VolumeResourceStatusResuming
+		return nil
+	case VolumeResourceStatusDeleting:
+		*s = VolumeResourceStatusDeleting
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -16861,86 +15864,6 @@ func (s *VolumeSnapshotListResponseBody) SetItems(val []VolumeSnapshotResource) 
 // SetPagination sets the value of Pagination.
 func (s *VolumeSnapshotListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
-}
-
-// An operation still running on this snapshot. It is not a separate resource; once it finishes, the
-// snapshot's `operation` is null again and the snapshot shows the result.
-// Ref: #/components/schemas/VolumeSnapshotOperation
-type VolumeSnapshotOperation struct {
-	// `restore`: a volume is being reverted to this snapshot (`revert-volume`) or created from it
-	// (`create-volume` with `volume_snapshot_id`).
-	Type      VolumeSnapshotOperationType `json:"type"`
-	StartedAt time.Time                   `json:"started_at"`
-}
-
-// GetType returns the value of Type.
-func (s *VolumeSnapshotOperation) GetType() VolumeSnapshotOperationType {
-	return s.Type
-}
-
-// GetStartedAt returns the value of StartedAt.
-func (s *VolumeSnapshotOperation) GetStartedAt() time.Time {
-	return s.StartedAt
-}
-
-// SetType sets the value of Type.
-func (s *VolumeSnapshotOperation) SetType(val VolumeSnapshotOperationType) {
-	s.Type = val
-}
-
-// SetStartedAt sets the value of StartedAt.
-func (s *VolumeSnapshotOperation) SetStartedAt(val time.Time) {
-	s.StartedAt = val
-}
-
-// `restore`: a volume is being reverted to this snapshot (`revert-volume`) or created from it
-// (`create-volume` with `volume_snapshot_id`).
-type VolumeSnapshotOperationType string
-
-const (
-	VolumeSnapshotOperationTypeCreate  VolumeSnapshotOperationType = "create"
-	VolumeSnapshotOperationTypeRestore VolumeSnapshotOperationType = "restore"
-	VolumeSnapshotOperationTypeDelete  VolumeSnapshotOperationType = "delete"
-)
-
-// AllValues returns all VolumeSnapshotOperationType values.
-func (VolumeSnapshotOperationType) AllValues() []VolumeSnapshotOperationType {
-	return []VolumeSnapshotOperationType{
-		VolumeSnapshotOperationTypeCreate,
-		VolumeSnapshotOperationTypeRestore,
-		VolumeSnapshotOperationTypeDelete,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s VolumeSnapshotOperationType) MarshalText() ([]byte, error) {
-	switch s {
-	case VolumeSnapshotOperationTypeCreate:
-		return []byte(s), nil
-	case VolumeSnapshotOperationTypeRestore:
-		return []byte(s), nil
-	case VolumeSnapshotOperationTypeDelete:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *VolumeSnapshotOperationType) UnmarshalText(data []byte) error {
-	switch VolumeSnapshotOperationType(data) {
-	case VolumeSnapshotOperationTypeCreate:
-		*s = VolumeSnapshotOperationTypeCreate
-		return nil
-	case VolumeSnapshotOperationTypeRestore:
-		*s = VolumeSnapshotOperationTypeRestore
-		return nil
-	case VolumeSnapshotOperationTypeDelete:
-		*s = VolumeSnapshotOperationTypeDelete
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // A resource a release set releases.
@@ -17031,12 +15954,12 @@ type VolumeSnapshotResource struct {
 	// Capacity of the source volume when the snapshot was created. A volume restored from it cannot be
 	// smaller.
 	SizeGib int64 `json:"size_gib"`
-	// `pending` once a quota slot is reserved and until the snapshot is taken, showing the `create`
-	// operation while it is taken; then `available`. `failed` means the snapshot was not created; its slot
-	// is released once no snapshot data remains. `error` means the cloud reports the snapshot broken.
+	// `pending` once a quota slot is reserved and until the snapshot is taken; then `available`. `failed`
+	// means the snapshot was not created; its slot is released once no snapshot data remains. `error`
+	// means the cloud reports the snapshot broken. A value naming an operation in progress (`restoring`,
+	// `deleting`) is shown while that operation runs; the snapshot refuses another operation until it
+	// ends.
 	Status VolumeSnapshotResourceStatus `json:"status"`
-	// The operation in progress on this snapshot, or null when none is.
-	Operation NilVolumeSnapshotOperation `json:"operation"`
 	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
 	// completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
 	// order was accepted, and the charge for this snapshot is refunded.
@@ -17094,11 +16017,6 @@ func (s *VolumeSnapshotResource) GetSizeGib() int64 {
 // GetStatus returns the value of Status.
 func (s *VolumeSnapshotResource) GetStatus() VolumeSnapshotResourceStatus {
 	return s.Status
-}
-
-// GetOperation returns the value of Operation.
-func (s *VolumeSnapshotResource) GetOperation() NilVolumeSnapshotOperation {
-	return s.Operation
 }
 
 // GetFailureReason returns the value of FailureReason.
@@ -17169,11 +16087,6 @@ func (s *VolumeSnapshotResource) SetSizeGib(val int64) {
 // SetStatus sets the value of Status.
 func (s *VolumeSnapshotResource) SetStatus(val VolumeSnapshotResourceStatus) {
 	s.Status = val
-}
-
-// SetOperation sets the value of Operation.
-func (s *VolumeSnapshotResource) SetOperation(val NilVolumeSnapshotOperation) {
-	s.Operation = val
 }
 
 // SetFailureReason sets the value of FailureReason.
@@ -17271,9 +16184,11 @@ func (s *VolumeSnapshotResourceFailureReason) UnmarshalText(data []byte) error {
 	}
 }
 
-// `pending` once a quota slot is reserved and until the snapshot is taken, showing the `create`
-// operation while it is taken; then `available`. `failed` means the snapshot was not created; its slot
-// is released once no snapshot data remains. `error` means the cloud reports the snapshot broken.
+// `pending` once a quota slot is reserved and until the snapshot is taken; then `available`. `failed`
+// means the snapshot was not created; its slot is released once no snapshot data remains. `error`
+// means the cloud reports the snapshot broken. A value naming an operation in progress (`restoring`,
+// `deleting`) is shown while that operation runs; the snapshot refuses another operation until it
+// ends.
 type VolumeSnapshotResourceStatus string
 
 const (
@@ -17282,6 +16197,8 @@ const (
 	VolumeSnapshotResourceStatusDeleted   VolumeSnapshotResourceStatus = "deleted"
 	VolumeSnapshotResourceStatusFailed    VolumeSnapshotResourceStatus = "failed"
 	VolumeSnapshotResourceStatusError     VolumeSnapshotResourceStatus = "error"
+	VolumeSnapshotResourceStatusRestoring VolumeSnapshotResourceStatus = "restoring"
+	VolumeSnapshotResourceStatusDeleting  VolumeSnapshotResourceStatus = "deleting"
 )
 
 // AllValues returns all VolumeSnapshotResourceStatus values.
@@ -17292,6 +16209,8 @@ func (VolumeSnapshotResourceStatus) AllValues() []VolumeSnapshotResourceStatus {
 		VolumeSnapshotResourceStatusDeleted,
 		VolumeSnapshotResourceStatusFailed,
 		VolumeSnapshotResourceStatusError,
+		VolumeSnapshotResourceStatusRestoring,
+		VolumeSnapshotResourceStatusDeleting,
 	}
 }
 
@@ -17307,6 +16226,10 @@ func (s VolumeSnapshotResourceStatus) MarshalText() ([]byte, error) {
 	case VolumeSnapshotResourceStatusFailed:
 		return []byte(s), nil
 	case VolumeSnapshotResourceStatusError:
+		return []byte(s), nil
+	case VolumeSnapshotResourceStatusRestoring:
+		return []byte(s), nil
+	case VolumeSnapshotResourceStatusDeleting:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -17330,6 +16253,12 @@ func (s *VolumeSnapshotResourceStatus) UnmarshalText(data []byte) error {
 		return nil
 	case VolumeSnapshotResourceStatusError:
 		*s = VolumeSnapshotResourceStatusError
+		return nil
+	case VolumeSnapshotResourceStatusRestoring:
+		*s = VolumeSnapshotResourceStatusRestoring
+		return nil
+	case VolumeSnapshotResourceStatusDeleting:
+		*s = VolumeSnapshotResourceStatusDeleting
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
