@@ -10,7 +10,7 @@ import (
 )
 
 // Bounded catalog snapshot for one requested region. Incomplete or unavailable price information is
-// not a purchasable offer.
+// not a purchasable offer. Provider plan IDs are unique regardless of the number of billing periods.
 // Ref: #/components/schemas/Catalog
 type Catalog struct {
 	Items []Plan `json:"items"`
@@ -1382,6 +1382,52 @@ func (s *OffsetPagination) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
+// NewOptBool returns new OptBool with value set to v.
+func NewOptBool(v bool) OptBool {
+	return OptBool{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptBool is optional bool.
+type OptBool struct {
+	Value bool
+	Set   bool
+}
+
+// IsSet returns true if OptBool was set.
+func (o OptBool) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptBool) Reset() {
+	var v bool
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptBool) SetTo(v bool) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptBool) Get() (v bool, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptBool) Or(d bool) bool {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptErrorStatusMetadata returns new OptErrorStatusMetadata with value set to v.
 func NewOptErrorStatusMetadata(v ErrorStatusMetadata) OptErrorStatusMetadata {
 	return OptErrorStatusMetadata{
@@ -1568,16 +1614,22 @@ func (o OptString) Or(d string) string {
 
 // Ref: #/components/schemas/Plan
 type Plan struct {
-	ProviderPlanID  string   `json:"provider_plan_id"`
-	RegionID        string   `json:"region_id"`
-	Name            string   `json:"name"`
-	CatalogRevision int      `json:"catalog_revision"`
-	Buyable         bool     `json:"buyable"`
-	Price           NilPrice `json:"price"`
-	ImageIds        []string `json:"image_ids"`
-	CPU             int      `json:"cpu"`
-	MemoryMB        int      `json:"memory_mb"`
-	DiskGB          int      `json:"disk_gb"`
+	ProviderPlanID  string `json:"provider_plan_id"`
+	RegionID        string `json:"region_id"`
+	Name            string `json:"name"`
+	CatalogRevision int    `json:"catalog_revision"`
+	Buyable         bool   `json:"buyable"`
+	// The existing default price representation. Its availability and the buyable field are unchanged by
+	// include_prices; clients using price retain the same default billing period.
+	Price NilPrice `json:"price"`
+	// Present only when include_prices=true. Contains all currently verified billing-period options,
+	// ordered by period_months. Billing price IDs and billing periods are each unique within a plan. An
+	// empty array means no verified option is available. It does not make the default price buyable.
+	Prices   []PriceOption `json:"prices"`
+	ImageIds []string      `json:"image_ids"`
+	CPU      int           `json:"cpu"`
+	MemoryMB int           `json:"memory_mb"`
+	DiskGB   int           `json:"disk_gb"`
 }
 
 // GetProviderPlanID returns the value of ProviderPlanID.
@@ -1608,6 +1660,11 @@ func (s *Plan) GetBuyable() bool {
 // GetPrice returns the value of Price.
 func (s *Plan) GetPrice() NilPrice {
 	return s.Price
+}
+
+// GetPrices returns the value of Prices.
+func (s *Plan) GetPrices() []PriceOption {
+	return s.Prices
 }
 
 // GetImageIds returns the value of ImageIds.
@@ -1658,6 +1715,11 @@ func (s *Plan) SetBuyable(val bool) {
 // SetPrice sets the value of Price.
 func (s *Plan) SetPrice(val NilPrice) {
 	s.Price = val
+}
+
+// SetPrices sets the value of Prices.
+func (s *Plan) SetPrices(val []PriceOption) {
+	s.Prices = val
 }
 
 // SetImageIds sets the value of ImageIds.
@@ -1737,6 +1799,93 @@ func (s *Price) SetAmount(val DecimalAmount) {
 // SetPeriodMonths sets the value of PeriodMonths.
 func (s *Price) SetPeriodMonths(val NilPricePeriodMonths) {
 	s.PeriodMonths = val
+}
+
+// A verified price option for one billing period. Its Billing price must currently be available, use
+// period-end cancellation without an automatic refund, and match this provider plan and region.
+// Archived snapshots, unknown periods and unverified prices are excluded. Selection does not bypass
+// current permissions, quote checks or disabled purchase controls. IDs and amounts are authoritative
+// only after server revalidation.
+// Ref: #/components/schemas/PriceOption
+type PriceOption struct {
+	BillingPlanID  uuid.UUID               `json:"billing_plan_id"`
+	BillingPriceID uuid.UUID               `json:"billing_price_id"`
+	Currency       string                  `json:"currency"`
+	Amount         DecimalAmount           `json:"amount"`
+	PeriodMonths   PriceOptionPeriodMonths `json:"period_months"`
+}
+
+// GetBillingPlanID returns the value of BillingPlanID.
+func (s *PriceOption) GetBillingPlanID() uuid.UUID {
+	return s.BillingPlanID
+}
+
+// GetBillingPriceID returns the value of BillingPriceID.
+func (s *PriceOption) GetBillingPriceID() uuid.UUID {
+	return s.BillingPriceID
+}
+
+// GetCurrency returns the value of Currency.
+func (s *PriceOption) GetCurrency() string {
+	return s.Currency
+}
+
+// GetAmount returns the value of Amount.
+func (s *PriceOption) GetAmount() DecimalAmount {
+	return s.Amount
+}
+
+// GetPeriodMonths returns the value of PeriodMonths.
+func (s *PriceOption) GetPeriodMonths() PriceOptionPeriodMonths {
+	return s.PeriodMonths
+}
+
+// SetBillingPlanID sets the value of BillingPlanID.
+func (s *PriceOption) SetBillingPlanID(val uuid.UUID) {
+	s.BillingPlanID = val
+}
+
+// SetBillingPriceID sets the value of BillingPriceID.
+func (s *PriceOption) SetBillingPriceID(val uuid.UUID) {
+	s.BillingPriceID = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *PriceOption) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *PriceOption) SetAmount(val DecimalAmount) {
+	s.Amount = val
+}
+
+// SetPeriodMonths sets the value of PeriodMonths.
+func (s *PriceOption) SetPeriodMonths(val PriceOptionPeriodMonths) {
+	s.PeriodMonths = val
+}
+
+type PriceOptionPeriodMonths int
+
+const (
+	PriceOptionPeriodMonths1  PriceOptionPeriodMonths = 1
+	PriceOptionPeriodMonths3  PriceOptionPeriodMonths = 3
+	PriceOptionPeriodMonths6  PriceOptionPeriodMonths = 6
+	PriceOptionPeriodMonths12 PriceOptionPeriodMonths = 12
+	PriceOptionPeriodMonths24 PriceOptionPeriodMonths = 24
+	PriceOptionPeriodMonths36 PriceOptionPeriodMonths = 36
+)
+
+// AllValues returns all PriceOptionPeriodMonths values.
+func (PriceOptionPeriodMonths) AllValues() []PriceOptionPeriodMonths {
+	return []PriceOptionPeriodMonths{
+		PriceOptionPeriodMonths1,
+		PriceOptionPeriodMonths3,
+		PriceOptionPeriodMonths6,
+		PriceOptionPeriodMonths12,
+		PriceOptionPeriodMonths24,
+		PriceOptionPeriodMonths36,
+	}
 }
 
 type PricePeriodMonths int
@@ -1828,13 +1977,17 @@ func (*Purchase) getPurchaseRes()    {}
 
 // Ref: #/components/schemas/PurchaseCreate
 type PurchaseCreate struct {
-	CatalogRevision int           `json:"catalog_revision"`
-	ProviderPlanID  string        `json:"provider_plan_id"`
-	BillingPriceID  uuid.UUID     `json:"billing_price_id"`
-	ImageID         string        `json:"image_id"`
-	Quantity        int           `json:"quantity"`
-	ExpectedQuote   ExpectedQuote `json:"expected_quote"`
-	RegionID        string        `json:"region_id"`
+	CatalogRevision int    `json:"catalog_revision"`
+	ProviderPlanID  string `json:"provider_plan_id"`
+	// Selects a price from the requested plan and current catalog revision. The server resolves its
+	// immutable Billing terms, billing period and ownership; the client does not set the billing period.
+	BillingPriceID uuid.UUID `json:"billing_price_id"`
+	ImageID        string    `json:"image_id"`
+	Quantity       int       `json:"quantity"`
+	// An assertion about the displayed quote, not an authoritative amount. The server obtains a new
+	// Billing quote and rejects a mismatch before accepting a purchase.
+	ExpectedQuote ExpectedQuote `json:"expected_quote"`
+	RegionID      string        `json:"region_id"`
 }
 
 // GetCatalogRevision returns the value of CatalogRevision.

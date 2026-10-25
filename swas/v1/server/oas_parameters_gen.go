@@ -700,6 +700,9 @@ func decodeListInstancesParams(args [0]string, argsEscaped bool, r *http.Request
 // ListPlansParams is parameters of list-plans operation.
 type ListPlansParams struct {
 	RegionID string
+	// Set to true to include all verified billing-period price options. When false or omitted, the
+	// response omits prices and preserves the default price representation.
+	IncludePrices OptBool `json:",omitempty,omitzero"`
 }
 
 func unpackListPlansParams(packed middleware.Parameters) (params ListPlansParams) {
@@ -709,6 +712,15 @@ func unpackListPlansParams(packed middleware.Parameters) (params ListPlansParams
 			In:   "query",
 		}
 		params.RegionID = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "include_prices",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.IncludePrices = v.(OptBool)
+		}
 	}
 	return params
 }
@@ -767,6 +779,52 @@ func decodeListPlansParams(args [0]string, argsEscaped bool, r *http.Request) (p
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "region_id",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: include_prices.
+	{
+		val := bool(false)
+		params.IncludePrices.SetTo(val)
+	}
+	// Decode query: include_prices.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "include_prices",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotIncludePricesVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotIncludePricesVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.IncludePrices.SetTo(paramsDotIncludePricesVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "include_prices",
 			In:   "query",
 			Err:  err,
 		}
