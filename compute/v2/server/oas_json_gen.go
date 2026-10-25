@@ -26604,6 +26604,8 @@ func (s *VirtualPrivateCloudPeeringResourceStatus) Decode(d *jx.Decoder) error {
 		*s = VirtualPrivateCloudPeeringResourceStatusFailed
 	case VirtualPrivateCloudPeeringResourceStatusProvisioning:
 		*s = VirtualPrivateCloudPeeringResourceStatusProvisioning
+	case VirtualPrivateCloudPeeringResourceStatusDeleting:
+		*s = VirtualPrivateCloudPeeringResourceStatusDeleting
 	default:
 		*s = VirtualPrivateCloudPeeringResourceStatus(v)
 	}

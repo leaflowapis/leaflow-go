@@ -13903,7 +13903,8 @@ type VirtualPrivateCloudPeeringResource struct {
 	Acceptance VirtualPrivateCloudPeeringResourceAcceptance `json:"acceptance"`
 	// `pending` until the connectivity exists: while acceptance is pending, and after it is accepted while
 	// the link is built (`provisioning`). Then `active`. `failed` means the link could not be built;
-	// `failure_reason` states why. `deleted` once deleted or rejected.
+	// `failure_reason` states why. `deleted` once deleted or rejected. `deleting` runs until the link and
+	// its peer routes are gone.
 	Status    VirtualPrivateCloudPeeringResourceStatus `json:"status"`
 	CreatedAt time.Time                                `json:"created_at"`
 	// Why provisioning failed; null unless `status` is `failed`.
@@ -14077,7 +14078,8 @@ func (s *VirtualPrivateCloudPeeringResourceAcceptance) UnmarshalText(data []byte
 
 // `pending` until the connectivity exists: while acceptance is pending, and after it is accepted while
 // the link is built (`provisioning`). Then `active`. `failed` means the link could not be built;
-// `failure_reason` states why. `deleted` once deleted or rejected.
+// `failure_reason` states why. `deleted` once deleted or rejected. `deleting` runs until the link and
+// its peer routes are gone.
 type VirtualPrivateCloudPeeringResourceStatus string
 
 const (
@@ -14086,6 +14088,7 @@ const (
 	VirtualPrivateCloudPeeringResourceStatusDeleted      VirtualPrivateCloudPeeringResourceStatus = "deleted"
 	VirtualPrivateCloudPeeringResourceStatusFailed       VirtualPrivateCloudPeeringResourceStatus = "failed"
 	VirtualPrivateCloudPeeringResourceStatusProvisioning VirtualPrivateCloudPeeringResourceStatus = "provisioning"
+	VirtualPrivateCloudPeeringResourceStatusDeleting     VirtualPrivateCloudPeeringResourceStatus = "deleting"
 )
 
 // AllValues returns all VirtualPrivateCloudPeeringResourceStatus values.
@@ -14096,6 +14099,7 @@ func (VirtualPrivateCloudPeeringResourceStatus) AllValues() []VirtualPrivateClou
 		VirtualPrivateCloudPeeringResourceStatusDeleted,
 		VirtualPrivateCloudPeeringResourceStatusFailed,
 		VirtualPrivateCloudPeeringResourceStatusProvisioning,
+		VirtualPrivateCloudPeeringResourceStatusDeleting,
 	}
 }
 
@@ -14111,6 +14115,8 @@ func (s VirtualPrivateCloudPeeringResourceStatus) MarshalText() ([]byte, error) 
 	case VirtualPrivateCloudPeeringResourceStatusFailed:
 		return []byte(s), nil
 	case VirtualPrivateCloudPeeringResourceStatusProvisioning:
+		return []byte(s), nil
+	case VirtualPrivateCloudPeeringResourceStatusDeleting:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -14134,6 +14140,9 @@ func (s *VirtualPrivateCloudPeeringResourceStatus) UnmarshalText(data []byte) er
 		return nil
 	case VirtualPrivateCloudPeeringResourceStatusProvisioning:
 		*s = VirtualPrivateCloudPeeringResourceStatusProvisioning
+		return nil
+	case VirtualPrivateCloudPeeringResourceStatusDeleting:
+		*s = VirtualPrivateCloudPeeringResourceStatusDeleting
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)

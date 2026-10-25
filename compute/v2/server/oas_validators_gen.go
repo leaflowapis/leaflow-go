@@ -9173,6 +9173,8 @@ func (s VirtualPrivateCloudPeeringResourceStatus) Validate() error {
 		return nil
 	case "provisioning":
 		return nil
+	case "deleting":
+		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}
