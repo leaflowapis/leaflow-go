@@ -615,6 +615,45 @@ func (s *Plan) Validate() error {
 		})
 	}
 	if err := func() error {
+		if s.Prices == nil {
+			return nil // optional
+		}
+		if err := (validate.Array{
+			MinLength:    0,
+			MinLengthSet: true,
+			MaxLength:    6,
+			MaxLengthSet: true,
+		}).ValidateLength(len(s.Prices)); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		if err := validateUniquePriceOption(s.Prices); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.Prices {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "prices",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if s.ImageIds == nil {
 			return errors.New("nil is invalid value")
 		}
@@ -741,6 +780,59 @@ func (s *Price) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s *PriceOption) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Amount.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "amount",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.PeriodMonths.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "period_months",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s PriceOptionPeriodMonths) Validate() error {
+	switch s {
+	case 1:
+		return nil
+	case 3:
+		return nil
+	case 6:
+		return nil
+	case 12:
+		return nil
+	case 24:
+		return nil
+	case 36:
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s PricePeriodMonths) Validate() error {
