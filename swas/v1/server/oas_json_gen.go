@@ -2654,8 +2654,10 @@ func (s *InstancePrice) encodeFields(e *jx.Encoder) {
 		e.Str("USD")
 	}
 	{
-		e.FieldStart("amount")
-		s.Amount.Encode(e)
+		if s.Amount.Set {
+			e.FieldStart("amount")
+			s.Amount.Encode(e)
+		}
 	}
 	{
 		e.FieldStart("period_months")
@@ -2691,8 +2693,8 @@ func (s *InstancePrice) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"currency\"")
 			}
 		case "amount":
-			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
+				s.Amount.Reset()
 				if err := s.Amount.Decode(d); err != nil {
 					return err
 				}
@@ -2720,7 +2722,7 @@ func (s *InstancePrice) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000111,
+		0b00000101,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

@@ -307,8 +307,15 @@ func (s *InstancePrice) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if err := s.Amount.Validate(); err != nil {
-			return err
+		if value, ok := s.Amount.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		}
 		return nil
 	}(); err != nil {

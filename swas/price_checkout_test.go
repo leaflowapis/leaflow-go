@@ -75,3 +75,24 @@ func TestPriceMetadataMayOmitAmount(t *testing.T) {
 	}
 	t.Log("Price identity and period validate without quote amount")
 }
+
+func TestPriceOnlyInstanceOmitsHistoricalAmount(t *testing.T) {
+	var value api.InstancePrice
+	if err := json.Unmarshal([]byte(`{"currency":"USD","period_months":12}`), &value); err != nil {
+		t.Fatal(err)
+	}
+	if err := value.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	if value.Amount.Set {
+		t.Fatal("unknown historical price became an amount")
+	}
+	raw, err := json.Marshal(&value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(raw), `"amount"`) {
+		t.Fatalf("unknown amount exposed: %s", raw)
+	}
+	t.Log("instance period retained; unavailable historical amount omitted, not zero")
+}

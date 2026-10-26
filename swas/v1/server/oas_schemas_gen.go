@@ -733,8 +733,9 @@ func (s *InstanceObservation) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/InstancePrice
 type InstancePrice struct {
-	Currency     string                    `json:"currency"`
-	Amount       DecimalAmount             `json:"amount"`
+	Currency string `json:"currency"`
+	// Historical display metadata only. Price-only purchases omit this field; use Billing for quotes.
+	Amount       OptDecimalAmount          `json:"amount"`
 	PeriodMonths InstancePricePeriodMonths `json:"period_months"`
 }
 
@@ -744,7 +745,7 @@ func (s *InstancePrice) GetCurrency() string {
 }
 
 // GetAmount returns the value of Amount.
-func (s *InstancePrice) GetAmount() DecimalAmount {
+func (s *InstancePrice) GetAmount() OptDecimalAmount {
 	return s.Amount
 }
 
@@ -759,7 +760,7 @@ func (s *InstancePrice) SetCurrency(val string) {
 }
 
 // SetAmount sets the value of Amount.
-func (s *InstancePrice) SetAmount(val DecimalAmount) {
+func (s *InstancePrice) SetAmount(val OptDecimalAmount) {
 	s.Amount = val
 }
 
