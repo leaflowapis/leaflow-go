@@ -263,32 +263,6 @@ func (s *ErrorStatusMetadata) init() ErrorStatusMetadata {
 	return m
 }
 
-// Ref: #/components/schemas/ExpectedQuote
-type ExpectedQuote struct {
-	Currency string        `json:"currency"`
-	Amount   DecimalAmount `json:"amount"`
-}
-
-// GetCurrency returns the value of Currency.
-func (s *ExpectedQuote) GetCurrency() string {
-	return s.Currency
-}
-
-// GetAmount returns the value of Amount.
-func (s *ExpectedQuote) GetAmount() DecimalAmount {
-	return s.Amount
-}
-
-// SetCurrency sets the value of Currency.
-func (s *ExpectedQuote) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// SetAmount sets the value of Amount.
-func (s *ExpectedQuote) SetAmount(val DecimalAmount) {
-	s.Amount = val
-}
-
 // Ref: #/components/schemas/FieldViolation
 type FieldViolation struct {
 	// The path to the rejected field in the request body, such as `items[2].price_id`.
@@ -759,8 +733,9 @@ func (s *InstanceObservation) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/InstancePrice
 type InstancePrice struct {
-	Currency     string                    `json:"currency"`
-	Amount       DecimalAmount             `json:"amount"`
+	Currency string `json:"currency"`
+	// Historical display metadata only. Price-only purchases omit this field; use Billing for quotes.
+	Amount       OptDecimalAmount          `json:"amount"`
 	PeriodMonths InstancePricePeriodMonths `json:"period_months"`
 }
 
@@ -770,7 +745,7 @@ func (s *InstancePrice) GetCurrency() string {
 }
 
 // GetAmount returns the value of Amount.
-func (s *InstancePrice) GetAmount() DecimalAmount {
+func (s *InstancePrice) GetAmount() OptDecimalAmount {
 	return s.Amount
 }
 
@@ -785,7 +760,7 @@ func (s *InstancePrice) SetCurrency(val string) {
 }
 
 // SetAmount sets the value of Amount.
-func (s *InstancePrice) SetAmount(val DecimalAmount) {
+func (s *InstancePrice) SetAmount(val OptDecimalAmount) {
 	s.Amount = val
 }
 
@@ -1428,6 +1403,52 @@ func (o OptBool) Or(d bool) bool {
 	return d
 }
 
+// NewOptDecimalAmount returns new OptDecimalAmount with value set to v.
+func NewOptDecimalAmount(v DecimalAmount) OptDecimalAmount {
+	return OptDecimalAmount{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptDecimalAmount is optional DecimalAmount.
+type OptDecimalAmount struct {
+	Value DecimalAmount
+	Set   bool
+}
+
+// IsSet returns true if OptDecimalAmount was set.
+func (o OptDecimalAmount) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptDecimalAmount) Reset() {
+	var v DecimalAmount
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptDecimalAmount) SetTo(v DecimalAmount) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptDecimalAmount) Get() (v DecimalAmount, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptDecimalAmount) Or(d DecimalAmount) DecimalAmount {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptErrorStatusMetadata returns new OptErrorStatusMetadata with value set to v.
 func NewOptErrorStatusMetadata(v ErrorStatusMetadata) OptErrorStatusMetadata {
 	return OptErrorStatusMetadata{
@@ -1744,11 +1765,12 @@ func (s *Plan) SetDiskGB(val int) {
 
 // Ref: #/components/schemas/Price
 type Price struct {
-	BillingPlanID  uuid.UUID            `json:"billing_plan_id"`
-	BillingPriceID uuid.UUID            `json:"billing_price_id"`
-	Currency       string               `json:"currency"`
-	Amount         DecimalAmount        `json:"amount"`
-	PeriodMonths   NilPricePeriodMonths `json:"period_months"`
+	BillingPlanID  uuid.UUID `json:"billing_plan_id"`
+	BillingPriceID uuid.UUID `json:"billing_price_id"`
+	Currency       string    `json:"currency"`
+	// Historical display metadata only. New responses omit this field; use Billing for quotes.
+	Amount       OptDecimalAmount     `json:"amount"`
+	PeriodMonths NilPricePeriodMonths `json:"period_months"`
 }
 
 // GetBillingPlanID returns the value of BillingPlanID.
@@ -1767,7 +1789,7 @@ func (s *Price) GetCurrency() string {
 }
 
 // GetAmount returns the value of Amount.
-func (s *Price) GetAmount() DecimalAmount {
+func (s *Price) GetAmount() OptDecimalAmount {
 	return s.Amount
 }
 
@@ -1792,7 +1814,7 @@ func (s *Price) SetCurrency(val string) {
 }
 
 // SetAmount sets the value of Amount.
-func (s *Price) SetAmount(val DecimalAmount) {
+func (s *Price) SetAmount(val OptDecimalAmount) {
 	s.Amount = val
 }
 
@@ -1804,15 +1826,16 @@ func (s *Price) SetPeriodMonths(val NilPricePeriodMonths) {
 // A verified price option for one billing period. Its Billing price must currently be available, use
 // period-end cancellation without an automatic refund, and match this provider plan and region.
 // Archived snapshots, unknown periods and unverified prices are excluded. Selection does not bypass
-// current permissions, quote checks or disabled purchase controls. IDs and amounts are authoritative
-// only after server revalidation.
+// current permissions, Price validation or disabled purchase controls. Billing owns quotes and
+// checkout amounts.
 // Ref: #/components/schemas/PriceOption
 type PriceOption struct {
-	BillingPlanID  uuid.UUID               `json:"billing_plan_id"`
-	BillingPriceID uuid.UUID               `json:"billing_price_id"`
-	Currency       string                  `json:"currency"`
-	Amount         DecimalAmount           `json:"amount"`
-	PeriodMonths   PriceOptionPeriodMonths `json:"period_months"`
+	BillingPlanID  uuid.UUID `json:"billing_plan_id"`
+	BillingPriceID uuid.UUID `json:"billing_price_id"`
+	Currency       string    `json:"currency"`
+	// Historical display metadata only. New responses omit this field; use Billing for quotes.
+	Amount       OptDecimalAmount        `json:"amount"`
+	PeriodMonths PriceOptionPeriodMonths `json:"period_months"`
 }
 
 // GetBillingPlanID returns the value of BillingPlanID.
@@ -1831,7 +1854,7 @@ func (s *PriceOption) GetCurrency() string {
 }
 
 // GetAmount returns the value of Amount.
-func (s *PriceOption) GetAmount() DecimalAmount {
+func (s *PriceOption) GetAmount() OptDecimalAmount {
 	return s.Amount
 }
 
@@ -1856,7 +1879,7 @@ func (s *PriceOption) SetCurrency(val string) {
 }
 
 // SetAmount sets the value of Amount.
-func (s *PriceOption) SetAmount(val DecimalAmount) {
+func (s *PriceOption) SetAmount(val OptDecimalAmount) {
 	s.Amount = val
 }
 
@@ -1911,8 +1934,10 @@ func (PricePeriodMonths) AllValues() []PricePeriodMonths {
 	}
 }
 
-// Durable purchase progress. delivered and billing_settled describe different facts. Acceptance is not
-// cloud delivery or checkout completion.
+// Durable purchase progress. The checkout_session_id identifies the Billing session for user quote,
+// confirmation and payment. It is not ready while checkout creation is pending. SWAS does not quote or
+// charge automatically. delivered and billing_settled describe different facts; acceptance is not
+// delivery.
 // Ref: #/components/schemas/Purchase
 type Purchase struct {
 	ID                uuid.UUID     `json:"id"`
@@ -1981,13 +2006,11 @@ type PurchaseCreate struct {
 	ProviderPlanID  string `json:"provider_plan_id"`
 	// Selects a price from the requested plan and current catalog revision. The server resolves its
 	// immutable Billing terms, billing period and ownership; the client does not set the billing period.
+	// SWAS validates the Price selection only. Billing owns quotes, checkout confirmation and payment.
 	BillingPriceID uuid.UUID `json:"billing_price_id"`
 	ImageID        string    `json:"image_id"`
 	Quantity       int       `json:"quantity"`
-	// An assertion about the displayed quote, not an authoritative amount. The server obtains a new
-	// Billing quote and rejects a mismatch before accepting a purchase.
-	ExpectedQuote ExpectedQuote `json:"expected_quote"`
-	RegionID      string        `json:"region_id"`
+	RegionID       string    `json:"region_id"`
 }
 
 // GetCatalogRevision returns the value of CatalogRevision.
@@ -2013,11 +2036,6 @@ func (s *PurchaseCreate) GetImageID() string {
 // GetQuantity returns the value of Quantity.
 func (s *PurchaseCreate) GetQuantity() int {
 	return s.Quantity
-}
-
-// GetExpectedQuote returns the value of ExpectedQuote.
-func (s *PurchaseCreate) GetExpectedQuote() ExpectedQuote {
-	return s.ExpectedQuote
 }
 
 // GetRegionID returns the value of RegionID.
@@ -2048,11 +2066,6 @@ func (s *PurchaseCreate) SetImageID(val string) {
 // SetQuantity sets the value of Quantity.
 func (s *PurchaseCreate) SetQuantity(val int) {
 	s.Quantity = val
-}
-
-// SetExpectedQuote sets the value of ExpectedQuote.
-func (s *PurchaseCreate) SetExpectedQuote(val ExpectedQuote) {
-	s.ExpectedQuote = val
 }
 
 // SetRegionID sets the value of RegionID.

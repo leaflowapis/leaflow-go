@@ -23,8 +23,14 @@ func (a PriceOption) Equal(b PriceOption, depth int) bool {
 	if a.Currency != b.Currency {
 		return false
 	}
-	if a.Amount != b.Amount {
+	// Compare optional field: Amount
+	if a.Amount.Set != b.Amount.Set {
 		return false
+	}
+	if a.Amount.Set {
+		if a.Amount.Value != b.Amount.Value {
+			return false
+		}
 	}
 	if a.PeriodMonths != b.PeriodMonths {
 		return false
