@@ -18,8 +18,13 @@ func (a PriceOption) Hash() uint64 {
 	h.Write([]byte(fmt.Sprintf("%v", a.BillingPriceID)))
 	// Hash primitive field: Currency
 	h.Write([]byte(fmt.Sprintf("%v", a.Currency)))
-	// Hash primitive field: Amount
-	h.Write([]byte(fmt.Sprintf("%v", a.Amount)))
+	// Hash optional field: Amount
+	if a.Amount.Set {
+		h.Write([]byte{1})
+		h.Write([]byte(fmt.Sprintf("%v", a.Amount.Value)))
+	} else {
+		h.Write([]byte{0})
+	}
 	// Hash primitive field: PeriodMonths
 	h.Write([]byte(fmt.Sprintf("%v", a.PeriodMonths)))
 	return h.Sum64()

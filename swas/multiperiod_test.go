@@ -66,7 +66,7 @@ func TestMultiPeriodPlanOptionalPrices(t *testing.T) {
 	if err := json.Unmarshal(b, &decoded); err != nil {
 		t.Fatal(err)
 	}
-	if len(decoded.Prices) != 1 || decoded.Prices[0].PeriodMonths != 36 || decoded.Prices[0].Amount != "10.01" {
+	if len(decoded.Prices) != 1 || decoded.Prices[0].PeriodMonths != 36 || decoded.Prices[0].Amount.Value != "10.01" || !decoded.Prices[0].Amount.Set {
 		t.Fatalf("option roundtrip: %+v", decoded.Prices)
 	}
 	for _, bad := range []string{`"period_months":2`, `"period_months":null`} {
