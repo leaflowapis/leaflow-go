@@ -1193,8 +1193,9 @@ func (s *Server) handleListInstancesRequest(args [0]string, argsEscaped bool, w 
 
 // handleListPlansRequest handles list-plans operation.
 //
-// Lists available plans and prices for the requested region. A plan without a price is not available
-// to buy.
+// Lists one plan per provider plan ID in the requested region. The default response preserves the
+// single price and buyable fields. With include_prices=true, plans also contain verified price options
+// for explicit billing-period selection. Archived snapshot prices are never offered for purchase.
 //
 // GET /api/v1/catalog/plans
 func (s *Server) handleListPlansRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1339,6 +1340,10 @@ func (s *Server) handleListPlansRequest(args [0]string, argsEscaped bool, w http
 					Name: "region_id",
 					In:   "query",
 				}: params.RegionID,
+				{
+					Name: "include_prices",
+					In:   "query",
+				}: params.IncludePrices,
 			},
 			Raw: r,
 		}

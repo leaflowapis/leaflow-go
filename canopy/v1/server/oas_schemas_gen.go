@@ -236,7 +236,9 @@ type APIKeyUsageResource struct {
 	InputTokens      int64     `json:"input_tokens"`
 	OutputTokens     int64     `json:"output_tokens"`
 	ReasoningTokens  int64     `json:"reasoning_tokens"`
-	Requests         int64     `json:"requests"`
+	// Media quantities and their rate dimensions. Null when this range has no media usage.
+	Media    OptNilMediaUsage `json:"media"`
+	Requests int64            `json:"requests"`
 }
 
 // GetAPIKeyID returns the value of APIKeyID.
@@ -267,6 +269,11 @@ func (s *APIKeyUsageResource) GetOutputTokens() int64 {
 // GetReasoningTokens returns the value of ReasoningTokens.
 func (s *APIKeyUsageResource) GetReasoningTokens() int64 {
 	return s.ReasoningTokens
+}
+
+// GetMedia returns the value of Media.
+func (s *APIKeyUsageResource) GetMedia() OptNilMediaUsage {
+	return s.Media
 }
 
 // GetRequests returns the value of Requests.
@@ -304,9 +311,79 @@ func (s *APIKeyUsageResource) SetReasoningTokens(val int64) {
 	s.ReasoningTokens = val
 }
 
+// SetMedia sets the value of Media.
+func (s *APIKeyUsageResource) SetMedia(val OptNilMediaUsage) {
+	s.Media = val
+}
+
 // SetRequests sets the value of Requests.
 func (s *APIKeyUsageResource) SetRequests(val int64) {
 	s.Requests = val
+}
+
+// The audio parameters this endpoint accepts.
+// Ref: #/components/schemas/AudioCapabilities
+type AudioCapabilities struct {
+	// Voices the speech endpoint accepts. Empty for transcription endpoints. Null means unknown.
+	Voices []string `json:"voices"`
+	// Audio container or codec values the endpoint accepts. Null means unknown.
+	Formats []string `json:"formats"`
+	// Response formats the transcription endpoint accepts, such as json or srt. Null means unknown.
+	ResponseFormats []string `json:"response_formats"`
+	// The largest upload the endpoint accepts, in bytes. Null means unknown.
+	MaxInputBytes NilInt64 `json:"max_input_bytes"`
+	// Whether the endpoint can stream its response. Null means unknown.
+	SupportsStream NilBool `json:"supports_stream"`
+}
+
+// GetVoices returns the value of Voices.
+func (s *AudioCapabilities) GetVoices() []string {
+	return s.Voices
+}
+
+// GetFormats returns the value of Formats.
+func (s *AudioCapabilities) GetFormats() []string {
+	return s.Formats
+}
+
+// GetResponseFormats returns the value of ResponseFormats.
+func (s *AudioCapabilities) GetResponseFormats() []string {
+	return s.ResponseFormats
+}
+
+// GetMaxInputBytes returns the value of MaxInputBytes.
+func (s *AudioCapabilities) GetMaxInputBytes() NilInt64 {
+	return s.MaxInputBytes
+}
+
+// GetSupportsStream returns the value of SupportsStream.
+func (s *AudioCapabilities) GetSupportsStream() NilBool {
+	return s.SupportsStream
+}
+
+// SetVoices sets the value of Voices.
+func (s *AudioCapabilities) SetVoices(val []string) {
+	s.Voices = val
+}
+
+// SetFormats sets the value of Formats.
+func (s *AudioCapabilities) SetFormats(val []string) {
+	s.Formats = val
+}
+
+// SetResponseFormats sets the value of ResponseFormats.
+func (s *AudioCapabilities) SetResponseFormats(val []string) {
+	s.ResponseFormats = val
+}
+
+// SetMaxInputBytes sets the value of MaxInputBytes.
+func (s *AudioCapabilities) SetMaxInputBytes(val NilInt64) {
+	s.MaxInputBytes = val
+}
+
+// SetSupportsStream sets the value of SupportsStream.
+func (s *AudioCapabilities) SetSupportsStream(val NilBool) {
+	s.SupportsStream = val
 }
 
 type BearerAuth struct {
@@ -940,6 +1017,15 @@ type EndpointCapabilities struct {
 	FunctionCalling  NilBool                  `json:"function_calling"`
 	StructuredOutput NilBool                  `json:"structured_output"`
 	Reasoning        NilReasoningCapabilities `json:"reasoning"`
+	// Present on image generation and edit endpoints. Null or absent elsewhere.
+	Image OptNilImageCapabilities `json:"image"`
+	// Present on speech and transcription endpoints. Null or absent elsewhere.
+	Audio OptNilAudioCapabilities `json:"audio"`
+	// Present on the videos endpoint. Null or absent elsewhere.
+	Video OptNilVideoCapabilities `json:"video"`
+	// Non-standard request fields this endpoint accepts, sent at the top level of the request body. Null
+	// or absent means none are declared.
+	Parameters OptNilModelParameterArray `json:"parameters"`
 }
 
 // GetFunctionCalling returns the value of FunctionCalling.
@@ -957,6 +1043,26 @@ func (s *EndpointCapabilities) GetReasoning() NilReasoningCapabilities {
 	return s.Reasoning
 }
 
+// GetImage returns the value of Image.
+func (s *EndpointCapabilities) GetImage() OptNilImageCapabilities {
+	return s.Image
+}
+
+// GetAudio returns the value of Audio.
+func (s *EndpointCapabilities) GetAudio() OptNilAudioCapabilities {
+	return s.Audio
+}
+
+// GetVideo returns the value of Video.
+func (s *EndpointCapabilities) GetVideo() OptNilVideoCapabilities {
+	return s.Video
+}
+
+// GetParameters returns the value of Parameters.
+func (s *EndpointCapabilities) GetParameters() OptNilModelParameterArray {
+	return s.Parameters
+}
+
 // SetFunctionCalling sets the value of FunctionCalling.
 func (s *EndpointCapabilities) SetFunctionCalling(val NilBool) {
 	s.FunctionCalling = val
@@ -970,6 +1076,26 @@ func (s *EndpointCapabilities) SetStructuredOutput(val NilBool) {
 // SetReasoning sets the value of Reasoning.
 func (s *EndpointCapabilities) SetReasoning(val NilReasoningCapabilities) {
 	s.Reasoning = val
+}
+
+// SetImage sets the value of Image.
+func (s *EndpointCapabilities) SetImage(val OptNilImageCapabilities) {
+	s.Image = val
+}
+
+// SetAudio sets the value of Audio.
+func (s *EndpointCapabilities) SetAudio(val OptNilAudioCapabilities) {
+	s.Audio = val
+}
+
+// SetVideo sets the value of Video.
+func (s *EndpointCapabilities) SetVideo(val OptNilVideoCapabilities) {
+	s.Video = val
+}
+
+// SetParameters sets the value of Parameters.
+func (s *EndpointCapabilities) SetParameters(val OptNilModelParameterArray) {
+	s.Parameters = val
 }
 
 // A failed request. The envelope follows the Google REST error format: `code` is the HTTP status,
@@ -1308,6 +1434,72 @@ func (s *GetUsageTimelineStatus) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// The image parameters this endpoint accepts. The client chooses among them; a value outside the list
+// is rejected before the upstream is called.
+// Ref: #/components/schemas/ImageCapabilities
+type ImageCapabilities struct {
+	// Size values the upstream accepts, such as 1024x1024 or auto. Null means unknown.
+	Sizes []string `json:"sizes"`
+	// Quality values the upstream accepts. Null means unknown.
+	Qualities []string `json:"qualities"`
+	// Response formats the upstream accepts. Null means unknown.
+	ResponseFormats []string `json:"response_formats"`
+	// The largest number of images one request may ask for. Null means unknown.
+	MaxN NilInt `json:"max_n"`
+	// Whether the endpoint can stream partial images. Null means unknown.
+	SupportsStream NilBool `json:"supports_stream"`
+}
+
+// GetSizes returns the value of Sizes.
+func (s *ImageCapabilities) GetSizes() []string {
+	return s.Sizes
+}
+
+// GetQualities returns the value of Qualities.
+func (s *ImageCapabilities) GetQualities() []string {
+	return s.Qualities
+}
+
+// GetResponseFormats returns the value of ResponseFormats.
+func (s *ImageCapabilities) GetResponseFormats() []string {
+	return s.ResponseFormats
+}
+
+// GetMaxN returns the value of MaxN.
+func (s *ImageCapabilities) GetMaxN() NilInt {
+	return s.MaxN
+}
+
+// GetSupportsStream returns the value of SupportsStream.
+func (s *ImageCapabilities) GetSupportsStream() NilBool {
+	return s.SupportsStream
+}
+
+// SetSizes sets the value of Sizes.
+func (s *ImageCapabilities) SetSizes(val []string) {
+	s.Sizes = val
+}
+
+// SetQualities sets the value of Qualities.
+func (s *ImageCapabilities) SetQualities(val []string) {
+	s.Qualities = val
+}
+
+// SetResponseFormats sets the value of ResponseFormats.
+func (s *ImageCapabilities) SetResponseFormats(val []string) {
+	s.ResponseFormats = val
+}
+
+// SetMaxN sets the value of MaxN.
+func (s *ImageCapabilities) SetMaxN(val NilInt) {
+	s.MaxN = val
+}
+
+// SetSupportsStream sets the value of SupportsStream.
+func (s *ImageCapabilities) SetSupportsStream(val NilBool) {
+	s.SupportsStream = val
 }
 
 // Ref: #/components/schemas/InferenceError
@@ -1930,6 +2122,95 @@ func (s *ListUsageByModelStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// Media quantities and the rate dimensions they were billed at. Absent on a token-only request.
+// Ref: #/components/schemas/MediaUsage
+type MediaUsage struct {
+	// Number of generated images.
+	Images int64 `json:"images"`
+	// Input characters of speech synthesis.
+	AudioCharacters int64 `json:"audio_characters"`
+	// Duration of transcribed audio.
+	AudioSeconds int64 `json:"audio_seconds"`
+	// Duration of a generated video.
+	VideoSeconds int64 `json:"video_seconds"`
+	// Image or video size the request asked for, if it carried one.
+	Size NilString `json:"size"`
+	// Image quality the request asked for, if it carried one.
+	Quality NilString `json:"quality"`
+	// Video resolution tier the request asked for, if it carried one.
+	Resolution NilString `json:"resolution"`
+}
+
+// GetImages returns the value of Images.
+func (s *MediaUsage) GetImages() int64 {
+	return s.Images
+}
+
+// GetAudioCharacters returns the value of AudioCharacters.
+func (s *MediaUsage) GetAudioCharacters() int64 {
+	return s.AudioCharacters
+}
+
+// GetAudioSeconds returns the value of AudioSeconds.
+func (s *MediaUsage) GetAudioSeconds() int64 {
+	return s.AudioSeconds
+}
+
+// GetVideoSeconds returns the value of VideoSeconds.
+func (s *MediaUsage) GetVideoSeconds() int64 {
+	return s.VideoSeconds
+}
+
+// GetSize returns the value of Size.
+func (s *MediaUsage) GetSize() NilString {
+	return s.Size
+}
+
+// GetQuality returns the value of Quality.
+func (s *MediaUsage) GetQuality() NilString {
+	return s.Quality
+}
+
+// GetResolution returns the value of Resolution.
+func (s *MediaUsage) GetResolution() NilString {
+	return s.Resolution
+}
+
+// SetImages sets the value of Images.
+func (s *MediaUsage) SetImages(val int64) {
+	s.Images = val
+}
+
+// SetAudioCharacters sets the value of AudioCharacters.
+func (s *MediaUsage) SetAudioCharacters(val int64) {
+	s.AudioCharacters = val
+}
+
+// SetAudioSeconds sets the value of AudioSeconds.
+func (s *MediaUsage) SetAudioSeconds(val int64) {
+	s.AudioSeconds = val
+}
+
+// SetVideoSeconds sets the value of VideoSeconds.
+func (s *MediaUsage) SetVideoSeconds(val int64) {
+	s.VideoSeconds = val
+}
+
+// SetSize sets the value of Size.
+func (s *MediaUsage) SetSize(val NilString) {
+	s.Size = val
+}
+
+// SetQuality sets the value of Quality.
+func (s *MediaUsage) SetQuality(val NilString) {
+	s.Quality = val
+}
+
+// SetResolution sets the value of Resolution.
+func (s *MediaUsage) SetResolution(val NilString) {
+	s.Resolution = val
+}
+
 // Ref: #/components/schemas/Modality
 type Modality string
 
@@ -2155,23 +2436,27 @@ func (s *Model) SetSupportedEndpoints(val []ModelEndpoint) {
 func (*Model) getInferenceModelRes() {}
 
 // How requests to a model are billed: under the service's subscription, on the Billing plan `plan_id`,
-// one rate for each token kind. Read the rates from Billing with `search-prices` for the plan,
+// one rate for each billable kind. Read the rates from Billing with `search-prices` for the plan,
 // narrowing each price's `rates` with each meter's `dimensions`.
 //
-// Each token kind is priced on its own. `input` excludes cached input, which is `cache_read`, and
-// `output` excludes reasoning the provider reports separately, which is `reasoning`; a request is
-// billed for each kind it used.
+// Text is billed on the five token kinds. `input` excludes cached input, which is `cache_read`;
+// `output` excludes reasoning the provider reports separately, which is `reasoning`. Media is billed
+// on its own unit and never converted to tokens: `images` counts generated images, `audio_characters`
+// counts the input characters of speech synthesis, `audio_seconds` counts the duration of a
+// transcription, and `video_seconds` counts the duration of a generated video. A request is billed for
+// each kind it used.
 //
 // Rates are set per currency, and a currency may not offer a model at all. A model is offered in the
-// currency of the project's billing account when at least one of its token kinds has a rate there; a
-// token kind without a rate in that currency is not charged. Requests to a model with no rate in that
+// currency of the project's billing account when at least one of its billable kinds has a rate there;
+// a kind without a rate in that currency is not charged. Requests to a model with no rate in that
 // currency are refused with 403 `BILLING_MODEL_NOT_OFFERED`.
 // Ref: #/components/schemas/ModelBilling
 type ModelBilling struct {
 	// The Billing plan of the service; null where the service is not sold.
 	PlanID NilUUID `json:"plan_id"`
-	// One entry for each of the five token kinds, in the order input, output, cache_read, cache_write,
-	// reasoning.
+	// One entry for each billable kind the model uses. A text model lists the five token kinds in the
+	// order input, output, cache_read, cache_write, reasoning; media kinds follow in the order images,
+	// audio_characters, audio_seconds, video_seconds.
 	Meters []ModelMeter `json:"meters"`
 }
 
@@ -2224,6 +2509,19 @@ const (
 	ModelEndpointSlashV1SlashAudioSlashTranslations              ModelEndpoint = "/v1/audio/translations"
 	ModelEndpointSlashV1SlashAudioSlashSpeech                    ModelEndpoint = "/v1/audio/speech"
 	ModelEndpointSlashV1SlashRealtime                            ModelEndpoint = "/v1/realtime"
+	ModelEndpointSlashV1SlashCompletions                         ModelEndpoint = "/v1/completions"
+	ModelEndpointSlashV1SlashRerank                              ModelEndpoint = "/v1/rerank"
+	ModelEndpointSlashV1SlashModerations                         ModelEndpoint = "/v1/moderations"
+	ModelEndpointSlashV1SlashImagesSlashVariations               ModelEndpoint = "/v1/images/variations"
+	ModelEndpointSlashV1SlashFiles                               ModelEndpoint = "/v1/files"
+	ModelEndpointSlashV1SlashUploads                             ModelEndpoint = "/v1/uploads"
+	ModelEndpointSlashV1SlashBatches                             ModelEndpoint = "/v1/batches"
+	ModelEndpointSlashV1SlashFineTuningSlashJobs                 ModelEndpoint = "/v1/fine_tuning/jobs"
+	ModelEndpointSlashV1SlashAssistants                          ModelEndpoint = "/v1/assistants"
+	ModelEndpointSlashV1SlashThreads                             ModelEndpoint = "/v1/threads"
+	ModelEndpointSlashV1SlashVectorStores                        ModelEndpoint = "/v1/vector_stores"
+	ModelEndpointSlashV1SlashContainers                          ModelEndpoint = "/v1/containers"
+	ModelEndpointSlashV1SlashVideos                              ModelEndpoint = "/v1/videos"
 )
 
 // AllValues returns all ModelEndpoint values.
@@ -2240,6 +2538,19 @@ func (ModelEndpoint) AllValues() []ModelEndpoint {
 		ModelEndpointSlashV1SlashAudioSlashTranslations,
 		ModelEndpointSlashV1SlashAudioSlashSpeech,
 		ModelEndpointSlashV1SlashRealtime,
+		ModelEndpointSlashV1SlashCompletions,
+		ModelEndpointSlashV1SlashRerank,
+		ModelEndpointSlashV1SlashModerations,
+		ModelEndpointSlashV1SlashImagesSlashVariations,
+		ModelEndpointSlashV1SlashFiles,
+		ModelEndpointSlashV1SlashUploads,
+		ModelEndpointSlashV1SlashBatches,
+		ModelEndpointSlashV1SlashFineTuningSlashJobs,
+		ModelEndpointSlashV1SlashAssistants,
+		ModelEndpointSlashV1SlashThreads,
+		ModelEndpointSlashV1SlashVectorStores,
+		ModelEndpointSlashV1SlashContainers,
+		ModelEndpointSlashV1SlashVideos,
 	}
 }
 
@@ -2267,6 +2578,32 @@ func (s ModelEndpoint) MarshalText() ([]byte, error) {
 	case ModelEndpointSlashV1SlashAudioSlashSpeech:
 		return []byte(s), nil
 	case ModelEndpointSlashV1SlashRealtime:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashCompletions:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashRerank:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashModerations:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashImagesSlashVariations:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashFiles:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashUploads:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashBatches:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashFineTuningSlashJobs:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashAssistants:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashThreads:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashVectorStores:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashContainers:
+		return []byte(s), nil
+	case ModelEndpointSlashV1SlashVideos:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -2308,6 +2645,45 @@ func (s *ModelEndpoint) UnmarshalText(data []byte) error {
 		return nil
 	case ModelEndpointSlashV1SlashRealtime:
 		*s = ModelEndpointSlashV1SlashRealtime
+		return nil
+	case ModelEndpointSlashV1SlashCompletions:
+		*s = ModelEndpointSlashV1SlashCompletions
+		return nil
+	case ModelEndpointSlashV1SlashRerank:
+		*s = ModelEndpointSlashV1SlashRerank
+		return nil
+	case ModelEndpointSlashV1SlashModerations:
+		*s = ModelEndpointSlashV1SlashModerations
+		return nil
+	case ModelEndpointSlashV1SlashImagesSlashVariations:
+		*s = ModelEndpointSlashV1SlashImagesSlashVariations
+		return nil
+	case ModelEndpointSlashV1SlashFiles:
+		*s = ModelEndpointSlashV1SlashFiles
+		return nil
+	case ModelEndpointSlashV1SlashUploads:
+		*s = ModelEndpointSlashV1SlashUploads
+		return nil
+	case ModelEndpointSlashV1SlashBatches:
+		*s = ModelEndpointSlashV1SlashBatches
+		return nil
+	case ModelEndpointSlashV1SlashFineTuningSlashJobs:
+		*s = ModelEndpointSlashV1SlashFineTuningSlashJobs
+		return nil
+	case ModelEndpointSlashV1SlashAssistants:
+		*s = ModelEndpointSlashV1SlashAssistants
+		return nil
+	case ModelEndpointSlashV1SlashThreads:
+		*s = ModelEndpointSlashV1SlashThreads
+		return nil
+	case ModelEndpointSlashV1SlashVectorStores:
+		*s = ModelEndpointSlashV1SlashVectorStores
+		return nil
+	case ModelEndpointSlashV1SlashContainers:
+		*s = ModelEndpointSlashV1SlashContainers
+		return nil
+	case ModelEndpointSlashV1SlashVideos:
+		*s = ModelEndpointSlashV1SlashVideos
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -2361,15 +2737,23 @@ func (*ModelListResponseBody) listModelsRes() {}
 
 // Ref: #/components/schemas/ModelMeter
 type ModelMeter struct {
-	TokenKind      ModelMeterTokenKind `json:"token_kind"`
-	MeterLookupKey string              `json:"meter_lookup_key"`
-	// The dimension values the usage of this token kind carries, and the rate is matched at.
+	// The billable quantity this entry prices. Token kinds are `input`, `output`, `cache_read`,
+	// `cache_write` and `reasoning`; media kinds are `images`, `audio_characters`, `audio_seconds` and
+	// `video_seconds`.
+	Kind           ModelMeterKind `json:"kind"`
+	MeterLookupKey string         `json:"meter_lookup_key"`
+	// The unit the meter counts in, such as token, image, character or second.
+	Unit string `json:"unit"`
+	// The dimension keys every rate of this kind is matched on, in the order the meter declares them.
+	DimensionKeys []string `json:"dimension_keys"`
+	// One set of dimension values of this kind, useful as a query template. A media kind may have other
+	// values on the same keys, such as another size or resolution.
 	Dimensions ModelMeterDimensions `json:"dimensions"`
 }
 
-// GetTokenKind returns the value of TokenKind.
-func (s *ModelMeter) GetTokenKind() ModelMeterTokenKind {
-	return s.TokenKind
+// GetKind returns the value of Kind.
+func (s *ModelMeter) GetKind() ModelMeterKind {
+	return s.Kind
 }
 
 // GetMeterLookupKey returns the value of MeterLookupKey.
@@ -2377,14 +2761,24 @@ func (s *ModelMeter) GetMeterLookupKey() string {
 	return s.MeterLookupKey
 }
 
+// GetUnit returns the value of Unit.
+func (s *ModelMeter) GetUnit() string {
+	return s.Unit
+}
+
+// GetDimensionKeys returns the value of DimensionKeys.
+func (s *ModelMeter) GetDimensionKeys() []string {
+	return s.DimensionKeys
+}
+
 // GetDimensions returns the value of Dimensions.
 func (s *ModelMeter) GetDimensions() ModelMeterDimensions {
 	return s.Dimensions
 }
 
-// SetTokenKind sets the value of TokenKind.
-func (s *ModelMeter) SetTokenKind(val ModelMeterTokenKind) {
-	s.TokenKind = val
+// SetKind sets the value of Kind.
+func (s *ModelMeter) SetKind(val ModelMeterKind) {
+	s.Kind = val
 }
 
 // SetMeterLookupKey sets the value of MeterLookupKey.
@@ -2392,12 +2786,23 @@ func (s *ModelMeter) SetMeterLookupKey(val string) {
 	s.MeterLookupKey = val
 }
 
+// SetUnit sets the value of Unit.
+func (s *ModelMeter) SetUnit(val string) {
+	s.Unit = val
+}
+
+// SetDimensionKeys sets the value of DimensionKeys.
+func (s *ModelMeter) SetDimensionKeys(val []string) {
+	s.DimensionKeys = val
+}
+
 // SetDimensions sets the value of Dimensions.
 func (s *ModelMeter) SetDimensions(val ModelMeterDimensions) {
 	s.Dimensions = val
 }
 
-// The dimension values the usage of this token kind carries, and the rate is matched at.
+// One set of dimension values of this kind, useful as a query template. A media kind may have other
+// values on the same keys, such as another size or resolution.
 type ModelMeterDimensions map[string]string
 
 func (s *ModelMeterDimensions) init() ModelMeterDimensions {
@@ -2409,39 +2814,62 @@ func (s *ModelMeterDimensions) init() ModelMeterDimensions {
 	return m
 }
 
-type ModelMeterTokenKind string
+// The billable quantity this entry prices. Token kinds are `input`, `output`, `cache_read`,
+// `cache_write` and `reasoning`; media kinds are `images`, `audio_characters`, `audio_seconds` and
+// `video_seconds`.
+type ModelMeterKind string
 
 const (
-	ModelMeterTokenKindInput      ModelMeterTokenKind = "input"
-	ModelMeterTokenKindOutput     ModelMeterTokenKind = "output"
-	ModelMeterTokenKindCacheRead  ModelMeterTokenKind = "cache_read"
-	ModelMeterTokenKindCacheWrite ModelMeterTokenKind = "cache_write"
-	ModelMeterTokenKindReasoning  ModelMeterTokenKind = "reasoning"
+	ModelMeterKindInput           ModelMeterKind = "input"
+	ModelMeterKindOutput          ModelMeterKind = "output"
+	ModelMeterKindCacheRead       ModelMeterKind = "cache_read"
+	ModelMeterKindCacheWrite      ModelMeterKind = "cache_write"
+	ModelMeterKindReasoning       ModelMeterKind = "reasoning"
+	ModelMeterKindImages          ModelMeterKind = "images"
+	ModelMeterKindAudioCharacters ModelMeterKind = "audio_characters"
+	ModelMeterKindAudioSeconds    ModelMeterKind = "audio_seconds"
+	ModelMeterKindVideoSeconds    ModelMeterKind = "video_seconds"
+	ModelMeterKindRerankUnits     ModelMeterKind = "rerank_units"
 )
 
-// AllValues returns all ModelMeterTokenKind values.
-func (ModelMeterTokenKind) AllValues() []ModelMeterTokenKind {
-	return []ModelMeterTokenKind{
-		ModelMeterTokenKindInput,
-		ModelMeterTokenKindOutput,
-		ModelMeterTokenKindCacheRead,
-		ModelMeterTokenKindCacheWrite,
-		ModelMeterTokenKindReasoning,
+// AllValues returns all ModelMeterKind values.
+func (ModelMeterKind) AllValues() []ModelMeterKind {
+	return []ModelMeterKind{
+		ModelMeterKindInput,
+		ModelMeterKindOutput,
+		ModelMeterKindCacheRead,
+		ModelMeterKindCacheWrite,
+		ModelMeterKindReasoning,
+		ModelMeterKindImages,
+		ModelMeterKindAudioCharacters,
+		ModelMeterKindAudioSeconds,
+		ModelMeterKindVideoSeconds,
+		ModelMeterKindRerankUnits,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s ModelMeterTokenKind) MarshalText() ([]byte, error) {
+func (s ModelMeterKind) MarshalText() ([]byte, error) {
 	switch s {
-	case ModelMeterTokenKindInput:
+	case ModelMeterKindInput:
 		return []byte(s), nil
-	case ModelMeterTokenKindOutput:
+	case ModelMeterKindOutput:
 		return []byte(s), nil
-	case ModelMeterTokenKindCacheRead:
+	case ModelMeterKindCacheRead:
 		return []byte(s), nil
-	case ModelMeterTokenKindCacheWrite:
+	case ModelMeterKindCacheWrite:
 		return []byte(s), nil
-	case ModelMeterTokenKindReasoning:
+	case ModelMeterKindReasoning:
+		return []byte(s), nil
+	case ModelMeterKindImages:
+		return []byte(s), nil
+	case ModelMeterKindAudioCharacters:
+		return []byte(s), nil
+	case ModelMeterKindAudioSeconds:
+		return []byte(s), nil
+	case ModelMeterKindVideoSeconds:
+		return []byte(s), nil
+	case ModelMeterKindRerankUnits:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -2449,22 +2877,181 @@ func (s ModelMeterTokenKind) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ModelMeterTokenKind) UnmarshalText(data []byte) error {
-	switch ModelMeterTokenKind(data) {
-	case ModelMeterTokenKindInput:
-		*s = ModelMeterTokenKindInput
+func (s *ModelMeterKind) UnmarshalText(data []byte) error {
+	switch ModelMeterKind(data) {
+	case ModelMeterKindInput:
+		*s = ModelMeterKindInput
 		return nil
-	case ModelMeterTokenKindOutput:
-		*s = ModelMeterTokenKindOutput
+	case ModelMeterKindOutput:
+		*s = ModelMeterKindOutput
 		return nil
-	case ModelMeterTokenKindCacheRead:
-		*s = ModelMeterTokenKindCacheRead
+	case ModelMeterKindCacheRead:
+		*s = ModelMeterKindCacheRead
 		return nil
-	case ModelMeterTokenKindCacheWrite:
-		*s = ModelMeterTokenKindCacheWrite
+	case ModelMeterKindCacheWrite:
+		*s = ModelMeterKindCacheWrite
 		return nil
-	case ModelMeterTokenKindReasoning:
-		*s = ModelMeterTokenKindReasoning
+	case ModelMeterKindReasoning:
+		*s = ModelMeterKindReasoning
+		return nil
+	case ModelMeterKindImages:
+		*s = ModelMeterKindImages
+		return nil
+	case ModelMeterKindAudioCharacters:
+		*s = ModelMeterKindAudioCharacters
+		return nil
+	case ModelMeterKindAudioSeconds:
+		*s = ModelMeterKindAudioSeconds
+		return nil
+	case ModelMeterKindVideoSeconds:
+		*s = ModelMeterKindVideoSeconds
+		return nil
+	case ModelMeterKindRerankUnits:
+		*s = ModelMeterKindRerankUnits
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A non-standard request field this endpoint accepts. OpenAI SDK callers pass it through `extra_body`,
+// which places it at the top level of the body.
+// Ref: #/components/schemas/ModelParameter
+type ModelParameter struct {
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	Type        ModelParameterType `json:"type"`
+	Required    bool               `json:"required"`
+	// The value the upstream assumes when the field is absent; null when there is none. The service never
+	// writes it into the request.
+	Default jx.Raw `json:"default"`
+	// The accepted values of an enumerated string parameter. Null when the parameter is not enumerated.
+	Values OptNilStringArray `json:"values"`
+}
+
+// GetName returns the value of Name.
+func (s *ModelParameter) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *ModelParameter) GetDescription() string {
+	return s.Description
+}
+
+// GetType returns the value of Type.
+func (s *ModelParameter) GetType() ModelParameterType {
+	return s.Type
+}
+
+// GetRequired returns the value of Required.
+func (s *ModelParameter) GetRequired() bool {
+	return s.Required
+}
+
+// GetDefault returns the value of Default.
+func (s *ModelParameter) GetDefault() jx.Raw {
+	return s.Default
+}
+
+// GetValues returns the value of Values.
+func (s *ModelParameter) GetValues() OptNilStringArray {
+	return s.Values
+}
+
+// SetName sets the value of Name.
+func (s *ModelParameter) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *ModelParameter) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetType sets the value of Type.
+func (s *ModelParameter) SetType(val ModelParameterType) {
+	s.Type = val
+}
+
+// SetRequired sets the value of Required.
+func (s *ModelParameter) SetRequired(val bool) {
+	s.Required = val
+}
+
+// SetDefault sets the value of Default.
+func (s *ModelParameter) SetDefault(val jx.Raw) {
+	s.Default = val
+}
+
+// SetValues sets the value of Values.
+func (s *ModelParameter) SetValues(val OptNilStringArray) {
+	s.Values = val
+}
+
+type ModelParameterType string
+
+const (
+	ModelParameterTypeString  ModelParameterType = "string"
+	ModelParameterTypeInteger ModelParameterType = "integer"
+	ModelParameterTypeNumber  ModelParameterType = "number"
+	ModelParameterTypeBoolean ModelParameterType = "boolean"
+	ModelParameterTypeObject  ModelParameterType = "object"
+	ModelParameterTypeArray   ModelParameterType = "array"
+)
+
+// AllValues returns all ModelParameterType values.
+func (ModelParameterType) AllValues() []ModelParameterType {
+	return []ModelParameterType{
+		ModelParameterTypeString,
+		ModelParameterTypeInteger,
+		ModelParameterTypeNumber,
+		ModelParameterTypeBoolean,
+		ModelParameterTypeObject,
+		ModelParameterTypeArray,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ModelParameterType) MarshalText() ([]byte, error) {
+	switch s {
+	case ModelParameterTypeString:
+		return []byte(s), nil
+	case ModelParameterTypeInteger:
+		return []byte(s), nil
+	case ModelParameterTypeNumber:
+		return []byte(s), nil
+	case ModelParameterTypeBoolean:
+		return []byte(s), nil
+	case ModelParameterTypeObject:
+		return []byte(s), nil
+	case ModelParameterTypeArray:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ModelParameterType) UnmarshalText(data []byte) error {
+	switch ModelParameterType(data) {
+	case ModelParameterTypeString:
+		*s = ModelParameterTypeString
+		return nil
+	case ModelParameterTypeInteger:
+		*s = ModelParameterTypeInteger
+		return nil
+	case ModelParameterTypeNumber:
+		*s = ModelParameterTypeNumber
+		return nil
+	case ModelParameterTypeBoolean:
+		*s = ModelParameterTypeBoolean
+		return nil
+	case ModelParameterTypeObject:
+		*s = ModelParameterTypeObject
+		return nil
+	case ModelParameterTypeArray:
+		*s = ModelParameterTypeArray
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -2702,7 +3289,9 @@ type ModelUsageResource struct {
 	ModelID          string `json:"model_id"`
 	OutputTokens     int64  `json:"output_tokens"`
 	ReasoningTokens  int64  `json:"reasoning_tokens"`
-	Requests         int64  `json:"requests"`
+	// Media quantities and their rate dimensions. Null when this range has no media usage.
+	Media    OptNilMediaUsage `json:"media"`
+	Requests int64            `json:"requests"`
 }
 
 // GetCacheReadTokens returns the value of CacheReadTokens.
@@ -2733,6 +3322,11 @@ func (s *ModelUsageResource) GetOutputTokens() int64 {
 // GetReasoningTokens returns the value of ReasoningTokens.
 func (s *ModelUsageResource) GetReasoningTokens() int64 {
 	return s.ReasoningTokens
+}
+
+// GetMedia returns the value of Media.
+func (s *ModelUsageResource) GetMedia() OptNilMediaUsage {
+	return s.Media
 }
 
 // GetRequests returns the value of Requests.
@@ -2768,6 +3362,11 @@ func (s *ModelUsageResource) SetOutputTokens(val int64) {
 // SetReasoningTokens sets the value of ReasoningTokens.
 func (s *ModelUsageResource) SetReasoningTokens(val int64) {
 	s.ReasoningTokens = val
+}
+
+// SetMedia sets the value of Media.
+func (s *ModelUsageResource) SetMedia(val OptNilMediaUsage) {
+	s.Media = val
 }
 
 // SetRequests sets the value of Requests.
@@ -2889,6 +3488,96 @@ func (o NilDateTime) Get() (v time.Time, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilInt returns new NilInt with value set to v.
+func NewNilInt(v int) NilInt {
+	return NilInt{
+		Value: v,
+	}
+}
+
+// NilInt is nullable int.
+type NilInt struct {
+	Value int
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilInt) SetTo(v int) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilInt) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilInt) SetToNull() {
+	o.Null = true
+	var v int
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilInt) Get() (v int, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilInt) Or(d int) int {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilInt64 returns new NilInt64 with value set to v.
+func NewNilInt64(v int64) NilInt64 {
+	return NilInt64{
+		Value: v,
+	}
+}
+
+// NilInt64 is nullable int64.
+type NilInt64 struct {
+	Value int64
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilInt64) SetTo(v int64) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilInt64) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilInt64) SetToNull() {
+	o.Null = true
+	var v int64
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilInt64) Get() (v int64, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilInt64) Or(d int64) int64 {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -3763,6 +4452,74 @@ func (o OptListUsageByModelStatus) Or(d ListUsageByModelStatus) ListUsageByModel
 	return d
 }
 
+// NewOptNilAudioCapabilities returns new OptNilAudioCapabilities with value set to v.
+func NewOptNilAudioCapabilities(v AudioCapabilities) OptNilAudioCapabilities {
+	return OptNilAudioCapabilities{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilAudioCapabilities is optional nullable AudioCapabilities.
+type OptNilAudioCapabilities struct {
+	Value AudioCapabilities
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilAudioCapabilities was set.
+func (o OptNilAudioCapabilities) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilAudioCapabilities) Reset() {
+	var v AudioCapabilities
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilAudioCapabilities) SetTo(v AudioCapabilities) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilAudioCapabilities) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilAudioCapabilities) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v AudioCapabilities
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilAudioCapabilities) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilAudioCapabilities) Get() (v AudioCapabilities, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilAudioCapabilities) Or(d AudioCapabilities) AudioCapabilities {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilBool returns new OptNilBool with value set to v.
 func NewOptNilBool(v bool) OptNilBool {
 	return OptNilBool{
@@ -3899,6 +4656,210 @@ func (o OptNilDateTime) Or(d time.Time) time.Time {
 	return d
 }
 
+// NewOptNilImageCapabilities returns new OptNilImageCapabilities with value set to v.
+func NewOptNilImageCapabilities(v ImageCapabilities) OptNilImageCapabilities {
+	return OptNilImageCapabilities{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilImageCapabilities is optional nullable ImageCapabilities.
+type OptNilImageCapabilities struct {
+	Value ImageCapabilities
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilImageCapabilities was set.
+func (o OptNilImageCapabilities) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilImageCapabilities) Reset() {
+	var v ImageCapabilities
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilImageCapabilities) SetTo(v ImageCapabilities) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilImageCapabilities) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilImageCapabilities) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v ImageCapabilities
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilImageCapabilities) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilImageCapabilities) Get() (v ImageCapabilities, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilImageCapabilities) Or(d ImageCapabilities) ImageCapabilities {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilMediaUsage returns new OptNilMediaUsage with value set to v.
+func NewOptNilMediaUsage(v MediaUsage) OptNilMediaUsage {
+	return OptNilMediaUsage{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilMediaUsage is optional nullable MediaUsage.
+type OptNilMediaUsage struct {
+	Value MediaUsage
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilMediaUsage was set.
+func (o OptNilMediaUsage) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilMediaUsage) Reset() {
+	var v MediaUsage
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilMediaUsage) SetTo(v MediaUsage) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilMediaUsage) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilMediaUsage) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v MediaUsage
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilMediaUsage) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilMediaUsage) Get() (v MediaUsage, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilMediaUsage) Or(d MediaUsage) MediaUsage {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilModelParameterArray returns new OptNilModelParameterArray with value set to v.
+func NewOptNilModelParameterArray(v []ModelParameter) OptNilModelParameterArray {
+	return OptNilModelParameterArray{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilModelParameterArray is optional nullable []ModelParameter.
+type OptNilModelParameterArray struct {
+	Value []ModelParameter
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilModelParameterArray was set.
+func (o OptNilModelParameterArray) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilModelParameterArray) Reset() {
+	var v []ModelParameter
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilModelParameterArray) SetTo(v []ModelParameter) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilModelParameterArray) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilModelParameterArray) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v []ModelParameter
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilModelParameterArray) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilModelParameterArray) Get() (v []ModelParameter, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilModelParameterArray) Or(d []ModelParameter) []ModelParameter {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilString returns new OptNilString with value set to v.
 func NewOptNilString(v string) OptNilString {
 	return OptNilString{
@@ -4029,6 +4990,74 @@ func (o OptNilStringArray) Get() (v []string, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilStringArray) Or(d []string) []string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilVideoCapabilities returns new OptNilVideoCapabilities with value set to v.
+func NewOptNilVideoCapabilities(v VideoCapabilities) OptNilVideoCapabilities {
+	return OptNilVideoCapabilities{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilVideoCapabilities is optional nullable VideoCapabilities.
+type OptNilVideoCapabilities struct {
+	Value VideoCapabilities
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilVideoCapabilities was set.
+func (o OptNilVideoCapabilities) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilVideoCapabilities) Reset() {
+	var v VideoCapabilities
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilVideoCapabilities) SetTo(v VideoCapabilities) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilVideoCapabilities) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilVideoCapabilities) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v VideoCapabilities
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilVideoCapabilities) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilVideoCapabilities) Get() (v VideoCapabilities, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilVideoCapabilities) Or(d VideoCapabilities) VideoCapabilities {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4354,8 +5383,9 @@ type RequestResource struct {
 	ErrorCode    string      `json:"error_code"`
 	FinishedAt   NilDateTime `json:"finished_at"`
 	FirstTokenAt NilDateTime `json:"first_token_at"`
-	ID           uuid.UUID   `json:"id"`
-	InputTokens  int64       `json:"input_tokens"`
+	// A typed request id such as `req_01j...`. Legacy rows may still be returned as a bare UUID.
+	ID          string `json:"id"`
+	InputTokens int64  `json:"input_tokens"`
 	// The model named in the request.
 	ModelID         string `json:"model_id"`
 	OutputTokens    int64  `json:"output_tokens"`
@@ -4377,6 +5407,8 @@ type RequestResource struct {
 	// character classes of the payload.
 	UsageSource RequestResourceUsageSource `json:"usage_source"`
 	Reasoning   NilReasoningDiagnostics    `json:"reasoning"`
+	// Media quantities and their rate dimensions. Null for a token-only request.
+	Media OptNilMediaUsage `json:"media"`
 }
 
 // GetAPIKeyID returns the value of APIKeyID.
@@ -4410,7 +5442,7 @@ func (s *RequestResource) GetFirstTokenAt() NilDateTime {
 }
 
 // GetID returns the value of ID.
-func (s *RequestResource) GetID() uuid.UUID {
+func (s *RequestResource) GetID() string {
 	return s.ID
 }
 
@@ -4479,6 +5511,11 @@ func (s *RequestResource) GetReasoning() NilReasoningDiagnostics {
 	return s.Reasoning
 }
 
+// GetMedia returns the value of Media.
+func (s *RequestResource) GetMedia() OptNilMediaUsage {
+	return s.Media
+}
+
 // SetAPIKeyID sets the value of APIKeyID.
 func (s *RequestResource) SetAPIKeyID(val NilUUID) {
 	s.APIKeyID = val
@@ -4510,7 +5547,7 @@ func (s *RequestResource) SetFirstTokenAt(val NilDateTime) {
 }
 
 // SetID sets the value of ID.
-func (s *RequestResource) SetID(val uuid.UUID) {
+func (s *RequestResource) SetID(val string) {
 	s.ID = val
 }
 
@@ -4577,6 +5614,11 @@ func (s *RequestResource) SetUsageSource(val RequestResourceUsageSource) {
 // SetReasoning sets the value of Reasoning.
 func (s *RequestResource) SetReasoning(val NilReasoningDiagnostics) {
 	s.Reasoning = val
+}
+
+// SetMedia sets the value of Media.
+func (s *RequestResource) SetMedia(val OptNilMediaUsage) {
+	s.Media = val
 }
 
 func (*RequestResource) getRequestRes() {}
@@ -5187,7 +6229,9 @@ type TotalsResource struct {
 	InputTokens      int64 `json:"input_tokens"`
 	OutputTokens     int64 `json:"output_tokens"`
 	ReasoningTokens  int64 `json:"reasoning_tokens"`
-	Requests         int64 `json:"requests"`
+	// Media quantities and their rate dimensions. Null when this range has no media usage.
+	Media    OptNilMediaUsage `json:"media"`
+	Requests int64            `json:"requests"`
 }
 
 // GetCacheReadTokens returns the value of CacheReadTokens.
@@ -5213,6 +6257,11 @@ func (s *TotalsResource) GetOutputTokens() int64 {
 // GetReasoningTokens returns the value of ReasoningTokens.
 func (s *TotalsResource) GetReasoningTokens() int64 {
 	return s.ReasoningTokens
+}
+
+// GetMedia returns the value of Media.
+func (s *TotalsResource) GetMedia() OptNilMediaUsage {
+	return s.Media
 }
 
 // GetRequests returns the value of Requests.
@@ -5243,6 +6292,11 @@ func (s *TotalsResource) SetOutputTokens(val int64) {
 // SetReasoningTokens sets the value of ReasoningTokens.
 func (s *TotalsResource) SetReasoningTokens(val int64) {
 	s.ReasoningTokens = val
+}
+
+// SetMedia sets the value of Media.
+func (s *TotalsResource) SetMedia(val OptNilMediaUsage) {
+	s.Media = val
 }
 
 // SetRequests sets the value of Requests.
@@ -5322,7 +6376,9 @@ type UsageBucketResource struct {
 	InputTokens     int64     `json:"input_tokens"`
 	OutputTokens    int64     `json:"output_tokens"`
 	ReasoningTokens int64     `json:"reasoning_tokens"`
-	Requests        int64     `json:"requests"`
+	// Media quantities and their rate dimensions. Null when this range has no media usage.
+	Media    OptNilMediaUsage `json:"media"`
+	Requests int64            `json:"requests"`
 	// End of the bucket, exclusive.
 	To time.Time `json:"to"`
 }
@@ -5355,6 +6411,11 @@ func (s *UsageBucketResource) GetOutputTokens() int64 {
 // GetReasoningTokens returns the value of ReasoningTokens.
 func (s *UsageBucketResource) GetReasoningTokens() int64 {
 	return s.ReasoningTokens
+}
+
+// GetMedia returns the value of Media.
+func (s *UsageBucketResource) GetMedia() OptNilMediaUsage {
+	return s.Media
 }
 
 // GetRequests returns the value of Requests.
@@ -5397,6 +6458,11 @@ func (s *UsageBucketResource) SetReasoningTokens(val int64) {
 	s.ReasoningTokens = val
 }
 
+// SetMedia sets the value of Media.
+func (s *UsageBucketResource) SetMedia(val OptNilMediaUsage) {
+	s.Media = val
+}
+
 // SetRequests sets the value of Requests.
 func (s *UsageBucketResource) SetRequests(val int64) {
 	s.Requests = val
@@ -5423,3 +6489,81 @@ func (s *UsageTimelineResponseBody) SetItems(val []UsageBucketResource) {
 }
 
 func (*UsageTimelineResponseBody) getUsageTimelineRes() {}
+
+// The video parameters this endpoint accepts. Video is asynchronous on every endpoint that supports
+// it. Create returns a task, and the task is polled separately.
+// Ref: #/components/schemas/VideoCapabilities
+type VideoCapabilities struct {
+	// Durations the upstream accepts, in seconds. Null means unknown.
+	Seconds []int `json:"seconds"`
+	// Output sizes the upstream accepts, such as 1280x720. Null means unknown.
+	Sizes []string `json:"sizes"`
+	// Resolution tiers the upstream accepts, such as 720p or 1080p. Null means unknown.
+	Resolutions []string `json:"resolutions"`
+	// Whether a request may carry a reference image. Null means unknown.
+	SupportsInputReference NilBool `json:"supports_input_reference"`
+	// Whether a generated video can be remixed into another task. Null means unknown.
+	SupportsRemix NilBool `json:"supports_remix"`
+	// Whether the upstream accepts reusable characters. Null means unknown.
+	SupportsCharacters NilBool `json:"supports_characters"`
+}
+
+// GetSeconds returns the value of Seconds.
+func (s *VideoCapabilities) GetSeconds() []int {
+	return s.Seconds
+}
+
+// GetSizes returns the value of Sizes.
+func (s *VideoCapabilities) GetSizes() []string {
+	return s.Sizes
+}
+
+// GetResolutions returns the value of Resolutions.
+func (s *VideoCapabilities) GetResolutions() []string {
+	return s.Resolutions
+}
+
+// GetSupportsInputReference returns the value of SupportsInputReference.
+func (s *VideoCapabilities) GetSupportsInputReference() NilBool {
+	return s.SupportsInputReference
+}
+
+// GetSupportsRemix returns the value of SupportsRemix.
+func (s *VideoCapabilities) GetSupportsRemix() NilBool {
+	return s.SupportsRemix
+}
+
+// GetSupportsCharacters returns the value of SupportsCharacters.
+func (s *VideoCapabilities) GetSupportsCharacters() NilBool {
+	return s.SupportsCharacters
+}
+
+// SetSeconds sets the value of Seconds.
+func (s *VideoCapabilities) SetSeconds(val []int) {
+	s.Seconds = val
+}
+
+// SetSizes sets the value of Sizes.
+func (s *VideoCapabilities) SetSizes(val []string) {
+	s.Sizes = val
+}
+
+// SetResolutions sets the value of Resolutions.
+func (s *VideoCapabilities) SetResolutions(val []string) {
+	s.Resolutions = val
+}
+
+// SetSupportsInputReference sets the value of SupportsInputReference.
+func (s *VideoCapabilities) SetSupportsInputReference(val NilBool) {
+	s.SupportsInputReference = val
+}
+
+// SetSupportsRemix sets the value of SupportsRemix.
+func (s *VideoCapabilities) SetSupportsRemix(val NilBool) {
+	s.SupportsRemix = val
+}
+
+// SetSupportsCharacters sets the value of SupportsCharacters.
+func (s *VideoCapabilities) SetSupportsCharacters(val NilBool) {
+	s.SupportsCharacters = val
+}

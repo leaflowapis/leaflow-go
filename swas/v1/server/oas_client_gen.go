@@ -72,8 +72,9 @@ type Invoker interface {
 	ListInstances(ctx context.Context, params ListInstancesParams) (ListInstancesRes, error)
 	// ListPlans invokes list-plans operation.
 	//
-	// Lists available plans and prices for the requested region. A plan without a price is not available
-	// to buy.
+	// Lists one plan per provider plan ID in the requested region. The default response preserves the
+	// single price and buyable fields. With include_prices=true, plans also contain verified price options
+	// for explicit billing-period selection. Archived snapshot prices are never offered for purchase.
 	//
 	// GET /api/v1/catalog/plans
 	ListPlans(ctx context.Context, params ListPlansParams) (ListPlansRes, error)
@@ -1013,8 +1014,9 @@ func (c *Client) sendListInstances(ctx context.Context, params ListInstancesPara
 
 // ListPlans invokes list-plans operation.
 //
-// Lists available plans and prices for the requested region. A plan without a price is not available
-// to buy.
+// Lists one plan per provider plan ID in the requested region. The default response preserves the
+// single price and buyable fields. With include_prices=true, plans also contain verified price options
+// for explicit billing-period selection. Archived snapshot prices are never offered for purchase.
 //
 // GET /api/v1/catalog/plans
 func (c *Client) ListPlans(ctx context.Context, params ListPlansParams) (ListPlansRes, error) {
@@ -1075,6 +1077,23 @@ func (c *Client) sendListPlans(ctx context.Context, params ListPlansParams) (res
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			return e.EncodeValue(conv.StringToString(params.RegionID))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "include_prices" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "include_prices",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.IncludePrices.Get(); ok {
+				return e.EncodeValue(conv.BoolToString(val))
+			}
+			return nil
 		}); err != nil {
 			return res, errors.Wrap(err, "encode query")
 		}

@@ -2041,7 +2041,7 @@ func (c *Client) sendGetRequest(ctx context.Context, params GetRequestParams) (r
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.RequestId))
+			return e.EncodeValue(conv.StringToString(params.RequestId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}

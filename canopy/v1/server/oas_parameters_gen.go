@@ -493,7 +493,8 @@ func decodeGetModelParams(args [1]string, argsEscaped bool, r *http.Request) (pa
 
 // GetRequestParams is parameters of get-request operation.
 type GetRequestParams struct {
-	RequestId uuid.UUID
+	// A typed request id such as `req_01j...`; a bare UUID is also accepted.
+	RequestId string
 }
 
 func unpackGetRequestParams(packed middleware.Parameters) (params GetRequestParams) {
@@ -502,7 +503,7 @@ func unpackGetRequestParams(packed middleware.Parameters) (params GetRequestPara
 			Name: "requestId",
 			In:   "path",
 		}
-		params.RequestId = packed[key].(uuid.UUID)
+		params.RequestId = packed[key].(string)
 	}
 	return params
 }
@@ -532,7 +533,7 @@ func decodeGetRequestParams(args [1]string, argsEscaped bool, r *http.Request) (
 					return err
 				}
 
-				c, err := conv.ToUUID(val)
+				c, err := conv.ToString(val)
 				if err != nil {
 					return err
 				}
