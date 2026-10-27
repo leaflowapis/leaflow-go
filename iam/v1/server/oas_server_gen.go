@@ -32,6 +32,19 @@ type Handler interface {
 	//
 	// POST /api/v1/members:batchGet
 	BatchGetMembers(ctx context.Context, req *BatchGetMembersRequestBody) (*BatchGetMembersResponseBody, error)
+	// CreateApplication implements create-application operation.
+	//
+	// Creates an OIDC client for an application of this project. Applications authenticate against
+	// `https://auth.leaflow.net/realms/user`.
+	//
+	// The `secret` is present only for a confidential application, and only in this response. It is not
+	// stored and cannot be read again; use `:rotateSecret` to obtain a new one.
+	//
+	// Any account of this platform may sign in to the application. Membership of this project is confirmed
+	// only when a token is exchanged for a scoped token.
+	//
+	// POST /api/v1/applications
+	CreateApplication(ctx context.Context, req *CreateApplicationRequestBody) (*CreateApplicationResponseBody, error)
 	// CreateRole implements create-role operation.
 	//
 	// Create a role.
@@ -46,6 +59,13 @@ type Handler interface {
 	//
 	// POST /api/v1/ssh-keys
 	CreateSSHKey(ctx context.Context, req *CreateSSHKeyRequestBody) (*SSHKeyResource, error)
+	// DeleteApplication implements delete-application operation.
+	//
+	// The application is removed from the identity provider and its row is retained with `status`
+	// `ARCHIVED`. Repeating the call returns the same resource.
+	//
+	// DELETE /api/v1/applications/{applicationId}
+	DeleteApplication(ctx context.Context, params DeleteApplicationParams) (*ApplicationResource, error)
 	// DeleteProject implements delete-project operation.
 	//
 	// Only the owner can do this, and it cannot be undone. The project enters DELETING and each service
@@ -67,6 +87,12 @@ type Handler interface {
 	//
 	// DELETE /api/v1/policies/{policyId}
 	DetachPolicy(ctx context.Context, params DetachPolicyParams) error
+	// GetApplication implements get-application operation.
+	//
+	// An application that has been deleted is still returned, with `status` `ARCHIVED`.
+	//
+	// GET /api/v1/applications/{applicationId}
+	GetApplication(ctx context.Context, params GetApplicationParams) (*ApplicationResource, error)
 	// GetPolicy implements get-policy operation.
 	//
 	// Visible to any member, on the same rule as list-policies; no further permission is required.
@@ -105,6 +131,13 @@ type Handler interface {
 	//
 	// POST /api/v1/invitations
 	IssueInvitation(ctx context.Context, req *IssueInvitationRequestBody) (*IssuedInvitationResponseBody, error)
+	// ListApplications implements list-applications operation.
+	//
+	// Disabled applications are listed. Archived applications are omitted unless `include_archived` is
+	// true. An application that is still being created is not listed.
+	//
+	// GET /api/v1/applications
+	ListApplications(ctx context.Context, params ListApplicationsParams) (*LengthAwarePageApplicationResource, error)
 	// ListMembers implements list-members operation.
 	//
 	// List the members of a project.
@@ -182,6 +215,13 @@ type Handler interface {
 	//
 	// DELETE /api/v1/ssh-keys/{keyId}
 	RevokeSSHKey(ctx context.Context, params RevokeSSHKeyParams) (*SSHKeyResource, error)
+	// RotateApplicationSecret implements rotate-application-secret operation.
+	//
+	// Returns a new secret and invalidates the previous one immediately. Only an active confidential
+	// application has a secret; any other state answers 412.
+	//
+	// POST /api/v1/applications/{applicationId}:rotateSecret
+	RotateApplicationSecret(ctx context.Context, params RotateApplicationSecretParams) (*RotateApplicationSecretResponseBody, error)
 	// SetMemberPermissions implements set-member-permissions operation.
 	//
 	// Replaces, in full, the permissions attached directly to the base policy. A direct permission grants
@@ -222,6 +262,14 @@ type Handler interface {
 	//
 	// POST /api/v1/project:transferOwnership
 	TransferProjectOwnership(ctx context.Context, req *TransferOwnershipRequestBody) (*OwnershipTransferResponseBody, error)
+	// UpdateApplication implements update-application operation.
+	//
+	// Only the name and the redirect URIs can change. The type and `client_id` never change.
+	//
+	// An application that is disabled or deleted cannot be updated.
+	//
+	// PATCH /api/v1/applications/{applicationId}
+	UpdateApplication(ctx context.Context, req *UpdateApplicationRequestBody, params UpdateApplicationParams) (*ApplicationResource, error)
 	// UpdatePolicy implements update-policy operation.
 	//
 	// Replaced in full rather than field by field — `resources`, `roles` and `permissions` are each

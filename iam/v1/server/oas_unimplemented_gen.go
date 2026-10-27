@@ -43,6 +43,22 @@ func (UnimplementedHandler) BatchGetMembers(ctx context.Context, req *BatchGetMe
 	return r, ht.ErrNotImplemented
 }
 
+// CreateApplication implements create-application operation.
+//
+// Creates an OIDC client for an application of this project. Applications authenticate against
+// `https://auth.leaflow.net/realms/user`.
+//
+// The `secret` is present only for a confidential application, and only in this response. It is not
+// stored and cannot be read again; use `:rotateSecret` to obtain a new one.
+//
+// Any account of this platform may sign in to the application. Membership of this project is confirmed
+// only when a token is exchanged for a scoped token.
+//
+// POST /api/v1/applications
+func (UnimplementedHandler) CreateApplication(ctx context.Context, req *CreateApplicationRequestBody) (r *CreateApplicationResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CreateRole implements create-role operation.
 //
 // Create a role.
@@ -60,6 +76,16 @@ func (UnimplementedHandler) CreateRole(ctx context.Context, req *CreateRoleReque
 //
 // POST /api/v1/ssh-keys
 func (UnimplementedHandler) CreateSSHKey(ctx context.Context, req *CreateSSHKeyRequestBody) (r *SSHKeyResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// DeleteApplication implements delete-application operation.
+//
+// The application is removed from the identity provider and its row is retained with `status`
+// `ARCHIVED`. Repeating the call returns the same resource.
+//
+// DELETE /api/v1/applications/{applicationId}
+func (UnimplementedHandler) DeleteApplication(ctx context.Context, params DeleteApplicationParams) (r *ApplicationResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -91,6 +117,15 @@ func (UnimplementedHandler) DeleteRole(ctx context.Context, params DeleteRolePar
 // DELETE /api/v1/policies/{policyId}
 func (UnimplementedHandler) DetachPolicy(ctx context.Context, params DetachPolicyParams) error {
 	return ht.ErrNotImplemented
+}
+
+// GetApplication implements get-application operation.
+//
+// An application that has been deleted is still returned, with `status` `ARCHIVED`.
+//
+// GET /api/v1/applications/{applicationId}
+func (UnimplementedHandler) GetApplication(ctx context.Context, params GetApplicationParams) (r *ApplicationResource, _ error) {
+	return r, ht.ErrNotImplemented
 }
 
 // GetPolicy implements get-policy operation.
@@ -146,6 +181,16 @@ func (UnimplementedHandler) GetSSHKey(ctx context.Context, params GetSSHKeyParam
 //
 // POST /api/v1/invitations
 func (UnimplementedHandler) IssueInvitation(ctx context.Context, req *IssueInvitationRequestBody) (r *IssuedInvitationResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListApplications implements list-applications operation.
+//
+// Disabled applications are listed. Archived applications are omitted unless `include_archived` is
+// true. An application that is still being created is not listed.
+//
+// GET /api/v1/applications
+func (UnimplementedHandler) ListApplications(ctx context.Context, params ListApplicationsParams) (r *LengthAwarePageApplicationResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -259,6 +304,16 @@ func (UnimplementedHandler) RevokeSSHKey(ctx context.Context, params RevokeSSHKe
 	return r, ht.ErrNotImplemented
 }
 
+// RotateApplicationSecret implements rotate-application-secret operation.
+//
+// Returns a new secret and invalidates the previous one immediately. Only an active confidential
+// application has a secret; any other state answers 412.
+//
+// POST /api/v1/applications/{applicationId}:rotateSecret
+func (UnimplementedHandler) RotateApplicationSecret(ctx context.Context, params RotateApplicationSecretParams) (r *RotateApplicationSecretResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SetMemberPermissions implements set-member-permissions operation.
 //
 // Replaces, in full, the permissions attached directly to the base policy. A direct permission grants
@@ -308,6 +363,17 @@ func (UnimplementedHandler) SetProjectSlug(ctx context.Context, req *SetProjectS
 //
 // POST /api/v1/project:transferOwnership
 func (UnimplementedHandler) TransferProjectOwnership(ctx context.Context, req *TransferOwnershipRequestBody) (r *OwnershipTransferResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateApplication implements update-application operation.
+//
+// Only the name and the redirect URIs can change. The type and `client_id` never change.
+//
+// An application that is disabled or deleted cannot be updated.
+//
+// PATCH /api/v1/applications/{applicationId}
+func (UnimplementedHandler) UpdateApplication(ctx context.Context, req *UpdateApplicationRequestBody, params UpdateApplicationParams) (r *ApplicationResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

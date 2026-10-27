@@ -14,6 +14,209 @@ func (s *ErrorStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
+// Ref: #/components/schemas/ApplicationResource
+type ApplicationResource struct {
+	ID              uuid.UUID                 `json:"id"`
+	Name            string                    `json:"name"`
+	Type            ApplicationResourceType   `json:"type"`
+	ClientID        string                    `json:"client_id"`
+	RedirectUris    []string                  `json:"redirect_uris"`
+	Status          ApplicationResourceStatus `json:"status"`
+	CreatedBy       NilString                 `json:"created_by"`
+	CreatedAt       time.Time                 `json:"created_at"`
+	DisabledAt      NilDateTime               `json:"disabled_at"`
+	SecretRotatedAt NilDateTime               `json:"secret_rotated_at"`
+}
+
+// GetID returns the value of ID.
+func (s *ApplicationResource) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *ApplicationResource) GetName() string {
+	return s.Name
+}
+
+// GetType returns the value of Type.
+func (s *ApplicationResource) GetType() ApplicationResourceType {
+	return s.Type
+}
+
+// GetClientID returns the value of ClientID.
+func (s *ApplicationResource) GetClientID() string {
+	return s.ClientID
+}
+
+// GetRedirectUris returns the value of RedirectUris.
+func (s *ApplicationResource) GetRedirectUris() []string {
+	return s.RedirectUris
+}
+
+// GetStatus returns the value of Status.
+func (s *ApplicationResource) GetStatus() ApplicationResourceStatus {
+	return s.Status
+}
+
+// GetCreatedBy returns the value of CreatedBy.
+func (s *ApplicationResource) GetCreatedBy() NilString {
+	return s.CreatedBy
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *ApplicationResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetDisabledAt returns the value of DisabledAt.
+func (s *ApplicationResource) GetDisabledAt() NilDateTime {
+	return s.DisabledAt
+}
+
+// GetSecretRotatedAt returns the value of SecretRotatedAt.
+func (s *ApplicationResource) GetSecretRotatedAt() NilDateTime {
+	return s.SecretRotatedAt
+}
+
+// SetID sets the value of ID.
+func (s *ApplicationResource) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *ApplicationResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetType sets the value of Type.
+func (s *ApplicationResource) SetType(val ApplicationResourceType) {
+	s.Type = val
+}
+
+// SetClientID sets the value of ClientID.
+func (s *ApplicationResource) SetClientID(val string) {
+	s.ClientID = val
+}
+
+// SetRedirectUris sets the value of RedirectUris.
+func (s *ApplicationResource) SetRedirectUris(val []string) {
+	s.RedirectUris = val
+}
+
+// SetStatus sets the value of Status.
+func (s *ApplicationResource) SetStatus(val ApplicationResourceStatus) {
+	s.Status = val
+}
+
+// SetCreatedBy sets the value of CreatedBy.
+func (s *ApplicationResource) SetCreatedBy(val NilString) {
+	s.CreatedBy = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *ApplicationResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetDisabledAt sets the value of DisabledAt.
+func (s *ApplicationResource) SetDisabledAt(val NilDateTime) {
+	s.DisabledAt = val
+}
+
+// SetSecretRotatedAt sets the value of SecretRotatedAt.
+func (s *ApplicationResource) SetSecretRotatedAt(val NilDateTime) {
+	s.SecretRotatedAt = val
+}
+
+type ApplicationResourceStatus string
+
+const (
+	ApplicationResourceStatusACTIVE   ApplicationResourceStatus = "ACTIVE"
+	ApplicationResourceStatusDISABLED ApplicationResourceStatus = "DISABLED"
+	ApplicationResourceStatusARCHIVED ApplicationResourceStatus = "ARCHIVED"
+)
+
+// AllValues returns all ApplicationResourceStatus values.
+func (ApplicationResourceStatus) AllValues() []ApplicationResourceStatus {
+	return []ApplicationResourceStatus{
+		ApplicationResourceStatusACTIVE,
+		ApplicationResourceStatusDISABLED,
+		ApplicationResourceStatusARCHIVED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ApplicationResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ApplicationResourceStatusACTIVE:
+		return []byte(s), nil
+	case ApplicationResourceStatusDISABLED:
+		return []byte(s), nil
+	case ApplicationResourceStatusARCHIVED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ApplicationResourceStatus) UnmarshalText(data []byte) error {
+	switch ApplicationResourceStatus(data) {
+	case ApplicationResourceStatusACTIVE:
+		*s = ApplicationResourceStatusACTIVE
+		return nil
+	case ApplicationResourceStatusDISABLED:
+		*s = ApplicationResourceStatusDISABLED
+		return nil
+	case ApplicationResourceStatusARCHIVED:
+		*s = ApplicationResourceStatusARCHIVED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type ApplicationResourceType string
+
+const (
+	ApplicationResourceTypePUBLIC       ApplicationResourceType = "PUBLIC"
+	ApplicationResourceTypeCONFIDENTIAL ApplicationResourceType = "CONFIDENTIAL"
+)
+
+// AllValues returns all ApplicationResourceType values.
+func (ApplicationResourceType) AllValues() []ApplicationResourceType {
+	return []ApplicationResourceType{
+		ApplicationResourceTypePUBLIC,
+		ApplicationResourceTypeCONFIDENTIAL,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ApplicationResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case ApplicationResourceTypePUBLIC:
+		return []byte(s), nil
+	case ApplicationResourceTypeCONFIDENTIAL:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ApplicationResourceType) UnmarshalText(data []byte) error {
+	switch ApplicationResourceType(data) {
+	case ApplicationResourceTypePUBLIC:
+		*s = ApplicationResourceTypePUBLIC
+		return nil
+	case ApplicationResourceTypeCONFIDENTIAL:
+		*s = ApplicationResourceTypeCONFIDENTIAL
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/AttachPolicyRequestBody
 type AttachPolicyRequestBody struct {
 	// Why it was granted, written for a reader.
@@ -241,6 +444,111 @@ func (s *CatalogResource) SetResourceTypes(val []ResourceTypeResource) {
 // SetService sets the value of Service.
 func (s *CatalogResource) SetService(val string) {
 	s.Service = val
+}
+
+// Ref: #/components/schemas/CreateApplicationRequestBody
+type CreateApplicationRequestBody struct {
+	Name         string                           `json:"name"`
+	Type         CreateApplicationRequestBodyType `json:"type"`
+	RedirectUris []string                         `json:"redirect_uris"`
+}
+
+// GetName returns the value of Name.
+func (s *CreateApplicationRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetType returns the value of Type.
+func (s *CreateApplicationRequestBody) GetType() CreateApplicationRequestBodyType {
+	return s.Type
+}
+
+// GetRedirectUris returns the value of RedirectUris.
+func (s *CreateApplicationRequestBody) GetRedirectUris() []string {
+	return s.RedirectUris
+}
+
+// SetName sets the value of Name.
+func (s *CreateApplicationRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetType sets the value of Type.
+func (s *CreateApplicationRequestBody) SetType(val CreateApplicationRequestBodyType) {
+	s.Type = val
+}
+
+// SetRedirectUris sets the value of RedirectUris.
+func (s *CreateApplicationRequestBody) SetRedirectUris(val []string) {
+	s.RedirectUris = val
+}
+
+type CreateApplicationRequestBodyType string
+
+const (
+	CreateApplicationRequestBodyTypePUBLIC       CreateApplicationRequestBodyType = "PUBLIC"
+	CreateApplicationRequestBodyTypeCONFIDENTIAL CreateApplicationRequestBodyType = "CONFIDENTIAL"
+)
+
+// AllValues returns all CreateApplicationRequestBodyType values.
+func (CreateApplicationRequestBodyType) AllValues() []CreateApplicationRequestBodyType {
+	return []CreateApplicationRequestBodyType{
+		CreateApplicationRequestBodyTypePUBLIC,
+		CreateApplicationRequestBodyTypeCONFIDENTIAL,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CreateApplicationRequestBodyType) MarshalText() ([]byte, error) {
+	switch s {
+	case CreateApplicationRequestBodyTypePUBLIC:
+		return []byte(s), nil
+	case CreateApplicationRequestBodyTypeCONFIDENTIAL:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CreateApplicationRequestBodyType) UnmarshalText(data []byte) error {
+	switch CreateApplicationRequestBodyType(data) {
+	case CreateApplicationRequestBodyTypePUBLIC:
+		*s = CreateApplicationRequestBodyTypePUBLIC
+		return nil
+	case CreateApplicationRequestBodyTypeCONFIDENTIAL:
+		*s = CreateApplicationRequestBodyTypeCONFIDENTIAL
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/CreateApplicationResponseBody
+type CreateApplicationResponseBody struct {
+	Application ApplicationResource `json:"application"`
+	// Present only for a confidential application, and only in this response.
+	Secret NilString `json:"secret"`
+}
+
+// GetApplication returns the value of Application.
+func (s *CreateApplicationResponseBody) GetApplication() ApplicationResource {
+	return s.Application
+}
+
+// GetSecret returns the value of Secret.
+func (s *CreateApplicationResponseBody) GetSecret() NilString {
+	return s.Secret
+}
+
+// SetApplication sets the value of Application.
+func (s *CreateApplicationResponseBody) SetApplication(val ApplicationResource) {
+	s.Application = val
+}
+
+// SetSecret sets the value of Secret.
+func (s *CreateApplicationResponseBody) SetSecret(val NilString) {
+	s.Secret = val
 }
 
 // Ref: #/components/schemas/CreateRoleRequestBody
@@ -776,6 +1084,54 @@ func (s *IssuedInvitationResponseBody) SetToken(val string) {
 	s.Token = val
 }
 
+// Ref: #/components/schemas/LengthAwarePageApplicationResource
+type LengthAwarePageApplicationResource struct {
+	Items  []ApplicationResource `json:"items"`
+	Limit  int64                 `json:"limit"`
+	Offset int64                 `json:"offset"`
+	Total  int64                 `json:"total"`
+}
+
+// GetItems returns the value of Items.
+func (s *LengthAwarePageApplicationResource) GetItems() []ApplicationResource {
+	return s.Items
+}
+
+// GetLimit returns the value of Limit.
+func (s *LengthAwarePageApplicationResource) GetLimit() int64 {
+	return s.Limit
+}
+
+// GetOffset returns the value of Offset.
+func (s *LengthAwarePageApplicationResource) GetOffset() int64 {
+	return s.Offset
+}
+
+// GetTotal returns the value of Total.
+func (s *LengthAwarePageApplicationResource) GetTotal() int64 {
+	return s.Total
+}
+
+// SetItems sets the value of Items.
+func (s *LengthAwarePageApplicationResource) SetItems(val []ApplicationResource) {
+	s.Items = val
+}
+
+// SetLimit sets the value of Limit.
+func (s *LengthAwarePageApplicationResource) SetLimit(val int64) {
+	s.Limit = val
+}
+
+// SetOffset sets the value of Offset.
+func (s *LengthAwarePageApplicationResource) SetOffset(val int64) {
+	s.Offset = val
+}
+
+// SetTotal sets the value of Total.
+func (s *LengthAwarePageApplicationResource) SetTotal(val int64) {
+	s.Total = val
+}
+
 // Ref: #/components/schemas/LengthAwarePageInvitationResource
 type LengthAwarePageInvitationResource struct {
 	// The items in this page.
@@ -1177,6 +1533,97 @@ func (o NilDateTime) Get() (v time.Time, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilString returns new NilString with value set to v.
+func NewNilString(v string) NilString {
+	return NilString{
+		Value: v,
+	}
+}
+
+// NilString is nullable string.
+type NilString struct {
+	Value string
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilString) SetTo(v string) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilString) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilString) SetToNull() {
+	o.Null = true
+	var v string
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilString) Get() (v string, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptBool returns new OptBool with value set to v.
+func NewOptBool(v bool) OptBool {
+	return OptBool{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptBool is optional bool.
+type OptBool struct {
+	Value bool
+	Set   bool
+}
+
+// IsSet returns true if OptBool was set.
+func (o OptBool) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptBool) Reset() {
+	var v bool
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptBool) SetTo(v bool) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptBool) Get() (v bool, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptBool) Or(d bool) bool {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -2402,6 +2849,32 @@ func (s *RoleResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
 }
 
+// Ref: #/components/schemas/RotateApplicationSecretResponseBody
+type RotateApplicationSecretResponseBody struct {
+	Secret    string    `json:"secret"`
+	RotatedAt time.Time `json:"rotated_at"`
+}
+
+// GetSecret returns the value of Secret.
+func (s *RotateApplicationSecretResponseBody) GetSecret() string {
+	return s.Secret
+}
+
+// GetRotatedAt returns the value of RotatedAt.
+func (s *RotateApplicationSecretResponseBody) GetRotatedAt() time.Time {
+	return s.RotatedAt
+}
+
+// SetSecret sets the value of Secret.
+func (s *RotateApplicationSecretResponseBody) SetSecret(val string) {
+	s.Secret = val
+}
+
+// SetRotatedAt sets the value of RotatedAt.
+func (s *RotateApplicationSecretResponseBody) SetRotatedAt(val time.Time) {
+	s.RotatedAt = val
+}
+
 // Ref: #/components/schemas/RuleResource
 type RuleResource struct {
 	Effect RuleResourceEffect `json:"effect"`
@@ -2706,6 +3179,32 @@ func (s *TransferOwnershipRequestBody) GetToUserID() string {
 // SetToUserID sets the value of ToUserID.
 func (s *TransferOwnershipRequestBody) SetToUserID(val string) {
 	s.ToUserID = val
+}
+
+// Ref: #/components/schemas/UpdateApplicationRequestBody
+type UpdateApplicationRequestBody struct {
+	Name         OptString `json:"name"`
+	RedirectUris []string  `json:"redirect_uris"`
+}
+
+// GetName returns the value of Name.
+func (s *UpdateApplicationRequestBody) GetName() OptString {
+	return s.Name
+}
+
+// GetRedirectUris returns the value of RedirectUris.
+func (s *UpdateApplicationRequestBody) GetRedirectUris() []string {
+	return s.RedirectUris
+}
+
+// SetName sets the value of Name.
+func (s *UpdateApplicationRequestBody) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetRedirectUris sets the value of RedirectUris.
+func (s *UpdateApplicationRequestBody) SetRedirectUris(val []string) {
+	s.RedirectUris = val
 }
 
 // Ref: #/components/schemas/UpdatePolicyRequestBody
