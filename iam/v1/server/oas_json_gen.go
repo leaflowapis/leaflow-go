@@ -47,6 +47,14 @@ func (s *ApplicationResource) encodeFields(e *jx.Encoder) {
 		e.ArrEnd()
 	}
 	{
+		e.FieldStart("scopes")
+		e.ArrStart()
+		for _, elem := range s.Scopes {
+			e.Str(elem)
+		}
+		e.ArrEnd()
+	}
+	{
 		e.FieldStart("status")
 		s.Status.Encode(e)
 	}
@@ -68,17 +76,18 @@ func (s *ApplicationResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfApplicationResource = [10]string{
-	0: "id",
-	1: "name",
-	2: "type",
-	3: "client_id",
-	4: "redirect_uris",
-	5: "status",
-	6: "created_by",
-	7: "created_at",
-	8: "disabled_at",
-	9: "secret_rotated_at",
+var jsonFieldsNameOfApplicationResource = [11]string{
+	0:  "id",
+	1:  "name",
+	2:  "type",
+	3:  "client_id",
+	4:  "redirect_uris",
+	5:  "scopes",
+	6:  "status",
+	7:  "created_by",
+	8:  "created_at",
+	9:  "disabled_at",
+	10: "secret_rotated_at",
 }
 
 // Decode decodes ApplicationResource from json.
@@ -156,8 +165,28 @@ func (s *ApplicationResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"redirect_uris\"")
 			}
-		case "status":
+		case "scopes":
 			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				s.Scopes = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.Scopes = append(s.Scopes, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"scopes\"")
+			}
+		case "status":
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -167,7 +196,7 @@ func (s *ApplicationResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "created_by":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.CreatedBy.Decode(d); err != nil {
 					return err
@@ -177,7 +206,7 @@ func (s *ApplicationResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_by\"")
 			}
 		case "created_at":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -189,7 +218,7 @@ func (s *ApplicationResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "disabled_at":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				if err := s.DisabledAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -199,7 +228,7 @@ func (s *ApplicationResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"disabled_at\"")
 			}
 		case "secret_rotated_at":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				if err := s.SecretRotatedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -219,7 +248,7 @@ func (s *ApplicationResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000011,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -1094,12 +1123,23 @@ func (s *CreateApplicationRequestBody) encodeFields(e *jx.Encoder) {
 		}
 		e.ArrEnd()
 	}
+	{
+		if s.Scopes != nil {
+			e.FieldStart("scopes")
+			e.ArrStart()
+			for _, elem := range s.Scopes {
+				e.Str(elem)
+			}
+			e.ArrEnd()
+		}
+	}
 }
 
-var jsonFieldsNameOfCreateApplicationRequestBody = [3]string{
+var jsonFieldsNameOfCreateApplicationRequestBody = [4]string{
 	0: "name",
 	1: "type",
 	2: "redirect_uris",
+	3: "scopes",
 }
 
 // Decode decodes CreateApplicationRequestBody from json.
@@ -1152,6 +1192,25 @@ func (s *CreateApplicationRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"redirect_uris\"")
+			}
+		case "scopes":
+			if err := func() error {
+				s.Scopes = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.Scopes = append(s.Scopes, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"scopes\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -7671,11 +7730,22 @@ func (s *UpdateApplicationRequestBody) encodeFields(e *jx.Encoder) {
 			e.ArrEnd()
 		}
 	}
+	{
+		if s.Scopes != nil {
+			e.FieldStart("scopes")
+			e.ArrStart()
+			for _, elem := range s.Scopes {
+				e.Str(elem)
+			}
+			e.ArrEnd()
+		}
+	}
 }
 
-var jsonFieldsNameOfUpdateApplicationRequestBody = [2]string{
+var jsonFieldsNameOfUpdateApplicationRequestBody = [3]string{
 	0: "name",
 	1: "redirect_uris",
+	2: "scopes",
 }
 
 // Decode decodes UpdateApplicationRequestBody from json.
@@ -7716,6 +7786,25 @@ func (s *UpdateApplicationRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"redirect_uris\"")
+			}
+		case "scopes":
+			if err := func() error {
+				s.Scopes = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.Scopes = append(s.Scopes, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"scopes\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)

@@ -16,11 +16,14 @@ func (s *ErrorStatusCode) Error() string {
 
 // Ref: #/components/schemas/ApplicationResource
 type ApplicationResource struct {
-	ID              uuid.UUID                 `json:"id"`
-	Name            string                    `json:"name"`
-	Type            ApplicationResourceType   `json:"type"`
-	ClientID        string                    `json:"client_id"`
-	RedirectUris    []string                  `json:"redirect_uris"`
+	ID           uuid.UUID               `json:"id"`
+	Name         string                  `json:"name"`
+	Type         ApplicationResourceType `json:"type"`
+	ClientID     string                  `json:"client_id"`
+	RedirectUris []string                `json:"redirect_uris"`
+	// The scopes this application may request. The list is the boundary — a scope not here cannot be
+	// obtained, and the platform's own scopes are never offered.
+	Scopes          []string                  `json:"scopes"`
 	Status          ApplicationResourceStatus `json:"status"`
 	CreatedBy       NilString                 `json:"created_by"`
 	CreatedAt       time.Time                 `json:"created_at"`
@@ -51,6 +54,11 @@ func (s *ApplicationResource) GetClientID() string {
 // GetRedirectUris returns the value of RedirectUris.
 func (s *ApplicationResource) GetRedirectUris() []string {
 	return s.RedirectUris
+}
+
+// GetScopes returns the value of Scopes.
+func (s *ApplicationResource) GetScopes() []string {
+	return s.Scopes
 }
 
 // GetStatus returns the value of Status.
@@ -101,6 +109,11 @@ func (s *ApplicationResource) SetClientID(val string) {
 // SetRedirectUris sets the value of RedirectUris.
 func (s *ApplicationResource) SetRedirectUris(val []string) {
 	s.RedirectUris = val
+}
+
+// SetScopes sets the value of Scopes.
+func (s *ApplicationResource) SetScopes(val []string) {
+	s.Scopes = val
 }
 
 // SetStatus sets the value of Status.
@@ -451,6 +464,9 @@ type CreateApplicationRequestBody struct {
 	Name         string                           `json:"name"`
 	Type         CreateApplicationRequestBodyType `json:"type"`
 	RedirectUris []string                         `json:"redirect_uris"`
+	// The scopes the application may request. Omitted means the defaults, `profile` and `email`; a scope
+	// not in the platform's list is refused.
+	Scopes []string `json:"scopes"`
 }
 
 // GetName returns the value of Name.
@@ -468,6 +484,11 @@ func (s *CreateApplicationRequestBody) GetRedirectUris() []string {
 	return s.RedirectUris
 }
 
+// GetScopes returns the value of Scopes.
+func (s *CreateApplicationRequestBody) GetScopes() []string {
+	return s.Scopes
+}
+
 // SetName sets the value of Name.
 func (s *CreateApplicationRequestBody) SetName(val string) {
 	s.Name = val
@@ -481,6 +502,11 @@ func (s *CreateApplicationRequestBody) SetType(val CreateApplicationRequestBodyT
 // SetRedirectUris sets the value of RedirectUris.
 func (s *CreateApplicationRequestBody) SetRedirectUris(val []string) {
 	s.RedirectUris = val
+}
+
+// SetScopes sets the value of Scopes.
+func (s *CreateApplicationRequestBody) SetScopes(val []string) {
+	s.Scopes = val
 }
 
 type CreateApplicationRequestBodyType string
@@ -3185,6 +3211,8 @@ func (s *TransferOwnershipRequestBody) SetToUserID(val string) {
 type UpdateApplicationRequestBody struct {
 	Name         OptString `json:"name"`
 	RedirectUris []string  `json:"redirect_uris"`
+	// The scopes the application may request. Omitted leaves them unchanged.
+	Scopes []string `json:"scopes"`
 }
 
 // GetName returns the value of Name.
@@ -3197,6 +3225,11 @@ func (s *UpdateApplicationRequestBody) GetRedirectUris() []string {
 	return s.RedirectUris
 }
 
+// GetScopes returns the value of Scopes.
+func (s *UpdateApplicationRequestBody) GetScopes() []string {
+	return s.Scopes
+}
+
 // SetName sets the value of Name.
 func (s *UpdateApplicationRequestBody) SetName(val OptString) {
 	s.Name = val
@@ -3205,6 +3238,11 @@ func (s *UpdateApplicationRequestBody) SetName(val OptString) {
 // SetRedirectUris sets the value of RedirectUris.
 func (s *UpdateApplicationRequestBody) SetRedirectUris(val []string) {
 	s.RedirectUris = val
+}
+
+// SetScopes sets the value of Scopes.
+func (s *UpdateApplicationRequestBody) SetScopes(val []string) {
+	s.Scopes = val
 }
 
 // Ref: #/components/schemas/UpdatePolicyRequestBody
