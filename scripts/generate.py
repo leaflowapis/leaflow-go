@@ -31,7 +31,7 @@ def generate_services(source):
         print(str(relative), "native client + server + referenced models", flush=True)
         module = ROOT / relative.parent / "go.mod"
         if not module.exists():
-            module.write_text("module github.com/leaflowapis/leaflow-go/" + str(relative.parent) + "\n\ngo 1.26.0\n\nrequire github.com/ogen-go/ogen v1.24.0\n")
+            module.write_text("module github.com/leaflowapis/leaflow-go/" + str(relative.parent) + "\n\ngo 1.27.3\n\nrequire github.com/ogen-go/ogen v1.24.0\n")
 
 
 def main():
