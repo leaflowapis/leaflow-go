@@ -230,12 +230,17 @@ func (*APIKeyUsageListResponseBody) listUsageByAPIKeyRes() {}
 
 // Ref: #/components/schemas/APIKeyUsageResource
 type APIKeyUsageResource struct {
-	APIKeyID         uuid.UUID `json:"api_key_id"`
-	CacheReadTokens  int64     `json:"cache_read_tokens"`
-	CacheWriteTokens int64     `json:"cache_write_tokens"`
-	InputTokens      int64     `json:"input_tokens"`
-	OutputTokens     int64     `json:"output_tokens"`
-	ReasoningTokens  int64     `json:"reasoning_tokens"`
+	APIKeyID uuid.UUID `json:"api_key_id"`
+	// Null when this range has no token usage.
+	CacheReadTokens NilInt64 `json:"cache_read_tokens"`
+	// Null when this range has no token usage.
+	CacheWriteTokens NilInt64 `json:"cache_write_tokens"`
+	// Null when this range has no token usage.
+	InputTokens NilInt64 `json:"input_tokens"`
+	// Null when this range has no token usage.
+	OutputTokens NilInt64 `json:"output_tokens"`
+	// Null when this range has no token usage.
+	ReasoningTokens NilInt64 `json:"reasoning_tokens"`
 	// Media quantities and their rate dimensions. Null when this range has no media usage.
 	Media    OptNilMediaUsage `json:"media"`
 	Requests int64            `json:"requests"`
@@ -247,27 +252,27 @@ func (s *APIKeyUsageResource) GetAPIKeyID() uuid.UUID {
 }
 
 // GetCacheReadTokens returns the value of CacheReadTokens.
-func (s *APIKeyUsageResource) GetCacheReadTokens() int64 {
+func (s *APIKeyUsageResource) GetCacheReadTokens() NilInt64 {
 	return s.CacheReadTokens
 }
 
 // GetCacheWriteTokens returns the value of CacheWriteTokens.
-func (s *APIKeyUsageResource) GetCacheWriteTokens() int64 {
+func (s *APIKeyUsageResource) GetCacheWriteTokens() NilInt64 {
 	return s.CacheWriteTokens
 }
 
 // GetInputTokens returns the value of InputTokens.
-func (s *APIKeyUsageResource) GetInputTokens() int64 {
+func (s *APIKeyUsageResource) GetInputTokens() NilInt64 {
 	return s.InputTokens
 }
 
 // GetOutputTokens returns the value of OutputTokens.
-func (s *APIKeyUsageResource) GetOutputTokens() int64 {
+func (s *APIKeyUsageResource) GetOutputTokens() NilInt64 {
 	return s.OutputTokens
 }
 
 // GetReasoningTokens returns the value of ReasoningTokens.
-func (s *APIKeyUsageResource) GetReasoningTokens() int64 {
+func (s *APIKeyUsageResource) GetReasoningTokens() NilInt64 {
 	return s.ReasoningTokens
 }
 
@@ -287,27 +292,27 @@ func (s *APIKeyUsageResource) SetAPIKeyID(val uuid.UUID) {
 }
 
 // SetCacheReadTokens sets the value of CacheReadTokens.
-func (s *APIKeyUsageResource) SetCacheReadTokens(val int64) {
+func (s *APIKeyUsageResource) SetCacheReadTokens(val NilInt64) {
 	s.CacheReadTokens = val
 }
 
 // SetCacheWriteTokens sets the value of CacheWriteTokens.
-func (s *APIKeyUsageResource) SetCacheWriteTokens(val int64) {
+func (s *APIKeyUsageResource) SetCacheWriteTokens(val NilInt64) {
 	s.CacheWriteTokens = val
 }
 
 // SetInputTokens sets the value of InputTokens.
-func (s *APIKeyUsageResource) SetInputTokens(val int64) {
+func (s *APIKeyUsageResource) SetInputTokens(val NilInt64) {
 	s.InputTokens = val
 }
 
 // SetOutputTokens sets the value of OutputTokens.
-func (s *APIKeyUsageResource) SetOutputTokens(val int64) {
+func (s *APIKeyUsageResource) SetOutputTokens(val NilInt64) {
 	s.OutputTokens = val
 }
 
 // SetReasoningTokens sets the value of ReasoningTokens.
-func (s *APIKeyUsageResource) SetReasoningTokens(val int64) {
+func (s *APIKeyUsageResource) SetReasoningTokens(val NilInt64) {
 	s.ReasoningTokens = val
 }
 
@@ -3283,29 +3288,34 @@ func (*ModelUsageListResponseBody) listUsageByModelRes() {}
 
 // Ref: #/components/schemas/ModelUsageResource
 type ModelUsageResource struct {
-	CacheReadTokens  int64  `json:"cache_read_tokens"`
-	CacheWriteTokens int64  `json:"cache_write_tokens"`
-	InputTokens      int64  `json:"input_tokens"`
-	ModelID          string `json:"model_id"`
-	OutputTokens     int64  `json:"output_tokens"`
-	ReasoningTokens  int64  `json:"reasoning_tokens"`
+	// Null when this range has no token usage.
+	CacheReadTokens NilInt64 `json:"cache_read_tokens"`
+	// Null when this range has no token usage.
+	CacheWriteTokens NilInt64 `json:"cache_write_tokens"`
+	// Null when this range has no token usage.
+	InputTokens NilInt64 `json:"input_tokens"`
+	ModelID     string   `json:"model_id"`
+	// Null when this range has no token usage.
+	OutputTokens NilInt64 `json:"output_tokens"`
+	// Null when this range has no token usage.
+	ReasoningTokens NilInt64 `json:"reasoning_tokens"`
 	// Media quantities and their rate dimensions. Null when this range has no media usage.
 	Media    OptNilMediaUsage `json:"media"`
 	Requests int64            `json:"requests"`
 }
 
 // GetCacheReadTokens returns the value of CacheReadTokens.
-func (s *ModelUsageResource) GetCacheReadTokens() int64 {
+func (s *ModelUsageResource) GetCacheReadTokens() NilInt64 {
 	return s.CacheReadTokens
 }
 
 // GetCacheWriteTokens returns the value of CacheWriteTokens.
-func (s *ModelUsageResource) GetCacheWriteTokens() int64 {
+func (s *ModelUsageResource) GetCacheWriteTokens() NilInt64 {
 	return s.CacheWriteTokens
 }
 
 // GetInputTokens returns the value of InputTokens.
-func (s *ModelUsageResource) GetInputTokens() int64 {
+func (s *ModelUsageResource) GetInputTokens() NilInt64 {
 	return s.InputTokens
 }
 
@@ -3315,12 +3325,12 @@ func (s *ModelUsageResource) GetModelID() string {
 }
 
 // GetOutputTokens returns the value of OutputTokens.
-func (s *ModelUsageResource) GetOutputTokens() int64 {
+func (s *ModelUsageResource) GetOutputTokens() NilInt64 {
 	return s.OutputTokens
 }
 
 // GetReasoningTokens returns the value of ReasoningTokens.
-func (s *ModelUsageResource) GetReasoningTokens() int64 {
+func (s *ModelUsageResource) GetReasoningTokens() NilInt64 {
 	return s.ReasoningTokens
 }
 
@@ -3335,17 +3345,17 @@ func (s *ModelUsageResource) GetRequests() int64 {
 }
 
 // SetCacheReadTokens sets the value of CacheReadTokens.
-func (s *ModelUsageResource) SetCacheReadTokens(val int64) {
+func (s *ModelUsageResource) SetCacheReadTokens(val NilInt64) {
 	s.CacheReadTokens = val
 }
 
 // SetCacheWriteTokens sets the value of CacheWriteTokens.
-func (s *ModelUsageResource) SetCacheWriteTokens(val int64) {
+func (s *ModelUsageResource) SetCacheWriteTokens(val NilInt64) {
 	s.CacheWriteTokens = val
 }
 
 // SetInputTokens sets the value of InputTokens.
-func (s *ModelUsageResource) SetInputTokens(val int64) {
+func (s *ModelUsageResource) SetInputTokens(val NilInt64) {
 	s.InputTokens = val
 }
 
@@ -3355,12 +3365,12 @@ func (s *ModelUsageResource) SetModelID(val string) {
 }
 
 // SetOutputTokens sets the value of OutputTokens.
-func (s *ModelUsageResource) SetOutputTokens(val int64) {
+func (s *ModelUsageResource) SetOutputTokens(val NilInt64) {
 	s.OutputTokens = val
 }
 
 // SetReasoningTokens sets the value of ReasoningTokens.
-func (s *ModelUsageResource) SetReasoningTokens(val int64) {
+func (s *ModelUsageResource) SetReasoningTokens(val NilInt64) {
 	s.ReasoningTokens = val
 }
 
@@ -6243,38 +6253,43 @@ func (*StreamGenerateContentOK) streamGenerateContentRes() {}
 
 // Ref: #/components/schemas/TotalsResource
 type TotalsResource struct {
-	CacheReadTokens  int64 `json:"cache_read_tokens"`
-	CacheWriteTokens int64 `json:"cache_write_tokens"`
-	InputTokens      int64 `json:"input_tokens"`
-	OutputTokens     int64 `json:"output_tokens"`
-	ReasoningTokens  int64 `json:"reasoning_tokens"`
+	// Null when this range has no token usage.
+	CacheReadTokens NilInt64 `json:"cache_read_tokens"`
+	// Null when this range has no token usage.
+	CacheWriteTokens NilInt64 `json:"cache_write_tokens"`
+	// Null when this range has no token usage.
+	InputTokens NilInt64 `json:"input_tokens"`
+	// Null when this range has no token usage.
+	OutputTokens NilInt64 `json:"output_tokens"`
+	// Null when this range has no token usage.
+	ReasoningTokens NilInt64 `json:"reasoning_tokens"`
 	// Media quantities and their rate dimensions. Null when this range has no media usage.
 	Media    OptNilMediaUsage `json:"media"`
 	Requests int64            `json:"requests"`
 }
 
 // GetCacheReadTokens returns the value of CacheReadTokens.
-func (s *TotalsResource) GetCacheReadTokens() int64 {
+func (s *TotalsResource) GetCacheReadTokens() NilInt64 {
 	return s.CacheReadTokens
 }
 
 // GetCacheWriteTokens returns the value of CacheWriteTokens.
-func (s *TotalsResource) GetCacheWriteTokens() int64 {
+func (s *TotalsResource) GetCacheWriteTokens() NilInt64 {
 	return s.CacheWriteTokens
 }
 
 // GetInputTokens returns the value of InputTokens.
-func (s *TotalsResource) GetInputTokens() int64 {
+func (s *TotalsResource) GetInputTokens() NilInt64 {
 	return s.InputTokens
 }
 
 // GetOutputTokens returns the value of OutputTokens.
-func (s *TotalsResource) GetOutputTokens() int64 {
+func (s *TotalsResource) GetOutputTokens() NilInt64 {
 	return s.OutputTokens
 }
 
 // GetReasoningTokens returns the value of ReasoningTokens.
-func (s *TotalsResource) GetReasoningTokens() int64 {
+func (s *TotalsResource) GetReasoningTokens() NilInt64 {
 	return s.ReasoningTokens
 }
 
@@ -6289,27 +6304,27 @@ func (s *TotalsResource) GetRequests() int64 {
 }
 
 // SetCacheReadTokens sets the value of CacheReadTokens.
-func (s *TotalsResource) SetCacheReadTokens(val int64) {
+func (s *TotalsResource) SetCacheReadTokens(val NilInt64) {
 	s.CacheReadTokens = val
 }
 
 // SetCacheWriteTokens sets the value of CacheWriteTokens.
-func (s *TotalsResource) SetCacheWriteTokens(val int64) {
+func (s *TotalsResource) SetCacheWriteTokens(val NilInt64) {
 	s.CacheWriteTokens = val
 }
 
 // SetInputTokens sets the value of InputTokens.
-func (s *TotalsResource) SetInputTokens(val int64) {
+func (s *TotalsResource) SetInputTokens(val NilInt64) {
 	s.InputTokens = val
 }
 
 // SetOutputTokens sets the value of OutputTokens.
-func (s *TotalsResource) SetOutputTokens(val int64) {
+func (s *TotalsResource) SetOutputTokens(val NilInt64) {
 	s.OutputTokens = val
 }
 
 // SetReasoningTokens sets the value of ReasoningTokens.
-func (s *TotalsResource) SetReasoningTokens(val int64) {
+func (s *TotalsResource) SetReasoningTokens(val NilInt64) {
 	s.ReasoningTokens = val
 }
 
@@ -6388,13 +6403,18 @@ func (s *UpdateAPIKeyRequestBody) SetRestrictModels(val OptNilBool) {
 
 // Ref: #/components/schemas/UsageBucketResource
 type UsageBucketResource struct {
-	CacheReadTokens  int64 `json:"cache_read_tokens"`
-	CacheWriteTokens int64 `json:"cache_write_tokens"`
+	// Null when this range has no token usage.
+	CacheReadTokens NilInt64 `json:"cache_read_tokens"`
+	// Null when this range has no token usage.
+	CacheWriteTokens NilInt64 `json:"cache_write_tokens"`
 	// Start of the bucket, inclusive.
-	From            time.Time `json:"from"`
-	InputTokens     int64     `json:"input_tokens"`
-	OutputTokens    int64     `json:"output_tokens"`
-	ReasoningTokens int64     `json:"reasoning_tokens"`
+	From time.Time `json:"from"`
+	// Null when this range has no token usage.
+	InputTokens NilInt64 `json:"input_tokens"`
+	// Null when this range has no token usage.
+	OutputTokens NilInt64 `json:"output_tokens"`
+	// Null when this range has no token usage.
+	ReasoningTokens NilInt64 `json:"reasoning_tokens"`
 	// Media quantities and their rate dimensions. Null when this range has no media usage.
 	Media    OptNilMediaUsage `json:"media"`
 	Requests int64            `json:"requests"`
@@ -6403,12 +6423,12 @@ type UsageBucketResource struct {
 }
 
 // GetCacheReadTokens returns the value of CacheReadTokens.
-func (s *UsageBucketResource) GetCacheReadTokens() int64 {
+func (s *UsageBucketResource) GetCacheReadTokens() NilInt64 {
 	return s.CacheReadTokens
 }
 
 // GetCacheWriteTokens returns the value of CacheWriteTokens.
-func (s *UsageBucketResource) GetCacheWriteTokens() int64 {
+func (s *UsageBucketResource) GetCacheWriteTokens() NilInt64 {
 	return s.CacheWriteTokens
 }
 
@@ -6418,17 +6438,17 @@ func (s *UsageBucketResource) GetFrom() time.Time {
 }
 
 // GetInputTokens returns the value of InputTokens.
-func (s *UsageBucketResource) GetInputTokens() int64 {
+func (s *UsageBucketResource) GetInputTokens() NilInt64 {
 	return s.InputTokens
 }
 
 // GetOutputTokens returns the value of OutputTokens.
-func (s *UsageBucketResource) GetOutputTokens() int64 {
+func (s *UsageBucketResource) GetOutputTokens() NilInt64 {
 	return s.OutputTokens
 }
 
 // GetReasoningTokens returns the value of ReasoningTokens.
-func (s *UsageBucketResource) GetReasoningTokens() int64 {
+func (s *UsageBucketResource) GetReasoningTokens() NilInt64 {
 	return s.ReasoningTokens
 }
 
@@ -6448,12 +6468,12 @@ func (s *UsageBucketResource) GetTo() time.Time {
 }
 
 // SetCacheReadTokens sets the value of CacheReadTokens.
-func (s *UsageBucketResource) SetCacheReadTokens(val int64) {
+func (s *UsageBucketResource) SetCacheReadTokens(val NilInt64) {
 	s.CacheReadTokens = val
 }
 
 // SetCacheWriteTokens sets the value of CacheWriteTokens.
-func (s *UsageBucketResource) SetCacheWriteTokens(val int64) {
+func (s *UsageBucketResource) SetCacheWriteTokens(val NilInt64) {
 	s.CacheWriteTokens = val
 }
 
@@ -6463,17 +6483,17 @@ func (s *UsageBucketResource) SetFrom(val time.Time) {
 }
 
 // SetInputTokens sets the value of InputTokens.
-func (s *UsageBucketResource) SetInputTokens(val int64) {
+func (s *UsageBucketResource) SetInputTokens(val NilInt64) {
 	s.InputTokens = val
 }
 
 // SetOutputTokens sets the value of OutputTokens.
-func (s *UsageBucketResource) SetOutputTokens(val int64) {
+func (s *UsageBucketResource) SetOutputTokens(val NilInt64) {
 	s.OutputTokens = val
 }
 
 // SetReasoningTokens sets the value of ReasoningTokens.
-func (s *UsageBucketResource) SetReasoningTokens(val int64) {
+func (s *UsageBucketResource) SetReasoningTokens(val NilInt64) {
 	s.ReasoningTokens = val
 }
 

@@ -467,23 +467,23 @@ func (s *APIKeyUsageResource) encodeFields(e *jx.Encoder) {
 	}
 	{
 		e.FieldStart("cache_read_tokens")
-		e.Int64(s.CacheReadTokens)
+		s.CacheReadTokens.Encode(e)
 	}
 	{
 		e.FieldStart("cache_write_tokens")
-		e.Int64(s.CacheWriteTokens)
+		s.CacheWriteTokens.Encode(e)
 	}
 	{
 		e.FieldStart("input_tokens")
-		e.Int64(s.InputTokens)
+		s.InputTokens.Encode(e)
 	}
 	{
 		e.FieldStart("output_tokens")
-		e.Int64(s.OutputTokens)
+		s.OutputTokens.Encode(e)
 	}
 	{
 		e.FieldStart("reasoning_tokens")
-		e.Int64(s.ReasoningTokens)
+		s.ReasoningTokens.Encode(e)
 	}
 	{
 		if s.Media.Set {
@@ -532,9 +532,7 @@ func (s *APIKeyUsageResource) Decode(d *jx.Decoder) error {
 		case "cache_read_tokens":
 			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
-				v, err := d.Int64()
-				s.CacheReadTokens = int64(v)
-				if err != nil {
+				if err := s.CacheReadTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -544,9 +542,7 @@ func (s *APIKeyUsageResource) Decode(d *jx.Decoder) error {
 		case "cache_write_tokens":
 			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				v, err := d.Int64()
-				s.CacheWriteTokens = int64(v)
-				if err != nil {
+				if err := s.CacheWriteTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -556,9 +552,7 @@ func (s *APIKeyUsageResource) Decode(d *jx.Decoder) error {
 		case "input_tokens":
 			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
-				v, err := d.Int64()
-				s.InputTokens = int64(v)
-				if err != nil {
+				if err := s.InputTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -568,9 +562,7 @@ func (s *APIKeyUsageResource) Decode(d *jx.Decoder) error {
 		case "output_tokens":
 			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
-				v, err := d.Int64()
-				s.OutputTokens = int64(v)
-				if err != nil {
+				if err := s.OutputTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -580,9 +572,7 @@ func (s *APIKeyUsageResource) Decode(d *jx.Decoder) error {
 		case "reasoning_tokens":
 			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
-				v, err := d.Int64()
-				s.ReasoningTokens = int64(v)
-				if err != nil {
+				if err := s.ReasoningTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -6109,15 +6099,15 @@ func (s *ModelUsageResource) Encode(e *jx.Encoder) {
 func (s *ModelUsageResource) encodeFields(e *jx.Encoder) {
 	{
 		e.FieldStart("cache_read_tokens")
-		e.Int64(s.CacheReadTokens)
+		s.CacheReadTokens.Encode(e)
 	}
 	{
 		e.FieldStart("cache_write_tokens")
-		e.Int64(s.CacheWriteTokens)
+		s.CacheWriteTokens.Encode(e)
 	}
 	{
 		e.FieldStart("input_tokens")
-		e.Int64(s.InputTokens)
+		s.InputTokens.Encode(e)
 	}
 	{
 		e.FieldStart("model_id")
@@ -6125,11 +6115,11 @@ func (s *ModelUsageResource) encodeFields(e *jx.Encoder) {
 	}
 	{
 		e.FieldStart("output_tokens")
-		e.Int64(s.OutputTokens)
+		s.OutputTokens.Encode(e)
 	}
 	{
 		e.FieldStart("reasoning_tokens")
-		e.Int64(s.ReasoningTokens)
+		s.ReasoningTokens.Encode(e)
 	}
 	{
 		if s.Media.Set {
@@ -6166,9 +6156,7 @@ func (s *ModelUsageResource) Decode(d *jx.Decoder) error {
 		case "cache_read_tokens":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				v, err := d.Int64()
-				s.CacheReadTokens = int64(v)
-				if err != nil {
+				if err := s.CacheReadTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -6178,9 +6166,7 @@ func (s *ModelUsageResource) Decode(d *jx.Decoder) error {
 		case "cache_write_tokens":
 			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
-				v, err := d.Int64()
-				s.CacheWriteTokens = int64(v)
-				if err != nil {
+				if err := s.CacheWriteTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -6190,9 +6176,7 @@ func (s *ModelUsageResource) Decode(d *jx.Decoder) error {
 		case "input_tokens":
 			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				v, err := d.Int64()
-				s.InputTokens = int64(v)
-				if err != nil {
+				if err := s.InputTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -6214,9 +6198,7 @@ func (s *ModelUsageResource) Decode(d *jx.Decoder) error {
 		case "output_tokens":
 			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
-				v, err := d.Int64()
-				s.OutputTokens = int64(v)
-				if err != nil {
+				if err := s.OutputTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -6226,9 +6208,7 @@ func (s *ModelUsageResource) Decode(d *jx.Decoder) error {
 		case "reasoning_tokens":
 			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
-				v, err := d.Int64()
-				s.ReasoningTokens = int64(v)
-				if err != nil {
+				if err := s.ReasoningTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -9582,23 +9562,23 @@ func (s *TotalsResource) Encode(e *jx.Encoder) {
 func (s *TotalsResource) encodeFields(e *jx.Encoder) {
 	{
 		e.FieldStart("cache_read_tokens")
-		e.Int64(s.CacheReadTokens)
+		s.CacheReadTokens.Encode(e)
 	}
 	{
 		e.FieldStart("cache_write_tokens")
-		e.Int64(s.CacheWriteTokens)
+		s.CacheWriteTokens.Encode(e)
 	}
 	{
 		e.FieldStart("input_tokens")
-		e.Int64(s.InputTokens)
+		s.InputTokens.Encode(e)
 	}
 	{
 		e.FieldStart("output_tokens")
-		e.Int64(s.OutputTokens)
+		s.OutputTokens.Encode(e)
 	}
 	{
 		e.FieldStart("reasoning_tokens")
-		e.Int64(s.ReasoningTokens)
+		s.ReasoningTokens.Encode(e)
 	}
 	{
 		if s.Media.Set {
@@ -9634,9 +9614,7 @@ func (s *TotalsResource) Decode(d *jx.Decoder) error {
 		case "cache_read_tokens":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				v, err := d.Int64()
-				s.CacheReadTokens = int64(v)
-				if err != nil {
+				if err := s.CacheReadTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -9646,9 +9624,7 @@ func (s *TotalsResource) Decode(d *jx.Decoder) error {
 		case "cache_write_tokens":
 			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
-				v, err := d.Int64()
-				s.CacheWriteTokens = int64(v)
-				if err != nil {
+				if err := s.CacheWriteTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -9658,9 +9634,7 @@ func (s *TotalsResource) Decode(d *jx.Decoder) error {
 		case "input_tokens":
 			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				v, err := d.Int64()
-				s.InputTokens = int64(v)
-				if err != nil {
+				if err := s.InputTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -9670,9 +9644,7 @@ func (s *TotalsResource) Decode(d *jx.Decoder) error {
 		case "output_tokens":
 			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
-				v, err := d.Int64()
-				s.OutputTokens = int64(v)
-				if err != nil {
+				if err := s.OutputTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -9682,9 +9654,7 @@ func (s *TotalsResource) Decode(d *jx.Decoder) error {
 		case "reasoning_tokens":
 			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
-				v, err := d.Int64()
-				s.ReasoningTokens = int64(v)
-				if err != nil {
+				if err := s.ReasoningTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -9911,11 +9881,11 @@ func (s *UsageBucketResource) Encode(e *jx.Encoder) {
 func (s *UsageBucketResource) encodeFields(e *jx.Encoder) {
 	{
 		e.FieldStart("cache_read_tokens")
-		e.Int64(s.CacheReadTokens)
+		s.CacheReadTokens.Encode(e)
 	}
 	{
 		e.FieldStart("cache_write_tokens")
-		e.Int64(s.CacheWriteTokens)
+		s.CacheWriteTokens.Encode(e)
 	}
 	{
 		e.FieldStart("from")
@@ -9923,15 +9893,15 @@ func (s *UsageBucketResource) encodeFields(e *jx.Encoder) {
 	}
 	{
 		e.FieldStart("input_tokens")
-		e.Int64(s.InputTokens)
+		s.InputTokens.Encode(e)
 	}
 	{
 		e.FieldStart("output_tokens")
-		e.Int64(s.OutputTokens)
+		s.OutputTokens.Encode(e)
 	}
 	{
 		e.FieldStart("reasoning_tokens")
-		e.Int64(s.ReasoningTokens)
+		s.ReasoningTokens.Encode(e)
 	}
 	{
 		if s.Media.Set {
@@ -9973,9 +9943,7 @@ func (s *UsageBucketResource) Decode(d *jx.Decoder) error {
 		case "cache_read_tokens":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				v, err := d.Int64()
-				s.CacheReadTokens = int64(v)
-				if err != nil {
+				if err := s.CacheReadTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -9985,9 +9953,7 @@ func (s *UsageBucketResource) Decode(d *jx.Decoder) error {
 		case "cache_write_tokens":
 			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
-				v, err := d.Int64()
-				s.CacheWriteTokens = int64(v)
-				if err != nil {
+				if err := s.CacheWriteTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -10009,9 +9975,7 @@ func (s *UsageBucketResource) Decode(d *jx.Decoder) error {
 		case "input_tokens":
 			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
-				v, err := d.Int64()
-				s.InputTokens = int64(v)
-				if err != nil {
+				if err := s.InputTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -10021,9 +9985,7 @@ func (s *UsageBucketResource) Decode(d *jx.Decoder) error {
 		case "output_tokens":
 			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
-				v, err := d.Int64()
-				s.OutputTokens = int64(v)
-				if err != nil {
+				if err := s.OutputTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -10033,9 +9995,7 @@ func (s *UsageBucketResource) Decode(d *jx.Decoder) error {
 		case "reasoning_tokens":
 			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
-				v, err := d.Int64()
-				s.ReasoningTokens = int64(v)
-				if err != nil {
+				if err := s.ReasoningTokens.Decode(d); err != nil {
 					return err
 				}
 				return nil
