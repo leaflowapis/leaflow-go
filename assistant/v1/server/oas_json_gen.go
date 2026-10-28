@@ -7260,6 +7260,51 @@ func (s *NilString) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes TaskRunEventData as json.
+func (o NilTaskRunEventData) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes TaskRunEventData from json.
+func (o *NilTaskRunEventData) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilTaskRunEventData to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v TaskRunEventData
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	o.Value = make(TaskRunEventData)
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilTaskRunEventData) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilTaskRunEventData) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes TaskRunResource as json.
 func (o NilTaskRunResource) Encode(e *jx.Encoder) {
 	if o.Null {
@@ -11050,6 +11095,8 @@ func (s *SearchTasksRequestBodyTriggerType) Decode(d *jx.Decoder) error {
 		*s = SearchTasksRequestBodyTriggerTypeInterval
 	case SearchTasksRequestBodyTriggerTypeCron:
 		*s = SearchTasksRequestBodyTriggerTypeCron
+	case SearchTasksRequestBodyTriggerTypeEvent:
+		*s = SearchTasksRequestBodyTriggerTypeEvent
 	default:
 		*s = SearchTasksRequestBodyTriggerType(v)
 	}
@@ -13293,6 +13340,14 @@ func (s *TaskResource) encodeFields(e *jx.Encoder) {
 		s.NextRunAt.Encode(e, json.EncodeDateTime)
 	}
 	{
+		e.FieldStart("eventVersion")
+		s.EventVersion.Encode(e)
+	}
+	{
+		e.FieldStart("eventRunCount")
+		e.Int64(s.EventRunCount)
+	}
+	{
 		e.FieldStart("lastRun")
 		s.LastRun.Encode(e)
 	}
@@ -13306,17 +13361,19 @@ func (s *TaskResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTaskResource = [10]string{
-	0: "id",
-	1: "threadId",
-	2: "name",
-	3: "status",
-	4: "trigger",
-	5: "action",
-	6: "nextRunAt",
-	7: "lastRun",
-	8: "createdAt",
-	9: "updatedAt",
+var jsonFieldsNameOfTaskResource = [12]string{
+	0:  "id",
+	1:  "threadId",
+	2:  "name",
+	3:  "status",
+	4:  "trigger",
+	5:  "action",
+	6:  "nextRunAt",
+	7:  "eventVersion",
+	8:  "eventRunCount",
+	9:  "lastRun",
+	10: "createdAt",
+	11: "updatedAt",
 }
 
 // Decode decodes TaskResource from json.
@@ -13404,8 +13461,30 @@ func (s *TaskResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"nextRunAt\"")
 			}
-		case "lastRun":
+		case "eventVersion":
 			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				if err := s.EventVersion.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"eventVersion\"")
+			}
+		case "eventRunCount":
+			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				v, err := d.Int64()
+				s.EventRunCount = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"eventRunCount\"")
+			}
+		case "lastRun":
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				if err := s.LastRun.Decode(d); err != nil {
 					return err
@@ -13415,7 +13494,7 @@ func (s *TaskResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"lastRun\"")
 			}
 		case "createdAt":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -13427,7 +13506,7 @@ func (s *TaskResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"createdAt\"")
 			}
 		case "updatedAt":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -13449,7 +13528,7 @@ func (s *TaskResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000011,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -13535,6 +13614,260 @@ func (s TaskResourceStatus) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *TaskResourceStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *TaskRunEvent) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *TaskRunEvent) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("id")
+		e.Str(s.ID)
+	}
+	{
+		e.FieldStart("event")
+		e.Str(s.Event)
+	}
+	{
+		e.FieldStart("version")
+		e.Int64(s.Version)
+	}
+	{
+		e.FieldStart("key")
+		e.Str(s.Key)
+	}
+	{
+		e.FieldStart("createdAt")
+		json.EncodeDateTime(e, s.CreatedAt)
+	}
+	{
+		e.FieldStart("data")
+		s.Data.Encode(e)
+	}
+	{
+		e.FieldStart("dataBytes")
+		e.Int64(s.DataBytes)
+	}
+}
+
+var jsonFieldsNameOfTaskRunEvent = [7]string{
+	0: "id",
+	1: "event",
+	2: "version",
+	3: "key",
+	4: "createdAt",
+	5: "data",
+	6: "dataBytes",
+}
+
+// Decode decodes TaskRunEvent from json.
+func (s *TaskRunEvent) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode TaskRunEvent to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.ID = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"id\"")
+			}
+		case "event":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Event = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"event\"")
+			}
+		case "version":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Int64()
+				s.Version = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"version\"")
+			}
+		case "key":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Str()
+				s.Key = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"key\"")
+			}
+		case "createdAt":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.CreatedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"createdAt\"")
+			}
+		case "data":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.Data.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"data\"")
+			}
+		case "dataBytes":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := d.Int64()
+				s.DataBytes = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"dataBytes\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode TaskRunEvent")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b01111111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfTaskRunEvent) {
+					name = jsonFieldsNameOfTaskRunEvent[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *TaskRunEvent) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *TaskRunEvent) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s TaskRunEventData) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields implements json.Marshaler.
+func (s TaskRunEventData) encodeFields(e *jx.Encoder) {
+	for k, elem := range s {
+		e.FieldStart(k)
+
+		if len(elem) != 0 {
+			e.Raw(elem)
+		}
+	}
+}
+
+// Decode decodes TaskRunEventData from json.
+func (s *TaskRunEventData) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode TaskRunEventData to nil")
+	}
+	m := s.init()
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		var elem jx.Raw
+		if err := func() error {
+			v, err := d.RawAppend(nil)
+			elem = jx.Raw(v)
+			if err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return errors.Wrapf(err, "decode field %q", k)
+		}
+		m[string(k)] = elem
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode TaskRunEventData")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s TaskRunEventData) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *TaskRunEventData) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -13705,18 +14038,36 @@ func (s *TaskRunResource) encodeFields(e *jx.Encoder) {
 		e.FieldStart("trigger")
 		s.Trigger.Encode(e)
 	}
+	{
+		e.FieldStart("eventCount")
+		e.Int64(s.EventCount)
+	}
+	{
+		e.FieldStart("events")
+		if s.Events == nil {
+			e.Null()
+		} else {
+			e.ArrStart()
+			for _, elem := range s.Events {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
 }
 
-var jsonFieldsNameOfTaskRunResource = [9]string{
-	0: "id",
-	1: "taskId",
-	2: "status",
-	3: "startedAt",
-	4: "finishedAt",
-	5: "exitCode",
-	6: "output",
-	7: "errorCode",
-	8: "trigger",
+var jsonFieldsNameOfTaskRunResource = [11]string{
+	0:  "id",
+	1:  "taskId",
+	2:  "status",
+	3:  "startedAt",
+	4:  "finishedAt",
+	5:  "exitCode",
+	6:  "output",
+	7:  "errorCode",
+	8:  "trigger",
+	9:  "eventCount",
+	10: "events",
 }
 
 // Decode decodes TaskRunResource from json.
@@ -13822,6 +14173,43 @@ func (s *TaskRunResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"trigger\"")
 			}
+		case "eventCount":
+			requiredBitSet[1] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int64()
+				s.EventCount = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"eventCount\"")
+			}
+		case "events":
+			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				switch tt := d.Next(); tt {
+				case jx.Null:
+					if err := d.Skip(); err != nil {
+						return err
+					}
+				default:
+					s.Events = make([]TaskRunEvent, 0)
+					if err := d.Arr(func(d *jx.Decoder) error {
+						var elem TaskRunEvent
+						if err := elem.Decode(d); err != nil {
+							return err
+						}
+						s.Events = append(s.Events, elem)
+						return nil
+					}); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"events\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -13833,7 +14221,7 @@ func (s *TaskRunResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000001,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -13949,6 +14337,8 @@ func (s *TaskRunResourceTrigger) Decode(d *jx.Decoder) error {
 		*s = TaskRunResourceTriggerManual
 	case TaskRunResourceTriggerAssistant:
 		*s = TaskRunResourceTriggerAssistant
+	case TaskRunResourceTriggerEvent:
+		*s = TaskRunResourceTriggerEvent
 	default:
 		*s = TaskRunResourceTrigger(v)
 	}
@@ -14024,17 +14414,59 @@ func (s *TaskTrigger) encodeFields(e *jx.Encoder) {
 			s.CatchupSeconds.Encode(e)
 		}
 	}
+	{
+		if s.Event.Set {
+			e.FieldStart("event")
+			s.Event.Encode(e)
+		}
+	}
+	{
+		if s.EventKey.Set {
+			e.FieldStart("eventKey")
+			s.EventKey.Encode(e)
+		}
+	}
+	{
+		if s.EventCondition.Set {
+			e.FieldStart("eventCondition")
+			s.EventCondition.Encode(e)
+		}
+	}
+	{
+		if s.MaxRuns.Set {
+			e.FieldStart("maxRuns")
+			s.MaxRuns.Encode(e)
+		}
+	}
+	{
+		if s.ExpiresAt.Set {
+			e.FieldStart("expiresAt")
+			s.ExpiresAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
+		if s.CooldownSeconds.Set {
+			e.FieldStart("cooldownSeconds")
+			s.CooldownSeconds.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfTaskTrigger = [8]string{
-	0: "type",
-	1: "runAt",
-	2: "intervalSeconds",
-	3: "anchorAt",
-	4: "cron",
-	5: "timezone",
-	6: "overlapPolicy",
-	7: "catchupSeconds",
+var jsonFieldsNameOfTaskTrigger = [14]string{
+	0:  "type",
+	1:  "runAt",
+	2:  "intervalSeconds",
+	3:  "anchorAt",
+	4:  "cron",
+	5:  "timezone",
+	6:  "overlapPolicy",
+	7:  "catchupSeconds",
+	8:  "event",
+	9:  "eventKey",
+	10: "eventCondition",
+	11: "maxRuns",
+	12: "expiresAt",
+	13: "cooldownSeconds",
 }
 
 // Decode decodes TaskTrigger from json.
@@ -14042,7 +14474,7 @@ func (s *TaskTrigger) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode TaskTrigger to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 	s.setDefaults()
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
@@ -14127,6 +14559,66 @@ func (s *TaskTrigger) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"catchupSeconds\"")
 			}
+		case "event":
+			if err := func() error {
+				s.Event.Reset()
+				if err := s.Event.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"event\"")
+			}
+		case "eventKey":
+			if err := func() error {
+				s.EventKey.Reset()
+				if err := s.EventKey.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"eventKey\"")
+			}
+		case "eventCondition":
+			if err := func() error {
+				s.EventCondition.Reset()
+				if err := s.EventCondition.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"eventCondition\"")
+			}
+		case "maxRuns":
+			if err := func() error {
+				s.MaxRuns.Reset()
+				if err := s.MaxRuns.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"maxRuns\"")
+			}
+		case "expiresAt":
+			if err := func() error {
+				s.ExpiresAt.Reset()
+				if err := s.ExpiresAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"expiresAt\"")
+			}
+		case "cooldownSeconds":
+			if err := func() error {
+				s.CooldownSeconds.Reset()
+				if err := s.CooldownSeconds.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"cooldownSeconds\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -14136,8 +14628,9 @@ func (s *TaskTrigger) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
+	for i, mask := range [2]uint8{
 		0b00000001,
+		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -14247,6 +14740,8 @@ func (s *TaskTriggerType) Decode(d *jx.Decoder) error {
 		*s = TaskTriggerTypeInterval
 	case TaskTriggerTypeCron:
 		*s = TaskTriggerTypeCron
+	case TaskTriggerTypeEvent:
+		*s = TaskTriggerTypeEvent
 	default:
 		*s = TaskTriggerType(v)
 	}

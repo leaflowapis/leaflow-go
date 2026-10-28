@@ -64,4 +64,8 @@ func (s *TaskTrigger) setDefaults() {
 		val := int64(300)
 		s.CatchupSeconds.SetTo(val)
 	}
+	{
+		val := int64(60)
+		s.CooldownSeconds.SetTo(val)
+	}
 }

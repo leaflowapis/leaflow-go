@@ -3537,6 +3537,51 @@ func (o NilString) Or(d string) string {
 	return d
 }
 
+// NewNilTaskRunEventData returns new NilTaskRunEventData with value set to v.
+func NewNilTaskRunEventData(v TaskRunEventData) NilTaskRunEventData {
+	return NilTaskRunEventData{
+		Value: v,
+	}
+}
+
+// NilTaskRunEventData is nullable TaskRunEventData.
+type NilTaskRunEventData struct {
+	Value TaskRunEventData
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilTaskRunEventData) SetTo(v TaskRunEventData) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilTaskRunEventData) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilTaskRunEventData) SetToNull() {
+	o.Null = true
+	var v TaskRunEventData
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilTaskRunEventData) Get() (v TaskRunEventData, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilTaskRunEventData) Or(d TaskRunEventData) TaskRunEventData {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilTaskRunResource returns new NilTaskRunResource with value set to v.
 func NewNilTaskRunResource(v TaskRunResource) NilTaskRunResource {
 	return NilTaskRunResource{
@@ -6609,6 +6654,7 @@ const (
 	SearchTasksRequestBodyTriggerTypeAt       SearchTasksRequestBodyTriggerType = "at"
 	SearchTasksRequestBodyTriggerTypeInterval SearchTasksRequestBodyTriggerType = "interval"
 	SearchTasksRequestBodyTriggerTypeCron     SearchTasksRequestBodyTriggerType = "cron"
+	SearchTasksRequestBodyTriggerTypeEvent    SearchTasksRequestBodyTriggerType = "event"
 )
 
 // AllValues returns all SearchTasksRequestBodyTriggerType values.
@@ -6618,6 +6664,7 @@ func (SearchTasksRequestBodyTriggerType) AllValues() []SearchTasksRequestBodyTri
 		SearchTasksRequestBodyTriggerTypeAt,
 		SearchTasksRequestBodyTriggerTypeInterval,
 		SearchTasksRequestBodyTriggerTypeCron,
+		SearchTasksRequestBodyTriggerTypeEvent,
 	}
 }
 
@@ -6631,6 +6678,8 @@ func (s SearchTasksRequestBodyTriggerType) MarshalText() ([]byte, error) {
 	case SearchTasksRequestBodyTriggerTypeInterval:
 		return []byte(s), nil
 	case SearchTasksRequestBodyTriggerTypeCron:
+		return []byte(s), nil
+	case SearchTasksRequestBodyTriggerTypeEvent:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -6651,6 +6700,9 @@ func (s *SearchTasksRequestBodyTriggerType) UnmarshalText(data []byte) error {
 		return nil
 	case SearchTasksRequestBodyTriggerTypeCron:
 		*s = SearchTasksRequestBodyTriggerTypeCron
+		return nil
+	case SearchTasksRequestBodyTriggerTypeEvent:
+		*s = SearchTasksRequestBodyTriggerTypeEvent
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -7628,10 +7680,16 @@ type TaskResource struct {
 	Trigger TaskTrigger        `json:"trigger"`
 	Action  TaskAction         `json:"action"`
 	// When the trigger starts the next run. Null when it will not.
-	NextRunAt NilDateTime        `json:"nextRunAt"`
-	LastRun   NilTaskRunResource `json:"lastRun"`
-	CreatedAt time.Time          `json:"createdAt"`
-	UpdatedAt time.Time          `json:"updatedAt"`
+	NextRunAt NilDateTime `json:"nextRunAt"`
+	// For `event`. The event version the condition was checked against. It advances when the event gains a
+	// newer version that the condition still fits; when it no longer fits, the task is paused and a failed
+	// run records TASK_EVENT_VERSION_INCOMPATIBLE.
+	EventVersion NilInt64 `json:"eventVersion"`
+	// For `event`. The event-triggered runs started under the current trigger.
+	EventRunCount int64              `json:"eventRunCount"`
+	LastRun       NilTaskRunResource `json:"lastRun"`
+	CreatedAt     time.Time          `json:"createdAt"`
+	UpdatedAt     time.Time          `json:"updatedAt"`
 }
 
 // GetID returns the value of ID.
@@ -7667,6 +7725,16 @@ func (s *TaskResource) GetAction() TaskAction {
 // GetNextRunAt returns the value of NextRunAt.
 func (s *TaskResource) GetNextRunAt() NilDateTime {
 	return s.NextRunAt
+}
+
+// GetEventVersion returns the value of EventVersion.
+func (s *TaskResource) GetEventVersion() NilInt64 {
+	return s.EventVersion
+}
+
+// GetEventRunCount returns the value of EventRunCount.
+func (s *TaskResource) GetEventRunCount() int64 {
+	return s.EventRunCount
 }
 
 // GetLastRun returns the value of LastRun.
@@ -7717,6 +7785,16 @@ func (s *TaskResource) SetAction(val TaskAction) {
 // SetNextRunAt sets the value of NextRunAt.
 func (s *TaskResource) SetNextRunAt(val NilDateTime) {
 	s.NextRunAt = val
+}
+
+// SetEventVersion sets the value of EventVersion.
+func (s *TaskResource) SetEventVersion(val NilInt64) {
+	s.EventVersion = val
+}
+
+// SetEventRunCount sets the value of EventRunCount.
+func (s *TaskResource) SetEventRunCount(val int64) {
+	s.EventRunCount = val
 }
 
 // SetLastRun sets the value of LastRun.
@@ -7790,6 +7868,101 @@ func (s *TaskResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// An event message that started a run.
+// Ref: #/components/schemas/TaskRunEvent
+type TaskRunEvent struct {
+	ID        string    `json:"id"`
+	Event     string    `json:"event"`
+	Version   int64     `json:"version"`
+	Key       string    `json:"key"`
+	CreatedAt time.Time `json:"createdAt"`
+	// The payload as published. Null when it was larger than 4 KiB; see dataBytes.
+	Data      NilTaskRunEventData `json:"data"`
+	DataBytes int64               `json:"dataBytes"`
+}
+
+// GetID returns the value of ID.
+func (s *TaskRunEvent) GetID() string {
+	return s.ID
+}
+
+// GetEvent returns the value of Event.
+func (s *TaskRunEvent) GetEvent() string {
+	return s.Event
+}
+
+// GetVersion returns the value of Version.
+func (s *TaskRunEvent) GetVersion() int64 {
+	return s.Version
+}
+
+// GetKey returns the value of Key.
+func (s *TaskRunEvent) GetKey() string {
+	return s.Key
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *TaskRunEvent) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetData returns the value of Data.
+func (s *TaskRunEvent) GetData() NilTaskRunEventData {
+	return s.Data
+}
+
+// GetDataBytes returns the value of DataBytes.
+func (s *TaskRunEvent) GetDataBytes() int64 {
+	return s.DataBytes
+}
+
+// SetID sets the value of ID.
+func (s *TaskRunEvent) SetID(val string) {
+	s.ID = val
+}
+
+// SetEvent sets the value of Event.
+func (s *TaskRunEvent) SetEvent(val string) {
+	s.Event = val
+}
+
+// SetVersion sets the value of Version.
+func (s *TaskRunEvent) SetVersion(val int64) {
+	s.Version = val
+}
+
+// SetKey sets the value of Key.
+func (s *TaskRunEvent) SetKey(val string) {
+	s.Key = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *TaskRunEvent) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetData sets the value of Data.
+func (s *TaskRunEvent) SetData(val NilTaskRunEventData) {
+	s.Data = val
+}
+
+// SetDataBytes sets the value of DataBytes.
+func (s *TaskRunEvent) SetDataBytes(val int64) {
+	s.DataBytes = val
+}
+
+// The payload as published. Null when it was larger than 4 KiB; see dataBytes.
+type TaskRunEventData map[string]jx.Raw
+
+func (s *TaskRunEventData) init() TaskRunEventData {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
 // Ref: #/components/schemas/TaskRunListResponseBody
 type TaskRunListResponseBody struct {
 	Runs       []TaskRunResource `json:"runs"`
@@ -7830,8 +8003,14 @@ type TaskRunResource struct {
 	// Why the run failed. Null unless status is failed.
 	ErrorCode NilString `json:"errorCode"`
 	// How the run started: `schedule` by the task's own trigger, including a task set to run now; `manual`
-	// by a person running it outside its schedule; `assistant` by the assistant.
+	// by a person running it outside its schedule; `assistant` by the assistant; `event` by matching event
+	// messages.
 	Trigger TaskRunResourceTrigger `json:"trigger"`
+	// For runs started by events, the number of matching messages the run covers.
+	EventCount int64 `json:"eventCount"`
+	// For runs started by events, up to 20 of the messages the run covers. Null in lists; read the run for
+	// it.
+	Events []TaskRunEvent `json:"events"`
 }
 
 // GetID returns the value of ID.
@@ -7879,6 +8058,16 @@ func (s *TaskRunResource) GetTrigger() TaskRunResourceTrigger {
 	return s.Trigger
 }
 
+// GetEventCount returns the value of EventCount.
+func (s *TaskRunResource) GetEventCount() int64 {
+	return s.EventCount
+}
+
+// GetEvents returns the value of Events.
+func (s *TaskRunResource) GetEvents() []TaskRunEvent {
+	return s.Events
+}
+
 // SetID sets the value of ID.
 func (s *TaskRunResource) SetID(val string) {
 	s.ID = val
@@ -7922,6 +8111,16 @@ func (s *TaskRunResource) SetErrorCode(val NilString) {
 // SetTrigger sets the value of Trigger.
 func (s *TaskRunResource) SetTrigger(val TaskRunResourceTrigger) {
 	s.Trigger = val
+}
+
+// SetEventCount sets the value of EventCount.
+func (s *TaskRunResource) SetEventCount(val int64) {
+	s.EventCount = val
+}
+
+// SetEvents sets the value of Events.
+func (s *TaskRunResource) SetEvents(val []TaskRunEvent) {
+	s.Events = val
 }
 
 type TaskRunResourceStatus string
@@ -7994,13 +8193,15 @@ func (s *TaskRunResourceStatus) UnmarshalText(data []byte) error {
 }
 
 // How the run started: `schedule` by the task's own trigger, including a task set to run now; `manual`
-// by a person running it outside its schedule; `assistant` by the assistant.
+// by a person running it outside its schedule; `assistant` by the assistant; `event` by matching event
+// messages.
 type TaskRunResourceTrigger string
 
 const (
 	TaskRunResourceTriggerSchedule  TaskRunResourceTrigger = "schedule"
 	TaskRunResourceTriggerManual    TaskRunResourceTrigger = "manual"
 	TaskRunResourceTriggerAssistant TaskRunResourceTrigger = "assistant"
+	TaskRunResourceTriggerEvent     TaskRunResourceTrigger = "event"
 )
 
 // AllValues returns all TaskRunResourceTrigger values.
@@ -8009,6 +8210,7 @@ func (TaskRunResourceTrigger) AllValues() []TaskRunResourceTrigger {
 		TaskRunResourceTriggerSchedule,
 		TaskRunResourceTriggerManual,
 		TaskRunResourceTriggerAssistant,
+		TaskRunResourceTriggerEvent,
 	}
 }
 
@@ -8020,6 +8222,8 @@ func (s TaskRunResourceTrigger) MarshalText() ([]byte, error) {
 	case TaskRunResourceTriggerManual:
 		return []byte(s), nil
 	case TaskRunResourceTriggerAssistant:
+		return []byte(s), nil
+	case TaskRunResourceTriggerEvent:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -8038,12 +8242,17 @@ func (s *TaskRunResourceTrigger) UnmarshalText(data []byte) error {
 	case TaskRunResourceTriggerAssistant:
 		*s = TaskRunResourceTriggerAssistant
 		return nil
+	case TaskRunResourceTriggerEvent:
+		*s = TaskRunResourceTriggerEvent
+		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// When the task runs. `type` determines which fields apply.
+// When the task runs. `type` determines which fields apply. An `event` task runs when a matching event
+// message arrives. Messages are delivered as they happen and are not stored: a message published while
+// delivery is interrupted does not start a run, and a message can arrive late or more than once.
 // Ref: #/components/schemas/TaskTrigger
 type TaskTrigger struct {
 	Type TaskTriggerType `json:"type"`
@@ -8061,6 +8270,22 @@ type TaskTrigger struct {
 	OverlapPolicy OptTaskTriggerOverlapPolicy `json:"overlapPolicy"`
 	// How late a missed run may still start, for example after a pause or an outage.
 	CatchupSeconds OptInt64 `json:"catchupSeconds"`
+	// For `event`. The full name of the event to listen for.
+	Event OptNilString `json:"event"`
+	// For `event`. A filter on the message key: layers separated by `/`, `+` matching exactly one layer,
+	// and `#` as the last layer matching that layer and every layer below it. Null matches every key.
+	EventKey OptNilString `json:"eventKey"`
+	// For `event`. A CEL expression that must be true for a message to count, over `data` (the payload)
+	// and `event` (`name`, `version`, `key`, `sender_id` and `created_at`). Reading a field the payload
+	// does not carry counts as false; use `has()` for optional fields. Null counts every message.
+	EventCondition OptNilString `json:"eventCondition"`
+	// For `event`. The number of event-triggered runs after which the task completes. Null means no limit.
+	MaxRuns OptNilInt64 `json:"maxRuns"`
+	// For `event`. The task stops listening and completes at this time.
+	ExpiresAt OptNilDateTime `json:"expiresAt"`
+	// For `event`. The least time between the starts of two event-triggered runs. Messages that match in
+	// between are delivered with the next run.
+	CooldownSeconds OptInt64 `json:"cooldownSeconds"`
 }
 
 // GetType returns the value of Type.
@@ -8103,6 +8328,36 @@ func (s *TaskTrigger) GetCatchupSeconds() OptInt64 {
 	return s.CatchupSeconds
 }
 
+// GetEvent returns the value of Event.
+func (s *TaskTrigger) GetEvent() OptNilString {
+	return s.Event
+}
+
+// GetEventKey returns the value of EventKey.
+func (s *TaskTrigger) GetEventKey() OptNilString {
+	return s.EventKey
+}
+
+// GetEventCondition returns the value of EventCondition.
+func (s *TaskTrigger) GetEventCondition() OptNilString {
+	return s.EventCondition
+}
+
+// GetMaxRuns returns the value of MaxRuns.
+func (s *TaskTrigger) GetMaxRuns() OptNilInt64 {
+	return s.MaxRuns
+}
+
+// GetExpiresAt returns the value of ExpiresAt.
+func (s *TaskTrigger) GetExpiresAt() OptNilDateTime {
+	return s.ExpiresAt
+}
+
+// GetCooldownSeconds returns the value of CooldownSeconds.
+func (s *TaskTrigger) GetCooldownSeconds() OptInt64 {
+	return s.CooldownSeconds
+}
+
 // SetType sets the value of Type.
 func (s *TaskTrigger) SetType(val TaskTriggerType) {
 	s.Type = val
@@ -8141,6 +8396,36 @@ func (s *TaskTrigger) SetOverlapPolicy(val OptTaskTriggerOverlapPolicy) {
 // SetCatchupSeconds sets the value of CatchupSeconds.
 func (s *TaskTrigger) SetCatchupSeconds(val OptInt64) {
 	s.CatchupSeconds = val
+}
+
+// SetEvent sets the value of Event.
+func (s *TaskTrigger) SetEvent(val OptNilString) {
+	s.Event = val
+}
+
+// SetEventKey sets the value of EventKey.
+func (s *TaskTrigger) SetEventKey(val OptNilString) {
+	s.EventKey = val
+}
+
+// SetEventCondition sets the value of EventCondition.
+func (s *TaskTrigger) SetEventCondition(val OptNilString) {
+	s.EventCondition = val
+}
+
+// SetMaxRuns sets the value of MaxRuns.
+func (s *TaskTrigger) SetMaxRuns(val OptNilInt64) {
+	s.MaxRuns = val
+}
+
+// SetExpiresAt sets the value of ExpiresAt.
+func (s *TaskTrigger) SetExpiresAt(val OptNilDateTime) {
+	s.ExpiresAt = val
+}
+
+// SetCooldownSeconds sets the value of CooldownSeconds.
+func (s *TaskTrigger) SetCooldownSeconds(val OptInt64) {
+	s.CooldownSeconds = val
 }
 
 // What happens when a run is due while the previous one is still going.
@@ -8192,6 +8477,7 @@ const (
 	TaskTriggerTypeAt       TaskTriggerType = "at"
 	TaskTriggerTypeInterval TaskTriggerType = "interval"
 	TaskTriggerTypeCron     TaskTriggerType = "cron"
+	TaskTriggerTypeEvent    TaskTriggerType = "event"
 )
 
 // AllValues returns all TaskTriggerType values.
@@ -8201,6 +8487,7 @@ func (TaskTriggerType) AllValues() []TaskTriggerType {
 		TaskTriggerTypeAt,
 		TaskTriggerTypeInterval,
 		TaskTriggerTypeCron,
+		TaskTriggerTypeEvent,
 	}
 }
 
@@ -8214,6 +8501,8 @@ func (s TaskTriggerType) MarshalText() ([]byte, error) {
 	case TaskTriggerTypeInterval:
 		return []byte(s), nil
 	case TaskTriggerTypeCron:
+		return []byte(s), nil
+	case TaskTriggerTypeEvent:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -8234,6 +8523,9 @@ func (s *TaskTriggerType) UnmarshalText(data []byte) error {
 		return nil
 	case TaskTriggerTypeCron:
 		*s = TaskTriggerTypeCron
+		return nil
+	case TaskTriggerTypeEvent:
+		*s = TaskTriggerTypeEvent
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
