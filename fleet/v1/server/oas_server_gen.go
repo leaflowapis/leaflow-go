@@ -19,6 +19,14 @@ type Handler interface {
 	//
 	// POST /api/v1/enrollments/{enrollmentId}:approve
 	ApproveEnrollment(ctx context.Context, req *ApproveEnrollmentRequest, params ApproveEnrollmentParams) (*MachineResource, error)
+	// ApprovePrivilegeRequest implements approve-privilege-request operation.
+	//
+	// Approves one of the caller's pending requests; the waiting sudo goes on as root. Fails with
+	// `PRIVILEGE_REQUEST_CLOSED` when the request is no longer pending, with `metadata.state` giving how
+	// it ended.
+	//
+	// POST /api/v1/privilege-requests/{requestId}:approve
+	ApprovePrivilegeRequest(ctx context.Context, params ApprovePrivilegeRequestParams) (*PrivilegeRequestResource, error)
 	// CloseSession implements close-session operation.
 	//
 	// Ends the session in order: its applications are asked to exit and get a grace period before the
@@ -143,6 +151,13 @@ type Handler interface {
 	//
 	// POST /api/v1/enrollments/{enrollmentId}:deny
 	DenyEnrollment(ctx context.Context, params DenyEnrollmentParams) (*EnrollmentResource, error)
+	// DenyPrivilegeRequest implements deny-privilege-request operation.
+	//
+	// Denies one of the caller's pending requests; the waiting sudo fails. Fails with
+	// `PRIVILEGE_REQUEST_CLOSED` as for approving.
+	//
+	// POST /api/v1/privilege-requests/{requestId}:deny
+	DenyPrivilegeRequest(ctx context.Context, params DenyPrivilegeRequestParams) (*PrivilegeRequestResource, error)
 	// FindEnrollmentByPairingCode implements find-enrollment-by-pairing-code operation.
 	//
 	// Returns the pending enrollment request whose pairing code matches, or no enrollment when none does.
@@ -174,6 +189,19 @@ type Handler interface {
 	//
 	// GET /api/v1/machines/{machineId}
 	GetMachine(ctx context.Context, params GetMachineParams) (*MachineResource, error)
+	// GetPrivilegeApproval implements get-privilege-approval operation.
+	//
+	// Returns whether the caller's elevations on the machine are approved without asking. A caller who
+	// never set it gets `never`.
+	//
+	// GET /api/v1/machines/{machineId}/privilege-approval
+	GetPrivilegeApproval(ctx context.Context, params GetPrivilegeApprovalParams) (*PrivilegeApproval, error)
+	// GetPrivilegeRequest implements get-privilege-request operation.
+	//
+	// Returns one of the caller's privilege requests.
+	//
+	// GET /api/v1/privilege-requests/{requestId}
+	GetPrivilegeRequest(ctx context.Context, params GetPrivilegeRequestParams) (*PrivilegeRequestResource, error)
 	// GetSession implements get-session operation.
 	//
 	// Get a session.
@@ -212,6 +240,13 @@ type Handler interface {
 	//
 	// GET /api/v1/machines
 	ListMachines(ctx context.Context, params ListMachinesParams) (*MachineList, error)
+	// ListPrivilegeRequests implements list-privilege-requests operation.
+	//
+	// Returns the caller's privilege requests on the project's machines, newest first. Requests are kept
+	// for 30 days.
+	//
+	// GET /api/v1/privilege-requests
+	ListPrivilegeRequests(ctx context.Context, params ListPrivilegeRequestsParams) (*PrivilegeRequestList, error)
 	// ListSessionViewers implements list-session-viewers operation.
 	//
 	// Returns the viewers connected to the session, in the order they connected.
@@ -291,6 +326,15 @@ type Handler interface {
 	//
 	// PATCH /api/v1/machines/{machineId}
 	UpdateMachine(ctx context.Context, req *UpdateMachineRequest, params UpdateMachineParams) (*MachineResource, error)
+	// UpdatePrivilegeApproval implements update-privilege-approval operation.
+	//
+	// Sets whether the caller's elevations on the machine are approved without asking: `never` asks every
+	// time, `until` approves without asking until `auto_approve_until`, `forever` always does. It applies
+	// to the caller's own account only, and only while they may become root on the machine. Fails with
+	// `INVALID_ARGUMENT` when `auto_approve_until` is missing or past for `until`, or present otherwise.
+	//
+	// PUT /api/v1/machines/{machineId}/privilege-approval
+	UpdatePrivilegeApproval(ctx context.Context, req *PrivilegeApproval, params UpdatePrivilegeApprovalParams) (*PrivilegeApproval, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.

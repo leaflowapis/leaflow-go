@@ -45,6 +45,7 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 // operationRolesBearerAuth is a private map storing roles per operation.
 var operationRolesBearerAuth = map[string][]string{
 	ApproveEnrollmentOperation:           []string{},
+	ApprovePrivilegeRequestOperation:     []string{},
 	CloseSessionOperation:                []string{},
 	CreateGroupOperation:                 []string{},
 	CreateGroupMemberOperation:           []string{},
@@ -55,16 +56,20 @@ var operationRolesBearerAuth = map[string][]string{
 	DeleteMachineOperation:               []string{},
 	DeleteViewerOperation:                []string{},
 	DenyEnrollmentOperation:              []string{},
+	DenyPrivilegeRequestOperation:        []string{},
 	FindEnrollmentByPairingCodeOperation: []string{},
 	GetAccountOperation:                  []string{},
 	GetGroupOperation:                    []string{},
 	GetMachineOperation:                  []string{},
+	GetPrivilegeApprovalOperation:        []string{},
+	GetPrivilegeRequestOperation:         []string{},
 	GetSessionOperation:                  []string{},
 	ListAccountsOperation:                []string{},
 	ListGroupMembersOperation:            []string{},
 	ListGroupsOperation:                  []string{},
 	ListMachineEventsOperation:           []string{},
 	ListMachinesOperation:                []string{},
+	ListPrivilegeRequestsOperation:       []string{},
 	ListSessionViewersOperation:          []string{},
 	ListSessionsOperation:                []string{},
 	RunMachineCommandOperation:           []string{},
@@ -72,6 +77,7 @@ var operationRolesBearerAuth = map[string][]string{
 	UpdateAccountOperation:               []string{},
 	UpdateGroupOperation:                 []string{},
 	UpdateMachineOperation:               []string{},
+	UpdatePrivilegeApprovalOperation:     []string{},
 }
 
 // GetRolesForBearerAuth returns the required roles for the given operation.

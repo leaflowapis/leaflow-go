@@ -134,6 +134,98 @@ func (PrivilegeOutcome) EnumDescriptor() ([]byte, []int) {
 	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{1}
 }
 
+// The request of DecidePrivilegeRequest.
+type DecidePrivilegeRequestRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The request, as the daemon shows it to viewers.
+	Request       *PrivilegeRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DecidePrivilegeRequestRequest) Reset() {
+	*x = DecidePrivilegeRequestRequest{}
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DecidePrivilegeRequestRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DecidePrivilegeRequestRequest) ProtoMessage() {}
+
+func (x *DecidePrivilegeRequestRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DecidePrivilegeRequestRequest.ProtoReflect.Descriptor instead.
+func (*DecidePrivilegeRequestRequest) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *DecidePrivilegeRequestRequest) GetRequest() *PrivilegeRequest {
+	if x != nil {
+		return x.Request
+	}
+	return nil
+}
+
+// The response of DecidePrivilegeRequest.
+type DecidePrivilegeRequestResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// APPROVED, DENIED or EXPIRED.
+	Outcome       PrivilegeOutcome `protobuf:"varint,1,opt,name=outcome,proto3,enum=leaflow.fleet.privilege.v1.PrivilegeOutcome" json:"outcome,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DecidePrivilegeRequestResponse) Reset() {
+	*x = DecidePrivilegeRequestResponse{}
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DecidePrivilegeRequestResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DecidePrivilegeRequestResponse) ProtoMessage() {}
+
+func (x *DecidePrivilegeRequestResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DecidePrivilegeRequestResponse.ProtoReflect.Descriptor instead.
+func (*DecidePrivilegeRequestResponse) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *DecidePrivilegeRequestResponse) GetOutcome() PrivilegeOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return PrivilegeOutcome_PRIVILEGE_OUTCOME_UNSPECIFIED
+}
+
 // A message from the viewer.
 type ClientMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -149,7 +241,7 @@ type ClientMessage struct {
 
 func (x *ClientMessage) Reset() {
 	*x = ClientMessage{}
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[0]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -161,7 +253,7 @@ func (x *ClientMessage) String() string {
 func (*ClientMessage) ProtoMessage() {}
 
 func (x *ClientMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[0]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -174,7 +266,7 @@ func (x *ClientMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClientMessage.ProtoReflect.Descriptor instead.
 func (*ClientMessage) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{0}
+	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ClientMessage) GetMessage() isClientMessage_Message {
@@ -222,7 +314,7 @@ type ServerMessage struct {
 
 func (x *ServerMessage) Reset() {
 	*x = ServerMessage{}
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[1]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -234,7 +326,7 @@ func (x *ServerMessage) String() string {
 func (*ServerMessage) ProtoMessage() {}
 
 func (x *ServerMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[1]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -247,7 +339,7 @@ func (x *ServerMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServerMessage.ProtoReflect.Descriptor instead.
 func (*ServerMessage) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{1}
+	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ServerMessage) GetMessage() isServerMessage_Message {
@@ -337,7 +429,7 @@ type ServerHello struct {
 
 func (x *ServerHello) Reset() {
 	*x = ServerHello{}
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[2]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -349,7 +441,7 @@ func (x *ServerHello) String() string {
 func (*ServerHello) ProtoMessage() {}
 
 func (x *ServerHello) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[2]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -362,7 +454,7 @@ func (x *ServerHello) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServerHello.ProtoReflect.Descriptor instead.
 func (*ServerHello) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{2}
+	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ServerHello) GetApproveAllowed() bool {
@@ -385,7 +477,7 @@ type PrivilegePrompt struct {
 
 func (x *PrivilegePrompt) Reset() {
 	*x = PrivilegePrompt{}
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[3]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -397,7 +489,7 @@ func (x *PrivilegePrompt) String() string {
 func (*PrivilegePrompt) ProtoMessage() {}
 
 func (x *PrivilegePrompt) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[3]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -410,7 +502,7 @@ func (x *PrivilegePrompt) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrivilegePrompt.ProtoReflect.Descriptor instead.
 func (*PrivilegePrompt) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{3}
+	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *PrivilegePrompt) GetRequest() []byte {
@@ -430,7 +522,8 @@ type PrivilegeRequest struct {
 	Nonce []byte `protobuf:"bytes,2,opt,name=nonce,proto3" json:"nonce,omitempty"`
 	// The machine.
 	MachineId string `protobuf:"bytes,3,opt,name=machine_id,json=machineId,proto3" json:"machine_id,omitempty"`
-	// The session the asking process belongs to.
+	// The session the asking process belongs to. Empty when it belongs to no
+	// session of the platform, such as after an SSH login.
 	SessionId string `protobuf:"bytes,4,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	// When the request was made.
 	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
@@ -456,7 +549,7 @@ type PrivilegeRequest struct {
 
 func (x *PrivilegeRequest) Reset() {
 	*x = PrivilegeRequest{}
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[4]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -468,7 +561,7 @@ func (x *PrivilegeRequest) String() string {
 func (*PrivilegeRequest) ProtoMessage() {}
 
 func (x *PrivilegeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[4]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -481,7 +574,7 @@ func (x *PrivilegeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrivilegeRequest.ProtoReflect.Descriptor instead.
 func (*PrivilegeRequest) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{4}
+	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *PrivilegeRequest) GetRequestId() string {
@@ -611,7 +704,7 @@ type PamAuthentication struct {
 
 func (x *PamAuthentication) Reset() {
 	*x = PamAuthentication{}
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[5]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -623,7 +716,7 @@ func (x *PamAuthentication) String() string {
 func (*PamAuthentication) ProtoMessage() {}
 
 func (x *PamAuthentication) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[5]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -636,7 +729,7 @@ func (x *PamAuthentication) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PamAuthentication.ProtoReflect.Descriptor instead.
 func (*PamAuthentication) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{5}
+	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *PamAuthentication) GetService() string {
@@ -710,7 +803,7 @@ type KeyringAccess struct {
 
 func (x *KeyringAccess) Reset() {
 	*x = KeyringAccess{}
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[6]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -722,7 +815,7 @@ func (x *KeyringAccess) String() string {
 func (*KeyringAccess) ProtoMessage() {}
 
 func (x *KeyringAccess) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[6]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -735,7 +828,7 @@ func (x *KeyringAccess) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KeyringAccess.ProtoReflect.Descriptor instead.
 func (*KeyringAccess) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{6}
+	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *KeyringAccess) GetOperation() KeyringOperation {
@@ -767,7 +860,7 @@ type SignedPrivilegeDecision struct {
 
 func (x *SignedPrivilegeDecision) Reset() {
 	*x = SignedPrivilegeDecision{}
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[7]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -779,7 +872,7 @@ func (x *SignedPrivilegeDecision) String() string {
 func (*SignedPrivilegeDecision) ProtoMessage() {}
 
 func (x *SignedPrivilegeDecision) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[7]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -792,7 +885,7 @@ func (x *SignedPrivilegeDecision) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignedPrivilegeDecision.ProtoReflect.Descriptor instead.
 func (*SignedPrivilegeDecision) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{7}
+	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SignedPrivilegeDecision) GetDecision() []byte {
@@ -824,7 +917,7 @@ type PrivilegeDecision struct {
 
 func (x *PrivilegeDecision) Reset() {
 	*x = PrivilegeDecision{}
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[8]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -836,7 +929,7 @@ func (x *PrivilegeDecision) String() string {
 func (*PrivilegeDecision) ProtoMessage() {}
 
 func (x *PrivilegeDecision) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[8]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -849,7 +942,7 @@ func (x *PrivilegeDecision) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrivilegeDecision.ProtoReflect.Descriptor instead.
 func (*PrivilegeDecision) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{8}
+	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *PrivilegeDecision) GetRequestSha256() []byte {
@@ -886,7 +979,7 @@ type PrivilegeRequestClosed struct {
 
 func (x *PrivilegeRequestClosed) Reset() {
 	*x = PrivilegeRequestClosed{}
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[9]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -898,7 +991,7 @@ func (x *PrivilegeRequestClosed) String() string {
 func (*PrivilegeRequestClosed) ProtoMessage() {}
 
 func (x *PrivilegeRequestClosed) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[9]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -911,7 +1004,7 @@ func (x *PrivilegeRequestClosed) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrivilegeRequestClosed.ProtoReflect.Descriptor instead.
 func (*PrivilegeRequestClosed) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{9}
+	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *PrivilegeRequestClosed) GetRequestId() string {
@@ -937,7 +1030,7 @@ type SnapshotEnd struct {
 
 func (x *SnapshotEnd) Reset() {
 	*x = SnapshotEnd{}
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[10]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -949,7 +1042,7 @@ func (x *SnapshotEnd) String() string {
 func (*SnapshotEnd) ProtoMessage() {}
 
 func (x *SnapshotEnd) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[10]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -962,7 +1055,7 @@ func (x *SnapshotEnd) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SnapshotEnd.ProtoReflect.Descriptor instead.
 func (*SnapshotEnd) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{10}
+	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{12}
 }
 
 // What a viewer may do with privilege requests. Carried in the viewer's
@@ -978,7 +1071,7 @@ type PrivilegePolicy struct {
 
 func (x *PrivilegePolicy) Reset() {
 	*x = PrivilegePolicy{}
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[11]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -990,7 +1083,7 @@ func (x *PrivilegePolicy) String() string {
 func (*PrivilegePolicy) ProtoMessage() {}
 
 func (x *PrivilegePolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[11]
+	mi := &file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1003,7 +1096,7 @@ func (x *PrivilegePolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrivilegePolicy.ProtoReflect.Descriptor instead.
 func (*PrivilegePolicy) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{11}
+	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *PrivilegePolicy) GetApproveAllowed() bool {
@@ -1017,7 +1110,11 @@ var File_leaflow_fleet_privilege_v1_privilege_proto protoreflect.FileDescriptor
 
 const file_leaflow_fleet_privilege_v1_privilege_proto_rawDesc = "" +
 	"\n" +
-	"*leaflow/fleet/privilege/v1/privilege.proto\x12\x1aleaflow.fleet.privilege.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"m\n" +
+	"*leaflow/fleet/privilege/v1/privilege.proto\x12\x1aleaflow.fleet.privilege.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"g\n" +
+	"\x1dDecidePrivilegeRequestRequest\x12F\n" +
+	"\arequest\x18\x01 \x01(\v2,.leaflow.fleet.privilege.v1.PrivilegeRequestR\arequest\"h\n" +
+	"\x1eDecidePrivilegeRequestResponse\x12F\n" +
+	"\aoutcome\x18\x01 \x01(\x0e2,.leaflow.fleet.privilege.v1.PrivilegeOutcomeR\aoutcome\"m\n" +
 	"\rClientMessage\x12Q\n" +
 	"\bdecision\x18\x01 \x01(\v23.leaflow.fleet.privilege.v1.SignedPrivilegeDecisionH\x00R\bdecisionB\t\n" +
 	"\amessage\"\xda\x02\n" +
@@ -1089,7 +1186,9 @@ const file_leaflow_fleet_privilege_v1_privilege_proto_rawDesc = "" +
 	"\x1aPRIVILEGE_OUTCOME_APPROVED\x10\x01\x12\x1c\n" +
 	"\x18PRIVILEGE_OUTCOME_DENIED\x10\x02\x12\x1d\n" +
 	"\x19PRIVILEGE_OUTCOME_EXPIRED\x10\x03\x12\x1f\n" +
-	"\x1bPRIVILEGE_OUTCOME_CANCELLED\x10\x04BBZ@github.com/leaflowapis/leaflow-go/fleet/privilege/v1;privilegev1b\x06proto3"
+	"\x1bPRIVILEGE_OUTCOME_CANCELLED\x10\x042\xa4\x01\n" +
+	"\x10PrivilegeService\x12\x8f\x01\n" +
+	"\x16DecidePrivilegeRequest\x129.leaflow.fleet.privilege.v1.DecidePrivilegeRequestRequest\x1a:.leaflow.fleet.privilege.v1.DecidePrivilegeRequestResponseBBZ@github.com/leaflowapis/leaflow-go/fleet/privilege/v1;privilegev1b\x06proto3"
 
 var (
 	file_leaflow_fleet_privilege_v1_privilege_proto_rawDescOnce sync.Once
@@ -1104,44 +1203,50 @@ func file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP() []byte {
 }
 
 var file_leaflow_fleet_privilege_v1_privilege_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_leaflow_fleet_privilege_v1_privilege_proto_goTypes = []any{
-	(KeyringOperation)(0),           // 0: leaflow.fleet.privilege.v1.KeyringOperation
-	(PrivilegeOutcome)(0),           // 1: leaflow.fleet.privilege.v1.PrivilegeOutcome
-	(*ClientMessage)(nil),           // 2: leaflow.fleet.privilege.v1.ClientMessage
-	(*ServerMessage)(nil),           // 3: leaflow.fleet.privilege.v1.ServerMessage
-	(*ServerHello)(nil),             // 4: leaflow.fleet.privilege.v1.ServerHello
-	(*PrivilegePrompt)(nil),         // 5: leaflow.fleet.privilege.v1.PrivilegePrompt
-	(*PrivilegeRequest)(nil),        // 6: leaflow.fleet.privilege.v1.PrivilegeRequest
-	(*PamAuthentication)(nil),       // 7: leaflow.fleet.privilege.v1.PamAuthentication
-	(*KeyringAccess)(nil),           // 8: leaflow.fleet.privilege.v1.KeyringAccess
-	(*SignedPrivilegeDecision)(nil), // 9: leaflow.fleet.privilege.v1.SignedPrivilegeDecision
-	(*PrivilegeDecision)(nil),       // 10: leaflow.fleet.privilege.v1.PrivilegeDecision
-	(*PrivilegeRequestClosed)(nil),  // 11: leaflow.fleet.privilege.v1.PrivilegeRequestClosed
-	(*SnapshotEnd)(nil),             // 12: leaflow.fleet.privilege.v1.SnapshotEnd
-	(*PrivilegePolicy)(nil),         // 13: leaflow.fleet.privilege.v1.PrivilegePolicy
-	nil,                             // 14: leaflow.fleet.privilege.v1.PamAuthentication.DetailsEntry
-	(*timestamppb.Timestamp)(nil),   // 15: google.protobuf.Timestamp
+	(KeyringOperation)(0),                  // 0: leaflow.fleet.privilege.v1.KeyringOperation
+	(PrivilegeOutcome)(0),                  // 1: leaflow.fleet.privilege.v1.PrivilegeOutcome
+	(*DecidePrivilegeRequestRequest)(nil),  // 2: leaflow.fleet.privilege.v1.DecidePrivilegeRequestRequest
+	(*DecidePrivilegeRequestResponse)(nil), // 3: leaflow.fleet.privilege.v1.DecidePrivilegeRequestResponse
+	(*ClientMessage)(nil),                  // 4: leaflow.fleet.privilege.v1.ClientMessage
+	(*ServerMessage)(nil),                  // 5: leaflow.fleet.privilege.v1.ServerMessage
+	(*ServerHello)(nil),                    // 6: leaflow.fleet.privilege.v1.ServerHello
+	(*PrivilegePrompt)(nil),                // 7: leaflow.fleet.privilege.v1.PrivilegePrompt
+	(*PrivilegeRequest)(nil),               // 8: leaflow.fleet.privilege.v1.PrivilegeRequest
+	(*PamAuthentication)(nil),              // 9: leaflow.fleet.privilege.v1.PamAuthentication
+	(*KeyringAccess)(nil),                  // 10: leaflow.fleet.privilege.v1.KeyringAccess
+	(*SignedPrivilegeDecision)(nil),        // 11: leaflow.fleet.privilege.v1.SignedPrivilegeDecision
+	(*PrivilegeDecision)(nil),              // 12: leaflow.fleet.privilege.v1.PrivilegeDecision
+	(*PrivilegeRequestClosed)(nil),         // 13: leaflow.fleet.privilege.v1.PrivilegeRequestClosed
+	(*SnapshotEnd)(nil),                    // 14: leaflow.fleet.privilege.v1.SnapshotEnd
+	(*PrivilegePolicy)(nil),                // 15: leaflow.fleet.privilege.v1.PrivilegePolicy
+	nil,                                    // 16: leaflow.fleet.privilege.v1.PamAuthentication.DetailsEntry
+	(*timestamppb.Timestamp)(nil),          // 17: google.protobuf.Timestamp
 }
 var file_leaflow_fleet_privilege_v1_privilege_proto_depIdxs = []int32{
-	9,  // 0: leaflow.fleet.privilege.v1.ClientMessage.decision:type_name -> leaflow.fleet.privilege.v1.SignedPrivilegeDecision
-	4,  // 1: leaflow.fleet.privilege.v1.ServerMessage.server_hello:type_name -> leaflow.fleet.privilege.v1.ServerHello
-	5,  // 2: leaflow.fleet.privilege.v1.ServerMessage.prompt:type_name -> leaflow.fleet.privilege.v1.PrivilegePrompt
-	11, // 3: leaflow.fleet.privilege.v1.ServerMessage.request_closed:type_name -> leaflow.fleet.privilege.v1.PrivilegeRequestClosed
-	12, // 4: leaflow.fleet.privilege.v1.ServerMessage.snapshot_end:type_name -> leaflow.fleet.privilege.v1.SnapshotEnd
-	15, // 5: leaflow.fleet.privilege.v1.PrivilegeRequest.created_at:type_name -> google.protobuf.Timestamp
-	15, // 6: leaflow.fleet.privilege.v1.PrivilegeRequest.expires_at:type_name -> google.protobuf.Timestamp
-	7,  // 7: leaflow.fleet.privilege.v1.PrivilegeRequest.pam_authentication:type_name -> leaflow.fleet.privilege.v1.PamAuthentication
-	8,  // 8: leaflow.fleet.privilege.v1.PrivilegeRequest.keyring_access:type_name -> leaflow.fleet.privilege.v1.KeyringAccess
-	14, // 9: leaflow.fleet.privilege.v1.PamAuthentication.details:type_name -> leaflow.fleet.privilege.v1.PamAuthentication.DetailsEntry
-	0,  // 10: leaflow.fleet.privilege.v1.KeyringAccess.operation:type_name -> leaflow.fleet.privilege.v1.KeyringOperation
-	15, // 11: leaflow.fleet.privilege.v1.PrivilegeDecision.decided_at:type_name -> google.protobuf.Timestamp
-	1,  // 12: leaflow.fleet.privilege.v1.PrivilegeRequestClosed.outcome:type_name -> leaflow.fleet.privilege.v1.PrivilegeOutcome
-	13, // [13:13] is the sub-list for method output_type
-	13, // [13:13] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	8,  // 0: leaflow.fleet.privilege.v1.DecidePrivilegeRequestRequest.request:type_name -> leaflow.fleet.privilege.v1.PrivilegeRequest
+	1,  // 1: leaflow.fleet.privilege.v1.DecidePrivilegeRequestResponse.outcome:type_name -> leaflow.fleet.privilege.v1.PrivilegeOutcome
+	11, // 2: leaflow.fleet.privilege.v1.ClientMessage.decision:type_name -> leaflow.fleet.privilege.v1.SignedPrivilegeDecision
+	6,  // 3: leaflow.fleet.privilege.v1.ServerMessage.server_hello:type_name -> leaflow.fleet.privilege.v1.ServerHello
+	7,  // 4: leaflow.fleet.privilege.v1.ServerMessage.prompt:type_name -> leaflow.fleet.privilege.v1.PrivilegePrompt
+	13, // 5: leaflow.fleet.privilege.v1.ServerMessage.request_closed:type_name -> leaflow.fleet.privilege.v1.PrivilegeRequestClosed
+	14, // 6: leaflow.fleet.privilege.v1.ServerMessage.snapshot_end:type_name -> leaflow.fleet.privilege.v1.SnapshotEnd
+	17, // 7: leaflow.fleet.privilege.v1.PrivilegeRequest.created_at:type_name -> google.protobuf.Timestamp
+	17, // 8: leaflow.fleet.privilege.v1.PrivilegeRequest.expires_at:type_name -> google.protobuf.Timestamp
+	9,  // 9: leaflow.fleet.privilege.v1.PrivilegeRequest.pam_authentication:type_name -> leaflow.fleet.privilege.v1.PamAuthentication
+	10, // 10: leaflow.fleet.privilege.v1.PrivilegeRequest.keyring_access:type_name -> leaflow.fleet.privilege.v1.KeyringAccess
+	16, // 11: leaflow.fleet.privilege.v1.PamAuthentication.details:type_name -> leaflow.fleet.privilege.v1.PamAuthentication.DetailsEntry
+	0,  // 12: leaflow.fleet.privilege.v1.KeyringAccess.operation:type_name -> leaflow.fleet.privilege.v1.KeyringOperation
+	17, // 13: leaflow.fleet.privilege.v1.PrivilegeDecision.decided_at:type_name -> google.protobuf.Timestamp
+	1,  // 14: leaflow.fleet.privilege.v1.PrivilegeRequestClosed.outcome:type_name -> leaflow.fleet.privilege.v1.PrivilegeOutcome
+	2,  // 15: leaflow.fleet.privilege.v1.PrivilegeService.DecidePrivilegeRequest:input_type -> leaflow.fleet.privilege.v1.DecidePrivilegeRequestRequest
+	3,  // 16: leaflow.fleet.privilege.v1.PrivilegeService.DecidePrivilegeRequest:output_type -> leaflow.fleet.privilege.v1.DecidePrivilegeRequestResponse
+	16, // [16:17] is the sub-list for method output_type
+	15, // [15:16] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_leaflow_fleet_privilege_v1_privilege_proto_init() }
@@ -1149,16 +1254,16 @@ func file_leaflow_fleet_privilege_v1_privilege_proto_init() {
 	if File_leaflow_fleet_privilege_v1_privilege_proto != nil {
 		return
 	}
-	file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[0].OneofWrappers = []any{
+	file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[2].OneofWrappers = []any{
 		(*ClientMessage_Decision)(nil),
 	}
-	file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[1].OneofWrappers = []any{
+	file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[3].OneofWrappers = []any{
 		(*ServerMessage_ServerHello)(nil),
 		(*ServerMessage_Prompt)(nil),
 		(*ServerMessage_RequestClosed)(nil),
 		(*ServerMessage_SnapshotEnd)(nil),
 	}
-	file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[4].OneofWrappers = []any{
+	file_leaflow_fleet_privilege_v1_privilege_proto_msgTypes[6].OneofWrappers = []any{
 		(*PrivilegeRequest_PamAuthentication)(nil),
 		(*PrivilegeRequest_KeyringAccess)(nil),
 	}
@@ -1168,9 +1273,9 @@ func file_leaflow_fleet_privilege_v1_privilege_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_leaflow_fleet_privilege_v1_privilege_proto_rawDesc), len(file_leaflow_fleet_privilege_v1_privilege_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   13,
+			NumMessages:   15,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   1,
 		},
 		GoTypes:           file_leaflow_fleet_privilege_v1_privilege_proto_goTypes,
 		DependencyIndexes: file_leaflow_fleet_privilege_v1_privilege_proto_depIdxs,

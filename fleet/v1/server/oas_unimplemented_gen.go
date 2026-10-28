@@ -27,6 +27,17 @@ func (UnimplementedHandler) ApproveEnrollment(ctx context.Context, req *ApproveE
 	return r, ht.ErrNotImplemented
 }
 
+// ApprovePrivilegeRequest implements approve-privilege-request operation.
+//
+// Approves one of the caller's pending requests; the waiting sudo goes on as root. Fails with
+// `PRIVILEGE_REQUEST_CLOSED` when the request is no longer pending, with `metadata.state` giving how
+// it ended.
+//
+// POST /api/v1/privilege-requests/{requestId}:approve
+func (UnimplementedHandler) ApprovePrivilegeRequest(ctx context.Context, params ApprovePrivilegeRequestParams) (r *PrivilegeRequestResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CloseSession implements close-session operation.
 //
 // Ends the session in order: its applications are asked to exit and get a grace period before the
@@ -181,6 +192,16 @@ func (UnimplementedHandler) DenyEnrollment(ctx context.Context, params DenyEnrol
 	return r, ht.ErrNotImplemented
 }
 
+// DenyPrivilegeRequest implements deny-privilege-request operation.
+//
+// Denies one of the caller's pending requests; the waiting sudo fails. Fails with
+// `PRIVILEGE_REQUEST_CLOSED` as for approving.
+//
+// POST /api/v1/privilege-requests/{requestId}:deny
+func (UnimplementedHandler) DenyPrivilegeRequest(ctx context.Context, params DenyPrivilegeRequestParams) (r *PrivilegeRequestResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // FindEnrollmentByPairingCode implements find-enrollment-by-pairing-code operation.
 //
 // Returns the pending enrollment request whose pairing code matches, or no enrollment when none does.
@@ -221,6 +242,25 @@ func (UnimplementedHandler) GetGroup(ctx context.Context, params GetGroupParams)
 //
 // GET /api/v1/machines/{machineId}
 func (UnimplementedHandler) GetMachine(ctx context.Context, params GetMachineParams) (r *MachineResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetPrivilegeApproval implements get-privilege-approval operation.
+//
+// Returns whether the caller's elevations on the machine are approved without asking. A caller who
+// never set it gets `never`.
+//
+// GET /api/v1/machines/{machineId}/privilege-approval
+func (UnimplementedHandler) GetPrivilegeApproval(ctx context.Context, params GetPrivilegeApprovalParams) (r *PrivilegeApproval, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetPrivilegeRequest implements get-privilege-request operation.
+//
+// Returns one of the caller's privilege requests.
+//
+// GET /api/v1/privilege-requests/{requestId}
+func (UnimplementedHandler) GetPrivilegeRequest(ctx context.Context, params GetPrivilegeRequestParams) (r *PrivilegeRequestResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -277,6 +317,16 @@ func (UnimplementedHandler) ListMachineEvents(ctx context.Context, params ListMa
 //
 // GET /api/v1/machines
 func (UnimplementedHandler) ListMachines(ctx context.Context, params ListMachinesParams) (r *MachineList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListPrivilegeRequests implements list-privilege-requests operation.
+//
+// Returns the caller's privilege requests on the project's machines, newest first. Requests are kept
+// for 30 days.
+//
+// GET /api/v1/privilege-requests
+func (UnimplementedHandler) ListPrivilegeRequests(ctx context.Context, params ListPrivilegeRequestsParams) (r *PrivilegeRequestList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -377,6 +427,18 @@ func (UnimplementedHandler) UpdateGroup(ctx context.Context, req *UpdateGroupReq
 //
 // PATCH /api/v1/machines/{machineId}
 func (UnimplementedHandler) UpdateMachine(ctx context.Context, req *UpdateMachineRequest, params UpdateMachineParams) (r *MachineResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdatePrivilegeApproval implements update-privilege-approval operation.
+//
+// Sets whether the caller's elevations on the machine are approved without asking: `never` asks every
+// time, `until` approves without asking until `auto_approve_until`, `forever` always does. It applies
+// to the caller's own account only, and only while they may become root on the machine. Fails with
+// `INVALID_ARGUMENT` when `auto_approve_until` is missing or past for `until`, or present otherwise.
+//
+// PUT /api/v1/machines/{machineId}/privilege-approval
+func (UnimplementedHandler) UpdatePrivilegeApproval(ctx context.Context, req *PrivilegeApproval, params UpdatePrivilegeApprovalParams) (r *PrivilegeApproval, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

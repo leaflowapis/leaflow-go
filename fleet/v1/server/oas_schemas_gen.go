@@ -1828,6 +1828,52 @@ func (o OptBool) Or(d bool) bool {
 	return d
 }
 
+// NewOptDateTime returns new OptDateTime with value set to v.
+func NewOptDateTime(v time.Time) OptDateTime {
+	return OptDateTime{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptDateTime is optional time.Time.
+type OptDateTime struct {
+	Value time.Time
+	Set   bool
+}
+
+// IsSet returns true if OptDateTime was set.
+func (o OptDateTime) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptDateTime) Reset() {
+	var v time.Time
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptDateTime) SetTo(v time.Time) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptDateTime) Get() (v time.Time, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptDesktopOptions returns new OptDesktopOptions with value set to v.
 func NewOptDesktopOptions(v DesktopOptions) OptDesktopOptions {
 	return OptDesktopOptions{
@@ -2172,6 +2218,52 @@ func (o OptNilUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
+// NewOptPrivilegeRequestState returns new OptPrivilegeRequestState with value set to v.
+func NewOptPrivilegeRequestState(v PrivilegeRequestState) OptPrivilegeRequestState {
+	return OptPrivilegeRequestState{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPrivilegeRequestState is optional PrivilegeRequestState.
+type OptPrivilegeRequestState struct {
+	Value PrivilegeRequestState
+	Set   bool
+}
+
+// IsSet returns true if OptPrivilegeRequestState was set.
+func (o OptPrivilegeRequestState) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPrivilegeRequestState) Reset() {
+	var v PrivilegeRequestState
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPrivilegeRequestState) SetTo(v PrivilegeRequestState) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPrivilegeRequestState) Get() (v PrivilegeRequestState, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPrivilegeRequestState) Or(d PrivilegeRequestState) PrivilegeRequestState {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptString returns new OptString with value set to v.
 func NewOptString(v string) OptString {
 	return OptString{
@@ -2262,6 +2354,343 @@ func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 		return v
 	}
 	return d
+}
+
+// Ref: #/components/schemas/PrivilegeApproval
+type PrivilegeApproval struct {
+	// `never` asks every time; `until` approves without asking until `auto_approve_until`; `forever`
+	// always approves without asking.
+	AutoApprove PrivilegeApprovalAutoApprove `json:"auto_approve"`
+	// Only with `until`. A setting whose time has passed reads as `never`.
+	AutoApproveUntil OptDateTime `json:"auto_approve_until"`
+}
+
+// GetAutoApprove returns the value of AutoApprove.
+func (s *PrivilegeApproval) GetAutoApprove() PrivilegeApprovalAutoApprove {
+	return s.AutoApprove
+}
+
+// GetAutoApproveUntil returns the value of AutoApproveUntil.
+func (s *PrivilegeApproval) GetAutoApproveUntil() OptDateTime {
+	return s.AutoApproveUntil
+}
+
+// SetAutoApprove sets the value of AutoApprove.
+func (s *PrivilegeApproval) SetAutoApprove(val PrivilegeApprovalAutoApprove) {
+	s.AutoApprove = val
+}
+
+// SetAutoApproveUntil sets the value of AutoApproveUntil.
+func (s *PrivilegeApproval) SetAutoApproveUntil(val OptDateTime) {
+	s.AutoApproveUntil = val
+}
+
+// `never` asks every time; `until` approves without asking until `auto_approve_until`; `forever`
+// always approves without asking.
+type PrivilegeApprovalAutoApprove string
+
+const (
+	PrivilegeApprovalAutoApproveNever   PrivilegeApprovalAutoApprove = "never"
+	PrivilegeApprovalAutoApproveUntil   PrivilegeApprovalAutoApprove = "until"
+	PrivilegeApprovalAutoApproveForever PrivilegeApprovalAutoApprove = "forever"
+)
+
+// AllValues returns all PrivilegeApprovalAutoApprove values.
+func (PrivilegeApprovalAutoApprove) AllValues() []PrivilegeApprovalAutoApprove {
+	return []PrivilegeApprovalAutoApprove{
+		PrivilegeApprovalAutoApproveNever,
+		PrivilegeApprovalAutoApproveUntil,
+		PrivilegeApprovalAutoApproveForever,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PrivilegeApprovalAutoApprove) MarshalText() ([]byte, error) {
+	switch s {
+	case PrivilegeApprovalAutoApproveNever:
+		return []byte(s), nil
+	case PrivilegeApprovalAutoApproveUntil:
+		return []byte(s), nil
+	case PrivilegeApprovalAutoApproveForever:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PrivilegeApprovalAutoApprove) UnmarshalText(data []byte) error {
+	switch PrivilegeApprovalAutoApprove(data) {
+	case PrivilegeApprovalAutoApproveNever:
+		*s = PrivilegeApprovalAutoApproveNever
+		return nil
+	case PrivilegeApprovalAutoApproveUntil:
+		*s = PrivilegeApprovalAutoApproveUntil
+		return nil
+	case PrivilegeApprovalAutoApproveForever:
+		*s = PrivilegeApprovalAutoApproveForever
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/PrivilegeRequestList
+type PrivilegeRequestList struct {
+	Items      []PrivilegeRequestResource `json:"items"`
+	TotalCount int64                      `json:"total_count"`
+	Page       int64                      `json:"page"`
+	PageSize   int64                      `json:"page_size"`
+}
+
+// GetItems returns the value of Items.
+func (s *PrivilegeRequestList) GetItems() []PrivilegeRequestResource {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *PrivilegeRequestList) GetTotalCount() int64 {
+	return s.TotalCount
+}
+
+// GetPage returns the value of Page.
+func (s *PrivilegeRequestList) GetPage() int64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *PrivilegeRequestList) GetPageSize() int64 {
+	return s.PageSize
+}
+
+// SetItems sets the value of Items.
+func (s *PrivilegeRequestList) SetItems(val []PrivilegeRequestResource) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *PrivilegeRequestList) SetTotalCount(val int64) {
+	s.TotalCount = val
+}
+
+// SetPage sets the value of Page.
+func (s *PrivilegeRequestList) SetPage(val int64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *PrivilegeRequestList) SetPageSize(val int64) {
+	s.PageSize = val
+}
+
+// Ref: #/components/schemas/PrivilegeRequestResource
+type PrivilegeRequestResource struct {
+	ID        uuid.UUID `json:"id"`
+	MachineID uuid.UUID `json:"machine_id"`
+	// The account that asks to become root.
+	Username string `json:"username"`
+	// The PAM service that asks, such as `sudo`.
+	Service string `json:"service"`
+	// What the machine reports the asking program runs, at most 4 KiB, such as `sudo apt install foo`. A
+	// claim of the machine.
+	CommandLine string `json:"command_line"`
+	// Where the login came from, when the machine knows it.
+	RemoteHost string `json:"remote_host"`
+	// The terminal, when the machine knows it, such as `/dev/pts/3`.
+	Tty   string                `json:"tty"`
+	State PrivilegeRequestState `json:"state"`
+	// The request was approved at once by the user's setting for the machine.
+	ApprovedWithoutAsking bool      `json:"approved_without_asking"`
+	CreatedAt             time.Time `json:"created_at"`
+	ExpiresAt             time.Time `json:"expires_at"`
+	// When the request stopped pending; null while pending.
+	DecidedAt NilDateTime `json:"decided_at"`
+}
+
+// GetID returns the value of ID.
+func (s *PrivilegeRequestResource) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetMachineID returns the value of MachineID.
+func (s *PrivilegeRequestResource) GetMachineID() uuid.UUID {
+	return s.MachineID
+}
+
+// GetUsername returns the value of Username.
+func (s *PrivilegeRequestResource) GetUsername() string {
+	return s.Username
+}
+
+// GetService returns the value of Service.
+func (s *PrivilegeRequestResource) GetService() string {
+	return s.Service
+}
+
+// GetCommandLine returns the value of CommandLine.
+func (s *PrivilegeRequestResource) GetCommandLine() string {
+	return s.CommandLine
+}
+
+// GetRemoteHost returns the value of RemoteHost.
+func (s *PrivilegeRequestResource) GetRemoteHost() string {
+	return s.RemoteHost
+}
+
+// GetTty returns the value of Tty.
+func (s *PrivilegeRequestResource) GetTty() string {
+	return s.Tty
+}
+
+// GetState returns the value of State.
+func (s *PrivilegeRequestResource) GetState() PrivilegeRequestState {
+	return s.State
+}
+
+// GetApprovedWithoutAsking returns the value of ApprovedWithoutAsking.
+func (s *PrivilegeRequestResource) GetApprovedWithoutAsking() bool {
+	return s.ApprovedWithoutAsking
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *PrivilegeRequestResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetExpiresAt returns the value of ExpiresAt.
+func (s *PrivilegeRequestResource) GetExpiresAt() time.Time {
+	return s.ExpiresAt
+}
+
+// GetDecidedAt returns the value of DecidedAt.
+func (s *PrivilegeRequestResource) GetDecidedAt() NilDateTime {
+	return s.DecidedAt
+}
+
+// SetID sets the value of ID.
+func (s *PrivilegeRequestResource) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetMachineID sets the value of MachineID.
+func (s *PrivilegeRequestResource) SetMachineID(val uuid.UUID) {
+	s.MachineID = val
+}
+
+// SetUsername sets the value of Username.
+func (s *PrivilegeRequestResource) SetUsername(val string) {
+	s.Username = val
+}
+
+// SetService sets the value of Service.
+func (s *PrivilegeRequestResource) SetService(val string) {
+	s.Service = val
+}
+
+// SetCommandLine sets the value of CommandLine.
+func (s *PrivilegeRequestResource) SetCommandLine(val string) {
+	s.CommandLine = val
+}
+
+// SetRemoteHost sets the value of RemoteHost.
+func (s *PrivilegeRequestResource) SetRemoteHost(val string) {
+	s.RemoteHost = val
+}
+
+// SetTty sets the value of Tty.
+func (s *PrivilegeRequestResource) SetTty(val string) {
+	s.Tty = val
+}
+
+// SetState sets the value of State.
+func (s *PrivilegeRequestResource) SetState(val PrivilegeRequestState) {
+	s.State = val
+}
+
+// SetApprovedWithoutAsking sets the value of ApprovedWithoutAsking.
+func (s *PrivilegeRequestResource) SetApprovedWithoutAsking(val bool) {
+	s.ApprovedWithoutAsking = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *PrivilegeRequestResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetExpiresAt sets the value of ExpiresAt.
+func (s *PrivilegeRequestResource) SetExpiresAt(val time.Time) {
+	s.ExpiresAt = val
+}
+
+// SetDecidedAt sets the value of DecidedAt.
+func (s *PrivilegeRequestResource) SetDecidedAt(val NilDateTime) {
+	s.DecidedAt = val
+}
+
+// `pending` waits for a decision; `approved` and `denied` were decided by the user, a viewer or the
+// user's setting; `expired` was not decided in time; `cancelled` ended because the asking program gave
+// up or a viewer decided it.
+// Ref: #/components/schemas/PrivilegeRequestState
+type PrivilegeRequestState string
+
+const (
+	PrivilegeRequestStatePending   PrivilegeRequestState = "pending"
+	PrivilegeRequestStateApproved  PrivilegeRequestState = "approved"
+	PrivilegeRequestStateDenied    PrivilegeRequestState = "denied"
+	PrivilegeRequestStateExpired   PrivilegeRequestState = "expired"
+	PrivilegeRequestStateCancelled PrivilegeRequestState = "cancelled"
+)
+
+// AllValues returns all PrivilegeRequestState values.
+func (PrivilegeRequestState) AllValues() []PrivilegeRequestState {
+	return []PrivilegeRequestState{
+		PrivilegeRequestStatePending,
+		PrivilegeRequestStateApproved,
+		PrivilegeRequestStateDenied,
+		PrivilegeRequestStateExpired,
+		PrivilegeRequestStateCancelled,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PrivilegeRequestState) MarshalText() ([]byte, error) {
+	switch s {
+	case PrivilegeRequestStatePending:
+		return []byte(s), nil
+	case PrivilegeRequestStateApproved:
+		return []byte(s), nil
+	case PrivilegeRequestStateDenied:
+		return []byte(s), nil
+	case PrivilegeRequestStateExpired:
+		return []byte(s), nil
+	case PrivilegeRequestStateCancelled:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PrivilegeRequestState) UnmarshalText(data []byte) error {
+	switch PrivilegeRequestState(data) {
+	case PrivilegeRequestStatePending:
+		*s = PrivilegeRequestStatePending
+		return nil
+	case PrivilegeRequestStateApproved:
+		*s = PrivilegeRequestStateApproved
+		return nil
+	case PrivilegeRequestStateDenied:
+		*s = PrivilegeRequestStateDenied
+		return nil
+	case PrivilegeRequestStateExpired:
+		*s = PrivilegeRequestStateExpired
+		return nil
+	case PrivilegeRequestStateCancelled:
+		*s = PrivilegeRequestStateCancelled
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 type PublicKey string
