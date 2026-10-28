@@ -7,6 +7,7 @@ import contracts
 import ogen
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+BUF = "github.com/bufbuild/buf/cmd/buf@v1.75.0"
 
 
 def require_source(source, ref):
@@ -34,6 +35,22 @@ def generate_services(source):
             module.write_text("module github.com/leaflowapis/leaflow-go/" + str(relative.parent) + "\n\ngo 1.27.3\n\nrequire github.com/ogen-go/ogen v1.24.0\n")
 
 
+def generate_protos(source):
+    # 契约仓库只有一部分是 proto（带 buf.yaml 的那个 buf 模块）。没有它就没有可生成的东西。
+    if not (source / "buf.yaml").exists():
+        return
+    # 先删旧产物再生成：契约里删掉的 proto 不会被 buf 覆盖，留下的 .pb.go 照样能编译，而它描述的
+    # 消息已经不在契约里了。拉下来的契约副本不在本仓库的产物范围内，跳过。
+    for stale in ROOT.glob("*/**/*.pb.go"):
+        if stale.relative_to(ROOT).parts[0] != "leaflowapis":
+            stale.unlink()
+    subprocess.run(
+        ["go", "run", BUF, "generate", str(source), "--template", str(ROOT / "buf.gen.yaml")],
+        cwd=ROOT, env={**os.environ, "GOWORK": "off", "GOTOOLCHAIN": "local"}, check=True,
+    )
+    print("proto messages", flush=True)
+
+
 def main():
     ref = (ROOT / "CONTRACTS_REF").read_text().strip()
     source = os.environ.get("CONTRACTS_DIR")
@@ -44,6 +61,7 @@ def main():
         source = ROOT / 'leaflowapis'
         contracts.fetch('https://github.com/leaflowapis/leaflowapis.git', source)
     generate_services(source)
+    generate_protos(source)
 
 
 if __name__ == "__main__":

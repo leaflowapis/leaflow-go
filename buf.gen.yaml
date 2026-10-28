@@ -1,0 +1,19 @@
+# proto 生成配置。源是契约仓库里带 buf.yaml 的那一份，产物落在各服务模块里。
+#
+# module= 让 protoc-gen-go 按 go_package 去掉本仓库的路径前缀再落盘：go_package
+# github.com/leaflowapis/leaflow-go/fleet/control/v1 生成到 fleet/control/v1/，
+# 与同一服务的 REST 包 fleet/v1/server 同在一个模块里。go_package 与目录对不上时，
+# 编译期报的是「找不到包」，不指向这里。
+#
+# 插件走 go run，不走 PATH：protoc-gen-go 的输出取决于编译它的那个 Go，装在 PATH 上的二进制
+# 会在升级 Go 之后与流水线逐字不同，而两边的版本号完全一致。版本号钉在这里，也只钉在这里。
+#
+# 只生成消息类型，不生成任何 RPC 桩：这些服务走 Fleet 自己的连接与 rpc 帧，不走 gRPC。
+version: v2
+plugins:
+  - local:
+      - go
+      - run
+      - google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
+    out: .
+    opt: module=github.com/leaflowapis/leaflow-go
