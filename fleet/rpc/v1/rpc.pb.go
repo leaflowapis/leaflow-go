@@ -94,9 +94,9 @@ type Call struct {
 	Method string `protobuf:"bytes,2,opt,name=method,proto3" json:"method,omitempty"`
 	// The serialized request message of the method.
 	Payload []byte `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
-	// How long the callee may work on the call, counted from receipt. When it
-	// passes the result is DEADLINE_EXCEEDED. Unset: the default the method
-	// documents.
+	// How long the callee may work on the call, counted from the receipt of
+	// its first piece. When it passes the result is DEADLINE_EXCEEDED. Unset:
+	// the default the method documents.
 	Timeout *durationpb.Duration `protobuf:"bytes,4,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	// Set on every piece of the payload but the last (see Pieces). Method and
 	// timeout are only on the first piece.
