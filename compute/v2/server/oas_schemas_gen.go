@@ -2290,6 +2290,8 @@ type ElasticIP struct {
 	// order was accepted, and the charge for this elastic IP is refunded.
 	FailureReason NilElasticIPFailureReason `json:"failure_reason"`
 	Association   NilElasticIPAssociation   `json:"association"`
+	// The most recent operation started on the elastic IP; null when none has been recorded.
+	LatestOperation NilLatestOperation `json:"latest_operation"`
 }
 
 // GetInternetChargeType returns the value of InternetChargeType.
@@ -2392,6 +2394,11 @@ func (s *ElasticIP) GetAssociation() NilElasticIPAssociation {
 	return s.Association
 }
 
+// GetLatestOperation returns the value of LatestOperation.
+func (s *ElasticIP) GetLatestOperation() NilLatestOperation {
+	return s.LatestOperation
+}
+
 // SetInternetChargeType sets the value of InternetChargeType.
 func (s *ElasticIP) SetInternetChargeType(val InternetChargeType) {
 	s.InternetChargeType = val
@@ -2490,6 +2497,11 @@ func (s *ElasticIP) SetFailureReason(val NilElasticIPFailureReason) {
 // SetAssociation sets the value of Association.
 func (s *ElasticIP) SetAssociation(val NilElasticIPAssociation) {
 	s.Association = val
+}
+
+// SetLatestOperation sets the value of LatestOperation.
+func (s *ElasticIP) SetLatestOperation(val NilLatestOperation) {
+	s.LatestOperation = val
 }
 
 func (*ElasticIP) associateElasticIPRes()    {}
@@ -3823,6 +3835,8 @@ type Instance struct {
 	LaunchTemplateID NilLaunchTemplateID `json:"launch_template_id"`
 	// The version of that launch template it was created from; null when none was named.
 	LaunchTemplateVersionNumber NilInt64 `json:"launch_template_version_number"`
+	// The most recent operation started on the instance; null when none has been recorded.
+	LatestOperation NilLatestOperation `json:"latest_operation"`
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
@@ -3975,6 +3989,11 @@ func (s *Instance) GetLaunchTemplateVersionNumber() NilInt64 {
 	return s.LaunchTemplateVersionNumber
 }
 
+// GetLatestOperation returns the value of LatestOperation.
+func (s *Instance) GetLatestOperation() NilLatestOperation {
+	return s.LatestOperation
+}
+
 // SetAvailabilityZoneID sets the value of AvailabilityZoneID.
 func (s *Instance) SetAvailabilityZoneID(val AvailabilityZoneID) {
 	s.AvailabilityZoneID = val
@@ -4123,6 +4142,11 @@ func (s *Instance) SetLaunchTemplateID(val NilLaunchTemplateID) {
 // SetLaunchTemplateVersionNumber sets the value of LaunchTemplateVersionNumber.
 func (s *Instance) SetLaunchTemplateVersionNumber(val NilInt64) {
 	s.LaunchTemplateVersionNumber = val
+}
+
+// SetLatestOperation sets the value of LatestOperation.
+func (s *Instance) SetLatestOperation(val NilLatestOperation) {
+	s.LatestOperation = val
 }
 
 func (*Instance) rebootInstanceRes()   {}
@@ -5384,6 +5408,97 @@ func (s *InternetChargeType) UnmarshalText(data []byte) error {
 	}
 }
 
+// The most recent operation started on a resource and how it stands. It is replaced when the next
+// operation starts.
+// Ref: #/components/schemas/LatestOperation
+type LatestOperation struct {
+	// The operation, named as the request that started it, for example `resize` or `attach_volume`. While
+	// `state` is `operating`, the resource's `status` names the same operation in progress.
+	Name string `json:"name"`
+	// `operating` while the operation runs; `succeeded` or `failed` once it has ended.
+	State     LatestOperationState `json:"state"`
+	StartedAt time.Time            `json:"started_at"`
+}
+
+// GetName returns the value of Name.
+func (s *LatestOperation) GetName() string {
+	return s.Name
+}
+
+// GetState returns the value of State.
+func (s *LatestOperation) GetState() LatestOperationState {
+	return s.State
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *LatestOperation) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// SetName sets the value of Name.
+func (s *LatestOperation) SetName(val string) {
+	s.Name = val
+}
+
+// SetState sets the value of State.
+func (s *LatestOperation) SetState(val LatestOperationState) {
+	s.State = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *LatestOperation) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// `operating` while the operation runs; `succeeded` or `failed` once it has ended.
+type LatestOperationState string
+
+const (
+	LatestOperationStateOperating LatestOperationState = "operating"
+	LatestOperationStateSucceeded LatestOperationState = "succeeded"
+	LatestOperationStateFailed    LatestOperationState = "failed"
+)
+
+// AllValues returns all LatestOperationState values.
+func (LatestOperationState) AllValues() []LatestOperationState {
+	return []LatestOperationState{
+		LatestOperationStateOperating,
+		LatestOperationStateSucceeded,
+		LatestOperationStateFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s LatestOperationState) MarshalText() ([]byte, error) {
+	switch s {
+	case LatestOperationStateOperating:
+		return []byte(s), nil
+	case LatestOperationStateSucceeded:
+		return []byte(s), nil
+	case LatestOperationStateFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *LatestOperationState) UnmarshalText(data []byte) error {
+	switch LatestOperationState(data) {
+	case LatestOperationStateOperating:
+		*s = LatestOperationStateOperating
+		return nil
+	case LatestOperationStateSucceeded:
+		*s = LatestOperationStateSucceeded
+		return nil
+	case LatestOperationStateFailed:
+		*s = LatestOperationStateFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/LaunchTemplate
 type LaunchTemplate struct {
 	ID          LaunchTemplateID `json:"id"`
@@ -5996,6 +6111,8 @@ type NetworkInterface struct {
 	// `removing_address`, `deleting`) is shown while that operation runs; the interface refuses another
 	// operation until it ends.
 	Status NetworkInterfaceStatus `json:"status"`
+	// The most recent operation started on the network interface; null when none has been recorded.
+	LatestOperation NilLatestOperation `json:"latest_operation"`
 }
 
 // GetID returns the value of ID.
@@ -6043,6 +6160,11 @@ func (s *NetworkInterface) GetStatus() NetworkInterfaceStatus {
 	return s.Status
 }
 
+// GetLatestOperation returns the value of LatestOperation.
+func (s *NetworkInterface) GetLatestOperation() NilLatestOperation {
+	return s.LatestOperation
+}
+
 // SetID sets the value of ID.
 func (s *NetworkInterface) SetID(val NetworkInterfaceID) {
 	s.ID = val
@@ -6086,6 +6208,11 @@ func (s *NetworkInterface) SetAttachment(val NilNetworkInterfaceAttachment) {
 // SetStatus sets the value of Status.
 func (s *NetworkInterface) SetStatus(val NetworkInterfaceStatus) {
 	s.Status = val
+}
+
+// SetLatestOperation sets the value of LatestOperation.
+func (s *NetworkInterface) SetLatestOperation(val NilLatestOperation) {
+	s.LatestOperation = val
 }
 
 func (*NetworkInterface) attachInstanceNetworkInterfaceRes() {}
@@ -7781,6 +7908,51 @@ func (o NilInt64) Get() (v int64, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilInt64) Or(d int64) int64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilLatestOperation returns new NilLatestOperation with value set to v.
+func NewNilLatestOperation(v LatestOperation) NilLatestOperation {
+	return NilLatestOperation{
+		Value: v,
+	}
+}
+
+// NilLatestOperation is nullable LatestOperation.
+type NilLatestOperation struct {
+	Value LatestOperation
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilLatestOperation) SetTo(v LatestOperation) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilLatestOperation) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilLatestOperation) SetToNull() {
+	o.Null = true
+	var v LatestOperation
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilLatestOperation) Get() (v LatestOperation, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilLatestOperation) Or(d LatestOperation) LatestOperation {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -11204,6 +11376,8 @@ type PrivateImageResource struct {
 	// cancellation through Billing can name what it releases. Empty when no subscription pays for it, and
 	// once it is released.
 	ReleaseSet []ReleaseSetItem `json:"release_set"`
+	// The most recent operation started on the image; null when none has been recorded.
+	LatestOperation NilLatestOperation `json:"latest_operation"`
 }
 
 // GetID returns the value of ID.
@@ -11316,6 +11490,11 @@ func (s *PrivateImageResource) GetReleaseSet() []ReleaseSetItem {
 	return s.ReleaseSet
 }
 
+// GetLatestOperation returns the value of LatestOperation.
+func (s *PrivateImageResource) GetLatestOperation() NilLatestOperation {
+	return s.LatestOperation
+}
+
 // SetID sets the value of ID.
 func (s *PrivateImageResource) SetID(val ImageID) {
 	s.ID = val
@@ -11424,6 +11603,11 @@ func (s *PrivateImageResource) SetSubscriptionID(val NilUUID) {
 // SetReleaseSet sets the value of ReleaseSet.
 func (s *PrivateImageResource) SetReleaseSet(val []ReleaseSetItem) {
 	s.ReleaseSet = val
+}
+
+// SetLatestOperation sets the value of LatestOperation.
+func (s *PrivateImageResource) SetLatestOperation(val NilLatestOperation) {
+	s.LatestOperation = val
 }
 
 // Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
@@ -13744,6 +13928,8 @@ type VirtualPrivateCloud struct {
 	Status    VirtualPrivateCloudStatus `json:"status"`
 	CreatedAt time.Time                 `json:"created_at"`
 	UpdatedAt time.Time                 `json:"updated_at"`
+	// The most recent operation started on the virtual private cloud; null when none has been recorded.
+	LatestOperation NilLatestOperation `json:"latest_operation"`
 }
 
 // GetID returns the value of ID.
@@ -13786,6 +13972,11 @@ func (s *VirtualPrivateCloud) GetUpdatedAt() time.Time {
 	return s.UpdatedAt
 }
 
+// GetLatestOperation returns the value of LatestOperation.
+func (s *VirtualPrivateCloud) GetLatestOperation() NilLatestOperation {
+	return s.LatestOperation
+}
+
 // SetID sets the value of ID.
 func (s *VirtualPrivateCloud) SetID(val VirtualPrivateCloudID) {
 	s.ID = val
@@ -13824,6 +14015,11 @@ func (s *VirtualPrivateCloud) SetCreatedAt(val time.Time) {
 // SetUpdatedAt sets the value of UpdatedAt.
 func (s *VirtualPrivateCloud) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
+}
+
+// SetLatestOperation sets the value of LatestOperation.
+func (s *VirtualPrivateCloud) SetLatestOperation(val NilLatestOperation) {
+	s.LatestOperation = val
 }
 
 func (*VirtualPrivateCloud) deleteVirtualPrivateCloudRes()      {}
@@ -13909,6 +14105,8 @@ type VirtualPrivateCloudPeeringResource struct {
 	CreatedAt time.Time                                `json:"created_at"`
 	// Why provisioning failed; null unless `status` is `failed`.
 	FailureReason NilString `json:"failure_reason"`
+	// The most recent operation started on the peering; null when none has been recorded.
+	LatestOperation NilLatestOperation `json:"latest_operation"`
 }
 
 // GetID returns the value of ID.
@@ -13966,6 +14164,11 @@ func (s *VirtualPrivateCloudPeeringResource) GetFailureReason() NilString {
 	return s.FailureReason
 }
 
+// GetLatestOperation returns the value of LatestOperation.
+func (s *VirtualPrivateCloudPeeringResource) GetLatestOperation() NilLatestOperation {
+	return s.LatestOperation
+}
+
 // SetID sets the value of ID.
 func (s *VirtualPrivateCloudPeeringResource) SetID(val VirtualPrivateCloudPeeringID) {
 	s.ID = val
@@ -14019,6 +14222,11 @@ func (s *VirtualPrivateCloudPeeringResource) SetCreatedAt(val time.Time) {
 // SetFailureReason sets the value of FailureReason.
 func (s *VirtualPrivateCloudPeeringResource) SetFailureReason(val NilString) {
 	s.FailureReason = val
+}
+
+// SetLatestOperation sets the value of LatestOperation.
+func (s *VirtualPrivateCloudPeeringResource) SetLatestOperation(val NilLatestOperation) {
+	s.LatestOperation = val
 }
 
 func (*VirtualPrivateCloudPeeringResource) acceptVirtualPrivateCloudPeeringRes() {}
@@ -14958,6 +15166,8 @@ type VolumeBackupResource struct {
 	// cancellation through Billing can name what it releases. Empty when no subscription pays for it, and
 	// once it is released.
 	ReleaseSet []ReleaseSetItem `json:"release_set"`
+	// The most recent operation started on the backup; null when none has been recorded.
+	LatestOperation NilLatestOperation `json:"latest_operation"`
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -15035,6 +15245,11 @@ func (s *VolumeBackupResource) GetReleaseSet() []ReleaseSetItem {
 	return s.ReleaseSet
 }
 
+// GetLatestOperation returns the value of LatestOperation.
+func (s *VolumeBackupResource) GetLatestOperation() NilLatestOperation {
+	return s.LatestOperation
+}
+
 // SetCreatedAt sets the value of CreatedAt.
 func (s *VolumeBackupResource) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
@@ -15108,6 +15323,11 @@ func (s *VolumeBackupResource) SetSubscriptionID(val NilUUID) {
 // SetReleaseSet sets the value of ReleaseSet.
 func (s *VolumeBackupResource) SetReleaseSet(val []ReleaseSetItem) {
 	s.ReleaseSet = val
+}
+
+// SetLatestOperation sets the value of LatestOperation.
+func (s *VolumeBackupResource) SetLatestOperation(val NilLatestOperation) {
+	s.LatestOperation = val
 }
 
 // Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
@@ -15421,6 +15641,8 @@ type VolumeResource struct {
 	// order was accepted, and the charge for this volume is refunded.
 	FailureReason NilVolumeResourceFailureReason `json:"failure_reason"`
 	Attachment    NilVolumeAttachment            `json:"attachment"`
+	// The most recent operation started on the volume; null when none has been recorded.
+	LatestOperation NilLatestOperation `json:"latest_operation"`
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
@@ -15508,6 +15730,11 @@ func (s *VolumeResource) GetAttachment() NilVolumeAttachment {
 	return s.Attachment
 }
 
+// GetLatestOperation returns the value of LatestOperation.
+func (s *VolumeResource) GetLatestOperation() NilLatestOperation {
+	return s.LatestOperation
+}
+
 // SetAvailabilityZoneID sets the value of AvailabilityZoneID.
 func (s *VolumeResource) SetAvailabilityZoneID(val AvailabilityZoneID) {
 	s.AvailabilityZoneID = val
@@ -15591,6 +15818,11 @@ func (s *VolumeResource) SetFailureReason(val NilVolumeResourceFailureReason) {
 // SetAttachment sets the value of Attachment.
 func (s *VolumeResource) SetAttachment(val NilVolumeAttachment) {
 	s.Attachment = val
+}
+
+// SetLatestOperation sets the value of LatestOperation.
+func (s *VolumeResource) SetLatestOperation(val NilLatestOperation) {
+	s.LatestOperation = val
 }
 
 func (*VolumeResource) attachInstanceVolumeRes() {}
@@ -15986,6 +16218,8 @@ type VolumeSnapshotResource struct {
 	// through Billing can name what it releases. Empty when no subscription pays for it, and once it is
 	// released.
 	ReleaseSet []ReleaseSetItem `json:"release_set"`
+	// The most recent operation started on the snapshot; null when none has been recorded.
+	LatestOperation NilLatestOperation `json:"latest_operation"`
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
@@ -16058,6 +16292,11 @@ func (s *VolumeSnapshotResource) GetReleaseSet() []ReleaseSetItem {
 	return s.ReleaseSet
 }
 
+// GetLatestOperation returns the value of LatestOperation.
+func (s *VolumeSnapshotResource) GetLatestOperation() NilLatestOperation {
+	return s.LatestOperation
+}
+
 // SetAvailabilityZoneID sets the value of AvailabilityZoneID.
 func (s *VolumeSnapshotResource) SetAvailabilityZoneID(val AvailabilityZoneID) {
 	s.AvailabilityZoneID = val
@@ -16126,6 +16365,11 @@ func (s *VolumeSnapshotResource) SetSubscriptionID(val NilUUID) {
 // SetReleaseSet sets the value of ReleaseSet.
 func (s *VolumeSnapshotResource) SetReleaseSet(val []ReleaseSetItem) {
 	s.ReleaseSet = val
+}
+
+// SetLatestOperation sets the value of LatestOperation.
+func (s *VolumeSnapshotResource) SetLatestOperation(val NilLatestOperation) {
+	s.LatestOperation = val
 }
 
 // Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not

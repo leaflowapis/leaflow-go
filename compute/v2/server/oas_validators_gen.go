@@ -2659,6 +2659,24 @@ func (s *ElasticIP) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if value, ok := s.LatestOperation.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "latest_operation",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -3707,6 +3725,24 @@ func (s *Instance) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if value, ok := s.LatestOperation.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "latest_operation",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -4447,6 +4483,42 @@ func (s InternetChargeType) Validate() error {
 	}
 }
 
+func (s *LatestOperation) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.State.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "state",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s LatestOperationState) Validate() error {
+	switch s {
+	case "operating":
+		return nil
+	case "succeeded":
+		return nil
+	case "failed":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s *LaunchTemplate) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -5173,6 +5245,24 @@ func (s *NetworkInterface) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "status",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.LatestOperation.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "latest_operation",
 			Error: err,
 		})
 	}
@@ -6736,6 +6826,24 @@ func (s *PrivateImageResource) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "release_set",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.LatestOperation.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "latest_operation",
 			Error: err,
 		})
 	}
@@ -8902,6 +9010,24 @@ func (s *VirtualPrivateCloud) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if value, ok := s.LatestOperation.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "latest_operation",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -9139,6 +9265,24 @@ func (s *VirtualPrivateCloudPeeringResource) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "status",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.LatestOperation.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "latest_operation",
 			Error: err,
 		})
 	}
@@ -9811,6 +9955,24 @@ func (s *VolumeBackupResource) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if value, ok := s.LatestOperation.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "latest_operation",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -10109,6 +10271,24 @@ func (s *VolumeResource) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if value, ok := s.LatestOperation.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "latest_operation",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -10397,6 +10577,24 @@ func (s *VolumeSnapshotResource) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "release_set",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.LatestOperation.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "latest_operation",
 			Error: err,
 		})
 	}

@@ -5971,9 +5971,13 @@ func (s *ElasticIP) encodeFields(e *jx.Encoder) {
 		e.FieldStart("association")
 		s.Association.Encode(e)
 	}
+	{
+		e.FieldStart("latest_operation")
+		s.LatestOperation.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfElasticIP = [20]string{
+var jsonFieldsNameOfElasticIP = [21]string{
 	0:  "internet_charge_type",
 	1:  "address",
 	2:  "allocated_at",
@@ -5994,6 +5998,7 @@ var jsonFieldsNameOfElasticIP = [20]string{
 	17: "access_state",
 	18: "failure_reason",
 	19: "association",
+	20: "latest_operation",
 }
 
 // Decode decodes ElasticIP from json.
@@ -6216,6 +6221,16 @@ func (s *ElasticIP) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"association\"")
 			}
+		case "latest_operation":
+			requiredBitSet[2] |= 1 << 4
+			if err := func() error {
+				if err := s.LatestOperation.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"latest_operation\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -6228,7 +6243,7 @@ func (s *ElasticIP) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
-		0b00001111,
+		0b00011111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -8983,9 +8998,13 @@ func (s *Instance) encodeFields(e *jx.Encoder) {
 		e.FieldStart("launch_template_version_number")
 		s.LaunchTemplateVersionNumber.Encode(e)
 	}
+	{
+		e.FieldStart("latest_operation")
+		s.LatestOperation.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfInstance = [30]string{
+var jsonFieldsNameOfInstance = [31]string{
 	0:  "availability_zone_id",
 	1:  "created_at",
 	2:  "hostname",
@@ -9016,6 +9035,7 @@ var jsonFieldsNameOfInstance = [30]string{
 	27: "source_volume_id",
 	28: "launch_template_id",
 	29: "launch_template_version_number",
+	30: "latest_operation",
 }
 
 // Decode decodes Instance from json.
@@ -9372,6 +9392,16 @@ func (s *Instance) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"launch_template_version_number\"")
 			}
+		case "latest_operation":
+			requiredBitSet[3] |= 1 << 6
+			if err := func() error {
+				if err := s.LatestOperation.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"latest_operation\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -9385,7 +9415,7 @@ func (s *Instance) Decode(d *jx.Decoder) error {
 		0b11111111,
 		0b11111111,
 		0b11111111,
-		0b00111111,
+		0b01111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -11522,6 +11552,176 @@ func (s *InternetChargeType) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *LatestOperation) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *LatestOperation) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		e.FieldStart("state")
+		s.State.Encode(e)
+	}
+	{
+		e.FieldStart("started_at")
+		json.EncodeDateTime(e, s.StartedAt)
+	}
+}
+
+var jsonFieldsNameOfLatestOperation = [3]string{
+	0: "name",
+	1: "state",
+	2: "started_at",
+}
+
+// Decode decodes LatestOperation from json.
+func (s *LatestOperation) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LatestOperation to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "name":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "state":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.State.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"state\"")
+			}
+		case "started_at":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.StartedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"started_at\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode LatestOperation")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfLatestOperation) {
+					name = jsonFieldsNameOfLatestOperation[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *LatestOperation) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LatestOperation) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LatestOperationState as json.
+func (s LatestOperationState) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes LatestOperationState from json.
+func (s *LatestOperationState) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LatestOperationState to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch LatestOperationState(v) {
+	case LatestOperationStateOperating:
+		*s = LatestOperationStateOperating
+	case LatestOperationStateSucceeded:
+		*s = LatestOperationStateSucceeded
+	case LatestOperationStateFailed:
+		*s = LatestOperationStateFailed
+	default:
+		*s = LatestOperationState(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s LatestOperationState) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LatestOperationState) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *LaunchTemplate) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -13110,9 +13310,13 @@ func (s *NetworkInterface) encodeFields(e *jx.Encoder) {
 		e.FieldStart("status")
 		s.Status.Encode(e)
 	}
+	{
+		e.FieldStart("latest_operation")
+		s.LatestOperation.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfNetworkInterface = [9]string{
+var jsonFieldsNameOfNetworkInterface = [10]string{
 	0: "id",
 	1: "mac_address",
 	2: "name",
@@ -13122,6 +13326,7 @@ var jsonFieldsNameOfNetworkInterface = [9]string{
 	6: "addresses",
 	7: "attachment",
 	8: "status",
+	9: "latest_operation",
 }
 
 // Decode decodes NetworkInterface from json.
@@ -13257,6 +13462,16 @@ func (s *NetworkInterface) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
+		case "latest_operation":
+			requiredBitSet[1] |= 1 << 1
+			if err := func() error {
+				if err := s.LatestOperation.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"latest_operation\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -13268,7 +13483,7 @@ func (s *NetworkInterface) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b10111111,
-		0b00000001,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -16114,6 +16329,50 @@ func (s NilInt64) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NilInt64) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LatestOperation as json.
+func (o NilLatestOperation) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes LatestOperation from json.
+func (o *NilLatestOperation) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilLatestOperation to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v LatestOperation
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilLatestOperation) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilLatestOperation) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -19708,9 +19967,13 @@ func (s *PrivateImageResource) encodeFields(e *jx.Encoder) {
 		}
 		e.ArrEnd()
 	}
+	{
+		e.FieldStart("latest_operation")
+		s.LatestOperation.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfPrivateImageResource = [22]string{
+var jsonFieldsNameOfPrivateImageResource = [23]string{
 	0:  "id",
 	1:  "region_id",
 	2:  "name",
@@ -19733,6 +19996,7 @@ var jsonFieldsNameOfPrivateImageResource = [22]string{
 	19: "order_item_id",
 	20: "subscription_id",
 	21: "release_set",
+	22: "latest_operation",
 }
 
 // Decode decodes PrivateImageResource from json.
@@ -19992,6 +20256,16 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"release_set\"")
 			}
+		case "latest_operation":
+			requiredBitSet[2] |= 1 << 6
+			if err := func() error {
+				if err := s.LatestOperation.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"latest_operation\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -20004,7 +20278,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
-		0b00111111,
+		0b01111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -25795,9 +26069,13 @@ func (s *VirtualPrivateCloud) encodeFields(e *jx.Encoder) {
 		e.FieldStart("updated_at")
 		json.EncodeDateTime(e, s.UpdatedAt)
 	}
+	{
+		e.FieldStart("latest_operation")
+		s.LatestOperation.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfVirtualPrivateCloud = [8]string{
+var jsonFieldsNameOfVirtualPrivateCloud = [9]string{
 	0: "id",
 	1: "region_id",
 	2: "name",
@@ -25806,6 +26084,7 @@ var jsonFieldsNameOfVirtualPrivateCloud = [8]string{
 	5: "status",
 	6: "created_at",
 	7: "updated_at",
+	8: "latest_operation",
 }
 
 // Decode decodes VirtualPrivateCloud from json.
@@ -25813,7 +26092,7 @@ func (s *VirtualPrivateCloud) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode VirtualPrivateCloud to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -25905,6 +26184,16 @@ func (s *VirtualPrivateCloud) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"updated_at\"")
 			}
+		case "latest_operation":
+			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				if err := s.LatestOperation.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"latest_operation\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -25914,8 +26203,9 @@ func (s *VirtualPrivateCloud) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
+	for i, mask := range [2]uint8{
 		0b11111111,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -26336,9 +26626,13 @@ func (s *VirtualPrivateCloudPeeringResource) encodeFields(e *jx.Encoder) {
 		e.FieldStart("failure_reason")
 		s.FailureReason.Encode(e)
 	}
+	{
+		e.FieldStart("latest_operation")
+		s.LatestOperation.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfVirtualPrivateCloudPeeringResource = [11]string{
+var jsonFieldsNameOfVirtualPrivateCloudPeeringResource = [12]string{
 	0:  "id",
 	1:  "name",
 	2:  "region_id",
@@ -26350,6 +26644,7 @@ var jsonFieldsNameOfVirtualPrivateCloudPeeringResource = [11]string{
 	8:  "status",
 	9:  "created_at",
 	10: "failure_reason",
+	11: "latest_operation",
 }
 
 // Decode decodes VirtualPrivateCloudPeeringResource from json.
@@ -26479,6 +26774,16 @@ func (s *VirtualPrivateCloudPeeringResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"failure_reason\"")
 			}
+		case "latest_operation":
+			requiredBitSet[1] |= 1 << 3
+			if err := func() error {
+				if err := s.LatestOperation.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"latest_operation\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -26490,7 +26795,7 @@ func (s *VirtualPrivateCloudPeeringResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -28321,9 +28626,13 @@ func (s *VolumeBackupResource) encodeFields(e *jx.Encoder) {
 		}
 		e.ArrEnd()
 	}
+	{
+		e.FieldStart("latest_operation")
+		s.LatestOperation.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfVolumeBackupResource = [15]string{
+var jsonFieldsNameOfVolumeBackupResource = [16]string{
 	0:  "created_at",
 	1:  "id",
 	2:  "name",
@@ -28339,6 +28648,7 @@ var jsonFieldsNameOfVolumeBackupResource = [15]string{
 	12: "order_item_id",
 	13: "subscription_id",
 	14: "release_set",
+	15: "latest_operation",
 }
 
 // Decode decodes VolumeBackupResource from json.
@@ -28516,6 +28826,16 @@ func (s *VolumeBackupResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"release_set\"")
 			}
+		case "latest_operation":
+			requiredBitSet[1] |= 1 << 7
+			if err := func() error {
+				if err := s.LatestOperation.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"latest_operation\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -28527,7 +28847,7 @@ func (s *VolumeBackupResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b01111111,
+		0b11111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -29199,9 +29519,13 @@ func (s *VolumeResource) encodeFields(e *jx.Encoder) {
 		e.FieldStart("attachment")
 		s.Attachment.Encode(e)
 	}
+	{
+		e.FieldStart("latest_operation")
+		s.LatestOperation.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfVolumeResource = [17]string{
+var jsonFieldsNameOfVolumeResource = [18]string{
 	0:  "availability_zone_id",
 	1:  "created_at",
 	2:  "volume_type_id",
@@ -29219,6 +29543,7 @@ var jsonFieldsNameOfVolumeResource = [17]string{
 	14: "access_state",
 	15: "failure_reason",
 	16: "attachment",
+	17: "latest_operation",
 }
 
 // Decode decodes VolumeResource from json.
@@ -29414,6 +29739,16 @@ func (s *VolumeResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"attachment\"")
 			}
+		case "latest_operation":
+			requiredBitSet[2] |= 1 << 1
+			if err := func() error {
+				if err := s.LatestOperation.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"latest_operation\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -29426,7 +29761,7 @@ func (s *VolumeResource) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
-		0b00000001,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -30031,9 +30366,13 @@ func (s *VolumeSnapshotResource) encodeFields(e *jx.Encoder) {
 		}
 		e.ArrEnd()
 	}
+	{
+		e.FieldStart("latest_operation")
+		s.LatestOperation.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfVolumeSnapshotResource = [14]string{
+var jsonFieldsNameOfVolumeSnapshotResource = [15]string{
 	0:  "availability_zone_id",
 	1:  "created_at",
 	2:  "volume_id",
@@ -30048,6 +30387,7 @@ var jsonFieldsNameOfVolumeSnapshotResource = [14]string{
 	11: "order_item_id",
 	12: "subscription_id",
 	13: "release_set",
+	14: "latest_operation",
 }
 
 // Decode decodes VolumeSnapshotResource from json.
@@ -30213,6 +30553,16 @@ func (s *VolumeSnapshotResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"release_set\"")
 			}
+		case "latest_operation":
+			requiredBitSet[1] |= 1 << 6
+			if err := func() error {
+				if err := s.LatestOperation.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"latest_operation\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -30224,7 +30574,7 @@ func (s *VolumeSnapshotResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00111111,
+		0b01111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
