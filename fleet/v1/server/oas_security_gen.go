@@ -67,6 +67,7 @@ var operationRolesBearerAuth = map[string][]string{
 	ListMachinesOperation:                []string{},
 	ListSessionViewersOperation:          []string{},
 	ListSessionsOperation:                []string{},
+	RunMachineCommandOperation:           []string{},
 	TerminateSessionOperation:            []string{},
 	UpdateAccountOperation:               []string{},
 	UpdateGroupOperation:                 []string{},

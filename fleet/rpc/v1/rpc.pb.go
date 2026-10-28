@@ -90,7 +90,7 @@ type Call struct {
 	RequestId string `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	// The method, in the form of a gRPC request path: "/" + full service name
 	// + "/" + method name, such as
-	// "/leaflow.fleet.virtualdesktop.capture.v1.CaptureService/CaptureScreenshot".
+	// "/leaflow.fleet.filetransfer.v1.FileSystemService/ListDirectory".
 	Method string `protobuf:"bytes,2,opt,name=method,proto3" json:"method,omitempty"`
 	// The serialized request message of the method.
 	Payload []byte `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`

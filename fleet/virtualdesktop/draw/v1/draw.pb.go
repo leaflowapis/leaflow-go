@@ -111,6 +111,7 @@ type ClientMessage struct {
 	//	*ClientMessage_ClientHello
 	//	*ClientMessage_FrameAcknowledge
 	//	*ClientMessage_WindowRefresh
+	//	*ClientMessage_SuppressOutput
 	Message       isClientMessage_Message `protobuf_oneof:"message"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -180,6 +181,15 @@ func (x *ClientMessage) GetWindowRefresh() *WindowRefresh {
 	return nil
 }
 
+func (x *ClientMessage) GetSuppressOutput() *SuppressOutput {
+	if x != nil {
+		if x, ok := x.Message.(*ClientMessage_SuppressOutput); ok {
+			return x.SuppressOutput
+		}
+	}
+	return nil
+}
+
 type isClientMessage_Message interface {
 	isClientMessage_Message()
 }
@@ -199,11 +209,18 @@ type ClientMessage_WindowRefresh struct {
 	WindowRefresh *WindowRefresh `protobuf:"bytes,3,opt,name=window_refresh,json=windowRefresh,proto3,oneof"`
 }
 
+type ClientMessage_SuppressOutput struct {
+	// Stops or resumes frames to this viewer.
+	SuppressOutput *SuppressOutput `protobuf:"bytes,4,opt,name=suppress_output,json=suppressOutput,proto3,oneof"`
+}
+
 func (*ClientMessage_ClientHello) isClientMessage_Message() {}
 
 func (*ClientMessage_FrameAcknowledge) isClientMessage_Message() {}
 
 func (*ClientMessage_WindowRefresh) isClientMessage_Message() {}
+
+func (*ClientMessage_SuppressOutput) isClientMessage_Message() {}
 
 // A message from the session on the draw channel.
 type ServerMessage struct {
@@ -1088,15 +1105,66 @@ func (x *WindowRefresh) GetWindowId() uint64 {
 	return 0
 }
 
+// Stops or resumes the frames sent to this viewer, such as while its window
+// is hidden (MS-RDPBCGR §2.2.11.3 Suppress Output PDU). While stopped the
+// session keeps the damage and sends one update covering it when frames
+// resume. Nothing but frames is affected. Frames are allowed when the
+// connection starts.
+type SuppressOutput struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// false stops frames, true resumes them.
+	AllowDisplayUpdates bool `protobuf:"varint,1,opt,name=allow_display_updates,json=allowDisplayUpdates,proto3" json:"allow_display_updates,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *SuppressOutput) Reset() {
+	*x = SuppressOutput{}
+	mi := &file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SuppressOutput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SuppressOutput) ProtoMessage() {}
+
+func (x *SuppressOutput) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SuppressOutput.ProtoReflect.Descriptor instead.
+func (*SuppressOutput) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *SuppressOutput) GetAllowDisplayUpdates() bool {
+	if x != nil {
+		return x.AllowDisplayUpdates
+	}
+	return false
+}
+
 var File_leaflow_fleet_virtualdesktop_draw_v1_draw_proto protoreflect.FileDescriptor
 
 const file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_rawDesc = "" +
 	"\n" +
-	"/leaflow/fleet/virtualdesktop/draw/v1/draw.proto\x12$leaflow.fleet.virtualdesktop.draw.v1\x1a5leaflow/fleet/virtualdesktop/display/v1/display.proto\"\xb7\x02\n" +
+	"/leaflow/fleet/virtualdesktop/draw/v1/draw.proto\x12$leaflow.fleet.virtualdesktop.draw.v1\x1a5leaflow/fleet/virtualdesktop/display/v1/display.proto\"\x98\x03\n" +
 	"\rClientMessage\x12V\n" +
 	"\fclient_hello\x18\x01 \x01(\v21.leaflow.fleet.virtualdesktop.draw.v1.ClientHelloH\x00R\vclientHello\x12e\n" +
 	"\x11frame_acknowledge\x18\x02 \x01(\v26.leaflow.fleet.virtualdesktop.draw.v1.FrameAcknowledgeH\x00R\x10frameAcknowledge\x12\\\n" +
-	"\x0ewindow_refresh\x18\x03 \x01(\v23.leaflow.fleet.virtualdesktop.draw.v1.WindowRefreshH\x00R\rwindowRefreshB\t\n" +
+	"\x0ewindow_refresh\x18\x03 \x01(\v23.leaflow.fleet.virtualdesktop.draw.v1.WindowRefreshH\x00R\rwindowRefresh\x12_\n" +
+	"\x0fsuppress_output\x18\x04 \x01(\v24.leaflow.fleet.virtualdesktop.draw.v1.SuppressOutputH\x00R\x0esuppressOutputB\t\n" +
 	"\amessage\"\xca\x01\n" +
 	"\rServerMessage\x12V\n" +
 	"\fserver_hello\x18\x01 \x01(\v21.leaflow.fleet.virtualdesktop.draw.v1.ServerHelloH\x00R\vserverHello\x12V\n" +
@@ -1164,7 +1232,9 @@ const file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_rawDesc = "" +
 	"\x14total_frames_decoded\x18\x04 \x01(\x04R\x12totalFramesDecoded\x12$\n" +
 	"\x0edecode_time_us\x18\x05 \x01(\rR\fdecodeTimeUs\",\n" +
 	"\rWindowRefresh\x12\x1b\n" +
-	"\twindow_id\x18\x01 \x01(\x04R\bwindowId*\xb2\x01\n" +
+	"\twindow_id\x18\x01 \x01(\x04R\bwindowId\"D\n" +
+	"\x0eSuppressOutput\x122\n" +
+	"\x15allow_display_updates\x18\x01 \x01(\bR\x13allowDisplayUpdates*\xb2\x01\n" +
 	"\bEncoding\x12\x18\n" +
 	"\x14ENCODING_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fENCODING_RAW\x10\x01\x12\x16\n" +
@@ -1188,7 +1258,7 @@ func file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_rawDescGZIP() []byte {
 }
 
 var file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_goTypes = []any{
 	(Encoding)(0),            // 0: leaflow.fleet.virtualdesktop.draw.v1.Encoding
 	(*ClientMessage)(nil),    // 1: leaflow.fleet.virtualdesktop.draw.v1.ClientMessage
@@ -1203,27 +1273,29 @@ var file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_goTypes = []any{
 	(*FrameCancel)(nil),      // 10: leaflow.fleet.virtualdesktop.draw.v1.FrameCancel
 	(*FrameAcknowledge)(nil), // 11: leaflow.fleet.virtualdesktop.draw.v1.FrameAcknowledge
 	(*WindowRefresh)(nil),    // 12: leaflow.fleet.virtualdesktop.draw.v1.WindowRefresh
-	(*v1.Size)(nil),          // 13: leaflow.fleet.virtualdesktop.display.v1.Size
+	(*SuppressOutput)(nil),   // 13: leaflow.fleet.virtualdesktop.draw.v1.SuppressOutput
+	(*v1.Size)(nil),          // 14: leaflow.fleet.virtualdesktop.display.v1.Size
 }
 var file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_depIdxs = []int32{
 	4,  // 0: leaflow.fleet.virtualdesktop.draw.v1.ClientMessage.client_hello:type_name -> leaflow.fleet.virtualdesktop.draw.v1.ClientHello
 	11, // 1: leaflow.fleet.virtualdesktop.draw.v1.ClientMessage.frame_acknowledge:type_name -> leaflow.fleet.virtualdesktop.draw.v1.FrameAcknowledge
 	12, // 2: leaflow.fleet.virtualdesktop.draw.v1.ClientMessage.window_refresh:type_name -> leaflow.fleet.virtualdesktop.draw.v1.WindowRefresh
-	5,  // 3: leaflow.fleet.virtualdesktop.draw.v1.ServerMessage.server_hello:type_name -> leaflow.fleet.virtualdesktop.draw.v1.ServerHello
-	10, // 4: leaflow.fleet.virtualdesktop.draw.v1.ServerMessage.frame_cancel:type_name -> leaflow.fleet.virtualdesktop.draw.v1.FrameCancel
-	6,  // 5: leaflow.fleet.virtualdesktop.draw.v1.FrameMessage.frame_start:type_name -> leaflow.fleet.virtualdesktop.draw.v1.FrameStart
-	8,  // 6: leaflow.fleet.virtualdesktop.draw.v1.FrameMessage.window_draw:type_name -> leaflow.fleet.virtualdesktop.draw.v1.WindowDraw
-	9,  // 7: leaflow.fleet.virtualdesktop.draw.v1.FrameMessage.frame_end:type_name -> leaflow.fleet.virtualdesktop.draw.v1.FrameEnd
-	0,  // 8: leaflow.fleet.virtualdesktop.draw.v1.ClientHello.encodings:type_name -> leaflow.fleet.virtualdesktop.draw.v1.Encoding
-	0,  // 9: leaflow.fleet.virtualdesktop.draw.v1.ServerHello.encodings:type_name -> leaflow.fleet.virtualdesktop.draw.v1.Encoding
-	7,  // 10: leaflow.fleet.virtualdesktop.draw.v1.FrameStart.references:type_name -> leaflow.fleet.virtualdesktop.draw.v1.FrameReference
-	0,  // 11: leaflow.fleet.virtualdesktop.draw.v1.WindowDraw.encoding:type_name -> leaflow.fleet.virtualdesktop.draw.v1.Encoding
-	13, // 12: leaflow.fleet.virtualdesktop.draw.v1.WindowDraw.scaled_size:type_name -> leaflow.fleet.virtualdesktop.display.v1.Size
-	13, // [13:13] is the sub-list for method output_type
-	13, // [13:13] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	13, // 3: leaflow.fleet.virtualdesktop.draw.v1.ClientMessage.suppress_output:type_name -> leaflow.fleet.virtualdesktop.draw.v1.SuppressOutput
+	5,  // 4: leaflow.fleet.virtualdesktop.draw.v1.ServerMessage.server_hello:type_name -> leaflow.fleet.virtualdesktop.draw.v1.ServerHello
+	10, // 5: leaflow.fleet.virtualdesktop.draw.v1.ServerMessage.frame_cancel:type_name -> leaflow.fleet.virtualdesktop.draw.v1.FrameCancel
+	6,  // 6: leaflow.fleet.virtualdesktop.draw.v1.FrameMessage.frame_start:type_name -> leaflow.fleet.virtualdesktop.draw.v1.FrameStart
+	8,  // 7: leaflow.fleet.virtualdesktop.draw.v1.FrameMessage.window_draw:type_name -> leaflow.fleet.virtualdesktop.draw.v1.WindowDraw
+	9,  // 8: leaflow.fleet.virtualdesktop.draw.v1.FrameMessage.frame_end:type_name -> leaflow.fleet.virtualdesktop.draw.v1.FrameEnd
+	0,  // 9: leaflow.fleet.virtualdesktop.draw.v1.ClientHello.encodings:type_name -> leaflow.fleet.virtualdesktop.draw.v1.Encoding
+	0,  // 10: leaflow.fleet.virtualdesktop.draw.v1.ServerHello.encodings:type_name -> leaflow.fleet.virtualdesktop.draw.v1.Encoding
+	7,  // 11: leaflow.fleet.virtualdesktop.draw.v1.FrameStart.references:type_name -> leaflow.fleet.virtualdesktop.draw.v1.FrameReference
+	0,  // 12: leaflow.fleet.virtualdesktop.draw.v1.WindowDraw.encoding:type_name -> leaflow.fleet.virtualdesktop.draw.v1.Encoding
+	14, // 13: leaflow.fleet.virtualdesktop.draw.v1.WindowDraw.scaled_size:type_name -> leaflow.fleet.virtualdesktop.display.v1.Size
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_init() }
@@ -1235,6 +1307,7 @@ func file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_init() {
 		(*ClientMessage_ClientHello)(nil),
 		(*ClientMessage_FrameAcknowledge)(nil),
 		(*ClientMessage_WindowRefresh)(nil),
+		(*ClientMessage_SuppressOutput)(nil),
 	}
 	file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_msgTypes[1].OneofWrappers = []any{
 		(*ServerMessage_ServerHello)(nil),
@@ -1251,7 +1324,7 @@ func file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_rawDesc), len(file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   12,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

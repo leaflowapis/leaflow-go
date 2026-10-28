@@ -71,21 +71,22 @@ type Invoker interface {
 	CreateGroupMember(ctx context.Context, request *CreateGroupMemberRequest, params CreateGroupMemberParams) (*AccountResource, error)
 	// CreateSession invokes create-session operation.
 	//
-	// Opens a desktop session for the caller on a machine, as the caller's account, and returns once it is
-	// ready. The account is created if the caller has none yet. Requires `fleet:machines.login` on the
-	// machine.
+	// Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
+	// With `desktop` the session has a desktop; without, it offers terminals, programs, files, ports,
+	// sound, devices, printers and privilege approvals. The account is created if the caller has none yet.
+	// Requires `fleet:machines.login` on the machine.
 	//
 	// Fails with:
 	//
 	//  - `MACHINE_OFFLINE` when the machine is not connected;
-	//  - `VIRTUALDESKTOP_UNAVAILABLE` when the machine does not run VirtualDesktop: its Agent was
-	//    installed without the remote desktop feature, so `capabilities` lacks `virtualdesktop`;
+	//  - `FEATURE_UNAVAILABLE` when the machine does not offer sessions, or with `desktop`, desktops;
 	//  - `USER_HAS_SESSION` when the account already has a session on the machine, which
 	//    `metadata.sessionId` names; connect to it instead;
-	//  - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED`, `PAM_PERMISSION_DENIED` or
-	//    `SESSION_CONFLICT` when the machine refuses the account, such as while it has not received the
-	//    account yet or a local account uses its name; `PAM_PERMISSION_DENIED` carries the machine's
-	//    message in `metadata.pamMessage`;
+	//  - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+	//    machine refuses the account, such as while it has not received the account yet or a local account
+	//    uses its name; `PAM_PERMISSION_DENIED` carries the machine's message in `metadata.pamMessage`;
+	//  - `SESSION_CONFLICT` with `desktop` when the account has a graphical session on the machine that
+	//    Fleet did not open;
 	//  - `DISPLAY_UNAVAILABLE` or `SESSION_START_FAILED` when the machine could not start it;
 	//  - `MACHINE_TIMEOUT` when the machine did not answer in time. The session may still open; list the
 	//    sessions before trying again.
@@ -100,7 +101,7 @@ type Invoker interface {
 	// The owner of a session may operate it. Viewing another member's session requires
 	// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
 	// operating it. Each further capability of the session — file transfer, the clipboard, terminals and
-	// commands, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
+	// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
 	// requests and reading logs — is granted only with its permission; a viewer that may only watch gets
 	// none of them. A ticket may ask for less: to watch only, or for some of the capabilities.
 	//
@@ -245,6 +246,33 @@ type Invoker interface {
 	//
 	// GET /api/v1/sessions
 	ListSessions(ctx context.Context, params ListSessionsParams) (*SessionList, error)
+	// RunMachineCommand invokes run-machine-command operation.
+	//
+	// Runs one command line on the machine as the caller's account, with its login shell, and returns once
+	// it exited or was killed, with its exit status and what it wrote. Pipes, redirection and `&&` work;
+	// there is no terminal and no standard input. The machine admits the account through PAM as for a
+	// login. The account is created if the caller has none yet. A command that fails is still a successful
+	// request: its exit status is its result.
+	//
+	// Inside the command, `sudo` works without a prompt while the caller has `fleet:machines.admin` on the
+	// machine, and refuses otherwise.
+	//
+	// The request is held until the command ends, at most `timeout_seconds` and a few seconds more.
+	// Neither the command nor its output is hidden from the platform: do not put secrets into either.
+	//
+	// Requires `fleet:machines.login` on the machine.
+	//
+	// Fails with:
+	//
+	//  - `MACHINE_OFFLINE` when the machine is not connected;
+	//  - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.command.v1`;
+	//  - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+	//    machine refuses the account, as for opening a session;
+	//  - `COMMAND_START_FAILED` when the shell could not start; nothing ran;
+	//  - `MACHINE_TIMEOUT` when the machine did not answer in time. The command may have run.
+	//
+	// POST /api/v1/machines/{machineId}:runCommand
+	RunMachineCommand(ctx context.Context, request *RunCommandRequest, params RunMachineCommandParams) (*RunCommandResponse, error)
 	// TerminateSession invokes terminate-session operation.
 	//
 	// Ends the session at once, killing every process in it. Returns once the session is closed.
@@ -879,21 +907,22 @@ func (c *Client) sendCreateGroupMember(ctx context.Context, request *CreateGroup
 
 // CreateSession invokes create-session operation.
 //
-// Opens a desktop session for the caller on a machine, as the caller's account, and returns once it is
-// ready. The account is created if the caller has none yet. Requires `fleet:machines.login` on the
-// machine.
+// Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
+// With `desktop` the session has a desktop; without, it offers terminals, programs, files, ports,
+// sound, devices, printers and privilege approvals. The account is created if the caller has none yet.
+// Requires `fleet:machines.login` on the machine.
 //
 // Fails with:
 //
 //   - `MACHINE_OFFLINE` when the machine is not connected;
-//   - `VIRTUALDESKTOP_UNAVAILABLE` when the machine does not run VirtualDesktop: its Agent was
-//     installed without the remote desktop feature, so `capabilities` lacks `virtualdesktop`;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer sessions, or with `desktop`, desktops;
 //   - `USER_HAS_SESSION` when the account already has a session on the machine, which
 //     `metadata.sessionId` names; connect to it instead;
-//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED`, `PAM_PERMISSION_DENIED` or
-//     `SESSION_CONFLICT` when the machine refuses the account, such as while it has not received the
-//     account yet or a local account uses its name; `PAM_PERMISSION_DENIED` carries the machine's
-//     message in `metadata.pamMessage`;
+//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+//     machine refuses the account, such as while it has not received the account yet or a local account
+//     uses its name; `PAM_PERMISSION_DENIED` carries the machine's message in `metadata.pamMessage`;
+//   - `SESSION_CONFLICT` with `desktop` when the account has a graphical session on the machine that
+//     Fleet did not open;
 //   - `DISPLAY_UNAVAILABLE` or `SESSION_START_FAILED` when the machine could not start it;
 //   - `MACHINE_TIMEOUT` when the machine did not answer in time. The session may still open; list the
 //     sessions before trying again.
@@ -1027,7 +1056,7 @@ func (c *Client) sendCreateSession(ctx context.Context, request *CreateSessionRe
 // The owner of a session may operate it. Viewing another member's session requires
 // `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
 // operating it. Each further capability of the session — file transfer, the clipboard, terminals and
-// commands, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
+// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
 // requests and reading logs — is granted only with its permission; a viewer that may only watch gets
 // none of them. A ticket may ask for less: to watch only, or for some of the capabilities.
 //
@@ -3745,6 +3774,171 @@ func (c *Client) sendListSessions(ctx context.Context, params ListSessionsParams
 
 	stage = "DecodeResponse"
 	result, err := decodeListSessionsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// RunMachineCommand invokes run-machine-command operation.
+//
+// Runs one command line on the machine as the caller's account, with its login shell, and returns once
+// it exited or was killed, with its exit status and what it wrote. Pipes, redirection and `&&` work;
+// there is no terminal and no standard input. The machine admits the account through PAM as for a
+// login. The account is created if the caller has none yet. A command that fails is still a successful
+// request: its exit status is its result.
+//
+// Inside the command, `sudo` works without a prompt while the caller has `fleet:machines.admin` on the
+// machine, and refuses otherwise.
+//
+// The request is held until the command ends, at most `timeout_seconds` and a few seconds more.
+// Neither the command nor its output is hidden from the platform: do not put secrets into either.
+//
+// Requires `fleet:machines.login` on the machine.
+//
+// Fails with:
+//
+//   - `MACHINE_OFFLINE` when the machine is not connected;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.command.v1`;
+//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+//     machine refuses the account, as for opening a session;
+//   - `COMMAND_START_FAILED` when the shell could not start; nothing ran;
+//   - `MACHINE_TIMEOUT` when the machine did not answer in time. The command may have run.
+//
+// POST /api/v1/machines/{machineId}:runCommand
+func (c *Client) RunMachineCommand(ctx context.Context, request *RunCommandRequest, params RunMachineCommandParams) (*RunCommandResponse, error) {
+	res, err := c.sendRunMachineCommand(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendRunMachineCommand(ctx context.Context, request *RunCommandRequest, params RunMachineCommandParams) (res *RunCommandResponse, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("run-machine-command"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}:runCommand"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RunMachineCommandOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/machines/"
+	{
+		// Encode "machineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "machineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = ":runCommand"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRunMachineCommandRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, RunMachineCommandOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRunMachineCommandResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

@@ -266,14 +266,8 @@ func (s *CreateGroupRequest) SetName(val DirectoryName) {
 
 // Ref: #/components/schemas/CreateSessionRequest
 type CreateSessionRequest struct {
-	MachineID uuid.UUID      `json:"machine_id"`
-	Mode      OptSessionMode `json:"mode"`
-	// The first width of the canvas, normally the viewer's; the machine's default when omitted.
-	Width OptInt64 `json:"width"`
-	// The first height of the canvas; given together with `width`.
-	Height OptInt64 `json:"height"`
-	// For `desktop` sessions, one of the machine's `session_desktops`; the machine's default when omitted.
-	SessionDesktop OptString `json:"session_desktop"`
+	MachineID uuid.UUID         `json:"machine_id"`
+	Desktop   OptDesktopOptions `json:"desktop"`
 }
 
 // GetMachineID returns the value of MachineID.
@@ -281,24 +275,9 @@ func (s *CreateSessionRequest) GetMachineID() uuid.UUID {
 	return s.MachineID
 }
 
-// GetMode returns the value of Mode.
-func (s *CreateSessionRequest) GetMode() OptSessionMode {
-	return s.Mode
-}
-
-// GetWidth returns the value of Width.
-func (s *CreateSessionRequest) GetWidth() OptInt64 {
-	return s.Width
-}
-
-// GetHeight returns the value of Height.
-func (s *CreateSessionRequest) GetHeight() OptInt64 {
-	return s.Height
-}
-
-// GetSessionDesktop returns the value of SessionDesktop.
-func (s *CreateSessionRequest) GetSessionDesktop() OptString {
-	return s.SessionDesktop
+// GetDesktop returns the value of Desktop.
+func (s *CreateSessionRequest) GetDesktop() OptDesktopOptions {
+	return s.Desktop
 }
 
 // SetMachineID sets the value of MachineID.
@@ -306,24 +285,9 @@ func (s *CreateSessionRequest) SetMachineID(val uuid.UUID) {
 	s.MachineID = val
 }
 
-// SetMode sets the value of Mode.
-func (s *CreateSessionRequest) SetMode(val OptSessionMode) {
-	s.Mode = val
-}
-
-// SetWidth sets the value of Width.
-func (s *CreateSessionRequest) SetWidth(val OptInt64) {
-	s.Width = val
-}
-
-// SetHeight sets the value of Height.
-func (s *CreateSessionRequest) SetHeight(val OptInt64) {
-	s.Height = val
-}
-
-// SetSessionDesktop sets the value of SessionDesktop.
-func (s *CreateSessionRequest) SetSessionDesktop(val OptString) {
-	s.SessionDesktop = val
+// SetDesktop sets the value of Desktop.
+func (s *CreateSessionRequest) SetDesktop(val OptDesktopOptions) {
+	s.Desktop = val
 }
 
 // Ref: #/components/schemas/CreateViewerTicketRequest
@@ -480,6 +444,87 @@ type DeleteMachineNoContent struct{}
 
 // DeleteViewerNoContent is response for DeleteViewer operation.
 type DeleteViewerNoContent struct{}
+
+// A desktop for the session, on a machine that offers `leaflow.fleet.virtualdesktop.host.v1`.
+// Ref: #/components/schemas/DesktopOptions
+type DesktopOptions struct {
+	Mode SessionMode `json:"mode"`
+	// The first width of the canvas, normally the viewer's; the machine's default when omitted.
+	Width OptInt64 `json:"width"`
+	// The first height of the canvas; given together with `width`.
+	Height OptInt64 `json:"height"`
+	// In `desktop` mode, the desktop environment to start: a detail of the machine's
+	// `leaflow.fleet.virtualdesktop.host.v1` feature without its `desktop.` prefix, such as `XFCE`; the
+	// machine's default when omitted.
+	SessionDesktop OptString `json:"session_desktop"`
+}
+
+// GetMode returns the value of Mode.
+func (s *DesktopOptions) GetMode() SessionMode {
+	return s.Mode
+}
+
+// GetWidth returns the value of Width.
+func (s *DesktopOptions) GetWidth() OptInt64 {
+	return s.Width
+}
+
+// GetHeight returns the value of Height.
+func (s *DesktopOptions) GetHeight() OptInt64 {
+	return s.Height
+}
+
+// GetSessionDesktop returns the value of SessionDesktop.
+func (s *DesktopOptions) GetSessionDesktop() OptString {
+	return s.SessionDesktop
+}
+
+// SetMode sets the value of Mode.
+func (s *DesktopOptions) SetMode(val SessionMode) {
+	s.Mode = val
+}
+
+// SetWidth sets the value of Width.
+func (s *DesktopOptions) SetWidth(val OptInt64) {
+	s.Width = val
+}
+
+// SetHeight sets the value of Height.
+func (s *DesktopOptions) SetHeight(val OptInt64) {
+	s.Height = val
+}
+
+// SetSessionDesktop sets the value of SessionDesktop.
+func (s *DesktopOptions) SetSessionDesktop(val OptString) {
+	s.SessionDesktop = val
+}
+
+// Ref: #/components/schemas/DesktopState
+type DesktopState struct {
+	Mode SessionMode `json:"mode"`
+	// The X display, such as `:100`.
+	Display string `json:"display"`
+}
+
+// GetMode returns the value of Mode.
+func (s *DesktopState) GetMode() SessionMode {
+	return s.Mode
+}
+
+// GetDisplay returns the value of Display.
+func (s *DesktopState) GetDisplay() string {
+	return s.Display
+}
+
+// SetMode sets the value of Mode.
+func (s *DesktopState) SetMode(val SessionMode) {
+	s.Mode = val
+}
+
+// SetDisplay sets the value of Display.
+func (s *DesktopState) SetDisplay(val string) {
+	s.Display = val
+}
 
 type DirectoryName string
 
@@ -805,6 +850,49 @@ func (s *ErrorStatusMetadata) init() ErrorStatusMetadata {
 		*s = m
 	}
 	return m
+}
+
+// `available` can be used now. `unavailable` is installed but cannot be used, as `reason` says.
+// Ref: #/components/schemas/FeatureState
+type FeatureState string
+
+const (
+	FeatureStateAvailable   FeatureState = "available"
+	FeatureStateUnavailable FeatureState = "unavailable"
+)
+
+// AllValues returns all FeatureState values.
+func (FeatureState) AllValues() []FeatureState {
+	return []FeatureState{
+		FeatureStateAvailable,
+		FeatureStateUnavailable,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s FeatureState) MarshalText() ([]byte, error) {
+	switch s {
+	case FeatureStateAvailable:
+		return []byte(s), nil
+	case FeatureStateUnavailable:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *FeatureState) UnmarshalText(data []byte) error {
+	switch FeatureState(data) {
+	case FeatureStateAvailable:
+		*s = FeatureStateAvailable
+		return nil
+	case FeatureStateUnavailable:
+		*s = FeatureStateUnavailable
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/FieldViolation
@@ -1139,6 +1227,57 @@ func (s *MachineEventType) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/MachineFeature
+type MachineFeature struct {
+	// The protocol package that defines the feature, such as `leaflow.fleet.command.v1`.
+	Name  string       `json:"name"`
+	State FeatureState `json:"state"`
+	// Why it cannot be used, such as `Xvfb is not installed`; empty while available.
+	Reason string `json:"reason"`
+	// What it can do on this machine, as the dotted names its package defines, such as `audio.pipewire`.
+	Details []string `json:"details"`
+}
+
+// GetName returns the value of Name.
+func (s *MachineFeature) GetName() string {
+	return s.Name
+}
+
+// GetState returns the value of State.
+func (s *MachineFeature) GetState() FeatureState {
+	return s.State
+}
+
+// GetReason returns the value of Reason.
+func (s *MachineFeature) GetReason() string {
+	return s.Reason
+}
+
+// GetDetails returns the value of Details.
+func (s *MachineFeature) GetDetails() []string {
+	return s.Details
+}
+
+// SetName sets the value of Name.
+func (s *MachineFeature) SetName(val string) {
+	s.Name = val
+}
+
+// SetState sets the value of State.
+func (s *MachineFeature) SetState(val FeatureState) {
+	s.State = val
+}
+
+// SetReason sets the value of Reason.
+func (s *MachineFeature) SetReason(val string) {
+	s.Reason = val
+}
+
+// SetDetails sets the value of Details.
+func (s *MachineFeature) SetDetails(val []string) {
+	s.Details = val
+}
+
 // Ref: #/components/schemas/MachineList
 type MachineList struct {
 	Items      []MachineResource `json:"items"`
@@ -1202,11 +1341,8 @@ type MachineResource struct {
 	KernelRelease string `json:"kernel_release"`
 	// Such as `x86_64`; empty until the machine has reported once.
 	Architecture string `json:"architecture"`
-	// What the machine can do, as dotted names such as `virtualdesktop`, `x11.xvfb` and `audio.pipewire`.
-	// `virtualdesktop` means the Agent includes the remote desktop feature.
-	Capabilities []string `json:"capabilities"`
-	// The desktop environments a `desktop` session can start.
-	SessionDesktops []string `json:"session_desktops"`
+	// What the machine offers; empty until the machine has reported once.
+	Features []MachineFeature `json:"features"`
 	// The Agent software the machine last connected with.
 	AgentVersion string `json:"agent_version"`
 	// The machine serves the project's current directory.
@@ -1256,14 +1392,9 @@ func (s *MachineResource) GetArchitecture() string {
 	return s.Architecture
 }
 
-// GetCapabilities returns the value of Capabilities.
-func (s *MachineResource) GetCapabilities() []string {
-	return s.Capabilities
-}
-
-// GetSessionDesktops returns the value of SessionDesktops.
-func (s *MachineResource) GetSessionDesktops() []string {
-	return s.SessionDesktops
+// GetFeatures returns the value of Features.
+func (s *MachineResource) GetFeatures() []MachineFeature {
+	return s.Features
 }
 
 // GetAgentVersion returns the value of AgentVersion.
@@ -1326,14 +1457,9 @@ func (s *MachineResource) SetArchitecture(val string) {
 	s.Architecture = val
 }
 
-// SetCapabilities sets the value of Capabilities.
-func (s *MachineResource) SetCapabilities(val []string) {
-	s.Capabilities = val
-}
-
-// SetSessionDesktops sets the value of SessionDesktops.
-func (s *MachineResource) SetSessionDesktops(val []string) {
-	s.SessionDesktops = val
+// SetFeatures sets the value of Features.
+func (s *MachineResource) SetFeatures(val []MachineFeature) {
+	s.Features = val
 }
 
 // SetAgentVersion sets the value of AgentVersion.
@@ -1429,6 +1555,96 @@ func (o NilDateTime) Get() (v time.Time, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilDesktopState returns new NilDesktopState with value set to v.
+func NewNilDesktopState(v DesktopState) NilDesktopState {
+	return NilDesktopState{
+		Value: v,
+	}
+}
+
+// NilDesktopState is nullable DesktopState.
+type NilDesktopState struct {
+	Value DesktopState
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilDesktopState) SetTo(v DesktopState) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilDesktopState) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilDesktopState) SetToNull() {
+	o.Null = true
+	var v DesktopState
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilDesktopState) Get() (v DesktopState, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilDesktopState) Or(d DesktopState) DesktopState {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilInt32 returns new NilInt32 with value set to v.
+func NewNilInt32(v int32) NilInt32 {
+	return NilInt32{
+		Value: v,
+	}
+}
+
+// NilInt32 is nullable int32.
+type NilInt32 struct {
+	Value int32
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilInt32) SetTo(v int32) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilInt32) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilInt32) SetToNull() {
+	o.Null = true
+	var v int32
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilInt32) Get() (v int32, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilInt32) Or(d int32) int32 {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -1606,6 +1822,52 @@ func (o OptBool) Get() (v bool, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptBool) Or(d bool) bool {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptDesktopOptions returns new OptDesktopOptions with value set to v.
+func NewOptDesktopOptions(v DesktopOptions) OptDesktopOptions {
+	return OptDesktopOptions{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptDesktopOptions is optional DesktopOptions.
+type OptDesktopOptions struct {
+	Value DesktopOptions
+	Set   bool
+}
+
+// IsSet returns true if OptDesktopOptions was set.
+func (o OptDesktopOptions) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptDesktopOptions) Reset() {
+	var v DesktopOptions
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptDesktopOptions) SetTo(v DesktopOptions) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptDesktopOptions) Get() (v DesktopOptions, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptDesktopOptions) Or(d DesktopOptions) DesktopOptions {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -1910,52 +2172,6 @@ func (o OptNilUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
-// NewOptSessionMode returns new OptSessionMode with value set to v.
-func NewOptSessionMode(v SessionMode) OptSessionMode {
-	return OptSessionMode{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptSessionMode is optional SessionMode.
-type OptSessionMode struct {
-	Value SessionMode
-	Set   bool
-}
-
-// IsSet returns true if OptSessionMode was set.
-func (o OptSessionMode) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptSessionMode) Reset() {
-	var v SessionMode
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptSessionMode) SetTo(v SessionMode) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptSessionMode) Get() (v SessionMode, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptSessionMode) Or(d SessionMode) SessionMode {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptString returns new OptString with value set to v.
 func NewOptString(v string) OptString {
 	return OptString{
@@ -2049,6 +2265,122 @@ func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 }
 
 type PublicKey string
+
+// Ref: #/components/schemas/RunCommandRequest
+type RunCommandRequest struct {
+	// The command line, which the account's login shell runs with `-c`; at most 65536 bytes and no NUL.
+	Command string `json:"command"`
+	// Kills the command, and every process it started, this long after it started.
+	TimeoutSeconds OptInt64 `json:"timeout_seconds"`
+}
+
+// GetCommand returns the value of Command.
+func (s *RunCommandRequest) GetCommand() string {
+	return s.Command
+}
+
+// GetTimeoutSeconds returns the value of TimeoutSeconds.
+func (s *RunCommandRequest) GetTimeoutSeconds() OptInt64 {
+	return s.TimeoutSeconds
+}
+
+// SetCommand sets the value of Command.
+func (s *RunCommandRequest) SetCommand(val string) {
+	s.Command = val
+}
+
+// SetTimeoutSeconds sets the value of TimeoutSeconds.
+func (s *RunCommandRequest) SetTimeoutSeconds(val OptInt64) {
+	s.TimeoutSeconds = val
+}
+
+// Ref: #/components/schemas/RunCommandResponse
+type RunCommandResponse struct {
+	// The status it exited with, 0 being success; null when a signal ended it.
+	ExitStatus NilInt32 `json:"exit_status"`
+	// The signal that ended it, such as 9 when the timeout killed it; null when it exited.
+	Signal NilInt32 `json:"signal"`
+	// The timeout ended it.
+	TimedOut bool `json:"timed_out"`
+	// What it wrote to standard output, at most 1 MiB, in standard Base64.
+	Stdout string `json:"stdout"`
+	// `stdout` is cut short.
+	StdoutTruncated bool `json:"stdout_truncated"`
+	// What it wrote to standard error, at most 1 MiB, in standard Base64.
+	Stderr string `json:"stderr"`
+	// `stderr` is cut short.
+	StderrTruncated bool `json:"stderr_truncated"`
+}
+
+// GetExitStatus returns the value of ExitStatus.
+func (s *RunCommandResponse) GetExitStatus() NilInt32 {
+	return s.ExitStatus
+}
+
+// GetSignal returns the value of Signal.
+func (s *RunCommandResponse) GetSignal() NilInt32 {
+	return s.Signal
+}
+
+// GetTimedOut returns the value of TimedOut.
+func (s *RunCommandResponse) GetTimedOut() bool {
+	return s.TimedOut
+}
+
+// GetStdout returns the value of Stdout.
+func (s *RunCommandResponse) GetStdout() string {
+	return s.Stdout
+}
+
+// GetStdoutTruncated returns the value of StdoutTruncated.
+func (s *RunCommandResponse) GetStdoutTruncated() bool {
+	return s.StdoutTruncated
+}
+
+// GetStderr returns the value of Stderr.
+func (s *RunCommandResponse) GetStderr() string {
+	return s.Stderr
+}
+
+// GetStderrTruncated returns the value of StderrTruncated.
+func (s *RunCommandResponse) GetStderrTruncated() bool {
+	return s.StderrTruncated
+}
+
+// SetExitStatus sets the value of ExitStatus.
+func (s *RunCommandResponse) SetExitStatus(val NilInt32) {
+	s.ExitStatus = val
+}
+
+// SetSignal sets the value of Signal.
+func (s *RunCommandResponse) SetSignal(val NilInt32) {
+	s.Signal = val
+}
+
+// SetTimedOut sets the value of TimedOut.
+func (s *RunCommandResponse) SetTimedOut(val bool) {
+	s.TimedOut = val
+}
+
+// SetStdout sets the value of Stdout.
+func (s *RunCommandResponse) SetStdout(val string) {
+	s.Stdout = val
+}
+
+// SetStdoutTruncated sets the value of StdoutTruncated.
+func (s *RunCommandResponse) SetStdoutTruncated(val bool) {
+	s.StdoutTruncated = val
+}
+
+// SetStderr sets the value of Stderr.
+func (s *RunCommandResponse) SetStderr(val string) {
+	s.Stderr = val
+}
+
+// SetStderrTruncated sets the value of StderrTruncated.
+func (s *RunCommandResponse) SetStderrTruncated(val bool) {
+	s.StderrTruncated = val
+}
 
 // Why a session ended. `close_requested` and `terminate_requested` follow a request; `logout` the user
 // logged out; `disconnected_timeout`, `no_client_timeout` and `max_lifetime` a time limit passed;
@@ -2266,10 +2598,9 @@ type SessionResource struct {
 	User      NamedIdentity `json:"user"`
 	// The Linux user the session runs as; `user` is the project member who owns the session.
 	Username string       `json:"username"`
-	Mode     SessionMode  `json:"mode"`
 	State    SessionState `json:"state"`
-	// The X display, such as `:100`.
-	Display string `json:"display"`
+	// The session's desktop; null for a session without one.
+	Desktop NilDesktopState `json:"desktop"`
 	// The session can admit viewers. False while its process restarts; viewers are then asked to connect
 	// again shortly.
 	ProcessRunning bool `json:"process_running"`
@@ -2301,19 +2632,14 @@ func (s *SessionResource) GetUsername() string {
 	return s.Username
 }
 
-// GetMode returns the value of Mode.
-func (s *SessionResource) GetMode() SessionMode {
-	return s.Mode
-}
-
 // GetState returns the value of State.
 func (s *SessionResource) GetState() SessionState {
 	return s.State
 }
 
-// GetDisplay returns the value of Display.
-func (s *SessionResource) GetDisplay() string {
-	return s.Display
+// GetDesktop returns the value of Desktop.
+func (s *SessionResource) GetDesktop() NilDesktopState {
+	return s.Desktop
 }
 
 // GetProcessRunning returns the value of ProcessRunning.
@@ -2361,19 +2687,14 @@ func (s *SessionResource) SetUsername(val string) {
 	s.Username = val
 }
 
-// SetMode sets the value of Mode.
-func (s *SessionResource) SetMode(val SessionMode) {
-	s.Mode = val
-}
-
 // SetState sets the value of State.
 func (s *SessionResource) SetState(val SessionState) {
 	s.State = val
 }
 
-// SetDisplay sets the value of Display.
-func (s *SessionResource) SetDisplay(val string) {
-	s.Display = val
+// SetDesktop sets the value of Desktop.
+func (s *SessionResource) SetDesktop(val NilDesktopState) {
+	s.Desktop = val
 }
 
 // SetProcessRunning sets the value of ProcessRunning.
@@ -2548,7 +2869,7 @@ type ViewerResource struct {
 	// The viewer may only watch.
 	ReadOnly bool `json:"read_only"`
 	// The capabilities granted to the viewer, as the full names of their policy messages, such as
-	// `leaflow.fleet.virtualdesktop.filetransfer.v1.FileTransferPolicy`.
+	// `leaflow.fleet.filetransfer.v1.FileTransferPolicy`.
 	Policies []string `json:"policies"`
 	// The IP address the viewer connected from.
 	RemoteAddress string `json:"remote_address"`

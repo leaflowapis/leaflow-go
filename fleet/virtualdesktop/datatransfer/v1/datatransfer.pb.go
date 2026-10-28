@@ -7,7 +7,7 @@
 package datatransferv1
 
 import (
-	v1 "github.com/leaflowapis/leaflow-go/fleet/virtualdesktop/filetransfer/v1"
+	v1 "github.com/leaflowapis/leaflow-go/fleet/filetransfer/v1"
 	status "google.golang.org/genproto/googleapis/rpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -3010,7 +3010,7 @@ var File_leaflow_fleet_virtualdesktop_datatransfer_v1_datatransfer_proto protore
 
 const file_leaflow_fleet_virtualdesktop_datatransfer_v1_datatransfer_proto_rawDesc = "" +
 	"\n" +
-	"?leaflow/fleet/virtualdesktop/datatransfer/v1/datatransfer.proto\x12,leaflow.fleet.virtualdesktop.datatransfer.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\x1a?leaflow/fleet/virtualdesktop/filetransfer/v1/filetransfer.proto\"C\n" +
+	"?leaflow/fleet/virtualdesktop/datatransfer/v1/datatransfer.proto\x12,leaflow.fleet.virtualdesktop.datatransfer.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\x1a0leaflow/fleet/filetransfer/v1/filetransfer.proto\"C\n" +
 	"\x10DataTransferItem\x12\x1b\n" +
 	"\tmime_type\x18\x01 \x01(\tR\bmimeType\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\fR\x04data\"\x88\x02\n" +
@@ -3031,15 +3031,15 @@ const file_leaflow_fleet_virtualdesktop_datatransfer_v1_datatransfer_proto_rawDe
 	"\rwrite_allowed\x18\x02 \x01(\bR\fwriteAllowed\x12W\n" +
 	"\n" +
 	"selections\x18\x03 \x03(\x0e27.leaflow.fleet.virtualdesktop.datatransfer.v1.SelectionR\n" +
-	"selections\"\xdd\x02\n" +
+	"selections\"\xce\x02\n" +
 	"\x13ClipboardFormatList\x12U\n" +
 	"\tselection\x18\x01 \x01(\x0e27.leaflow.fleet.virtualdesktop.datatransfer.v1.SelectionR\tselection\x12\x1a\n" +
 	"\bsequence\x18\x02 \x01(\x04R\bsequence\x12\x1d\n" +
 	"\n" +
 	"mime_types\x18\x03 \x03(\tR\tmimeTypes\x12T\n" +
-	"\x05items\x18\x04 \x03(\v2>.leaflow.fleet.virtualdesktop.datatransfer.v1.DataTransferItemR\x05items\x12^\n" +
+	"\x05items\x18\x04 \x03(\v2>.leaflow.fleet.virtualdesktop.datatransfer.v1.DataTransferItemR\x05items\x12O\n" +
 	"\n" +
-	"file_offer\x18\x05 \x01(\v2?.leaflow.fleet.virtualdesktop.filetransfer.v1.FileTransferOfferR\tfileOffer\"\xba\x01\n" +
+	"file_offer\x18\x05 \x01(\v20.leaflow.fleet.filetransfer.v1.FileTransferOfferR\tfileOffer\"\xba\x01\n" +
 	"\x1bClipboardFormatListResponse\x12U\n" +
 	"\tselection\x18\x01 \x01(\x0e27.leaflow.fleet.virtualdesktop.datatransfer.v1.SelectionR\tselection\x12\x1a\n" +
 	"\bsequence\x18\x02 \x01(\x04R\bsequence\x12(\n" +
@@ -3079,16 +3079,16 @@ const file_leaflow_fleet_virtualdesktop_datatransfer_v1_datatransfer_proto_rawDe
 	"\x06result\"1\n" +
 	"\x10DragSourceCancel\x12\x1d\n" +
 	"\n" +
-	"request_id\x18\x01 \x01(\x04R\trequestId\"\xe7\x02\n" +
+	"request_id\x18\x01 \x01(\x04R\trequestId\"\xd8\x02\n" +
 	"\tDragStart\x12\x17\n" +
 	"\adrag_id\x18\x01 \x01(\tR\x06dragId\x12(\n" +
 	"\x10source_window_id\x18\x02 \x01(\x04R\x0esourceWindowId\x12\x1d\n" +
 	"\n" +
 	"mime_types\x18\x03 \x03(\tR\tmimeTypes\x12R\n" +
 	"\aactions\x18\x04 \x03(\x0e28.leaflow.fleet.virtualdesktop.datatransfer.v1.DragActionR\aactions\x12\x1b\n" +
-	"\tinput_seq\x18\x05 \x01(\x04R\binputSeq\x12^\n" +
+	"\tinput_seq\x18\x05 \x01(\x04R\binputSeq\x12O\n" +
 	"\n" +
-	"file_offer\x18\x06 \x01(\v2?.leaflow.fleet.virtualdesktop.filetransfer.v1.FileTransferOfferR\tfileOffer\x12'\n" +
+	"file_offer\x18\x06 \x01(\v20.leaflow.fleet.filetransfer.v1.FileTransferOfferR\tfileOffer\x12'\n" +
 	"\x0ffiles_available\x18\a \x01(\bR\x0efilesAvailable\"V\n" +
 	"\x11DragStartResponse\x12\x17\n" +
 	"\adrag_id\x18\x01 \x01(\tR\x06dragId\x12(\n" +
@@ -3147,13 +3147,13 @@ const file_leaflow_fleet_virtualdesktop_datatransfer_v1_datatransfer_proto_rawDe
 	"\x06format\"\x84\x01\n" +
 	"\x0fClipboardSource\x12U\n" +
 	"\tselection\x18\x01 \x01(\x0e27.leaflow.fleet.virtualdesktop.datatransfer.v1.SelectionR\tselection\x12\x1a\n" +
-	"\bsequence\x18\x02 \x01(\x04R\bsequence\"\xb1\x02\n" +
+	"\bsequence\x18\x02 \x01(\x04R\bsequence\"\xa2\x02\n" +
 	"\fDataResponse\x12*\n" +
 	"\x10total_size_bytes\x18\x01 \x01(\x04H\x00R\x0etotalSizeBytes\x12\x14\n" +
 	"\x04data\x18\x02 \x01(\fH\x00R\x04data\x12I\n" +
-	"\x03end\x18\x03 \x01(\v25.leaflow.fleet.virtualdesktop.datatransfer.v1.DataEndH\x00R\x03end\x12`\n" +
+	"\x03end\x18\x03 \x01(\v25.leaflow.fleet.virtualdesktop.datatransfer.v1.DataEndH\x00R\x03end\x12Q\n" +
 	"\n" +
-	"file_offer\x18\x04 \x01(\v2?.leaflow.fleet.virtualdesktop.filetransfer.v1.FileTransferOfferH\x00R\tfileOffer\x12*\n" +
+	"file_offer\x18\x04 \x01(\v20.leaflow.fleet.filetransfer.v1.FileTransferOfferH\x00R\tfileOffer\x12*\n" +
 	"\x05error\x18\x05 \x01(\v2\x12.google.rpc.StatusH\x00R\x05errorB\x06\n" +
 	"\x04part\"!\n" +
 	"\aDataEnd\x12\x16\n" +
@@ -3267,7 +3267,7 @@ var file_leaflow_fleet_virtualdesktop_datatransfer_v1_datatransfer_proto_goTypes
 	(*DropDataResponse)(nil),            // 34: leaflow.fleet.virtualdesktop.datatransfer.v1.DropDataResponse
 	(*ClipboardPolicy)(nil),             // 35: leaflow.fleet.virtualdesktop.datatransfer.v1.ClipboardPolicy
 	(*DragPolicy)(nil),                  // 36: leaflow.fleet.virtualdesktop.datatransfer.v1.DragPolicy
-	(*v1.FileTransferOffer)(nil),        // 37: leaflow.fleet.virtualdesktop.filetransfer.v1.FileTransferOffer
+	(*v1.FileTransferOffer)(nil),        // 37: leaflow.fleet.filetransfer.v1.FileTransferOffer
 	(*status.Status)(nil),               // 38: google.rpc.Status
 	(*durationpb.Duration)(nil),         // 39: google.protobuf.Duration
 }
@@ -3281,7 +3281,7 @@ var file_leaflow_fleet_virtualdesktop_datatransfer_v1_datatransfer_proto_depIdxs
 	0,  // 6: leaflow.fleet.virtualdesktop.datatransfer.v1.ClipboardStatus.selections:type_name -> leaflow.fleet.virtualdesktop.datatransfer.v1.Selection
 	0,  // 7: leaflow.fleet.virtualdesktop.datatransfer.v1.ClipboardFormatList.selection:type_name -> leaflow.fleet.virtualdesktop.datatransfer.v1.Selection
 	2,  // 8: leaflow.fleet.virtualdesktop.datatransfer.v1.ClipboardFormatList.items:type_name -> leaflow.fleet.virtualdesktop.datatransfer.v1.DataTransferItem
-	37, // 9: leaflow.fleet.virtualdesktop.datatransfer.v1.ClipboardFormatList.file_offer:type_name -> leaflow.fleet.virtualdesktop.filetransfer.v1.FileTransferOffer
+	37, // 9: leaflow.fleet.virtualdesktop.datatransfer.v1.ClipboardFormatList.file_offer:type_name -> leaflow.fleet.filetransfer.v1.FileTransferOffer
 	0,  // 10: leaflow.fleet.virtualdesktop.datatransfer.v1.ClipboardFormatListResponse.selection:type_name -> leaflow.fleet.virtualdesktop.datatransfer.v1.Selection
 	38, // 11: leaflow.fleet.virtualdesktop.datatransfer.v1.ClipboardFormatListResponse.error:type_name -> google.rpc.Status
 	11, // 12: leaflow.fleet.virtualdesktop.datatransfer.v1.DragClientMessage.source_request:type_name -> leaflow.fleet.virtualdesktop.datatransfer.v1.DragSourceRequest
@@ -3303,7 +3303,7 @@ var file_leaflow_fleet_virtualdesktop_datatransfer_v1_datatransfer_proto_depIdxs
 	14, // 28: leaflow.fleet.virtualdesktop.datatransfer.v1.DragSourceResponse.start:type_name -> leaflow.fleet.virtualdesktop.datatransfer.v1.DragStart
 	38, // 29: leaflow.fleet.virtualdesktop.datatransfer.v1.DragSourceResponse.error:type_name -> google.rpc.Status
 	1,  // 30: leaflow.fleet.virtualdesktop.datatransfer.v1.DragStart.actions:type_name -> leaflow.fleet.virtualdesktop.datatransfer.v1.DragAction
-	37, // 31: leaflow.fleet.virtualdesktop.datatransfer.v1.DragStart.file_offer:type_name -> leaflow.fleet.virtualdesktop.filetransfer.v1.FileTransferOffer
+	37, // 31: leaflow.fleet.virtualdesktop.datatransfer.v1.DragStart.file_offer:type_name -> leaflow.fleet.filetransfer.v1.FileTransferOffer
 	38, // 32: leaflow.fleet.virtualdesktop.datatransfer.v1.DragStartResponse.error:type_name -> google.rpc.Status
 	1,  // 33: leaflow.fleet.virtualdesktop.datatransfer.v1.DragEnter.proposed_action:type_name -> leaflow.fleet.virtualdesktop.datatransfer.v1.DragAction
 	1,  // 34: leaflow.fleet.virtualdesktop.datatransfer.v1.DragPosition.proposed_action:type_name -> leaflow.fleet.virtualdesktop.datatransfer.v1.DragAction
@@ -3316,7 +3316,7 @@ var file_leaflow_fleet_virtualdesktop_datatransfer_v1_datatransfer_proto_depIdxs
 	24, // 41: leaflow.fleet.virtualdesktop.datatransfer.v1.DataRequest.clipboard:type_name -> leaflow.fleet.virtualdesktop.datatransfer.v1.ClipboardSource
 	0,  // 42: leaflow.fleet.virtualdesktop.datatransfer.v1.ClipboardSource.selection:type_name -> leaflow.fleet.virtualdesktop.datatransfer.v1.Selection
 	26, // 43: leaflow.fleet.virtualdesktop.datatransfer.v1.DataResponse.end:type_name -> leaflow.fleet.virtualdesktop.datatransfer.v1.DataEnd
-	37, // 44: leaflow.fleet.virtualdesktop.datatransfer.v1.DataResponse.file_offer:type_name -> leaflow.fleet.virtualdesktop.filetransfer.v1.FileTransferOffer
+	37, // 44: leaflow.fleet.virtualdesktop.datatransfer.v1.DataResponse.file_offer:type_name -> leaflow.fleet.filetransfer.v1.FileTransferOffer
 	38, // 45: leaflow.fleet.virtualdesktop.datatransfer.v1.DataResponse.error:type_name -> google.rpc.Status
 	0,  // 46: leaflow.fleet.virtualdesktop.datatransfer.v1.ReadClipboardRequest.selection:type_name -> leaflow.fleet.virtualdesktop.datatransfer.v1.Selection
 	2,  // 47: leaflow.fleet.virtualdesktop.datatransfer.v1.ReadClipboardResponse.item:type_name -> leaflow.fleet.virtualdesktop.datatransfer.v1.DataTransferItem

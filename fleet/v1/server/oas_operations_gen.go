@@ -29,6 +29,7 @@ const (
 	ListMachinesOperation                OperationName = "ListMachines"
 	ListSessionViewersOperation          OperationName = "ListSessionViewers"
 	ListSessionsOperation                OperationName = "ListSessions"
+	RunMachineCommandOperation           OperationName = "RunMachineCommand"
 	TerminateSessionOperation            OperationName = "TerminateSession"
 	UpdateAccountOperation               OperationName = "UpdateAccount"
 	UpdateGroupOperation                 OperationName = "UpdateGroup"

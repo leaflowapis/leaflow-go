@@ -8,7 +8,7 @@ package controlv1
 
 import (
 	v1 "github.com/leaflowapis/leaflow-go/fleet/rpc/v1"
-	v11 "github.com/leaflowapis/leaflow-go/fleet/virtualdesktop/transport/v1"
+	v11 "github.com/leaflowapis/leaflow-go/fleet/transport/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	anypb "google.golang.org/protobuf/types/known/anypb"
@@ -48,7 +48,8 @@ const (
 	// A message larger than max_message_size. Either side.
 	CloseReason_CLOSE_REASON_MESSAGE_TOO_BIG CloseReason = 8
 	// The credential did not verify, or names an unknown machine, a used or
-	// expired ticket or another key. Service only.
+	// expired ticket or another key. For a machine credential it is final: the
+	// daemon stops and its machine must enroll again. Service only.
 	CloseReason_CLOSE_REASON_AUTHENTICATION_FAILED CloseReason = 9
 	// The endpoint is known but not allowed, such as a removed machine or a
 	// viewer whose rights were withdrawn. Service only.
@@ -595,8 +596,7 @@ func (*ServerMessage_Close) isServerMessage_Message() {}
 type ServerHello struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The HTTPS origin (RFC 6454) that names the service, such as
-	// "https://fleet.leaflow.cloud": the issuer of everything it
-	// signs.
+	// "https://fleet.leaflow.cloud": the issuer of everything it signs.
 	Issuer string `protobuf:"bytes,1,opt,name=issuer,proto3" json:"issuer,omitempty"`
 	// 32 random bytes, new for this connection, that the credential signs.
 	Challenge []byte `protobuf:"bytes,2,opt,name=challenge,proto3" json:"challenge,omitempty"`
@@ -688,8 +688,9 @@ type ClientHello struct {
 	//	*ClientHello_Session
 	//	*ClientHello_Viewer
 	Credential isClientHello_Credential `protobuf_oneof:"credential"`
-	// The endpoint software, such as "leaflow-fleet-agent/1.0.0" or the browser's
-	// User-Agent (RFC 9110 §10.1.5). For diagnostics only.
+	// The endpoint software, such as "leaflow-fleet-agent/1.0.0" or the
+	// browser's User-Agent (RFC 9110 §10.1.5). For diagnostics only. A machine
+	// reports its Agent's version with leaflow.fleet.machine.v1.
 	UserAgent     string `protobuf:"bytes,5,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1415,7 +1416,7 @@ type Authorization struct {
 	// The viewer may only watch, whatever policies say.
 	ReadOnly bool `protobuf:"varint,11,opt,name=read_only,json=readOnly,proto3" json:"read_only,omitempty"`
 	// The policies of the domains the viewer may use, at most one of each
-	// type, such as a leaflow.fleet.virtualdesktop.filetransfer.v1.FileTransferPolicy.
+	// type, such as a leaflow.fleet.filetransfer.v1.FileTransferPolicy.
 	// A domain whose policy is missing is denied. A type the session does not
 	// know is ignored.
 	Policies []*anypb.Any `protobuf:"bytes,12,rep,name=policies,proto3" json:"policies,omitempty"`
@@ -2136,7 +2137,7 @@ var File_leaflow_fleet_control_v1_control_proto protoreflect.FileDescriptor
 
 const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\n" +
-	"&leaflow/fleet/control/v1/control.proto\x12\x18leaflow.fleet.control.v1\x1a\x19google/protobuf/any.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1eleaflow/fleet/rpc/v1/rpc.proto\x1a9leaflow/fleet/virtualdesktop/transport/v1/transport.proto\"\xea\x04\n" +
+	"&leaflow/fleet/control/v1/control.proto\x12\x18leaflow.fleet.control.v1\x1a\x19google/protobuf/any.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1eleaflow/fleet/rpc/v1/rpc.proto\x1a*leaflow/fleet/transport/v1/transport.proto\"\xcc\x04\n" +
 	"\rClientMessage\x12J\n" +
 	"\fclient_hello\x18\x01 \x01(\v2%.leaflow.fleet.control.v1.ClientHelloH\x00R\vclientHello\x124\n" +
 	"\x04ping\x18\x02 \x01(\v2\x1e.leaflow.fleet.control.v1.PingH\x00R\x04ping\x124\n" +
@@ -2145,11 +2146,11 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\vcall_result\x18\x05 \x01(\v2 .leaflow.fleet.rpc.v1.CallResultH\x00R\n" +
 	"callResult\x12C\n" +
 	"\vcall_cancel\x18\x06 \x01(\v2 .leaflow.fleet.rpc.v1.CallCancelH\x00R\n" +
-	"callCancel\x12K\n" +
-	"\x06signal\x18\a \x01(\v21.leaflow.fleet.virtualdesktop.transport.v1.SignalH\x00R\x06signal\x12T\n" +
-	"\tmigration\x18\b \x01(\v24.leaflow.fleet.virtualdesktop.transport.v1.MigrationH\x00R\tmigration\x127\n" +
+	"callCancel\x12<\n" +
+	"\x06signal\x18\a \x01(\v2\".leaflow.fleet.transport.v1.SignalH\x00R\x06signal\x12E\n" +
+	"\tmigration\x18\b \x01(\v2%.leaflow.fleet.transport.v1.MigrationH\x00R\tmigration\x127\n" +
 	"\x05close\x18\t \x01(\v2\x1f.leaflow.fleet.control.v1.CloseH\x00R\x05closeB\t\n" +
-	"\amessage\"\xf5\x05\n" +
+	"\amessage\"\xd7\x05\n" +
 	"\rServerMessage\x12J\n" +
 	"\fserver_hello\x18\x01 \x01(\v2%.leaflow.fleet.control.v1.ServerHelloH\x00R\vserverHello\x12=\n" +
 	"\awelcome\x18\x02 \x01(\v2!.leaflow.fleet.control.v1.WelcomeH\x00R\awelcome\x124\n" +
@@ -2159,9 +2160,9 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\vcall_result\x18\x06 \x01(\v2 .leaflow.fleet.rpc.v1.CallResultH\x00R\n" +
 	"callResult\x12C\n" +
 	"\vcall_cancel\x18\a \x01(\v2 .leaflow.fleet.rpc.v1.CallCancelH\x00R\n" +
-	"callCancel\x12K\n" +
-	"\x06signal\x18\b \x01(\v21.leaflow.fleet.virtualdesktop.transport.v1.SignalH\x00R\x06signal\x12T\n" +
-	"\tmigration\x18\t \x01(\v24.leaflow.fleet.virtualdesktop.transport.v1.MigrationH\x00R\tmigration\x12J\n" +
+	"callCancel\x12<\n" +
+	"\x06signal\x18\b \x01(\v2\".leaflow.fleet.transport.v1.SignalH\x00R\x06signal\x12E\n" +
+	"\tmigration\x18\t \x01(\v2%.leaflow.fleet.transport.v1.MigrationH\x00R\tmigration\x12J\n" +
 	"\fservice_keys\x18\n" +
 	" \x01(\v2%.leaflow.fleet.control.v1.ServiceKeysH\x00R\vserviceKeys\x127\n" +
 	"\x05close\x18\v \x01(\v2\x1f.leaflow.fleet.control.v1.CloseH\x00R\x05closeB\t\n" +
@@ -2209,7 +2210,7 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\x10ViewerCredential\x12\x16\n" +
 	"\x06ticket\x18\x01 \x01(\tR\x06ticket\x120\n" +
 	"\x14resume_connection_id\x18\x02 \x01(\x04R\x12resumeConnectionId\x12\x1c\n" +
-	"\tsignature\x18\x03 \x01(\fR\tsignature\"\xcd\x03\n" +
+	"\tsignature\x18\x03 \x01(\fR\tsignature\"\xbe\x03\n" +
 	"\aWelcome\x12#\n" +
 	"\rconnection_id\x18\x01 \x01(\x04R\fconnectionId\x12\x1d\n" +
 	"\n" +
@@ -2219,8 +2220,8 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\fservice_keys\x18\x04 \x01(\v2%.leaflow.fleet.control.v1.ServiceKeysR\vserviceKeys\x12<\n" +
 	"\fresume_grace\x18\x05 \x01(\v2\x19.google.protobuf.DurationR\vresumeGrace\x12\x18\n" +
 	"\aresumed\x18\x06 \x01(\bR\aresumed\x12S\n" +
-	"\rauthorization\x18\a \x01(\v2-.leaflow.fleet.control.v1.SignedAuthorizationR\rauthorization\x12h\n" +
-	"\x11rtc_configuration\x18\b \x01(\v2;.leaflow.fleet.virtualdesktop.transport.v1.RtcConfigurationR\x10rtcConfiguration\"F\n" +
+	"\rauthorization\x18\a \x01(\v2-.leaflow.fleet.control.v1.SignedAuthorizationR\rauthorization\x12Y\n" +
+	"\x11rtc_configuration\x18\b \x01(\v2,.leaflow.fleet.transport.v1.RtcConfigurationR\x10rtcConfiguration\"F\n" +
 	"\vServiceKeys\x127\n" +
 	"\x04keys\x18\x01 \x03(\v2#.leaflow.fleet.control.v1.PublicKeyR\x04keys\"E\n" +
 	"\tPublicKey\x12\x15\n" +
@@ -2257,10 +2258,10 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\vretry_delay\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\n" +
 	"retryDelay\"5\n" +
 	"\x1bRefreshAuthorizationRequest\x12\x16\n" +
-	"\x06ticket\x18\x01 \x01(\tR\x06ticket\"\xdd\x01\n" +
+	"\x06ticket\x18\x01 \x01(\tR\x06ticket\"\xce\x01\n" +
 	"\x1cRefreshAuthorizationResponse\x12S\n" +
-	"\rauthorization\x18\x01 \x01(\v2-.leaflow.fleet.control.v1.SignedAuthorizationR\rauthorization\x12h\n" +
-	"\x11rtc_configuration\x18\x02 \x01(\v2;.leaflow.fleet.virtualdesktop.transport.v1.RtcConfigurationR\x10rtcConfiguration\"j\n" +
+	"\rauthorization\x18\x01 \x01(\v2-.leaflow.fleet.control.v1.SignedAuthorizationR\rauthorization\x12Y\n" +
+	"\x11rtc_configuration\x18\x02 \x01(\v2,.leaflow.fleet.transport.v1.RtcConfigurationR\x10rtcConfiguration\"j\n" +
 	"\x13AttachViewerRequest\x12S\n" +
 	"\rauthorization\x18\x01 \x01(\v2-.leaflow.fleet.control.v1.SignedAuthorizationR\rauthorization\"\x16\n" +
 	"\x14AttachViewerResponse\"w\n" +
@@ -2342,11 +2343,11 @@ var file_leaflow_fleet_control_v1_control_proto_goTypes = []any{
 	(*v1.Call)(nil),                           // 26: leaflow.fleet.rpc.v1.Call
 	(*v1.CallResult)(nil),                     // 27: leaflow.fleet.rpc.v1.CallResult
 	(*v1.CallCancel)(nil),                     // 28: leaflow.fleet.rpc.v1.CallCancel
-	(*v11.Signal)(nil),                        // 29: leaflow.fleet.virtualdesktop.transport.v1.Signal
-	(*v11.Migration)(nil),                     // 30: leaflow.fleet.virtualdesktop.transport.v1.Migration
+	(*v11.Signal)(nil),                        // 29: leaflow.fleet.transport.v1.Signal
+	(*v11.Migration)(nil),                     // 30: leaflow.fleet.transport.v1.Migration
 	(*durationpb.Duration)(nil),               // 31: google.protobuf.Duration
 	(*timestamppb.Timestamp)(nil),             // 32: google.protobuf.Timestamp
-	(*v11.RtcConfiguration)(nil),              // 33: leaflow.fleet.virtualdesktop.transport.v1.RtcConfiguration
+	(*v11.RtcConfiguration)(nil),              // 33: leaflow.fleet.transport.v1.RtcConfiguration
 	(*anypb.Any)(nil),                         // 34: google.protobuf.Any
 }
 var file_leaflow_fleet_control_v1_control_proto_depIdxs = []int32{
@@ -2356,8 +2357,8 @@ var file_leaflow_fleet_control_v1_control_proto_depIdxs = []int32{
 	26, // 3: leaflow.fleet.control.v1.ClientMessage.call:type_name -> leaflow.fleet.rpc.v1.Call
 	27, // 4: leaflow.fleet.control.v1.ClientMessage.call_result:type_name -> leaflow.fleet.rpc.v1.CallResult
 	28, // 5: leaflow.fleet.control.v1.ClientMessage.call_cancel:type_name -> leaflow.fleet.rpc.v1.CallCancel
-	29, // 6: leaflow.fleet.control.v1.ClientMessage.signal:type_name -> leaflow.fleet.virtualdesktop.transport.v1.Signal
-	30, // 7: leaflow.fleet.control.v1.ClientMessage.migration:type_name -> leaflow.fleet.virtualdesktop.transport.v1.Migration
+	29, // 6: leaflow.fleet.control.v1.ClientMessage.signal:type_name -> leaflow.fleet.transport.v1.Signal
+	30, // 7: leaflow.fleet.control.v1.ClientMessage.migration:type_name -> leaflow.fleet.transport.v1.Migration
 	17, // 8: leaflow.fleet.control.v1.ClientMessage.close:type_name -> leaflow.fleet.control.v1.Close
 	3,  // 9: leaflow.fleet.control.v1.ServerMessage.server_hello:type_name -> leaflow.fleet.control.v1.ServerHello
 	10, // 10: leaflow.fleet.control.v1.ServerMessage.welcome:type_name -> leaflow.fleet.control.v1.Welcome
@@ -2366,8 +2367,8 @@ var file_leaflow_fleet_control_v1_control_proto_depIdxs = []int32{
 	26, // 13: leaflow.fleet.control.v1.ServerMessage.call:type_name -> leaflow.fleet.rpc.v1.Call
 	27, // 14: leaflow.fleet.control.v1.ServerMessage.call_result:type_name -> leaflow.fleet.rpc.v1.CallResult
 	28, // 15: leaflow.fleet.control.v1.ServerMessage.call_cancel:type_name -> leaflow.fleet.rpc.v1.CallCancel
-	29, // 16: leaflow.fleet.control.v1.ServerMessage.signal:type_name -> leaflow.fleet.virtualdesktop.transport.v1.Signal
-	30, // 17: leaflow.fleet.control.v1.ServerMessage.migration:type_name -> leaflow.fleet.virtualdesktop.transport.v1.Migration
+	29, // 16: leaflow.fleet.control.v1.ServerMessage.signal:type_name -> leaflow.fleet.transport.v1.Signal
+	30, // 17: leaflow.fleet.control.v1.ServerMessage.migration:type_name -> leaflow.fleet.transport.v1.Migration
 	11, // 18: leaflow.fleet.control.v1.ServerMessage.service_keys:type_name -> leaflow.fleet.control.v1.ServiceKeys
 	17, // 19: leaflow.fleet.control.v1.ServerMessage.close:type_name -> leaflow.fleet.control.v1.Close
 	31, // 20: leaflow.fleet.control.v1.ServerHello.ping_interval:type_name -> google.protobuf.Duration
@@ -2381,7 +2382,7 @@ var file_leaflow_fleet_control_v1_control_proto_depIdxs = []int32{
 	11, // 28: leaflow.fleet.control.v1.Welcome.service_keys:type_name -> leaflow.fleet.control.v1.ServiceKeys
 	31, // 29: leaflow.fleet.control.v1.Welcome.resume_grace:type_name -> google.protobuf.Duration
 	14, // 30: leaflow.fleet.control.v1.Welcome.authorization:type_name -> leaflow.fleet.control.v1.SignedAuthorization
-	33, // 31: leaflow.fleet.control.v1.Welcome.rtc_configuration:type_name -> leaflow.fleet.virtualdesktop.transport.v1.RtcConfiguration
+	33, // 31: leaflow.fleet.control.v1.Welcome.rtc_configuration:type_name -> leaflow.fleet.transport.v1.RtcConfiguration
 	12, // 32: leaflow.fleet.control.v1.ServiceKeys.keys:type_name -> leaflow.fleet.control.v1.PublicKey
 	34, // 33: leaflow.fleet.control.v1.Authorization.policies:type_name -> google.protobuf.Any
 	32, // 34: leaflow.fleet.control.v1.Authorization.issued_at:type_name -> google.protobuf.Timestamp
@@ -2389,7 +2390,7 @@ var file_leaflow_fleet_control_v1_control_proto_depIdxs = []int32{
 	0,  // 36: leaflow.fleet.control.v1.Close.reason:type_name -> leaflow.fleet.control.v1.CloseReason
 	31, // 37: leaflow.fleet.control.v1.Close.retry_delay:type_name -> google.protobuf.Duration
 	14, // 38: leaflow.fleet.control.v1.RefreshAuthorizationResponse.authorization:type_name -> leaflow.fleet.control.v1.SignedAuthorization
-	33, // 39: leaflow.fleet.control.v1.RefreshAuthorizationResponse.rtc_configuration:type_name -> leaflow.fleet.virtualdesktop.transport.v1.RtcConfiguration
+	33, // 39: leaflow.fleet.control.v1.RefreshAuthorizationResponse.rtc_configuration:type_name -> leaflow.fleet.transport.v1.RtcConfiguration
 	14, // 40: leaflow.fleet.control.v1.AttachViewerRequest.authorization:type_name -> leaflow.fleet.control.v1.SignedAuthorization
 	14, // 41: leaflow.fleet.control.v1.UpdateViewerAuthorizationRequest.authorization:type_name -> leaflow.fleet.control.v1.SignedAuthorization
 	0,  // 42: leaflow.fleet.control.v1.DetachViewerRequest.reason:type_name -> leaflow.fleet.control.v1.CloseReason

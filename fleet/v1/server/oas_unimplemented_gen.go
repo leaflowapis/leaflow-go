@@ -67,21 +67,22 @@ func (UnimplementedHandler) CreateGroupMember(ctx context.Context, req *CreateGr
 
 // CreateSession implements create-session operation.
 //
-// Opens a desktop session for the caller on a machine, as the caller's account, and returns once it is
-// ready. The account is created if the caller has none yet. Requires `fleet:machines.login` on the
-// machine.
+// Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
+// With `desktop` the session has a desktop; without, it offers terminals, programs, files, ports,
+// sound, devices, printers and privilege approvals. The account is created if the caller has none yet.
+// Requires `fleet:machines.login` on the machine.
 //
 // Fails with:
 //
 //   - `MACHINE_OFFLINE` when the machine is not connected;
-//   - `VIRTUALDESKTOP_UNAVAILABLE` when the machine does not run VirtualDesktop: its Agent was
-//     installed without the remote desktop feature, so `capabilities` lacks `virtualdesktop`;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer sessions, or with `desktop`, desktops;
 //   - `USER_HAS_SESSION` when the account already has a session on the machine, which
 //     `metadata.sessionId` names; connect to it instead;
-//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED`, `PAM_PERMISSION_DENIED` or
-//     `SESSION_CONFLICT` when the machine refuses the account, such as while it has not received the
-//     account yet or a local account uses its name; `PAM_PERMISSION_DENIED` carries the machine's
-//     message in `metadata.pamMessage`;
+//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+//     machine refuses the account, such as while it has not received the account yet or a local account
+//     uses its name; `PAM_PERMISSION_DENIED` carries the machine's message in `metadata.pamMessage`;
+//   - `SESSION_CONFLICT` with `desktop` when the account has a graphical session on the machine that
+//     Fleet did not open;
 //   - `DISPLAY_UNAVAILABLE` or `SESSION_START_FAILED` when the machine could not start it;
 //   - `MACHINE_TIMEOUT` when the machine did not answer in time. The session may still open; list the
 //     sessions before trying again.
@@ -99,7 +100,7 @@ func (UnimplementedHandler) CreateSession(ctx context.Context, req *CreateSessio
 // The owner of a session may operate it. Viewing another member's session requires
 // `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
 // operating it. Each further capability of the session — file transfer, the clipboard, terminals and
-// commands, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
+// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
 // requests and reading logs — is granted only with its permission; a viewer that may only watch gets
 // none of them. A ticket may ask for less: to watch only, or for some of the capabilities.
 //
@@ -295,6 +296,36 @@ func (UnimplementedHandler) ListSessionViewers(ctx context.Context, params ListS
 //
 // GET /api/v1/sessions
 func (UnimplementedHandler) ListSessions(ctx context.Context, params ListSessionsParams) (r *SessionList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RunMachineCommand implements run-machine-command operation.
+//
+// Runs one command line on the machine as the caller's account, with its login shell, and returns once
+// it exited or was killed, with its exit status and what it wrote. Pipes, redirection and `&&` work;
+// there is no terminal and no standard input. The machine admits the account through PAM as for a
+// login. The account is created if the caller has none yet. A command that fails is still a successful
+// request: its exit status is its result.
+//
+// Inside the command, `sudo` works without a prompt while the caller has `fleet:machines.admin` on the
+// machine, and refuses otherwise.
+//
+// The request is held until the command ends, at most `timeout_seconds` and a few seconds more.
+// Neither the command nor its output is hidden from the platform: do not put secrets into either.
+//
+// Requires `fleet:machines.login` on the machine.
+//
+// Fails with:
+//
+//   - `MACHINE_OFFLINE` when the machine is not connected;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.command.v1`;
+//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+//     machine refuses the account, as for opening a session;
+//   - `COMMAND_START_FAILED` when the shell could not start; nothing ran;
+//   - `MACHINE_TIMEOUT` when the machine did not answer in time. The command may have run.
+//
+// POST /api/v1/machines/{machineId}:runCommand
+func (UnimplementedHandler) RunMachineCommand(ctx context.Context, req *RunCommandRequest, params RunMachineCommandParams) (r *RunCommandResponse, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

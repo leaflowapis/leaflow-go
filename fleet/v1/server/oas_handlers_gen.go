@@ -881,21 +881,22 @@ func (s *Server) handleCreateGroupMemberRequest(args [1]string, argsEscaped bool
 
 // handleCreateSessionRequest handles create-session operation.
 //
-// Opens a desktop session for the caller on a machine, as the caller's account, and returns once it is
-// ready. The account is created if the caller has none yet. Requires `fleet:machines.login` on the
-// machine.
+// Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
+// With `desktop` the session has a desktop; without, it offers terminals, programs, files, ports,
+// sound, devices, printers and privilege approvals. The account is created if the caller has none yet.
+// Requires `fleet:machines.login` on the machine.
 //
 // Fails with:
 //
 //   - `MACHINE_OFFLINE` when the machine is not connected;
-//   - `VIRTUALDESKTOP_UNAVAILABLE` when the machine does not run VirtualDesktop: its Agent was
-//     installed without the remote desktop feature, so `capabilities` lacks `virtualdesktop`;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer sessions, or with `desktop`, desktops;
 //   - `USER_HAS_SESSION` when the account already has a session on the machine, which
 //     `metadata.sessionId` names; connect to it instead;
-//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED`, `PAM_PERMISSION_DENIED` or
-//     `SESSION_CONFLICT` when the machine refuses the account, such as while it has not received the
-//     account yet or a local account uses its name; `PAM_PERMISSION_DENIED` carries the machine's
-//     message in `metadata.pamMessage`;
+//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+//     machine refuses the account, such as while it has not received the account yet or a local account
+//     uses its name; `PAM_PERMISSION_DENIED` carries the machine's message in `metadata.pamMessage`;
+//   - `SESSION_CONFLICT` with `desktop` when the account has a graphical session on the machine that
+//     Fleet did not open;
 //   - `DISPLAY_UNAVAILABLE` or `SESSION_START_FAILED` when the machine could not start it;
 //   - `MACHINE_TIMEOUT` when the machine did not answer in time. The session may still open; list the
 //     sessions before trying again.
@@ -1104,7 +1105,7 @@ func (s *Server) handleCreateSessionRequest(args [0]string, argsEscaped bool, w 
 // The owner of a session may operate it. Viewing another member's session requires
 // `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
 // operating it. Each further capability of the session — file transfer, the clipboard, terminals and
-// commands, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
+// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
 // requests and reading logs — is granted only with its permission; a viewer that may only watch gets
 // none of them. A ticket may ask for less: to watch only, or for some of the capabilities.
 //
@@ -4816,6 +4817,242 @@ func (s *Server) handleListSessionsRequest(args [0]string, argsEscaped bool, w h
 	}
 
 	if err := encodeListSessionsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleRunMachineCommandRequest handles run-machine-command operation.
+//
+// Runs one command line on the machine as the caller's account, with its login shell, and returns once
+// it exited or was killed, with its exit status and what it wrote. Pipes, redirection and `&&` work;
+// there is no terminal and no standard input. The machine admits the account through PAM as for a
+// login. The account is created if the caller has none yet. A command that fails is still a successful
+// request: its exit status is its result.
+//
+// Inside the command, `sudo` works without a prompt while the caller has `fleet:machines.admin` on the
+// machine, and refuses otherwise.
+//
+// The request is held until the command ends, at most `timeout_seconds` and a few seconds more.
+// Neither the command nor its output is hidden from the platform: do not put secrets into either.
+//
+// Requires `fleet:machines.login` on the machine.
+//
+// Fails with:
+//
+//   - `MACHINE_OFFLINE` when the machine is not connected;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.command.v1`;
+//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+//     machine refuses the account, as for opening a session;
+//   - `COMMAND_START_FAILED` when the shell could not start; nothing ran;
+//   - `MACHINE_TIMEOUT` when the machine did not answer in time. The command may have run.
+//
+// POST /api/v1/machines/{machineId}:runCommand
+func (s *Server) handleRunMachineCommandRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("run-machine-command"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/machines/{machineId}:runCommand"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RunMachineCommandOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: RunMachineCommandOperation,
+			ID:   "run-machine-command",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, RunMachineCommandOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeRunMachineCommandParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeRunMachineCommandRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *RunCommandResponse
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    RunMachineCommandOperation,
+			OperationSummary: "Run a command",
+			OperationID:      "run-machine-command",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "machineId",
+					In:   "path",
+				}: params.MachineId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *RunCommandRequest
+			Params   = RunMachineCommandParams
+			Response = *RunCommandResponse
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackRunMachineCommandParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.RunMachineCommand(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.RunMachineCommand(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeRunMachineCommandResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
