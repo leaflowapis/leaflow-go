@@ -5387,10 +5387,13 @@ type RequestResource struct {
 	ID          string `json:"id"`
 	InputTokens int64  `json:"input_tokens"`
 	// The model named in the request.
-	ModelID         string `json:"model_id"`
-	OutputTokens    int64  `json:"output_tokens"`
-	ReasoningTokens int64  `json:"reasoning_tokens"`
-	Retries         int64  `json:"retries"`
+	ModelID string `json:"model_id"`
+	// The request operation, such as video_create or video_retrieve. Absent for historical requests where
+	// it was not recorded.
+	Operation       OptString `json:"operation"`
+	OutputTokens    int64     `json:"output_tokens"`
+	ReasoningTokens int64     `json:"reasoning_tokens"`
+	Retries         int64     `json:"retries"`
 	// Who made the request. `api_key` means one of the project's API keys and `project_token` a project
 	// access token on the OpenAI-compatible endpoints; any other value names the Leaflow service that made
 	// it on the project's behalf, such as `assistant`, and more services may appear. Null for requests
@@ -5454,6 +5457,11 @@ func (s *RequestResource) GetInputTokens() int64 {
 // GetModelID returns the value of ModelID.
 func (s *RequestResource) GetModelID() string {
 	return s.ModelID
+}
+
+// GetOperation returns the value of Operation.
+func (s *RequestResource) GetOperation() OptString {
+	return s.Operation
 }
 
 // GetOutputTokens returns the value of OutputTokens.
@@ -5559,6 +5567,11 @@ func (s *RequestResource) SetInputTokens(val int64) {
 // SetModelID sets the value of ModelID.
 func (s *RequestResource) SetModelID(val string) {
 	s.ModelID = val
+}
+
+// SetOperation sets the value of Operation.
+func (s *RequestResource) SetOperation(val OptString) {
+	s.Operation = val
 }
 
 // SetOutputTokens sets the value of OutputTokens.

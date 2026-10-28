@@ -8218,6 +8218,12 @@ func (s *RequestResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.ModelID)
 	}
 	{
+		if s.Operation.Set {
+			e.FieldStart("operation")
+			s.Operation.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("output_tokens")
 		e.Int64(s.OutputTokens)
 	}
@@ -8269,7 +8275,7 @@ func (s *RequestResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfRequestResource = [21]string{
+var jsonFieldsNameOfRequestResource = [22]string{
 	0:  "api_key_id",
 	1:  "cache_read_tokens",
 	2:  "cache_write_tokens",
@@ -8279,18 +8285,19 @@ var jsonFieldsNameOfRequestResource = [21]string{
 	6:  "id",
 	7:  "input_tokens",
 	8:  "model_id",
-	9:  "output_tokens",
-	10: "reasoning_tokens",
-	11: "retries",
-	12: "source",
-	13: "started_at",
-	14: "status",
-	15: "stream",
-	16: "upstream_request_id",
-	17: "upstream_status",
-	18: "usage_source",
-	19: "reasoning",
-	20: "media",
+	9:  "operation",
+	10: "output_tokens",
+	11: "reasoning_tokens",
+	12: "retries",
+	13: "source",
+	14: "started_at",
+	15: "status",
+	16: "stream",
+	17: "upstream_request_id",
+	18: "upstream_status",
+	19: "usage_source",
+	20: "reasoning",
+	21: "media",
 }
 
 // Decode decodes RequestResource from json.
@@ -8404,8 +8411,18 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"model_id\"")
 			}
+		case "operation":
+			if err := func() error {
+				s.Operation.Reset()
+				if err := s.Operation.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"operation\"")
+			}
 		case "output_tokens":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := d.Int64()
 				s.OutputTokens = int64(v)
@@ -8417,7 +8434,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"output_tokens\"")
 			}
 		case "reasoning_tokens":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				v, err := d.Int64()
 				s.ReasoningTokens = int64(v)
@@ -8429,7 +8446,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"reasoning_tokens\"")
 			}
 		case "retries":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				v, err := d.Int64()
 				s.Retries = int64(v)
@@ -8441,7 +8458,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"retries\"")
 			}
 		case "source":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				if err := s.Source.Decode(d); err != nil {
 					return err
@@ -8451,7 +8468,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"source\"")
 			}
 		case "started_at":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.StartedAt = v
@@ -8463,7 +8480,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"started_at\"")
 			}
 		case "status":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -8473,7 +8490,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "stream":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				v, err := d.Bool()
 				s.Stream = bool(v)
@@ -8485,7 +8502,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"stream\"")
 			}
 		case "upstream_request_id":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.UpstreamRequestID = string(v)
@@ -8497,7 +8514,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"upstream_request_id\"")
 			}
 		case "upstream_status":
-			requiredBitSet[2] |= 1 << 1
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				v, err := d.Int64()
 				s.UpstreamStatus = int64(v)
@@ -8509,7 +8526,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"upstream_status\"")
 			}
 		case "usage_source":
-			requiredBitSet[2] |= 1 << 2
+			requiredBitSet[2] |= 1 << 3
 			if err := func() error {
 				if err := s.UsageSource.Decode(d); err != nil {
 					return err
@@ -8519,7 +8536,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"usage_source\"")
 			}
 		case "reasoning":
-			requiredBitSet[2] |= 1 << 3
+			requiredBitSet[2] |= 1 << 4
 			if err := func() error {
 				if err := s.Reasoning.Decode(d); err != nil {
 					return err
@@ -8549,8 +8566,8 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [3]uint8{
 		0b11111111,
-		0b11111111,
-		0b00001111,
+		0b11111101,
+		0b00011111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
