@@ -8,10 +8,19 @@ import (
 
 // Handler handles operations described by OpenAPI v3 specification.
 type Handler interface {
+	// CreateAccountRealtimeTicket implements create-account-realtime-ticket operation.
+	//
+	// Issues a short-lived ticket for a caller who has not selected a project, or belongs to none. Only
+	// platform events are accepted, and the ticket covers only messages sent to the caller outside any
+	// project or to no recipient. The ticket cannot publish. Its `client_id_prefix` is `user.{user_id}.`.
+	// The ticket lives no longer than the token it was created with.
+	//
+	// POST /api/v1/account/realtime/tickets
+	CreateAccountRealtimeTicket(ctx context.Context, req *RealtimeTicketRequest) (CreateAccountRealtimeTicketRes, error)
 	// CreateEvent implements create-event operation.
 	//
-	// Creates a project event with its first version. The name is unique within the project. The first
-	// segment of the name is the event's namespace and must not be a platform namespace.
+	// Creates an event with its first version in one of the project's namespaces. The first segment of the
+	// name is that namespace, followed by at least a resource and an action.
 	//
 	// POST /api/v1/events
 	CreateEvent(ctx context.Context, req *CreateEventRequest) (CreateEventRes, error)
@@ -23,13 +32,32 @@ type Handler interface {
 	//
 	// POST /api/v1/events/{eventName}/versions
 	CreateEventVersion(ctx context.Context, req *CreateVersionRequest, params CreateEventVersionParams) (CreateEventVersionRes, error)
+	// CreateNamespace implements create-namespace operation.
+	//
+	// Creates a namespace in the current project. Its name is a single segment, unique within the project;
+	// names reserved for the platform are rejected.
+	//
+	// POST /api/v1/namespaces
+	CreateNamespace(ctx context.Context, req *CreateNamespaceRequest) (CreateNamespaceRes, error)
 	// CreateRealtimeTicket implements create-realtime-ticket operation.
 	//
-	// Issues a short-lived ticket for a realtime connection. Connect to `url`, pass the ticket, then
-	// authenticate the connection with a scoped token. A ticket is not a bearer token for other APIs.
+	// Issues a short-lived ticket for the named events in the current project. For an event defined by the
+	// project, the ticket covers messages sent to the members of the project and messages sent to the
+	// caller within it. For a platform event, it also covers messages sent to the caller outside any
+	// project and messages sent to no recipient; messages sent within the project are covered as far as
+	// the caller's current permissions allow, which may be limited to some resources or to none. The
+	// caller must still be a member of the project. The ticket lives no longer than the scoped token it
+	// was created with. It is not a bearer token for other APIs.
 	//
 	// POST /api/v1/realtime/tickets
-	CreateRealtimeTicket(ctx context.Context) (CreateRealtimeTicketRes, error)
+	CreateRealtimeTicket(ctx context.Context, req *RealtimeTicketRequest) (CreateRealtimeTicketRes, error)
+	// DeleteNamespace implements delete-namespace operation.
+	//
+	// Deletes one of the project's namespaces together with every event and version in it. Publishing or
+	// subscribing to those events fails from then on. Platform namespaces cannot be deleted.
+	//
+	// DELETE /api/v1/namespaces/{namespaceName}
+	DeleteNamespace(ctx context.Context, params DeleteNamespaceParams) (DeleteNamespaceRes, error)
 	// GetEvent implements get-event operation.
 	//
 	// Returns the event and every version, newest first.
@@ -42,20 +70,34 @@ type Handler interface {
 	//
 	// GET /api/v1/events/{eventName}/versions/{version}
 	GetEventVersion(ctx context.Context, params GetEventVersionParams) (GetEventVersionRes, error)
+	// GetNamespace implements get-namespace operation.
+	//
+	// Returns a platform namespace or one of the project's own.
+	//
+	// GET /api/v1/namespaces/{namespaceName}
+	GetNamespace(ctx context.Context, params GetNamespaceParams) (GetNamespaceRes, error)
 	// ListEvents implements list-events operation.
 	//
-	// Returns the global events visible to the project and the project's own events. Ordered by name.
+	// Returns the platform events and the project's own events. Ordered by name.
 	//
 	// GET /api/v1/events
 	ListEvents(ctx context.Context, params ListEventsParams) (ListEventsRes, error)
-	// PublishEvent implements publish-event operation.
+	// ListNamespaces implements list-namespaces operation.
 	//
-	// Validates the payload against the selected version and publishes the message. The response carries
-	// the message identity; it does not mean a consumer received it. A version of zero selects the highest
-	// active version.
+	// Returns the platform namespaces followed by the project's own, each group ordered by name. Archived
+	// namespaces are omitted unless `include_archived` is true.
 	//
-	// POST /api/v1/events/{eventName}:publish
-	PublishEvent(ctx context.Context, req *PublishRequest, params PublishEventParams) (PublishEventRes, error)
+	// GET /api/v1/namespaces
+	ListNamespaces(ctx context.Context, params ListNamespacesParams) (ListNamespacesRes, error)
+	// PublishEvents implements publish-events operation.
+	//
+	// Validates every message against its selected version and publishes the batch. If any message is
+	// rejected, none is published. The response carries the identity of each message in request order; it
+	// does not mean a consumer received it. Only events defined by the current project can be published
+	// here.
+	//
+	// POST /api/v1/events:publish
+	PublishEvents(ctx context.Context, req *PublishRequest) (PublishEventsRes, error)
 	// UpdateEvent implements update-event operation.
 	//
 	// Changes the description, tags, or status. Only the fields present in the request are changed. An
@@ -63,6 +105,14 @@ type Handler interface {
 	//
 	// PATCH /api/v1/events/{eventName}
 	UpdateEvent(ctx context.Context, req *UpdateEventRequest, params UpdateEventParams) (UpdateEventRes, error)
+	// UpdateNamespace implements update-namespace operation.
+	//
+	// Changes the description or status of one of the project's namespaces. Only the fields present in the
+	// request are changed. While a namespace is archived, its events cannot be created, published or
+	// subscribed to; restoring it lifts that. Platform namespaces cannot be changed.
+	//
+	// PATCH /api/v1/namespaces/{namespaceName}
+	UpdateNamespace(ctx context.Context, req *UpdateNamespaceRequest, params UpdateNamespaceParams) (UpdateNamespaceRes, error)
 }
 
 // Server implements http server based on OpenAPI v3 specification and

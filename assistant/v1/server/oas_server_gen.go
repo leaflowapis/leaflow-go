@@ -92,22 +92,6 @@ type Handler interface {
 	//
 	// POST /api/v1/folders
 	CreateFolder(ctx context.Context, req *CreateFolderRequestBody) (*FolderResource, error)
-	// CreateRealtimeTicket implements create-realtime-ticket operation.
-	//
-	// Returns the address and a short-lived ticket for the realtime WebSocket. Open
-	// `{url}?ticket={ticket}`; the ticket stands in for the bearer token, which a browser cannot set on a
-	// WebSocket. One connection carries every subscription of a client.
-	//
-	// Messages are JSON text frames. The client sends `RealtimeClientMessage` and receives
-	// `RealtimeServerMessage`. Subscribe to `workspace` for every conversation, folder and task of the
-	// caller in this project, and to `thread:{id}` for the transcript of one conversation. A transcript
-	// subscription takes the `streamCursor` from list-thread-items and replays what was written after it;
-	// when the cursor is too old the server sends `resync` and the client reads the items again.
-	//
-	// Reconnect with a new ticket after the connection closes. Ping at least every 30 seconds.
-	//
-	// POST /api/v1/realtime/tickets
-	CreateRealtimeTicket(ctx context.Context) (*RealtimeTicketResource, error)
 	// CreateTask implements create-task operation.
 	//
 	// A task does something on a trigger and reports to a conversation. Its action either sends a prompt
@@ -438,14 +422,6 @@ type Handler interface {
 	//
 	// POST /api/v1/folders/{folder}:move
 	MoveFolder(ctx context.Context, req *MoveFolderRequestBody, params MoveFolderParams) (*FolderResource, error)
-	// OpenRealtime implements open-realtime operation.
-	//
-	// Upgrades to a WebSocket. The ticket from create-realtime-ticket authenticates the connection; a
-	// missing, expired or foreign ticket closes it with code 4401. The 200 response documents the message
-	// a client receives on the socket; the endpoint never answers with a plain HTTP body.
-	//
-	// GET /api/v1/realtime
-	OpenRealtime(ctx context.Context, params OpenRealtimeParams) (*RealtimeExchange, error)
 	// PauseTask implements pause-task operation.
 	//
 	// Stops future runs from its trigger. A run in progress continues. Pausing a paused task succeeds.
@@ -479,6 +455,13 @@ type Handler interface {
 	//
 	// PUT /api/v1/uploads/{upload}/parts/{part}
 	PutUploadPart(ctx context.Context, req PutUploadPartReq, params PutUploadPartParams) (*UploadPartResource, error)
+	// RenewThreadPresence implements renew-thread-presence operation.
+	//
+	// Renews an already announced browser client while the thread is open. It does not create or replace
+	// the client catalogue.
+	//
+	// POST /api/v1/threads/{thread}/presence
+	RenewThreadPresence(ctx context.Context, params RenewThreadPresenceParams) error
 	// ResumeTask implements resume-task operation.
 	//
 	// Lets its trigger start runs again. Missed runs within `catchupSeconds` are started. Resuming an

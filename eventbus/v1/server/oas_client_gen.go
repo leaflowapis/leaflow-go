@@ -29,10 +29,19 @@ func trimTrailingSlashes(u *url.URL) {
 
 // Invoker invokes operations described by OpenAPI v3 specification.
 type Invoker interface {
+	// CreateAccountRealtimeTicket invokes create-account-realtime-ticket operation.
+	//
+	// Issues a short-lived ticket for a caller who has not selected a project, or belongs to none. Only
+	// platform events are accepted, and the ticket covers only messages sent to the caller outside any
+	// project or to no recipient. The ticket cannot publish. Its `client_id_prefix` is `user.{user_id}.`.
+	// The ticket lives no longer than the token it was created with.
+	//
+	// POST /api/v1/account/realtime/tickets
+	CreateAccountRealtimeTicket(ctx context.Context, request *RealtimeTicketRequest) (CreateAccountRealtimeTicketRes, error)
 	// CreateEvent invokes create-event operation.
 	//
-	// Creates a project event with its first version. The name is unique within the project. The first
-	// segment of the name is the event's namespace and must not be a platform namespace.
+	// Creates an event with its first version in one of the project's namespaces. The first segment of the
+	// name is that namespace, followed by at least a resource and an action.
 	//
 	// POST /api/v1/events
 	CreateEvent(ctx context.Context, request *CreateEventRequest) (CreateEventRes, error)
@@ -44,13 +53,32 @@ type Invoker interface {
 	//
 	// POST /api/v1/events/{eventName}/versions
 	CreateEventVersion(ctx context.Context, request *CreateVersionRequest, params CreateEventVersionParams) (CreateEventVersionRes, error)
+	// CreateNamespace invokes create-namespace operation.
+	//
+	// Creates a namespace in the current project. Its name is a single segment, unique within the project;
+	// names reserved for the platform are rejected.
+	//
+	// POST /api/v1/namespaces
+	CreateNamespace(ctx context.Context, request *CreateNamespaceRequest) (CreateNamespaceRes, error)
 	// CreateRealtimeTicket invokes create-realtime-ticket operation.
 	//
-	// Issues a short-lived ticket for a realtime connection. Connect to `url`, pass the ticket, then
-	// authenticate the connection with a scoped token. A ticket is not a bearer token for other APIs.
+	// Issues a short-lived ticket for the named events in the current project. For an event defined by the
+	// project, the ticket covers messages sent to the members of the project and messages sent to the
+	// caller within it. For a platform event, it also covers messages sent to the caller outside any
+	// project and messages sent to no recipient; messages sent within the project are covered as far as
+	// the caller's current permissions allow, which may be limited to some resources or to none. The
+	// caller must still be a member of the project. The ticket lives no longer than the scoped token it
+	// was created with. It is not a bearer token for other APIs.
 	//
 	// POST /api/v1/realtime/tickets
-	CreateRealtimeTicket(ctx context.Context) (CreateRealtimeTicketRes, error)
+	CreateRealtimeTicket(ctx context.Context, request *RealtimeTicketRequest) (CreateRealtimeTicketRes, error)
+	// DeleteNamespace invokes delete-namespace operation.
+	//
+	// Deletes one of the project's namespaces together with every event and version in it. Publishing or
+	// subscribing to those events fails from then on. Platform namespaces cannot be deleted.
+	//
+	// DELETE /api/v1/namespaces/{namespaceName}
+	DeleteNamespace(ctx context.Context, params DeleteNamespaceParams) (DeleteNamespaceRes, error)
 	// GetEvent invokes get-event operation.
 	//
 	// Returns the event and every version, newest first.
@@ -63,20 +91,34 @@ type Invoker interface {
 	//
 	// GET /api/v1/events/{eventName}/versions/{version}
 	GetEventVersion(ctx context.Context, params GetEventVersionParams) (GetEventVersionRes, error)
+	// GetNamespace invokes get-namespace operation.
+	//
+	// Returns a platform namespace or one of the project's own.
+	//
+	// GET /api/v1/namespaces/{namespaceName}
+	GetNamespace(ctx context.Context, params GetNamespaceParams) (GetNamespaceRes, error)
 	// ListEvents invokes list-events operation.
 	//
-	// Returns the global events visible to the project and the project's own events. Ordered by name.
+	// Returns the platform events and the project's own events. Ordered by name.
 	//
 	// GET /api/v1/events
 	ListEvents(ctx context.Context, params ListEventsParams) (ListEventsRes, error)
-	// PublishEvent invokes publish-event operation.
+	// ListNamespaces invokes list-namespaces operation.
 	//
-	// Validates the payload against the selected version and publishes the message. The response carries
-	// the message identity; it does not mean a consumer received it. A version of zero selects the highest
-	// active version.
+	// Returns the platform namespaces followed by the project's own, each group ordered by name. Archived
+	// namespaces are omitted unless `include_archived` is true.
 	//
-	// POST /api/v1/events/{eventName}:publish
-	PublishEvent(ctx context.Context, request *PublishRequest, params PublishEventParams) (PublishEventRes, error)
+	// GET /api/v1/namespaces
+	ListNamespaces(ctx context.Context, params ListNamespacesParams) (ListNamespacesRes, error)
+	// PublishEvents invokes publish-events operation.
+	//
+	// Validates every message against its selected version and publishes the batch. If any message is
+	// rejected, none is published. The response carries the identity of each message in request order; it
+	// does not mean a consumer received it. Only events defined by the current project can be published
+	// here.
+	//
+	// POST /api/v1/events:publish
+	PublishEvents(ctx context.Context, request *PublishRequest) (PublishEventsRes, error)
 	// UpdateEvent invokes update-event operation.
 	//
 	// Changes the description, tags, or status. Only the fields present in the request are changed. An
@@ -84,6 +126,14 @@ type Invoker interface {
 	//
 	// PATCH /api/v1/events/{eventName}
 	UpdateEvent(ctx context.Context, request *UpdateEventRequest, params UpdateEventParams) (UpdateEventRes, error)
+	// UpdateNamespace invokes update-namespace operation.
+	//
+	// Changes the description or status of one of the project's namespaces. Only the fields present in the
+	// request are changed. While a namespace is archived, its events cannot be created, published or
+	// subscribed to; restoring it lifts that. Platform namespaces cannot be changed.
+	//
+	// PATCH /api/v1/namespaces/{namespaceName}
+	UpdateNamespace(ctx context.Context, request *UpdateNamespaceRequest, params UpdateNamespaceParams) (UpdateNamespaceRes, error)
 }
 
 // Client implements OAS client.
@@ -127,10 +177,138 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 	return u
 }
 
+// CreateAccountRealtimeTicket invokes create-account-realtime-ticket operation.
+//
+// Issues a short-lived ticket for a caller who has not selected a project, or belongs to none. Only
+// platform events are accepted, and the ticket covers only messages sent to the caller outside any
+// project or to no recipient. The ticket cannot publish. Its `client_id_prefix` is `user.{user_id}.`.
+// The ticket lives no longer than the token it was created with.
+//
+// POST /api/v1/account/realtime/tickets
+func (c *Client) CreateAccountRealtimeTicket(ctx context.Context, request *RealtimeTicketRequest) (CreateAccountRealtimeTicketRes, error) {
+	res, err := c.sendCreateAccountRealtimeTicket(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateAccountRealtimeTicket(ctx context.Context, request *RealtimeTicketRequest) (res CreateAccountRealtimeTicketRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-account-realtime-ticket"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/account/realtime/tickets"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateAccountRealtimeTicketOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/account/realtime/tickets"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateAccountRealtimeTicketRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, CreateAccountRealtimeTicketOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateAccountRealtimeTicketResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // CreateEvent invokes create-event operation.
 //
-// Creates a project event with its first version. The name is unique within the project. The first
-// segment of the name is the event's namespace and must not be a platform namespace.
+// Creates an event with its first version in one of the project's namespaces. The first segment of the
+// name is that namespace, followed by at least a resource and an action.
 //
 // POST /api/v1/events
 func (c *Client) CreateEvent(ctx context.Context, request *CreateEventRequest) (CreateEventRes, error) {
@@ -399,18 +577,158 @@ func (c *Client) sendCreateEventVersion(ctx context.Context, request *CreateVers
 	return result, nil
 }
 
-// CreateRealtimeTicket invokes create-realtime-ticket operation.
+// CreateNamespace invokes create-namespace operation.
 //
-// Issues a short-lived ticket for a realtime connection. Connect to `url`, pass the ticket, then
-// authenticate the connection with a scoped token. A ticket is not a bearer token for other APIs.
+// Creates a namespace in the current project. Its name is a single segment, unique within the project;
+// names reserved for the platform are rejected.
 //
-// POST /api/v1/realtime/tickets
-func (c *Client) CreateRealtimeTicket(ctx context.Context) (CreateRealtimeTicketRes, error) {
-	res, err := c.sendCreateRealtimeTicket(ctx)
+// POST /api/v1/namespaces
+func (c *Client) CreateNamespace(ctx context.Context, request *CreateNamespaceRequest) (CreateNamespaceRes, error) {
+	res, err := c.sendCreateNamespace(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateRealtimeTicket(ctx context.Context) (res CreateRealtimeTicketRes, err error) {
+func (c *Client) sendCreateNamespace(ctx context.Context, request *CreateNamespaceRequest) (res CreateNamespaceRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-namespace"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/namespaces"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateNamespaceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/namespaces"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateNamespaceRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreateNamespaceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateNamespaceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateRealtimeTicket invokes create-realtime-ticket operation.
+//
+// Issues a short-lived ticket for the named events in the current project. For an event defined by the
+// project, the ticket covers messages sent to the members of the project and messages sent to the
+// caller within it. For a platform event, it also covers messages sent to the caller outside any
+// project and messages sent to no recipient; messages sent within the project are covered as far as
+// the caller's current permissions allow, which may be limited to some resources or to none. The
+// caller must still be a member of the project. The ticket lives no longer than the scoped token it
+// was created with. It is not a bearer token for other APIs.
+//
+// POST /api/v1/realtime/tickets
+func (c *Client) CreateRealtimeTicket(ctx context.Context, request *RealtimeTicketRequest) (CreateRealtimeTicketRes, error) {
+	res, err := c.sendCreateRealtimeTicket(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateRealtimeTicket(ctx context.Context, request *RealtimeTicketRequest) (res CreateRealtimeTicketRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-realtime-ticket"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -455,6 +773,9 @@ func (c *Client) sendCreateRealtimeTicket(ctx context.Context) (res CreateRealti
 	r, err := ht.NewRequest(ctx, "POST", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateRealtimeTicketRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
 	}
 
 	{
@@ -506,6 +827,138 @@ func (c *Client) sendCreateRealtimeTicket(ctx context.Context) (res CreateRealti
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateRealtimeTicketResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeleteNamespace invokes delete-namespace operation.
+//
+// Deletes one of the project's namespaces together with every event and version in it. Publishing or
+// subscribing to those events fails from then on. Platform namespaces cannot be deleted.
+//
+// DELETE /api/v1/namespaces/{namespaceName}
+func (c *Client) DeleteNamespace(ctx context.Context, params DeleteNamespaceParams) (DeleteNamespaceRes, error) {
+	res, err := c.sendDeleteNamespace(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeleteNamespace(ctx context.Context, params DeleteNamespaceParams) (res DeleteNamespaceRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-namespace"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/namespaces/{namespaceName}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteNamespaceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/namespaces/"
+	{
+		// Encode "namespaceName" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "namespaceName",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.NamespaceName))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, DeleteNamespaceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteNamespaceResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -794,9 +1247,140 @@ func (c *Client) sendGetEventVersion(ctx context.Context, params GetEventVersion
 	return result, nil
 }
 
+// GetNamespace invokes get-namespace operation.
+//
+// Returns a platform namespace or one of the project's own.
+//
+// GET /api/v1/namespaces/{namespaceName}
+func (c *Client) GetNamespace(ctx context.Context, params GetNamespaceParams) (GetNamespaceRes, error) {
+	res, err := c.sendGetNamespace(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetNamespace(ctx context.Context, params GetNamespaceParams) (res GetNamespaceRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-namespace"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/namespaces/{namespaceName}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetNamespaceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/namespaces/"
+	{
+		// Encode "namespaceName" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "namespaceName",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.NamespaceName))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetNamespaceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetNamespaceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListEvents invokes list-events operation.
 //
-// Returns the global events visible to the project and the project's own events. Ordered by name.
+// Returns the platform events and the project's own events. Ordered by name.
 //
 // GET /api/v1/events
 func (c *Client) ListEvents(ctx context.Context, params ListEventsParams) (ListEventsRes, error) {
@@ -996,32 +1580,22 @@ func (c *Client) sendListEvents(ctx context.Context, params ListEventsParams) (r
 	return result, nil
 }
 
-// PublishEvent invokes publish-event operation.
+// ListNamespaces invokes list-namespaces operation.
 //
-// Validates the payload against the selected version and publishes the message. The response carries
-// the message identity; it does not mean a consumer received it. A version of zero selects the highest
-// active version.
+// Returns the platform namespaces followed by the project's own, each group ordered by name. Archived
+// namespaces are omitted unless `include_archived` is true.
 //
-// POST /api/v1/events/{eventName}:publish
-func (c *Client) PublishEvent(ctx context.Context, request *PublishRequest, params PublishEventParams) (PublishEventRes, error) {
-	res, err := c.sendPublishEvent(ctx, request, params)
+// GET /api/v1/namespaces
+func (c *Client) ListNamespaces(ctx context.Context, params ListNamespacesParams) (ListNamespacesRes, error) {
+	res, err := c.sendListNamespaces(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendPublishEvent(ctx context.Context, request *PublishRequest, params PublishEventParams) (res PublishEventRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
+func (c *Client) sendListNamespaces(ctx context.Context, params ListNamespacesParams) (res ListNamespacesRes, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("publish-event"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/events/{eventName}:publish"),
+		otelogen.OperationID("list-namespaces"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/namespaces"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1037,7 +1611,7 @@ func (c *Client) sendPublishEvent(ctx context.Context, request *PublishRequest, 
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, PublishEventOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListNamespacesOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -1054,36 +1628,86 @@ func (c *Client) sendPublishEvent(ctx context.Context, request *PublishRequest, 
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/events/"
-	{
-		// Encode "eventName" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "eventName",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.EventName))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = ":publish"
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/namespaces"
 	uri.AddPathParts(u, pathParts[:]...)
 
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "keyword" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "keyword",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Keyword.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "include_archived" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "include_archived",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.IncludeArchived.Get(); ok {
+				return e.EncodeValue(conv.BoolToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
+	r, err := ht.NewRequest(ctx, "GET", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodePublishEventRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
 	}
 
 	{
@@ -1091,7 +1715,7 @@ func (c *Client) sendPublishEvent(ctx context.Context, request *PublishRequest, 
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, PublishEventOperation, r); {
+			switch err := c.securityBearerAuth(ctx, ListNamespacesOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -1134,7 +1758,135 @@ func (c *Client) sendPublishEvent(ctx context.Context, request *PublishRequest, 
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodePublishEventResponse(resp)
+	result, err := decodeListNamespacesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// PublishEvents invokes publish-events operation.
+//
+// Validates every message against its selected version and publishes the batch. If any message is
+// rejected, none is published. The response carries the identity of each message in request order; it
+// does not mean a consumer received it. Only events defined by the current project can be published
+// here.
+//
+// POST /api/v1/events:publish
+func (c *Client) PublishEvents(ctx context.Context, request *PublishRequest) (PublishEventsRes, error) {
+	res, err := c.sendPublishEvents(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendPublishEvents(ctx context.Context, request *PublishRequest) (res PublishEventsRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("publish-events"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/events:publish"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, PublishEventsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/events:publish"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodePublishEventsRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, PublishEventsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodePublishEventsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1279,6 +2031,151 @@ func (c *Client) sendUpdateEvent(ctx context.Context, request *UpdateEventReques
 
 	stage = "DecodeResponse"
 	result, err := decodeUpdateEventResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateNamespace invokes update-namespace operation.
+//
+// Changes the description or status of one of the project's namespaces. Only the fields present in the
+// request are changed. While a namespace is archived, its events cannot be created, published or
+// subscribed to; restoring it lifts that. Platform namespaces cannot be changed.
+//
+// PATCH /api/v1/namespaces/{namespaceName}
+func (c *Client) UpdateNamespace(ctx context.Context, request *UpdateNamespaceRequest, params UpdateNamespaceParams) (UpdateNamespaceRes, error) {
+	res, err := c.sendUpdateNamespace(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateNamespace(ctx context.Context, request *UpdateNamespaceRequest, params UpdateNamespaceParams) (res UpdateNamespaceRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-namespace"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/namespaces/{namespaceName}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateNamespaceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/namespaces/"
+	{
+		// Encode "namespaceName" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "namespaceName",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.NamespaceName))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateNamespaceRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, UpdateNamespaceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateNamespaceResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

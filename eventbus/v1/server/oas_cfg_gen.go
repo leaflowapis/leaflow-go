@@ -18,6 +18,8 @@ import (
 )
 
 var regexMap = map[string]ogenregex.Regexp{
+	"^[a-z](?:[a-z0-9_]*[a-z0-9])?$":                                        ogenregex.MustCompile("^[a-z](?:[a-z0-9_]*[a-z0-9])?$"),
+	"^[a-z](?:[a-z0-9_]*[a-z0-9])?(?:\\.[a-z](?:[a-z0-9_]*[a-z0-9])?)*$":    ogenregex.MustCompile("^[a-z](?:[a-z0-9_]*[a-z0-9])?(?:\\.[a-z](?:[a-z0-9_]*[a-z0-9])?)*$"),
 	"^[a-z](?:[a-z0-9_]*[a-z0-9])?(?:\\.[a-z](?:[a-z0-9_]*[a-z0-9])?){2,}$": ogenregex.MustCompile("^[a-z](?:[a-z0-9_]*[a-z0-9])?(?:\\.[a-z](?:[a-z0-9_]*[a-z0-9])?){2,}$"),
 }
 var (

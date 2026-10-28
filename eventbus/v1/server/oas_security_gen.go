@@ -13,6 +13,11 @@ import (
 
 // SecurityHandler is handler for security parameters.
 type SecurityHandler interface {
+	// HandleAccessTokenAuth handles accessTokenAuth security.
+	// The access token issued by auth.leaflow.net. It states who the caller is and names no project.
+	//
+	// Use it to list the projects the caller belongs to and to obtain a scoped token.
+	HandleAccessTokenAuth(ctx context.Context, operationName OperationName, t AccessTokenAuth) (context.Context, error)
 	// HandleBearerAuth handles bearerAuth security.
 	// A scoped token issued by IAM. Sign in at auth.leaflow.net to obtain an access token, then exchange
 	// it for a scoped token (`POST /account/v1/projects/{projectId}/scoped-tokens`).
@@ -42,16 +47,47 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 	return "", false
 }
 
+// operationRolesAccessTokenAuth is a private map storing roles per operation.
+var operationRolesAccessTokenAuth = map[string][]string{
+	CreateAccountRealtimeTicketOperation: []string{},
+}
+
+// GetRolesForAccessTokenAuth returns the required roles for the given operation.
+//
+// This is useful for authorization scenarios where you need to know which roles
+// are required for an operation.
+//
+// Example:
+//
+//	requiredRoles := GetRolesForAccessTokenAuth(AddPetOperation)
+//
+// Returns nil if the operation has no role requirements or if the operation is unknown.
+func GetRolesForAccessTokenAuth(operation string) []string {
+	roles, ok := operationRolesAccessTokenAuth[operation]
+	if !ok {
+		return nil
+	}
+	// Return a copy to prevent external modification
+	result := make([]string, len(roles))
+	copy(result, roles)
+	return result
+}
+
 // operationRolesBearerAuth is a private map storing roles per operation.
 var operationRolesBearerAuth = map[string][]string{
 	CreateEventOperation:          []string{},
 	CreateEventVersionOperation:   []string{},
+	CreateNamespaceOperation:      []string{},
 	CreateRealtimeTicketOperation: []string{},
+	DeleteNamespaceOperation:      []string{},
 	GetEventOperation:             []string{},
 	GetEventVersionOperation:      []string{},
+	GetNamespaceOperation:         []string{},
 	ListEventsOperation:           []string{},
-	PublishEventOperation:         []string{},
+	ListNamespacesOperation:       []string{},
+	PublishEventsOperation:        []string{},
 	UpdateEventOperation:          []string{},
+	UpdateNamespaceOperation:      []string{},
 }
 
 // GetRolesForBearerAuth returns the required roles for the given operation.
@@ -75,6 +111,23 @@ func GetRolesForBearerAuth(operation string) []string {
 	return result
 }
 
+func (s *Server) securityAccessTokenAuth(ctx context.Context, operationName OperationName, req *http.Request) (context.Context, bool, error) {
+	var t AccessTokenAuth
+	token, ok := findAuthorization(req.Header, "Bearer")
+	if !ok {
+		return ctx, false, nil
+	}
+	t.Token = token
+	t.Roles = operationRolesAccessTokenAuth[operationName]
+	rctx, err := s.sec.HandleAccessTokenAuth(ctx, operationName, t)
+	if errors.Is(err, ogenerrors.ErrSkipServerSecurity) {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, false, err
+	}
+	return rctx, true, err
+}
+
 func (s *Server) securityBearerAuth(ctx context.Context, operationName OperationName, req *http.Request) (context.Context, bool, error) {
 	var t BearerAuth
 	token, ok := findAuthorization(req.Header, "Bearer")
@@ -94,6 +147,11 @@ func (s *Server) securityBearerAuth(ctx context.Context, operationName Operation
 
 // SecuritySource is provider of security values (tokens, passwords, etc.).
 type SecuritySource interface {
+	// AccessTokenAuth provides accessTokenAuth security value.
+	// The access token issued by auth.leaflow.net. It states who the caller is and names no project.
+	//
+	// Use it to list the projects the caller belongs to and to obtain a scoped token.
+	AccessTokenAuth(ctx context.Context, operationName OperationName) (AccessTokenAuth, error)
 	// BearerAuth provides bearerAuth security value.
 	// A scoped token issued by IAM. Sign in at auth.leaflow.net to obtain an access token, then exchange
 	// it for a scoped token (`POST /account/v1/projects/{projectId}/scoped-tokens`).
@@ -108,6 +166,14 @@ type SecuritySource interface {
 	BearerAuth(ctx context.Context, operationName OperationName) (BearerAuth, error)
 }
 
+func (s *Client) securityAccessTokenAuth(ctx context.Context, operationName OperationName, req *http.Request) error {
+	t, err := s.sec.AccessTokenAuth(ctx, operationName)
+	if err != nil {
+		return errors.Wrap(err, "security source \"AccessTokenAuth\"")
+	}
+	req.Header.Set("Authorization", "Bearer "+t.Token)
+	return nil
+}
 func (s *Client) securityBearerAuth(ctx context.Context, operationName OperationName, req *http.Request) error {
 	t, err := s.sec.BearerAuth(ctx, operationName)
 	if err != nil {

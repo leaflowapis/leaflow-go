@@ -3,13 +3,37 @@
 package eventbusv1server
 
 import (
-	"net/url"
 	"time"
 
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
 	"github.com/google/uuid"
 )
+
+type AccessTokenAuth struct {
+	Token string
+	Roles []string
+}
+
+// GetToken returns the value of Token.
+func (s *AccessTokenAuth) GetToken() string {
+	return s.Token
+}
+
+// GetRoles returns the value of Roles.
+func (s *AccessTokenAuth) GetRoles() []string {
+	return s.Roles
+}
+
+// SetToken sets the value of Token.
+func (s *AccessTokenAuth) SetToken(val string) {
+	s.Token = val
+}
+
+// SetRoles sets the value of Roles.
+func (s *AccessTokenAuth) SetRoles(val []string) {
+	s.Roles = val
+}
 
 type BearerAuth struct {
 	Token string
@@ -36,6 +60,26 @@ func (s *BearerAuth) SetRoles(val []string) {
 	s.Roles = val
 }
 
+type CreateAccountRealtimeTicketBadRequest Error
+
+func (*CreateAccountRealtimeTicketBadRequest) createAccountRealtimeTicketRes() {}
+
+type CreateAccountRealtimeTicketForbidden Error
+
+func (*CreateAccountRealtimeTicketForbidden) createAccountRealtimeTicketRes() {}
+
+type CreateAccountRealtimeTicketNotFound Error
+
+func (*CreateAccountRealtimeTicketNotFound) createAccountRealtimeTicketRes() {}
+
+type CreateAccountRealtimeTicketServiceUnavailable Error
+
+func (*CreateAccountRealtimeTicketServiceUnavailable) createAccountRealtimeTicketRes() {}
+
+type CreateAccountRealtimeTicketUnauthorized Error
+
+func (*CreateAccountRealtimeTicketUnauthorized) createAccountRealtimeTicketRes() {}
+
 type CreateEventBadRequest Error
 
 func (*CreateEventBadRequest) createEventRes() {}
@@ -47,6 +91,10 @@ func (*CreateEventConflict) createEventRes() {}
 type CreateEventForbidden Error
 
 func (*CreateEventForbidden) createEventRes() {}
+
+type CreateEventNotFound Error
+
+func (*CreateEventNotFound) createEventRes() {}
 
 // Ref: #/components/schemas/CreateEventRequest
 type CreateEventRequest struct {
@@ -156,9 +204,64 @@ type CreateEventVersionUnauthorized Error
 
 func (*CreateEventVersionUnauthorized) createEventVersionRes() {}
 
+type CreateNamespaceBadRequest Error
+
+func (*CreateNamespaceBadRequest) createNamespaceRes() {}
+
+type CreateNamespaceConflict Error
+
+func (*CreateNamespaceConflict) createNamespaceRes() {}
+
+type CreateNamespaceForbidden Error
+
+func (*CreateNamespaceForbidden) createNamespaceRes() {}
+
+// Ref: #/components/schemas/CreateNamespaceRequest
+type CreateNamespaceRequest struct {
+	// A single segment of lowercase letters, digits and underscores, starting with a letter.
+	Name        string    `json:"name"`
+	Description OptString `json:"description"`
+}
+
+// GetName returns the value of Name.
+func (s *CreateNamespaceRequest) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *CreateNamespaceRequest) GetDescription() OptString {
+	return s.Description
+}
+
+// SetName sets the value of Name.
+func (s *CreateNamespaceRequest) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *CreateNamespaceRequest) SetDescription(val OptString) {
+	s.Description = val
+}
+
+type CreateNamespaceServiceUnavailable Error
+
+func (*CreateNamespaceServiceUnavailable) createNamespaceRes() {}
+
+type CreateNamespaceUnauthorized Error
+
+func (*CreateNamespaceUnauthorized) createNamespaceRes() {}
+
+type CreateRealtimeTicketBadRequest Error
+
+func (*CreateRealtimeTicketBadRequest) createRealtimeTicketRes() {}
+
 type CreateRealtimeTicketForbidden Error
 
 func (*CreateRealtimeTicketForbidden) createRealtimeTicketRes() {}
+
+type CreateRealtimeTicketNotFound Error
+
+func (*CreateRealtimeTicketNotFound) createRealtimeTicketRes() {}
 
 type CreateRealtimeTicketServiceUnavailable Error
 
@@ -231,6 +334,31 @@ func (s *CreateVersionRequestSchema) init() CreateVersionRequestSchema {
 	}
 	return m
 }
+
+type DeleteNamespaceConflict Error
+
+func (*DeleteNamespaceConflict) deleteNamespaceRes() {}
+
+type DeleteNamespaceForbidden Error
+
+func (*DeleteNamespaceForbidden) deleteNamespaceRes() {}
+
+// DeleteNamespaceNoContent is response for DeleteNamespace operation.
+type DeleteNamespaceNoContent struct{}
+
+func (*DeleteNamespaceNoContent) deleteNamespaceRes() {}
+
+type DeleteNamespaceNotFound Error
+
+func (*DeleteNamespaceNotFound) deleteNamespaceRes() {}
+
+type DeleteNamespaceServiceUnavailable Error
+
+func (*DeleteNamespaceServiceUnavailable) deleteNamespaceRes() {}
+
+type DeleteNamespaceUnauthorized Error
+
+func (*DeleteNamespaceUnauthorized) deleteNamespaceRes() {}
 
 // A failed request. The envelope follows the Google REST error format: `code` is the HTTP status,
 // `status` is its canonical name, and `reason` is the stable machine-readable code that identifies the
@@ -374,7 +502,9 @@ func (s *ErrorStatusMetadata) init() ErrorStatusMetadata {
 type EventDetail struct {
 	// The full event name.
 	Name string `json:"name"`
-	// The owning project; absent for a global event.
+	// The namespace the event belongs to; the name starts with it and a dot.
+	Namespace string `json:"namespace"`
+	// The owning project; absent for an event in a platform namespace.
 	ProjectID OptNilUUID `json:"project_id"`
 	// What the event means, for developers.
 	Description string      `json:"description"`
@@ -390,6 +520,11 @@ type EventDetail struct {
 // GetName returns the value of Name.
 func (s *EventDetail) GetName() string {
 	return s.Name
+}
+
+// GetNamespace returns the value of Namespace.
+func (s *EventDetail) GetNamespace() string {
+	return s.Namespace
 }
 
 // GetProjectID returns the value of ProjectID.
@@ -425,6 +560,11 @@ func (s *EventDetail) GetVersions() []EventVersion {
 // SetName sets the value of Name.
 func (s *EventDetail) SetName(val string) {
 	s.Name = val
+}
+
+// SetNamespace sets the value of Namespace.
+func (s *EventDetail) SetNamespace(val string) {
+	s.Namespace = val
 }
 
 // SetProjectID sets the value of ProjectID.
@@ -514,7 +654,9 @@ func (*EventList) listEventsRes() {}
 type EventResource struct {
 	// The full event name.
 	Name string `json:"name"`
-	// The owning project; absent for a global event.
+	// The namespace the event belongs to; the name starts with it and a dot.
+	Namespace string `json:"namespace"`
+	// The owning project; absent for an event in a platform namespace.
 	ProjectID OptNilUUID `json:"project_id"`
 	// What the event means, for developers.
 	Description string      `json:"description"`
@@ -528,6 +670,11 @@ type EventResource struct {
 // GetName returns the value of Name.
 func (s *EventResource) GetName() string {
 	return s.Name
+}
+
+// GetNamespace returns the value of Namespace.
+func (s *EventResource) GetNamespace() string {
+	return s.Namespace
 }
 
 // GetProjectID returns the value of ProjectID.
@@ -558,6 +705,11 @@ func (s *EventResource) GetLatestVersion() OptInt64 {
 // SetName sets the value of Name.
 func (s *EventResource) SetName(val string) {
 	s.Name = val
+}
+
+// SetNamespace sets the value of Namespace.
+func (s *EventResource) SetNamespace(val string) {
+	s.Namespace = val
 }
 
 // SetProjectID sets the value of ProjectID.
@@ -824,6 +976,18 @@ type GetEventVersionUnauthorized Error
 
 func (*GetEventVersionUnauthorized) getEventVersionRes() {}
 
+type GetNamespaceNotFound Error
+
+func (*GetNamespaceNotFound) getNamespaceRes() {}
+
+type GetNamespaceServiceUnavailable Error
+
+func (*GetNamespaceServiceUnavailable) getNamespaceRes() {}
+
+type GetNamespaceUnauthorized Error
+
+func (*GetNamespaceUnauthorized) getNamespaceRes() {}
+
 type ListEventsBadRequest Error
 
 func (*ListEventsBadRequest) listEventsRes() {}
@@ -839,6 +1003,190 @@ func (*ListEventsServiceUnavailable) listEventsRes() {}
 type ListEventsUnauthorized Error
 
 func (*ListEventsUnauthorized) listEventsRes() {}
+
+type ListNamespacesBadRequest Error
+
+func (*ListNamespacesBadRequest) listNamespacesRes() {}
+
+type ListNamespacesServiceUnavailable Error
+
+func (*ListNamespacesServiceUnavailable) listNamespacesRes() {}
+
+type ListNamespacesUnauthorized Error
+
+func (*ListNamespacesUnauthorized) listNamespacesRes() {}
+
+// Ref: #/components/schemas/NamespaceList
+type NamespaceList struct {
+	Items []NamespaceResource `json:"items"`
+	// The number of namespaces matching the filters.
+	TotalCount int64 `json:"total_count"`
+	Page       int64 `json:"page"`
+	PageSize   int64 `json:"page_size"`
+}
+
+// GetItems returns the value of Items.
+func (s *NamespaceList) GetItems() []NamespaceResource {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *NamespaceList) GetTotalCount() int64 {
+	return s.TotalCount
+}
+
+// GetPage returns the value of Page.
+func (s *NamespaceList) GetPage() int64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *NamespaceList) GetPageSize() int64 {
+	return s.PageSize
+}
+
+// SetItems sets the value of Items.
+func (s *NamespaceList) SetItems(val []NamespaceResource) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *NamespaceList) SetTotalCount(val int64) {
+	s.TotalCount = val
+}
+
+// SetPage sets the value of Page.
+func (s *NamespaceList) SetPage(val int64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *NamespaceList) SetPageSize(val int64) {
+	s.PageSize = val
+}
+
+func (*NamespaceList) listNamespacesRes() {}
+
+// Ref: #/components/schemas/NamespaceResource
+type NamespaceResource struct {
+	// The namespace's name; every event in it is named with this prefix and a dot.
+	Name string `json:"name"`
+	// The owning project; absent for a platform namespace, which is maintained by a platform service and
+	// is read-only.
+	ProjectID   OptUUID         `json:"project_id"`
+	Description string          `json:"description"`
+	Status      NamespaceStatus `json:"status"`
+	CreatedAt   time.Time       `json:"created_at"`
+	UpdatedAt   time.Time       `json:"updated_at"`
+}
+
+// GetName returns the value of Name.
+func (s *NamespaceResource) GetName() string {
+	return s.Name
+}
+
+// GetProjectID returns the value of ProjectID.
+func (s *NamespaceResource) GetProjectID() OptUUID {
+	return s.ProjectID
+}
+
+// GetDescription returns the value of Description.
+func (s *NamespaceResource) GetDescription() string {
+	return s.Description
+}
+
+// GetStatus returns the value of Status.
+func (s *NamespaceResource) GetStatus() NamespaceStatus {
+	return s.Status
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *NamespaceResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *NamespaceResource) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetName sets the value of Name.
+func (s *NamespaceResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *NamespaceResource) SetProjectID(val OptUUID) {
+	s.ProjectID = val
+}
+
+// SetDescription sets the value of Description.
+func (s *NamespaceResource) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetStatus sets the value of Status.
+func (s *NamespaceResource) SetStatus(val NamespaceStatus) {
+	s.Status = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *NamespaceResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *NamespaceResource) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+func (*NamespaceResource) createNamespaceRes() {}
+func (*NamespaceResource) getNamespaceRes()    {}
+func (*NamespaceResource) updateNamespaceRes() {}
+
+// `active` admits its events. `archived` keeps them readable but rejects new events, messages and
+// subscriptions.
+// Ref: #/components/schemas/NamespaceStatus
+type NamespaceStatus string
+
+const (
+	NamespaceStatusActive   NamespaceStatus = "active"
+	NamespaceStatusArchived NamespaceStatus = "archived"
+)
+
+// AllValues returns all NamespaceStatus values.
+func (NamespaceStatus) AllValues() []NamespaceStatus {
+	return []NamespaceStatus{
+		NamespaceStatusActive,
+		NamespaceStatusArchived,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s NamespaceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case NamespaceStatusActive:
+		return []byte(s), nil
+	case NamespaceStatusArchived:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *NamespaceStatus) UnmarshalText(data []byte) error {
+	switch NamespaceStatus(data) {
+	case NamespaceStatusActive:
+		*s = NamespaceStatusActive
+		return nil
+	case NamespaceStatusArchived:
+		*s = NamespaceStatusArchived
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
 
 // NewOptBool returns new OptBool with value set to v.
 func NewOptBool(v bool) OptBool {
@@ -1162,6 +1510,52 @@ func (o OptInt64) Or(d int64) int64 {
 	return d
 }
 
+// NewOptNamespaceStatus returns new OptNamespaceStatus with value set to v.
+func NewOptNamespaceStatus(v NamespaceStatus) OptNamespaceStatus {
+	return OptNamespaceStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNamespaceStatus is optional NamespaceStatus.
+type OptNamespaceStatus struct {
+	Value NamespaceStatus
+	Set   bool
+}
+
+// IsSet returns true if OptNamespaceStatus was set.
+func (o OptNamespaceStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNamespaceStatus) Reset() {
+	var v NamespaceStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptNamespaceStatus) SetTo(v NamespaceStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNamespaceStatus) Get() (v NamespaceStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNamespaceStatus) Or(d NamespaceStatus) NamespaceStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilUUID returns new OptNilUUID with value set to v.
 func NewOptNilUUID(v uuid.UUID) OptNilUUID {
 	return OptNilUUID{
@@ -1276,75 +1670,121 @@ func (o OptString) Or(d string) string {
 	return d
 }
 
-type PublishEventBadRequest Error
+// NewOptUUID returns new OptUUID with value set to v.
+func NewOptUUID(v uuid.UUID) OptUUID {
+	return OptUUID{
+		Value: v,
+		Set:   true,
+	}
+}
 
-func (*PublishEventBadRequest) publishEventRes() {}
+// OptUUID is optional uuid.UUID.
+type OptUUID struct {
+	Value uuid.UUID
+	Set   bool
+}
 
-type PublishEventConflict Error
+// IsSet returns true if OptUUID was set.
+func (o OptUUID) IsSet() bool { return o.Set }
 
-func (*PublishEventConflict) publishEventRes() {}
+// Reset unsets value.
+func (o *OptUUID) Reset() {
+	var v uuid.UUID
+	o.Value = v
+	o.Set = false
+}
 
-type PublishEventForbidden Error
+// SetTo sets value to v.
+func (o *OptUUID) SetTo(v uuid.UUID) {
+	o.Set = true
+	o.Value = v
+}
 
-func (*PublishEventForbidden) publishEventRes() {}
+// Get returns value and boolean that denotes whether value was set.
+func (o OptUUID) Get() (v uuid.UUID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
 
-type PublishEventNotFound Error
+// Or returns value if set, or given parameter if does not.
+func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
 
-func (*PublishEventNotFound) publishEventRes() {}
-
-type PublishEventServiceUnavailable Error
-
-func (*PublishEventServiceUnavailable) publishEventRes() {}
-
-type PublishEventUnauthorized Error
-
-func (*PublishEventUnauthorized) publishEventRes() {}
-
-// Ref: #/components/schemas/PublishRequest
-type PublishRequest struct {
+// Ref: #/components/schemas/Publication
+type Publication struct {
+	// The name of an event defined by the current project.
+	Event string `json:"event"`
 	// The version to validate against; zero selects the highest active version.
 	Version OptInt64 `json:"version"`
-	// The ordering key. Messages with the same key reach an individual consumer in publication order.
-	// Defaults to the project id when absent.
+	// The last levels of the message's topic, separated by `/`. Subscribers select messages by level. No
+	// level may be empty, and neither `+` nor `#` may appear.
 	Key OptString `json:"key"`
+	// A member of the current project; when set, only that member receives the message.
+	Subject OptString `json:"subject"`
 	// The message payload.
-	Data PublishRequestData `json:"data"`
+	Data PublicationData `json:"data"`
+}
+
+// GetEvent returns the value of Event.
+func (s *Publication) GetEvent() string {
+	return s.Event
 }
 
 // GetVersion returns the value of Version.
-func (s *PublishRequest) GetVersion() OptInt64 {
+func (s *Publication) GetVersion() OptInt64 {
 	return s.Version
 }
 
 // GetKey returns the value of Key.
-func (s *PublishRequest) GetKey() OptString {
+func (s *Publication) GetKey() OptString {
 	return s.Key
 }
 
+// GetSubject returns the value of Subject.
+func (s *Publication) GetSubject() OptString {
+	return s.Subject
+}
+
 // GetData returns the value of Data.
-func (s *PublishRequest) GetData() PublishRequestData {
+func (s *Publication) GetData() PublicationData {
 	return s.Data
 }
 
+// SetEvent sets the value of Event.
+func (s *Publication) SetEvent(val string) {
+	s.Event = val
+}
+
 // SetVersion sets the value of Version.
-func (s *PublishRequest) SetVersion(val OptInt64) {
+func (s *Publication) SetVersion(val OptInt64) {
 	s.Version = val
 }
 
 // SetKey sets the value of Key.
-func (s *PublishRequest) SetKey(val OptString) {
+func (s *Publication) SetKey(val OptString) {
 	s.Key = val
 }
 
+// SetSubject sets the value of Subject.
+func (s *Publication) SetSubject(val OptString) {
+	s.Subject = val
+}
+
 // SetData sets the value of Data.
-func (s *PublishRequest) SetData(val PublishRequestData) {
+func (s *Publication) SetData(val PublicationData) {
 	s.Data = val
 }
 
 // The message payload.
-type PublishRequestData map[string]jx.Raw
+type PublicationData map[string]jx.Raw
 
-func (s *PublishRequestData) init() PublishRequestData {
+func (s *PublicationData) init() PublicationData {
 	m := *s
 	if m == nil {
 		m = map[string]jx.Raw{}
@@ -1353,8 +1793,78 @@ func (s *PublishRequestData) init() PublishRequestData {
 	return m
 }
 
+type PublishEventsBadRequest Error
+
+func (*PublishEventsBadRequest) publishEventsRes() {}
+
+type PublishEventsConflict Error
+
+func (*PublishEventsConflict) publishEventsRes() {}
+
+type PublishEventsForbidden Error
+
+func (*PublishEventsForbidden) publishEventsRes() {}
+
+type PublishEventsNotFound Error
+
+func (*PublishEventsNotFound) publishEventsRes() {}
+
+type PublishEventsServiceUnavailable Error
+
+func (*PublishEventsServiceUnavailable) publishEventsRes() {}
+
+type PublishEventsUnauthorized Error
+
+func (*PublishEventsUnauthorized) publishEventsRes() {}
+
+// Ref: #/components/schemas/PublishRequest
+type PublishRequest struct {
+	// The publishing client: the caller's prefix, `user.{user_id}.project.{project_id}.`, followed by one
+	// segment of up to 64 letters, digits, hyphens or underscores.
+	ClientID string        `json:"client_id"`
+	Messages []Publication `json:"messages"`
+}
+
+// GetClientID returns the value of ClientID.
+func (s *PublishRequest) GetClientID() string {
+	return s.ClientID
+}
+
+// GetMessages returns the value of Messages.
+func (s *PublishRequest) GetMessages() []Publication {
+	return s.Messages
+}
+
+// SetClientID sets the value of ClientID.
+func (s *PublishRequest) SetClientID(val string) {
+	s.ClientID = val
+}
+
+// SetMessages sets the value of Messages.
+func (s *PublishRequest) SetMessages(val []Publication) {
+	s.Messages = val
+}
+
 // Ref: #/components/schemas/PublishResponse
 type PublishResponse struct {
+	// One entry per published message, in request order.
+	Messages []PublishedMessage `json:"messages"`
+}
+
+// GetMessages returns the value of Messages.
+func (s *PublishResponse) GetMessages() []PublishedMessage {
+	return s.Messages
+}
+
+// SetMessages sets the value of Messages.
+func (s *PublishResponse) SetMessages(val []PublishedMessage) {
+	s.Messages = val
+}
+
+func (*PublishResponse) publishEventsRes() {}
+
+// Ref: #/components/schemas/PublishedMessage
+type PublishedMessage struct {
 	// The message identity; consumers use it to discard duplicates.
 	ID uuid.UUID `json:"id"`
 	// The event name.
@@ -1366,60 +1876,55 @@ type PublishResponse struct {
 }
 
 // GetID returns the value of ID.
-func (s *PublishResponse) GetID() uuid.UUID {
+func (s *PublishedMessage) GetID() uuid.UUID {
 	return s.ID
 }
 
 // GetEvent returns the value of Event.
-func (s *PublishResponse) GetEvent() string {
+func (s *PublishedMessage) GetEvent() string {
 	return s.Event
 }
 
 // GetVersion returns the value of Version.
-func (s *PublishResponse) GetVersion() int64 {
+func (s *PublishedMessage) GetVersion() int64 {
 	return s.Version
 }
 
 // GetCreatedAt returns the value of CreatedAt.
-func (s *PublishResponse) GetCreatedAt() time.Time {
+func (s *PublishedMessage) GetCreatedAt() time.Time {
 	return s.CreatedAt
 }
 
 // SetID sets the value of ID.
-func (s *PublishResponse) SetID(val uuid.UUID) {
+func (s *PublishedMessage) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
 // SetEvent sets the value of Event.
-func (s *PublishResponse) SetEvent(val string) {
+func (s *PublishedMessage) SetEvent(val string) {
 	s.Event = val
 }
 
 // SetVersion sets the value of Version.
-func (s *PublishResponse) SetVersion(val int64) {
+func (s *PublishedMessage) SetVersion(val int64) {
 	s.Version = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
-func (s *PublishResponse) SetCreatedAt(val time.Time) {
+func (s *PublishedMessage) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
 }
 
-func (*PublishResponse) publishEventRes() {}
-
 // Ref: #/components/schemas/RealtimeTicket
 type RealtimeTicket struct {
-	// The WebSocket URL to connect to.
-	URL url.URL `json:"url"`
-	// The ticket to present when connecting.
+	// The ticket to present in the first frame of a realtime connection.
 	Ticket string `json:"ticket"`
-	// When the ticket expires, in UTC RFC 3339.
+	// When the ticket expires, in UTC RFC 3339; renew the connection before then.
 	ExpiresAt time.Time `json:"expires_at"`
-}
-
-// GetURL returns the value of URL.
-func (s *RealtimeTicket) GetURL() url.URL {
-	return s.URL
+	// The prefix every client ID on this ticket must start with.
+	ClientIDPrefix string `json:"client_id_prefix"`
+	// The topic filters the ticket covers; subscribe to these or to filters within them.
+	Topics []string `json:"topics"`
 }
 
 // GetTicket returns the value of Ticket.
@@ -1432,9 +1937,14 @@ func (s *RealtimeTicket) GetExpiresAt() time.Time {
 	return s.ExpiresAt
 }
 
-// SetURL sets the value of URL.
-func (s *RealtimeTicket) SetURL(val url.URL) {
-	s.URL = val
+// GetClientIDPrefix returns the value of ClientIDPrefix.
+func (s *RealtimeTicket) GetClientIDPrefix() string {
+	return s.ClientIDPrefix
+}
+
+// GetTopics returns the value of Topics.
+func (s *RealtimeTicket) GetTopics() []string {
+	return s.Topics
 }
 
 // SetTicket sets the value of Ticket.
@@ -1447,7 +1957,34 @@ func (s *RealtimeTicket) SetExpiresAt(val time.Time) {
 	s.ExpiresAt = val
 }
 
-func (*RealtimeTicket) createRealtimeTicketRes() {}
+// SetClientIDPrefix sets the value of ClientIDPrefix.
+func (s *RealtimeTicket) SetClientIDPrefix(val string) {
+	s.ClientIDPrefix = val
+}
+
+// SetTopics sets the value of Topics.
+func (s *RealtimeTicket) SetTopics(val []string) {
+	s.Topics = val
+}
+
+func (*RealtimeTicket) createAccountRealtimeTicketRes() {}
+func (*RealtimeTicket) createRealtimeTicketRes()        {}
+
+// Ref: #/components/schemas/RealtimeTicketRequest
+type RealtimeTicketRequest struct {
+	// The events to receive, each named once.
+	Events []string `json:"events"`
+}
+
+// GetEvents returns the value of Events.
+func (s *RealtimeTicketRequest) GetEvents() []string {
+	return s.Events
+}
+
+// SetEvents sets the value of Events.
+func (s *RealtimeTicketRequest) SetEvents(val []string) {
+	s.Events = val
+}
 
 type UpdateEventBadRequest Error
 
@@ -1511,3 +2048,49 @@ func (*UpdateEventServiceUnavailable) updateEventRes() {}
 type UpdateEventUnauthorized Error
 
 func (*UpdateEventUnauthorized) updateEventRes() {}
+
+type UpdateNamespaceBadRequest Error
+
+func (*UpdateNamespaceBadRequest) updateNamespaceRes() {}
+
+type UpdateNamespaceForbidden Error
+
+func (*UpdateNamespaceForbidden) updateNamespaceRes() {}
+
+type UpdateNamespaceNotFound Error
+
+func (*UpdateNamespaceNotFound) updateNamespaceRes() {}
+
+// Ref: #/components/schemas/UpdateNamespaceRequest
+type UpdateNamespaceRequest struct {
+	Description OptString          `json:"description"`
+	Status      OptNamespaceStatus `json:"status"`
+}
+
+// GetDescription returns the value of Description.
+func (s *UpdateNamespaceRequest) GetDescription() OptString {
+	return s.Description
+}
+
+// GetStatus returns the value of Status.
+func (s *UpdateNamespaceRequest) GetStatus() OptNamespaceStatus {
+	return s.Status
+}
+
+// SetDescription sets the value of Description.
+func (s *UpdateNamespaceRequest) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetStatus sets the value of Status.
+func (s *UpdateNamespaceRequest) SetStatus(val OptNamespaceStatus) {
+	s.Status = val
+}
+
+type UpdateNamespaceServiceUnavailable Error
+
+func (*UpdateNamespaceServiceUnavailable) updateNamespaceRes() {}
+
+type UpdateNamespaceUnauthorized Error
+
+func (*UpdateNamespaceUnauthorized) updateNamespaceRes() {}

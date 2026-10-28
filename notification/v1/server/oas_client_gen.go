@@ -36,20 +36,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/notifications/{notificationId}:archive
 	ArchiveNotification(ctx context.Context, params ArchiveNotificationParams) (*NotificationResource, error)
-	// AuthorizeRealtimeChannel invokes authorize-realtime-channel operation.
-	//
-	// Authorizes one subscription. Realtime clients call this on their own while subscribing; it is not
-	// normally called directly.
-	//
-	// Only two channels are authorized: the one naming you, and the one naming the project in the token.
-	// Any other channel returns `REALTIME_CHANNEL_FORBIDDEN`.
-	//
-	// Authorization is evaluated once, when the subscription is established. A subscription already open
-	// is not revoked when project membership changes, so realtime events carry identifiers and counts
-	// only, never the contents of a notification.
-	//
-	// POST /api/v1/realtime/auth
-	AuthorizeRealtimeChannel(ctx context.Context, request *AuthorizeRealtimeChannelRequestBody) (*RealtimeAuthResource, error)
 	// CancelEmailOverride invokes cancel-email-override operation.
 	//
 	// Drops the pending address and the code that was sent to it. Nothing else changes: an address that
@@ -74,7 +60,8 @@ type Invoker interface {
 	// CountUnreadNotifications invokes count-unread-notifications operation.
 	//
 	// Returns the number of unread notifications. This is the value behind the badge in the console, and
-	// it is also carried on every realtime event, so it does not normally need to be requested on its own.
+	// it is also carried on every `notification.inbox.created` and `notification.inbox.read` message
+	// delivered by EventBus, so it does not normally need to be requested on its own.
 	//
 	// GET /api/v1/notifications/unread-count
 	CountUnreadNotifications(ctx context.Context, params CountUnreadNotificationsParams) (*UnreadCountResource, error)
@@ -121,17 +108,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/credentials/{ticketId}
 	DescribeCredentialTicket(ctx context.Context, params DescribeCredentialTicketParams) (*CredentialTicketResource, error)
-	// DescribeRealtimeConnection invokes describe-realtime-connection operation.
-	//
-	// Returns everything needed to open a realtime connection, and the names of the channels to subscribe
-	// to. The parameters are not constants: they differ between environments, so they must be requested
-	// rather than compiled in.
-	//
-	// Realtime delivery is an optimisation. Everything it announces is also readable through the listing
-	// operations, so a client that cannot connect stays correct by polling or by refreshing.
-	//
-	// GET /api/v1/realtime
-	DescribeRealtimeConnection(ctx context.Context) (*RealtimeConnectionResource, error)
 	// GetNotification invokes get-notification operation.
 	//
 	// A notification addressed to someone else returns `NOTIFICATION_NOT_FOUND`, the same answer as one
@@ -520,139 +496,6 @@ func (c *Client) sendArchiveNotification(ctx context.Context, params ArchiveNoti
 	return result, nil
 }
 
-// AuthorizeRealtimeChannel invokes authorize-realtime-channel operation.
-//
-// Authorizes one subscription. Realtime clients call this on their own while subscribing; it is not
-// normally called directly.
-//
-// Only two channels are authorized: the one naming you, and the one naming the project in the token.
-// Any other channel returns `REALTIME_CHANNEL_FORBIDDEN`.
-//
-// Authorization is evaluated once, when the subscription is established. A subscription already open
-// is not revoked when project membership changes, so realtime events carry identifiers and counts
-// only, never the contents of a notification.
-//
-// POST /api/v1/realtime/auth
-func (c *Client) AuthorizeRealtimeChannel(ctx context.Context, request *AuthorizeRealtimeChannelRequestBody) (*RealtimeAuthResource, error) {
-	res, err := c.sendAuthorizeRealtimeChannel(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendAuthorizeRealtimeChannel(ctx context.Context, request *AuthorizeRealtimeChannelRequestBody) (res *RealtimeAuthResource, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("authorize-realtime-channel"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/realtime/auth"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, AuthorizeRealtimeChannelOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/realtime/auth"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeAuthorizeRealtimeChannelRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, AuthorizeRealtimeChannelOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeAuthorizeRealtimeChannelResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // CancelEmailOverride invokes cancel-email-override operation.
 //
 // Drops the pending address and the code that was sent to it. Nothing else changes: an address that
@@ -903,7 +746,8 @@ func (c *Client) sendConfirmEmailOverride(ctx context.Context, request *ConfirmE
 // CountUnreadNotifications invokes count-unread-notifications operation.
 //
 // Returns the number of unread notifications. This is the value behind the badge in the console, and
-// it is also carried on every realtime event, so it does not normally need to be requested on its own.
+// it is also carried on every `notification.inbox.created` and `notification.inbox.read` message
+// delivered by EventBus, so it does not normally need to be requested on its own.
 //
 // GET /api/v1/notifications/unread-count
 func (c *Client) CountUnreadNotifications(ctx context.Context, params CountUnreadNotificationsParams) (*UnreadCountResource, error) {
@@ -1586,124 +1430,6 @@ func (c *Client) sendDescribeCredentialTicket(ctx context.Context, params Descri
 
 	stage = "DecodeResponse"
 	result, err := decodeDescribeCredentialTicketResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// DescribeRealtimeConnection invokes describe-realtime-connection operation.
-//
-// Returns everything needed to open a realtime connection, and the names of the channels to subscribe
-// to. The parameters are not constants: they differ between environments, so they must be requested
-// rather than compiled in.
-//
-// Realtime delivery is an optimisation. Everything it announces is also readable through the listing
-// operations, so a client that cannot connect stays correct by polling or by refreshing.
-//
-// GET /api/v1/realtime
-func (c *Client) DescribeRealtimeConnection(ctx context.Context) (*RealtimeConnectionResource, error) {
-	res, err := c.sendDescribeRealtimeConnection(ctx)
-	return res, err
-}
-
-func (c *Client) sendDescribeRealtimeConnection(ctx context.Context) (res *RealtimeConnectionResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("describe-realtime-connection"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/realtime"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DescribeRealtimeConnectionOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/realtime"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DescribeRealtimeConnectionOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeDescribeRealtimeConnectionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

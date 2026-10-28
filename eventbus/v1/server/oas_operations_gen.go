@@ -6,12 +6,18 @@ package eventbusv1server
 type OperationName = string
 
 const (
-	CreateEventOperation          OperationName = "CreateEvent"
-	CreateEventVersionOperation   OperationName = "CreateEventVersion"
-	CreateRealtimeTicketOperation OperationName = "CreateRealtimeTicket"
-	GetEventOperation             OperationName = "GetEvent"
-	GetEventVersionOperation      OperationName = "GetEventVersion"
-	ListEventsOperation           OperationName = "ListEvents"
-	PublishEventOperation         OperationName = "PublishEvent"
-	UpdateEventOperation          OperationName = "UpdateEvent"
+	CreateAccountRealtimeTicketOperation OperationName = "CreateAccountRealtimeTicket"
+	CreateEventOperation                 OperationName = "CreateEvent"
+	CreateEventVersionOperation          OperationName = "CreateEventVersion"
+	CreateNamespaceOperation             OperationName = "CreateNamespace"
+	CreateRealtimeTicketOperation        OperationName = "CreateRealtimeTicket"
+	DeleteNamespaceOperation             OperationName = "DeleteNamespace"
+	GetEventOperation                    OperationName = "GetEvent"
+	GetEventVersionOperation             OperationName = "GetEventVersion"
+	GetNamespaceOperation                OperationName = "GetNamespace"
+	ListEventsOperation                  OperationName = "ListEvents"
+	ListNamespacesOperation              OperationName = "ListNamespaces"
+	PublishEventsOperation               OperationName = "PublishEvents"
+	UpdateEventOperation                 OperationName = "UpdateEvent"
+	UpdateNamespaceOperation             OperationName = "UpdateNamespace"
 )

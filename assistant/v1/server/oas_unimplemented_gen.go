@@ -127,25 +127,6 @@ func (UnimplementedHandler) CreateFolder(ctx context.Context, req *CreateFolderR
 	return r, ht.ErrNotImplemented
 }
 
-// CreateRealtimeTicket implements create-realtime-ticket operation.
-//
-// Returns the address and a short-lived ticket for the realtime WebSocket. Open
-// `{url}?ticket={ticket}`; the ticket stands in for the bearer token, which a browser cannot set on a
-// WebSocket. One connection carries every subscription of a client.
-//
-// Messages are JSON text frames. The client sends `RealtimeClientMessage` and receives
-// `RealtimeServerMessage`. Subscribe to `workspace` for every conversation, folder and task of the
-// caller in this project, and to `thread:{id}` for the transcript of one conversation. A transcript
-// subscription takes the `streamCursor` from list-thread-items and replays what was written after it;
-// when the cursor is too old the server sends `resync` and the client reads the items again.
-//
-// Reconnect with a new ticket after the connection closes. Ping at least every 30 seconds.
-//
-// POST /api/v1/realtime/tickets
-func (UnimplementedHandler) CreateRealtimeTicket(ctx context.Context) (r *RealtimeTicketResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // CreateTask implements create-task operation.
 //
 // A task does something on a trigger and reports to a conversation. Its action either sends a prompt
@@ -596,17 +577,6 @@ func (UnimplementedHandler) MoveFolder(ctx context.Context, req *MoveFolderReque
 	return r, ht.ErrNotImplemented
 }
 
-// OpenRealtime implements open-realtime operation.
-//
-// Upgrades to a WebSocket. The ticket from create-realtime-ticket authenticates the connection; a
-// missing, expired or foreign ticket closes it with code 4401. The 200 response documents the message
-// a client receives on the socket; the endpoint never answers with a plain HTTP body.
-//
-// GET /api/v1/realtime
-func (UnimplementedHandler) OpenRealtime(ctx context.Context, params OpenRealtimeParams) (r *RealtimeExchange, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // PauseTask implements pause-task operation.
 //
 // Stops future runs from its trigger. A run in progress continues. Pausing a paused task succeeds.
@@ -650,6 +620,16 @@ func (UnimplementedHandler) PutSkill(ctx context.Context, req *SkillRequestBody)
 // PUT /api/v1/uploads/{upload}/parts/{part}
 func (UnimplementedHandler) PutUploadPart(ctx context.Context, req PutUploadPartReq, params PutUploadPartParams) (r *UploadPartResource, _ error) {
 	return r, ht.ErrNotImplemented
+}
+
+// RenewThreadPresence implements renew-thread-presence operation.
+//
+// Renews an already announced browser client while the thread is open. It does not create or replace
+// the client catalogue.
+//
+// POST /api/v1/threads/{thread}/presence
+func (UnimplementedHandler) RenewThreadPresence(ctx context.Context, params RenewThreadPresenceParams) error {
+	return ht.ErrNotImplemented
 }
 
 // ResumeTask implements resume-task operation.

@@ -3,7 +3,15 @@
 package eventbusv1server
 
 // setDefaults set default value of fields.
-func (s *PublishRequest) setDefaults() {
+func (s *CreateNamespaceRequest) setDefaults() {
+	{
+		val := string("")
+		s.Description.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
+func (s *Publication) setDefaults() {
 	{
 		val := int64(0)
 		s.Version.SetTo(val)

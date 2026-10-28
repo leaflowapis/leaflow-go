@@ -10,6 +10,20 @@ import (
 	ht "github.com/ogen-go/ogen/http"
 )
 
+func encodeCreateAccountRealtimeTicketRequest(
+	req *RealtimeTicketRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCreateEventRequest(
 	req *CreateEventRequest,
 	r *http.Request,
@@ -38,7 +52,35 @@ func encodeCreateEventVersionRequest(
 	return nil
 }
 
-func encodePublishEventRequest(
+func encodeCreateNamespaceRequest(
+	req *CreateNamespaceRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateRealtimeTicketRequest(
+	req *RealtimeTicketRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodePublishEventsRequest(
 	req *PublishRequest,
 	r *http.Request,
 ) error {
@@ -54,6 +96,20 @@ func encodePublishEventRequest(
 
 func encodeUpdateEventRequest(
 	req *UpdateEventRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateNamespaceRequest(
+	req *UpdateNamespaceRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

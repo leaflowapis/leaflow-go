@@ -4645,83 +4645,6 @@ func decodeMoveFolderParams(args [1]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
-// OpenRealtimeParams is parameters of open-realtime operation.
-type OpenRealtimeParams struct {
-	Ticket string
-}
-
-func unpackOpenRealtimeParams(packed middleware.Parameters) (params OpenRealtimeParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "ticket",
-			In:   "query",
-		}
-		params.Ticket = packed[key].(string)
-	}
-	return params
-}
-
-func decodeOpenRealtimeParams(args [0]string, argsEscaped bool, r *http.Request) (params OpenRealtimeParams, _ error) {
-	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode query: ticket.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "ticket",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Ticket = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     0,
-					MinLengthSet:  false,
-					MaxLength:     4096,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.Ticket)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "ticket",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // PauseTaskParams is parameters of pause-task operation.
 type PauseTaskParams struct {
 	// A task id.
@@ -5204,6 +5127,92 @@ func decodePutUploadPartParams(args [2]string, argsEscaped bool, r *http.Request
 		return params, &ogenerrors.DecodeParamError{
 			Name: "X-Part-Size",
 			In:   "header",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// RenewThreadPresenceParams is parameters of renew-thread-presence operation.
+type RenewThreadPresenceParams struct {
+	// A thread id. Subagents are threads as well.
+	Thread string
+}
+
+func unpackRenewThreadPresenceParams(packed middleware.Parameters) (params RenewThreadPresenceParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "thread",
+			In:   "path",
+		}
+		params.Thread = packed[key].(string)
+	}
+	return params
+}
+
+func decodeRenewThreadPresenceParams(args [1]string, argsEscaped bool, r *http.Request) (params RenewThreadPresenceParams, _ error) {
+	// Decode path: thread.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "thread",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Thread = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Thread)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "thread",
+			In:   "path",
 			Err:  err,
 		}
 	}

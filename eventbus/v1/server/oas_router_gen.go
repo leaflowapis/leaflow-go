@@ -12,24 +12,36 @@ import (
 
 var (
 	rn1AllowedHeaders = map[string]string{
-		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
 	rn3AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
+		"POST": "Authorization,Content-Type",
+	}
+	rn5AllowedHeaders = map[string]string{
 		"GET":   "Authorization",
 		"PATCH": "Authorization,Content-Type",
 	}
-	rn4AllowedHeaders = map[string]string{
+	rn6AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn8AllowedHeaders = map[string]string{
+	rn12AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn9AllowedHeaders = map[string]string{
+	rn13AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn6AllowedHeaders = map[string]string{
-		"POST": "Authorization",
+	rn7AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
+		"POST": "Authorization,Content-Type",
+	}
+	rn10AllowedHeaders = map[string]string{
+		"DELETE": "Authorization",
+		"GET":    "Authorization",
+		"PATCH":  "Authorization,Content-Type",
+	}
+	rn8AllowedHeaders = map[string]string{
+		"POST": "Authorization,Content-Type",
 	}
 )
 
@@ -84,6 +96,31 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 			switch elem[0] {
+			case 'a': // Prefix: "account/realtime/tickets"
+
+				if l := len("account/realtime/tickets"); len(elem) >= l && elem[0:l] == "account/realtime/tickets" {
+					elem = elem[l:]
+				} else {
+					break
+				}
+
+				if len(elem) == 0 {
+					// Leaf node.
+					switch r.Method {
+					case "POST":
+						s.handleCreateAccountRealtimeTicketRequest([0]string{}, elemIsEscaped, w, r)
+					default:
+						s.notAllowed(w, r, notAllowedParams{
+							allowedMethods: "POST",
+							allowedHeaders: rn1AllowedHeaders,
+							acceptPost:     "application/json",
+							acceptPatch:    "",
+						})
+					}
+
+					return
+				}
+
 			case 'e': // Prefix: "events"
 
 				if l := len("events"); len(elem) >= l && elem[0:l] == "events" {
@@ -101,7 +138,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET,POST",
-							allowedHeaders: rn1AllowedHeaders,
+							allowedHeaders: rn3AllowedHeaders,
 							acceptPost:     "application/json",
 							acceptPatch:    "",
 						})
@@ -119,8 +156,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					}
 
 					// Param: "eventName"
-					// Match until one of "/:"
-					idx := strings.IndexAny(elem, "/:")
+					// Match until "/"
+					idx := strings.IndexByte(elem, '/')
 					if idx < 0 {
 						idx = len(elem)
 					}
@@ -140,7 +177,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET,PATCH",
-								allowedHeaders: rn3AllowedHeaders,
+								allowedHeaders: rn5AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "application/json",
 							})
@@ -166,7 +203,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "POST",
-									allowedHeaders: rn4AllowedHeaders,
+									allowedHeaders: rn6AllowedHeaders,
 									acceptPost:     "application/json",
 									acceptPatch:    "",
 								})
@@ -203,7 +240,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "GET",
-										allowedHeaders: rn8AllowedHeaders,
+										allowedHeaders: rn12AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -214,33 +251,103 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 						}
 
-					case ':': // Prefix: ":publish"
+					}
 
-						if l := len(":publish"); len(elem) >= l && elem[0:l] == ":publish" {
-							elem = elem[l:]
-						} else {
-							break
+				case ':': // Prefix: ":publish"
+
+					if l := len(":publish"); len(elem) >= l && elem[0:l] == ":publish" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch r.Method {
+						case "POST":
+							s.handlePublishEventsRequest([0]string{}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "POST",
+								allowedHeaders: rn13AllowedHeaders,
+								acceptPost:     "application/json",
+								acceptPatch:    "",
+							})
 						}
 
-						if len(elem) == 0 {
-							// Leaf node.
-							switch r.Method {
-							case "POST":
-								s.handlePublishEventRequest([1]string{
-									args[0],
-								}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "POST",
-									allowedHeaders: rn9AllowedHeaders,
-									acceptPost:     "application/json",
-									acceptPatch:    "",
-								})
-							}
+						return
+					}
 
-							return
+				}
+
+			case 'n': // Prefix: "namespaces"
+
+				if l := len("namespaces"); len(elem) >= l && elem[0:l] == "namespaces" {
+					elem = elem[l:]
+				} else {
+					break
+				}
+
+				if len(elem) == 0 {
+					switch r.Method {
+					case "GET":
+						s.handleListNamespacesRequest([0]string{}, elemIsEscaped, w, r)
+					case "POST":
+						s.handleCreateNamespaceRequest([0]string{}, elemIsEscaped, w, r)
+					default:
+						s.notAllowed(w, r, notAllowedParams{
+							allowedMethods: "GET,POST",
+							allowedHeaders: rn7AllowedHeaders,
+							acceptPost:     "application/json",
+							acceptPatch:    "",
+						})
+					}
+
+					return
+				}
+				switch elem[0] {
+				case '/': // Prefix: "/"
+
+					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					// Param: "namespaceName"
+					// Leaf parameter, slashes are prohibited
+					idx := strings.IndexByte(elem, '/')
+					if idx >= 0 {
+						break
+					}
+					args[0] = elem
+					elem = ""
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch r.Method {
+						case "DELETE":
+							s.handleDeleteNamespaceRequest([1]string{
+								args[0],
+							}, elemIsEscaped, w, r)
+						case "GET":
+							s.handleGetNamespaceRequest([1]string{
+								args[0],
+							}, elemIsEscaped, w, r)
+						case "PATCH":
+							s.handleUpdateNamespaceRequest([1]string{
+								args[0],
+							}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "DELETE,GET,PATCH",
+								allowedHeaders: rn10AllowedHeaders,
+								acceptPost:     "",
+								acceptPatch:    "application/json",
+							})
 						}
 
+						return
 					}
 
 				}
@@ -261,8 +368,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "POST",
-							allowedHeaders: rn6AllowedHeaders,
-							acceptPost:     "",
+							allowedHeaders: rn8AllowedHeaders,
+							acceptPost:     "application/json",
 							acceptPatch:    "",
 						})
 					}
@@ -370,6 +477,31 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 				break
 			}
 			switch elem[0] {
+			case 'a': // Prefix: "account/realtime/tickets"
+
+				if l := len("account/realtime/tickets"); len(elem) >= l && elem[0:l] == "account/realtime/tickets" {
+					elem = elem[l:]
+				} else {
+					break
+				}
+
+				if len(elem) == 0 {
+					// Leaf node.
+					switch method {
+					case "POST":
+						r.name = CreateAccountRealtimeTicketOperation
+						r.summary = "Create an account realtime ticket"
+						r.operationID = "create-account-realtime-ticket"
+						r.operationGroup = ""
+						r.pathPattern = "/api/v1/account/realtime/tickets"
+						r.args = args
+						r.count = 0
+						return r, true
+					default:
+						return
+					}
+				}
+
 			case 'e': // Prefix: "events"
 
 				if l := len("events"); len(elem) >= l && elem[0:l] == "events" {
@@ -412,8 +544,8 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					}
 
 					// Param: "eventName"
-					// Match until one of "/:"
-					idx := strings.IndexAny(elem, "/:")
+					// Match until "/"
+					idx := strings.IndexByte(elem, '/')
 					if idx < 0 {
 						idx = len(elem)
 					}
@@ -505,31 +637,118 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 						}
 
-					case ':': // Prefix: ":publish"
+					}
 
-						if l := len(":publish"); len(elem) >= l && elem[0:l] == ":publish" {
-							elem = elem[l:]
-						} else {
-							break
+				case ':': // Prefix: ":publish"
+
+					if l := len(":publish"); len(elem) >= l && elem[0:l] == ":publish" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch method {
+						case "POST":
+							r.name = PublishEventsOperation
+							r.summary = "Publish event messages"
+							r.operationID = "publish-events"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/events:publish"
+							r.args = args
+							r.count = 0
+							return r, true
+						default:
+							return
 						}
+					}
 
-						if len(elem) == 0 {
-							// Leaf node.
-							switch method {
-							case "POST":
-								r.name = PublishEventOperation
-								r.summary = "Publish an event message"
-								r.operationID = "publish-event"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/events/{eventName}:publish"
-								r.args = args
-								r.count = 1
-								return r, true
-							default:
-								return
-							}
+				}
+
+			case 'n': // Prefix: "namespaces"
+
+				if l := len("namespaces"); len(elem) >= l && elem[0:l] == "namespaces" {
+					elem = elem[l:]
+				} else {
+					break
+				}
+
+				if len(elem) == 0 {
+					switch method {
+					case "GET":
+						r.name = ListNamespacesOperation
+						r.summary = "List namespaces"
+						r.operationID = "list-namespaces"
+						r.operationGroup = ""
+						r.pathPattern = "/api/v1/namespaces"
+						r.args = args
+						r.count = 0
+						return r, true
+					case "POST":
+						r.name = CreateNamespaceOperation
+						r.summary = "Create a namespace"
+						r.operationID = "create-namespace"
+						r.operationGroup = ""
+						r.pathPattern = "/api/v1/namespaces"
+						r.args = args
+						r.count = 0
+						return r, true
+					default:
+						return
+					}
+				}
+				switch elem[0] {
+				case '/': // Prefix: "/"
+
+					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					// Param: "namespaceName"
+					// Leaf parameter, slashes are prohibited
+					idx := strings.IndexByte(elem, '/')
+					if idx >= 0 {
+						break
+					}
+					args[0] = elem
+					elem = ""
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch method {
+						case "DELETE":
+							r.name = DeleteNamespaceOperation
+							r.summary = "Delete a namespace"
+							r.operationID = "delete-namespace"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/namespaces/{namespaceName}"
+							r.args = args
+							r.count = 1
+							return r, true
+						case "GET":
+							r.name = GetNamespaceOperation
+							r.summary = "Get a namespace"
+							r.operationID = "get-namespace"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/namespaces/{namespaceName}"
+							r.args = args
+							r.count = 1
+							return r, true
+						case "PATCH":
+							r.name = UpdateNamespaceOperation
+							r.summary = "Update a namespace"
+							r.operationID = "update-namespace"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/namespaces/{namespaceName}"
+							r.args = args
+							r.count = 1
+							return r, true
+						default:
+							return
 						}
-
 					}
 
 				}

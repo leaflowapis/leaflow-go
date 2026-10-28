@@ -113,22 +113,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/folders
 	CreateFolder(ctx context.Context, request *CreateFolderRequestBody) (*FolderResource, error)
-	// CreateRealtimeTicket invokes create-realtime-ticket operation.
-	//
-	// Returns the address and a short-lived ticket for the realtime WebSocket. Open
-	// `{url}?ticket={ticket}`; the ticket stands in for the bearer token, which a browser cannot set on a
-	// WebSocket. One connection carries every subscription of a client.
-	//
-	// Messages are JSON text frames. The client sends `RealtimeClientMessage` and receives
-	// `RealtimeServerMessage`. Subscribe to `workspace` for every conversation, folder and task of the
-	// caller in this project, and to `thread:{id}` for the transcript of one conversation. A transcript
-	// subscription takes the `streamCursor` from list-thread-items and replays what was written after it;
-	// when the cursor is too old the server sends `resync` and the client reads the items again.
-	//
-	// Reconnect with a new ticket after the connection closes. Ping at least every 30 seconds.
-	//
-	// POST /api/v1/realtime/tickets
-	CreateRealtimeTicket(ctx context.Context) (*RealtimeTicketResource, error)
 	// CreateTask invokes create-task operation.
 	//
 	// A task does something on a trigger and reports to a conversation. Its action either sends a prompt
@@ -459,14 +443,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/folders/{folder}:move
 	MoveFolder(ctx context.Context, request *MoveFolderRequestBody, params MoveFolderParams) (*FolderResource, error)
-	// OpenRealtime invokes open-realtime operation.
-	//
-	// Upgrades to a WebSocket. The ticket from create-realtime-ticket authenticates the connection; a
-	// missing, expired or foreign ticket closes it with code 4401. The 200 response documents the message
-	// a client receives on the socket; the endpoint never answers with a plain HTTP body.
-	//
-	// GET /api/v1/realtime
-	OpenRealtime(ctx context.Context, params OpenRealtimeParams) (*RealtimeExchange, error)
 	// PauseTask invokes pause-task operation.
 	//
 	// Stops future runs from its trigger. A run in progress continues. Pausing a paused task succeeds.
@@ -500,6 +476,13 @@ type Invoker interface {
 	//
 	// PUT /api/v1/uploads/{upload}/parts/{part}
 	PutUploadPart(ctx context.Context, request PutUploadPartReq, params PutUploadPartParams) (*UploadPartResource, error)
+	// RenewThreadPresence invokes renew-thread-presence operation.
+	//
+	// Renews an already announced browser client while the thread is open. It does not create or replace
+	// the client catalogue.
+	//
+	// POST /api/v1/threads/{thread}/presence
+	RenewThreadPresence(ctx context.Context, params RenewThreadPresenceParams) error
 	// ResumeTask invokes resume-task operation.
 	//
 	// Lets its trigger start runs again. Missed runs within `catchupSeconds` are started. Resuming an
@@ -2090,129 +2073,6 @@ func (c *Client) sendCreateFolder(ctx context.Context, request *CreateFolderRequ
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateFolderResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateRealtimeTicket invokes create-realtime-ticket operation.
-//
-// Returns the address and a short-lived ticket for the realtime WebSocket. Open
-// `{url}?ticket={ticket}`; the ticket stands in for the bearer token, which a browser cannot set on a
-// WebSocket. One connection carries every subscription of a client.
-//
-// Messages are JSON text frames. The client sends `RealtimeClientMessage` and receives
-// `RealtimeServerMessage`. Subscribe to `workspace` for every conversation, folder and task of the
-// caller in this project, and to `thread:{id}` for the transcript of one conversation. A transcript
-// subscription takes the `streamCursor` from list-thread-items and replays what was written after it;
-// when the cursor is too old the server sends `resync` and the client reads the items again.
-//
-// Reconnect with a new ticket after the connection closes. Ping at least every 30 seconds.
-//
-// POST /api/v1/realtime/tickets
-func (c *Client) CreateRealtimeTicket(ctx context.Context) (*RealtimeTicketResource, error) {
-	res, err := c.sendCreateRealtimeTicket(ctx)
-	return res, err
-}
-
-func (c *Client) sendCreateRealtimeTicket(ctx context.Context) (res *RealtimeTicketResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-realtime-ticket"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/realtime/tickets"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateRealtimeTicketOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/realtime/tickets"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateRealtimeTicketOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateRealtimeTicketResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -7835,106 +7695,6 @@ func (c *Client) sendMoveFolder(ctx context.Context, request *MoveFolderRequestB
 	return result, nil
 }
 
-// OpenRealtime invokes open-realtime operation.
-//
-// Upgrades to a WebSocket. The ticket from create-realtime-ticket authenticates the connection; a
-// missing, expired or foreign ticket closes it with code 4401. The 200 response documents the message
-// a client receives on the socket; the endpoint never answers with a plain HTTP body.
-//
-// GET /api/v1/realtime
-func (c *Client) OpenRealtime(ctx context.Context, params OpenRealtimeParams) (*RealtimeExchange, error) {
-	res, err := c.sendOpenRealtime(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendOpenRealtime(ctx context.Context, params OpenRealtimeParams) (res *RealtimeExchange, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("open-realtime"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/realtime"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, OpenRealtimeOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/realtime"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "ticket" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "ticket",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.Ticket))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeOpenRealtimeResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // PauseTask invokes pause-task operation.
 //
 // Stops future runs from its trigger. A run in progress continues. Pausing a paused task succeeds.
@@ -8541,6 +8301,139 @@ func (c *Client) sendPutUploadPart(ctx context.Context, request PutUploadPartReq
 
 	stage = "DecodeResponse"
 	result, err := decodePutUploadPartResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// RenewThreadPresence invokes renew-thread-presence operation.
+//
+// Renews an already announced browser client while the thread is open. It does not create or replace
+// the client catalogue.
+//
+// POST /api/v1/threads/{thread}/presence
+func (c *Client) RenewThreadPresence(ctx context.Context, params RenewThreadPresenceParams) error {
+	_, err := c.sendRenewThreadPresence(ctx, params)
+	return err
+}
+
+func (c *Client) sendRenewThreadPresence(ctx context.Context, params RenewThreadPresenceParams) (res *RenewThreadPresenceNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("renew-thread-presence"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}/presence"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RenewThreadPresenceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/threads/"
+	{
+		// Encode "thread" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "thread",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Thread))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/presence"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, RenewThreadPresenceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRenewThreadPresenceResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

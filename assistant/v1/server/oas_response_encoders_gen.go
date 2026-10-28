@@ -131,19 +131,6 @@ func encodeCreateFolderResponse(response *FolderResource, w http.ResponseWriter,
 	return nil
 }
 
-func encodeCreateRealtimeTicketResponse(response *RealtimeTicketResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(201)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeCreateTaskResponse(response *TaskResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
@@ -635,19 +622,6 @@ func encodeMoveFolderResponse(response *FolderResource, w http.ResponseWriter, s
 	return nil
 }
 
-func encodeOpenRealtimeResponse(response *RealtimeExchange, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodePauseTaskResponse(response *TaskResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -696,6 +670,12 @@ func encodePutUploadPartResponse(response *UploadPartResource, w http.ResponseWr
 	if _, err := e.WriteTo(w); err != nil {
 		return errors.Wrap(err, "write")
 	}
+
+	return nil
+}
+
+func encodeRenewThreadPresenceResponse(response *RenewThreadPresenceNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
 
 	return nil
 }
