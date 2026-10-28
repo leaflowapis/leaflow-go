@@ -56,6 +56,17 @@ type Handler interface {
 	//
 	// POST /api/v1/groups/{groupId}/members
 	CreateGroupMember(ctx context.Context, req *CreateGroupMemberRequest, params CreateGroupMemberParams) (*AccountResource, error)
+	// CreateMachineRegistration implements create-machine-registration operation.
+	//
+	// Reserves a machine in the current project under the given name and returns the registration with a
+	// one-time token. A machine that presents the token when it enrolls joins the project as
+	// `registration.machine_id` without approval. The token is returned only in this response and cannot
+	// be read again.
+	//
+	// Requires `fleet:machines.manage`.
+	//
+	// POST /api/v1/machine-registrations
+	CreateMachineRegistration(ctx context.Context, req *CreateMachineRegistrationRequest) (*CreateMachineRegistrationResponse, error)
 	// CreateSession implements create-session operation.
 	//
 	// Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
@@ -130,6 +141,16 @@ type Handler interface {
 	//
 	// DELETE /api/v1/machines/{machineId}
 	DeleteMachine(ctx context.Context, params DeleteMachineParams) error
+	// DeleteMachineRegistration implements delete-machine-registration operation.
+	//
+	// Revokes the registration: its token no longer enrolls a machine. Revoking a registration that is
+	// already revoked or expired succeeds and changes nothing else. A registration that a machine has used
+	// is rejected with `MACHINE_REGISTRATION_USED`; to remove that machine, delete the machine.
+	//
+	// Requires `fleet:machines.manage`.
+	//
+	// DELETE /api/v1/machine-registrations/{registrationId}
+	DeleteMachineRegistration(ctx context.Context, params DeleteMachineRegistrationParams) error
 	// DeleteViewer implements delete-viewer operation.
 	//
 	// Disconnects the viewer from the session; the session goes on. The viewer can connect again only with
@@ -189,6 +210,12 @@ type Handler interface {
 	//
 	// GET /api/v1/machines/{machineId}
 	GetMachine(ctx context.Context, params GetMachineParams) (*MachineResource, error)
+	// GetMachineRegistration implements get-machine-registration operation.
+	//
+	// Requires `fleet:machines.manage`.
+	//
+	// GET /api/v1/machine-registrations/{registrationId}
+	GetMachineRegistration(ctx context.Context, params GetMachineRegistrationParams) (*MachineRegistrationResource, error)
 	// GetPrivilegeApproval implements get-privilege-approval operation.
 	//
 	// Returns whether the caller's elevations on the machine are approved without asking. A caller who
@@ -234,6 +261,14 @@ type Handler interface {
 	//
 	// GET /api/v1/machines/{machineId}/events
 	ListMachineEvents(ctx context.Context, params ListMachineEventsParams) (*MachineEventList, error)
+	// ListMachineRegistrations implements list-machine-registrations operation.
+	//
+	// Returns the registrations of the current project, newest first. Registrations are kept for 30 days.
+	//
+	// Requires `fleet:machines.manage`.
+	//
+	// GET /api/v1/machine-registrations
+	ListMachineRegistrations(ctx context.Context, params ListMachineRegistrationsParams) (*MachineRegistrationList, error)
 	// ListMachines implements list-machines operation.
 	//
 	// Returns the machines of the current project, newest first.

@@ -264,6 +264,63 @@ func (s *CreateGroupRequest) SetName(val DirectoryName) {
 	s.Name = val
 }
 
+// Ref: #/components/schemas/CreateMachineRegistrationRequest
+type CreateMachineRegistrationRequest struct {
+	// The name of the machine in the project.
+	Name string `json:"name"`
+	// How long the token can be used, from now.
+	ExpiresInSeconds OptInt64 `json:"expires_in_seconds"`
+}
+
+// GetName returns the value of Name.
+func (s *CreateMachineRegistrationRequest) GetName() string {
+	return s.Name
+}
+
+// GetExpiresInSeconds returns the value of ExpiresInSeconds.
+func (s *CreateMachineRegistrationRequest) GetExpiresInSeconds() OptInt64 {
+	return s.ExpiresInSeconds
+}
+
+// SetName sets the value of Name.
+func (s *CreateMachineRegistrationRequest) SetName(val string) {
+	s.Name = val
+}
+
+// SetExpiresInSeconds sets the value of ExpiresInSeconds.
+func (s *CreateMachineRegistrationRequest) SetExpiresInSeconds(val OptInt64) {
+	s.ExpiresInSeconds = val
+}
+
+// Ref: #/components/schemas/CreateMachineRegistrationResponse
+type CreateMachineRegistrationResponse struct {
+	Registration MachineRegistrationResource `json:"registration"`
+	// The token to give to the machine, returned only in this response. A secret: anyone who has it can
+	// enroll a machine into the current project until it is used, expires or is revoked. Never put it in a
+	// URL.
+	Token string `json:"token"`
+}
+
+// GetRegistration returns the value of Registration.
+func (s *CreateMachineRegistrationResponse) GetRegistration() MachineRegistrationResource {
+	return s.Registration
+}
+
+// GetToken returns the value of Token.
+func (s *CreateMachineRegistrationResponse) GetToken() string {
+	return s.Token
+}
+
+// SetRegistration sets the value of Registration.
+func (s *CreateMachineRegistrationResponse) SetRegistration(val MachineRegistrationResource) {
+	s.Registration = val
+}
+
+// SetToken sets the value of Token.
+func (s *CreateMachineRegistrationResponse) SetToken(val string) {
+	s.Token = val
+}
+
 // Ref: #/components/schemas/CreateSessionRequest
 type CreateSessionRequest struct {
 	MachineID uuid.UUID         `json:"machine_id"`
@@ -441,6 +498,9 @@ type DeleteGroupNoContent struct{}
 
 // DeleteMachineNoContent is response for DeleteMachine operation.
 type DeleteMachineNoContent struct{}
+
+// DeleteMachineRegistrationNoContent is response for DeleteMachineRegistration operation.
+type DeleteMachineRegistrationNoContent struct{}
 
 // DeleteViewerNoContent is response for DeleteViewer operation.
 type DeleteViewerNoContent struct{}
@@ -1326,6 +1386,221 @@ func (s *MachineList) SetPageSize(val int64) {
 	s.PageSize = val
 }
 
+// Ref: #/components/schemas/MachineRegistrationList
+type MachineRegistrationList struct {
+	Items      []MachineRegistrationResource `json:"items"`
+	TotalCount int64                         `json:"total_count"`
+	Page       int64                         `json:"page"`
+	PageSize   int64                         `json:"page_size"`
+}
+
+// GetItems returns the value of Items.
+func (s *MachineRegistrationList) GetItems() []MachineRegistrationResource {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *MachineRegistrationList) GetTotalCount() int64 {
+	return s.TotalCount
+}
+
+// GetPage returns the value of Page.
+func (s *MachineRegistrationList) GetPage() int64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *MachineRegistrationList) GetPageSize() int64 {
+	return s.PageSize
+}
+
+// SetItems sets the value of Items.
+func (s *MachineRegistrationList) SetItems(val []MachineRegistrationResource) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *MachineRegistrationList) SetTotalCount(val int64) {
+	s.TotalCount = val
+}
+
+// SetPage sets the value of Page.
+func (s *MachineRegistrationList) SetPage(val int64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *MachineRegistrationList) SetPageSize(val int64) {
+	s.PageSize = val
+}
+
+// Ref: #/components/schemas/MachineRegistrationResource
+type MachineRegistrationResource struct {
+	ID uuid.UUID `json:"id"`
+	// The machine that the registration's token enrolls.
+	MachineID uuid.UUID `json:"machine_id"`
+	// The name of the machine in the project.
+	Name      string                   `json:"name"`
+	State     MachineRegistrationState `json:"state"`
+	CreatedAt time.Time                `json:"created_at"`
+	// When the token stops enrolling a machine.
+	ExpiresAt time.Time `json:"expires_at"`
+	// When a machine used the token; null until then.
+	UsedAt NilDateTime `json:"used_at"`
+	// The key of the machine that used the token; null until then.
+	PublicKey NilPublicKey `json:"public_key"`
+	// The IP address the machine used the token from; null until then.
+	SourceAddress NilString `json:"source_address"`
+}
+
+// GetID returns the value of ID.
+func (s *MachineRegistrationResource) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetMachineID returns the value of MachineID.
+func (s *MachineRegistrationResource) GetMachineID() uuid.UUID {
+	return s.MachineID
+}
+
+// GetName returns the value of Name.
+func (s *MachineRegistrationResource) GetName() string {
+	return s.Name
+}
+
+// GetState returns the value of State.
+func (s *MachineRegistrationResource) GetState() MachineRegistrationState {
+	return s.State
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *MachineRegistrationResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetExpiresAt returns the value of ExpiresAt.
+func (s *MachineRegistrationResource) GetExpiresAt() time.Time {
+	return s.ExpiresAt
+}
+
+// GetUsedAt returns the value of UsedAt.
+func (s *MachineRegistrationResource) GetUsedAt() NilDateTime {
+	return s.UsedAt
+}
+
+// GetPublicKey returns the value of PublicKey.
+func (s *MachineRegistrationResource) GetPublicKey() NilPublicKey {
+	return s.PublicKey
+}
+
+// GetSourceAddress returns the value of SourceAddress.
+func (s *MachineRegistrationResource) GetSourceAddress() NilString {
+	return s.SourceAddress
+}
+
+// SetID sets the value of ID.
+func (s *MachineRegistrationResource) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetMachineID sets the value of MachineID.
+func (s *MachineRegistrationResource) SetMachineID(val uuid.UUID) {
+	s.MachineID = val
+}
+
+// SetName sets the value of Name.
+func (s *MachineRegistrationResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetState sets the value of State.
+func (s *MachineRegistrationResource) SetState(val MachineRegistrationState) {
+	s.State = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *MachineRegistrationResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetExpiresAt sets the value of ExpiresAt.
+func (s *MachineRegistrationResource) SetExpiresAt(val time.Time) {
+	s.ExpiresAt = val
+}
+
+// SetUsedAt sets the value of UsedAt.
+func (s *MachineRegistrationResource) SetUsedAt(val NilDateTime) {
+	s.UsedAt = val
+}
+
+// SetPublicKey sets the value of PublicKey.
+func (s *MachineRegistrationResource) SetPublicKey(val NilPublicKey) {
+	s.PublicKey = val
+}
+
+// SetSourceAddress sets the value of SourceAddress.
+func (s *MachineRegistrationResource) SetSourceAddress(val NilString) {
+	s.SourceAddress = val
+}
+
+// `pending` waits for a machine to use the token; `used` enrolled a machine; `expired` was not used in
+// time; `revoked` was revoked before it was used.
+// Ref: #/components/schemas/MachineRegistrationState
+type MachineRegistrationState string
+
+const (
+	MachineRegistrationStatePending MachineRegistrationState = "pending"
+	MachineRegistrationStateUsed    MachineRegistrationState = "used"
+	MachineRegistrationStateExpired MachineRegistrationState = "expired"
+	MachineRegistrationStateRevoked MachineRegistrationState = "revoked"
+)
+
+// AllValues returns all MachineRegistrationState values.
+func (MachineRegistrationState) AllValues() []MachineRegistrationState {
+	return []MachineRegistrationState{
+		MachineRegistrationStatePending,
+		MachineRegistrationStateUsed,
+		MachineRegistrationStateExpired,
+		MachineRegistrationStateRevoked,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s MachineRegistrationState) MarshalText() ([]byte, error) {
+	switch s {
+	case MachineRegistrationStatePending:
+		return []byte(s), nil
+	case MachineRegistrationStateUsed:
+		return []byte(s), nil
+	case MachineRegistrationStateExpired:
+		return []byte(s), nil
+	case MachineRegistrationStateRevoked:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *MachineRegistrationState) UnmarshalText(data []byte) error {
+	switch MachineRegistrationState(data) {
+	case MachineRegistrationStatePending:
+		*s = MachineRegistrationStatePending
+		return nil
+	case MachineRegistrationStateUsed:
+		*s = MachineRegistrationStateUsed
+		return nil
+	case MachineRegistrationStateExpired:
+		*s = MachineRegistrationStateExpired
+		return nil
+	case MachineRegistrationStateRevoked:
+		*s = MachineRegistrationStateRevoked
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/MachineResource
 type MachineResource struct {
 	ID   uuid.UUID `json:"id"`
@@ -1696,6 +1971,51 @@ func (o NilOperatingSystem) Or(d OperatingSystem) OperatingSystem {
 	return d
 }
 
+// NewNilPublicKey returns new NilPublicKey with value set to v.
+func NewNilPublicKey(v PublicKey) NilPublicKey {
+	return NilPublicKey{
+		Value: v,
+	}
+}
+
+// NilPublicKey is nullable PublicKey.
+type NilPublicKey struct {
+	Value PublicKey
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilPublicKey) SetTo(v PublicKey) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilPublicKey) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilPublicKey) SetToNull() {
+	o.Null = true
+	var v PublicKey
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilPublicKey) Get() (v PublicKey, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilPublicKey) Or(d PublicKey) PublicKey {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilSessionCloseReason returns new NilSessionCloseReason with value set to v.
 func NewNilSessionCloseReason(v SessionCloseReason) NilSessionCloseReason {
 	return NilSessionCloseReason{
@@ -1735,6 +2055,51 @@ func (o NilSessionCloseReason) Get() (v SessionCloseReason, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilSessionCloseReason) Or(d SessionCloseReason) SessionCloseReason {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilString returns new NilString with value set to v.
+func NewNilString(v string) NilString {
+	return NilString{
+		Value: v,
+	}
+}
+
+// NilString is nullable string.
+type NilString struct {
+	Value string
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilString) SetTo(v string) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilString) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilString) SetToNull() {
+	o.Null = true
+	var v string
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilString) Get() (v string, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilString) Or(d string) string {
 	if v, ok := o.Get(); ok {
 		return v
 	}

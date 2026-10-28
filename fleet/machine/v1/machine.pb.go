@@ -193,9 +193,15 @@ func (MachineEventType) EnumDescriptor() ([]byte, []int) {
 type EnrollMachineRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The host name (uname(2) nodename), the machine's first name.
-	Hostname      string `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Hostname string `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
+	// A registration token created on the platform for this machine, or empty
+	// to wait for approval by pairing code. A bearer secret that enrolls once:
+	// send it only on a control connection whose certificate was verified, read
+	// it only from a file that only root can read, never log it, and delete it
+	// once the machine is enrolled.
+	RegistrationToken string `protobuf:"bytes,2,opt,name=registration_token,json=registrationToken,proto3" json:"registration_token,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *EnrollMachineRequest) Reset() {
@@ -231,6 +237,13 @@ func (*EnrollMachineRequest) Descriptor() ([]byte, []int) {
 func (x *EnrollMachineRequest) GetHostname() string {
 	if x != nil {
 		return x.Hostname
+	}
+	return ""
+}
+
+func (x *EnrollMachineRequest) GetRegistrationToken() string {
+	if x != nil {
+		return x.RegistrationToken
 	}
 	return ""
 }
@@ -753,9 +766,10 @@ var File_leaflow_fleet_machine_v1_machine_proto protoreflect.FileDescriptor
 
 const file_leaflow_fleet_machine_v1_machine_proto_rawDesc = "" +
 	"\n" +
-	"&leaflow/fleet/machine/v1/machine.proto\x12\x18leaflow.fleet.machine.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"2\n" +
+	"&leaflow/fleet/machine/v1/machine.proto\x12\x18leaflow.fleet.machine.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"a\n" +
 	"\x14EnrollMachineRequest\x12\x1a\n" +
-	"\bhostname\x18\x01 \x01(\tR\bhostname\"\xd6\x01\n" +
+	"\bhostname\x18\x01 \x01(\tR\bhostname\x12-\n" +
+	"\x12registration_token\x18\x02 \x01(\tR\x11registrationToken\"\xd6\x01\n" +
 	"\x15EnrollMachineResponse\x12?\n" +
 	"\x05state\x18\x01 \x01(\x0e2).leaflow.fleet.machine.v1.EnrollmentStateR\x05state\x12\x1d\n" +
 	"\n" +

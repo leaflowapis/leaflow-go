@@ -77,6 +77,17 @@ type Invoker interface {
 	//
 	// POST /api/v1/groups/{groupId}/members
 	CreateGroupMember(ctx context.Context, request *CreateGroupMemberRequest, params CreateGroupMemberParams) (*AccountResource, error)
+	// CreateMachineRegistration invokes create-machine-registration operation.
+	//
+	// Reserves a machine in the current project under the given name and returns the registration with a
+	// one-time token. A machine that presents the token when it enrolls joins the project as
+	// `registration.machine_id` without approval. The token is returned only in this response and cannot
+	// be read again.
+	//
+	// Requires `fleet:machines.manage`.
+	//
+	// POST /api/v1/machine-registrations
+	CreateMachineRegistration(ctx context.Context, request *CreateMachineRegistrationRequest) (*CreateMachineRegistrationResponse, error)
 	// CreateSession invokes create-session operation.
 	//
 	// Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
@@ -151,6 +162,16 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/machines/{machineId}
 	DeleteMachine(ctx context.Context, params DeleteMachineParams) error
+	// DeleteMachineRegistration invokes delete-machine-registration operation.
+	//
+	// Revokes the registration: its token no longer enrolls a machine. Revoking a registration that is
+	// already revoked or expired succeeds and changes nothing else. A registration that a machine has used
+	// is rejected with `MACHINE_REGISTRATION_USED`; to remove that machine, delete the machine.
+	//
+	// Requires `fleet:machines.manage`.
+	//
+	// DELETE /api/v1/machine-registrations/{registrationId}
+	DeleteMachineRegistration(ctx context.Context, params DeleteMachineRegistrationParams) error
 	// DeleteViewer invokes delete-viewer operation.
 	//
 	// Disconnects the viewer from the session; the session goes on. The viewer can connect again only with
@@ -210,6 +231,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/machines/{machineId}
 	GetMachine(ctx context.Context, params GetMachineParams) (*MachineResource, error)
+	// GetMachineRegistration invokes get-machine-registration operation.
+	//
+	// Requires `fleet:machines.manage`.
+	//
+	// GET /api/v1/machine-registrations/{registrationId}
+	GetMachineRegistration(ctx context.Context, params GetMachineRegistrationParams) (*MachineRegistrationResource, error)
 	// GetPrivilegeApproval invokes get-privilege-approval operation.
 	//
 	// Returns whether the caller's elevations on the machine are approved without asking. A caller who
@@ -255,6 +282,14 @@ type Invoker interface {
 	//
 	// GET /api/v1/machines/{machineId}/events
 	ListMachineEvents(ctx context.Context, params ListMachineEventsParams) (*MachineEventList, error)
+	// ListMachineRegistrations invokes list-machine-registrations operation.
+	//
+	// Returns the registrations of the current project, newest first. Registrations are kept for 30 days.
+	//
+	// Requires `fleet:machines.manage`.
+	//
+	// GET /api/v1/machine-registrations
+	ListMachineRegistrations(ctx context.Context, params ListMachineRegistrationsParams) (*MachineRegistrationList, error)
 	// ListMachines invokes list-machines operation.
 	//
 	// Returns the machines of the current project, newest first.
@@ -1085,6 +1120,136 @@ func (c *Client) sendCreateGroupMember(ctx context.Context, request *CreateGroup
 	return result, nil
 }
 
+// CreateMachineRegistration invokes create-machine-registration operation.
+//
+// Reserves a machine in the current project under the given name and returns the registration with a
+// one-time token. A machine that presents the token when it enrolls joins the project as
+// `registration.machine_id` without approval. The token is returned only in this response and cannot
+// be read again.
+//
+// Requires `fleet:machines.manage`.
+//
+// POST /api/v1/machine-registrations
+func (c *Client) CreateMachineRegistration(ctx context.Context, request *CreateMachineRegistrationRequest) (*CreateMachineRegistrationResponse, error) {
+	res, err := c.sendCreateMachineRegistration(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateMachineRegistration(ctx context.Context, request *CreateMachineRegistrationRequest) (res *CreateMachineRegistrationResponse, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-machine-registration"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/machine-registrations"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateMachineRegistrationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/machine-registrations"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateMachineRegistrationRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreateMachineRegistrationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateMachineRegistrationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // CreateSession invokes create-session operation.
 //
 // Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
@@ -1803,6 +1968,141 @@ func (c *Client) sendDeleteMachine(ctx context.Context, params DeleteMachinePara
 
 	stage = "DecodeResponse"
 	result, err := decodeDeleteMachineResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeleteMachineRegistration invokes delete-machine-registration operation.
+//
+// Revokes the registration: its token no longer enrolls a machine. Revoking a registration that is
+// already revoked or expired succeeds and changes nothing else. A registration that a machine has used
+// is rejected with `MACHINE_REGISTRATION_USED`; to remove that machine, delete the machine.
+//
+// Requires `fleet:machines.manage`.
+//
+// DELETE /api/v1/machine-registrations/{registrationId}
+func (c *Client) DeleteMachineRegistration(ctx context.Context, params DeleteMachineRegistrationParams) error {
+	_, err := c.sendDeleteMachineRegistration(ctx, params)
+	return err
+}
+
+func (c *Client) sendDeleteMachineRegistration(ctx context.Context, params DeleteMachineRegistrationParams) (res *DeleteMachineRegistrationNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-machine-registration"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/machine-registrations/{registrationId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteMachineRegistrationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/machine-registrations/"
+	{
+		// Encode "registrationId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "registrationId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.RegistrationId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, DeleteMachineRegistrationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteMachineRegistrationResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2758,6 +3058,137 @@ func (c *Client) sendGetMachine(ctx context.Context, params GetMachineParams) (r
 
 	stage = "DecodeResponse"
 	result, err := decodeGetMachineResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetMachineRegistration invokes get-machine-registration operation.
+//
+// Requires `fleet:machines.manage`.
+//
+// GET /api/v1/machine-registrations/{registrationId}
+func (c *Client) GetMachineRegistration(ctx context.Context, params GetMachineRegistrationParams) (*MachineRegistrationResource, error) {
+	res, err := c.sendGetMachineRegistration(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetMachineRegistration(ctx context.Context, params GetMachineRegistrationParams) (res *MachineRegistrationResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-machine-registration"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/machine-registrations/{registrationId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetMachineRegistrationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/machine-registrations/"
+	{
+		// Encode "registrationId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "registrationId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.RegistrationId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetMachineRegistrationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetMachineRegistrationResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3848,6 +4279,159 @@ func (c *Client) sendListMachineEvents(ctx context.Context, params ListMachineEv
 
 	stage = "DecodeResponse"
 	result, err := decodeListMachineEventsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListMachineRegistrations invokes list-machine-registrations operation.
+//
+// Returns the registrations of the current project, newest first. Registrations are kept for 30 days.
+//
+// Requires `fleet:machines.manage`.
+//
+// GET /api/v1/machine-registrations
+func (c *Client) ListMachineRegistrations(ctx context.Context, params ListMachineRegistrationsParams) (*MachineRegistrationList, error) {
+	res, err := c.sendListMachineRegistrations(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListMachineRegistrations(ctx context.Context, params ListMachineRegistrationsParams) (res *MachineRegistrationList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-machine-registrations"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/machine-registrations"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListMachineRegistrationsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/machine-registrations"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListMachineRegistrationsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListMachineRegistrationsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

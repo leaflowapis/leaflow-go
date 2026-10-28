@@ -3,6 +3,14 @@
 package fleetv1server
 
 // setDefaults set default value of fields.
+func (s *CreateMachineRegistrationRequest) setDefaults() {
+	{
+		val := int64(3600)
+		s.ExpiresInSeconds.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
 func (s *RunCommandRequest) setDefaults() {
 	{
 		val := int64(60)
