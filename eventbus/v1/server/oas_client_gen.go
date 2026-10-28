@@ -33,8 +33,8 @@ type Invoker interface {
 	//
 	// Issues a short-lived ticket for a caller who has not selected a project, or belongs to none. Only
 	// platform events are accepted, and the ticket covers only messages sent to the caller outside any
-	// project or to no recipient. The ticket cannot publish. Its `client_id_prefix` is `user.{user_id}.`.
-	// The ticket lives no longer than the token it was created with.
+	// project or to no recipient. The ticket cannot publish. The ticket lives no longer than the token it
+	// was created with.
 	//
 	// POST /api/v1/account/realtime/tickets
 	CreateAccountRealtimeTicket(ctx context.Context, request *RealtimeTicketRequest) (CreateAccountRealtimeTicketRes, error)
@@ -181,8 +181,8 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 //
 // Issues a short-lived ticket for a caller who has not selected a project, or belongs to none. Only
 // platform events are accepted, and the ticket covers only messages sent to the caller outside any
-// project or to no recipient. The ticket cannot publish. Its `client_id_prefix` is `user.{user_id}.`.
-// The ticket lives no longer than the token it was created with.
+// project or to no recipient. The ticket cannot publish. The ticket lives no longer than the token it
+// was created with.
 //
 // POST /api/v1/account/realtime/tickets
 func (c *Client) CreateAccountRealtimeTicket(ctx context.Context, request *RealtimeTicketRequest) (CreateAccountRealtimeTicketRes, error) {

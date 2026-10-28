@@ -1624,6 +1624,52 @@ func (o OptNilUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
+// NewOptPublicationRecipient returns new OptPublicationRecipient with value set to v.
+func NewOptPublicationRecipient(v PublicationRecipient) OptPublicationRecipient {
+	return OptPublicationRecipient{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPublicationRecipient is optional PublicationRecipient.
+type OptPublicationRecipient struct {
+	Value PublicationRecipient
+	Set   bool
+}
+
+// IsSet returns true if OptPublicationRecipient was set.
+func (o OptPublicationRecipient) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPublicationRecipient) Reset() {
+	var v PublicationRecipient
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPublicationRecipient) SetTo(v PublicationRecipient) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPublicationRecipient) Get() (v PublicationRecipient, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPublicationRecipient) Or(d PublicationRecipient) PublicationRecipient {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptString returns new OptString with value set to v.
 func NewOptString(v string) OptString {
 	return OptString{
@@ -1724,9 +1770,8 @@ type Publication struct {
 	Version OptInt64 `json:"version"`
 	// The last levels of the message's topic, separated by `/`. Subscribers select messages by level. No
 	// level may be empty, and neither `+` nor `#` may appear.
-	Key OptString `json:"key"`
-	// A member of the current project; when set, only that member receives the message.
-	Subject OptString `json:"subject"`
+	Key       OptString               `json:"key"`
+	Recipient OptPublicationRecipient `json:"recipient"`
 	// The message payload.
 	Data PublicationData `json:"data"`
 }
@@ -1746,9 +1791,9 @@ func (s *Publication) GetKey() OptString {
 	return s.Key
 }
 
-// GetSubject returns the value of Subject.
-func (s *Publication) GetSubject() OptString {
-	return s.Subject
+// GetRecipient returns the value of Recipient.
+func (s *Publication) GetRecipient() OptPublicationRecipient {
+	return s.Recipient
 }
 
 // GetData returns the value of Data.
@@ -1771,9 +1816,9 @@ func (s *Publication) SetKey(val OptString) {
 	s.Key = val
 }
 
-// SetSubject sets the value of Subject.
-func (s *Publication) SetSubject(val OptString) {
-	s.Subject = val
+// SetRecipient sets the value of Recipient.
+func (s *Publication) SetRecipient(val OptPublicationRecipient) {
+	s.Recipient = val
 }
 
 // SetData sets the value of Data.
@@ -1791,6 +1836,22 @@ func (s *PublicationData) init() PublicationData {
 		*s = m
 	}
 	return m
+}
+
+// A member of the current project; when set, only that member receives the message.
+// Ref: #/components/schemas/PublicationRecipient
+type PublicationRecipient struct {
+	ID string `json:"id"`
+}
+
+// GetID returns the value of ID.
+func (s *PublicationRecipient) GetID() string {
+	return s.ID
+}
+
+// SetID sets the value of ID.
+func (s *PublicationRecipient) SetID(val string) {
+	s.ID = val
 }
 
 type PublishEventsBadRequest Error
@@ -1819,14 +1880,13 @@ func (*PublishEventsUnauthorized) publishEventsRes() {}
 
 // Ref: #/components/schemas/PublishRequest
 type PublishRequest struct {
-	// The publishing client: the caller's prefix, `user.{user_id}.project.{project_id}.`, followed by one
-	// segment of up to 64 letters, digits, hyphens or underscores.
-	ClientID string        `json:"client_id"`
+	// Any label for the publishing client, such as one per browser tab; it need not be unique.
+	ClientID OptString     `json:"client_id"`
 	Messages []Publication `json:"messages"`
 }
 
 // GetClientID returns the value of ClientID.
-func (s *PublishRequest) GetClientID() string {
+func (s *PublishRequest) GetClientID() OptString {
 	return s.ClientID
 }
 
@@ -1836,7 +1896,7 @@ func (s *PublishRequest) GetMessages() []Publication {
 }
 
 // SetClientID sets the value of ClientID.
-func (s *PublishRequest) SetClientID(val string) {
+func (s *PublishRequest) SetClientID(val OptString) {
 	s.ClientID = val
 }
 
@@ -1921,8 +1981,6 @@ type RealtimeTicket struct {
 	Ticket string `json:"ticket"`
 	// When the ticket expires, in UTC RFC 3339; renew the connection before then.
 	ExpiresAt time.Time `json:"expires_at"`
-	// The prefix every client ID on this ticket must start with.
-	ClientIDPrefix string `json:"client_id_prefix"`
 	// The topic filters the ticket covers; subscribe to these or to filters within them.
 	Topics []string `json:"topics"`
 }
@@ -1935,11 +1993,6 @@ func (s *RealtimeTicket) GetTicket() string {
 // GetExpiresAt returns the value of ExpiresAt.
 func (s *RealtimeTicket) GetExpiresAt() time.Time {
 	return s.ExpiresAt
-}
-
-// GetClientIDPrefix returns the value of ClientIDPrefix.
-func (s *RealtimeTicket) GetClientIDPrefix() string {
-	return s.ClientIDPrefix
 }
 
 // GetTopics returns the value of Topics.
@@ -1955,11 +2008,6 @@ func (s *RealtimeTicket) SetTicket(val string) {
 // SetExpiresAt sets the value of ExpiresAt.
 func (s *RealtimeTicket) SetExpiresAt(val time.Time) {
 	s.ExpiresAt = val
-}
-
-// SetClientIDPrefix sets the value of ClientIDPrefix.
-func (s *RealtimeTicket) SetClientIDPrefix(val string) {
-	s.ClientIDPrefix = val
 }
 
 // SetTopics sets the value of Topics.
