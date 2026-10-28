@@ -5376,24 +5376,30 @@ type RequestResource struct {
 	// Null for a request that did not come through one of the project's API keys.
 	APIKeyID NilUUID `json:"api_key_id"`
 	// The portion served from the upstream prefix cache, which costs an order of magnitude less than
-	// ordinary input.
-	CacheReadTokens  int64 `json:"cache_read_tokens"`
-	CacheWriteTokens int64 `json:"cache_write_tokens"`
+	// ordinary input. Null on a request billed on a non-token meter.
+	CacheReadTokens NilInt64 `json:"cache_read_tokens"`
+	// Tokens written to the provider's prompt cache. Null on a request billed on a non-token meter.
+	CacheWriteTokens NilInt64 `json:"cache_write_tokens"`
 	// The error code on failure. Empty on success.
 	ErrorCode    string      `json:"error_code"`
 	FinishedAt   NilDateTime `json:"finished_at"`
 	FirstTokenAt NilDateTime `json:"first_token_at"`
 	// A typed request id such as `req_01j...`. Legacy rows may still be returned as a bare UUID.
-	ID          string `json:"id"`
-	InputTokens int64  `json:"input_tokens"`
+	ID string `json:"id"`
+	// Input tokens the provider billed for. Null on a request billed on a non-token meter, such as image
+	// generation, video generation or speech.
+	InputTokens NilInt64 `json:"input_tokens"`
 	// The model named in the request.
 	ModelID string `json:"model_id"`
 	// The request operation, such as video_create or video_retrieve. Absent for historical requests where
 	// it was not recorded.
-	Operation       OptString `json:"operation"`
-	OutputTokens    int64     `json:"output_tokens"`
-	ReasoningTokens int64     `json:"reasoning_tokens"`
-	Retries         int64     `json:"retries"`
+	Operation OptString `json:"operation"`
+	// Output tokens the provider billed for. Null on a request billed on a non-token meter, such as image
+	// generation, video generation or speech.
+	OutputTokens NilInt64 `json:"output_tokens"`
+	// Reasoning tokens the provider reports separately. Null on a request billed on a non-token meter.
+	ReasoningTokens NilInt64 `json:"reasoning_tokens"`
+	Retries         int64    `json:"retries"`
 	// Who made the request. `api_key` means one of the project's API keys and `project_token` a project
 	// access token on the OpenAI-compatible endpoints; any other value names the Leaflow service that made
 	// it on the project's behalf, such as `assistant`, and more services may appear. Null for requests
@@ -5420,12 +5426,12 @@ func (s *RequestResource) GetAPIKeyID() NilUUID {
 }
 
 // GetCacheReadTokens returns the value of CacheReadTokens.
-func (s *RequestResource) GetCacheReadTokens() int64 {
+func (s *RequestResource) GetCacheReadTokens() NilInt64 {
 	return s.CacheReadTokens
 }
 
 // GetCacheWriteTokens returns the value of CacheWriteTokens.
-func (s *RequestResource) GetCacheWriteTokens() int64 {
+func (s *RequestResource) GetCacheWriteTokens() NilInt64 {
 	return s.CacheWriteTokens
 }
 
@@ -5450,7 +5456,7 @@ func (s *RequestResource) GetID() string {
 }
 
 // GetInputTokens returns the value of InputTokens.
-func (s *RequestResource) GetInputTokens() int64 {
+func (s *RequestResource) GetInputTokens() NilInt64 {
 	return s.InputTokens
 }
 
@@ -5465,12 +5471,12 @@ func (s *RequestResource) GetOperation() OptString {
 }
 
 // GetOutputTokens returns the value of OutputTokens.
-func (s *RequestResource) GetOutputTokens() int64 {
+func (s *RequestResource) GetOutputTokens() NilInt64 {
 	return s.OutputTokens
 }
 
 // GetReasoningTokens returns the value of ReasoningTokens.
-func (s *RequestResource) GetReasoningTokens() int64 {
+func (s *RequestResource) GetReasoningTokens() NilInt64 {
 	return s.ReasoningTokens
 }
 
@@ -5530,12 +5536,12 @@ func (s *RequestResource) SetAPIKeyID(val NilUUID) {
 }
 
 // SetCacheReadTokens sets the value of CacheReadTokens.
-func (s *RequestResource) SetCacheReadTokens(val int64) {
+func (s *RequestResource) SetCacheReadTokens(val NilInt64) {
 	s.CacheReadTokens = val
 }
 
 // SetCacheWriteTokens sets the value of CacheWriteTokens.
-func (s *RequestResource) SetCacheWriteTokens(val int64) {
+func (s *RequestResource) SetCacheWriteTokens(val NilInt64) {
 	s.CacheWriteTokens = val
 }
 
@@ -5560,7 +5566,7 @@ func (s *RequestResource) SetID(val string) {
 }
 
 // SetInputTokens sets the value of InputTokens.
-func (s *RequestResource) SetInputTokens(val int64) {
+func (s *RequestResource) SetInputTokens(val NilInt64) {
 	s.InputTokens = val
 }
 
@@ -5575,12 +5581,12 @@ func (s *RequestResource) SetOperation(val OptString) {
 }
 
 // SetOutputTokens sets the value of OutputTokens.
-func (s *RequestResource) SetOutputTokens(val int64) {
+func (s *RequestResource) SetOutputTokens(val NilInt64) {
 	s.OutputTokens = val
 }
 
 // SetReasoningTokens sets the value of ReasoningTokens.
-func (s *RequestResource) SetReasoningTokens(val int64) {
+func (s *RequestResource) SetReasoningTokens(val NilInt64) {
 	s.ReasoningTokens = val
 }
 
