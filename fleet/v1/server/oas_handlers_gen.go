@@ -4848,6 +4848,8 @@ func (s *Server) handleListSessionsRequest(args [0]string, argsEscaped bool, w h
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;
 //   - `COMMAND_START_FAILED` when the shell could not start; nothing ran;
+//   - `COMMAND_LOST` when the machine lost the command while it ran. The command may have run in part,
+//     and its output is lost;
 //   - `MACHINE_TIMEOUT` when the machine did not answer in time. The command may have run.
 //
 // POST /api/v1/machines/{machineId}:runCommand

@@ -97,7 +97,10 @@ type Call struct {
 	// How long the callee may work on the call, counted from receipt. When it
 	// passes the result is DEADLINE_EXCEEDED. Unset: the default the method
 	// documents.
-	Timeout       *durationpb.Duration `protobuf:"bytes,4,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	Timeout *durationpb.Duration `protobuf:"bytes,4,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	// Set on every piece of the payload but the last (see Pieces). Method and
+	// timeout are only on the first piece.
+	More          bool `protobuf:"varint,5,opt,name=more,proto3" json:"more,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -160,6 +163,13 @@ func (x *Call) GetTimeout() *durationpb.Duration {
 	return nil
 }
 
+func (x *Call) GetMore() bool {
+	if x != nil {
+		return x.More
+	}
+	return false
+}
+
 // The result of a Call. Exactly one CallResult answers every Call, including
 // a cancelled one. Calls still outstanding when the carrier closes have no
 // result and are never resent.
@@ -173,7 +183,9 @@ type CallResult struct {
 	//
 	//	*CallResult_Payload
 	//	*CallResult_Error
-	Result        isCallResult_Result `protobuf_oneof:"result"`
+	Result isCallResult_Result `protobuf_oneof:"result"`
+	// Set on every piece of the payload but the last (see Pieces).
+	More          bool `protobuf:"varint,4,opt,name=more,proto3" json:"more,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -238,6 +250,13 @@ func (x *CallResult) GetError() *status.Status {
 		}
 	}
 	return nil
+}
+
+func (x *CallResult) GetMore() bool {
+	if x != nil {
+		return x.More
+	}
+	return false
 }
 
 type isCallResult_Result interface {
@@ -466,19 +485,21 @@ var File_leaflow_fleet_rpc_v1_rpc_proto protoreflect.FileDescriptor
 
 const file_leaflow_fleet_rpc_v1_rpc_proto_rawDesc = "" +
 	"\n" +
-	"\x1eleaflow/fleet/rpc/v1/rpc.proto\x12\x14leaflow.fleet.rpc.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\"\x8c\x01\n" +
+	"\x1eleaflow/fleet/rpc/v1/rpc.proto\x12\x14leaflow.fleet.rpc.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\"\xa0\x01\n" +
 	"\x04Call\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12\x16\n" +
 	"\x06method\x18\x02 \x01(\tR\x06method\x12\x18\n" +
 	"\apayload\x18\x03 \x01(\fR\apayload\x123\n" +
-	"\atimeout\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\atimeout\"}\n" +
+	"\atimeout\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12\x12\n" +
+	"\x04more\x18\x05 \x01(\bR\x04more\"\x91\x01\n" +
 	"\n" +
 	"CallResult\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12\x1a\n" +
 	"\apayload\x18\x02 \x01(\fH\x00R\apayload\x12*\n" +
-	"\x05error\x18\x03 \x01(\v2\x12.google.rpc.StatusH\x00R\x05errorB\b\n" +
+	"\x05error\x18\x03 \x01(\v2\x12.google.rpc.StatusH\x00R\x05error\x12\x12\n" +
+	"\x04more\x18\x04 \x01(\bR\x04moreB\b\n" +
 	"\x06result\"+\n" +
 	"\n" +
 	"CallCancel\x12\x1d\n" +

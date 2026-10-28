@@ -605,7 +605,8 @@ type ServerHello struct {
 	// How long either side waits without receiving anything before it closes
 	// the connection.
 	IdleTimeout *durationpb.Duration `protobuf:"bytes,4,opt,name=idle_timeout,json=idleTimeout,proto3" json:"idle_timeout,omitempty"`
-	// The largest message, in bytes, either end may send.
+	// The largest message, in bytes, either end may send. At least 512 KiB, so
+	// that a piece of a call's payload (leaflow.fleet.rpc.v1) always fits.
 	MaxMessageSize uint32 `protobuf:"varint,5,opt,name=max_message_size,json=maxMessageSize,proto3" json:"max_message_size,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache

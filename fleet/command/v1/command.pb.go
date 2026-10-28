@@ -32,8 +32,11 @@ type RunCommandRequest struct {
 	Username string `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
 	// The command line for the account's login shell (`shell -c command`).
 	Command string `protobuf:"bytes,3,opt,name=command,proto3" json:"command,omitempty"`
-	// Kills the command, and every process it started, this long after it
-	// started. 1 to 300 seconds; unset: 60 seconds.
+	// Kills the command, and every process it started, when it has not ended
+	// this long after it started: the shell still runs or its output is still
+	// open. 1 to 300 seconds; unset: 60 seconds. As with ssh, a command ends
+	// without waiting for what it left running in the background with its
+	// output elsewhere (`nohup daemon >log 2>&1 &`), and that keeps running.
 	Timeout       *durationpb.Duration `protobuf:"bytes,4,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
