@@ -1224,8 +1224,9 @@ type Welcome struct {
 	SessionId string `protobuf:"bytes,3,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	// The keys the service signs with.
 	SigningKeys *SigningKeys `protobuf:"bytes,4,opt,name=signing_keys,json=signingKeys,proto3" json:"signing_keys,omitempty"`
-	// How long the service keeps the session's participants when this connection
-	// drops. Session processes only.
+	// How long, after this connection drops, the service waits for the results
+	// of the calls the endpoint received on it (see Disconnection) and, for a
+	// session process, keeps the session's participants.
 	ResumeGrace *durationpb.Duration `protobuf:"bytes,5,opt,name=resume_grace,json=resumeGrace,proto3" json:"resume_grace,omitempty"`
 	// The session process connected again within resume_grace and kept its
 	// participants. Session processes only.

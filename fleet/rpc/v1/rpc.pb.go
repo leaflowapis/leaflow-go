@@ -97,7 +97,12 @@ type Call struct {
 	// How long the callee may work on the call, counted from receipt. When it
 	// passes the result is DEADLINE_EXCEEDED. Unset: the default the method
 	// documents.
-	Timeout       *durationpb.Duration `protobuf:"bytes,4,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	Timeout *durationpb.Duration `protobuf:"bytes,4,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	// Set by the service on the calls it makes on a control connection
+	// (leaflow.fleet.control.v1): an opaque value of at most 256 bytes that the
+	// callee copies into the CallResult. It lets any address of the service
+	// pass on a result that arrives on a later connection.
+	ResumeToken   []byte `protobuf:"bytes,5,opt,name=resume_token,json=resumeToken,proto3" json:"resume_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -160,9 +165,17 @@ func (x *Call) GetTimeout() *durationpb.Duration {
 	return nil
 }
 
+func (x *Call) GetResumeToken() []byte {
+	if x != nil {
+		return x.ResumeToken
+	}
+	return nil
+}
+
 // The result of a Call. Exactly one CallResult answers every Call, including
-// a cancelled one. Calls still outstanding when the carrier closes have no
-// result and are never resent.
+// a cancelled one. Calls still outstanding when the carrier closes are never
+// resent; a control connection (leaflow.fleet.control.v1) carries their
+// results on the callee's next connection, other carriers drop them.
 type CallResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The request_id of the Call being answered.
@@ -173,7 +186,9 @@ type CallResult struct {
 	//
 	//	*CallResult_Payload
 	//	*CallResult_Error
-	Result        isCallResult_Result `protobuf_oneof:"result"`
+	Result isCallResult_Result `protobuf_oneof:"result"`
+	// The resume_token of the Call, unchanged.
+	ResumeToken   []byte `protobuf:"bytes,4,opt,name=resume_token,json=resumeToken,proto3" json:"resume_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -236,6 +251,13 @@ func (x *CallResult) GetError() *status.Status {
 		if x, ok := x.Result.(*CallResult_Error); ok {
 			return x.Error
 		}
+	}
+	return nil
+}
+
+func (x *CallResult) GetResumeToken() []byte {
+	if x != nil {
+		return x.ResumeToken
 	}
 	return nil
 }
@@ -466,19 +488,21 @@ var File_leaflow_fleet_rpc_v1_rpc_proto protoreflect.FileDescriptor
 
 const file_leaflow_fleet_rpc_v1_rpc_proto_rawDesc = "" +
 	"\n" +
-	"\x1eleaflow/fleet/rpc/v1/rpc.proto\x12\x14leaflow.fleet.rpc.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\"\x8c\x01\n" +
+	"\x1eleaflow/fleet/rpc/v1/rpc.proto\x12\x14leaflow.fleet.rpc.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\"\xaf\x01\n" +
 	"\x04Call\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12\x16\n" +
 	"\x06method\x18\x02 \x01(\tR\x06method\x12\x18\n" +
 	"\apayload\x18\x03 \x01(\fR\apayload\x123\n" +
-	"\atimeout\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\atimeout\"}\n" +
+	"\atimeout\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12!\n" +
+	"\fresume_token\x18\x05 \x01(\fR\vresumeToken\"\xa0\x01\n" +
 	"\n" +
 	"CallResult\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12\x1a\n" +
 	"\apayload\x18\x02 \x01(\fH\x00R\apayload\x12*\n" +
-	"\x05error\x18\x03 \x01(\v2\x12.google.rpc.StatusH\x00R\x05errorB\b\n" +
+	"\x05error\x18\x03 \x01(\v2\x12.google.rpc.StatusH\x00R\x05error\x12!\n" +
+	"\fresume_token\x18\x04 \x01(\fR\vresumeTokenB\b\n" +
 	"\x06result\"+\n" +
 	"\n" +
 	"CallCancel\x12\x1d\n" +

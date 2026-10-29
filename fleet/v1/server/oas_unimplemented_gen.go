@@ -63,8 +63,8 @@ func (UnimplementedHandler) CloseSession(ctx context.Context, params CloseSessio
 //
 //   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
 //   - `CHECKPOINT_INVALID` when the checkpoint is not a serialized `Checkpoint`;
-//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
-//     again after the error's `retry_delay`.
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected and does not connect again in
+//     time, or did not answer in time; try again after the error's `retry_delay`.
 //
 // POST /api/v1/sessions/{sessionId}/participants/{participantId}:commitMigration
 func (UnimplementedHandler) CommitParticipantMigration(ctx context.Context, req *MigrationStep, params CommitParticipantMigrationParams) (r *MigrationStep, _ error) {
@@ -135,8 +135,8 @@ func (UnimplementedHandler) CreateMachineRegistration(ctx context.Context, req *
 //   - `SESSION_CLOSED` when the session has ended;
 //   - `SESSION_ACCESS_DENIED` when the caller may not join the session;
 //   - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
-//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time, such
-//     as while it restarts; try again after the error's `retry_delay`;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected and does not connect again in
+//     time, or did not answer in time; try again after the error's `retry_delay`;
 //   - `PARTICIPANT_LIMIT_REACHED` when the session has as many participants as it admits;
 //   - `PARTICIPANT_REFUSED` when the session refused the participant;
 //   - `PARTICIPANT_KEY_IN_USE` when the public key belongs to a participant of the session that another
@@ -165,8 +165,8 @@ func (UnimplementedHandler) CreateParticipant(ctx context.Context, req *CreatePa
 //   - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
 //   - `RATE_LIMIT_EXCEEDED` when the participant started too many PeerConnections in the last minute;
 //     try again after the error's `retry_delay`;
-//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
-//     again after the error's `retry_delay`;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected and does not connect again in
+//     time, or did not answer in time; try again after the error's `retry_delay`;
 //   - `PEER_CONNECTION_ABORTED` when the session gave up the PeerConnection; start another.
 //
 // POST /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections
@@ -185,8 +185,8 @@ func (UnimplementedHandler) CreatePeerConnection(ctx context.Context, req *Creat
 // Fails with:
 //
 //   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
-//   - `SESSION_UNAVAILABLE` when the session's process is not connected; try again after the error's
-//     `retry_delay`.
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected and does not connect again in
+//     time; try again after the error's `retry_delay`.
 //
 // POST /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}/candidates
 func (UnimplementedHandler) CreatePeerConnectionCandidates(ctx context.Context, req *CreatePeerConnectionCandidatesRequest, params CreatePeerConnectionCandidatesParams) error {
@@ -196,9 +196,11 @@ func (UnimplementedHandler) CreatePeerConnectionCandidates(ctx context.Context, 
 // CreateSession implements create-session operation.
 //
 // Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
-// With `desktop` the session has a desktop; without, it offers terminals, programs, files, ports,
-// sound, devices, printers and privilege approvals. The account is created if the caller has none yet.
-// Requires `fleet:machines.login` on the machine.
+// With `desktop` the session has a desktop. Without, it is a terminal session: its one terminal runs
+// the caller's login shell from the start, every participant attaches to that terminal, and the
+// session ends when the shell exits; a caller who wants another terminal opens another session. Either
+// kind also offers programs, files, ports, sound, devices, printers and privilege approvals. The
+// account is created if the caller has none yet. Requires `fleet:machines.login` on the machine.
 //
 // On a machine an account has at most one session with a desktop and at most 8 sessions in all.
 // Sessions without a desktop run side by side, such as one for a program and one for a person; several
@@ -206,7 +208,7 @@ func (UnimplementedHandler) CreatePeerConnectionCandidates(ctx context.Context, 
 //
 // Fails with:
 //
-//   - `MACHINE_OFFLINE` when the machine is not connected;
+//   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
 //   - `FEATURE_UNAVAILABLE` when the machine does not offer sessions, or with `desktop`, desktops;
 //   - `USER_HAS_DESKTOP_SESSION` with `desktop` when the account already has a session with a desktop
 //     on the machine, which `metadata.sessionId` names; connect to it instead;
@@ -544,8 +546,8 @@ func (UnimplementedHandler) ListSessions(ctx context.Context, params ListSession
 //
 //   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
 //   - `CHECKPOINT_INVALID` when the checkpoint is not a serialized `Checkpoint`;
-//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
-//     again after the error's `retry_delay`.
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected and does not connect again in
+//     time, or did not answer in time; try again after the error's `retry_delay`.
 //
 // POST /api/v1/sessions/{sessionId}/participants/{participantId}:prepareMigration
 func (UnimplementedHandler) PrepareParticipantMigration(ctx context.Context, req *MigrationStep, params PrepareParticipantMigrationParams) (r *MigrationStep, _ error) {
@@ -593,7 +595,7 @@ func (UnimplementedHandler) RenewParticipant(ctx context.Context, req *RenewPart
 //
 // Fails with:
 //
-//   - `MACHINE_OFFLINE` when the machine is not connected;
+//   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
 //   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.command.v1`;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;

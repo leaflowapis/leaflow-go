@@ -1813,7 +1813,8 @@ type MachineResource struct {
 	// The host name the machine last reported.
 	Hostname  string    `json:"hostname"`
 	PublicKey PublicKey `json:"public_key"`
-	// The machine's Agent is connected.
+	// The machine's Agent is connected, or lost its connection less than a minute ago and may connect
+	// again.
 	Online bool `json:"online"`
 	// Null until the machine has reported once.
 	OperatingSystem NilOperatingSystem `json:"operating_system"`
@@ -3889,10 +3890,10 @@ func (s *RunCommandResponse) SetStderrTruncated(val bool) {
 }
 
 // Why a session ended. `close_requested` and `terminate_requested` follow a request; `logout` the user
-// logged out; `disconnected_timeout`, `no_participant_timeout` and `max_lifetime` a time limit passed;
-// `display_exit` and `process_lost` the session failed; `open_failed` it never opened;
-// `access_revoked` its user may no longer log in; `machine_restarted` the machine restarted; `unknown`
-// the machine no longer reports it.
+// logged out, such as when the shell of a terminal session exited; `disconnected_timeout`,
+// `no_participant_timeout` and `max_lifetime` a time limit passed; `display_exit` and `process_lost`
+// the session failed; `open_failed` it never opened; `access_revoked` its user may no longer log in;
+// `machine_restarted` the machine restarted; `unknown` the machine no longer reports it.
 // Ref: #/components/schemas/SessionCloseReason
 type SessionCloseReason string
 
@@ -4108,8 +4109,8 @@ type SessionResource struct {
 	// The session's desktop; null for a session without one.
 	Desktop NilDesktopState `json:"desktop"`
 	// The session's process is connected to the service, so participants can join and start
-	// PeerConnections. False while it restarts; such requests are then answered with `SESSION_UNAVAILABLE`
-	// and succeed again shortly.
+	// PeerConnections. False while it connects again, such as after it restarted; such requests then wait
+	// for it and fail with `SESSION_UNAVAILABLE` only if it does not come back in time.
 	ProcessConnected bool `json:"process_connected"`
 	// The last input of a person in the session.
 	LastInputAt NilDateTime `json:"last_input_at"`

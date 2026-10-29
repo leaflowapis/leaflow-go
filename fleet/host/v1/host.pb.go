@@ -93,7 +93,8 @@ const (
 	SessionCloseReason_SESSION_CLOSE_REASON_CLOSE_REQUESTED SessionCloseReason = 1
 	// TerminateSession was called.
 	SessionCloseReason_SESSION_CLOSE_REASON_TERMINATE_REQUESTED SessionCloseReason = 2
-	// The user logged out.
+	// The user logged out, such as when the shell of a terminal session
+	// exited.
 	SessionCloseReason_SESSION_CLOSE_REASON_LOGOUT SessionCloseReason = 3
 	// SessionPolicy.disconnected_timeout passed.
 	SessionCloseReason_SESSION_CLOSE_REASON_DISCONNECTED_TIMEOUT SessionCloseReason = 4
