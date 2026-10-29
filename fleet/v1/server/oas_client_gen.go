@@ -598,9 +598,10 @@ type Invoker interface {
 	// `tools/call`, `resources/read` or `prompts/get`, and returns the server's response. The machine
 	// starts or connects to the server if it is not running, and handles its initialization itself; a
 	// request still running when `timeout_seconds` passes is cancelled at the server. Requests the server
-	// makes of the client, such as for sampling, are refused, and its notifications, such as of progress,
-	// are dropped. A response with a JSON-RPC error is a successful request. Neither the request nor the
-	// response is hidden from the platform. Requires `fleet:machines.login` on the machine.
+	// makes of the client are answered as by a client that offers no sampling, elicitation or roots, and
+	// its notifications, such as of progress, are dropped. A response with a JSON-RPC error is a
+	// successful request. Neither the request nor the response is hidden from the platform. Requires
+	// `fleet:machines.login` on the machine.
 	//
 	// Fails with:
 	//
@@ -8154,9 +8155,10 @@ func (c *Client) sendRunMachineCommand(ctx context.Context, request *RunCommandR
 // `tools/call`, `resources/read` or `prompts/get`, and returns the server's response. The machine
 // starts or connects to the server if it is not running, and handles its initialization itself; a
 // request still running when `timeout_seconds` passes is cancelled at the server. Requests the server
-// makes of the client, such as for sampling, are refused, and its notifications, such as of progress,
-// are dropped. A response with a JSON-RPC error is a successful request. Neither the request nor the
-// response is hidden from the platform. Requires `fleet:machines.login` on the machine.
+// makes of the client are answered as by a client that offers no sampling, elicitation or roots, and
+// its notifications, such as of progress, are dropped. A response with a JSON-RPC error is a
+// successful request. Neither the request nor the response is hidden from the platform. Requires
+// `fleet:machines.login` on the machine.
 //
 // Fails with:
 //

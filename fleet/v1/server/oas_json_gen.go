@@ -6565,8 +6565,6 @@ func (s *McpTransport) Decode(d *jx.Decoder) error {
 		*s = McpTransportStdio
 	case McpTransportHTTP:
 		*s = McpTransportHTTP
-	case McpTransportSse:
-		*s = McpTransportSse
 	default:
 		*s = McpTransport(v)
 	}

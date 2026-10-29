@@ -2314,7 +2314,7 @@ type McpServerResource struct {
 	Args    []string `json:"args"`
 	// The variables `env` sets; their values are never returned.
 	EnvKeys []string `json:"env_keys"`
-	// With `http` and `sse`, the endpoint.
+	// With `http`, the endpoint.
 	URL string `json:"url"`
 	// The headers `headers` sends; their values are never returned.
 	HeaderKeys []string `json:"header_keys"`
@@ -2682,15 +2682,13 @@ func (s *McpToolResourceOutputSchema) init() McpToolResourceOutputSchema {
 	return m
 }
 
-// `stdio` for a program the machine starts as the account, `http` for Streamable HTTP and `sse` for
-// HTTP with Server-Sent Events, the transport of earlier revisions of MCP.
+// `stdio` for a program the machine starts as the account, `http` for Streamable HTTP.
 // Ref: #/components/schemas/McpTransport
 type McpTransport string
 
 const (
 	McpTransportStdio McpTransport = "stdio"
 	McpTransportHTTP  McpTransport = "http"
-	McpTransportSse   McpTransport = "sse"
 )
 
 // AllValues returns all McpTransport values.
@@ -2698,7 +2696,6 @@ func (McpTransport) AllValues() []McpTransport {
 	return []McpTransport{
 		McpTransportStdio,
 		McpTransportHTTP,
-		McpTransportSse,
 	}
 }
 
@@ -2708,8 +2705,6 @@ func (s McpTransport) MarshalText() ([]byte, error) {
 	case McpTransportStdio:
 		return []byte(s), nil
 	case McpTransportHTTP:
-		return []byte(s), nil
-	case McpTransportSse:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -2724,9 +2719,6 @@ func (s *McpTransport) UnmarshalText(data []byte) error {
 		return nil
 	case McpTransportHTTP:
 		*s = McpTransportHTTP
-		return nil
-	case McpTransportSse:
-		*s = McpTransportSse
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -5691,9 +5683,9 @@ type UpdateMcpServerRequest struct {
 	Args []string `json:"args"`
 	// With `stdio`, variables added to the account's environment.
 	Env OptUpdateMcpServerRequestEnv `json:"env"`
-	// With `http` and `sse`, the endpoint; shown to anyone who reads the configuration.
+	// With `http`, the endpoint; shown to anyone who reads the configuration.
 	URL OptString `json:"url"`
-	// With `http` and `sse`, headers sent with every request.
+	// With `http`, headers sent with every request.
 	Headers OptUpdateMcpServerRequestHeaders `json:"headers"`
 	// Configured but kept stopped.
 	Disabled OptBool `json:"disabled"`
@@ -5817,7 +5809,7 @@ func (s *UpdateMcpServerRequestEnv) init() UpdateMcpServerRequestEnv {
 	return m
 }
 
-// With `http` and `sse`, headers sent with every request.
+// With `http`, headers sent with every request.
 type UpdateMcpServerRequestHeaders map[string]string
 
 func (s *UpdateMcpServerRequestHeaders) init() UpdateMcpServerRequestHeaders {

@@ -92,8 +92,6 @@ const (
 	McpTransport_MCP_TRANSPORT_STDIO McpTransport = 1
 	// Streamable HTTP.
 	McpTransport_MCP_TRANSPORT_HTTP McpTransport = 2
-	// HTTP with Server-Sent Events, the transport of earlier revisions of MCP.
-	McpTransport_MCP_TRANSPORT_SSE McpTransport = 3
 )
 
 // Enum value maps for McpTransport.
@@ -102,13 +100,11 @@ var (
 		0: "MCP_TRANSPORT_UNSPECIFIED",
 		1: "MCP_TRANSPORT_STDIO",
 		2: "MCP_TRANSPORT_HTTP",
-		3: "MCP_TRANSPORT_SSE",
 	}
 	McpTransport_value = map[string]int32{
 		"MCP_TRANSPORT_UNSPECIFIED": 0,
 		"MCP_TRANSPORT_STDIO":       1,
 		"MCP_TRANSPORT_HTTP":        2,
-		"MCP_TRANSPORT_SSE":         3,
 	}
 )
 
@@ -621,9 +617,9 @@ type McpServerDefinition struct {
 	Args []string `protobuf:"bytes,3,rep,name=args,proto3" json:"args,omitempty"`
 	// STDIO only: variables added to the account's environment. Secret.
 	Env map[string]string `protobuf:"bytes,4,rep,name=env,proto3" json:"env,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	// HTTP and SSE only: the endpoint.
+	// HTTP only: the endpoint.
 	Url string `protobuf:"bytes,5,opt,name=url,proto3" json:"url,omitempty"`
-	// HTTP and SSE only: headers sent with every request. Secret.
+	// HTTP only: headers sent with every request. Secret.
 	Headers map[string]string `protobuf:"bytes,6,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// Configured but kept stopped.
 	Disabled      bool `protobuf:"varint,7,opt,name=disabled,proto3" json:"disabled,omitempty"`
@@ -1650,12 +1646,11 @@ const file_leaflow_fleet_mcp_v1_mcp_proto_rawDesc = "" +
 	"\x1aMCP_CONFIGURATION_STATE_OK\x10\x01\x12#\n" +
 	"\x1fMCP_CONFIGURATION_STATE_MISSING\x10\x02\x12&\n" +
 	"\"MCP_CONFIGURATION_STATE_UNREADABLE\x10\x03\x12#\n" +
-	"\x1fMCP_CONFIGURATION_STATE_INVALID\x10\x04*u\n" +
+	"\x1fMCP_CONFIGURATION_STATE_INVALID\x10\x04*^\n" +
 	"\fMcpTransport\x12\x1d\n" +
 	"\x19MCP_TRANSPORT_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13MCP_TRANSPORT_STDIO\x10\x01\x12\x16\n" +
-	"\x12MCP_TRANSPORT_HTTP\x10\x02\x12\x15\n" +
-	"\x11MCP_TRANSPORT_SSE\x10\x03*\xe7\x01\n" +
+	"\x12MCP_TRANSPORT_HTTP\x10\x02*\xe7\x01\n" +
 	"\x0eMcpServerState\x12 \n" +
 	"\x1cMCP_SERVER_STATE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18MCP_SERVER_STATE_STOPPED\x10\x01\x12\x1d\n" +

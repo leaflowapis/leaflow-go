@@ -1895,8 +1895,6 @@ func (s McpTransport) Validate() error {
 		return nil
 	case "http":
 		return nil
-	case "sse":
-		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}
