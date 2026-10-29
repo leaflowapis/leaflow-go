@@ -84,9 +84,11 @@ func (ExecutionState) EnumDescriptor() ([]byte, []int) {
 type Call struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Identifies the call among the calls the sender has made on this carrier;
-	// CallResult and CallCancel echo it. A UUID (RFC 9562). It only correlates:
-	// resending a Call with the same request_id starts another call, so a
-	// method is retried safely only when the method itself is idempotent.
+	// CallResult and CallCancel echo it. A UUID (RFC 9562); the service's are
+	// unique across all control connections (leaflow.fleet.control.v1). It
+	// only correlates: resending a Call with the same request_id starts another
+	// call, so a method is retried safely only when the method itself is
+	// idempotent.
 	RequestId string `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	// The method, in the form of a gRPC request path: "/" + full service name
 	// + "/" + method name, such as
@@ -174,8 +176,9 @@ func (x *Call) GetResumeToken() []byte {
 
 // The result of a Call. Exactly one CallResult answers every Call, including
 // a cancelled one. Calls still outstanding when the carrier closes are never
-// resent; a control connection (leaflow.fleet.control.v1) carries their
-// results on the callee's next connection, other carriers drop them.
+// resent, except a call that a control connection (leaflow.fleet.control.v1)
+// shows never reached the callee; a control connection carries the results of
+// the others on the callee's next connection, other carriers drop them.
 type CallResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The request_id of the Call being answered.

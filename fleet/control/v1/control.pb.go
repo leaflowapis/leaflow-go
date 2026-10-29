@@ -840,9 +840,19 @@ type ClientHello struct {
 	// The endpoint software, such as "leaflow-fleet-agent/1.0.0". For
 	// diagnostics only. A machine reports its Agent's version with
 	// leaflow.fleet.machine.v1.
-	UserAgent     string `protobuf:"bytes,5,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	UserAgent string `protobuf:"bytes,5,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
+	// 16 random bytes that the endpoint process chooses when it starts and keeps
+	// for all its connections. They tell a connection of the same process from
+	// one of a process that started anew, whose calls in flight were lost (see
+	// Disconnection).
+	InstanceId []byte `protobuf:"bytes,6,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	// The request_ids of the calls the service made that this process received
+	// on an earlier connection and has not answered on an open one (see
+	// Disconnection). The process names each until the call's timeout has
+	// passed; at most 1024.
+	ReceivedRequestIds []string `protobuf:"bytes,7,rep,name=received_request_ids,json=receivedRequestIds,proto3" json:"received_request_ids,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *ClientHello) Reset() {
@@ -914,6 +924,20 @@ func (x *ClientHello) GetUserAgent() string {
 		return x.UserAgent
 	}
 	return ""
+}
+
+func (x *ClientHello) GetInstanceId() []byte {
+	if x != nil {
+		return x.InstanceId
+	}
+	return nil
+}
+
+func (x *ClientHello) GetReceivedRequestIds() []string {
+	if x != nil {
+		return x.ReceivedRequestIds
+	}
+	return nil
 }
 
 type isClientHello_Credential interface {
@@ -1224,12 +1248,13 @@ type Welcome struct {
 	SessionId string `protobuf:"bytes,3,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	// The keys the service signs with.
 	SigningKeys *SigningKeys `protobuf:"bytes,4,opt,name=signing_keys,json=signingKeys,proto3" json:"signing_keys,omitempty"`
-	// How long, after this connection drops, the service waits for the results
-	// of the calls the endpoint received on it (see Disconnection) and, for a
-	// session process, keeps the session's participants.
+	// How long, after this connection drops, the endpoint keeps the results of
+	// the calls it received on it (see Disconnection) and, for a session
+	// process, the service keeps the session's participants (see Resumption).
 	ResumeGrace *durationpb.Duration `protobuf:"bytes,5,opt,name=resume_grace,json=resumeGrace,proto3" json:"resume_grace,omitempty"`
-	// The session process connected again within resume_grace and kept its
-	// participants. Session processes only.
+	// This connection follows one of the same process (ClientHello.instance_id);
+	// for a session process, also within resume_grace, so that the session kept
+	// its participants.
 	Resumed       bool `protobuf:"varint,6,opt,name=resumed,proto3" json:"resumed,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1825,7 +1850,8 @@ type Close struct {
 	// Plain text for logs, at most 1024 bytes.
 	ReasonPhrase string `protobuf:"bytes,2,opt,name=reason_phrase,json=reasonPhrase,proto3" json:"reason_phrase,omitempty"`
 	// How long to wait at least before connecting again (see Reconnection).
-	// Always set with OVERLOADED; set with SERVER_UPGRADE.
+	// Always set with OVERLOADED; set with SERVER_UPGRADE, spread over up to 10
+	// seconds across connections so that they do not all come back at once.
 	RetryDelay    *durationpb.Duration `protobuf:"bytes,3,opt,name=retry_delay,json=retryDelay,proto3" json:"retry_delay,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2186,7 +2212,7 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\x10max_message_size\x18\x05 \x01(\rR\x0emaxMessageSize\x120\n" +
 	"\x14max_concurrent_calls\x18\x06 \x01(\rR\x12maxConcurrentCalls\x12.\n" +
 	"\x13messages_per_second\x18\a \x01(\rR\x11messagesPerSecond\x12#\n" +
-	"\rmessage_burst\x18\b \x01(\rR\fmessageBurst\"\x9e\x02\n" +
+	"\rmessage_burst\x18\b \x01(\rR\fmessageBurst\"\xf1\x02\n" +
 	"\vClientHello\x12G\n" +
 	"\amachine\x18\x01 \x01(\v2+.leaflow.fleet.control.v1.MachineCredentialH\x00R\amachine\x12P\n" +
 	"\n" +
@@ -2194,7 +2220,10 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"enrollment\x12G\n" +
 	"\asession\x18\x03 \x01(\v2+.leaflow.fleet.control.v1.SessionCredentialH\x00R\asession\x12\x1d\n" +
 	"\n" +
-	"user_agent\x18\x05 \x01(\tR\tuserAgentB\f\n" +
+	"user_agent\x18\x05 \x01(\tR\tuserAgent\x12\x1f\n" +
+	"\vinstance_id\x18\x06 \x01(\fR\n" +
+	"instanceId\x120\n" +
+	"\x14received_request_ids\x18\a \x03(\tR\x12receivedRequestIdsB\f\n" +
 	"\n" +
 	"credential\"P\n" +
 	"\x11MachineCredential\x12\x1d\n" +
