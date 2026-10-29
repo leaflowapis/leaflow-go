@@ -67,8 +67,9 @@ const (
 	CloseReason_CLOSE_REASON_POLICY_VIOLATION CloseReason = 16
 	// The sender failed. Either side.
 	CloseReason_CLOSE_REASON_INTERNAL_ERROR CloseReason = 17
-	// The service cannot serve the connection now; connect again after
-	// retry_delay, which is always set. Service only.
+	// The service cannot serve the connection now, or the endpoint connected
+	// too often; connect again after retry_delay, which is always set. Service
+	// only.
 	CloseReason_CLOSE_REASON_OVERLOADED CloseReason = 18
 	// The endpoint did not read what the service sent as it arrived. Service
 	// only.
@@ -731,11 +732,18 @@ type ServerHello struct {
 	// How many calls of the endpoint may run on the service at a time. At
 	// least 1.
 	MaxConcurrentCalls uint32 `protobuf:"varint,6,opt,name=max_concurrent_calls,json=maxConcurrentCalls,proto3" json:"max_concurrent_calls,omitempty"`
-	// How fast the endpoint's token bucket refills, in messages a second (see
-	// Flow). At least 1.
+	// How fast the endpoint's message bucket refills, in messages a second
+	// (see Flow). At least 1.
 	MessagesPerSecond uint32 `protobuf:"varint,7,opt,name=messages_per_second,json=messagesPerSecond,proto3" json:"messages_per_second,omitempty"`
-	// How many tokens the endpoint's bucket holds (see Flow). At least 1.
-	MessageBurst  uint32 `protobuf:"varint,8,opt,name=message_burst,json=messageBurst,proto3" json:"message_burst,omitempty"`
+	// How many tokens the endpoint's message bucket holds (see Flow). At
+	// least 1.
+	MessageBurst uint32 `protobuf:"varint,8,opt,name=message_burst,json=messageBurst,proto3" json:"message_burst,omitempty"`
+	// How fast the endpoint's byte bucket refills, in bytes a second (see
+	// Flow). At least 1.
+	BytesPerSecond uint32 `protobuf:"varint,9,opt,name=bytes_per_second,json=bytesPerSecond,proto3" json:"bytes_per_second,omitempty"`
+	// How many bytes the endpoint's byte bucket holds (see Flow). At least
+	// max_message_size, so that any message fits.
+	ByteBurst     uint32 `protobuf:"varint,10,opt,name=byte_burst,json=byteBurst,proto3" json:"byte_burst,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -822,6 +830,20 @@ func (x *ServerHello) GetMessagesPerSecond() uint32 {
 func (x *ServerHello) GetMessageBurst() uint32 {
 	if x != nil {
 		return x.MessageBurst
+	}
+	return 0
+}
+
+func (x *ServerHello) GetBytesPerSecond() uint32 {
+	if x != nil {
+		return x.BytesPerSecond
+	}
+	return 0
+}
+
+func (x *ServerHello) GetByteBurst() uint32 {
+	if x != nil {
+		return x.ByteBurst
 	}
 	return 0
 }
@@ -2203,7 +2225,7 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	" \x01(\v2%.leaflow.fleet.control.v1.SigningKeysH\x00R\vsigningKeys\x127\n" +
 	"\x05close\x18\v \x01(\v2\x1f.leaflow.fleet.control.v1.CloseH\x00R\x05close\x12@\n" +
 	"\bfragment\x18\f \x01(\v2\".leaflow.fleet.control.v1.FragmentH\x00R\bfragmentB\t\n" +
-	"\amessage\"\xf2\x02\n" +
+	"\amessage\"\xbb\x03\n" +
 	"\vServerHello\x12\x16\n" +
 	"\x06issuer\x18\x01 \x01(\tR\x06issuer\x12\x1c\n" +
 	"\tchallenge\x18\x02 \x01(\fR\tchallenge\x12>\n" +
@@ -2212,7 +2234,11 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\x10max_message_size\x18\x05 \x01(\rR\x0emaxMessageSize\x120\n" +
 	"\x14max_concurrent_calls\x18\x06 \x01(\rR\x12maxConcurrentCalls\x12.\n" +
 	"\x13messages_per_second\x18\a \x01(\rR\x11messagesPerSecond\x12#\n" +
-	"\rmessage_burst\x18\b \x01(\rR\fmessageBurst\"\xf1\x02\n" +
+	"\rmessage_burst\x18\b \x01(\rR\fmessageBurst\x12(\n" +
+	"\x10bytes_per_second\x18\t \x01(\rR\x0ebytesPerSecond\x12\x1d\n" +
+	"\n" +
+	"byte_burst\x18\n" +
+	" \x01(\rR\tbyteBurst\"\xf1\x02\n" +
 	"\vClientHello\x12G\n" +
 	"\amachine\x18\x01 \x01(\v2+.leaflow.fleet.control.v1.MachineCredentialH\x00R\amachine\x12P\n" +
 	"\n" +
