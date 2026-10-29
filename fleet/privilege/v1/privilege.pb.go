@@ -137,7 +137,7 @@ func (PrivilegeOutcome) EnumDescriptor() ([]byte, []int) {
 // The request of DecidePrivilegeRequest.
 type DecidePrivilegeRequestRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The request, as the daemon shows it to viewers.
+	// The request, as the daemon shows it to participants.
 	Request       *PrivilegeRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -226,7 +226,7 @@ func (x *DecidePrivilegeRequestResponse) GetOutcome() PrivilegeOutcome {
 	return PrivilegeOutcome_PRIVILEGE_OUTCOME_UNSPECIFIED
 }
 
-// A message from the viewer.
+// A message from the participant.
 type ClientMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The message.
@@ -390,7 +390,7 @@ type isServerMessage_Message interface {
 }
 
 type ServerMessage_ServerHello struct {
-	// What this viewer may do. The first message.
+	// What this participant may do. The first message.
 	ServerHello *ServerHello `protobuf:"bytes,1,opt,name=server_hello,json=serverHello,proto3,oneof"`
 }
 
@@ -417,11 +417,11 @@ func (*ServerMessage_RequestClosed) isServerMessage_Message() {}
 
 func (*ServerMessage_SnapshotEnd) isServerMessage_Message() {}
 
-// What this viewer may do.
+// What this participant may do.
 type ServerHello struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The viewer's authorization allows it to approve requests. Without it the
-	// viewer sees requests and cannot decide them.
+	// The participant's authorization allows it to approve requests. Without it
+	// the participant sees requests and cannot decide them.
 	ApproveAllowed bool `protobuf:"varint,1,opt,name=approve_allowed,json=approveAllowed,proto3" json:"approve_allowed,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -468,7 +468,7 @@ func (x *ServerHello) GetApproveAllowed() bool {
 type PrivilegePrompt struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// A serialized PrivilegeRequest, exactly as the daemon produced it. The
-	// viewer shows the request decoded from these bytes and signs their
+	// participant shows the request decoded from these bytes and signs their
 	// SHA-256.
 	Request       []byte `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -845,14 +845,14 @@ func (x *KeyringAccess) GetCollectionLabel() string {
 	return ""
 }
 
-// A person's decision, signed by the viewer.
+// A person's decision, signed by the participant.
 type SignedPrivilegeDecision struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// A serialized PrivilegeDecision.
 	Decision []byte `protobuf:"bytes,1,opt,name=decision,proto3" json:"decision,omitempty"`
 	// The Ed25519 signature (RFC 8032) over the ASCII bytes
 	// "leaflow.fleet.privilege.v1.PrivilegeDecision", one zero byte
-	// and decision, by the viewer key of the connection's authorization.
+	// and decision, by the participant key of the connection's authorization.
 	Signature     []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1058,12 +1058,12 @@ func (*SnapshotEnd) Descriptor() ([]byte, []int) {
 	return file_leaflow_fleet_privilege_v1_privilege_proto_rawDescGZIP(), []int{12}
 }
 
-// What a viewer may do with privilege requests. Carried in the viewer's
-// signed authorization; the service grants approve_allowed only to the
-// devices of the session's person.
+// What a participant may do with privilege requests. Carried in the
+// participant's signed authorization; the service grants approve_allowed only
+// to the devices of the session's person.
 type PrivilegePolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The viewer may approve or deny requests.
+	// The participant may approve or deny requests.
 	ApproveAllowed bool `protobuf:"varint,1,opt,name=approve_allowed,json=approveAllowed,proto3" json:"approve_allowed,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache

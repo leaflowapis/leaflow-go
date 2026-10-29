@@ -110,7 +110,7 @@ func (*ServerMessage_InputLease) isServerMessage_Message() {}
 func (*ServerMessage_SnapshotEnd) isServerMessage_Message() {}
 
 // Who holds the input lease. Sent in the snapshot and whenever it changes,
-// so that every viewer sees who operates the session.
+// so that every participant sees who operates the session.
 type InputLease struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The connection that holds it. 0: nobody; the next input takes it.

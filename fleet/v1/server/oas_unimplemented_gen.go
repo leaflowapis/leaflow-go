@@ -51,6 +51,68 @@ func (UnimplementedHandler) CloseSession(ctx context.Context, params CloseSessio
 	return r, ht.ErrNotImplemented
 }
 
+// CommitParticipantMigration implements commit-participant-migration operation.
+//
+// Commits the epoch the participant prepared and returns the session's checkpoint once it committed
+// it: the `commit` and `committed` steps of `Migration` in
+// `leaflow/fleet/transport/v1/transport.proto`. Repeating the step returns the same answer.
+//
+// Only the participant's user may migrate it.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `CHECKPOINT_INVALID` when the checkpoint is not a serialized `Checkpoint`;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+//     again after the error's `retry_delay`.
+//
+// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:commit-migration
+func (UnimplementedHandler) CommitParticipantMigration(ctx context.Context, req *MigrationStep, params CommitParticipantMigrationParams) (r *MigrationStep, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateAttempt implements create-attempt operation.
+//
+// Starts another PeerConnection of the participant with the offer, such as after a path failed, and
+// returns the session's answer, its ICE candidates and the signed PeerAuthorization. Move the
+// connection to it with `prepare-participant-migration` and `commit-participant-migration`.
+//
+// Only the participant's user may start one.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
+//   - `TOO_MANY_ATTEMPTS` when the participant started too many PeerConnections in the last minute; try
+//     again after the error's `retry_delay`;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+//     again after the error's `retry_delay`;
+//   - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; start another.
+//
+// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts
+func (UnimplementedHandler) CreateAttempt(ctx context.Context, req *CreateAttemptRequest, params CreateAttemptParams) (r *Attempt, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateAttemptCandidates implements create-attempt-candidates operation.
+//
+// Passes the ICE candidates the participant gathered after its offer to the session, and with
+// `end_of_candidates`, that it has gathered all (RFC 8838). The session ignores those of an attempt
+// that has ended.
+//
+// Only the participant's user may add them.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected; try again after the error's
+//     `retry_delay`.
+//
+// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}/candidates
+func (UnimplementedHandler) CreateAttemptCandidates(ctx context.Context, req *CreateAttemptCandidatesRequest, params CreateAttemptCandidatesParams) error {
+	return ht.ErrNotImplemented
+}
+
 // CreateGroup implements create-group operation.
 //
 // Creates a group in the project's directory. It reaches the machines within about a minute.
@@ -90,6 +152,36 @@ func (UnimplementedHandler) CreateMachineRegistration(ctx context.Context, req *
 	return r, ht.ErrNotImplemented
 }
 
+// CreateParticipant implements create-participant operation.
+//
+// Admits one participant with the given public key to the session: signs its authorization, has the
+// session accept it, and starts its first PeerConnection with the offer. The answer carries the
+// participant, its authorization and the attempt with the session's answer. The participant lasts
+// while it is renewed.
+//
+// The owner of a session may operate it. Joining another member's session requires
+// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
+// operating it. Each further capability of the session — file transfer, the clipboard, terminals and
+// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
+// requests and reading logs — is granted only with its permission; a participant that may only watch
+// gets none of them. A request may ask for less: to watch only, or for some of the capabilities.
+//
+// Fails with the following, and then no participant was created:
+//
+//   - `SESSION_CLOSED` when the session has ended;
+//   - `SESSION_ACCESS_DENIED` when the caller may not join the session;
+//   - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time, such
+//     as while it restarts; try again after the error's `retry_delay`;
+//   - `PARTICIPANT_LIMIT_REACHED` when the session has as many participants as it admits;
+//   - `PARTICIPANT_REFUSED` when the session refused the participant;
+//   - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; try again with a new offer.
+//
+// POST /api/v1/sessions/{sessionId}/participants
+func (UnimplementedHandler) CreateParticipant(ctx context.Context, req *CreateParticipantRequest, params CreateParticipantParams) (r *ParticipantConnection, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CreateSession implements create-session operation.
 //
 // Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
@@ -99,7 +191,7 @@ func (UnimplementedHandler) CreateMachineRegistration(ctx context.Context, req *
 //
 // On a machine an account has at most one session with a desktop and at most 8 sessions in all.
 // Sessions without a desktop run side by side, such as one for a program and one for a person; several
-// viewers can also share one session.
+// participants can also share one session.
 //
 // Fails with:
 //
@@ -123,43 +215,18 @@ func (UnimplementedHandler) CreateSession(ctx context.Context, req *CreateSessio
 	return r, ht.ErrNotImplemented
 }
 
-// CreateSignalingTicket implements create-signaling-ticket operation.
+// DeleteAttempt implements delete-attempt operation.
 //
-// Issues a single-use ticket for one signaling WebSocket of the viewer connection, valid for 60
-// seconds. Only the viewer connection's user may ask for one.
+// Tells the session to give up the attempt and close its PeerConnection. Abandoning an attempt that
+// has ended succeeds.
 //
-// Fails with `VIEWER_NOT_FOUND` when the viewer connection has ended.
+// Only the participant's user may abandon it.
 //
-// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}/signaling-tickets
-func (UnimplementedHandler) CreateSignalingTicket(ctx context.Context, params CreateSignalingTicketParams) (r *SignalingTicket, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateViewer implements create-viewer operation.
+// Fails with `PARTICIPANT_NOT_FOUND` when the participant has ended.
 //
-// Admits one viewer with the given public key to the session: signs its authorization, has the session
-// accept it, and returns it with a first signaling ticket. The viewer connection lasts while it is
-// renewed.
-//
-// The owner of a session may operate it. Viewing another member's session requires
-// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
-// operating it. Each further capability of the session — file transfer, the clipboard, terminals and
-// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
-// requests and reading logs — is granted only with its permission; a viewer that may only watch gets
-// none of them. A request may ask for less: to watch only, or for some of the capabilities.
-//
-// Fails with:
-//
-//   - `SESSION_CLOSED` when the session has ended;
-//   - `SESSION_ACCESS_DENIED` when the caller may not view the session;
-//   - `SESSION_UNAVAILABLE` when the session's process is not connected, such as while it restarts; try
-//     again after the error's `retry_delay`;
-//   - `VIEWER_LIMIT_REACHED` when the session has as many viewers as it admits;
-//   - `VIEWER_REFUSED` when the session refused the viewer.
-//
-// POST /api/v1/sessions/{sessionId}/viewers
-func (UnimplementedHandler) CreateViewer(ctx context.Context, req *CreateViewerRequest, params CreateViewerParams) (r *ViewerConnection, _ error) {
-	return r, ht.ErrNotImplemented
+// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}
+func (UnimplementedHandler) DeleteAttempt(ctx context.Context, params DeleteAttemptParams) error {
+	return ht.ErrNotImplemented
 }
 
 // DeleteGroup implements delete-group operation.
@@ -187,10 +254,10 @@ func (UnimplementedHandler) DeleteGroupMember(ctx context.Context, params Delete
 
 // DeleteMachine implements delete-machine operation.
 //
-// Removes the machine from the project. Every viewer of its sessions is disconnected at once and the
-// Agent is refused from then on; to use the machine again, enroll it again. Sessions still open on the
-// machine can no longer be reached and end according to their own timeouts. Nothing on the machine is
-// deleted.
+// Removes the machine from the project. Every participant of its sessions is disconnected at once and
+// the Agent is refused from then on; to use the machine again, enroll it again. Sessions still open on
+// the machine can no longer be reached and end according to their own timeouts. Nothing on the machine
+// is deleted.
 //
 // Requires `fleet:machines.manage`.
 //
@@ -212,16 +279,16 @@ func (UnimplementedHandler) DeleteMachineRegistration(ctx context.Context, param
 	return ht.ErrNotImplemented
 }
 
-// DeleteViewer implements delete-viewer operation.
+// DeleteParticipant implements delete-participant operation.
 //
-// Ends the viewer connection: the session detaches the viewer and closes its PeerConnections, and the
-// session goes on. A viewer leaves this way; others are disconnected this way.
+// Ends the participant: the session detaches it and closes its PeerConnections, and the session goes
+// on. A participant leaves this way; others are disconnected this way.
 //
-// The viewer connection's user and the owner of the session may end it; otherwise this requires
+// The participant's user and the owner of the session may end it; otherwise this requires
 // `fleet:sessions.manage`.
 //
-// DELETE /api/v1/sessions/{sessionId}/viewers/{connectionId}
-func (UnimplementedHandler) DeleteViewer(ctx context.Context, params DeleteViewerParams) error {
+// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}
+func (UnimplementedHandler) DeleteParticipant(ctx context.Context, params DeleteParticipantParams) error {
 	return ht.ErrNotImplemented
 }
 
@@ -301,6 +368,15 @@ func (UnimplementedHandler) GetMachineRegistration(ctx context.Context, params G
 	return r, ht.ErrNotImplemented
 }
 
+// GetParticipant implements get-participant operation.
+//
+// Returns a participant of the session.
+//
+// GET /api/v1/sessions/{sessionId}/participants/{connectionId}
+func (UnimplementedHandler) GetParticipant(ctx context.Context, params GetParticipantParams) (r *ParticipantResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetPrivilegeApproval implements get-privilege-approval operation.
 //
 // Returns whether the caller's elevations on the machine are approved without asking. A caller who
@@ -329,12 +405,21 @@ func (UnimplementedHandler) GetSession(ctx context.Context, params GetSessionPar
 	return r, ht.ErrNotImplemented
 }
 
-// GetViewer implements get-viewer operation.
+// GetSessionRtcConfiguration implements get-session-rtc-configuration operation.
 //
-// Returns a viewer connected to the session.
+// Returns the STUN and TURN servers for the PeerConnections the caller starts to the session, with
+// TURN credentials of its own, and the policy for using them. Ask again once `expires_at` has passed;
+// the credentials of a PeerConnection already relayed last longer.
 //
-// GET /api/v1/sessions/{sessionId}/viewers/{connectionId}
-func (UnimplementedHandler) GetViewer(ctx context.Context, params GetViewerParams) (r *ViewerResource, _ error) {
+// Requires that the caller may join the session, as for `create-participant`.
+//
+// Fails with:
+//
+//   - `SESSION_CLOSED` when the session has ended;
+//   - `SESSION_ACCESS_DENIED` when the caller may not join the session.
+//
+// GET /api/v1/sessions/{sessionId}/rtc-configuration
+func (UnimplementedHandler) GetSessionRtcConfiguration(ctx context.Context, params GetSessionRtcConfigurationParams) (r *RtcConfiguration, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -417,12 +502,12 @@ func (UnimplementedHandler) ListPrivilegeRequests(ctx context.Context, params Li
 	return r, ht.ErrNotImplemented
 }
 
-// ListSessionViewers implements list-session-viewers operation.
+// ListSessionParticipants implements list-session-participants operation.
 //
-// Returns the viewers connected to the session, in the order they connected.
+// Returns the participants of the session, in the order they joined.
 //
-// GET /api/v1/sessions/{sessionId}/viewers
-func (UnimplementedHandler) ListSessionViewers(ctx context.Context, params ListSessionViewersParams) (r *ViewerList, _ error) {
+// GET /api/v1/sessions/{sessionId}/participants
+func (UnimplementedHandler) ListSessionParticipants(ctx context.Context, params ListSessionParticipantsParams) (r *ParticipantList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -436,24 +521,44 @@ func (UnimplementedHandler) ListSessions(ctx context.Context, params ListSession
 	return r, ht.ErrNotImplemented
 }
 
-// RenewViewer implements renew-viewer operation.
+// PrepareParticipantMigration implements prepare-participant-migration operation.
 //
-// Extends the viewer connection's lease and returns renewed PeerAuthorizations for the PeerConnections
-// whose current ones the request presents; the session receives them too. A presented authorization
-// that the service did not sign for this viewer connection, or whose attempt has ended, is left out of
-// the answer. When the viewer's authorization nears its end, the answer carries a renewed one, which
-// the session already holds.
+// Passes the participant's checkpoint for the next epoch to the session and returns the session's
+// checkpoint for it: the `prepare` and `prepared` steps of `Migration` in
+// `leaflow/fleet/transport/v1/transport.proto`. Repeating the step returns the same answer.
 //
-// Only the viewer connection's user may renew it.
+// Only the participant's user may migrate it.
 //
 // Fails with:
 //
-//   - `VIEWER_NOT_FOUND` when the viewer connection has ended; create another;
-//   - `VIEWER_RIGHTS_CHANGED` when the caller's permissions no longer grant what the viewer connection
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `CHECKPOINT_INVALID` when the checkpoint is not a serialized `Checkpoint`;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+//     again after the error's `retry_delay`.
+//
+// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:prepare-migration
+func (UnimplementedHandler) PrepareParticipantMigration(ctx context.Context, req *MigrationStep, params PrepareParticipantMigrationParams) (r *MigrationStep, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RenewParticipant implements renew-participant operation.
+//
+// Extends the participant's lease and returns renewed PeerAuthorizations for the PeerConnections whose
+// current ones the request presents; the session receives them too. A presented authorization that the
+// service did not sign for this participant, or whose attempt has ended, is left out of the answer.
+// When the participant's authorization nears its end, the answer carries a renewed one, which the
+// session already holds.
+//
+// Only the participant's user may renew it.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended; create another;
+//   - `PARTICIPANT_RIGHTS_CHANGED` when the caller's permissions no longer grant what the participant
 //     holds; it has ended, and another can be created with the current rights.
 //
-// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}:renew
-func (UnimplementedHandler) RenewViewer(ctx context.Context, req *RenewViewerRequest, params RenewViewerParams) (r *RenewViewerResponse, _ error) {
+// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:renew
+func (UnimplementedHandler) RenewParticipant(ctx context.Context, req *RenewParticipantRequest, params RenewParticipantParams) (r *RenewParticipantResponse, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

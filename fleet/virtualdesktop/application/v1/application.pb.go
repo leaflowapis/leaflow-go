@@ -244,8 +244,8 @@ type ServerMessage_ApplicationMenu struct {
 }
 
 type ServerMessage_DesktopIcon struct {
-	// A desktop icon as it is now, in full: new when the viewer does not know
-	// its uri, otherwise replacing what the viewer had.
+	// A desktop icon as it is now, in full: new when the participant does not
+	// know its uri, otherwise replacing what the participant had.
 	DesktopIcon *DesktopIcon `protobuf:"bytes,2,opt,name=desktop_icon,json=desktopIcon,proto3,oneof"`
 }
 
@@ -757,7 +757,7 @@ func (x *ApplicationAction) GetIcon() *v1.Icon {
 	return nil
 }
 
-// An icon on the desktop. Hidden files are not shown. Viewers keep icon
+// An icon on the desktop. Hidden files are not shown. Participants keep icon
 // positions themselves, keyed by uri.
 type DesktopIcon struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -768,7 +768,7 @@ type DesktopIcon struct {
 	// What it shows. Never changes for a uri.
 	Type DesktopIconType `protobuf:"varint,2,opt,name=type,proto3,enum=leaflow.fleet.virtualdesktop.application.v1.DesktopIconType" json:"type,omitempty"`
 	// Its label: the Name of a launcher, or the file name. Empty for Home, File
-	// System and Trash, which viewers name.
+	// System and Trash, which participants name.
 	DisplayName string `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	// Its icon: "user-home", "drive-harddisk", "user-trash" or
 	// "user-trash-full", a launcher's Icon, or the icon of the file's media
@@ -1021,7 +1021,7 @@ type ListApplicationsResponse struct {
 	// Empty on the last page.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	// ApplicationMenu.revision the page belongs to. When it changes between
-	// pages, the viewer starts again from the first page.
+	// pages, the participant starts again from the first page.
 	Revision      uint64 `protobuf:"varint,3,opt,name=revision,proto3" json:"revision,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1223,7 +1223,7 @@ type OpenUriRequest struct {
 	Uri string `protobuf:"bytes,1,opt,name=uri,proto3" json:"uri,omitempty"`
 	// How the person answered for an untrusted launcher. A launcher that is not
 	// trusted fails with FAILED_PRECONDITION and reason UNTRUSTED_LAUNCHER,
-	// naming the launcher but not its Exec line; the viewer asks its person
+	// naming the launcher but not its Exec line; the participant asks its person
 	// and, if they agree, calls again with their answer.
 	LauncherConfirmation LauncherConfirmation `protobuf:"varint,2,opt,name=launcher_confirmation,json=launcherConfirmation,proto3,enum=leaflow.fleet.virtualdesktop.application.v1.LauncherConfirmation" json:"launcher_confirmation,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -1645,8 +1645,8 @@ func (x *TerminateProcessResponse) GetRevision() uint64 {
 	return 0
 }
 
-// Allows a viewer to launch applications and open URIs. Carried in the
-// viewer's signed authorization; without it the viewer can only look.
+// Allows a participant to launch applications and open URIs. Carried in the
+// participant's signed authorization; without it the participant can only look.
 type ApplicationPolicy struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields

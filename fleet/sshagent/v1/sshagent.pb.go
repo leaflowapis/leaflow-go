@@ -23,14 +23,14 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// The role of a viewer that offers its agent.
+// The role of a participant that offers its agent.
 type ProviderState int32
 
 const (
 	ProviderState_PROVIDER_STATE_UNSPECIFIED ProviderState = 0
-	// Another viewer is selected.
+	// Another participant is selected.
 	ProviderState_PROVIDER_STATE_AVAILABLE ProviderState = 1
-	// This viewer is selected: new connections go to it.
+	// This participant is selected: new connections go to it.
 	ProviderState_PROVIDER_STATE_SELECTED ProviderState = 2
 	// The session cannot forward an agent, such as without a socket.
 	ProviderState_PROVIDER_STATE_UNAVAILABLE ProviderState = 3
@@ -79,15 +79,15 @@ func (ProviderState) EnumDescriptor() ([]byte, []int) {
 	return file_leaflow_fleet_sshagent_v1_sshagent_proto_rawDescGZIP(), []int{0}
 }
 
-// Offers the viewer's agent.
+// Offers the participant's agent.
 type ProviderHello struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// A name for the agent to show, at most 256 bytes, such as "OpenSSH
 	// agent". Never a path, key or PIN.
 	DisplayName string `protobuf:"bytes,1,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	// The largest agent message the viewer handles, at most 256 KiB.
+	// The largest agent message the participant handles, at most 256 KiB.
 	MaxMessageSizeBytes uint32 `protobuf:"varint,2,opt,name=max_message_size_bytes,json=maxMessageSizeBytes,proto3" json:"max_message_size_bytes,omitempty"`
-	// The most connections the viewer handles at once.
+	// The most connections the participant handles at once.
 	MaxConnections uint32 `protobuf:"varint,3,opt,name=max_connections,json=maxConnections,proto3" json:"max_connections,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -144,7 +144,7 @@ func (x *ProviderHello) GetMaxConnections() uint32 {
 	return 0
 }
 
-// The viewer's role as a provider.
+// The participant's role as a provider.
 type ProviderStatus struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The role.
@@ -258,11 +258,11 @@ func (x *AgentMessage) GetData() []byte {
 	return nil
 }
 
-// What a viewer may do with SSH agents. Carried in the viewer's signed
-// authorization; without it the viewer offers no agent.
+// What a participant may do with SSH agents. Carried in the participant's
+// signed authorization; without it the participant offers no agent.
 type SshAgentPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Decides between viewers offering an agent: the higher is selected, and
+	// Decides between participants offering an agent: the higher is selected, and
 	// on a tie the selected one stays.
 	ProviderPriority uint32 `protobuf:"varint,1,opt,name=provider_priority,json=providerPriority,proto3" json:"provider_priority,omitempty"`
 	// The most connections at once, at most 32. 0: the session's limit.

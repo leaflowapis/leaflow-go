@@ -203,8 +203,8 @@ type Session struct {
 	// Plain text for logs about close_reason, at most 1024 bytes.
 	ReasonPhrase string `protobuf:"bytes,11,opt,name=reason_phrase,json=reasonPhrase,proto3" json:"reason_phrase,omitempty"`
 	// The state of what its options added, at most one of each type, such as
-	// leaflow.fleet.virtualdesktop.host.v1 DesktopState. A type the service does not
-	// know is ignored.
+	// leaflow.fleet.virtualdesktop.host.v1 DesktopState. A type the service does
+	// not know is ignored.
 	Details       []*anypb.Any `protobuf:"bytes,12,rep,name=details,proto3" json:"details,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -328,12 +328,12 @@ func (x *Session) GetDetails() []*anypb.Any {
 // service is unreachable. A timeout that is unset or zero is off.
 type SessionPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Ends the session this long after its last viewer left (xrdp
+	// Ends the session this long after its last participant left (xrdp
 	// DisconnectedTimeLimit).
 	DisconnectedTimeout *durationpb.Duration `protobuf:"bytes,1,opt,name=disconnected_timeout,json=disconnectedTimeout,proto3" json:"disconnected_timeout,omitempty"`
 	// Ends the session this long after it opened.
 	MaxLifetime *durationpb.Duration `protobuf:"bytes,2,opt,name=max_lifetime,json=maxLifetime,proto3" json:"max_lifetime,omitempty"`
-	// Ends the session when no viewer came this long after it opened.
+	// Ends the session when no participant came this long after it opened.
 	NoClientTimeout *durationpb.Duration `protobuf:"bytes,3,opt,name=no_client_timeout,json=noClientTimeout,proto3" json:"no_client_timeout,omitempty"`
 	// Limits on the user's resources.
 	ResourceControl *ResourceControl `protobuf:"bytes,4,opt,name=resource_control,json=resourceControl,proto3" json:"resource_control,omitempty"`
@@ -492,7 +492,7 @@ type OpenSessionRequest struct {
 	// The platform user's directory account. The daemon only checks that the
 	// account may have a session.
 	Username string `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
-	// The address of the viewer that asked, for PAM_RHOST and logind's
+	// The address of the participant that asked, for PAM_RHOST and logind's
 	// RemoteHost. Empty: the service's host name, so that the session is
 	// always remote.
 	RemoteHost string `protobuf:"bytes,4,opt,name=remote_host,json=remoteHost,proto3" json:"remote_host,omitempty"`

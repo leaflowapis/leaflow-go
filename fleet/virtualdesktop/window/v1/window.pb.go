@@ -443,7 +443,7 @@ const (
 	VisibilityState_VISIBILITY_STATE_UNOBSCURED VisibilityState = 1
 	// Part of it.
 	VisibilityState_VISIBILITY_STATE_PARTIALLY_OBSCURED VisibilityState = 2
-	// None of it, including when this viewer minimized it in its own layout.
+	// None of it, including when this participant minimized it in its own layout.
 	VisibilityState_VISIBILITY_STATE_FULLY_OBSCURED VisibilityState = 3
 )
 
@@ -583,7 +583,7 @@ func (MoveResizeDirection) EnumDescriptor() ([]byte, []int) {
 	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDescGZIP(), []int{6}
 }
 
-// A message from the viewer.
+// A message from the participant.
 type ClientMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The message.
@@ -717,7 +717,7 @@ type isClientMessage_Message interface {
 }
 
 type ClientMessage_ClientHello struct {
-	// How the viewer shows windows. The first message.
+	// How the participant shows windows. The first message.
 	ClientHello *ClientHello `protobuf:"bytes,1,opt,name=client_hello,json=clientHello,proto3,oneof"`
 }
 
@@ -752,7 +752,7 @@ type ClientMessage_StateChange struct {
 }
 
 type ClientMessage_Visibility struct {
-	// How much of a window this viewer shows.
+	// How much of a window this participant shows.
 	Visibility *WindowVisibility `protobuf:"bytes,8,opt,name=visibility,proto3,oneof"`
 }
 
@@ -916,8 +916,8 @@ type isServerMessage_Message interface {
 }
 
 type ServerMessage_Window struct {
-	// A window as it is now, in full: new when the viewer does not know its
-	// window_id, otherwise replacing what the viewer had.
+	// A window as it is now, in full: new when the participant does not know
+	// its window_id, otherwise replacing what the participant had.
 	Window *Window `protobuf:"bytes,1,opt,name=window,proto3,oneof"`
 }
 
@@ -979,10 +979,10 @@ func (*ServerMessage_Ungrab) isServerMessage_Message() {}
 
 func (*ServerMessage_SnapshotEnd) isServerMessage_Message() {}
 
-// How the viewer shows windows.
+// How the participant shows windows.
 type ClientHello struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The viewer shows every window as a window of its own desktop (see
+	// The participant shows every window as a window of its own desktop (see
 	// "Native windows"). Only in SESSION_MODE_SEAMLESS.
 	NativeWindows bool `protobuf:"varint,1,opt,name=native_windows,json=nativeWindows,proto3" json:"native_windows,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1036,13 +1036,13 @@ type Window struct {
 	// put it.
 	Geometry *v1.Rectangle `protobuf:"bytes,2,opt,name=geometry,proto3" json:"geometry,omitempty"`
 	// Counts the size changes of the window; see WindowConfigure. It never
-	// decreases and stays the same on a pure move. A size change that applies
-	// a WindowConfigure takes that request's value; any other size change adds
-	// one. Frames drawn after a size change carry the new value, and the first
-	// of them for this window depends on nothing. A value smaller than the
-	// largest the viewer has sent in a WindowConfigure confirms an older
-	// request: the viewer keeps its newer layout but records the size for this
-	// value, because frames drawn for it use it.
+	// decreases and stays the same on a pure move. A size change that applies a
+	// WindowConfigure takes that request's value; any other size change adds one.
+	// Frames drawn after a size change carry the new value, and the first of them
+	// for this window depends on nothing. A value smaller than the largest the
+	// participant has sent in a WindowConfigure confirms an older request: the
+	// participant keeps its newer layout but records the size for this value,
+	// because frames drawn for it use it.
 	ResizeCounter uint64 `protobuf:"varint,3,opt,name=resize_counter,json=resizeCounter,proto3" json:"resize_counter,omitempty"`
 	// The window bypasses the window manager, such as a menu, a tooltip or the
 	// popup of a combo box (ICCCM override_redirect). Never changes.
@@ -1050,14 +1050,14 @@ type Window struct {
 	// The window it is transient for, as the application declared it (ICCCM
 	// WM_TRANSIENT_FOR).
 	TransientFor *uint64 `protobuf:"varint,5,opt,name=transient_for,json=transientFor,proto3,oneof" json:"transient_for,omitempty"`
-	// The leader of its group (ICCCM WM_HINTS window_group). The leader is
-	// often a window the viewer never sees; equal values mean the same group.
+	// The leader of its group (ICCCM WM_HINTS window_group). The leader is often
+	// a window the participant never sees; equal values mean the same group.
 	WindowGroup *uint64 `protobuf:"varint,6,opt,name=window_group,json=windowGroup,proto3,oneof" json:"window_group,omitempty"`
 	// Its types, most preferred first (EWMH _NET_WM_WINDOW_TYPE). Never empty.
 	WindowTypes []WindowType `protobuf:"varint,7,rep,packed,name=window_types,json=windowTypes,proto3,enum=leaflow.fleet.virtualdesktop.window.v1.WindowType" json:"window_types,omitempty"`
 	// Its states (EWMH _NET_WM_STATE).
 	States []WindowState `protobuf:"varint,8,rep,packed,name=states,proto3,enum=leaflow.fleet.virtualdesktop.window.v1.WindowState" json:"states,omitempty"`
-	// The operations the viewer may offer (EWMH _NET_WM_ALLOWED_ACTIONS).
+	// The operations the participant may offer (EWMH _NET_WM_ALLOWED_ACTIONS).
 	AllowedActions []WindowAction `protobuf:"varint,9,rep,packed,name=allowed_actions,json=allowedActions,proto3,enum=leaflow.fleet.virtualdesktop.window.v1.WindowAction" json:"allowed_actions,omitempty"`
 	// Its size limits (ICCCM WM_NORMAL_HINTS). Unset: none.
 	SizeHints *SizeHints `protobuf:"bytes,10,opt,name=size_hints,json=sizeHints,proto3" json:"size_hints,omitempty"`
@@ -1078,7 +1078,7 @@ type Window struct {
 	StartupId string `protobuf:"bytes,16,opt,name=startup_id,json=startupId,proto3" json:"startup_id,omitempty"`
 	// The process that owns it (EWMH _NET_WM_PID). 0 when unknown.
 	Pid uint32 `protobuf:"varint,17,opt,name=pid,proto3" json:"pid,omitempty"`
-	// Whether the viewer draws a title bar and borders around it. False for
+	// Whether the participant draws a title bar and borders around it. False for
 	// windows that draw their own. Unset: managed windows are decorated,
 	// override-redirect windows are not.
 	Decorations *bool `protobuf:"varint,18,opt,name=decorations,proto3,oneof" json:"decorations,omitempty"`
@@ -1421,7 +1421,7 @@ func (x *WindowDestroy) GetWindowId() uint64 {
 // The managed windows from the bottom of the stack to the top (EWMH
 // _NET_CLIENT_LIST_STACKING). From the driver, the order it shows; the
 // session restacks the windows, keeping transient windows right above their
-// owner. From the session, the order now in effect, so that other viewers
+// owner. From the session, the order now in effect, so that other participants
 // follow the driver. Override-redirect windows are not listed: they stay on
 // top in the order they appeared.
 type WindowStacking struct {
@@ -1470,8 +1470,8 @@ func (x *WindowStacking) GetWindowIds() []uint64 {
 	return nil
 }
 
-// From the viewer, the user activated a window; 0 means focus left every
-// window of the session, such as for a terminal of the viewer's own. The
+// From the participant, the user activated a window; 0 means focus left every
+// window of the session, such as for a terminal of the participant's own. The
 // session focuses it (ICCCM input focus), restores it when minimized and
 // clears DEMANDS_ATTENTION. Stacking follows separately in WindowStacking.
 // From the session, an application asks to activate a window (EWMH
@@ -1598,11 +1598,11 @@ type WindowConfigure struct {
 	WindowId uint64 `protobuf:"varint,1,opt,name=window_id,json=windowId,proto3" json:"window_id,omitempty"`
 	// The client area wanted, in canvas coordinates.
 	Geometry *v1.Rectangle `protobuf:"bytes,2,opt,name=geometry,proto3" json:"geometry,omitempty"`
-	// Let M be the largest resize_counter the viewer has sent or received for
-	// the window. A request that changes the size carries M + 1, a pure move
+	// Let M be the largest resize_counter the participant has sent or received
+	// for the window. A request that changes the size carries M + 1, a pure move
 	// carries M. The session drops a size change whose value is not larger than
 	// its own counter, and a move whose value is smaller: the application or a
-	// newer request won, and the viewer sees the outcome in Window.
+	// newer request won, and the participant sees the outcome in Window.
 	ResizeCounter uint64 `protobuf:"varint,3,opt,name=resize_counter,json=resizeCounter,proto3" json:"resize_counter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1822,15 +1822,16 @@ func (x *WindowStateChange) GetStates() []WindowState {
 	return nil
 }
 
-// How much of a window this viewer shows, so that the session stops sending
-// frames of windows nobody sees. Only frames to this viewer change; the
-// window itself does not. Damage piles up while it is fully obscured and is
-// sent at once when it shows again. Every window starts unobscured.
+// How much of a window this participant shows, so that the session stops
+// sending frames of windows nobody sees. Only frames to this participant
+// change; the window itself does not. Damage piles up while it is fully
+// obscured and is sent at once when it shows again. Every window starts
+// unobscured.
 type WindowVisibility struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The window.
 	WindowId uint64 `protobuf:"varint,1,opt,name=window_id,json=windowId,proto3" json:"window_id,omitempty"`
-	// How much of it the viewer shows.
+	// How much of it the participant shows.
 	Visibility    VisibilityState `protobuf:"varint,2,opt,name=visibility,proto3,enum=leaflow.fleet.virtualdesktop.window.v1.VisibilityState" json:"visibility,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1881,12 +1882,12 @@ func (x *WindowVisibility) GetVisibility() VisibilityState {
 }
 
 // An application started an interactive move or resize, usually because the
-// user dragged the title bar the window draws itself (EWMH
-// _NET_WM_MOVERESIZE). A pointer operation is sent only to the viewer whose
-// press the session applied and can bind the request to; one it cannot bind
-// to such a press is dropped. A keyboard operation is sent to the driver. The
-// viewer runs the drag with its own pointer until the button is released and
-// ends it with WindowConfigure; with CANCEL it stops the drag in progress.
+// user dragged the title bar the window draws itself (EWMH _NET_WM_MOVERESIZE).
+// A pointer operation is sent only to the participant whose press the session
+// applied and can bind the request to; one it cannot bind to such a press is
+// dropped. A keyboard operation is sent to the driver. The participant runs the
+// drag with its own pointer until the button is released and ends it with
+// WindowConfigure; with CANCEL it stops the drag in progress.
 type WindowInitiateMoveResize struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The window.
@@ -1900,9 +1901,9 @@ type WindowInitiateMoveResize struct {
 	Direction MoveResizeDirection `protobuf:"varint,4,opt,name=direction,proto3,enum=leaflow.fleet.virtualdesktop.window.v1.MoveResizeDirection" json:"direction,omitempty"`
 	// The X button that started it, from 1. Unused for keyboard operations.
 	Button uint32 `protobuf:"varint,5,opt,name=button,proto3" json:"button,omitempty"`
-	// PointerButton.input_seq of the viewer's press that the application's
-	// request was bound to. The viewer ignores the request when that press has
-	// already been released. 0 for keyboard operations.
+	// PointerButton.input_seq of the participant's press that the application's
+	// request was bound to. The participant ignores the request when that press
+	// has already been released. 0 for keyboard operations.
 	PressInputSeq uint64 `protobuf:"varint,6,opt,name=press_input_seq,json=pressInputSeq,proto3" json:"press_input_seq,omitempty"`
 	// Window.resize_counter at that press.
 	ResizeCounter uint64 `protobuf:"varint,7,opt,name=resize_counter,json=resizeCounter,proto3" json:"resize_counter,omitempty"`
@@ -1990,7 +1991,7 @@ func (x *WindowInitiateMoveResize) GetResizeCounter() uint64 {
 }
 
 // An application grabbed the pointer, such as to run a popup menu (X11
-// GrabPointer). Until WindowUngrab the viewer sends every pointer event to
+// GrabPointer). Until WindowUngrab the participant sends every pointer event to
 // this window, even outside it, so that a click outside the menu reaches the
 // application.
 type WindowGrab struct {

@@ -203,7 +203,7 @@ func (CompositionPhase) EnumDescriptor() ([]byte, []int) {
 	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_rawDescGZIP(), []int{2}
 }
 
-// A message from the viewer on the input channel.
+// A message from the participant on the input channel.
 type ClientMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The message.
@@ -342,7 +342,7 @@ type ClientMessage_InsertText struct {
 }
 
 type ClientMessage_Composition struct {
-	// A step of a composition of the viewer's input method.
+	// A step of a composition of the participant's input method.
 	Composition *Composition `protobuf:"bytes,6,opt,name=composition,proto3,oneof"`
 }
 
@@ -463,7 +463,7 @@ func (*ServerMessage_InputError) isServerMessage_Message() {}
 func (*ServerMessage_TextInputError) isServerMessage_Message() {}
 
 // A physical key was pressed or released (RFC 6143 KeyEvent). The session
-// turns off X auto-repeat; the viewer sends its repeated key presses as
+// turns off X auto-repeat; the participant sends its repeated key presses as
 // further presses, and releases every pressed key when it loses focus.
 type KeyEvent struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -483,13 +483,13 @@ type KeyEvent struct {
 	// compensating Shift for the letters Caps Lock inverts, and applies a lock
 	// key press as state instead of typing it. Unset: every lock is off.
 	LockKeyState *LockKeyState `protobuf:"bytes,5,opt,name=lock_key_state,json=lockKeyState,proto3" json:"lock_key_state,omitempty"`
-	// The window the viewer shows focused. When another window has the X focus
-	// the session activates this one first, because a WindowActivate sent on
-	// the window channel may arrive later. 0: the window with the X focus. For
+	// The window the participant shows focused. When another window has the X
+	// focus the session activates this one first, because a WindowActivate sent
+	// on the window channel may arrive later. 0: the window with the X focus. For
 	// a window that is gone, presses are dropped and releases still typed.
 	WindowId uint64 `protobuf:"varint,6,opt,name=window_id,json=windowId,proto3" json:"window_id,omitempty"`
-	// The sequence of the latest clipboard content this viewer offered, until
-	// the session confirmed it. See "Clipboard before paste".
+	// The sequence of the latest clipboard content this participant offered,
+	// until the session confirmed it. See "Clipboard before paste".
 	ClipboardSequence *uint64 `protobuf:"varint,7,opt,name=clipboard_sequence,json=clipboardSequence,proto3,oneof" json:"clipboard_sequence,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -651,8 +651,8 @@ type PointerMotion struct {
 	X int32 `protobuf:"zigzag32,3,opt,name=x,proto3" json:"x,omitempty"`
 	// See x.
 	Y int32 `protobuf:"zigzag32,4,opt,name=y,proto3" json:"y,omitempty"`
-	// input_seq of the last other input the viewer sent before this motion; 0
-	// when none.
+	// input_seq of the last other input the participant sent before this motion;
+	// 0 when none.
 	AfterInputSeq uint64 `protobuf:"varint,5,opt,name=after_input_seq,json=afterInputSeq,proto3" json:"after_input_seq,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -741,8 +741,8 @@ type PointerButton struct {
 	Button uint32 `protobuf:"varint,5,opt,name=button,proto3" json:"button,omitempty"`
 	// A press or a release.
 	Pressed bool `protobuf:"varint,6,opt,name=pressed,proto3" json:"pressed,omitempty"`
-	// The sequence of the latest clipboard content this viewer offered, until
-	// the session confirmed it. See "Clipboard before paste".
+	// The sequence of the latest clipboard content this participant offered,
+	// until the session confirmed it. See "Clipboard before paste".
 	ClipboardSequence *uint64 `protobuf:"varint,7,opt,name=clipboard_sequence,json=clipboardSequence,proto3,oneof" json:"clipboard_sequence,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -827,7 +827,7 @@ func (x *PointerButton) GetClipboardSequence() uint64 {
 	return 0
 }
 
-// The wheel or touchpad scrolled. The viewer adds up the deltas of an
+// The wheel or touchpad scrolled. The participant adds up the deltas of an
 // animation frame into one message; the session turns every 120 units into
 // one X button 4 to 7 click and keeps the remainder.
 type PointerWheel struct {
@@ -929,15 +929,15 @@ type TextInputState struct {
 	// The window of the focused editor. 0 when no window has focus.
 	WindowId uint64 `protobuf:"varint,1,opt,name=window_id,json=windowId,proto3" json:"window_id,omitempty"`
 	// An editable control or a terminal has focus and accepts text, whether
-	// or not its caret is known. The viewer keeps a local text field focused
+	// or not its caret is known. The participant keeps a local text field focused
 	// while it is set, so that its own input method can start.
 	Enabled bool `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	// The caret, relative to the window, for placing the input method's
 	// candidate window. Unset when the application does not report it
 	// reliably; text input still works.
 	CursorRectangle *v1.Rectangle `protobuf:"bytes,3,opt,name=cursor_rectangle,json=cursorRectangle,proto3" json:"cursor_rectangle,omitempty"`
-	// Window.resize_counter the rectangles belong to. The viewer does not apply
-	// rectangles of an earlier window size.
+	// Window.resize_counter the rectangles belong to. The participant does not
+	// apply rectangles of an earlier window size.
 	ResizeCounter uint64 `protobuf:"varint,4,opt,name=resize_counter,json=resizeCounter,proto3" json:"resize_counter,omitempty"`
 	// Where cursor_rectangle came from. UNSPECIFIED when it is unset.
 	CursorSource CursorSource `protobuf:"varint,5,opt,name=cursor_source,json=cursorSource,proto3,enum=leaflow.fleet.virtualdesktop.input.v1.CursorSource" json:"cursor_source,omitempty"`
@@ -949,12 +949,12 @@ type TextInputState struct {
 	// caret moves. Compositions and composed text are bound to it.
 	FocusSerial uint64 `protobuf:"varint,7,opt,name=focus_serial,json=focusSerial,proto3" json:"focus_serial,omitempty"`
 	// The bounds of the focused control, relative to the window (AT-SPI2
-	// Component.GetExtents; EditContext controlBounds). The viewer may anchor
-	// its candidate window there when cursor_rectangle is unset; it never
+	// Component.GetExtents; EditContext controlBounds). The participant may
+	// anchor its candidate window there when cursor_rectangle is unset; it never
 	// treats it as the caret.
 	ControlRectangle *v1.Rectangle `protobuf:"bytes,8,opt,name=control_rectangle,json=controlRectangle,proto3" json:"control_rectangle,omitempty"`
 	// The editor's native input context takes Composition messages: preedit
-	// text and the real keys consumed while composing. Otherwise the viewer
+	// text and the real keys consumed while composing. Otherwise the participant
 	// sends only InsertText.
 	CompositionSupported bool `protobuf:"varint,9,opt,name=composition_supported,json=compositionSupported,proto3" json:"composition_supported,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -1147,7 +1147,7 @@ func (x *InsertText) GetInputType() InputType {
 	return InputType_INPUT_TYPE_UNSPECIFIED
 }
 
-// A step of a composition of the viewer's input method (W3C UI Events
+// A step of a composition of the participant's input method (W3C UI Events
 // CompositionEvent; EditContext). Sent only while
 // TextInputState.composition_supported is set.
 type Composition struct {
@@ -1162,7 +1162,7 @@ type Composition struct {
 	FocusSerial uint64 `protobuf:"varint,4,opt,name=focus_serial,json=focusSerial,proto3" json:"focus_serial,omitempty"`
 	// Window.resize_counter when the composition began.
 	ResizeCounter uint64 `protobuf:"varint,5,opt,name=resize_counter,json=resizeCounter,proto3" json:"resize_counter,omitempty"`
-	// Chosen by the viewer at BEGIN, unique on the connection; the later
+	// Chosen by the participant at BEGIN, unique on the connection; the later
 	// phases repeat it.
 	CompositionId uint64 `protobuf:"varint,6,opt,name=composition_id,json=compositionId,proto3" json:"composition_id,omitempty"`
 	// The step.
@@ -1442,10 +1442,10 @@ type TextInputError struct {
 	InputContextId string `protobuf:"bytes,3,opt,name=input_context_id,json=inputContextId,proto3" json:"input_context_id,omitempty"`
 	// Its focus_serial, as when it was sent.
 	FocusSerial uint64 `protobuf:"varint,4,opt,name=focus_serial,json=focusSerial,proto3" json:"focus_serial,omitempty"`
-	// The composition cancelled with it. 0: none. The viewer ends only this
+	// The composition cancelled with it. 0: none. The participant ends only this
 	// composition; new ones may begin in the same editor.
 	CompositionId uint64 `protobuf:"varint,5,opt,name=composition_id,json=compositionId,proto3" json:"composition_id,omitempty"`
-	// Text input of this viewer is paused: the session dropped text whose
+	// Text input of this participant is paused: the session dropped text whose
 	// delivery the application did not confirm, without replaying it. Pointer,
 	// key and window input go on. Text is accepted again once a TextInputState
 	// names an editor with a larger focus_serial.

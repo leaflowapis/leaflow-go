@@ -58,6 +58,59 @@ type Invoker interface {
 	//
 	// POST /api/v1/sessions/{sessionId}:close
 	CloseSession(ctx context.Context, params CloseSessionParams) (*SessionResource, error)
+	// CommitParticipantMigration invokes commit-participant-migration operation.
+	//
+	// Commits the epoch the participant prepared and returns the session's checkpoint once it committed
+	// it: the `commit` and `committed` steps of `Migration` in
+	// `leaflow/fleet/transport/v1/transport.proto`. Repeating the step returns the same answer.
+	//
+	// Only the participant's user may migrate it.
+	//
+	// Fails with:
+	//
+	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+	//  - `CHECKPOINT_INVALID` when the checkpoint is not a serialized `Checkpoint`;
+	//  - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+	//    again after the error's `retry_delay`.
+	//
+	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:commit-migration
+	CommitParticipantMigration(ctx context.Context, request *MigrationStep, params CommitParticipantMigrationParams) (*MigrationStep, error)
+	// CreateAttempt invokes create-attempt operation.
+	//
+	// Starts another PeerConnection of the participant with the offer, such as after a path failed, and
+	// returns the session's answer, its ICE candidates and the signed PeerAuthorization. Move the
+	// connection to it with `prepare-participant-migration` and `commit-participant-migration`.
+	//
+	// Only the participant's user may start one.
+	//
+	// Fails with:
+	//
+	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+	//  - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
+	//  - `TOO_MANY_ATTEMPTS` when the participant started too many PeerConnections in the last minute; try
+	//    again after the error's `retry_delay`;
+	//  - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+	//    again after the error's `retry_delay`;
+	//  - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; start another.
+	//
+	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts
+	CreateAttempt(ctx context.Context, request *CreateAttemptRequest, params CreateAttemptParams) (*Attempt, error)
+	// CreateAttemptCandidates invokes create-attempt-candidates operation.
+	//
+	// Passes the ICE candidates the participant gathered after its offer to the session, and with
+	// `end_of_candidates`, that it has gathered all (RFC 8838). The session ignores those of an attempt
+	// that has ended.
+	//
+	// Only the participant's user may add them.
+	//
+	// Fails with:
+	//
+	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+	//  - `SESSION_UNAVAILABLE` when the session's process is not connected; try again after the error's
+	//    `retry_delay`.
+	//
+	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}/candidates
+	CreateAttemptCandidates(ctx context.Context, request *CreateAttemptCandidatesRequest, params CreateAttemptCandidatesParams) error
 	// CreateGroup invokes create-group operation.
 	//
 	// Creates a group in the project's directory. It reaches the machines within about a minute.
@@ -88,6 +141,33 @@ type Invoker interface {
 	//
 	// POST /api/v1/machine-registrations
 	CreateMachineRegistration(ctx context.Context, request *CreateMachineRegistrationRequest) (*CreateMachineRegistrationResponse, error)
+	// CreateParticipant invokes create-participant operation.
+	//
+	// Admits one participant with the given public key to the session: signs its authorization, has the
+	// session accept it, and starts its first PeerConnection with the offer. The answer carries the
+	// participant, its authorization and the attempt with the session's answer. The participant lasts
+	// while it is renewed.
+	//
+	// The owner of a session may operate it. Joining another member's session requires
+	// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
+	// operating it. Each further capability of the session — file transfer, the clipboard, terminals and
+	// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
+	// requests and reading logs — is granted only with its permission; a participant that may only watch
+	// gets none of them. A request may ask for less: to watch only, or for some of the capabilities.
+	//
+	// Fails with the following, and then no participant was created:
+	//
+	//  - `SESSION_CLOSED` when the session has ended;
+	//  - `SESSION_ACCESS_DENIED` when the caller may not join the session;
+	//  - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
+	//  - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time, such
+	//    as while it restarts; try again after the error's `retry_delay`;
+	//  - `PARTICIPANT_LIMIT_REACHED` when the session has as many participants as it admits;
+	//  - `PARTICIPANT_REFUSED` when the session refused the participant;
+	//  - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; try again with a new offer.
+	//
+	// POST /api/v1/sessions/{sessionId}/participants
+	CreateParticipant(ctx context.Context, request *CreateParticipantRequest, params CreateParticipantParams) (*ParticipantConnection, error)
 	// CreateSession invokes create-session operation.
 	//
 	// Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
@@ -97,7 +177,7 @@ type Invoker interface {
 	//
 	// On a machine an account has at most one session with a desktop and at most 8 sessions in all.
 	// Sessions without a desktop run side by side, such as one for a program and one for a person; several
-	// viewers can also share one session.
+	// participants can also share one session.
 	//
 	// Fails with:
 	//
@@ -118,39 +198,17 @@ type Invoker interface {
 	//
 	// POST /api/v1/sessions
 	CreateSession(ctx context.Context, request *CreateSessionRequest) (*SessionResource, error)
-	// CreateSignalingTicket invokes create-signaling-ticket operation.
+	// DeleteAttempt invokes delete-attempt operation.
 	//
-	// Issues a single-use ticket for one signaling WebSocket of the viewer connection, valid for 60
-	// seconds. Only the viewer connection's user may ask for one.
+	// Tells the session to give up the attempt and close its PeerConnection. Abandoning an attempt that
+	// has ended succeeds.
 	//
-	// Fails with `VIEWER_NOT_FOUND` when the viewer connection has ended.
+	// Only the participant's user may abandon it.
 	//
-	// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}/signaling-tickets
-	CreateSignalingTicket(ctx context.Context, params CreateSignalingTicketParams) (*SignalingTicket, error)
-	// CreateViewer invokes create-viewer operation.
+	// Fails with `PARTICIPANT_NOT_FOUND` when the participant has ended.
 	//
-	// Admits one viewer with the given public key to the session: signs its authorization, has the session
-	// accept it, and returns it with a first signaling ticket. The viewer connection lasts while it is
-	// renewed.
-	//
-	// The owner of a session may operate it. Viewing another member's session requires
-	// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
-	// operating it. Each further capability of the session — file transfer, the clipboard, terminals and
-	// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
-	// requests and reading logs — is granted only with its permission; a viewer that may only watch gets
-	// none of them. A request may ask for less: to watch only, or for some of the capabilities.
-	//
-	// Fails with:
-	//
-	//  - `SESSION_CLOSED` when the session has ended;
-	//  - `SESSION_ACCESS_DENIED` when the caller may not view the session;
-	//  - `SESSION_UNAVAILABLE` when the session's process is not connected, such as while it restarts; try
-	//    again after the error's `retry_delay`;
-	//  - `VIEWER_LIMIT_REACHED` when the session has as many viewers as it admits;
-	//  - `VIEWER_REFUSED` when the session refused the viewer.
-	//
-	// POST /api/v1/sessions/{sessionId}/viewers
-	CreateViewer(ctx context.Context, request *CreateViewerRequest, params CreateViewerParams) (*ViewerConnection, error)
+	// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}
+	DeleteAttempt(ctx context.Context, params DeleteAttemptParams) error
 	// DeleteGroup invokes delete-group operation.
 	//
 	// Removes the group from the directory. Machines stop resolving it within about a minute; files keep
@@ -170,10 +228,10 @@ type Invoker interface {
 	DeleteGroupMember(ctx context.Context, params DeleteGroupMemberParams) error
 	// DeleteMachine invokes delete-machine operation.
 	//
-	// Removes the machine from the project. Every viewer of its sessions is disconnected at once and the
-	// Agent is refused from then on; to use the machine again, enroll it again. Sessions still open on the
-	// machine can no longer be reached and end according to their own timeouts. Nothing on the machine is
-	// deleted.
+	// Removes the machine from the project. Every participant of its sessions is disconnected at once and
+	// the Agent is refused from then on; to use the machine again, enroll it again. Sessions still open on
+	// the machine can no longer be reached and end according to their own timeouts. Nothing on the machine
+	// is deleted.
 	//
 	// Requires `fleet:machines.manage`.
 	//
@@ -189,16 +247,16 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/machine-registrations/{registrationId}
 	DeleteMachineRegistration(ctx context.Context, params DeleteMachineRegistrationParams) error
-	// DeleteViewer invokes delete-viewer operation.
+	// DeleteParticipant invokes delete-participant operation.
 	//
-	// Ends the viewer connection: the session detaches the viewer and closes its PeerConnections, and the
-	// session goes on. A viewer leaves this way; others are disconnected this way.
+	// Ends the participant: the session detaches it and closes its PeerConnections, and the session goes
+	// on. A participant leaves this way; others are disconnected this way.
 	//
-	// The viewer connection's user and the owner of the session may end it; otherwise this requires
+	// The participant's user and the owner of the session may end it; otherwise this requires
 	// `fleet:sessions.manage`.
 	//
-	// DELETE /api/v1/sessions/{sessionId}/viewers/{connectionId}
-	DeleteViewer(ctx context.Context, params DeleteViewerParams) error
+	// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}
+	DeleteParticipant(ctx context.Context, params DeleteParticipantParams) error
 	// DenyEnrollment invokes deny-enrollment operation.
 	//
 	// Refuses the request. The decision is final for the machine's key: the Agent stops polling and
@@ -254,6 +312,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/machine-registrations/{registrationId}
 	GetMachineRegistration(ctx context.Context, params GetMachineRegistrationParams) (*MachineRegistrationResource, error)
+	// GetParticipant invokes get-participant operation.
+	//
+	// Returns a participant of the session.
+	//
+	// GET /api/v1/sessions/{sessionId}/participants/{connectionId}
+	GetParticipant(ctx context.Context, params GetParticipantParams) (*ParticipantResource, error)
 	// GetPrivilegeApproval invokes get-privilege-approval operation.
 	//
 	// Returns whether the caller's elevations on the machine are approved without asking. A caller who
@@ -273,12 +337,21 @@ type Invoker interface {
 	//
 	// GET /api/v1/sessions/{sessionId}
 	GetSession(ctx context.Context, params GetSessionParams) (*SessionResource, error)
-	// GetViewer invokes get-viewer operation.
+	// GetSessionRtcConfiguration invokes get-session-rtc-configuration operation.
 	//
-	// Returns a viewer connected to the session.
+	// Returns the STUN and TURN servers for the PeerConnections the caller starts to the session, with
+	// TURN credentials of its own, and the policy for using them. Ask again once `expires_at` has passed;
+	// the credentials of a PeerConnection already relayed last longer.
 	//
-	// GET /api/v1/sessions/{sessionId}/viewers/{connectionId}
-	GetViewer(ctx context.Context, params GetViewerParams) (*ViewerResource, error)
+	// Requires that the caller may join the session, as for `create-participant`.
+	//
+	// Fails with:
+	//
+	//  - `SESSION_CLOSED` when the session has ended;
+	//  - `SESSION_ACCESS_DENIED` when the caller may not join the session.
+	//
+	// GET /api/v1/sessions/{sessionId}/rtc-configuration
+	GetSessionRtcConfiguration(ctx context.Context, params GetSessionRtcConfigurationParams) (*RtcConfiguration, error)
 	// ListAccounts invokes list-accounts operation.
 	//
 	// Returns the accounts of the project's members, ordered by username. A member who has never been able
@@ -334,12 +407,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/privilege-requests
 	ListPrivilegeRequests(ctx context.Context, params ListPrivilegeRequestsParams) (*PrivilegeRequestList, error)
-	// ListSessionViewers invokes list-session-viewers operation.
+	// ListSessionParticipants invokes list-session-participants operation.
 	//
-	// Returns the viewers connected to the session, in the order they connected.
+	// Returns the participants of the session, in the order they joined.
 	//
-	// GET /api/v1/sessions/{sessionId}/viewers
-	ListSessionViewers(ctx context.Context, params ListSessionViewersParams) (*ViewerList, error)
+	// GET /api/v1/sessions/{sessionId}/participants
+	ListSessionParticipants(ctx context.Context, params ListSessionParticipantsParams) (*ParticipantList, error)
 	// ListSessions invokes list-sessions operation.
 	//
 	// Returns the sessions of the current project's machines, newest first. Closed sessions are omitted
@@ -347,24 +420,41 @@ type Invoker interface {
 	//
 	// GET /api/v1/sessions
 	ListSessions(ctx context.Context, params ListSessionsParams) (*SessionList, error)
-	// RenewViewer invokes renew-viewer operation.
+	// PrepareParticipantMigration invokes prepare-participant-migration operation.
 	//
-	// Extends the viewer connection's lease and returns renewed PeerAuthorizations for the PeerConnections
-	// whose current ones the request presents; the session receives them too. A presented authorization
-	// that the service did not sign for this viewer connection, or whose attempt has ended, is left out of
-	// the answer. When the viewer's authorization nears its end, the answer carries a renewed one, which
-	// the session already holds.
+	// Passes the participant's checkpoint for the next epoch to the session and returns the session's
+	// checkpoint for it: the `prepare` and `prepared` steps of `Migration` in
+	// `leaflow/fleet/transport/v1/transport.proto`. Repeating the step returns the same answer.
 	//
-	// Only the viewer connection's user may renew it.
+	// Only the participant's user may migrate it.
 	//
 	// Fails with:
 	//
-	//  - `VIEWER_NOT_FOUND` when the viewer connection has ended; create another;
-	//  - `VIEWER_RIGHTS_CHANGED` when the caller's permissions no longer grant what the viewer connection
+	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+	//  - `CHECKPOINT_INVALID` when the checkpoint is not a serialized `Checkpoint`;
+	//  - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+	//    again after the error's `retry_delay`.
+	//
+	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:prepare-migration
+	PrepareParticipantMigration(ctx context.Context, request *MigrationStep, params PrepareParticipantMigrationParams) (*MigrationStep, error)
+	// RenewParticipant invokes renew-participant operation.
+	//
+	// Extends the participant's lease and returns renewed PeerAuthorizations for the PeerConnections whose
+	// current ones the request presents; the session receives them too. A presented authorization that the
+	// service did not sign for this participant, or whose attempt has ended, is left out of the answer.
+	// When the participant's authorization nears its end, the answer carries a renewed one, which the
+	// session already holds.
+	//
+	// Only the participant's user may renew it.
+	//
+	// Fails with:
+	//
+	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended; create another;
+	//  - `PARTICIPANT_RIGHTS_CHANGED` when the caller's permissions no longer grant what the participant
 	//    holds; it has ended, and another can be created with the current rights.
 	//
-	// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}:renew
-	RenewViewer(ctx context.Context, request *RenewViewerRequest, params RenewViewerParams) (*RenewViewerResponse, error)
+	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:renew
+	RenewParticipant(ctx context.Context, request *RenewParticipantRequest, params RenewParticipantParams) (*RenewParticipantResponse, error)
 	// RunMachineCommand invokes run-machine-command operation.
 	//
 	// Runs one command line on the machine as the caller's account, with its login shell, and returns once
@@ -902,6 +992,549 @@ func (c *Client) sendCloseSession(ctx context.Context, params CloseSessionParams
 	return result, nil
 }
 
+// CommitParticipantMigration invokes commit-participant-migration operation.
+//
+// Commits the epoch the participant prepared and returns the session's checkpoint once it committed
+// it: the `commit` and `committed` steps of `Migration` in
+// `leaflow/fleet/transport/v1/transport.proto`. Repeating the step returns the same answer.
+//
+// Only the participant's user may migrate it.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `CHECKPOINT_INVALID` when the checkpoint is not a serialized `Checkpoint`;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+//     again after the error's `retry_delay`.
+//
+// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:commit-migration
+func (c *Client) CommitParticipantMigration(ctx context.Context, request *MigrationStep, params CommitParticipantMigrationParams) (*MigrationStep, error) {
+	res, err := c.sendCommitParticipantMigration(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCommitParticipantMigration(ctx context.Context, request *MigrationStep, params CommitParticipantMigrationParams) (res *MigrationStep, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("commit-participant-migration"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}:commit-migration"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CommitParticipantMigrationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [5]string
+	pathParts[0] = "/api/v1/sessions/"
+	{
+		// Encode "sessionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "sessionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.SessionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/participants/"
+	{
+		// Encode "connectionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "connectionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.ConnectionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = ":commit-migration"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCommitParticipantMigrationRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CommitParticipantMigrationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCommitParticipantMigrationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateAttempt invokes create-attempt operation.
+//
+// Starts another PeerConnection of the participant with the offer, such as after a path failed, and
+// returns the session's answer, its ICE candidates and the signed PeerAuthorization. Move the
+// connection to it with `prepare-participant-migration` and `commit-participant-migration`.
+//
+// Only the participant's user may start one.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
+//   - `TOO_MANY_ATTEMPTS` when the participant started too many PeerConnections in the last minute; try
+//     again after the error's `retry_delay`;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+//     again after the error's `retry_delay`;
+//   - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; start another.
+//
+// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts
+func (c *Client) CreateAttempt(ctx context.Context, request *CreateAttemptRequest, params CreateAttemptParams) (*Attempt, error) {
+	res, err := c.sendCreateAttempt(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCreateAttempt(ctx context.Context, request *CreateAttemptRequest, params CreateAttemptParams) (res *Attempt, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-attempt"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}/attempts"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateAttemptOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [5]string
+	pathParts[0] = "/api/v1/sessions/"
+	{
+		// Encode "sessionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "sessionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.SessionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/participants/"
+	{
+		// Encode "connectionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "connectionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.ConnectionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = "/attempts"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateAttemptRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreateAttemptOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateAttemptResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateAttemptCandidates invokes create-attempt-candidates operation.
+//
+// Passes the ICE candidates the participant gathered after its offer to the session, and with
+// `end_of_candidates`, that it has gathered all (RFC 8838). The session ignores those of an attempt
+// that has ended.
+//
+// Only the participant's user may add them.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected; try again after the error's
+//     `retry_delay`.
+//
+// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}/candidates
+func (c *Client) CreateAttemptCandidates(ctx context.Context, request *CreateAttemptCandidatesRequest, params CreateAttemptCandidatesParams) error {
+	_, err := c.sendCreateAttemptCandidates(ctx, request, params)
+	return err
+}
+
+func (c *Client) sendCreateAttemptCandidates(ctx context.Context, request *CreateAttemptCandidatesRequest, params CreateAttemptCandidatesParams) (res *CreateAttemptCandidatesNoContent, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-attempt-candidates"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}/candidates"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateAttemptCandidatesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [7]string
+	pathParts[0] = "/api/v1/sessions/"
+	{
+		// Encode "sessionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "sessionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.SessionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/participants/"
+	{
+		// Encode "connectionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "connectionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.ConnectionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = "/attempts/"
+	{
+		// Encode "attemptId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "attemptId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.AttemptId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[5] = encoded
+	}
+	pathParts[6] = "/candidates"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateAttemptCandidatesRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreateAttemptCandidatesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateAttemptCandidatesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // CreateGroup invokes create-group operation.
 //
 // Creates a group in the project's directory. It reaches the machines within about a minute.
@@ -1299,6 +1932,171 @@ func (c *Client) sendCreateMachineRegistration(ctx context.Context, request *Cre
 	return result, nil
 }
 
+// CreateParticipant invokes create-participant operation.
+//
+// Admits one participant with the given public key to the session: signs its authorization, has the
+// session accept it, and starts its first PeerConnection with the offer. The answer carries the
+// participant, its authorization and the attempt with the session's answer. The participant lasts
+// while it is renewed.
+//
+// The owner of a session may operate it. Joining another member's session requires
+// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
+// operating it. Each further capability of the session — file transfer, the clipboard, terminals and
+// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
+// requests and reading logs — is granted only with its permission; a participant that may only watch
+// gets none of them. A request may ask for less: to watch only, or for some of the capabilities.
+//
+// Fails with the following, and then no participant was created:
+//
+//   - `SESSION_CLOSED` when the session has ended;
+//   - `SESSION_ACCESS_DENIED` when the caller may not join the session;
+//   - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time, such
+//     as while it restarts; try again after the error's `retry_delay`;
+//   - `PARTICIPANT_LIMIT_REACHED` when the session has as many participants as it admits;
+//   - `PARTICIPANT_REFUSED` when the session refused the participant;
+//   - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; try again with a new offer.
+//
+// POST /api/v1/sessions/{sessionId}/participants
+func (c *Client) CreateParticipant(ctx context.Context, request *CreateParticipantRequest, params CreateParticipantParams) (*ParticipantConnection, error) {
+	res, err := c.sendCreateParticipant(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCreateParticipant(ctx context.Context, request *CreateParticipantRequest, params CreateParticipantParams) (res *ParticipantConnection, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-participant"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateParticipantOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/sessions/"
+	{
+		// Encode "sessionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "sessionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.SessionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/participants"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateParticipantRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreateParticipantOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateParticipantResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // CreateSession invokes create-session operation.
 //
 // Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
@@ -1308,7 +2106,7 @@ func (c *Client) sendCreateMachineRegistration(ctx context.Context, request *Cre
 //
 // On a machine an account has at most one session with a desktop and at most 8 sessions in all.
 // Sessions without a desktop run side by side, such as one for a program and one for a person; several
-// viewers can also share one session.
+// participants can also share one session.
 //
 // Fails with:
 //
@@ -1448,24 +2246,26 @@ func (c *Client) sendCreateSession(ctx context.Context, request *CreateSessionRe
 	return result, nil
 }
 
-// CreateSignalingTicket invokes create-signaling-ticket operation.
+// DeleteAttempt invokes delete-attempt operation.
 //
-// Issues a single-use ticket for one signaling WebSocket of the viewer connection, valid for 60
-// seconds. Only the viewer connection's user may ask for one.
+// Tells the session to give up the attempt and close its PeerConnection. Abandoning an attempt that
+// has ended succeeds.
 //
-// Fails with `VIEWER_NOT_FOUND` when the viewer connection has ended.
+// Only the participant's user may abandon it.
 //
-// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}/signaling-tickets
-func (c *Client) CreateSignalingTicket(ctx context.Context, params CreateSignalingTicketParams) (*SignalingTicket, error) {
-	res, err := c.sendCreateSignalingTicket(ctx, params)
-	return res, err
+// Fails with `PARTICIPANT_NOT_FOUND` when the participant has ended.
+//
+// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}
+func (c *Client) DeleteAttempt(ctx context.Context, params DeleteAttemptParams) error {
+	_, err := c.sendDeleteAttempt(ctx, params)
+	return err
 }
 
-func (c *Client) sendCreateSignalingTicket(ctx context.Context, params CreateSignalingTicketParams) (res *SignalingTicket, err error) {
+func (c *Client) sendDeleteAttempt(ctx context.Context, params DeleteAttemptParams) (res *DeleteAttemptNoContent, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-signaling-ticket"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/viewers/{connectionId}/signaling-tickets"),
+		otelogen.OperationID("delete-attempt"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1481,7 +2281,7 @@ func (c *Client) sendCreateSignalingTicket(ctx context.Context, params CreateSig
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateSignalingTicketOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteAttemptOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -1498,7 +2298,7 @@ func (c *Client) sendCreateSignalingTicket(ctx context.Context, params CreateSig
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [5]string
+	var pathParts [6]string
 	pathParts[0] = "/api/v1/sessions/"
 	{
 		// Encode "sessionId" parameter.
@@ -1518,7 +2318,7 @@ func (c *Client) sendCreateSignalingTicket(ctx context.Context, params CreateSig
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/viewers/"
+	pathParts[2] = "/participants/"
 	{
 		// Encode "connectionId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -1537,156 +2337,16 @@ func (c *Client) sendCreateSignalingTicket(ctx context.Context, params CreateSig
 		}
 		pathParts[3] = encoded
 	}
-	pathParts[4] = "/signaling-tickets"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
+	pathParts[4] = "/attempts/"
 	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateSignalingTicketOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateSignalingTicketResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateViewer invokes create-viewer operation.
-//
-// Admits one viewer with the given public key to the session: signs its authorization, has the session
-// accept it, and returns it with a first signaling ticket. The viewer connection lasts while it is
-// renewed.
-//
-// The owner of a session may operate it. Viewing another member's session requires
-// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
-// operating it. Each further capability of the session — file transfer, the clipboard, terminals and
-// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
-// requests and reading logs — is granted only with its permission; a viewer that may only watch gets
-// none of them. A request may ask for less: to watch only, or for some of the capabilities.
-//
-// Fails with:
-//
-//   - `SESSION_CLOSED` when the session has ended;
-//   - `SESSION_ACCESS_DENIED` when the caller may not view the session;
-//   - `SESSION_UNAVAILABLE` when the session's process is not connected, such as while it restarts; try
-//     again after the error's `retry_delay`;
-//   - `VIEWER_LIMIT_REACHED` when the session has as many viewers as it admits;
-//   - `VIEWER_REFUSED` when the session refused the viewer.
-//
-// POST /api/v1/sessions/{sessionId}/viewers
-func (c *Client) CreateViewer(ctx context.Context, request *CreateViewerRequest, params CreateViewerParams) (*ViewerConnection, error) {
-	res, err := c.sendCreateViewer(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendCreateViewer(ctx context.Context, request *CreateViewerRequest, params CreateViewerParams) (res *ViewerConnection, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-viewer"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/viewers"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateViewerOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/sessions/"
-	{
-		// Encode "sessionId" parameter.
+		// Encode "attemptId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "sessionId",
+			Param:   "attemptId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.SessionId))
+			return e.EncodeValue(conv.UUIDToString(params.AttemptId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -1694,18 +2354,14 @@ func (c *Client) sendCreateViewer(ctx context.Context, request *CreateViewerRequ
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[1] = encoded
+		pathParts[5] = encoded
 	}
-	pathParts[2] = "/viewers"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
+	r, err := ht.NewRequest(ctx, "DELETE", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateViewerRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
 	}
 
 	{
@@ -1713,7 +2369,7 @@ func (c *Client) sendCreateViewer(ctx context.Context, request *CreateViewerRequ
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateViewerOperation, r); {
+			switch err := c.securityBearerAuth(ctx, DeleteAttemptOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -1756,7 +2412,7 @@ func (c *Client) sendCreateViewer(ctx context.Context, request *CreateViewerRequ
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeCreateViewerResponse(resp)
+	result, err := decodeDeleteAttemptResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2052,10 +2708,10 @@ func (c *Client) sendDeleteGroupMember(ctx context.Context, params DeleteGroupMe
 
 // DeleteMachine invokes delete-machine operation.
 //
-// Removes the machine from the project. Every viewer of its sessions is disconnected at once and the
-// Agent is refused from then on; to use the machine again, enroll it again. Sessions still open on the
-// machine can no longer be reached and end according to their own timeouts. Nothing on the machine is
-// deleted.
+// Removes the machine from the project. Every participant of its sessions is disconnected at once and
+// the Agent is refused from then on; to use the machine again, enroll it again. Sessions still open on
+// the machine can no longer be reached and end according to their own timeouts. Nothing on the machine
+// is deleted.
 //
 // Requires `fleet:machines.manage`.
 //
@@ -2321,25 +2977,25 @@ func (c *Client) sendDeleteMachineRegistration(ctx context.Context, params Delet
 	return result, nil
 }
 
-// DeleteViewer invokes delete-viewer operation.
+// DeleteParticipant invokes delete-participant operation.
 //
-// Ends the viewer connection: the session detaches the viewer and closes its PeerConnections, and the
-// session goes on. A viewer leaves this way; others are disconnected this way.
+// Ends the participant: the session detaches it and closes its PeerConnections, and the session goes
+// on. A participant leaves this way; others are disconnected this way.
 //
-// The viewer connection's user and the owner of the session may end it; otherwise this requires
+// The participant's user and the owner of the session may end it; otherwise this requires
 // `fleet:sessions.manage`.
 //
-// DELETE /api/v1/sessions/{sessionId}/viewers/{connectionId}
-func (c *Client) DeleteViewer(ctx context.Context, params DeleteViewerParams) error {
-	_, err := c.sendDeleteViewer(ctx, params)
+// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}
+func (c *Client) DeleteParticipant(ctx context.Context, params DeleteParticipantParams) error {
+	_, err := c.sendDeleteParticipant(ctx, params)
 	return err
 }
 
-func (c *Client) sendDeleteViewer(ctx context.Context, params DeleteViewerParams) (res *DeleteViewerNoContent, err error) {
+func (c *Client) sendDeleteParticipant(ctx context.Context, params DeleteParticipantParams) (res *DeleteParticipantNoContent, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-viewer"),
+		otelogen.OperationID("delete-participant"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/viewers/{connectionId}"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2355,7 +3011,7 @@ func (c *Client) sendDeleteViewer(ctx context.Context, params DeleteViewerParams
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DeleteViewerOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteParticipantOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -2392,7 +3048,7 @@ func (c *Client) sendDeleteViewer(ctx context.Context, params DeleteViewerParams
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/viewers/"
+	pathParts[2] = "/participants/"
 	{
 		// Encode "connectionId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -2424,7 +3080,7 @@ func (c *Client) sendDeleteViewer(ctx context.Context, params DeleteViewerParams
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeleteViewerOperation, r); {
+			switch err := c.securityBearerAuth(ctx, DeleteParticipantOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -2467,7 +3123,7 @@ func (c *Client) sendDeleteViewer(ctx context.Context, params DeleteViewerParams
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeDeleteViewerResponse(resp)
+	result, err := decodeDeleteParticipantResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3407,6 +4063,156 @@ func (c *Client) sendGetMachineRegistration(ctx context.Context, params GetMachi
 	return result, nil
 }
 
+// GetParticipant invokes get-participant operation.
+//
+// Returns a participant of the session.
+//
+// GET /api/v1/sessions/{sessionId}/participants/{connectionId}
+func (c *Client) GetParticipant(ctx context.Context, params GetParticipantParams) (*ParticipantResource, error) {
+	res, err := c.sendGetParticipant(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetParticipant(ctx context.Context, params GetParticipantParams) (res *ParticipantResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-participant"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetParticipantOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/sessions/"
+	{
+		// Encode "sessionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "sessionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.SessionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/participants/"
+	{
+		// Encode "connectionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "connectionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.ConnectionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetParticipantOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetParticipantResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetPrivilegeApproval invokes get-privilege-approval operation.
 //
 // Returns whether the caller's elevations on the machine are approved without asking. A caller who
@@ -3802,21 +4608,30 @@ func (c *Client) sendGetSession(ctx context.Context, params GetSessionParams) (r
 	return result, nil
 }
 
-// GetViewer invokes get-viewer operation.
+// GetSessionRtcConfiguration invokes get-session-rtc-configuration operation.
 //
-// Returns a viewer connected to the session.
+// Returns the STUN and TURN servers for the PeerConnections the caller starts to the session, with
+// TURN credentials of its own, and the policy for using them. Ask again once `expires_at` has passed;
+// the credentials of a PeerConnection already relayed last longer.
 //
-// GET /api/v1/sessions/{sessionId}/viewers/{connectionId}
-func (c *Client) GetViewer(ctx context.Context, params GetViewerParams) (*ViewerResource, error) {
-	res, err := c.sendGetViewer(ctx, params)
+// Requires that the caller may join the session, as for `create-participant`.
+//
+// Fails with:
+//
+//   - `SESSION_CLOSED` when the session has ended;
+//   - `SESSION_ACCESS_DENIED` when the caller may not join the session.
+//
+// GET /api/v1/sessions/{sessionId}/rtc-configuration
+func (c *Client) GetSessionRtcConfiguration(ctx context.Context, params GetSessionRtcConfigurationParams) (*RtcConfiguration, error) {
+	res, err := c.sendGetSessionRtcConfiguration(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetViewer(ctx context.Context, params GetViewerParams) (res *ViewerResource, err error) {
+func (c *Client) sendGetSessionRtcConfiguration(ctx context.Context, params GetSessionRtcConfigurationParams) (res *RtcConfiguration, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-viewer"),
+		otelogen.OperationID("get-session-rtc-configuration"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/viewers/{connectionId}"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/rtc-configuration"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3832,7 +4647,7 @@ func (c *Client) sendGetViewer(ctx context.Context, params GetViewerParams) (res
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetViewerOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, GetSessionRtcConfigurationOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -3849,7 +4664,7 @@ func (c *Client) sendGetViewer(ctx context.Context, params GetViewerParams) (res
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
+	var pathParts [3]string
 	pathParts[0] = "/api/v1/sessions/"
 	{
 		// Encode "sessionId" parameter.
@@ -3869,25 +4684,7 @@ func (c *Client) sendGetViewer(ctx context.Context, params GetViewerParams) (res
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/viewers/"
-	{
-		// Encode "connectionId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "connectionId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.Int64ToString(params.ConnectionId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
+	pathParts[2] = "/rtc-configuration"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -3901,7 +4698,7 @@ func (c *Client) sendGetViewer(ctx context.Context, params GetViewerParams) (res
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetViewerOperation, r); {
+			switch err := c.securityBearerAuth(ctx, GetSessionRtcConfigurationOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -3944,7 +4741,7 @@ func (c *Client) sendGetViewer(ctx context.Context, params GetViewerParams) (res
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeGetViewerResponse(resp)
+	result, err := decodeGetSessionRtcConfigurationResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5307,21 +6104,21 @@ func (c *Client) sendListPrivilegeRequests(ctx context.Context, params ListPrivi
 	return result, nil
 }
 
-// ListSessionViewers invokes list-session-viewers operation.
+// ListSessionParticipants invokes list-session-participants operation.
 //
-// Returns the viewers connected to the session, in the order they connected.
+// Returns the participants of the session, in the order they joined.
 //
-// GET /api/v1/sessions/{sessionId}/viewers
-func (c *Client) ListSessionViewers(ctx context.Context, params ListSessionViewersParams) (*ViewerList, error) {
-	res, err := c.sendListSessionViewers(ctx, params)
+// GET /api/v1/sessions/{sessionId}/participants
+func (c *Client) ListSessionParticipants(ctx context.Context, params ListSessionParticipantsParams) (*ParticipantList, error) {
+	res, err := c.sendListSessionParticipants(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListSessionViewers(ctx context.Context, params ListSessionViewersParams) (res *ViewerList, err error) {
+func (c *Client) sendListSessionParticipants(ctx context.Context, params ListSessionParticipantsParams) (res *ParticipantList, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-session-viewers"),
+		otelogen.OperationID("list-session-participants"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/viewers"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5337,7 +6134,7 @@ func (c *Client) sendListSessionViewers(ctx context.Context, params ListSessionV
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListSessionViewersOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListSessionParticipantsOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -5374,7 +6171,7 @@ func (c *Client) sendListSessionViewers(ctx context.Context, params ListSessionV
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/viewers"
+	pathParts[2] = "/participants"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -5388,7 +6185,7 @@ func (c *Client) sendListSessionViewers(ctx context.Context, params ListSessionV
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListSessionViewersOperation, r); {
+			switch err := c.securityBearerAuth(ctx, ListSessionParticipantsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -5431,7 +6228,7 @@ func (c *Client) sendListSessionViewers(ctx context.Context, params ListSessionV
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeListSessionViewersResponse(resp)
+	result, err := decodeListSessionParticipantsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5642,29 +6439,28 @@ func (c *Client) sendListSessions(ctx context.Context, params ListSessionsParams
 	return result, nil
 }
 
-// RenewViewer invokes renew-viewer operation.
+// PrepareParticipantMigration invokes prepare-participant-migration operation.
 //
-// Extends the viewer connection's lease and returns renewed PeerAuthorizations for the PeerConnections
-// whose current ones the request presents; the session receives them too. A presented authorization
-// that the service did not sign for this viewer connection, or whose attempt has ended, is left out of
-// the answer. When the viewer's authorization nears its end, the answer carries a renewed one, which
-// the session already holds.
+// Passes the participant's checkpoint for the next epoch to the session and returns the session's
+// checkpoint for it: the `prepare` and `prepared` steps of `Migration` in
+// `leaflow/fleet/transport/v1/transport.proto`. Repeating the step returns the same answer.
 //
-// Only the viewer connection's user may renew it.
+// Only the participant's user may migrate it.
 //
 // Fails with:
 //
-//   - `VIEWER_NOT_FOUND` when the viewer connection has ended; create another;
-//   - `VIEWER_RIGHTS_CHANGED` when the caller's permissions no longer grant what the viewer connection
-//     holds; it has ended, and another can be created with the current rights.
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `CHECKPOINT_INVALID` when the checkpoint is not a serialized `Checkpoint`;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+//     again after the error's `retry_delay`.
 //
-// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}:renew
-func (c *Client) RenewViewer(ctx context.Context, request *RenewViewerRequest, params RenewViewerParams) (*RenewViewerResponse, error) {
-	res, err := c.sendRenewViewer(ctx, request, params)
+// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:prepare-migration
+func (c *Client) PrepareParticipantMigration(ctx context.Context, request *MigrationStep, params PrepareParticipantMigrationParams) (*MigrationStep, error) {
+	res, err := c.sendPrepareParticipantMigration(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendRenewViewer(ctx context.Context, request *RenewViewerRequest, params RenewViewerParams) (res *RenewViewerResponse, err error) {
+func (c *Client) sendPrepareParticipantMigration(ctx context.Context, request *MigrationStep, params PrepareParticipantMigrationParams) (res *MigrationStep, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -5675,9 +6471,9 @@ func (c *Client) sendRenewViewer(ctx context.Context, request *RenewViewerReques
 		return res, errors.Wrap(err, "validate")
 	}
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("renew-viewer"),
+		otelogen.OperationID("prepare-participant-migration"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/viewers/{connectionId}:renew"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}:prepare-migration"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5693,7 +6489,7 @@ func (c *Client) sendRenewViewer(ctx context.Context, request *RenewViewerReques
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RenewViewerOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, PrepareParticipantMigrationOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -5730,7 +6526,7 @@ func (c *Client) sendRenewViewer(ctx context.Context, request *RenewViewerReques
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/viewers/"
+	pathParts[2] = "/participants/"
 	{
 		// Encode "connectionId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -5749,7 +6545,7 @@ func (c *Client) sendRenewViewer(ctx context.Context, request *RenewViewerReques
 		}
 		pathParts[3] = encoded
 	}
-	pathParts[4] = ":renew"
+	pathParts[4] = ":prepare-migration"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -5757,7 +6553,7 @@ func (c *Client) sendRenewViewer(ctx context.Context, request *RenewViewerReques
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeRenewViewerRequest(request, r); err != nil {
+	if err := encodePrepareParticipantMigrationRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -5766,7 +6562,7 @@ func (c *Client) sendRenewViewer(ctx context.Context, request *RenewViewerReques
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RenewViewerOperation, r); {
+			switch err := c.securityBearerAuth(ctx, PrepareParticipantMigrationOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -5809,7 +6605,182 @@ func (c *Client) sendRenewViewer(ctx context.Context, request *RenewViewerReques
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeRenewViewerResponse(resp)
+	result, err := decodePrepareParticipantMigrationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// RenewParticipant invokes renew-participant operation.
+//
+// Extends the participant's lease and returns renewed PeerAuthorizations for the PeerConnections whose
+// current ones the request presents; the session receives them too. A presented authorization that the
+// service did not sign for this participant, or whose attempt has ended, is left out of the answer.
+// When the participant's authorization nears its end, the answer carries a renewed one, which the
+// session already holds.
+//
+// Only the participant's user may renew it.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended; create another;
+//   - `PARTICIPANT_RIGHTS_CHANGED` when the caller's permissions no longer grant what the participant
+//     holds; it has ended, and another can be created with the current rights.
+//
+// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:renew
+func (c *Client) RenewParticipant(ctx context.Context, request *RenewParticipantRequest, params RenewParticipantParams) (*RenewParticipantResponse, error) {
+	res, err := c.sendRenewParticipant(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendRenewParticipant(ctx context.Context, request *RenewParticipantRequest, params RenewParticipantParams) (res *RenewParticipantResponse, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("renew-participant"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}:renew"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RenewParticipantOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [5]string
+	pathParts[0] = "/api/v1/sessions/"
+	{
+		// Encode "sessionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "sessionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.SessionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/participants/"
+	{
+		// Encode "connectionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "connectionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.ConnectionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = ":renew"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRenewParticipantRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, RenewParticipantOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRenewParticipantResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

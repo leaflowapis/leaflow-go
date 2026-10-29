@@ -227,7 +227,7 @@ type FileTransferOffer struct {
 	Entries []*FileEntry `protobuf:"bytes,2,rep,name=entries,proto3" json:"entries,omitempty"`
 	// The sum of the regular files' sizes.
 	TotalSizeBytes uint64 `protobuf:"varint,3,opt,name=total_size_bytes,json=totalSizeBytes,proto3" json:"total_size_bytes,omitempty"`
-	// From the viewer only: the directory of the session user to store the
+	// From the participant only: the directory of the session user to store the
 	// files in, which needs FileTransferPolicy.file_system_allowed. Empty: the
 	// user's private transfer directory. Existing files are never overwritten.
 	DestinationDirectory string `protobuf:"bytes,4,opt,name=destination_directory,json=destinationDirectory,proto3" json:"destination_directory,omitempty"`
@@ -394,7 +394,7 @@ type FileTransferRequest struct {
 	// The regular files, and the directories whose whole contents, it wants.
 	FileIds []string `protobuf:"bytes,3,rep,name=file_ids,json=fileIds,proto3" json:"file_ids,omitempty"`
 	// The files go to the receiver's clipboard once stored. Needs the matching
-	// direction of the viewer's ClipboardPolicy as well.
+	// direction of the participant's ClipboardPolicy as well.
 	Clipboard     bool `protobuf:"varint,4,opt,name=clipboard,proto3" json:"clipboard,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1403,15 +1403,15 @@ func (x *CreateFileOfferResponse) GetOffer() *FileTransferOffer {
 	return nil
 }
 
-// What a viewer may do with files. Carried in the viewer's signed
-// authorization; without it the viewer may do none of this.
+// What a participant may do with files. Carried in the participant's signed
+// authorization; without it the participant may do none of this.
 type FileTransferPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The viewer may send files to the session.
+	// The participant may send files to the session.
 	UploadAllowed bool `protobuf:"varint,1,opt,name=upload_allowed,json=uploadAllowed,proto3" json:"upload_allowed,omitempty"`
-	// The viewer may receive files from the session.
+	// The participant may receive files from the session.
 	DownloadAllowed bool `protobuf:"varint,2,opt,name=download_allowed,json=downloadAllowed,proto3" json:"download_allowed,omitempty"`
-	// The viewer may use FileSystemService and choose where uploads go.
+	// The participant may use FileSystemService and choose where uploads go.
 	FileSystemAllowed bool `protobuf:"varint,3,opt,name=file_system_allowed,json=fileSystemAllowed,proto3" json:"file_system_allowed,omitempty"`
 	// The most entries, directories included, of one offer. 0: 1024.
 	MaxEntries    uint32 `protobuf:"varint,4,opt,name=max_entries,json=maxEntries,proto3" json:"max_entries,omitempty"`

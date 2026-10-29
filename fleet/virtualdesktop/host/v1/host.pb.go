@@ -27,7 +27,7 @@ type DesktopOptions struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// How the session shows its windows.
 	Mode v1.SessionMode `protobuf:"varint,1,opt,name=mode,proto3,enum=leaflow.fleet.virtualdesktop.display.v1.SessionMode" json:"mode,omitempty"`
-	// The first size of the canvas, normally the viewer's. Unset: the
+	// The first size of the canvas, normally the participant's. Unset: the
 	// Agent's default.
 	Size *v1.Size `protobuf:"bytes,2,opt,name=size,proto3" json:"size,omitempty"`
 	// The largest size the canvas may grow to. Unset: the Agent's default.

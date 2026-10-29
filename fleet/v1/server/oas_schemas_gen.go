@@ -4,7 +4,6 @@ package fleetv1server
 
 import (
 	"fmt"
-	"net/url"
 	"time"
 
 	"github.com/go-faster/errors"
@@ -209,6 +208,62 @@ func (s *ApproveEnrollmentRequest) SetName(val string) {
 	s.Name = val
 }
 
+// One PeerConnection of a participant, as the session answered it. Set the answer as the remote
+// description, add the candidates, and verify the authorization before sending application data; its
+// SHA-256 goes into `Hello.authorization_sha256`.
+// Ref: #/components/schemas/Attempt
+type Attempt struct {
+	// The attempt, as `attempt_id` of the transport protocol in its 16 bytes.
+	AttemptID uuid.UUID `json:"attempt_id"`
+	// The session's SDP answer (RFC 8866); it holds ICE credentials, so never log it.
+	Answer string `json:"answer"`
+	// The session's ICE candidates gathered until it reported the end of its candidates, or until 2
+	// seconds after its answer.
+	Candidates []IceCandidate `json:"candidates"`
+	// The signed `PeerAuthorization` of the attempt, the same one the session holds.
+	Authorization Signed `json:"authorization"`
+}
+
+// GetAttemptID returns the value of AttemptID.
+func (s *Attempt) GetAttemptID() uuid.UUID {
+	return s.AttemptID
+}
+
+// GetAnswer returns the value of Answer.
+func (s *Attempt) GetAnswer() string {
+	return s.Answer
+}
+
+// GetCandidates returns the value of Candidates.
+func (s *Attempt) GetCandidates() []IceCandidate {
+	return s.Candidates
+}
+
+// GetAuthorization returns the value of Authorization.
+func (s *Attempt) GetAuthorization() Signed {
+	return s.Authorization
+}
+
+// SetAttemptID sets the value of AttemptID.
+func (s *Attempt) SetAttemptID(val uuid.UUID) {
+	s.AttemptID = val
+}
+
+// SetAnswer sets the value of Answer.
+func (s *Attempt) SetAnswer(val string) {
+	s.Answer = val
+}
+
+// SetCandidates sets the value of Candidates.
+func (s *Attempt) SetCandidates(val []IceCandidate) {
+	s.Candidates = val
+}
+
+// SetAuthorization sets the value of Authorization.
+func (s *Attempt) SetAuthorization(val Signed) {
+	s.Authorization = val
+}
+
 type BearerAuth struct {
 	Token string
 	Roles []string
@@ -232,6 +287,53 @@ func (s *BearerAuth) SetToken(val string) {
 // SetRoles sets the value of Roles.
 func (s *BearerAuth) SetRoles(val []string) {
 	s.Roles = val
+}
+
+// CreateAttemptCandidatesNoContent is response for CreateAttemptCandidates operation.
+type CreateAttemptCandidatesNoContent struct{}
+
+// Ref: #/components/schemas/CreateAttemptCandidatesRequest
+type CreateAttemptCandidatesRequest struct {
+	Candidates []IceCandidate `json:"candidates"`
+	// The participant has gathered all its candidates.
+	EndOfCandidates OptBool `json:"end_of_candidates"`
+}
+
+// GetCandidates returns the value of Candidates.
+func (s *CreateAttemptCandidatesRequest) GetCandidates() []IceCandidate {
+	return s.Candidates
+}
+
+// GetEndOfCandidates returns the value of EndOfCandidates.
+func (s *CreateAttemptCandidatesRequest) GetEndOfCandidates() OptBool {
+	return s.EndOfCandidates
+}
+
+// SetCandidates sets the value of Candidates.
+func (s *CreateAttemptCandidatesRequest) SetCandidates(val []IceCandidate) {
+	s.Candidates = val
+}
+
+// SetEndOfCandidates sets the value of EndOfCandidates.
+func (s *CreateAttemptCandidatesRequest) SetEndOfCandidates(val OptBool) {
+	s.EndOfCandidates = val
+}
+
+// Ref: #/components/schemas/CreateAttemptRequest
+type CreateAttemptRequest struct {
+	// The SDP offer (RFC 8866) of the PeerConnection, with the ICE candidates gathered so far; it holds
+	// ICE credentials, so never log it.
+	Offer string `json:"offer"`
+}
+
+// GetOffer returns the value of Offer.
+func (s *CreateAttemptRequest) GetOffer() string {
+	return s.Offer
+}
+
+// SetOffer sets the value of Offer.
+func (s *CreateAttemptRequest) SetOffer(val string) {
+	s.Offer = val
 }
 
 // Ref: #/components/schemas/CreateGroupMemberRequest
@@ -321,6 +423,162 @@ func (s *CreateMachineRegistrationResponse) SetToken(val string) {
 	s.Token = val
 }
 
+// Ref: #/components/schemas/CreateParticipantRequest
+type CreateParticipantRequest struct {
+	PublicKey PublicKey `json:"public_key"`
+	// A label for the client that joins, such as `console` or `assistant`, shown to the other
+	// participants. It is neither unique nor verified.
+	ClientID OptString `json:"client_id"`
+	// The participant only watches, even if the caller may operate the session.
+	ReadOnly OptBool `json:"read_only"`
+	// The capabilities the participant may use, as permission names such as `fleet:files.transfer`; when
+	// omitted, every capability the caller holds. A capability the caller does not hold is not granted.
+	Permissions []CreateParticipantRequestPermissionsItem `json:"permissions"`
+	// The SDP offer (RFC 8866) of the first PeerConnection, with the ICE candidates gathered so far; it
+	// holds ICE credentials, so never log it.
+	Offer string `json:"offer"`
+}
+
+// GetPublicKey returns the value of PublicKey.
+func (s *CreateParticipantRequest) GetPublicKey() PublicKey {
+	return s.PublicKey
+}
+
+// GetClientID returns the value of ClientID.
+func (s *CreateParticipantRequest) GetClientID() OptString {
+	return s.ClientID
+}
+
+// GetReadOnly returns the value of ReadOnly.
+func (s *CreateParticipantRequest) GetReadOnly() OptBool {
+	return s.ReadOnly
+}
+
+// GetPermissions returns the value of Permissions.
+func (s *CreateParticipantRequest) GetPermissions() []CreateParticipantRequestPermissionsItem {
+	return s.Permissions
+}
+
+// GetOffer returns the value of Offer.
+func (s *CreateParticipantRequest) GetOffer() string {
+	return s.Offer
+}
+
+// SetPublicKey sets the value of PublicKey.
+func (s *CreateParticipantRequest) SetPublicKey(val PublicKey) {
+	s.PublicKey = val
+}
+
+// SetClientID sets the value of ClientID.
+func (s *CreateParticipantRequest) SetClientID(val OptString) {
+	s.ClientID = val
+}
+
+// SetReadOnly sets the value of ReadOnly.
+func (s *CreateParticipantRequest) SetReadOnly(val OptBool) {
+	s.ReadOnly = val
+}
+
+// SetPermissions sets the value of Permissions.
+func (s *CreateParticipantRequest) SetPermissions(val []CreateParticipantRequestPermissionsItem) {
+	s.Permissions = val
+}
+
+// SetOffer sets the value of Offer.
+func (s *CreateParticipantRequest) SetOffer(val string) {
+	s.Offer = val
+}
+
+type CreateParticipantRequestPermissionsItem string
+
+const (
+	CreateParticipantRequestPermissionsItemFleetFilesTransfer    CreateParticipantRequestPermissionsItem = "fleet:files.transfer"
+	CreateParticipantRequestPermissionsItemFleetClipboardUse     CreateParticipantRequestPermissionsItem = "fleet:clipboard.use"
+	CreateParticipantRequestPermissionsItemFleetTerminalUse      CreateParticipantRequestPermissionsItem = "fleet:terminal.use"
+	CreateParticipantRequestPermissionsItemFleetPortsForward     CreateParticipantRequestPermissionsItem = "fleet:ports.forward"
+	CreateParticipantRequestPermissionsItemFleetDevicesUse       CreateParticipantRequestPermissionsItem = "fleet:devices.use"
+	CreateParticipantRequestPermissionsItemFleetPrintingUse      CreateParticipantRequestPermissionsItem = "fleet:printing.use"
+	CreateParticipantRequestPermissionsItemFleetSSHAgentUse      CreateParticipantRequestPermissionsItem = "fleet:ssh_agent.use"
+	CreateParticipantRequestPermissionsItemFleetPrivilegeApprove CreateParticipantRequestPermissionsItem = "fleet:privilege.approve"
+	CreateParticipantRequestPermissionsItemFleetLogsRead         CreateParticipantRequestPermissionsItem = "fleet:logs.read"
+)
+
+// AllValues returns all CreateParticipantRequestPermissionsItem values.
+func (CreateParticipantRequestPermissionsItem) AllValues() []CreateParticipantRequestPermissionsItem {
+	return []CreateParticipantRequestPermissionsItem{
+		CreateParticipantRequestPermissionsItemFleetFilesTransfer,
+		CreateParticipantRequestPermissionsItemFleetClipboardUse,
+		CreateParticipantRequestPermissionsItemFleetTerminalUse,
+		CreateParticipantRequestPermissionsItemFleetPortsForward,
+		CreateParticipantRequestPermissionsItemFleetDevicesUse,
+		CreateParticipantRequestPermissionsItemFleetPrintingUse,
+		CreateParticipantRequestPermissionsItemFleetSSHAgentUse,
+		CreateParticipantRequestPermissionsItemFleetPrivilegeApprove,
+		CreateParticipantRequestPermissionsItemFleetLogsRead,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CreateParticipantRequestPermissionsItem) MarshalText() ([]byte, error) {
+	switch s {
+	case CreateParticipantRequestPermissionsItemFleetFilesTransfer:
+		return []byte(s), nil
+	case CreateParticipantRequestPermissionsItemFleetClipboardUse:
+		return []byte(s), nil
+	case CreateParticipantRequestPermissionsItemFleetTerminalUse:
+		return []byte(s), nil
+	case CreateParticipantRequestPermissionsItemFleetPortsForward:
+		return []byte(s), nil
+	case CreateParticipantRequestPermissionsItemFleetDevicesUse:
+		return []byte(s), nil
+	case CreateParticipantRequestPermissionsItemFleetPrintingUse:
+		return []byte(s), nil
+	case CreateParticipantRequestPermissionsItemFleetSSHAgentUse:
+		return []byte(s), nil
+	case CreateParticipantRequestPermissionsItemFleetPrivilegeApprove:
+		return []byte(s), nil
+	case CreateParticipantRequestPermissionsItemFleetLogsRead:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CreateParticipantRequestPermissionsItem) UnmarshalText(data []byte) error {
+	switch CreateParticipantRequestPermissionsItem(data) {
+	case CreateParticipantRequestPermissionsItemFleetFilesTransfer:
+		*s = CreateParticipantRequestPermissionsItemFleetFilesTransfer
+		return nil
+	case CreateParticipantRequestPermissionsItemFleetClipboardUse:
+		*s = CreateParticipantRequestPermissionsItemFleetClipboardUse
+		return nil
+	case CreateParticipantRequestPermissionsItemFleetTerminalUse:
+		*s = CreateParticipantRequestPermissionsItemFleetTerminalUse
+		return nil
+	case CreateParticipantRequestPermissionsItemFleetPortsForward:
+		*s = CreateParticipantRequestPermissionsItemFleetPortsForward
+		return nil
+	case CreateParticipantRequestPermissionsItemFleetDevicesUse:
+		*s = CreateParticipantRequestPermissionsItemFleetDevicesUse
+		return nil
+	case CreateParticipantRequestPermissionsItemFleetPrintingUse:
+		*s = CreateParticipantRequestPermissionsItemFleetPrintingUse
+		return nil
+	case CreateParticipantRequestPermissionsItemFleetSSHAgentUse:
+		*s = CreateParticipantRequestPermissionsItemFleetSSHAgentUse
+		return nil
+	case CreateParticipantRequestPermissionsItemFleetPrivilegeApprove:
+		*s = CreateParticipantRequestPermissionsItemFleetPrivilegeApprove
+		return nil
+	case CreateParticipantRequestPermissionsItemFleetLogsRead:
+		*s = CreateParticipantRequestPermissionsItemFleetLogsRead
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/CreateSessionRequest
 type CreateSessionRequest struct {
 	MachineID uuid.UUID         `json:"machine_id"`
@@ -347,148 +605,8 @@ func (s *CreateSessionRequest) SetDesktop(val OptDesktopOptions) {
 	s.Desktop = val
 }
 
-// Ref: #/components/schemas/CreateViewerRequest
-type CreateViewerRequest struct {
-	PublicKey PublicKey `json:"public_key"`
-	// A label for the client that connects, such as `console` or `assistant`, shown to the other viewers.
-	// It is neither unique nor verified.
-	ClientID OptString `json:"client_id"`
-	// The viewer only watches, even if the caller may operate the session.
-	ReadOnly OptBool `json:"read_only"`
-	// The capabilities the viewer may use, as permission names such as `fleet:files.transfer`; when
-	// omitted, every capability the caller holds. A capability the caller does not hold is not granted.
-	Permissions []CreateViewerRequestPermissionsItem `json:"permissions"`
-}
-
-// GetPublicKey returns the value of PublicKey.
-func (s *CreateViewerRequest) GetPublicKey() PublicKey {
-	return s.PublicKey
-}
-
-// GetClientID returns the value of ClientID.
-func (s *CreateViewerRequest) GetClientID() OptString {
-	return s.ClientID
-}
-
-// GetReadOnly returns the value of ReadOnly.
-func (s *CreateViewerRequest) GetReadOnly() OptBool {
-	return s.ReadOnly
-}
-
-// GetPermissions returns the value of Permissions.
-func (s *CreateViewerRequest) GetPermissions() []CreateViewerRequestPermissionsItem {
-	return s.Permissions
-}
-
-// SetPublicKey sets the value of PublicKey.
-func (s *CreateViewerRequest) SetPublicKey(val PublicKey) {
-	s.PublicKey = val
-}
-
-// SetClientID sets the value of ClientID.
-func (s *CreateViewerRequest) SetClientID(val OptString) {
-	s.ClientID = val
-}
-
-// SetReadOnly sets the value of ReadOnly.
-func (s *CreateViewerRequest) SetReadOnly(val OptBool) {
-	s.ReadOnly = val
-}
-
-// SetPermissions sets the value of Permissions.
-func (s *CreateViewerRequest) SetPermissions(val []CreateViewerRequestPermissionsItem) {
-	s.Permissions = val
-}
-
-type CreateViewerRequestPermissionsItem string
-
-const (
-	CreateViewerRequestPermissionsItemFleetFilesTransfer    CreateViewerRequestPermissionsItem = "fleet:files.transfer"
-	CreateViewerRequestPermissionsItemFleetClipboardUse     CreateViewerRequestPermissionsItem = "fleet:clipboard.use"
-	CreateViewerRequestPermissionsItemFleetTerminalUse      CreateViewerRequestPermissionsItem = "fleet:terminal.use"
-	CreateViewerRequestPermissionsItemFleetPortsForward     CreateViewerRequestPermissionsItem = "fleet:ports.forward"
-	CreateViewerRequestPermissionsItemFleetDevicesUse       CreateViewerRequestPermissionsItem = "fleet:devices.use"
-	CreateViewerRequestPermissionsItemFleetPrintingUse      CreateViewerRequestPermissionsItem = "fleet:printing.use"
-	CreateViewerRequestPermissionsItemFleetSSHAgentUse      CreateViewerRequestPermissionsItem = "fleet:ssh_agent.use"
-	CreateViewerRequestPermissionsItemFleetPrivilegeApprove CreateViewerRequestPermissionsItem = "fleet:privilege.approve"
-	CreateViewerRequestPermissionsItemFleetLogsRead         CreateViewerRequestPermissionsItem = "fleet:logs.read"
-)
-
-// AllValues returns all CreateViewerRequestPermissionsItem values.
-func (CreateViewerRequestPermissionsItem) AllValues() []CreateViewerRequestPermissionsItem {
-	return []CreateViewerRequestPermissionsItem{
-		CreateViewerRequestPermissionsItemFleetFilesTransfer,
-		CreateViewerRequestPermissionsItemFleetClipboardUse,
-		CreateViewerRequestPermissionsItemFleetTerminalUse,
-		CreateViewerRequestPermissionsItemFleetPortsForward,
-		CreateViewerRequestPermissionsItemFleetDevicesUse,
-		CreateViewerRequestPermissionsItemFleetPrintingUse,
-		CreateViewerRequestPermissionsItemFleetSSHAgentUse,
-		CreateViewerRequestPermissionsItemFleetPrivilegeApprove,
-		CreateViewerRequestPermissionsItemFleetLogsRead,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CreateViewerRequestPermissionsItem) MarshalText() ([]byte, error) {
-	switch s {
-	case CreateViewerRequestPermissionsItemFleetFilesTransfer:
-		return []byte(s), nil
-	case CreateViewerRequestPermissionsItemFleetClipboardUse:
-		return []byte(s), nil
-	case CreateViewerRequestPermissionsItemFleetTerminalUse:
-		return []byte(s), nil
-	case CreateViewerRequestPermissionsItemFleetPortsForward:
-		return []byte(s), nil
-	case CreateViewerRequestPermissionsItemFleetDevicesUse:
-		return []byte(s), nil
-	case CreateViewerRequestPermissionsItemFleetPrintingUse:
-		return []byte(s), nil
-	case CreateViewerRequestPermissionsItemFleetSSHAgentUse:
-		return []byte(s), nil
-	case CreateViewerRequestPermissionsItemFleetPrivilegeApprove:
-		return []byte(s), nil
-	case CreateViewerRequestPermissionsItemFleetLogsRead:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CreateViewerRequestPermissionsItem) UnmarshalText(data []byte) error {
-	switch CreateViewerRequestPermissionsItem(data) {
-	case CreateViewerRequestPermissionsItemFleetFilesTransfer:
-		*s = CreateViewerRequestPermissionsItemFleetFilesTransfer
-		return nil
-	case CreateViewerRequestPermissionsItemFleetClipboardUse:
-		*s = CreateViewerRequestPermissionsItemFleetClipboardUse
-		return nil
-	case CreateViewerRequestPermissionsItemFleetTerminalUse:
-		*s = CreateViewerRequestPermissionsItemFleetTerminalUse
-		return nil
-	case CreateViewerRequestPermissionsItemFleetPortsForward:
-		*s = CreateViewerRequestPermissionsItemFleetPortsForward
-		return nil
-	case CreateViewerRequestPermissionsItemFleetDevicesUse:
-		*s = CreateViewerRequestPermissionsItemFleetDevicesUse
-		return nil
-	case CreateViewerRequestPermissionsItemFleetPrintingUse:
-		*s = CreateViewerRequestPermissionsItemFleetPrintingUse
-		return nil
-	case CreateViewerRequestPermissionsItemFleetSSHAgentUse:
-		*s = CreateViewerRequestPermissionsItemFleetSSHAgentUse
-		return nil
-	case CreateViewerRequestPermissionsItemFleetPrivilegeApprove:
-		*s = CreateViewerRequestPermissionsItemFleetPrivilegeApprove
-		return nil
-	case CreateViewerRequestPermissionsItemFleetLogsRead:
-		*s = CreateViewerRequestPermissionsItemFleetLogsRead
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
+// DeleteAttemptNoContent is response for DeleteAttempt operation.
+type DeleteAttemptNoContent struct{}
 
 // DeleteGroupMemberNoContent is response for DeleteGroupMember operation.
 type DeleteGroupMemberNoContent struct{}
@@ -502,14 +620,14 @@ type DeleteMachineNoContent struct{}
 // DeleteMachineRegistrationNoContent is response for DeleteMachineRegistration operation.
 type DeleteMachineRegistrationNoContent struct{}
 
-// DeleteViewerNoContent is response for DeleteViewer operation.
-type DeleteViewerNoContent struct{}
+// DeleteParticipantNoContent is response for DeleteParticipant operation.
+type DeleteParticipantNoContent struct{}
 
 // A desktop for the session, on a machine that offers `leaflow.fleet.virtualdesktop.host.v1`.
 // Ref: #/components/schemas/DesktopOptions
 type DesktopOptions struct {
 	Mode SessionMode `json:"mode"`
-	// The first width of the canvas, normally the viewer's; the machine's default when omitted.
+	// The first width of the canvas, normally the participant's; the machine's default when omitted.
 	Width OptInt64 `json:"width"`
 	// The first height of the canvas; given together with `width`.
 	Height OptInt64 `json:"height"`
@@ -1116,6 +1234,35 @@ func (s *GroupResource) SetCreatedAt(val time.Time) {
 // SetUpdatedAt sets the value of UpdatedAt.
 func (s *GroupResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
+}
+
+// An ICE candidate (RFC 8445), as W3C RTCIceCandidateInit.
+// Ref: #/components/schemas/IceCandidate
+type IceCandidate struct {
+	// The candidate attribute; it names network addresses, so never log it.
+	Candidate string `json:"candidate"`
+	// The media stream identification tag of the candidate (RFC 5888).
+	SdpMid OptString `json:"sdp_mid"`
+}
+
+// GetCandidate returns the value of Candidate.
+func (s *IceCandidate) GetCandidate() string {
+	return s.Candidate
+}
+
+// GetSdpMid returns the value of SdpMid.
+func (s *IceCandidate) GetSdpMid() OptString {
+	return s.SdpMid
+}
+
+// SetCandidate sets the value of Candidate.
+func (s *IceCandidate) SetCandidate(val string) {
+	s.Candidate = val
+}
+
+// SetSdpMid sets the value of SdpMid.
+func (s *IceCandidate) SetSdpMid(val OptString) {
+	s.SdpMid = val
 }
 
 // A STUN or TURN server, as W3C RTCIceServer.
@@ -1795,6 +1942,22 @@ func (s *MachineResource) SetCreatedAt(val time.Time) {
 // SetUpdatedAt sets the value of UpdatedAt.
 func (s *MachineResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
+}
+
+// Ref: #/components/schemas/MigrationStep
+type MigrationStep struct {
+	// A serialized `Checkpoint` of `leaflow/fleet/transport/v1/transport.proto`.
+	Checkpoint []byte `json:"checkpoint"`
+}
+
+// GetCheckpoint returns the value of Checkpoint.
+func (s *MigrationStep) GetCheckpoint() []byte {
+	return s.Checkpoint
+}
+
+// SetCheckpoint sets the value of Checkpoint.
+func (s *MigrationStep) SetCheckpoint(val []byte) {
+	s.Checkpoint = val
 }
 
 // Which object this is, together with what a person currently calls it.
@@ -2807,6 +2970,184 @@ func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
+// Ref: #/components/schemas/ParticipantConnection
+type ParticipantConnection struct {
+	Participant ParticipantResource `json:"participant"`
+	// The participant's signed `Authorization`, the same one the session holds.
+	Authorization Signed `json:"authorization"`
+	// The ICE servers for later PeerConnections of the participant.
+	RtcConfiguration RtcConfiguration `json:"rtc_configuration"`
+	ServiceKeys      []ServiceKey     `json:"service_keys"`
+	// When the participant ends unless renewed.
+	LeaseExpiresAt time.Time `json:"lease_expires_at"`
+	// The first PeerConnection, started with the request's offer.
+	Attempt Attempt `json:"attempt"`
+}
+
+// GetParticipant returns the value of Participant.
+func (s *ParticipantConnection) GetParticipant() ParticipantResource {
+	return s.Participant
+}
+
+// GetAuthorization returns the value of Authorization.
+func (s *ParticipantConnection) GetAuthorization() Signed {
+	return s.Authorization
+}
+
+// GetRtcConfiguration returns the value of RtcConfiguration.
+func (s *ParticipantConnection) GetRtcConfiguration() RtcConfiguration {
+	return s.RtcConfiguration
+}
+
+// GetServiceKeys returns the value of ServiceKeys.
+func (s *ParticipantConnection) GetServiceKeys() []ServiceKey {
+	return s.ServiceKeys
+}
+
+// GetLeaseExpiresAt returns the value of LeaseExpiresAt.
+func (s *ParticipantConnection) GetLeaseExpiresAt() time.Time {
+	return s.LeaseExpiresAt
+}
+
+// GetAttempt returns the value of Attempt.
+func (s *ParticipantConnection) GetAttempt() Attempt {
+	return s.Attempt
+}
+
+// SetParticipant sets the value of Participant.
+func (s *ParticipantConnection) SetParticipant(val ParticipantResource) {
+	s.Participant = val
+}
+
+// SetAuthorization sets the value of Authorization.
+func (s *ParticipantConnection) SetAuthorization(val Signed) {
+	s.Authorization = val
+}
+
+// SetRtcConfiguration sets the value of RtcConfiguration.
+func (s *ParticipantConnection) SetRtcConfiguration(val RtcConfiguration) {
+	s.RtcConfiguration = val
+}
+
+// SetServiceKeys sets the value of ServiceKeys.
+func (s *ParticipantConnection) SetServiceKeys(val []ServiceKey) {
+	s.ServiceKeys = val
+}
+
+// SetLeaseExpiresAt sets the value of LeaseExpiresAt.
+func (s *ParticipantConnection) SetLeaseExpiresAt(val time.Time) {
+	s.LeaseExpiresAt = val
+}
+
+// SetAttempt sets the value of Attempt.
+func (s *ParticipantConnection) SetAttempt(val Attempt) {
+	s.Attempt = val
+}
+
+// Ref: #/components/schemas/ParticipantList
+type ParticipantList struct {
+	Items []ParticipantResource `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *ParticipantList) GetItems() []ParticipantResource {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *ParticipantList) SetItems(val []ParticipantResource) {
+	s.Items = val
+}
+
+// Ref: #/components/schemas/ParticipantResource
+type ParticipantResource struct {
+	// The participant's connection.
+	ConnectionID int64         `json:"connection_id"`
+	User         NamedIdentity `json:"user"`
+	// The label the participant's client chose, such as `console` or `assistant`; neither unique nor
+	// verified.
+	ClientID string `json:"client_id"`
+	// The participant may only watch.
+	ReadOnly bool `json:"read_only"`
+	// The capabilities granted to the participant, as the full names of their policy messages, such as
+	// `leaflow.fleet.filetransfer.v1.FileTransferPolicy`.
+	Policies []string `json:"policies"`
+	// The IP address the participant joined from.
+	RemoteAddress string `json:"remote_address"`
+	// When the participant joined.
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// GetConnectionID returns the value of ConnectionID.
+func (s *ParticipantResource) GetConnectionID() int64 {
+	return s.ConnectionID
+}
+
+// GetUser returns the value of User.
+func (s *ParticipantResource) GetUser() NamedIdentity {
+	return s.User
+}
+
+// GetClientID returns the value of ClientID.
+func (s *ParticipantResource) GetClientID() string {
+	return s.ClientID
+}
+
+// GetReadOnly returns the value of ReadOnly.
+func (s *ParticipantResource) GetReadOnly() bool {
+	return s.ReadOnly
+}
+
+// GetPolicies returns the value of Policies.
+func (s *ParticipantResource) GetPolicies() []string {
+	return s.Policies
+}
+
+// GetRemoteAddress returns the value of RemoteAddress.
+func (s *ParticipantResource) GetRemoteAddress() string {
+	return s.RemoteAddress
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *ParticipantResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetConnectionID sets the value of ConnectionID.
+func (s *ParticipantResource) SetConnectionID(val int64) {
+	s.ConnectionID = val
+}
+
+// SetUser sets the value of User.
+func (s *ParticipantResource) SetUser(val NamedIdentity) {
+	s.User = val
+}
+
+// SetClientID sets the value of ClientID.
+func (s *ParticipantResource) SetClientID(val string) {
+	s.ClientID = val
+}
+
+// SetReadOnly sets the value of ReadOnly.
+func (s *ParticipantResource) SetReadOnly(val bool) {
+	s.ReadOnly = val
+}
+
+// SetPolicies sets the value of Policies.
+func (s *ParticipantResource) SetPolicies(val []string) {
+	s.Policies = val
+}
+
+// SetRemoteAddress sets the value of RemoteAddress.
+func (s *ParticipantResource) SetRemoteAddress(val string) {
+	s.RemoteAddress = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *ParticipantResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
 // Ref: #/components/schemas/PrivilegeApproval
 type PrivilegeApproval struct {
 	// `never` asks every time; `until` approves without asking until `auto_approve_until`; `forever`
@@ -3207,9 +3548,9 @@ func (s *PrivilegeRequestResource) SetDecidedAt(val NilDateTime) {
 	s.DecidedAt = val
 }
 
-// `pending` waits for a decision; `approved` and `denied` were decided by the user, a viewer or the
-// user's setting; `expired` was not decided in time; `cancelled` ended because the asking program gave
-// up or a viewer decided it.
+// `pending` waits for a decision; `approved` and `denied` were decided by the user, a participant or
+// the user's setting; `expired` was not decided in time; `cancelled` ended because the asking program
+// gave up or a participant decided it.
 // Ref: #/components/schemas/PrivilegeRequestState
 type PrivilegeRequestState string
 
@@ -3275,24 +3616,24 @@ func (s *PrivilegeRequestState) UnmarshalText(data []byte) error {
 
 type PublicKey string
 
-// Ref: #/components/schemas/RenewViewerRequest
-type RenewViewerRequest struct {
+// Ref: #/components/schemas/RenewParticipantRequest
+type RenewParticipantRequest struct {
 	// The current signed `PeerAuthorization` of each PeerConnection to renew.
 	PeerAuthorizations []Signed `json:"peer_authorizations"`
 }
 
 // GetPeerAuthorizations returns the value of PeerAuthorizations.
-func (s *RenewViewerRequest) GetPeerAuthorizations() []Signed {
+func (s *RenewParticipantRequest) GetPeerAuthorizations() []Signed {
 	return s.PeerAuthorizations
 }
 
 // SetPeerAuthorizations sets the value of PeerAuthorizations.
-func (s *RenewViewerRequest) SetPeerAuthorizations(val []Signed) {
+func (s *RenewParticipantRequest) SetPeerAuthorizations(val []Signed) {
 	s.PeerAuthorizations = val
 }
 
-// Ref: #/components/schemas/RenewViewerResponse
-type RenewViewerResponse struct {
+// Ref: #/components/schemas/RenewParticipantResponse
+type RenewParticipantResponse struct {
 	LeaseExpiresAt time.Time `json:"lease_expires_at"`
 	// The renewed signed `PeerAuthorization`s, in the order of the request.
 	PeerAuthorizations []Signed `json:"peer_authorizations"`
@@ -3303,56 +3644,56 @@ type RenewViewerResponse struct {
 }
 
 // GetLeaseExpiresAt returns the value of LeaseExpiresAt.
-func (s *RenewViewerResponse) GetLeaseExpiresAt() time.Time {
+func (s *RenewParticipantResponse) GetLeaseExpiresAt() time.Time {
 	return s.LeaseExpiresAt
 }
 
 // GetPeerAuthorizations returns the value of PeerAuthorizations.
-func (s *RenewViewerResponse) GetPeerAuthorizations() []Signed {
+func (s *RenewParticipantResponse) GetPeerAuthorizations() []Signed {
 	return s.PeerAuthorizations
 }
 
 // GetAuthorization returns the value of Authorization.
-func (s *RenewViewerResponse) GetAuthorization() OptSigned {
+func (s *RenewParticipantResponse) GetAuthorization() OptSigned {
 	return s.Authorization
 }
 
 // GetRtcConfiguration returns the value of RtcConfiguration.
-func (s *RenewViewerResponse) GetRtcConfiguration() RtcConfiguration {
+func (s *RenewParticipantResponse) GetRtcConfiguration() RtcConfiguration {
 	return s.RtcConfiguration
 }
 
 // GetServiceKeys returns the value of ServiceKeys.
-func (s *RenewViewerResponse) GetServiceKeys() []ServiceKey {
+func (s *RenewParticipantResponse) GetServiceKeys() []ServiceKey {
 	return s.ServiceKeys
 }
 
 // SetLeaseExpiresAt sets the value of LeaseExpiresAt.
-func (s *RenewViewerResponse) SetLeaseExpiresAt(val time.Time) {
+func (s *RenewParticipantResponse) SetLeaseExpiresAt(val time.Time) {
 	s.LeaseExpiresAt = val
 }
 
 // SetPeerAuthorizations sets the value of PeerAuthorizations.
-func (s *RenewViewerResponse) SetPeerAuthorizations(val []Signed) {
+func (s *RenewParticipantResponse) SetPeerAuthorizations(val []Signed) {
 	s.PeerAuthorizations = val
 }
 
 // SetAuthorization sets the value of Authorization.
-func (s *RenewViewerResponse) SetAuthorization(val OptSigned) {
+func (s *RenewParticipantResponse) SetAuthorization(val OptSigned) {
 	s.Authorization = val
 }
 
 // SetRtcConfiguration sets the value of RtcConfiguration.
-func (s *RenewViewerResponse) SetRtcConfiguration(val RtcConfiguration) {
+func (s *RenewParticipantResponse) SetRtcConfiguration(val RtcConfiguration) {
 	s.RtcConfiguration = val
 }
 
 // SetServiceKeys sets the value of ServiceKeys.
-func (s *RenewViewerResponse) SetServiceKeys(val []ServiceKey) {
+func (s *RenewParticipantResponse) SetServiceKeys(val []ServiceKey) {
 	s.ServiceKeys = val
 }
 
-// The ICE servers for the PeerConnections the viewer starts.
+// The ICE servers for the PeerConnections the caller starts, as W3C RTCConfiguration.
 // Ref: #/components/schemas/RtcConfiguration
 type RtcConfiguration struct {
 	IceServers         []IceServer                        `json:"ice_servers"`
@@ -3794,8 +4135,8 @@ type SessionResource struct {
 	State    SessionState `json:"state"`
 	// The session's desktop; null for a session without one.
 	Desktop NilDesktopState `json:"desktop"`
-	// The session can admit viewers. False while its process restarts; viewers are then asked to connect
-	// again shortly.
+	// The session can admit participants. False while its process restarts; requests that signal are then
+	// answered with `SESSION_UNAVAILABLE` and succeed again shortly.
 	ProcessRunning bool `json:"process_running"`
 	// The last input of a person in the session.
 	LastInputAt NilDateTime `json:"last_input_at"`
@@ -3980,45 +4321,6 @@ func (s *SessionState) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/SignalingTicket
-type SignalingTicket struct {
-	// The ticket to send in `ViewerCredential.ticket`. Never put it in a URL.
-	Ticket string `json:"ticket"`
-	// The WebSocket URL of the control connection.
-	URL       url.URL   `json:"url"`
-	ExpiresAt time.Time `json:"expires_at"`
-}
-
-// GetTicket returns the value of Ticket.
-func (s *SignalingTicket) GetTicket() string {
-	return s.Ticket
-}
-
-// GetURL returns the value of URL.
-func (s *SignalingTicket) GetURL() url.URL {
-	return s.URL
-}
-
-// GetExpiresAt returns the value of ExpiresAt.
-func (s *SignalingTicket) GetExpiresAt() time.Time {
-	return s.ExpiresAt
-}
-
-// SetTicket sets the value of Ticket.
-func (s *SignalingTicket) SetTicket(val string) {
-	s.Ticket = val
-}
-
-// SetURL sets the value of URL.
-func (s *SignalingTicket) SetURL(val url.URL) {
-	s.URL = val
-}
-
-// SetExpiresAt sets the value of ExpiresAt.
-func (s *SignalingTicket) SetExpiresAt(val time.Time) {
-	s.ExpiresAt = val
-}
-
 // A message the service signed: the serialized message, the key that signed it and the signature, as
 // in `SignedAuthorization` and `SignedPeerAuthorization` of the protocol. Each byte string is standard
 // Base64.
@@ -4115,179 +4417,4 @@ func (s *UpdateMachineRequest) GetName() string {
 // SetName sets the value of Name.
 func (s *UpdateMachineRequest) SetName(val string) {
 	s.Name = val
-}
-
-// Ref: #/components/schemas/ViewerConnection
-type ViewerConnection struct {
-	Viewer ViewerResource `json:"viewer"`
-	// The viewer's signed `Authorization`, the same one the session holds.
-	Authorization    Signed           `json:"authorization"`
-	RtcConfiguration RtcConfiguration `json:"rtc_configuration"`
-	ServiceKeys      []ServiceKey     `json:"service_keys"`
-	Signaling        SignalingTicket  `json:"signaling"`
-	// When the viewer connection ends unless renewed.
-	LeaseExpiresAt time.Time `json:"lease_expires_at"`
-}
-
-// GetViewer returns the value of Viewer.
-func (s *ViewerConnection) GetViewer() ViewerResource {
-	return s.Viewer
-}
-
-// GetAuthorization returns the value of Authorization.
-func (s *ViewerConnection) GetAuthorization() Signed {
-	return s.Authorization
-}
-
-// GetRtcConfiguration returns the value of RtcConfiguration.
-func (s *ViewerConnection) GetRtcConfiguration() RtcConfiguration {
-	return s.RtcConfiguration
-}
-
-// GetServiceKeys returns the value of ServiceKeys.
-func (s *ViewerConnection) GetServiceKeys() []ServiceKey {
-	return s.ServiceKeys
-}
-
-// GetSignaling returns the value of Signaling.
-func (s *ViewerConnection) GetSignaling() SignalingTicket {
-	return s.Signaling
-}
-
-// GetLeaseExpiresAt returns the value of LeaseExpiresAt.
-func (s *ViewerConnection) GetLeaseExpiresAt() time.Time {
-	return s.LeaseExpiresAt
-}
-
-// SetViewer sets the value of Viewer.
-func (s *ViewerConnection) SetViewer(val ViewerResource) {
-	s.Viewer = val
-}
-
-// SetAuthorization sets the value of Authorization.
-func (s *ViewerConnection) SetAuthorization(val Signed) {
-	s.Authorization = val
-}
-
-// SetRtcConfiguration sets the value of RtcConfiguration.
-func (s *ViewerConnection) SetRtcConfiguration(val RtcConfiguration) {
-	s.RtcConfiguration = val
-}
-
-// SetServiceKeys sets the value of ServiceKeys.
-func (s *ViewerConnection) SetServiceKeys(val []ServiceKey) {
-	s.ServiceKeys = val
-}
-
-// SetSignaling sets the value of Signaling.
-func (s *ViewerConnection) SetSignaling(val SignalingTicket) {
-	s.Signaling = val
-}
-
-// SetLeaseExpiresAt sets the value of LeaseExpiresAt.
-func (s *ViewerConnection) SetLeaseExpiresAt(val time.Time) {
-	s.LeaseExpiresAt = val
-}
-
-// Ref: #/components/schemas/ViewerList
-type ViewerList struct {
-	Items []ViewerResource `json:"items"`
-}
-
-// GetItems returns the value of Items.
-func (s *ViewerList) GetItems() []ViewerResource {
-	return s.Items
-}
-
-// SetItems sets the value of Items.
-func (s *ViewerList) SetItems(val []ViewerResource) {
-	s.Items = val
-}
-
-// Ref: #/components/schemas/ViewerResource
-type ViewerResource struct {
-	// The viewer's connection.
-	ConnectionID int64         `json:"connection_id"`
-	User         NamedIdentity `json:"user"`
-	// The label the viewer's client chose, such as `console` or `assistant`; neither unique nor verified.
-	ClientID string `json:"client_id"`
-	// The viewer may only watch.
-	ReadOnly bool `json:"read_only"`
-	// The capabilities granted to the viewer, as the full names of their policy messages, such as
-	// `leaflow.fleet.filetransfer.v1.FileTransferPolicy`.
-	Policies []string `json:"policies"`
-	// The IP address the viewer connected from.
-	RemoteAddress string `json:"remote_address"`
-	// When the viewer connected.
-	CreatedAt time.Time `json:"created_at"`
-}
-
-// GetConnectionID returns the value of ConnectionID.
-func (s *ViewerResource) GetConnectionID() int64 {
-	return s.ConnectionID
-}
-
-// GetUser returns the value of User.
-func (s *ViewerResource) GetUser() NamedIdentity {
-	return s.User
-}
-
-// GetClientID returns the value of ClientID.
-func (s *ViewerResource) GetClientID() string {
-	return s.ClientID
-}
-
-// GetReadOnly returns the value of ReadOnly.
-func (s *ViewerResource) GetReadOnly() bool {
-	return s.ReadOnly
-}
-
-// GetPolicies returns the value of Policies.
-func (s *ViewerResource) GetPolicies() []string {
-	return s.Policies
-}
-
-// GetRemoteAddress returns the value of RemoteAddress.
-func (s *ViewerResource) GetRemoteAddress() string {
-	return s.RemoteAddress
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *ViewerResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// SetConnectionID sets the value of ConnectionID.
-func (s *ViewerResource) SetConnectionID(val int64) {
-	s.ConnectionID = val
-}
-
-// SetUser sets the value of User.
-func (s *ViewerResource) SetUser(val NamedIdentity) {
-	s.User = val
-}
-
-// SetClientID sets the value of ClientID.
-func (s *ViewerResource) SetClientID(val string) {
-	s.ClientID = val
-}
-
-// SetReadOnly sets the value of ReadOnly.
-func (s *ViewerResource) SetReadOnly(val bool) {
-	s.ReadOnly = val
-}
-
-// SetPolicies sets the value of Policies.
-func (s *ViewerResource) SetPolicies(val []string) {
-	s.Policies = val
-}
-
-// SetRemoteAddress sets the value of RemoteAddress.
-func (s *ViewerResource) SetRemoteAddress(val string) {
-	s.RemoteAddress = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *ViewerResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
 }

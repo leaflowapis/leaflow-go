@@ -26,20 +26,22 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Why a control connection ends.
+// Why a control connection ends, and why a participant ends
+// (DetachParticipantRequest.reason).
 type CloseReason int32
 
 const (
 	CloseReason_CLOSE_REASON_UNSPECIFIED CloseReason = 0
 	// An ordinary close. Either side.
 	CloseReason_CLOSE_REASON_DONE CloseReason = 1
-	// The endpoint goes away, such as a closed tab. Endpoint only.
+	// The endpoint goes away. Endpoint only.
 	CloseReason_CLOSE_REASON_CLIENT_EXIT CloseReason = 2
 	// The service shuts down. Service only.
 	CloseReason_CLOSE_REASON_SERVER_SHUTDOWN CloseReason = 3
 	// The service restarts; connect again after retry_delay. Service only.
 	CloseReason_CLOSE_REASON_SERVER_UPGRADE CloseReason = 4
-	// Nothing arrived for idle_timeout. Either side.
+	// Nothing arrived for idle_timeout. Either side. For a participant, its
+	// lease ran out.
 	CloseReason_CLOSE_REASON_PING_TIMEOUT CloseReason = 5
 	// ClientHello did not arrive in time. Service only.
 	CloseReason_CLOSE_REASON_HELLO_TIMEOUT CloseReason = 6
@@ -48,12 +50,12 @@ const (
 	// A message larger than max_message_size, or one joined from fragments
 	// larger than 16 MiB. Either side.
 	CloseReason_CLOSE_REASON_MESSAGE_TOO_BIG CloseReason = 8
-	// The credential did not verify, or names an unknown machine, a used or
-	// expired ticket or another key. For a machine credential it is final: the
-	// daemon stops and its machine must enroll again. Service only.
+	// The credential did not verify, or names an unknown machine or another
+	// key. For a machine credential it is final: the daemon stops and its
+	// machine must enroll again. Service only.
 	CloseReason_CLOSE_REASON_AUTHENTICATION_FAILED CloseReason = 9
 	// The endpoint is known but not allowed, such as a removed machine or a
-	// viewer whose rights were withdrawn. Service only.
+	// participant whose rights were withdrawn. Service only.
 	CloseReason_CLOSE_REASON_PERMISSION_DENIED CloseReason = 10
 	// The session named by the credential does not exist or has ended.
 	// Service only.
@@ -62,13 +64,14 @@ const (
 	// daemon that connected again. Service only.
 	CloseReason_CLOSE_REASON_NEW_CLIENT CloseReason = 12
 	// The session ended. The session process before it ends, and the service
-	// to the session's viewers.
+	// for the session's participants.
 	CloseReason_CLOSE_REASON_SESSION_EXIT CloseReason = 13
-	// The session exists but its process is not connected, such as while it
-	// restarts; connect again after retry_delay. Service only, to viewers.
+	// The session's process did not connect again within
+	// Welcome.resume_grace. Service only, for the session's participants.
 	CloseReason_CLOSE_REASON_SESSION_RESTARTING CloseReason = 14
-	// The viewer was detached on request, such as by an administrator or to
-	// change its rights; the session goes on. Service only, to viewers.
+	// The participant was ended on request, such as when it left or another
+	// member disconnected it; the session goes on. Service only, for
+	// participants.
 	CloseReason_CLOSE_REASON_DETACH_REQUEST CloseReason = 15
 	// A rule or a rate limit was broken. Either side.
 	CloseReason_CLOSE_REASON_POLICY_VIOLATION CloseReason = 16
@@ -341,12 +344,12 @@ type ClientMessage_CallCancel struct {
 }
 
 type ClientMessage_Signal struct {
-	// Signaling for a PeerConnection. Viewers and session processes only.
+	// Signaling for a PeerConnection. Session processes only.
 	Signal *v11.Signal `protobuf:"bytes,7,opt,name=signal,proto3,oneof"`
 }
 
 type ClientMessage_Migration struct {
-	// A step of a migration. Viewers and session processes only.
+	// A step of a migration. Session processes only.
 	Migration *v11.Migration `protobuf:"bytes,8,opt,name=migration,proto3,oneof"`
 }
 
@@ -589,12 +592,14 @@ type ServerMessage_CallCancel struct {
 }
 
 type ServerMessage_Signal struct {
-	// Signaling for a PeerConnection, from the other end of its connection.
+	// Signaling for a PeerConnection, from its participant through the Fleet
+	// API. To session processes only.
 	Signal *v11.Signal `protobuf:"bytes,8,opt,name=signal,proto3,oneof"`
 }
 
 type ServerMessage_Migration struct {
-	// A step of a migration, from the other end of its connection.
+	// A step of a migration, from its participant through the Fleet API. To
+	// session processes only.
 	Migration *v11.Migration `protobuf:"bytes,9,opt,name=migration,proto3,oneof"`
 }
 
@@ -762,11 +767,10 @@ type ClientHello struct {
 	//	*ClientHello_Machine
 	//	*ClientHello_Enrollment
 	//	*ClientHello_Session
-	//	*ClientHello_Viewer
 	Credential isClientHello_Credential `protobuf_oneof:"credential"`
-	// The endpoint software, such as "leaflow-fleet-agent/1.0.0" or the
-	// browser's User-Agent (RFC 9110 §10.1.5). For diagnostics only. A machine
-	// reports its Agent's version with leaflow.fleet.machine.v1.
+	// The endpoint software, such as "leaflow-fleet-agent/1.0.0". For
+	// diagnostics only. A machine reports its Agent's version with
+	// leaflow.fleet.machine.v1.
 	UserAgent     string `protobuf:"bytes,5,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -836,15 +840,6 @@ func (x *ClientHello) GetSession() *SessionCredential {
 	return nil
 }
 
-func (x *ClientHello) GetViewer() *ViewerCredential {
-	if x != nil {
-		if x, ok := x.Credential.(*ClientHello_Viewer); ok {
-			return x.Viewer
-		}
-	}
-	return nil
-}
-
 func (x *ClientHello) GetUserAgent() string {
 	if x != nil {
 		return x.UserAgent
@@ -871,18 +866,11 @@ type ClientHello_Session struct {
 	Session *SessionCredential `protobuf:"bytes,3,opt,name=session,proto3,oneof"`
 }
 
-type ClientHello_Viewer struct {
-	// A viewer.
-	Viewer *ViewerCredential `protobuf:"bytes,4,opt,name=viewer,proto3,oneof"`
-}
-
 func (*ClientHello_Machine) isClientHello_Credential() {}
 
 func (*ClientHello_Enrollment) isClientHello_Credential() {}
 
 func (*ClientHello_Session) isClientHello_Credential() {}
-
-func (*ClientHello_Viewer) isClientHello_Credential() {}
 
 // The daemon of an enrolled machine, with its machine key.
 type MachineCredential struct {
@@ -1156,85 +1144,22 @@ func (x *SessionDelegation) GetExpiresAt() *timestamppb.Timestamp {
 	return nil
 }
 
-// A viewer, with its own key.
-type ViewerCredential struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// A single-use signaling ticket the Fleet API issued for one viewer
-	// connection, which names its key. Valid for at most 60 seconds. It
-	// authenticates nothing by itself: the signature below proves the key.
-	// Whoever asked for it, a browser through its console, a desktop client or
-	// a program, connects with it the same way. Never put into a URL.
-	Ticket string `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
-	// The Ed25519 signature by the viewer key the ticket names over the ASCII
-	// bytes "leaflow.fleet.control.v1.ViewerCredential", one zero byte
-	// and ServerHello.challenge. The private key never leaves the client, such
-	// as a non-extractable WebCrypto key.
-	Signature     []byte `protobuf:"bytes,3,opt,name=signature,proto3" json:"signature,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ViewerCredential) Reset() {
-	*x = ViewerCredential{}
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[8]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ViewerCredential) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ViewerCredential) ProtoMessage() {}
-
-func (x *ViewerCredential) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[8]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ViewerCredential.ProtoReflect.Descriptor instead.
-func (*ViewerCredential) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{8}
-}
-
-func (x *ViewerCredential) GetTicket() string {
-	if x != nil {
-		return x.Ticket
-	}
-	return ""
-}
-
-func (x *ViewerCredential) GetSignature() []byte {
-	if x != nil {
-		return x.Signature
-	}
-	return nil
-}
-
 // The service accepted ClientHello.
 type Welcome struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The connection. For a viewer, its viewer connection's connection_id,
-	// which its signaling, its PeerConnections and its authorization name.
+	// The connection.
 	ConnectionId uint64 `protobuf:"varint,1,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
 	// The machine. Empty while enrolling.
 	MachineId string `protobuf:"bytes,2,opt,name=machine_id,json=machineId,proto3" json:"machine_id,omitempty"`
-	// The session. Session processes and viewers only.
+	// The session. Session processes only.
 	SessionId string `protobuf:"bytes,3,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	// The keys the service signs with.
 	ServiceKeys *ServiceKeys `protobuf:"bytes,4,opt,name=service_keys,json=serviceKeys,proto3" json:"service_keys,omitempty"`
-	// How long the service keeps the session's viewers when this connection
+	// How long the service keeps the session's participants when this connection
 	// drops. Session processes only.
 	ResumeGrace *durationpb.Duration `protobuf:"bytes,5,opt,name=resume_grace,json=resumeGrace,proto3" json:"resume_grace,omitempty"`
 	// The session process connected again within resume_grace and kept its
-	// viewers. Session processes only.
+	// participants. Session processes only.
 	Resumed       bool `protobuf:"varint,6,opt,name=resumed,proto3" json:"resumed,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1242,7 +1167,7 @@ type Welcome struct {
 
 func (x *Welcome) Reset() {
 	*x = Welcome{}
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[9]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1254,7 +1179,7 @@ func (x *Welcome) String() string {
 func (*Welcome) ProtoMessage() {}
 
 func (x *Welcome) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[9]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1267,7 +1192,7 @@ func (x *Welcome) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Welcome.ProtoReflect.Descriptor instead.
 func (*Welcome) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{9}
+	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Welcome) GetConnectionId() uint64 {
@@ -1323,7 +1248,7 @@ type ServiceKeys struct {
 
 func (x *ServiceKeys) Reset() {
 	*x = ServiceKeys{}
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[10]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1335,7 +1260,7 @@ func (x *ServiceKeys) String() string {
 func (*ServiceKeys) ProtoMessage() {}
 
 func (x *ServiceKeys) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[10]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1348,7 +1273,7 @@ func (x *ServiceKeys) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServiceKeys.ProtoReflect.Descriptor instead.
 func (*ServiceKeys) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{10}
+	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ServiceKeys) GetKeys() []*PublicKey {
@@ -1375,7 +1300,7 @@ type PublicKey struct {
 
 func (x *PublicKey) Reset() {
 	*x = PublicKey{}
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[11]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1387,7 +1312,7 @@ func (x *PublicKey) String() string {
 func (*PublicKey) ProtoMessage() {}
 
 func (x *PublicKey) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[11]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1400,7 +1325,7 @@ func (x *PublicKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PublicKey.ProtoReflect.Descriptor instead.
 func (*PublicKey) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{11}
+	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *PublicKey) GetKeyId() string {
@@ -1437,9 +1362,9 @@ type PublicKey_Ed25519 struct {
 
 func (*PublicKey_Ed25519) isPublicKey_Key() {}
 
-// The service's statement of what one viewer connection may do in one
-// session. The session takes who the viewer is and what it may do from here,
-// never from the viewer.
+// The service's statement of what one participant may do in one session. The
+// session takes who the participant is and what it may do from here, never from
+// the participant.
 type Authorization struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// ServerHello.issuer of the service that signed it.
@@ -1448,23 +1373,23 @@ type Authorization struct {
 	MachineId string `protobuf:"bytes,2,opt,name=machine_id,json=machineId,proto3" json:"machine_id,omitempty"`
 	// The session.
 	SessionId string `protobuf:"bytes,3,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	// The viewer's connection.
+	// The participant's connection.
 	ConnectionId uint64 `protobuf:"varint,4,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
-	// The platform user the viewer acts for.
+	// The platform user the participant acts for.
 	UserId string `protobuf:"bytes,5,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	// The user's name, plain text.
 	DisplayName string `protobuf:"bytes,6,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	// The label the client gave itself when the ticket was issued, such as
-	// "console" or "assistant", at most 64 bytes. Neither unique nor verified:
-	// it lets people tell connections apart and grants nothing.
+	// The label the client gave itself when it created the participant, such
+	// as "console" or "assistant", at most 64 bytes. Neither unique nor
+	// verified: it lets people tell participants apart and grants nothing.
 	ClientId string `protobuf:"bytes,7,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	// The viewer's Ed25519 public key, 32 bytes. The viewer proved it with its
-	// credential, and the session accepts only a PeerConnection whose viewer
-	// Hello is signed with it.
-	ViewerPublicKey []byte `protobuf:"bytes,9,opt,name=viewer_public_key,json=viewerPublicKey,proto3" json:"viewer_public_key,omitempty"`
-	// The viewer may only watch, whatever policies say.
+	// The participant's Ed25519 public key, 32 bytes. The session accepts only
+	// a PeerConnection whose participant Hello is signed with it
+	// (leaflow.fleet.transport.v1).
+	ParticipantPublicKey []byte `protobuf:"bytes,9,opt,name=participant_public_key,json=participantPublicKey,proto3" json:"participant_public_key,omitempty"`
+	// The participant may only watch, whatever policies say.
 	ReadOnly bool `protobuf:"varint,11,opt,name=read_only,json=readOnly,proto3" json:"read_only,omitempty"`
-	// The policies of the domains the viewer may use, at most one of each
+	// The policies of the domains the participant may use, at most one of each
 	// type, such as a leaflow.fleet.filetransfer.v1.FileTransferPolicy.
 	// A domain whose policy is missing is denied. A type the session does not
 	// know is ignored.
@@ -1472,8 +1397,8 @@ type Authorization struct {
 	// When the service issued it. Refused when more than 5 minutes ahead of the
 	// session's clock.
 	IssuedAt *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
-	// When it ends. The session refuses it, and ends the viewer's connection,
-	// once this time and 5 more minutes have passed.
+	// When it ends. The session refuses it, and ends the participant's
+	// connection, once this time and 5 more minutes have passed.
 	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1481,7 +1406,7 @@ type Authorization struct {
 
 func (x *Authorization) Reset() {
 	*x = Authorization{}
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[12]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1493,7 +1418,7 @@ func (x *Authorization) String() string {
 func (*Authorization) ProtoMessage() {}
 
 func (x *Authorization) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[12]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1506,7 +1431,7 @@ func (x *Authorization) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Authorization.ProtoReflect.Descriptor instead.
 func (*Authorization) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{12}
+	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Authorization) GetIssuer() string {
@@ -1558,9 +1483,9 @@ func (x *Authorization) GetClientId() string {
 	return ""
 }
 
-func (x *Authorization) GetViewerPublicKey() []byte {
+func (x *Authorization) GetParticipantPublicKey() []byte {
 	if x != nil {
-		return x.ViewerPublicKey
+		return x.ParticipantPublicKey
 	}
 	return nil
 }
@@ -1612,7 +1537,7 @@ type SignedAuthorization struct {
 
 func (x *SignedAuthorization) Reset() {
 	*x = SignedAuthorization{}
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[13]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1624,7 +1549,7 @@ func (x *SignedAuthorization) String() string {
 func (*SignedAuthorization) ProtoMessage() {}
 
 func (x *SignedAuthorization) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[13]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1637,7 +1562,7 @@ func (x *SignedAuthorization) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignedAuthorization.ProtoReflect.Descriptor instead.
 func (*SignedAuthorization) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{13}
+	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *SignedAuthorization) GetKeyId() string {
@@ -1673,7 +1598,7 @@ type Ping struct {
 
 func (x *Ping) Reset() {
 	*x = Ping{}
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[14]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1685,7 +1610,7 @@ func (x *Ping) String() string {
 func (*Ping) ProtoMessage() {}
 
 func (x *Ping) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[14]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1698,7 +1623,7 @@ func (x *Ping) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Ping.ProtoReflect.Descriptor instead.
 func (*Ping) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{14}
+	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *Ping) GetMonotonicMs() uint64 {
@@ -1719,7 +1644,7 @@ type Pong struct {
 
 func (x *Pong) Reset() {
 	*x = Pong{}
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[15]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1731,7 +1656,7 @@ func (x *Pong) String() string {
 func (*Pong) ProtoMessage() {}
 
 func (x *Pong) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[15]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1744,7 +1669,7 @@ func (x *Pong) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Pong.ProtoReflect.Descriptor instead.
 func (*Pong) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{15}
+	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *Pong) GetMonotonicMs() uint64 {
@@ -1771,7 +1696,7 @@ type Fragment struct {
 
 func (x *Fragment) Reset() {
 	*x = Fragment{}
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[16]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1783,7 +1708,7 @@ func (x *Fragment) String() string {
 func (*Fragment) ProtoMessage() {}
 
 func (x *Fragment) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[16]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1796,7 +1721,7 @@ func (x *Fragment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Fragment.ProtoReflect.Descriptor instead.
 func (*Fragment) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{16}
+	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *Fragment) GetMessageId() uint64 {
@@ -1830,8 +1755,7 @@ type Close struct {
 	// Plain text for logs, at most 1024 bytes.
 	ReasonPhrase string `protobuf:"bytes,2,opt,name=reason_phrase,json=reasonPhrase,proto3" json:"reason_phrase,omitempty"`
 	// How long to wait at least before connecting again (see Reconnection).
-	// Always set with OVERLOADED; set with SERVER_UPGRADE and
-	// SESSION_RESTARTING.
+	// Always set with OVERLOADED; set with SERVER_UPGRADE.
 	RetryDelay    *durationpb.Duration `protobuf:"bytes,3,opt,name=retry_delay,json=retryDelay,proto3" json:"retry_delay,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1839,7 +1763,7 @@ type Close struct {
 
 func (x *Close) Reset() {
 	*x = Close{}
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[17]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1851,7 +1775,7 @@ func (x *Close) String() string {
 func (*Close) ProtoMessage() {}
 
 func (x *Close) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[17]
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1864,7 +1788,7 @@ func (x *Close) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Close.ProtoReflect.Descriptor instead.
 func (*Close) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{17}
+	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *Close) GetReason() CloseReason {
@@ -1888,31 +1812,31 @@ func (x *Close) GetRetryDelay() *durationpb.Duration {
 	return nil
 }
 
-// The request of AttachViewer.
-type AttachViewerRequest struct {
+// The request of AttachParticipant.
+type AttachParticipantRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The viewer's authorization, the same one the Fleet API returned for the
-	// viewer connection.
+	// The participant's authorization, the same one the Fleet API returned for
+	// the participant.
 	Authorization *SignedAuthorization `protobuf:"bytes,1,opt,name=authorization,proto3" json:"authorization,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *AttachViewerRequest) Reset() {
-	*x = AttachViewerRequest{}
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[18]
+func (x *AttachParticipantRequest) Reset() {
+	*x = AttachParticipantRequest{}
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *AttachViewerRequest) String() string {
+func (x *AttachParticipantRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AttachViewerRequest) ProtoMessage() {}
+func (*AttachParticipantRequest) ProtoMessage() {}
 
-func (x *AttachViewerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[18]
+func (x *AttachParticipantRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1923,40 +1847,40 @@ func (x *AttachViewerRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AttachViewerRequest.ProtoReflect.Descriptor instead.
-func (*AttachViewerRequest) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{18}
+// Deprecated: Use AttachParticipantRequest.ProtoReflect.Descriptor instead.
+func (*AttachParticipantRequest) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{17}
 }
 
-func (x *AttachViewerRequest) GetAuthorization() *SignedAuthorization {
+func (x *AttachParticipantRequest) GetAuthorization() *SignedAuthorization {
 	if x != nil {
 		return x.Authorization
 	}
 	return nil
 }
 
-// The response of AttachViewer.
-type AttachViewerResponse struct {
+// The response of AttachParticipant.
+type AttachParticipantResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *AttachViewerResponse) Reset() {
-	*x = AttachViewerResponse{}
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[19]
+func (x *AttachParticipantResponse) Reset() {
+	*x = AttachParticipantResponse{}
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *AttachViewerResponse) String() string {
+func (x *AttachParticipantResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AttachViewerResponse) ProtoMessage() {}
+func (*AttachParticipantResponse) ProtoMessage() {}
 
-func (x *AttachViewerResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[19]
+func (x *AttachParticipantResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1967,13 +1891,13 @@ func (x *AttachViewerResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AttachViewerResponse.ProtoReflect.Descriptor instead.
-func (*AttachViewerResponse) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{19}
+// Deprecated: Use AttachParticipantResponse.ProtoReflect.Descriptor instead.
+func (*AttachParticipantResponse) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{18}
 }
 
-// The request of UpdateViewerAuthorization.
-type UpdateViewerAuthorizationRequest struct {
+// The request of UpdateParticipantAuthorization.
+type UpdateParticipantAuthorizationRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The renewed authorization.
 	Authorization *SignedAuthorization `protobuf:"bytes,1,opt,name=authorization,proto3" json:"authorization,omitempty"`
@@ -1981,21 +1905,21 @@ type UpdateViewerAuthorizationRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *UpdateViewerAuthorizationRequest) Reset() {
-	*x = UpdateViewerAuthorizationRequest{}
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[20]
+func (x *UpdateParticipantAuthorizationRequest) Reset() {
+	*x = UpdateParticipantAuthorizationRequest{}
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UpdateViewerAuthorizationRequest) String() string {
+func (x *UpdateParticipantAuthorizationRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UpdateViewerAuthorizationRequest) ProtoMessage() {}
+func (*UpdateParticipantAuthorizationRequest) ProtoMessage() {}
 
-func (x *UpdateViewerAuthorizationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[20]
+func (x *UpdateParticipantAuthorizationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2006,40 +1930,40 @@ func (x *UpdateViewerAuthorizationRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UpdateViewerAuthorizationRequest.ProtoReflect.Descriptor instead.
-func (*UpdateViewerAuthorizationRequest) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{20}
+// Deprecated: Use UpdateParticipantAuthorizationRequest.ProtoReflect.Descriptor instead.
+func (*UpdateParticipantAuthorizationRequest) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{19}
 }
 
-func (x *UpdateViewerAuthorizationRequest) GetAuthorization() *SignedAuthorization {
+func (x *UpdateParticipantAuthorizationRequest) GetAuthorization() *SignedAuthorization {
 	if x != nil {
 		return x.Authorization
 	}
 	return nil
 }
 
-// The response of UpdateViewerAuthorization.
-type UpdateViewerAuthorizationResponse struct {
+// The response of UpdateParticipantAuthorization.
+type UpdateParticipantAuthorizationResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *UpdateViewerAuthorizationResponse) Reset() {
-	*x = UpdateViewerAuthorizationResponse{}
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[21]
+func (x *UpdateParticipantAuthorizationResponse) Reset() {
+	*x = UpdateParticipantAuthorizationResponse{}
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UpdateViewerAuthorizationResponse) String() string {
+func (x *UpdateParticipantAuthorizationResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UpdateViewerAuthorizationResponse) ProtoMessage() {}
+func (*UpdateParticipantAuthorizationResponse) ProtoMessage() {}
 
-func (x *UpdateViewerAuthorizationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[21]
+func (x *UpdateParticipantAuthorizationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2050,38 +1974,38 @@ func (x *UpdateViewerAuthorizationResponse) ProtoReflect() protoreflect.Message 
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UpdateViewerAuthorizationResponse.ProtoReflect.Descriptor instead.
-func (*UpdateViewerAuthorizationResponse) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{21}
+// Deprecated: Use UpdateParticipantAuthorizationResponse.ProtoReflect.Descriptor instead.
+func (*UpdateParticipantAuthorizationResponse) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{20}
 }
 
-// The request of DetachViewer.
-type DetachViewerRequest struct {
+// The request of DetachParticipant.
+type DetachParticipantRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The viewer's connection.
+	// The participant's connection.
 	ConnectionId uint64 `protobuf:"varint,1,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
-	// Why it ends: the reason the service gave the viewer, or the one its
-	// connection ended with, such as CLIENT_EXIT.
+	// Why it ends, such as DETACH_REQUEST when it was ended through the Fleet
+	// API or PING_TIMEOUT when its lease ran out.
 	Reason        CloseReason `protobuf:"varint,2,opt,name=reason,proto3,enum=leaflow.fleet.control.v1.CloseReason" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DetachViewerRequest) Reset() {
-	*x = DetachViewerRequest{}
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[22]
+func (x *DetachParticipantRequest) Reset() {
+	*x = DetachParticipantRequest{}
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DetachViewerRequest) String() string {
+func (x *DetachParticipantRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DetachViewerRequest) ProtoMessage() {}
+func (*DetachParticipantRequest) ProtoMessage() {}
 
-func (x *DetachViewerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[22]
+func (x *DetachParticipantRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2092,47 +2016,47 @@ func (x *DetachViewerRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DetachViewerRequest.ProtoReflect.Descriptor instead.
-func (*DetachViewerRequest) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{22}
+// Deprecated: Use DetachParticipantRequest.ProtoReflect.Descriptor instead.
+func (*DetachParticipantRequest) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{21}
 }
 
-func (x *DetachViewerRequest) GetConnectionId() uint64 {
+func (x *DetachParticipantRequest) GetConnectionId() uint64 {
 	if x != nil {
 		return x.ConnectionId
 	}
 	return 0
 }
 
-func (x *DetachViewerRequest) GetReason() CloseReason {
+func (x *DetachParticipantRequest) GetReason() CloseReason {
 	if x != nil {
 		return x.Reason
 	}
 	return CloseReason_CLOSE_REASON_UNSPECIFIED
 }
 
-// The response of DetachViewer.
-type DetachViewerResponse struct {
+// The response of DetachParticipant.
+type DetachParticipantResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DetachViewerResponse) Reset() {
-	*x = DetachViewerResponse{}
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[23]
+func (x *DetachParticipantResponse) Reset() {
+	*x = DetachParticipantResponse{}
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DetachViewerResponse) String() string {
+func (x *DetachParticipantResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DetachViewerResponse) ProtoMessage() {}
+func (*DetachParticipantResponse) ProtoMessage() {}
 
-func (x *DetachViewerResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[23]
+func (x *DetachParticipantResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2143,9 +2067,9 @@ func (x *DetachViewerResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DetachViewerResponse.ProtoReflect.Descriptor instead.
-func (*DetachViewerResponse) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{23}
+// Deprecated: Use DetachParticipantResponse.ProtoReflect.Descriptor instead.
+func (*DetachParticipantResponse) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{22}
 }
 
 var File_leaflow_fleet_control_v1_control_proto protoreflect.FileDescriptor
@@ -2193,14 +2117,13 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\x10max_message_size\x18\x05 \x01(\rR\x0emaxMessageSize\x120\n" +
 	"\x14max_concurrent_calls\x18\x06 \x01(\rR\x12maxConcurrentCalls\x12.\n" +
 	"\x13messages_per_second\x18\a \x01(\rR\x11messagesPerSecond\x12#\n" +
-	"\rmessage_burst\x18\b \x01(\rR\fmessageBurst\"\xe4\x02\n" +
+	"\rmessage_burst\x18\b \x01(\rR\fmessageBurst\"\x9e\x02\n" +
 	"\vClientHello\x12G\n" +
 	"\amachine\x18\x01 \x01(\v2+.leaflow.fleet.control.v1.MachineCredentialH\x00R\amachine\x12P\n" +
 	"\n" +
 	"enrollment\x18\x02 \x01(\v2..leaflow.fleet.control.v1.EnrollmentCredentialH\x00R\n" +
 	"enrollment\x12G\n" +
-	"\asession\x18\x03 \x01(\v2+.leaflow.fleet.control.v1.SessionCredentialH\x00R\asession\x12D\n" +
-	"\x06viewer\x18\x04 \x01(\v2*.leaflow.fleet.control.v1.ViewerCredentialH\x00R\x06viewer\x12\x1d\n" +
+	"\asession\x18\x03 \x01(\v2+.leaflow.fleet.control.v1.SessionCredentialH\x00R\asession\x12\x1d\n" +
 	"\n" +
 	"user_agent\x18\x05 \x01(\tR\tuserAgentB\f\n" +
 	"\n" +
@@ -2227,10 +2150,7 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\x12session_public_key\x18\x03 \x01(\fR\x10sessionPublicKey\x127\n" +
 	"\tissued_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\bissuedAt\x129\n" +
 	"\n" +
-	"expires_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"H\n" +
-	"\x10ViewerCredential\x12\x16\n" +
-	"\x06ticket\x18\x01 \x01(\tR\x06ticket\x12\x1c\n" +
-	"\tsignature\x18\x03 \x01(\fR\tsignature\"\x8e\x02\n" +
+	"expires_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"\x8e\x02\n" +
 	"\aWelcome\x12#\n" +
 	"\rconnection_id\x18\x01 \x01(\x04R\fconnectionId\x12\x1d\n" +
 	"\n" +
@@ -2245,7 +2165,7 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\tPublicKey\x12\x15\n" +
 	"\x06key_id\x18\x01 \x01(\tR\x05keyId\x12\x1a\n" +
 	"\aed25519\x18\x02 \x01(\fH\x00R\aed25519B\x05\n" +
-	"\x03key\"\xd2\x03\n" +
+	"\x03key\"\xdc\x03\n" +
 	"\rAuthorization\x12\x16\n" +
 	"\x06issuer\x18\x01 \x01(\tR\x06issuer\x12\x1d\n" +
 	"\n" +
@@ -2255,8 +2175,8 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\rconnection_id\x18\x04 \x01(\x04R\fconnectionId\x12\x17\n" +
 	"\auser_id\x18\x05 \x01(\tR\x06userId\x12!\n" +
 	"\fdisplay_name\x18\x06 \x01(\tR\vdisplayName\x12\x1b\n" +
-	"\tclient_id\x18\a \x01(\tR\bclientId\x12*\n" +
-	"\x11viewer_public_key\x18\t \x01(\fR\x0fviewerPublicKey\x12\x1b\n" +
+	"\tclient_id\x18\a \x01(\tR\bclientId\x124\n" +
+	"\x16participant_public_key\x18\t \x01(\fR\x14participantPublicKey\x12\x1b\n" +
 	"\tread_only\x18\v \x01(\bR\breadOnly\x120\n" +
 	"\bpolicies\x18\f \x03(\v2\x14.google.protobuf.AnyR\bpolicies\x127\n" +
 	"\tissued_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\bissuedAt\x129\n" +
@@ -2279,17 +2199,17 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\x06reason\x18\x01 \x01(\x0e2%.leaflow.fleet.control.v1.CloseReasonR\x06reason\x12#\n" +
 	"\rreason_phrase\x18\x02 \x01(\tR\freasonPhrase\x12:\n" +
 	"\vretry_delay\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\n" +
-	"retryDelay\"j\n" +
-	"\x13AttachViewerRequest\x12S\n" +
-	"\rauthorization\x18\x01 \x01(\v2-.leaflow.fleet.control.v1.SignedAuthorizationR\rauthorization\"\x16\n" +
-	"\x14AttachViewerResponse\"w\n" +
-	" UpdateViewerAuthorizationRequest\x12S\n" +
-	"\rauthorization\x18\x01 \x01(\v2-.leaflow.fleet.control.v1.SignedAuthorizationR\rauthorization\"#\n" +
-	"!UpdateViewerAuthorizationResponse\"y\n" +
-	"\x13DetachViewerRequest\x12#\n" +
+	"retryDelay\"o\n" +
+	"\x18AttachParticipantRequest\x12S\n" +
+	"\rauthorization\x18\x01 \x01(\v2-.leaflow.fleet.control.v1.SignedAuthorizationR\rauthorization\"\x1b\n" +
+	"\x19AttachParticipantResponse\"|\n" +
+	"%UpdateParticipantAuthorizationRequest\x12S\n" +
+	"\rauthorization\x18\x01 \x01(\v2-.leaflow.fleet.control.v1.SignedAuthorizationR\rauthorization\"(\n" +
+	"&UpdateParticipantAuthorizationResponse\"~\n" +
+	"\x18DetachParticipantRequest\x12#\n" +
 	"\rconnection_id\x18\x01 \x01(\x04R\fconnectionId\x12=\n" +
-	"\x06reason\x18\x02 \x01(\x0e2%.leaflow.fleet.control.v1.CloseReasonR\x06reason\"\x16\n" +
-	"\x14DetachViewerResponse*\x9c\x05\n" +
+	"\x06reason\x18\x02 \x01(\x0e2%.leaflow.fleet.control.v1.CloseReasonR\x06reason\"\x1b\n" +
+	"\x19DetachParticipantResponse*\x9c\x05\n" +
 	"\vCloseReason\x12\x1c\n" +
 	"\x18CLOSE_REASON_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11CLOSE_REASON_DONE\x10\x01\x12\x1c\n" +
@@ -2311,11 +2231,11 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\x1dCLOSE_REASON_POLICY_VIOLATION\x10\x10\x12\x1f\n" +
 	"\x1bCLOSE_REASON_INTERNAL_ERROR\x10\x11\x12\x1b\n" +
 	"\x17CLOSE_REASON_OVERLOADED\x10\x12\x12\"\n" +
-	"\x1eCLOSE_REASON_ENDPOINT_TOO_SLOW\x10\x132\x93\x03\n" +
-	"\rViewerService\x12r\n" +
-	"\fAttachViewer\x12-.leaflow.fleet.control.v1.AttachViewerRequest\x1a..leaflow.fleet.control.v1.AttachViewerResponse\"\x03\x90\x02\x02\x12\x99\x01\n" +
-	"\x19UpdateViewerAuthorization\x12:.leaflow.fleet.control.v1.UpdateViewerAuthorizationRequest\x1a;.leaflow.fleet.control.v1.UpdateViewerAuthorizationResponse\"\x03\x90\x02\x02\x12r\n" +
-	"\fDetachViewer\x12-.leaflow.fleet.control.v1.DetachViewerRequest\x1a..leaflow.fleet.control.v1.DetachViewerResponse\"\x03\x90\x02\x02B>Z<github.com/leaflowapis/leaflow-go/fleet/control/v1;controlv1b\x06proto3"
+	"\x1eCLOSE_REASON_ENDPOINT_TOO_SLOW\x10\x132\xc7\x03\n" +
+	"\x12ParticipantService\x12\x81\x01\n" +
+	"\x11AttachParticipant\x122.leaflow.fleet.control.v1.AttachParticipantRequest\x1a3.leaflow.fleet.control.v1.AttachParticipantResponse\"\x03\x90\x02\x02\x12\xa8\x01\n" +
+	"\x1eUpdateParticipantAuthorization\x12?.leaflow.fleet.control.v1.UpdateParticipantAuthorizationRequest\x1a@.leaflow.fleet.control.v1.UpdateParticipantAuthorizationResponse\"\x03\x90\x02\x02\x12\x81\x01\n" +
+	"\x11DetachParticipant\x122.leaflow.fleet.control.v1.DetachParticipantRequest\x1a3.leaflow.fleet.control.v1.DetachParticipantResponse\"\x03\x90\x02\x02B>Z<github.com/leaflowapis/leaflow-go/fleet/control/v1;controlv1b\x06proto3"
 
 var (
 	file_leaflow_fleet_control_v1_control_proto_rawDescOnce sync.Once
@@ -2330,95 +2250,93 @@ func file_leaflow_fleet_control_v1_control_proto_rawDescGZIP() []byte {
 }
 
 var file_leaflow_fleet_control_v1_control_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_leaflow_fleet_control_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
+var file_leaflow_fleet_control_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_leaflow_fleet_control_v1_control_proto_goTypes = []any{
-	(CloseReason)(0),                          // 0: leaflow.fleet.control.v1.CloseReason
-	(*ClientMessage)(nil),                     // 1: leaflow.fleet.control.v1.ClientMessage
-	(*ServerMessage)(nil),                     // 2: leaflow.fleet.control.v1.ServerMessage
-	(*ServerHello)(nil),                       // 3: leaflow.fleet.control.v1.ServerHello
-	(*ClientHello)(nil),                       // 4: leaflow.fleet.control.v1.ClientHello
-	(*MachineCredential)(nil),                 // 5: leaflow.fleet.control.v1.MachineCredential
-	(*EnrollmentCredential)(nil),              // 6: leaflow.fleet.control.v1.EnrollmentCredential
-	(*SessionCredential)(nil),                 // 7: leaflow.fleet.control.v1.SessionCredential
-	(*SessionDelegation)(nil),                 // 8: leaflow.fleet.control.v1.SessionDelegation
-	(*ViewerCredential)(nil),                  // 9: leaflow.fleet.control.v1.ViewerCredential
-	(*Welcome)(nil),                           // 10: leaflow.fleet.control.v1.Welcome
-	(*ServiceKeys)(nil),                       // 11: leaflow.fleet.control.v1.ServiceKeys
-	(*PublicKey)(nil),                         // 12: leaflow.fleet.control.v1.PublicKey
-	(*Authorization)(nil),                     // 13: leaflow.fleet.control.v1.Authorization
-	(*SignedAuthorization)(nil),               // 14: leaflow.fleet.control.v1.SignedAuthorization
-	(*Ping)(nil),                              // 15: leaflow.fleet.control.v1.Ping
-	(*Pong)(nil),                              // 16: leaflow.fleet.control.v1.Pong
-	(*Fragment)(nil),                          // 17: leaflow.fleet.control.v1.Fragment
-	(*Close)(nil),                             // 18: leaflow.fleet.control.v1.Close
-	(*AttachViewerRequest)(nil),               // 19: leaflow.fleet.control.v1.AttachViewerRequest
-	(*AttachViewerResponse)(nil),              // 20: leaflow.fleet.control.v1.AttachViewerResponse
-	(*UpdateViewerAuthorizationRequest)(nil),  // 21: leaflow.fleet.control.v1.UpdateViewerAuthorizationRequest
-	(*UpdateViewerAuthorizationResponse)(nil), // 22: leaflow.fleet.control.v1.UpdateViewerAuthorizationResponse
-	(*DetachViewerRequest)(nil),               // 23: leaflow.fleet.control.v1.DetachViewerRequest
-	(*DetachViewerResponse)(nil),              // 24: leaflow.fleet.control.v1.DetachViewerResponse
-	(*v1.Call)(nil),                           // 25: leaflow.fleet.rpc.v1.Call
-	(*v1.CallResult)(nil),                     // 26: leaflow.fleet.rpc.v1.CallResult
-	(*v1.CallCancel)(nil),                     // 27: leaflow.fleet.rpc.v1.CallCancel
-	(*v11.Signal)(nil),                        // 28: leaflow.fleet.transport.v1.Signal
-	(*v11.Migration)(nil),                     // 29: leaflow.fleet.transport.v1.Migration
-	(*durationpb.Duration)(nil),               // 30: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil),             // 31: google.protobuf.Timestamp
-	(*anypb.Any)(nil),                         // 32: google.protobuf.Any
+	(CloseReason)(0),                               // 0: leaflow.fleet.control.v1.CloseReason
+	(*ClientMessage)(nil),                          // 1: leaflow.fleet.control.v1.ClientMessage
+	(*ServerMessage)(nil),                          // 2: leaflow.fleet.control.v1.ServerMessage
+	(*ServerHello)(nil),                            // 3: leaflow.fleet.control.v1.ServerHello
+	(*ClientHello)(nil),                            // 4: leaflow.fleet.control.v1.ClientHello
+	(*MachineCredential)(nil),                      // 5: leaflow.fleet.control.v1.MachineCredential
+	(*EnrollmentCredential)(nil),                   // 6: leaflow.fleet.control.v1.EnrollmentCredential
+	(*SessionCredential)(nil),                      // 7: leaflow.fleet.control.v1.SessionCredential
+	(*SessionDelegation)(nil),                      // 8: leaflow.fleet.control.v1.SessionDelegation
+	(*Welcome)(nil),                                // 9: leaflow.fleet.control.v1.Welcome
+	(*ServiceKeys)(nil),                            // 10: leaflow.fleet.control.v1.ServiceKeys
+	(*PublicKey)(nil),                              // 11: leaflow.fleet.control.v1.PublicKey
+	(*Authorization)(nil),                          // 12: leaflow.fleet.control.v1.Authorization
+	(*SignedAuthorization)(nil),                    // 13: leaflow.fleet.control.v1.SignedAuthorization
+	(*Ping)(nil),                                   // 14: leaflow.fleet.control.v1.Ping
+	(*Pong)(nil),                                   // 15: leaflow.fleet.control.v1.Pong
+	(*Fragment)(nil),                               // 16: leaflow.fleet.control.v1.Fragment
+	(*Close)(nil),                                  // 17: leaflow.fleet.control.v1.Close
+	(*AttachParticipantRequest)(nil),               // 18: leaflow.fleet.control.v1.AttachParticipantRequest
+	(*AttachParticipantResponse)(nil),              // 19: leaflow.fleet.control.v1.AttachParticipantResponse
+	(*UpdateParticipantAuthorizationRequest)(nil),  // 20: leaflow.fleet.control.v1.UpdateParticipantAuthorizationRequest
+	(*UpdateParticipantAuthorizationResponse)(nil), // 21: leaflow.fleet.control.v1.UpdateParticipantAuthorizationResponse
+	(*DetachParticipantRequest)(nil),               // 22: leaflow.fleet.control.v1.DetachParticipantRequest
+	(*DetachParticipantResponse)(nil),              // 23: leaflow.fleet.control.v1.DetachParticipantResponse
+	(*v1.Call)(nil),                                // 24: leaflow.fleet.rpc.v1.Call
+	(*v1.CallResult)(nil),                          // 25: leaflow.fleet.rpc.v1.CallResult
+	(*v1.CallCancel)(nil),                          // 26: leaflow.fleet.rpc.v1.CallCancel
+	(*v11.Signal)(nil),                             // 27: leaflow.fleet.transport.v1.Signal
+	(*v11.Migration)(nil),                          // 28: leaflow.fleet.transport.v1.Migration
+	(*durationpb.Duration)(nil),                    // 29: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil),                  // 30: google.protobuf.Timestamp
+	(*anypb.Any)(nil),                              // 31: google.protobuf.Any
 }
 var file_leaflow_fleet_control_v1_control_proto_depIdxs = []int32{
 	4,  // 0: leaflow.fleet.control.v1.ClientMessage.client_hello:type_name -> leaflow.fleet.control.v1.ClientHello
-	15, // 1: leaflow.fleet.control.v1.ClientMessage.ping:type_name -> leaflow.fleet.control.v1.Ping
-	16, // 2: leaflow.fleet.control.v1.ClientMessage.pong:type_name -> leaflow.fleet.control.v1.Pong
-	25, // 3: leaflow.fleet.control.v1.ClientMessage.call:type_name -> leaflow.fleet.rpc.v1.Call
-	26, // 4: leaflow.fleet.control.v1.ClientMessage.call_result:type_name -> leaflow.fleet.rpc.v1.CallResult
-	27, // 5: leaflow.fleet.control.v1.ClientMessage.call_cancel:type_name -> leaflow.fleet.rpc.v1.CallCancel
-	28, // 6: leaflow.fleet.control.v1.ClientMessage.signal:type_name -> leaflow.fleet.transport.v1.Signal
-	29, // 7: leaflow.fleet.control.v1.ClientMessage.migration:type_name -> leaflow.fleet.transport.v1.Migration
-	18, // 8: leaflow.fleet.control.v1.ClientMessage.close:type_name -> leaflow.fleet.control.v1.Close
-	17, // 9: leaflow.fleet.control.v1.ClientMessage.fragment:type_name -> leaflow.fleet.control.v1.Fragment
+	14, // 1: leaflow.fleet.control.v1.ClientMessage.ping:type_name -> leaflow.fleet.control.v1.Ping
+	15, // 2: leaflow.fleet.control.v1.ClientMessage.pong:type_name -> leaflow.fleet.control.v1.Pong
+	24, // 3: leaflow.fleet.control.v1.ClientMessage.call:type_name -> leaflow.fleet.rpc.v1.Call
+	25, // 4: leaflow.fleet.control.v1.ClientMessage.call_result:type_name -> leaflow.fleet.rpc.v1.CallResult
+	26, // 5: leaflow.fleet.control.v1.ClientMessage.call_cancel:type_name -> leaflow.fleet.rpc.v1.CallCancel
+	27, // 6: leaflow.fleet.control.v1.ClientMessage.signal:type_name -> leaflow.fleet.transport.v1.Signal
+	28, // 7: leaflow.fleet.control.v1.ClientMessage.migration:type_name -> leaflow.fleet.transport.v1.Migration
+	17, // 8: leaflow.fleet.control.v1.ClientMessage.close:type_name -> leaflow.fleet.control.v1.Close
+	16, // 9: leaflow.fleet.control.v1.ClientMessage.fragment:type_name -> leaflow.fleet.control.v1.Fragment
 	3,  // 10: leaflow.fleet.control.v1.ServerMessage.server_hello:type_name -> leaflow.fleet.control.v1.ServerHello
-	10, // 11: leaflow.fleet.control.v1.ServerMessage.welcome:type_name -> leaflow.fleet.control.v1.Welcome
-	15, // 12: leaflow.fleet.control.v1.ServerMessage.ping:type_name -> leaflow.fleet.control.v1.Ping
-	16, // 13: leaflow.fleet.control.v1.ServerMessage.pong:type_name -> leaflow.fleet.control.v1.Pong
-	25, // 14: leaflow.fleet.control.v1.ServerMessage.call:type_name -> leaflow.fleet.rpc.v1.Call
-	26, // 15: leaflow.fleet.control.v1.ServerMessage.call_result:type_name -> leaflow.fleet.rpc.v1.CallResult
-	27, // 16: leaflow.fleet.control.v1.ServerMessage.call_cancel:type_name -> leaflow.fleet.rpc.v1.CallCancel
-	28, // 17: leaflow.fleet.control.v1.ServerMessage.signal:type_name -> leaflow.fleet.transport.v1.Signal
-	29, // 18: leaflow.fleet.control.v1.ServerMessage.migration:type_name -> leaflow.fleet.transport.v1.Migration
-	11, // 19: leaflow.fleet.control.v1.ServerMessage.service_keys:type_name -> leaflow.fleet.control.v1.ServiceKeys
-	18, // 20: leaflow.fleet.control.v1.ServerMessage.close:type_name -> leaflow.fleet.control.v1.Close
-	17, // 21: leaflow.fleet.control.v1.ServerMessage.fragment:type_name -> leaflow.fleet.control.v1.Fragment
-	30, // 22: leaflow.fleet.control.v1.ServerHello.ping_interval:type_name -> google.protobuf.Duration
-	30, // 23: leaflow.fleet.control.v1.ServerHello.idle_timeout:type_name -> google.protobuf.Duration
+	9,  // 11: leaflow.fleet.control.v1.ServerMessage.welcome:type_name -> leaflow.fleet.control.v1.Welcome
+	14, // 12: leaflow.fleet.control.v1.ServerMessage.ping:type_name -> leaflow.fleet.control.v1.Ping
+	15, // 13: leaflow.fleet.control.v1.ServerMessage.pong:type_name -> leaflow.fleet.control.v1.Pong
+	24, // 14: leaflow.fleet.control.v1.ServerMessage.call:type_name -> leaflow.fleet.rpc.v1.Call
+	25, // 15: leaflow.fleet.control.v1.ServerMessage.call_result:type_name -> leaflow.fleet.rpc.v1.CallResult
+	26, // 16: leaflow.fleet.control.v1.ServerMessage.call_cancel:type_name -> leaflow.fleet.rpc.v1.CallCancel
+	27, // 17: leaflow.fleet.control.v1.ServerMessage.signal:type_name -> leaflow.fleet.transport.v1.Signal
+	28, // 18: leaflow.fleet.control.v1.ServerMessage.migration:type_name -> leaflow.fleet.transport.v1.Migration
+	10, // 19: leaflow.fleet.control.v1.ServerMessage.service_keys:type_name -> leaflow.fleet.control.v1.ServiceKeys
+	17, // 20: leaflow.fleet.control.v1.ServerMessage.close:type_name -> leaflow.fleet.control.v1.Close
+	16, // 21: leaflow.fleet.control.v1.ServerMessage.fragment:type_name -> leaflow.fleet.control.v1.Fragment
+	29, // 22: leaflow.fleet.control.v1.ServerHello.ping_interval:type_name -> google.protobuf.Duration
+	29, // 23: leaflow.fleet.control.v1.ServerHello.idle_timeout:type_name -> google.protobuf.Duration
 	5,  // 24: leaflow.fleet.control.v1.ClientHello.machine:type_name -> leaflow.fleet.control.v1.MachineCredential
 	6,  // 25: leaflow.fleet.control.v1.ClientHello.enrollment:type_name -> leaflow.fleet.control.v1.EnrollmentCredential
 	7,  // 26: leaflow.fleet.control.v1.ClientHello.session:type_name -> leaflow.fleet.control.v1.SessionCredential
-	9,  // 27: leaflow.fleet.control.v1.ClientHello.viewer:type_name -> leaflow.fleet.control.v1.ViewerCredential
-	31, // 28: leaflow.fleet.control.v1.SessionDelegation.issued_at:type_name -> google.protobuf.Timestamp
-	31, // 29: leaflow.fleet.control.v1.SessionDelegation.expires_at:type_name -> google.protobuf.Timestamp
-	11, // 30: leaflow.fleet.control.v1.Welcome.service_keys:type_name -> leaflow.fleet.control.v1.ServiceKeys
-	30, // 31: leaflow.fleet.control.v1.Welcome.resume_grace:type_name -> google.protobuf.Duration
-	12, // 32: leaflow.fleet.control.v1.ServiceKeys.keys:type_name -> leaflow.fleet.control.v1.PublicKey
-	32, // 33: leaflow.fleet.control.v1.Authorization.policies:type_name -> google.protobuf.Any
-	31, // 34: leaflow.fleet.control.v1.Authorization.issued_at:type_name -> google.protobuf.Timestamp
-	31, // 35: leaflow.fleet.control.v1.Authorization.expires_at:type_name -> google.protobuf.Timestamp
-	0,  // 36: leaflow.fleet.control.v1.Close.reason:type_name -> leaflow.fleet.control.v1.CloseReason
-	30, // 37: leaflow.fleet.control.v1.Close.retry_delay:type_name -> google.protobuf.Duration
-	14, // 38: leaflow.fleet.control.v1.AttachViewerRequest.authorization:type_name -> leaflow.fleet.control.v1.SignedAuthorization
-	14, // 39: leaflow.fleet.control.v1.UpdateViewerAuthorizationRequest.authorization:type_name -> leaflow.fleet.control.v1.SignedAuthorization
-	0,  // 40: leaflow.fleet.control.v1.DetachViewerRequest.reason:type_name -> leaflow.fleet.control.v1.CloseReason
-	19, // 41: leaflow.fleet.control.v1.ViewerService.AttachViewer:input_type -> leaflow.fleet.control.v1.AttachViewerRequest
-	21, // 42: leaflow.fleet.control.v1.ViewerService.UpdateViewerAuthorization:input_type -> leaflow.fleet.control.v1.UpdateViewerAuthorizationRequest
-	23, // 43: leaflow.fleet.control.v1.ViewerService.DetachViewer:input_type -> leaflow.fleet.control.v1.DetachViewerRequest
-	20, // 44: leaflow.fleet.control.v1.ViewerService.AttachViewer:output_type -> leaflow.fleet.control.v1.AttachViewerResponse
-	22, // 45: leaflow.fleet.control.v1.ViewerService.UpdateViewerAuthorization:output_type -> leaflow.fleet.control.v1.UpdateViewerAuthorizationResponse
-	24, // 46: leaflow.fleet.control.v1.ViewerService.DetachViewer:output_type -> leaflow.fleet.control.v1.DetachViewerResponse
-	44, // [44:47] is the sub-list for method output_type
-	41, // [41:44] is the sub-list for method input_type
-	41, // [41:41] is the sub-list for extension type_name
-	41, // [41:41] is the sub-list for extension extendee
-	0,  // [0:41] is the sub-list for field type_name
+	30, // 27: leaflow.fleet.control.v1.SessionDelegation.issued_at:type_name -> google.protobuf.Timestamp
+	30, // 28: leaflow.fleet.control.v1.SessionDelegation.expires_at:type_name -> google.protobuf.Timestamp
+	10, // 29: leaflow.fleet.control.v1.Welcome.service_keys:type_name -> leaflow.fleet.control.v1.ServiceKeys
+	29, // 30: leaflow.fleet.control.v1.Welcome.resume_grace:type_name -> google.protobuf.Duration
+	11, // 31: leaflow.fleet.control.v1.ServiceKeys.keys:type_name -> leaflow.fleet.control.v1.PublicKey
+	31, // 32: leaflow.fleet.control.v1.Authorization.policies:type_name -> google.protobuf.Any
+	30, // 33: leaflow.fleet.control.v1.Authorization.issued_at:type_name -> google.protobuf.Timestamp
+	30, // 34: leaflow.fleet.control.v1.Authorization.expires_at:type_name -> google.protobuf.Timestamp
+	0,  // 35: leaflow.fleet.control.v1.Close.reason:type_name -> leaflow.fleet.control.v1.CloseReason
+	29, // 36: leaflow.fleet.control.v1.Close.retry_delay:type_name -> google.protobuf.Duration
+	13, // 37: leaflow.fleet.control.v1.AttachParticipantRequest.authorization:type_name -> leaflow.fleet.control.v1.SignedAuthorization
+	13, // 38: leaflow.fleet.control.v1.UpdateParticipantAuthorizationRequest.authorization:type_name -> leaflow.fleet.control.v1.SignedAuthorization
+	0,  // 39: leaflow.fleet.control.v1.DetachParticipantRequest.reason:type_name -> leaflow.fleet.control.v1.CloseReason
+	18, // 40: leaflow.fleet.control.v1.ParticipantService.AttachParticipant:input_type -> leaflow.fleet.control.v1.AttachParticipantRequest
+	20, // 41: leaflow.fleet.control.v1.ParticipantService.UpdateParticipantAuthorization:input_type -> leaflow.fleet.control.v1.UpdateParticipantAuthorizationRequest
+	22, // 42: leaflow.fleet.control.v1.ParticipantService.DetachParticipant:input_type -> leaflow.fleet.control.v1.DetachParticipantRequest
+	19, // 43: leaflow.fleet.control.v1.ParticipantService.AttachParticipant:output_type -> leaflow.fleet.control.v1.AttachParticipantResponse
+	21, // 44: leaflow.fleet.control.v1.ParticipantService.UpdateParticipantAuthorization:output_type -> leaflow.fleet.control.v1.UpdateParticipantAuthorizationResponse
+	23, // 45: leaflow.fleet.control.v1.ParticipantService.DetachParticipant:output_type -> leaflow.fleet.control.v1.DetachParticipantResponse
+	43, // [43:46] is the sub-list for method output_type
+	40, // [40:43] is the sub-list for method input_type
+	40, // [40:40] is the sub-list for extension type_name
+	40, // [40:40] is the sub-list for extension extendee
+	0,  // [0:40] is the sub-list for field type_name
 }
 
 func init() { file_leaflow_fleet_control_v1_control_proto_init() }
@@ -2456,9 +2374,8 @@ func file_leaflow_fleet_control_v1_control_proto_init() {
 		(*ClientHello_Machine)(nil),
 		(*ClientHello_Enrollment)(nil),
 		(*ClientHello_Session)(nil),
-		(*ClientHello_Viewer)(nil),
 	}
-	file_leaflow_fleet_control_v1_control_proto_msgTypes[11].OneofWrappers = []any{
+	file_leaflow_fleet_control_v1_control_proto_msgTypes[10].OneofWrappers = []any{
 		(*PublicKey_Ed25519)(nil),
 	}
 	type x struct{}
@@ -2467,7 +2384,7 @@ func file_leaflow_fleet_control_v1_control_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_leaflow_fleet_control_v1_control_proto_rawDesc), len(file_leaflow_fleet_control_v1_control_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   24,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

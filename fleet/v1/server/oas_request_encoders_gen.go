@@ -24,6 +24,48 @@ func encodeApproveEnrollmentRequest(
 	return nil
 }
 
+func encodeCommitParticipantMigrationRequest(
+	req *MigrationStep,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateAttemptRequest(
+	req *CreateAttemptRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateAttemptCandidatesRequest(
+	req *CreateAttemptCandidatesRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCreateGroupRequest(
 	req *CreateGroupRequest,
 	r *http.Request,
@@ -66,6 +108,20 @@ func encodeCreateMachineRegistrationRequest(
 	return nil
 }
 
+func encodeCreateParticipantRequest(
+	req *CreateParticipantRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCreateSessionRequest(
 	req *CreateSessionRequest,
 	r *http.Request,
@@ -80,8 +136,8 @@ func encodeCreateSessionRequest(
 	return nil
 }
 
-func encodeCreateViewerRequest(
-	req *CreateViewerRequest,
+func encodePrepareParticipantMigrationRequest(
+	req *MigrationStep,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -94,8 +150,8 @@ func encodeCreateViewerRequest(
 	return nil
 }
 
-func encodeRenewViewerRequest(
-	req *RenewViewerRequest,
+func encodeRenewParticipantRequest(
+	req *RenewParticipantRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

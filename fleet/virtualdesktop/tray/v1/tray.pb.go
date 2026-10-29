@@ -139,7 +139,7 @@ type TrayIconStatus int32
 
 const (
 	TrayIconStatus_TRAY_ICON_STATUS_UNSPECIFIED TrayIconStatus = 0
-	// Idle; the viewer may move it to an overflow area ("Passive").
+	// Idle; the participant may move it to an overflow area ("Passive").
 	TrayIconStatus_TRAY_ICON_STATUS_PASSIVE TrayIconStatus = 1
 	// Active ("Active"); also XEmbed icons.
 	TrayIconStatus_TRAY_ICON_STATUS_ACTIVE TrayIconStatus = 2
@@ -196,7 +196,7 @@ type TrayIconClick int32
 const (
 	TrayIconClick_TRAY_ICON_CLICK_UNSPECIFIED TrayIconClick = 0
 	// The primary click (Activate), usually the left button. For an icon with
-	// item_is_menu and has_menu, the viewer shows the menu instead.
+	// item_is_menu and has_menu, the participant shows the menu instead.
 	TrayIconClick_TRAY_ICON_CLICK_PRIMARY TrayIconClick = 1
 	// The secondary click (SecondaryActivate), usually the middle button.
 	TrayIconClick_TRAY_ICON_CLICK_SECONDARY TrayIconClick = 2
@@ -477,7 +477,7 @@ type MenuEventType int32
 
 const (
 	MenuEventType_MENU_EVENT_TYPE_UNSPECIFIED MenuEventType = 0
-	// The item was activated ("clicked"). Viewers always send it.
+	// The item was activated ("clicked"). Participants always send it.
 	MenuEventType_MENU_EVENT_TYPE_CLICKED MenuEventType = 1
 	// Its submenu was opened ("opened"). Optional.
 	MenuEventType_MENU_EVENT_TYPE_OPENED MenuEventType = 2
@@ -532,8 +532,8 @@ func (MenuEventType) EnumDescriptor() ([]byte, []int) {
 	return file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_rawDescGZIP(), []int{8}
 }
 
-// A message from the session on the tray channel. The viewer sends nothing on
-// it.
+// A message from the session on the tray channel. The participant sends nothing
+// on it.
 type ServerMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The message.
@@ -627,8 +627,8 @@ type isServerMessage_Message interface {
 }
 
 type ServerMessage_TrayIcon struct {
-	// A tray icon as it is now, in full: new when the viewer does not know
-	// its tray_icon_id, otherwise replacing what the viewer had.
+	// A tray icon as it is now, in full: new when the participant does not know
+	// its tray_icon_id, otherwise replacing what the participant had.
 	TrayIcon *TrayIcon `protobuf:"bytes,1,opt,name=tray_icon,json=trayIcon,proto3,oneof"`
 }
 
@@ -638,7 +638,7 @@ type ServerMessage_TrayIconRemoved struct {
 }
 
 type ServerMessage_MenuUpdated struct {
-	// A menu changed while a viewer may be showing it.
+	// A menu changed while a participant may be showing it.
 	MenuUpdated *TrayMenuUpdated `protobuf:"bytes,3,opt,name=menu_updated,json=menuUpdated,proto3,oneof"`
 }
 
@@ -947,7 +947,7 @@ func (x *TrayIconRemoved) GetTrayIconId() uint64 {
 }
 
 // A menu changed (dbusmenu LayoutUpdated and ItemsPropertiesUpdated). A
-// viewer showing the menu or the submenu reads it again with GetTrayMenu.
+// participant showing the menu or the submenu reads it again with GetTrayMenu.
 type TrayMenuUpdated struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The icon whose menu changed.
@@ -1055,7 +1055,7 @@ type ClickTrayIconRequest struct {
 	TrayIconId uint64 `protobuf:"varint,1,opt,name=tray_icon_id,json=trayIconId,proto3" json:"tray_icon_id,omitempty"`
 	// The click.
 	Click TrayIconClick `protobuf:"varint,2,opt,name=click,proto3,enum=leaflow.fleet.virtualdesktop.tray.v1.TrayIconClick" json:"click,omitempty"`
-	// Where the viewer shows the icon, in canvas coordinates, so that the
+	// Where the participant shows the icon, in canvas coordinates, so that the
 	// application places what it opens next to it. Unset: the session picks a
 	// place at the top right of the canvas.
 	IconArea      *v1.Rectangle `protobuf:"bytes,3,opt,name=icon_area,json=iconArea,proto3" json:"icon_area,omitempty"`

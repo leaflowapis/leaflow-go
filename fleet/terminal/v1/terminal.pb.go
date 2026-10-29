@@ -23,7 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// A message from the viewer on the terminal channel.
+// A message from the participant on the terminal channel.
 type ClientMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The message.
@@ -132,8 +132,8 @@ type ClientMessage_Input struct {
 }
 
 type ClientMessage_Resize struct {
-	// The viewer's terminal changed size. The latest size of any viewer
-	// applies, and the shell gets SIGWINCH.
+	// The participant's terminal changed size. The latest size of any
+	// participant applies, and the shell gets SIGWINCH.
 	Resize *TerminalSize `protobuf:"bytes,4,opt,name=resize,proto3,oneof"`
 }
 
@@ -259,7 +259,7 @@ type ServerMessage_Output struct {
 }
 
 type ServerMessage_Resize struct {
-	// Another viewer changed the size.
+	// Another participant changed the size.
 	Resize *TerminalSize `protobuf:"bytes,3,opt,name=resize,proto3,oneof"`
 }
 
@@ -357,7 +357,7 @@ type TerminalAttach struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The terminal.
 	TerminalId uint64 `protobuf:"varint,1,opt,name=terminal_id,json=terminalId,proto3" json:"terminal_id,omitempty"`
-	// The output offset the viewer has applied up to. 0: nothing yet.
+	// The output offset the participant has applied up to. 0: nothing yet.
 	Offset        uint64 `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -416,7 +416,7 @@ type TerminalAttached struct {
 	// The offset of the first output that follows: the requested one when it
 	// is still kept, otherwise the current end, and nothing is replayed.
 	Offset uint64 `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
-	// The requested offset is no longer kept. The viewer resets its terminal
+	// The requested offset is no longer kept. The participant resets its terminal
 	// (ECMA-48 RIS) before applying what follows, and the session makes the
 	// program redraw by changing the size and back (SIGWINCH).
 	Reset_ bool `protobuf:"varint,3,opt,name=reset,proto3" json:"reset,omitempty"`
@@ -755,8 +755,8 @@ type Terminal struct {
 	Size *TerminalSize `protobuf:"bytes,2,opt,name=size,proto3" json:"size,omitempty"`
 	// When it started.
 	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	// The viewers showing it now, across all connections.
-	ViewerCount uint32 `protobuf:"varint,4,opt,name=viewer_count,json=viewerCount,proto3" json:"viewer_count,omitempty"`
+	// The participants showing it now, across all connections.
+	ParticipantCount uint32 `protobuf:"varint,4,opt,name=participant_count,json=participantCount,proto3" json:"participant_count,omitempty"`
 	// The offset its output has reached.
 	Offset uint64 `protobuf:"varint,5,opt,name=offset,proto3" json:"offset,omitempty"`
 	// How it ended. Unset while it runs.
@@ -816,9 +816,9 @@ func (x *Terminal) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *Terminal) GetViewerCount() uint32 {
+func (x *Terminal) GetParticipantCount() uint32 {
 	if x != nil {
-		return x.ViewerCount
+		return x.ParticipantCount
 	}
 	return 0
 }
@@ -1003,7 +1003,7 @@ func (*CloseTerminalResponse) Descriptor() ([]byte, []int) {
 	return file_leaflow_fleet_terminal_v1_terminal_proto_rawDescGZIP(), []int{13}
 }
 
-// Allows a viewer to use terminals. Carried in the viewer's signed
+// Allows a participant to use terminals. Carried in the participant's signed
 // authorization.
 type TerminalPolicy struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1088,14 +1088,14 @@ const file_leaflow_fleet_terminal_v1_terminal_proto_rawDesc = "" +
 	"signalName\x12\x1f\n" +
 	"\vcore_dumped\x18\x03 \x01(\bR\n" +
 	"coreDumpedB\b\n" +
-	"\x06status\"\x9b\x02\n" +
+	"\x06status\"\xa5\x02\n" +
 	"\bTerminal\x12\x1f\n" +
 	"\vterminal_id\x18\x01 \x01(\x04R\n" +
 	"terminalId\x12;\n" +
 	"\x04size\x18\x02 \x01(\v2'.leaflow.fleet.terminal.v1.TerminalSizeR\x04size\x129\n" +
 	"\n" +
-	"created_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12!\n" +
-	"\fviewer_count\x18\x04 \x01(\rR\vviewerCount\x12\x16\n" +
+	"created_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12+\n" +
+	"\x11participant_count\x18\x04 \x01(\rR\x10participantCount\x12\x16\n" +
 	"\x06offset\x18\x05 \x01(\x04R\x06offset\x12;\n" +
 	"\x04exit\x18\x06 \x01(\v2'.leaflow.fleet.terminal.v1.TerminalExitR\x04exit\"\x16\n" +
 	"\x14ListTerminalsRequest\"Z\n" +

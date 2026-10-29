@@ -242,9 +242,9 @@ func (*LogsServerMessage_Batch) isLogsServerMessage_Message() {}
 // them are dropped and counted.
 type LogSubscriptionAccepted struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The most records queued for the viewer.
+	// The most records queued for the participant.
 	MaxQueuedRecords uint32 `protobuf:"varint,1,opt,name=max_queued_records,json=maxQueuedRecords,proto3" json:"max_queued_records,omitempty"`
-	// The most bytes queued for the viewer.
+	// The most bytes queued for the participant.
 	MaxQueuedBytes uint32 `protobuf:"varint,2,opt,name=max_queued_bytes,json=maxQueuedBytes,proto3" json:"max_queued_bytes,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -299,7 +299,7 @@ type LogRecordBatch struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// At most 128.
 	Records []*LogRecord `protobuf:"bytes,1,rep,name=records,proto3" json:"records,omitempty"`
-	// Records dropped since the previous batch because the viewer read too
+	// Records dropped since the previous batch because the participant read too
 	// slowly.
 	DroppedCount  uint64 `protobuf:"varint,2,opt,name=dropped_count,json=droppedCount,proto3" json:"dropped_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -579,8 +579,8 @@ func (*LogValue_Boolean) isLogValue_Value() {}
 
 func (*LogValue_Identifier) isLogValue_Value() {}
 
-// Allows a viewer to read the diagnostic records of this session only.
-// Carried in the viewer's signed authorization.
+// Allows a participant to read the diagnostic records of this session only.
+// Carried in the participant's signed authorization.
 type LogsPolicy struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields

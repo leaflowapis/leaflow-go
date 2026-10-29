@@ -86,7 +86,7 @@ const (
 	NotificationCloseReason_NOTIFICATION_CLOSE_REASON_UNSPECIFIED NotificationCloseReason = 0
 	// It expired (1).
 	NotificationCloseReason_NOTIFICATION_CLOSE_REASON_EXPIRED NotificationCloseReason = 1
-	// A viewer dismissed it (2).
+	// A participant dismissed it (2).
 	NotificationCloseReason_NOTIFICATION_CLOSE_REASON_DISMISSED NotificationCloseReason = 2
 	// Its application closed it (3).
 	NotificationCloseReason_NOTIFICATION_CLOSE_REASON_CLOSED_BY_APPLICATION NotificationCloseReason = 3
@@ -139,7 +139,7 @@ func (NotificationCloseReason) EnumDescriptor() ([]byte, []int) {
 	return file_leaflow_fleet_virtualdesktop_notification_v1_notification_proto_rawDescGZIP(), []int{1}
 }
 
-// A message from the session on the notification channel. The viewer sends
+// A message from the session on the notification channel. The participant sends
 // nothing on it.
 type ServerMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -224,8 +224,8 @@ type isServerMessage_Message interface {
 }
 
 type ServerMessage_Notification struct {
-	// A notification as it is now, in full: new when the viewer does not know
-	// its notification_id, otherwise replacing it in place.
+	// A notification as it is now, in full: new when the participant does not
+	// know its notification_id, otherwise replacing it in place.
 	Notification *Notification `protobuf:"bytes,1,opt,name=notification,proto3,oneof"`
 }
 

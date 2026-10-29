@@ -21,14 +21,14 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Why a viewer connection ends.
+// Why a participant ends.
 type CloseReason int32
 
 const (
 	CloseReason_CLOSE_REASON_UNSPECIFIED CloseReason = 0
 	// An ordinary close. Either side.
 	CloseReason_CLOSE_REASON_DONE CloseReason = 1
-	// The viewer goes away, such as a closed tab. Viewer only.
+	// The participant goes away, such as a closed tab. Participant only.
 	CloseReason_CLOSE_REASON_CLIENT_EXIT CloseReason = 2
 	// The session ends. Session only, just before it ends.
 	CloseReason_CLOSE_REASON_SESSION_EXIT CloseReason = 3
@@ -39,7 +39,8 @@ const (
 	CloseReason_CLOSE_REASON_HELLO_TIMEOUT CloseReason = 5
 	// Pings went unanswered. Either side.
 	CloseReason_CLOSE_REASON_PING_TIMEOUT CloseReason = 6
-	// The viewer's authorization did not verify or has expired. Session only.
+	// The participant's authorization did not verify or has expired. Session
+	// only.
 	CloseReason_CLOSE_REASON_PERMISSION_DENIED CloseReason = 7
 	// A malformed or unexpected message, or one that is too large. Either side.
 	CloseReason_CLOSE_REASON_PROTOCOL_ERROR CloseReason = 8
@@ -102,7 +103,7 @@ func (CloseReason) EnumDescriptor() ([]byte, []int) {
 	return file_leaflow_fleet_session_v1_session_proto_rawDescGZIP(), []int{0}
 }
 
-// A message from the viewer.
+// A message from the participant.
 type ClientMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The message.
@@ -196,7 +197,7 @@ type isClientMessage_Message interface {
 }
 
 type ClientMessage_ClientHello struct {
-	// The first message of the viewer.
+	// The first message of the participant.
 	ClientHello *ClientHello `protobuf:"bytes,1,opt,name=client_hello,json=clientHello,proto3,oneof"`
 }
 
@@ -211,7 +212,7 @@ type ClientMessage_Pong struct {
 }
 
 type ClientMessage_Close struct {
-	// The viewer leaves.
+	// The participant leaves.
 	Close *Close `protobuf:"bytes,4,opt,name=close,proto3,oneof"`
 }
 
@@ -233,7 +234,7 @@ type ServerMessage struct {
 	//	*ServerMessage_ServerHello
 	//	*ServerMessage_Ping
 	//	*ServerMessage_Pong
-	//	*ServerMessage_ViewerList
+	//	*ServerMessage_ParticipantList
 	//	*ServerMessage_SnapshotEnd
 	//	*ServerMessage_Close
 	Message       isServerMessage_Message `protobuf_oneof:"message"`
@@ -305,10 +306,10 @@ func (x *ServerMessage) GetPong() *Pong {
 	return nil
 }
 
-func (x *ServerMessage) GetViewerList() *ViewerList {
+func (x *ServerMessage) GetParticipantList() *ParticipantList {
 	if x != nil {
-		if x, ok := x.Message.(*ServerMessage_ViewerList); ok {
-			return x.ViewerList
+		if x, ok := x.Message.(*ServerMessage_ParticipantList); ok {
+			return x.ParticipantList
 		}
 	}
 	return nil
@@ -347,13 +348,13 @@ type ServerMessage_Ping struct {
 }
 
 type ServerMessage_Pong struct {
-	// Answers a Ping of the viewer.
+	// Answers a Ping of the participant.
 	Pong *Pong `protobuf:"bytes,3,opt,name=pong,proto3,oneof"`
 }
 
-type ServerMessage_ViewerList struct {
-	// The viewers of the session, in full.
-	ViewerList *ViewerList `protobuf:"bytes,4,opt,name=viewer_list,json=viewerList,proto3,oneof"`
+type ServerMessage_ParticipantList struct {
+	// The participants of the session, in full.
+	ParticipantList *ParticipantList `protobuf:"bytes,4,opt,name=participant_list,json=participantList,proto3,oneof"`
 }
 
 type ServerMessage_SnapshotEnd struct {
@@ -372,25 +373,25 @@ func (*ServerMessage_Ping) isServerMessage_Message() {}
 
 func (*ServerMessage_Pong) isServerMessage_Message() {}
 
-func (*ServerMessage_ViewerList) isServerMessage_Message() {}
+func (*ServerMessage_ParticipantList) isServerMessage_Message() {}
 
 func (*ServerMessage_SnapshotEnd) isServerMessage_Message() {}
 
 func (*ServerMessage_Close) isServerMessage_Message() {}
 
-// The viewer's side of the handshake.
+// The participant's side of the handshake.
 type ClientHello struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The channel types the viewer can open or accept, such as
+	// The channel types the participant can open or accept, such as
 	// "leaflow.fleet.terminal.v1" or
 	// "leaflow.fleet.filetransfer.v1.FileSystemService". A channel type
 	// missing on either side is not used on this connection.
 	ChannelTypes []string `protobuf:"bytes,1,rep,name=channel_types,json=channelTypes,proto3" json:"channel_types,omitempty"`
-	// The viewer's language as a BCP 47 tag, such as "zh-CN". The session uses
-	// it for the names of applications and menus it sends from now on. Empty:
-	// the session's own language.
+	// The participant's language as a BCP 47 tag, such as "zh-CN". The session
+	// uses it for the names of applications and menus it sends from now on.
+	// Empty: the session's own language.
 	LanguageCode string `protobuf:"bytes,2,opt,name=language_code,json=languageCode,proto3" json:"language_code,omitempty"`
-	// The viewer software, such as "leaflow-desktop/1.2.0" or the browser's
+	// The participant software, such as "leaflow-desktop/1.2.0" or the browser's
 	// User-Agent (RFC 9110 §10.1.5). For display and diagnostics only.
 	UserAgent     string `protobuf:"bytes,3,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -451,14 +452,14 @@ func (x *ClientHello) GetUserAgent() string {
 // The session's side of the handshake.
 type ServerHello struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The channel types the session offers this viewer: those of
-	// ClientHello.channel_types the session supports and the viewer's
+	// The channel types the session offers this participant: those of
+	// ClientHello.channel_types the session supports and the participant's
 	// authorization allows.
 	ChannelTypes []string `protobuf:"bytes,1,rep,name=channel_types,json=channelTypes,proto3" json:"channel_types,omitempty"`
-	// The viewer may only watch. The session refuses or ignores everything
+	// The participant may only watch. The session refuses or ignores everything
 	// that would change it.
 	ReadOnly bool `protobuf:"varint,2,opt,name=read_only,json=readOnly,proto3" json:"read_only,omitempty"`
-	// This viewer's connection, as it appears in ViewerList.
+	// This participant's connection, as it appears in ParticipantList.
 	ConnectionId  uint64 `protobuf:"varint,3,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -515,16 +516,16 @@ func (x *ServerHello) GetConnectionId() uint64 {
 	return 0
 }
 
-// One viewer attached to the session.
-type Viewer struct {
+// One participant attached to the session.
+type Participant struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The viewer's connection.
+	// The participant's connection.
 	ConnectionId uint64 `protobuf:"varint,1,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
-	// The platform user the viewer acts for.
+	// The platform user the participant acts for.
 	UserId string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	// The user's name, plain text.
 	DisplayName string `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	// The viewer may only watch.
+	// The participant may only watch.
 	ReadOnly bool `protobuf:"varint,4,opt,name=read_only,json=readOnly,proto3" json:"read_only,omitempty"`
 	// The label the client gave itself, such as "console" or "assistant".
 	// Neither unique nor verified: it lets people tell connections apart.
@@ -533,20 +534,20 @@ type Viewer struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Viewer) Reset() {
-	*x = Viewer{}
+func (x *Participant) Reset() {
+	*x = Participant{}
 	mi := &file_leaflow_fleet_session_v1_session_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Viewer) String() string {
+func (x *Participant) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Viewer) ProtoMessage() {}
+func (*Participant) ProtoMessage() {}
 
-func (x *Viewer) ProtoReflect() protoreflect.Message {
+func (x *Participant) ProtoReflect() protoreflect.Message {
 	mi := &file_leaflow_fleet_session_v1_session_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -558,74 +559,74 @@ func (x *Viewer) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Viewer.ProtoReflect.Descriptor instead.
-func (*Viewer) Descriptor() ([]byte, []int) {
+// Deprecated: Use Participant.ProtoReflect.Descriptor instead.
+func (*Participant) Descriptor() ([]byte, []int) {
 	return file_leaflow_fleet_session_v1_session_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *Viewer) GetConnectionId() uint64 {
+func (x *Participant) GetConnectionId() uint64 {
 	if x != nil {
 		return x.ConnectionId
 	}
 	return 0
 }
 
-func (x *Viewer) GetUserId() string {
+func (x *Participant) GetUserId() string {
 	if x != nil {
 		return x.UserId
 	}
 	return ""
 }
 
-func (x *Viewer) GetDisplayName() string {
+func (x *Participant) GetDisplayName() string {
 	if x != nil {
 		return x.DisplayName
 	}
 	return ""
 }
 
-func (x *Viewer) GetReadOnly() bool {
+func (x *Participant) GetReadOnly() bool {
 	if x != nil {
 		return x.ReadOnly
 	}
 	return false
 }
 
-func (x *Viewer) GetClientId() string {
+func (x *Participant) GetClientId() string {
 	if x != nil {
 		return x.ClientId
 	}
 	return ""
 }
 
-// Every viewer attached to the session, this one included. Sent in the
-// snapshot and again whenever a viewer attaches or leaves or the driver
+// Every participant attached to the session, this one included. Sent in the
+// snapshot and again whenever a participant attaches or leaves or the driver
 // changes.
-type ViewerList struct {
+type ParticipantList struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The viewers.
-	Viewers []*Viewer `protobuf:"bytes,1,rep,name=viewers,proto3" json:"viewers,omitempty"`
-	// The viewer whose settings the session follows, such as the size of its
-	// desktop. 0 before any viewer has driven.
+	// The participants.
+	Participants []*Participant `protobuf:"bytes,1,rep,name=participants,proto3" json:"participants,omitempty"`
+	// The participant whose settings the session follows, such as the size of its
+	// desktop. 0 before any participant has driven.
 	DriverConnectionId uint64 `protobuf:"varint,2,opt,name=driver_connection_id,json=driverConnectionId,proto3" json:"driver_connection_id,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
-func (x *ViewerList) Reset() {
-	*x = ViewerList{}
+func (x *ParticipantList) Reset() {
+	*x = ParticipantList{}
 	mi := &file_leaflow_fleet_session_v1_session_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ViewerList) String() string {
+func (x *ParticipantList) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ViewerList) ProtoMessage() {}
+func (*ParticipantList) ProtoMessage() {}
 
-func (x *ViewerList) ProtoReflect() protoreflect.Message {
+func (x *ParticipantList) ProtoReflect() protoreflect.Message {
 	mi := &file_leaflow_fleet_session_v1_session_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -637,26 +638,26 @@ func (x *ViewerList) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ViewerList.ProtoReflect.Descriptor instead.
-func (*ViewerList) Descriptor() ([]byte, []int) {
+// Deprecated: Use ParticipantList.ProtoReflect.Descriptor instead.
+func (*ParticipantList) Descriptor() ([]byte, []int) {
 	return file_leaflow_fleet_session_v1_session_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *ViewerList) GetViewers() []*Viewer {
+func (x *ParticipantList) GetParticipants() []*Participant {
 	if x != nil {
-		return x.Viewers
+		return x.Participants
 	}
 	return nil
 }
 
-func (x *ViewerList) GetDriverConnectionId() uint64 {
+func (x *ParticipantList) GetDriverConnectionId() uint64 {
 	if x != nil {
 		return x.DriverConnectionId
 	}
 	return 0
 }
 
-// Ends the snapshot of this channel: the ViewerList has been sent.
+// Ends the snapshot of this channel: the ParticipantList has been sent.
 type SnapshotEnd struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -852,13 +853,12 @@ const file_leaflow_fleet_session_v1_session_proto_rawDesc = "" +
 	"\x04ping\x18\x02 \x01(\v2\x1e.leaflow.fleet.session.v1.PingH\x00R\x04ping\x124\n" +
 	"\x04pong\x18\x03 \x01(\v2\x1e.leaflow.fleet.session.v1.PongH\x00R\x04pong\x127\n" +
 	"\x05close\x18\x04 \x01(\v2\x1f.leaflow.fleet.session.v1.CloseH\x00R\x05closeB\t\n" +
-	"\amessage\"\xa0\x03\n" +
+	"\amessage\"\xaf\x03\n" +
 	"\rServerMessage\x12J\n" +
 	"\fserver_hello\x18\x01 \x01(\v2%.leaflow.fleet.session.v1.ServerHelloH\x00R\vserverHello\x124\n" +
 	"\x04ping\x18\x02 \x01(\v2\x1e.leaflow.fleet.session.v1.PingH\x00R\x04ping\x124\n" +
-	"\x04pong\x18\x03 \x01(\v2\x1e.leaflow.fleet.session.v1.PongH\x00R\x04pong\x12G\n" +
-	"\vviewer_list\x18\x04 \x01(\v2$.leaflow.fleet.session.v1.ViewerListH\x00R\n" +
-	"viewerList\x12J\n" +
+	"\x04pong\x18\x03 \x01(\v2\x1e.leaflow.fleet.session.v1.PongH\x00R\x04pong\x12V\n" +
+	"\x10participant_list\x18\x04 \x01(\v2).leaflow.fleet.session.v1.ParticipantListH\x00R\x0fparticipantList\x12J\n" +
 	"\fsnapshot_end\x18\x05 \x01(\v2%.leaflow.fleet.session.v1.SnapshotEndH\x00R\vsnapshotEnd\x127\n" +
 	"\x05close\x18\x06 \x01(\v2\x1f.leaflow.fleet.session.v1.CloseH\x00R\x05closeB\t\n" +
 	"\amessage\"v\n" +
@@ -870,16 +870,15 @@ const file_leaflow_fleet_session_v1_session_proto_rawDesc = "" +
 	"\vServerHello\x12#\n" +
 	"\rchannel_types\x18\x01 \x03(\tR\fchannelTypes\x12\x1b\n" +
 	"\tread_only\x18\x02 \x01(\bR\breadOnly\x12#\n" +
-	"\rconnection_id\x18\x03 \x01(\x04R\fconnectionId\"\xa3\x01\n" +
-	"\x06Viewer\x12#\n" +
+	"\rconnection_id\x18\x03 \x01(\x04R\fconnectionId\"\xa8\x01\n" +
+	"\vParticipant\x12#\n" +
 	"\rconnection_id\x18\x01 \x01(\x04R\fconnectionId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12!\n" +
 	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x12\x1b\n" +
 	"\tread_only\x18\x04 \x01(\bR\breadOnly\x12\x1b\n" +
-	"\tclient_id\x18\x05 \x01(\tR\bclientId\"z\n" +
-	"\n" +
-	"ViewerList\x12:\n" +
-	"\aviewers\x18\x01 \x03(\v2 .leaflow.fleet.session.v1.ViewerR\aviewers\x120\n" +
+	"\tclient_id\x18\x05 \x01(\tR\bclientId\"\x8e\x01\n" +
+	"\x0fParticipantList\x12I\n" +
+	"\fparticipants\x18\x01 \x03(\v2%.leaflow.fleet.session.v1.ParticipantR\fparticipants\x120\n" +
 	"\x14driver_connection_id\x18\x02 \x01(\x04R\x12driverConnectionId\"\r\n" +
 	"\vSnapshotEnd\")\n" +
 	"\x04Ping\x12!\n" +
@@ -916,17 +915,17 @@ func file_leaflow_fleet_session_v1_session_proto_rawDescGZIP() []byte {
 var file_leaflow_fleet_session_v1_session_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_leaflow_fleet_session_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_leaflow_fleet_session_v1_session_proto_goTypes = []any{
-	(CloseReason)(0),      // 0: leaflow.fleet.session.v1.CloseReason
-	(*ClientMessage)(nil), // 1: leaflow.fleet.session.v1.ClientMessage
-	(*ServerMessage)(nil), // 2: leaflow.fleet.session.v1.ServerMessage
-	(*ClientHello)(nil),   // 3: leaflow.fleet.session.v1.ClientHello
-	(*ServerHello)(nil),   // 4: leaflow.fleet.session.v1.ServerHello
-	(*Viewer)(nil),        // 5: leaflow.fleet.session.v1.Viewer
-	(*ViewerList)(nil),    // 6: leaflow.fleet.session.v1.ViewerList
-	(*SnapshotEnd)(nil),   // 7: leaflow.fleet.session.v1.SnapshotEnd
-	(*Ping)(nil),          // 8: leaflow.fleet.session.v1.Ping
-	(*Pong)(nil),          // 9: leaflow.fleet.session.v1.Pong
-	(*Close)(nil),         // 10: leaflow.fleet.session.v1.Close
+	(CloseReason)(0),        // 0: leaflow.fleet.session.v1.CloseReason
+	(*ClientMessage)(nil),   // 1: leaflow.fleet.session.v1.ClientMessage
+	(*ServerMessage)(nil),   // 2: leaflow.fleet.session.v1.ServerMessage
+	(*ClientHello)(nil),     // 3: leaflow.fleet.session.v1.ClientHello
+	(*ServerHello)(nil),     // 4: leaflow.fleet.session.v1.ServerHello
+	(*Participant)(nil),     // 5: leaflow.fleet.session.v1.Participant
+	(*ParticipantList)(nil), // 6: leaflow.fleet.session.v1.ParticipantList
+	(*SnapshotEnd)(nil),     // 7: leaflow.fleet.session.v1.SnapshotEnd
+	(*Ping)(nil),            // 8: leaflow.fleet.session.v1.Ping
+	(*Pong)(nil),            // 9: leaflow.fleet.session.v1.Pong
+	(*Close)(nil),           // 10: leaflow.fleet.session.v1.Close
 }
 var file_leaflow_fleet_session_v1_session_proto_depIdxs = []int32{
 	3,  // 0: leaflow.fleet.session.v1.ClientMessage.client_hello:type_name -> leaflow.fleet.session.v1.ClientHello
@@ -936,10 +935,10 @@ var file_leaflow_fleet_session_v1_session_proto_depIdxs = []int32{
 	4,  // 4: leaflow.fleet.session.v1.ServerMessage.server_hello:type_name -> leaflow.fleet.session.v1.ServerHello
 	8,  // 5: leaflow.fleet.session.v1.ServerMessage.ping:type_name -> leaflow.fleet.session.v1.Ping
 	9,  // 6: leaflow.fleet.session.v1.ServerMessage.pong:type_name -> leaflow.fleet.session.v1.Pong
-	6,  // 7: leaflow.fleet.session.v1.ServerMessage.viewer_list:type_name -> leaflow.fleet.session.v1.ViewerList
+	6,  // 7: leaflow.fleet.session.v1.ServerMessage.participant_list:type_name -> leaflow.fleet.session.v1.ParticipantList
 	7,  // 8: leaflow.fleet.session.v1.ServerMessage.snapshot_end:type_name -> leaflow.fleet.session.v1.SnapshotEnd
 	10, // 9: leaflow.fleet.session.v1.ServerMessage.close:type_name -> leaflow.fleet.session.v1.Close
-	5,  // 10: leaflow.fleet.session.v1.ViewerList.viewers:type_name -> leaflow.fleet.session.v1.Viewer
+	5,  // 10: leaflow.fleet.session.v1.ParticipantList.participants:type_name -> leaflow.fleet.session.v1.Participant
 	0,  // 11: leaflow.fleet.session.v1.Close.reason:type_name -> leaflow.fleet.session.v1.CloseReason
 	12, // [12:12] is the sub-list for method output_type
 	12, // [12:12] is the sub-list for method input_type
@@ -963,7 +962,7 @@ func file_leaflow_fleet_session_v1_session_proto_init() {
 		(*ServerMessage_ServerHello)(nil),
 		(*ServerMessage_Ping)(nil),
 		(*ServerMessage_Pong)(nil),
-		(*ServerMessage_ViewerList)(nil),
+		(*ServerMessage_ParticipantList)(nil),
 		(*ServerMessage_SnapshotEnd)(nil),
 		(*ServerMessage_Close)(nil),
 	}

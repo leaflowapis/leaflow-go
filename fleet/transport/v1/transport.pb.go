@@ -28,8 +28,8 @@ type ChannelOpenFailureReason int32
 
 const (
 	ChannelOpenFailureReason_CHANNEL_OPEN_FAILURE_REASON_UNSPECIFIED ChannelOpenFailureReason = 0
-	// The viewer's authorization or the session's policy does not allow it, or
-	// the channel type allows one channel and one is open.
+	// The participant's authorization or the session's policy does not allow it,
+	// or the channel type allows one channel and one is open.
 	ChannelOpenFailureReason_CHANNEL_OPEN_FAILURE_REASON_ADMINISTRATIVELY_PROHIBITED ChannelOpenFailureReason = 1
 	// What the channel leads to cannot be reached, such as a TCP endpoint.
 	ChannelOpenFailureReason_CHANNEL_OPEN_FAILURE_REASON_CONNECT_FAILED ChannelOpenFailureReason = 2
@@ -402,29 +402,31 @@ type Hello struct {
 	AttemptId []byte `protobuf:"bytes,1,opt,name=attempt_id,json=attemptId,proto3" json:"attempt_id,omitempty"`
 	// The logical connection.
 	ConnectionId uint64 `protobuf:"varint,2,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
-	// The epoch of this path, chosen by the viewer: 1 for the first attempt of
-	// the connection, then one more than the committed epoch, since the
-	// session may have taken an earlier attempt that the viewer did not. The
-	// session accepts one more than its committed epoch, or 1 while no path
-	// has carried the connection, and greets with the same epoch.
+	// The epoch of this path, chosen by the participant: 1 for the first attempt
+	// of the connection, then one more than the committed epoch, since the
+	// session may have taken an earlier attempt that the participant did not. The
+	// session accepts one more than its committed epoch, or 1 while no path has
+	// carried the connection, and greets with the same epoch.
 	Epoch uint64 `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty"`
 	// 32 unpredictable bytes.
 	Challenge []byte `protobuf:"bytes,4,opt,name=challenge,proto3" json:"challenge,omitempty"`
 	// The peer's challenge. Empty in the first Hello.
 	Response []byte `protobuf:"bytes,5,opt,name=response,proto3" json:"response,omitempty"`
-	// SHA-256 of the PeerAuthorization bytes signed for this attempt.
+	// SHA-256 of the bytes of the first PeerAuthorization the service signed
+	// for this attempt (SignedPeerAuthorization.authorization). Renewed ones do
+	// not change it.
 	AuthorizationSha256 []byte `protobuf:"bytes,6,opt,name=authorization_sha256,json=authorizationSha256,proto3" json:"authorization_sha256,omitempty"`
 	// The Ed25519 public key (RFC 8032) that vouches for the sender's DTLS
-	// certificate: the machine key of the Agent, the viewer key of the viewer.
-	// The viewer refuses an Agent key other than the one it pinned for the
-	// machine; the session refuses a viewer key other than the one in the
-	// viewer's authorization.
+	// certificate: the machine key for the Agent, the participant's own key for
+	// the participant. The participant refuses an Agent key other than the one
+	// it pinned for the machine; the session refuses a participant key other
+	// than the one in the participant's authorization.
 	PublicKey []byte `protobuf:"bytes,7,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
 	// Ed25519 signature by public_key over the UTF-8 string
 	// "leaflow.fleet.transport.v1.Hello", one zero byte, attempt_id,
-	// connection_id as 8 big-endian bytes, one byte for the role of the sender
-	// (1 viewer, 2 Agent) and the SHA-256 fingerprint of the sender's own DTLS
-	// certificate (RFC 8122).
+	// connection_id as 8 big-endian bytes, one byte for the role of the
+	// sender (1 participant, 2 Agent) and the SHA-256 fingerprint of the
+	// sender's own DTLS certificate (RFC 8122).
 	DtlsAttestation []byte `protobuf:"bytes,8,opt,name=dtls_attestation,json=dtlsAttestation,proto3" json:"dtls_attestation,omitempty"`
 	// The largest message, in bytes, the sender accepts in the byte stream of
 	// one channel.
@@ -1206,11 +1208,15 @@ func (x *RetiredRange) GetLastChannelId() uint64 {
 }
 
 // A two-phase migration of a connection to a new path; RFC 9000 §9 calls the
-// same move connection migration. It travels over the control connections,
-// which stay up while paths fail. The viewer coordinates: it sends prepare,
-// the session answers prepared, the viewer sends commit and the session
-// answers committed. Both ends stop admitting envelopes of the old epoch at
-// prepare. A repeated step is answered again and never applied twice.
+// same move connection migration. It does not depend on the failed path: the
+// participant sends its steps through the Fleet API and receives the
+// session's in the answers, and the session sends its own on its control
+// connection. The participant coordinates: it sends prepare, the session
+// answers prepared, the participant sends commit and the session answers
+// committed. Both ends stop admitting envelopes of the old epoch at prepare. A
+// repeated step is answered again and never applied twice. Only the
+// participant starts a migration: when the session's side of the path fails,
+// the participant's side fails too.
 type Migration struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The logical connection.
@@ -1223,7 +1229,6 @@ type Migration struct {
 	//	*Migration_Prepared
 	//	*Migration_Commit
 	//	*Migration_Committed
-	//	*Migration_Request
 	Step          isMigration_Step `protobuf_oneof:"step"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1309,21 +1314,12 @@ func (x *Migration) GetCommitted() *Checkpoint {
 	return nil
 }
 
-func (x *Migration) GetRequest() bool {
-	if x != nil {
-		if x, ok := x.Step.(*Migration_Request); ok {
-			return x.Request
-		}
-	}
-	return false
-}
-
 type isMigration_Step interface {
 	isMigration_Step()
 }
 
 type Migration_Prepare struct {
-	// The viewer's checkpoint for the next epoch.
+	// The participant's checkpoint for the next epoch.
 	Prepare *Checkpoint `protobuf:"bytes,2,opt,name=prepare,proto3,oneof"`
 }
 
@@ -1333,19 +1329,13 @@ type Migration_Prepared struct {
 }
 
 type Migration_Commit struct {
-	// The viewer commits the epoch.
+	// The participant commits the epoch.
 	Commit *Checkpoint `protobuf:"bytes,4,opt,name=commit,proto3,oneof"`
 }
 
 type Migration_Committed struct {
 	// The session committed it.
 	Committed *Checkpoint `protobuf:"bytes,5,opt,name=committed,proto3,oneof"`
-}
-
-type Migration_Request struct {
-	// The session asks the viewer to migrate, such as after its side of the
-	// path failed. Only the viewer starts a migration.
-	Request bool `protobuf:"varint,6,opt,name=request,proto3,oneof"`
 }
 
 func (*Migration_Prepare) isMigration_Step() {}
@@ -1355,8 +1345,6 @@ func (*Migration_Prepared) isMigration_Step() {}
 func (*Migration_Commit) isMigration_Step() {}
 
 func (*Migration_Committed) isMigration_Step() {}
-
-func (*Migration_Request) isMigration_Step() {}
 
 // Why the sender closes the PeerConnection.
 type Close struct {
@@ -1405,19 +1393,24 @@ func (x *Close) GetStatus() *status.Status {
 }
 
 // Signaling for one PeerConnection attempt (RFC 9429 JSEP; RFC 8838 trickle
-// ICE). It travels over the control connections of the viewer and the
-// session; the service derives the sender from the connection it came on and
-// passes it to the other end of the same connection_id.
+// ICE) between the session process and the service, which stands for the
+// participant: the participant sends its offer, its candidates and the end of
+// an attempt through the Fleet API, and receives the session's answer,
+// candidates and the PeerAuthorization in the answer of its request. The
+// service passes on the session's candidates that arrive until the session
+// sends end_of_candidates, and at most 2 seconds after the answer; the session
+// therefore sends end_of_candidates as soon as it gathered.
 type Signal struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// 16 random bytes the viewer chose for the attempt.
+	// 16 random bytes the service chose for the attempt: the attempt_id of the
+	// Fleet API, a UUID.
 	AttemptId []byte `protobuf:"bytes,1,opt,name=attempt_id,json=attemptId,proto3" json:"attempt_id,omitempty"`
 	// The logical connection.
 	ConnectionId uint64 `protobuf:"varint,2,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
 	// Increases with every signal of one sender in the attempt.
 	Sequence uint64 `protobuf:"varint,3,opt,name=sequence,proto3" json:"sequence,omitempty"`
-	// The configuration the viewer was given for this attempt. Set by the
-	// service on the offer it passes to the session; never sent by a viewer.
+	// The ICE servers and policy for the session's end of the attempt. Set by
+	// the service on the offer.
 	Configuration *RtcConfiguration `protobuf:"bytes,4,opt,name=configuration,proto3" json:"configuration,omitempty"`
 	// The signal.
 	//
@@ -1548,7 +1541,7 @@ type isSignal_Signal interface {
 }
 
 type Signal_Description struct {
-	// An offer from the viewer or an answer from the session.
+	// An offer from the participant or an answer from the session.
 	Description *SessionDescription `protobuf:"bytes,5,opt,name=description,proto3,oneof"`
 }
 
@@ -1563,15 +1556,17 @@ type Signal_EndOfCandidates struct {
 }
 
 type Signal_Abort struct {
-	// The sender gave up the attempt. The viewer starts another one at once.
+	// The sender gave up the attempt: the participant ended it through the
+	// Fleet API, or the session could not take it. The participant starts
+	// another one.
 	Abort bool `protobuf:"varint,8,opt,name=abort,proto3,oneof"`
 }
 
 type Signal_Authorization struct {
-	// The service's authorization of the attempt, sent to both ends before
-	// either may send application data. Renewed authorizations reach the
-	// session this way too, and the viewer in the answer of its renewal
-	// through the Fleet API.
+	// The service's authorization of the attempt, sent to the session this
+	// way and to the participant with the answer, before either may send
+	// application data. Renewed ones reach the session this way too, and the
+	// participant in the answer of its renewal through the Fleet API.
 	Authorization *SignedPeerAuthorization `protobuf:"bytes,9,opt,name=authorization,proto3,oneof"`
 }
 
@@ -1892,10 +1887,10 @@ func (x *SignedPeerAuthorization) GetSignature() []byte {
 	return nil
 }
 
-// The service's statement that one attempt joins this viewer to this session
-// with these two DTLS certificates. Both ends check the signature, every
-// field and the lifetime before sending application data; DTLS alone does not
-// authorize.
+// The service's statement that one attempt joins this participant to this
+// session with these two DTLS certificates. Both ends check the signature,
+// every field and the lifetime before sending application data; DTLS alone does
+// not authorize.
 type PeerAuthorization struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The HTTPS origin of the service that signed it.
@@ -1904,26 +1899,26 @@ type PeerAuthorization struct {
 	MachineId string `protobuf:"bytes,2,opt,name=machine_id,json=machineId,proto3" json:"machine_id,omitempty"`
 	// The session.
 	SessionId string `protobuf:"bytes,3,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	// The logical connection of the viewer.
+	// The logical connection of the participant.
 	ConnectionId uint64 `protobuf:"varint,4,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
 	// The attempt.
 	AttemptId []byte `protobuf:"bytes,5,opt,name=attempt_id,json=attemptId,proto3" json:"attempt_id,omitempty"`
-	// SHA-256 fingerprint of the viewer's DTLS certificate, from its offer.
-	ViewerFingerprintSha256 []byte `protobuf:"bytes,6,opt,name=viewer_fingerprint_sha256,json=viewerFingerprintSha256,proto3" json:"viewer_fingerprint_sha256,omitempty"`
+	// SHA-256 fingerprint of the participant's DTLS certificate, from its offer.
+	ParticipantFingerprintSha256 []byte `protobuf:"bytes,6,opt,name=participant_fingerprint_sha256,json=participantFingerprintSha256,proto3" json:"participant_fingerprint_sha256,omitempty"`
 	// SHA-256 fingerprint of the Agent's DTLS certificate, from its answer.
 	AgentFingerprintSha256 []byte `protobuf:"bytes,7,opt,name=agent_fingerprint_sha256,json=agentFingerprintSha256,proto3" json:"agent_fingerprint_sha256,omitempty"`
-	// SHA-256 of the viewer's authorization that both ends hold for the
+	// SHA-256 of the participant's authorization that both ends hold for the
 	// connection: the exact serialized bytes the service signed. A renewal
-	// names the viewer's current authorization, which may be a renewed one
+	// names the participant's current authorization, which may be a renewed one
 	// through the Fleet API.
-	ViewerAuthorizationSha256 []byte `protobuf:"bytes,8,opt,name=viewer_authorization_sha256,json=viewerAuthorizationSha256,proto3" json:"viewer_authorization_sha256,omitempty"`
+	ParticipantAuthorizationSha256 []byte `protobuf:"bytes,8,opt,name=participant_authorization_sha256,json=participantAuthorizationSha256,proto3" json:"participant_authorization_sha256,omitempty"`
 	// When the service signed it.
 	IssuedAt *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
-	// The end of the attempt's authorization: the end of the viewer's current
-	// authorization.
+	// The end of the attempt's authorization: the end of the participant's
+	// current authorization.
 	ExpiresAt *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
 	// The end of the current lease, at most 30 seconds after issued_at and no
-	// later than expires_at. The viewer renews it through the Fleet API with
+	// later than expires_at. The participant renews it through the Fleet API with
 	// the PeerAuthorization it holds. Each end stops sending application data
 	// when the lease runs out, and goes on once it holds a later one.
 	LeaseExpiresAt *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=lease_expires_at,json=leaseExpiresAt,proto3" json:"lease_expires_at,omitempty"`
@@ -1996,9 +1991,9 @@ func (x *PeerAuthorization) GetAttemptId() []byte {
 	return nil
 }
 
-func (x *PeerAuthorization) GetViewerFingerprintSha256() []byte {
+func (x *PeerAuthorization) GetParticipantFingerprintSha256() []byte {
 	if x != nil {
-		return x.ViewerFingerprintSha256
+		return x.ParticipantFingerprintSha256
 	}
 	return nil
 }
@@ -2010,9 +2005,9 @@ func (x *PeerAuthorization) GetAgentFingerprintSha256() []byte {
 	return nil
 }
 
-func (x *PeerAuthorization) GetViewerAuthorizationSha256() []byte {
+func (x *PeerAuthorization) GetParticipantAuthorizationSha256() []byte {
 	if x != nil {
-		return x.ViewerAuthorizationSha256
+		return x.ParticipantAuthorizationSha256
 	}
 	return nil
 }
@@ -2105,14 +2100,13 @@ const file_leaflow_fleet_transport_v1_transport_proto_rawDesc = "" +
 	"\bsequence\x18\x02 \x01(\x04R\bsequence\"`\n" +
 	"\fRetiredRange\x12(\n" +
 	"\x10first_channel_id\x18\x01 \x01(\x04R\x0efirstChannelId\x12&\n" +
-	"\x0flast_channel_id\x18\x02 \x01(\x04R\rlastChannelId\"\xe8\x02\n" +
+	"\x0flast_channel_id\x18\x02 \x01(\x04R\rlastChannelId\"\xcc\x02\n" +
 	"\tMigration\x12#\n" +
 	"\rconnection_id\x18\x01 \x01(\x04R\fconnectionId\x12B\n" +
 	"\aprepare\x18\x02 \x01(\v2&.leaflow.fleet.transport.v1.CheckpointH\x00R\aprepare\x12D\n" +
 	"\bprepared\x18\x03 \x01(\v2&.leaflow.fleet.transport.v1.CheckpointH\x00R\bprepared\x12@\n" +
 	"\x06commit\x18\x04 \x01(\v2&.leaflow.fleet.transport.v1.CheckpointH\x00R\x06commit\x12F\n" +
-	"\tcommitted\x18\x05 \x01(\v2&.leaflow.fleet.transport.v1.CheckpointH\x00R\tcommitted\x12\x1a\n" +
-	"\arequest\x18\x06 \x01(\bH\x00R\arequestB\x06\n" +
+	"\tcommitted\x18\x05 \x01(\v2&.leaflow.fleet.transport.v1.CheckpointH\x00R\tcommittedB\x06\n" +
 	"\x04step\"3\n" +
 	"\x05Close\x12*\n" +
 	"\x06status\x18\x01 \x01(\v2\x12.google.rpc.StatusR\x06status\"\x87\x04\n" +
@@ -2149,7 +2143,7 @@ const file_leaflow_fleet_transport_v1_transport_proto_rawDesc = "" +
 	"\x17SignedPeerAuthorization\x12\x15\n" +
 	"\x06key_id\x18\x01 \x01(\tR\x05keyId\x12$\n" +
 	"\rauthorization\x18\x02 \x01(\fR\rauthorization\x12\x1c\n" +
-	"\tsignature\x18\x03 \x01(\fR\tsignature\"\x9d\x04\n" +
+	"\tsignature\x18\x03 \x01(\fR\tsignature\"\xb1\x04\n" +
 	"\x11PeerAuthorization\x12\x16\n" +
 	"\x06issuer\x18\x01 \x01(\tR\x06issuer\x12\x1d\n" +
 	"\n" +
@@ -2158,10 +2152,10 @@ const file_leaflow_fleet_transport_v1_transport_proto_rawDesc = "" +
 	"session_id\x18\x03 \x01(\tR\tsessionId\x12#\n" +
 	"\rconnection_id\x18\x04 \x01(\x04R\fconnectionId\x12\x1d\n" +
 	"\n" +
-	"attempt_id\x18\x05 \x01(\fR\tattemptId\x12:\n" +
-	"\x19viewer_fingerprint_sha256\x18\x06 \x01(\fR\x17viewerFingerprintSha256\x128\n" +
-	"\x18agent_fingerprint_sha256\x18\a \x01(\fR\x16agentFingerprintSha256\x12>\n" +
-	"\x1bviewer_authorization_sha256\x18\b \x01(\fR\x19viewerAuthorizationSha256\x127\n" +
+	"attempt_id\x18\x05 \x01(\fR\tattemptId\x12D\n" +
+	"\x1eparticipant_fingerprint_sha256\x18\x06 \x01(\fR\x1cparticipantFingerprintSha256\x128\n" +
+	"\x18agent_fingerprint_sha256\x18\a \x01(\fR\x16agentFingerprintSha256\x12H\n" +
+	" participant_authorization_sha256\x18\b \x01(\fR\x1eparticipantAuthorizationSha256\x127\n" +
 	"\tissued_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\bissuedAt\x129\n" +
 	"\n" +
 	"expires_at\x18\n" +
@@ -2293,7 +2287,6 @@ func file_leaflow_fleet_transport_v1_transport_proto_init() {
 		(*Migration_Prepared)(nil),
 		(*Migration_Commit)(nil),
 		(*Migration_Committed)(nil),
-		(*Migration_Request)(nil),
 	}
 	file_leaflow_fleet_transport_v1_transport_proto_msgTypes[13].OneofWrappers = []any{
 		(*Signal_Description)(nil),

@@ -75,7 +75,7 @@ func (OutputStream) EnumDescriptor() ([]byte, []int) {
 	return file_leaflow_fleet_exec_v1_exec_proto_rawDescGZIP(), []int{0}
 }
 
-// A message from the viewer.
+// A message from the participant.
 type ClientMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The message.
@@ -267,7 +267,7 @@ func (*ServerMessage_Output) isServerMessage_Message() {}
 
 func (*ServerMessage_Exit) isServerMessage_Message() {}
 
-// Starts a program. No shell interprets the arguments; a viewer that wants
+// Starts a program. No shell interprets the arguments; a participant that wants
 // one runs it, such as ["/bin/sh", "-lc", "ls | wc -l"].
 type ExecStart struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -603,7 +603,7 @@ func (*ExecExit_ExitCode) isExecExit_Status() {}
 
 func (*ExecExit_SignalName) isExecExit_Status() {}
 
-// Allows a viewer to run commands. Carried in the viewer's signed
+// Allows a participant to run commands. Carried in the participant's signed
 // authorization.
 type ExecPolicy struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`

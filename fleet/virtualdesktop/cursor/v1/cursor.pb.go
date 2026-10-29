@@ -126,12 +126,12 @@ type ServerMessage_SnapshotEnd struct {
 }
 
 type ServerMessage_PointerPosition struct {
-	// The pointer moved, other than by this viewer.
+	// The pointer moved, other than by this participant.
 	PointerPosition *PointerPosition `protobuf:"bytes,3,opt,name=pointer_position,json=pointerPosition,proto3,oneof"`
 }
 
 type ServerMessage_Highlight struct {
-	// Another viewer's operation call acted on an area.
+	// Another participant's operation call acted on an area.
 	Highlight *Highlight `protobuf:"bytes,4,opt,name=highlight,proto3,oneof"`
 }
 
@@ -149,7 +149,7 @@ type Cursor struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The CSS cursor keyword that matches the shape, such as "default", "text"
 	// or "ew-resize" (CSS Basic User Interface Module Level 4); "none" hides
-	// the cursor. When the viewer supports the keyword it uses it instead of
+	// the cursor. When the participant supports the keyword it uses it instead of
 	// the image. Empty: use the image.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The shape as a PNG with straight alpha, one pixel per canvas pixel.
@@ -231,10 +231,10 @@ func (x *Cursor) GetSerial() uint64 {
 }
 
 // Where the pointer is (RFB PointerPos pseudo-encoding; Xpra pointer-position),
-// so that a viewer can show the pointer of whoever else moves it, such as
-// another viewer holding the input lease. Sent when the pointer was moved
-// by another viewer or by an application, at most once per 16 milliseconds
-// with the latest position; never for this viewer's own input.
+// so that a participant can show the pointer of whoever else moves it, such as
+// another participant holding the input lease. Sent when the pointer was moved
+// by another participant or by an application, at most once per 16 milliseconds
+// with the latest position; never for this participant's own input.
 type PointerPosition struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The window the point is relative to. 0: canvas coordinates.
@@ -243,8 +243,8 @@ type PointerPosition struct {
 	X int32 `protobuf:"zigzag32,2,opt,name=x,proto3" json:"x,omitempty"`
 	// See x.
 	Y int32 `protobuf:"zigzag32,3,opt,name=y,proto3" json:"y,omitempty"`
-	// The connection whose input moved it, as in ViewerList. 0: an application
-	// moved it.
+	// The connection whose input moved it, as in ParticipantList. 0: an
+	// application moved it.
 	ConnectionId  uint64 `protobuf:"varint,4,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -308,14 +308,14 @@ func (x *PointerPosition) GetConnectionId() uint64 {
 	return 0
 }
 
-// The area an operation call acted on, so that the other viewers see what it
-// does (after the Chrome DevTools Protocol Overlay highlights). Sent to the
-// other viewers for every operation call that acts on a
-// place, such as an injected click or an action on an accessibility node.
-// The viewer draws it briefly.
+// The area an operation call acted on, so that the other participants see what
+// it does (after the Chrome DevTools Protocol Overlay highlights). Sent to the
+// other participants for every operation call that acts on a place, such as an
+// injected click or an action on an accessibility node. The participant draws
+// it briefly.
 type Highlight struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The connection that acted, as in ViewerList.
+	// The connection that acted, as in ParticipantList.
 	ConnectionId uint64 `protobuf:"varint,1,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
 	// The window the area is relative to. 0: canvas coordinates.
 	WindowId uint64 `protobuf:"varint,2,opt,name=window_id,json=windowId,proto3" json:"window_id,omitempty"`

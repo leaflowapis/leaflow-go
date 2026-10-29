@@ -24,11 +24,11 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Asks for a stream. The first message of the viewer on both channels.
+// Asks for a stream. The first message of the participant on both channels.
 type AudioRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// WebCodecs codec strings, most preferred first, such as "opus": for
-	// output those the viewer decodes (AudioDecoder.isConfigSupported), for
+	// output those the participant decodes (AudioDecoder.isConfigSupported), for
 	// input those it encodes (AudioEncoder.isConfigSupported).
 	Codecs        []string `protobuf:"bytes,1,rep,name=codecs,proto3" json:"codecs,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -326,7 +326,7 @@ func (*OutputServerMessage_Data) isOutputServerMessage_Message() {}
 
 func (*OutputServerMessage_Error) isOutputServerMessage_Message() {}
 
-// A message from the viewer on the input channel.
+// A message from the participant on the input channel.
 type InputClientMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The message.
@@ -400,7 +400,7 @@ type isInputClientMessage_Message interface {
 }
 
 type InputClientMessage_Request struct {
-	// The codecs the viewer can encode. The first message.
+	// The codecs the participant can encode. The first message.
 	Request *AudioRequest `protobuf:"bytes,1,opt,name=request,proto3,oneof"`
 }
 
@@ -506,8 +506,8 @@ type InputGrant struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The format to send: 48000 Hz, one channel, in 20 millisecond packets.
 	Format *AudioFormat `protobuf:"bytes,1,opt,name=format,proto3" json:"format,omitempty"`
-	// The viewer stops capturing after this long; the session ends the stream
-	// with DEADLINE_EXCEEDED then.
+	// The participant stops capturing after this long; the session ends the
+	// stream with DEADLINE_EXCEEDED then.
 	MaxCaptureDuration *durationpb.Duration `protobuf:"bytes,2,opt,name=max_capture_duration,json=maxCaptureDuration,proto3" json:"max_capture_duration,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -557,8 +557,8 @@ func (x *InputGrant) GetMaxCaptureDuration() *durationpb.Duration {
 	return nil
 }
 
-// Allows a viewer to play the session's sound, and with DevicePolicy to
-// provide the microphone. Carried in the viewer's signed authorization.
+// Allows a participant to play the session's sound, and with DevicePolicy to
+// provide the microphone. Carried in the participant's signed authorization.
 type AudioPolicy struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields

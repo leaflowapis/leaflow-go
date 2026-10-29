@@ -51,6 +51,38 @@ func encodeCloseSessionResponse(response *SessionResource, w http.ResponseWriter
 	return nil
 }
 
+func encodeCommitParticipantMigrationResponse(response *MigrationStep, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeCreateAttemptResponse(response *Attempt, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeCreateAttemptCandidatesResponse(response *CreateAttemptCandidatesNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
+}
+
 func encodeCreateGroupResponse(response *GroupResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
@@ -90,6 +122,19 @@ func encodeCreateMachineRegistrationResponse(response *CreateMachineRegistration
 	return nil
 }
 
+func encodeCreateParticipantResponse(response *ParticipantConnection, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeCreateSessionResponse(response *SessionResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
@@ -103,28 +148,8 @@ func encodeCreateSessionResponse(response *SessionResource, w http.ResponseWrite
 	return nil
 }
 
-func encodeCreateSignalingTicketResponse(response *SignalingTicket, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(201)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeCreateViewerResponse(response *ViewerConnection, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(201)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
+func encodeDeleteAttemptResponse(response *DeleteAttemptNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
 
 	return nil
 }
@@ -153,7 +178,7 @@ func encodeDeleteMachineRegistrationResponse(response *DeleteMachineRegistration
 	return nil
 }
 
-func encodeDeleteViewerResponse(response *DeleteViewerNoContent, w http.ResponseWriter, span trace.Span) error {
+func encodeDeleteParticipantResponse(response *DeleteParticipantNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
 	return nil
@@ -250,6 +275,19 @@ func encodeGetMachineRegistrationResponse(response *MachineRegistrationResource,
 	return nil
 }
 
+func encodeGetParticipantResponse(response *ParticipantResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeGetPrivilegeApprovalResponse(response *PrivilegeApproval, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -289,7 +327,7 @@ func encodeGetSessionResponse(response *SessionResource, w http.ResponseWriter, 
 	return nil
 }
 
-func encodeGetViewerResponse(response *ViewerResource, w http.ResponseWriter, span trace.Span) error {
+func encodeGetSessionRtcConfigurationResponse(response *RtcConfiguration, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -406,7 +444,7 @@ func encodeListPrivilegeRequestsResponse(response *PrivilegeRequestList, w http.
 	return nil
 }
 
-func encodeListSessionViewersResponse(response *ViewerList, w http.ResponseWriter, span trace.Span) error {
+func encodeListSessionParticipantsResponse(response *ParticipantList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -432,7 +470,20 @@ func encodeListSessionsResponse(response *SessionList, w http.ResponseWriter, sp
 	return nil
 }
 
-func encodeRenewViewerResponse(response *RenewViewerResponse, w http.ResponseWriter, span trace.Span) error {
+func encodePrepareParticipantMigrationResponse(response *MigrationStep, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeRenewParticipantResponse(response *RenewParticipantResponse, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

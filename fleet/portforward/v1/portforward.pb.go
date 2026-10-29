@@ -28,9 +28,9 @@ type ForwardDirection int32
 
 const (
 	ForwardDirection_FORWARD_DIRECTION_UNSPECIFIED ForwardDirection = 0
-	// The viewer listens; the session connects (ssh -L).
+	// The participant listens; the session connects (ssh -L).
 	ForwardDirection_FORWARD_DIRECTION_LOCAL_TO_REMOTE ForwardDirection = 1
-	// The session listens; the viewer connects (ssh -R).
+	// The session listens; the participant connects (ssh -R).
 	ForwardDirection_FORWARD_DIRECTION_REMOTE_TO_LOCAL ForwardDirection = 2
 )
 
@@ -132,7 +132,8 @@ type ForwardState int32
 
 const (
 	ForwardState_FORWARD_STATE_UNSPECIFIED ForwardState = 0
-	// Created; the viewer's listener is not reported yet. Nothing is accepted.
+	// Created; the participant's listener is not reported yet. Nothing is
+	// accepted.
 	ForwardState_FORWARD_STATE_PREPARING ForwardState = 1
 	// Listening and forwarding.
 	ForwardState_FORWARD_STATE_ACTIVE ForwardState = 2
@@ -629,9 +630,9 @@ type ReportListenerReadyRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The forward.
 	ForwardId uint64 `protobuf:"varint,1,opt,name=forward_id,json=forwardId,proto3" json:"forward_id,omitempty"`
-	// Where the viewer listens.
+	// Where the participant listens.
 	BoundEndpoint *Endpoint `protobuf:"bytes,2,opt,name=bound_endpoint,json=boundEndpoint,proto3" json:"bound_endpoint,omitempty"`
-	// Why the viewer could not listen; the forward then fails. Unset on
+	// Why the participant could not listen; the forward then fails. Unset on
 	// success.
 	Error         *status.Status `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1102,21 +1103,21 @@ func (x *UdpPacket) GetData() []byte {
 	return nil
 }
 
-// What a viewer may forward. Carried in the viewer's signed authorization;
-// without it the viewer forwards nothing.
+// What a participant may forward. Carried in the participant's signed
+// authorization; without it the participant forwards nothing.
 type PortForwardPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// LOCAL_TO_REMOTE forwards are allowed.
 	LocalToRemoteAllowed bool `protobuf:"varint,1,opt,name=local_to_remote_allowed,json=localToRemoteAllowed,proto3" json:"local_to_remote_allowed,omitempty"`
 	// REMOTE_TO_LOCAL forwards are allowed.
 	RemoteToLocalAllowed bool `protobuf:"varint,2,opt,name=remote_to_local_allowed,json=remoteToLocalAllowed,proto3" json:"remote_to_local_allowed,omitempty"`
-	// Where the viewer may listen for LOCAL_TO_REMOTE.
+	// Where the participant may listen for LOCAL_TO_REMOTE.
 	LocalListeners *EndpointPolicy `protobuf:"bytes,3,opt,name=local_listeners,json=localListeners,proto3" json:"local_listeners,omitempty"`
 	// Where the session may connect for LOCAL_TO_REMOTE.
 	RemoteTargets *EndpointPolicy `protobuf:"bytes,4,opt,name=remote_targets,json=remoteTargets,proto3" json:"remote_targets,omitempty"`
 	// Where the session may listen for REMOTE_TO_LOCAL.
 	RemoteListeners *EndpointPolicy `protobuf:"bytes,5,opt,name=remote_listeners,json=remoteListeners,proto3" json:"remote_listeners,omitempty"`
-	// Where the viewer may connect for REMOTE_TO_LOCAL.
+	// Where the participant may connect for REMOTE_TO_LOCAL.
 	LocalTargets *EndpointPolicy `protobuf:"bytes,6,opt,name=local_targets,json=localTargets,proto3" json:"local_targets,omitempty"`
 	// The most forwards at once, at most 32. 0: 8.
 	MaxForwards uint32 `protobuf:"varint,7,opt,name=max_forwards,json=maxForwards,proto3" json:"max_forwards,omitempty"`

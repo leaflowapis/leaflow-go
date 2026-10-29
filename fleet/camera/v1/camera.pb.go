@@ -32,7 +32,7 @@ const (
 	// it from a captured VideoFrame.
 	CameraEncoding_CAMERA_ENCODING_JPEG CameraEncoding = 1
 	// H.264, one complete access unit in AVC format per frame. Offered only
-	// when the viewer can encode it.
+	// when the participant can encode it.
 	CameraEncoding_CAMERA_ENCODING_H264 CameraEncoding = 2
 )
 
@@ -80,7 +80,7 @@ func (CameraEncoding) EnumDescriptor() ([]byte, []int) {
 // Asks to provide the camera.
 type CameraRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The formats the viewer can produce, most preferred first, at most 8.
+	// The formats the participant can produce, most preferred first, at most 8.
 	Formats       []*CameraFormat `protobuf:"bytes,1,rep,name=formats,proto3" json:"formats,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -239,8 +239,8 @@ type CameraGrant struct {
 	MaxQueuedFrames uint32 `protobuf:"varint,3,opt,name=max_queued_frames,json=maxQueuedFrames,proto3" json:"max_queued_frames,omitempty"`
 	// The oldest a frame in flight may get, at most 200 milliseconds.
 	MaxQueueTime *durationpb.Duration `protobuf:"bytes,4,opt,name=max_queue_time,json=maxQueueTime,proto3" json:"max_queue_time,omitempty"`
-	// The viewer stops capturing after this long; the session ends the stream
-	// with DEADLINE_EXCEEDED then.
+	// The participant stops capturing after this long; the session ends the
+	// stream with DEADLINE_EXCEEDED then.
 	MaxCaptureDuration *durationpb.Duration `protobuf:"bytes,5,opt,name=max_capture_duration,json=maxCaptureDuration,proto3" json:"max_capture_duration,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -420,7 +420,7 @@ type CameraFrame struct {
 	// Grows by one with every frame of the camera channel, starting at 1. The
 	// session drops a frame older than one it has shown.
 	Sequence uint64 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
-	// The capture time in microseconds, on the viewer's media clock.
+	// The capture time in microseconds, on the participant's media clock.
 	TimestampUs int64 `protobuf:"varint,2,opt,name=timestamp_us,json=timestampUs,proto3" json:"timestamp_us,omitempty"`
 	// Its duration in microseconds. 0 when unknown.
 	DurationUs uint32 `protobuf:"varint,3,opt,name=duration_us,json=durationUs,proto3" json:"duration_us,omitempty"`
@@ -499,7 +499,7 @@ func (x *CameraFrame) GetData() []byte {
 }
 
 // Asks for a key frame after a frame was lost, abandoned or not decodable.
-// The session drops H264 frames until a key frame; the viewer sends one
+// The session drops H264 frames until a key frame; the participant sends one
 // soon, or the session ends the stream.
 type KeyFrameRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`

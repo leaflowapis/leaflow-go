@@ -659,6 +659,702 @@ func (s *Server) handleCloseSessionRequest(args [1]string, argsEscaped bool, w h
 	}
 }
 
+// handleCommitParticipantMigrationRequest handles commit-participant-migration operation.
+//
+// Commits the epoch the participant prepared and returns the session's checkpoint once it committed
+// it: the `commit` and `committed` steps of `Migration` in
+// `leaflow/fleet/transport/v1/transport.proto`. Repeating the step returns the same answer.
+//
+// Only the participant's user may migrate it.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `CHECKPOINT_INVALID` when the checkpoint is not a serialized `Checkpoint`;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+//     again after the error's `retry_delay`.
+//
+// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:commit-migration
+func (s *Server) handleCommitParticipantMigrationRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("commit-participant-migration"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}:commit-migration"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CommitParticipantMigrationOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CommitParticipantMigrationOperation,
+			ID:   "commit-participant-migration",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, CommitParticipantMigrationOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCommitParticipantMigrationParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCommitParticipantMigrationRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *MigrationStep
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CommitParticipantMigrationOperation,
+			OperationSummary: "Commit a migration",
+			OperationID:      "commit-participant-migration",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "sessionId",
+					In:   "path",
+				}: params.SessionId,
+				{
+					Name: "connectionId",
+					In:   "path",
+				}: params.ConnectionId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *MigrationStep
+			Params   = CommitParticipantMigrationParams
+			Response = *MigrationStep
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCommitParticipantMigrationParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CommitParticipantMigration(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CommitParticipantMigration(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCommitParticipantMigrationResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateAttemptRequest handles create-attempt operation.
+//
+// Starts another PeerConnection of the participant with the offer, such as after a path failed, and
+// returns the session's answer, its ICE candidates and the signed PeerAuthorization. Move the
+// connection to it with `prepare-participant-migration` and `commit-participant-migration`.
+//
+// Only the participant's user may start one.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
+//   - `TOO_MANY_ATTEMPTS` when the participant started too many PeerConnections in the last minute; try
+//     again after the error's `retry_delay`;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+//     again after the error's `retry_delay`;
+//   - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; start another.
+//
+// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts
+func (s *Server) handleCreateAttemptRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-attempt"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}/attempts"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateAttemptOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateAttemptOperation,
+			ID:   "create-attempt",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, CreateAttemptOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCreateAttemptParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateAttemptRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *Attempt
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateAttemptOperation,
+			OperationSummary: "Start a PeerConnection",
+			OperationID:      "create-attempt",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "sessionId",
+					In:   "path",
+				}: params.SessionId,
+				{
+					Name: "connectionId",
+					In:   "path",
+				}: params.ConnectionId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *CreateAttemptRequest
+			Params   = CreateAttemptParams
+			Response = *Attempt
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCreateAttemptParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateAttempt(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateAttempt(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateAttemptResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateAttemptCandidatesRequest handles create-attempt-candidates operation.
+//
+// Passes the ICE candidates the participant gathered after its offer to the session, and with
+// `end_of_candidates`, that it has gathered all (RFC 8838). The session ignores those of an attempt
+// that has ended.
+//
+// Only the participant's user may add them.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected; try again after the error's
+//     `retry_delay`.
+//
+// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}/candidates
+func (s *Server) handleCreateAttemptCandidatesRequest(args [3]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-attempt-candidates"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}/candidates"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateAttemptCandidatesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateAttemptCandidatesOperation,
+			ID:   "create-attempt-candidates",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, CreateAttemptCandidatesOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCreateAttemptCandidatesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateAttemptCandidatesRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *CreateAttemptCandidatesNoContent
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateAttemptCandidatesOperation,
+			OperationSummary: "Add ICE candidates to a PeerConnection",
+			OperationID:      "create-attempt-candidates",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "sessionId",
+					In:   "path",
+				}: params.SessionId,
+				{
+					Name: "connectionId",
+					In:   "path",
+				}: params.ConnectionId,
+				{
+					Name: "attemptId",
+					In:   "path",
+				}: params.AttemptId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *CreateAttemptCandidatesRequest
+			Params   = CreateAttemptCandidatesParams
+			Response = *CreateAttemptCandidatesNoContent
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCreateAttemptCandidatesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				err = s.h.CreateAttemptCandidates(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		err = s.h.CreateAttemptCandidates(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateAttemptCandidatesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleCreateGroupRequest handles create-group operation.
 //
 // Creates a group in the project's directory. It reaches the machines within about a minute.
@@ -1286,6 +1982,242 @@ func (s *Server) handleCreateMachineRegistrationRequest(args [0]string, argsEsca
 	}
 }
 
+// handleCreateParticipantRequest handles create-participant operation.
+//
+// Admits one participant with the given public key to the session: signs its authorization, has the
+// session accept it, and starts its first PeerConnection with the offer. The answer carries the
+// participant, its authorization and the attempt with the session's answer. The participant lasts
+// while it is renewed.
+//
+// The owner of a session may operate it. Joining another member's session requires
+// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
+// operating it. Each further capability of the session — file transfer, the clipboard, terminals and
+// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
+// requests and reading logs — is granted only with its permission; a participant that may only watch
+// gets none of them. A request may ask for less: to watch only, or for some of the capabilities.
+//
+// Fails with the following, and then no participant was created:
+//
+//   - `SESSION_CLOSED` when the session has ended;
+//   - `SESSION_ACCESS_DENIED` when the caller may not join the session;
+//   - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time, such
+//     as while it restarts; try again after the error's `retry_delay`;
+//   - `PARTICIPANT_LIMIT_REACHED` when the session has as many participants as it admits;
+//   - `PARTICIPANT_REFUSED` when the session refused the participant;
+//   - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; try again with a new offer.
+//
+// POST /api/v1/sessions/{sessionId}/participants
+func (s *Server) handleCreateParticipantRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-participant"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/participants"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateParticipantOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateParticipantOperation,
+			ID:   "create-participant",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, CreateParticipantOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCreateParticipantParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateParticipantRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *ParticipantConnection
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateParticipantOperation,
+			OperationSummary: "Join a session",
+			OperationID:      "create-participant",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "sessionId",
+					In:   "path",
+				}: params.SessionId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *CreateParticipantRequest
+			Params   = CreateParticipantParams
+			Response = *ParticipantConnection
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCreateParticipantParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateParticipant(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateParticipant(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateParticipantResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleCreateSessionRequest handles create-session operation.
 //
 // Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
@@ -1295,7 +2227,7 @@ func (s *Server) handleCreateMachineRegistrationRequest(args [0]string, argsEsca
 //
 // On a machine an account has at most one session with a desktop and at most 8 sessions in all.
 // Sessions without a desktop run side by side, such as one for a program and one for a person; several
-// viewers can also share one session.
+// participants can also share one session.
 //
 // Fails with:
 //
@@ -1510,27 +2442,29 @@ func (s *Server) handleCreateSessionRequest(args [0]string, argsEscaped bool, w 
 	}
 }
 
-// handleCreateSignalingTicketRequest handles create-signaling-ticket operation.
+// handleDeleteAttemptRequest handles delete-attempt operation.
 //
-// Issues a single-use ticket for one signaling WebSocket of the viewer connection, valid for 60
-// seconds. Only the viewer connection's user may ask for one.
+// Tells the session to give up the attempt and close its PeerConnection. Abandoning an attempt that
+// has ended succeeds.
 //
-// Fails with `VIEWER_NOT_FOUND` when the viewer connection has ended.
+// Only the participant's user may abandon it.
 //
-// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}/signaling-tickets
-func (s *Server) handleCreateSignalingTicketRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// Fails with `PARTICIPANT_NOT_FOUND` when the participant has ended.
+//
+// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}
+func (s *Server) handleDeleteAttemptRequest(args [3]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-signaling-ticket"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/viewers/{connectionId}/signaling-tickets"),
+		otelogen.OperationID("delete-attempt"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateSignalingTicketOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteAttemptOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -1585,15 +2519,15 @@ func (s *Server) handleCreateSignalingTicketRequest(args [2]string, argsEscaped 
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: CreateSignalingTicketOperation,
-			ID:   "create-signaling-ticket",
+			Name: DeleteAttemptOperation,
+			ID:   "delete-attempt",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CreateSignalingTicketOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, DeleteAttemptOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -1635,7 +2569,7 @@ func (s *Server) handleCreateSignalingTicketRequest(args [2]string, argsEscaped 
 			return
 		}
 	}
-	params, err := decodeCreateSignalingTicketParams(args, argsEscaped, r)
+	params, err := decodeDeleteAttemptParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -1648,13 +2582,13 @@ func (s *Server) handleCreateSignalingTicketRequest(args [2]string, argsEscaped 
 
 	var rawBody []byte
 
-	var response *SignalingTicket
+	var response *DeleteAttemptNoContent
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    CreateSignalingTicketOperation,
-			OperationSummary: "Create a signaling ticket",
-			OperationID:      "create-signaling-ticket",
+			OperationName:    DeleteAttemptOperation,
+			OperationSummary: "Abandon a PeerConnection",
+			OperationID:      "delete-attempt",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -1666,14 +2600,18 @@ func (s *Server) handleCreateSignalingTicketRequest(args [2]string, argsEscaped 
 					Name: "connectionId",
 					In:   "path",
 				}: params.ConnectionId,
+				{
+					Name: "attemptId",
+					In:   "path",
+				}: params.AttemptId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = CreateSignalingTicketParams
-			Response = *SignalingTicket
+			Params   = DeleteAttemptParams
+			Response = *DeleteAttemptNoContent
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1682,14 +2620,14 @@ func (s *Server) handleCreateSignalingTicketRequest(args [2]string, argsEscaped 
 		](
 			m,
 			mreq,
-			unpackCreateSignalingTicketParams,
+			unpackDeleteAttemptParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateSignalingTicket(ctx, params)
+				err = s.h.DeleteAttempt(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.CreateSignalingTicket(ctx, params)
+		err = s.h.DeleteAttempt(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -1708,240 +2646,7 @@ func (s *Server) handleCreateSignalingTicketRequest(args [2]string, argsEscaped 
 		return
 	}
 
-	if err := encodeCreateSignalingTicketResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCreateViewerRequest handles create-viewer operation.
-//
-// Admits one viewer with the given public key to the session: signs its authorization, has the session
-// accept it, and returns it with a first signaling ticket. The viewer connection lasts while it is
-// renewed.
-//
-// The owner of a session may operate it. Viewing another member's session requires
-// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
-// operating it. Each further capability of the session — file transfer, the clipboard, terminals and
-// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
-// requests and reading logs — is granted only with its permission; a viewer that may only watch gets
-// none of them. A request may ask for less: to watch only, or for some of the capabilities.
-//
-// Fails with:
-//
-//   - `SESSION_CLOSED` when the session has ended;
-//   - `SESSION_ACCESS_DENIED` when the caller may not view the session;
-//   - `SESSION_UNAVAILABLE` when the session's process is not connected, such as while it restarts; try
-//     again after the error's `retry_delay`;
-//   - `VIEWER_LIMIT_REACHED` when the session has as many viewers as it admits;
-//   - `VIEWER_REFUSED` when the session refused the viewer.
-//
-// POST /api/v1/sessions/{sessionId}/viewers
-func (s *Server) handleCreateViewerRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-viewer"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/viewers"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateViewerOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CreateViewerOperation,
-			ID:   "create-viewer",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CreateViewerOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeCreateViewerParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateViewerRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *ViewerConnection
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CreateViewerOperation,
-			OperationSummary: "Create a viewer connection",
-			OperationID:      "create-viewer",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "sessionId",
-					In:   "path",
-				}: params.SessionId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *CreateViewerRequest
-			Params   = CreateViewerParams
-			Response = *ViewerConnection
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackCreateViewerParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateViewer(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CreateViewer(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCreateViewerResponse(response, w, span); err != nil {
+	if err := encodeDeleteAttemptResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -2361,10 +3066,10 @@ func (s *Server) handleDeleteGroupMemberRequest(args [2]string, argsEscaped bool
 
 // handleDeleteMachineRequest handles delete-machine operation.
 //
-// Removes the machine from the project. Every viewer of its sessions is disconnected at once and the
-// Agent is refused from then on; to use the machine again, enroll it again. Sessions still open on the
-// machine can no longer be reached and end according to their own timeouts. Nothing on the machine is
-// deleted.
+// Removes the machine from the project. Every participant of its sessions is disconnected at once and
+// the Agent is refused from then on; to use the machine again, enroll it again. Sessions still open on
+// the machine can no longer be reached and end according to their own timeouts. Nothing on the machine
+// is deleted.
 //
 // Requires `fleet:machines.manage`.
 //
@@ -2768,28 +3473,28 @@ func (s *Server) handleDeleteMachineRegistrationRequest(args [1]string, argsEsca
 	}
 }
 
-// handleDeleteViewerRequest handles delete-viewer operation.
+// handleDeleteParticipantRequest handles delete-participant operation.
 //
-// Ends the viewer connection: the session detaches the viewer and closes its PeerConnections, and the
-// session goes on. A viewer leaves this way; others are disconnected this way.
+// Ends the participant: the session detaches it and closes its PeerConnections, and the session goes
+// on. A participant leaves this way; others are disconnected this way.
 //
-// The viewer connection's user and the owner of the session may end it; otherwise this requires
+// The participant's user and the owner of the session may end it; otherwise this requires
 // `fleet:sessions.manage`.
 //
-// DELETE /api/v1/sessions/{sessionId}/viewers/{connectionId}
-func (s *Server) handleDeleteViewerRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}
+func (s *Server) handleDeleteParticipantRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-viewer"),
+		otelogen.OperationID("delete-participant"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/viewers/{connectionId}"),
+		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteViewerOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteParticipantOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -2844,15 +3549,15 @@ func (s *Server) handleDeleteViewerRequest(args [2]string, argsEscaped bool, w h
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: DeleteViewerOperation,
-			ID:   "delete-viewer",
+			Name: DeleteParticipantOperation,
+			ID:   "delete-participant",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DeleteViewerOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, DeleteParticipantOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -2894,7 +3599,7 @@ func (s *Server) handleDeleteViewerRequest(args [2]string, argsEscaped bool, w h
 			return
 		}
 	}
-	params, err := decodeDeleteViewerParams(args, argsEscaped, r)
+	params, err := decodeDeleteParticipantParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -2907,13 +3612,13 @@ func (s *Server) handleDeleteViewerRequest(args [2]string, argsEscaped bool, w h
 
 	var rawBody []byte
 
-	var response *DeleteViewerNoContent
+	var response *DeleteParticipantNoContent
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    DeleteViewerOperation,
-			OperationSummary: "End a viewer connection",
-			OperationID:      "delete-viewer",
+			OperationName:    DeleteParticipantOperation,
+			OperationSummary: "End a participant",
+			OperationID:      "delete-participant",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -2931,8 +3636,8 @@ func (s *Server) handleDeleteViewerRequest(args [2]string, argsEscaped bool, w h
 
 		type (
 			Request  = struct{}
-			Params   = DeleteViewerParams
-			Response = *DeleteViewerNoContent
+			Params   = DeleteParticipantParams
+			Response = *DeleteParticipantNoContent
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -2941,14 +3646,14 @@ func (s *Server) handleDeleteViewerRequest(args [2]string, argsEscaped bool, w h
 		](
 			m,
 			mreq,
-			unpackDeleteViewerParams,
+			unpackDeleteParticipantParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.DeleteViewer(ctx, params)
+				err = s.h.DeleteParticipant(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		err = s.h.DeleteViewer(ctx, params)
+		err = s.h.DeleteParticipant(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -2967,7 +3672,7 @@ func (s *Server) handleDeleteViewerRequest(args [2]string, argsEscaped bool, w h
 		return
 	}
 
-	if err := encodeDeleteViewerResponse(response, w, span); err != nil {
+	if err := encodeDeleteParticipantResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -4389,6 +5094,210 @@ func (s *Server) handleGetMachineRegistrationRequest(args [1]string, argsEscaped
 	}
 }
 
+// handleGetParticipantRequest handles get-participant operation.
+//
+// Returns a participant of the session.
+//
+// GET /api/v1/sessions/{sessionId}/participants/{connectionId}
+func (s *Server) handleGetParticipantRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-participant"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetParticipantOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetParticipantOperation,
+			ID:   "get-participant",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, GetParticipantOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetParticipantParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *ParticipantResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetParticipantOperation,
+			OperationSummary: "Get a participant of a session",
+			OperationID:      "get-participant",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "sessionId",
+					In:   "path",
+				}: params.SessionId,
+				{
+					Name: "connectionId",
+					In:   "path",
+				}: params.ConnectionId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetParticipantParams
+			Response = *ParticipantResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetParticipantParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetParticipant(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetParticipant(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetParticipantResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleGetPrivilegeApprovalRequest handles get-privilege-approval operation.
 //
 // Returns whether the caller's elevations on the machine are approved without asking. A caller who
@@ -4990,24 +5899,33 @@ func (s *Server) handleGetSessionRequest(args [1]string, argsEscaped bool, w htt
 	}
 }
 
-// handleGetViewerRequest handles get-viewer operation.
+// handleGetSessionRtcConfigurationRequest handles get-session-rtc-configuration operation.
 //
-// Returns a viewer connected to the session.
+// Returns the STUN and TURN servers for the PeerConnections the caller starts to the session, with
+// TURN credentials of its own, and the policy for using them. Ask again once `expires_at` has passed;
+// the credentials of a PeerConnection already relayed last longer.
 //
-// GET /api/v1/sessions/{sessionId}/viewers/{connectionId}
-func (s *Server) handleGetViewerRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// Requires that the caller may join the session, as for `create-participant`.
+//
+// Fails with:
+//
+//   - `SESSION_CLOSED` when the session has ended;
+//   - `SESSION_ACCESS_DENIED` when the caller may not join the session.
+//
+// GET /api/v1/sessions/{sessionId}/rtc-configuration
+func (s *Server) handleGetSessionRtcConfigurationRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-viewer"),
+		otelogen.OperationID("get-session-rtc-configuration"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/viewers/{connectionId}"),
+		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/rtc-configuration"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetViewerOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetSessionRtcConfigurationOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -5062,15 +5980,15 @@ func (s *Server) handleGetViewerRequest(args [2]string, argsEscaped bool, w http
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: GetViewerOperation,
-			ID:   "get-viewer",
+			Name: GetSessionRtcConfigurationOperation,
+			ID:   "get-session-rtc-configuration",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetViewerOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, GetSessionRtcConfigurationOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -5112,7 +6030,7 @@ func (s *Server) handleGetViewerRequest(args [2]string, argsEscaped bool, w http
 			return
 		}
 	}
-	params, err := decodeGetViewerParams(args, argsEscaped, r)
+	params, err := decodeGetSessionRtcConfigurationParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -5125,13 +6043,13 @@ func (s *Server) handleGetViewerRequest(args [2]string, argsEscaped bool, w http
 
 	var rawBody []byte
 
-	var response *ViewerResource
+	var response *RtcConfiguration
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    GetViewerOperation,
-			OperationSummary: "Get a viewer of a session",
-			OperationID:      "get-viewer",
+			OperationName:    GetSessionRtcConfigurationOperation,
+			OperationSummary: "Get the ICE servers for a session",
+			OperationID:      "get-session-rtc-configuration",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -5139,18 +6057,14 @@ func (s *Server) handleGetViewerRequest(args [2]string, argsEscaped bool, w http
 					Name: "sessionId",
 					In:   "path",
 				}: params.SessionId,
-				{
-					Name: "connectionId",
-					In:   "path",
-				}: params.ConnectionId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = GetViewerParams
-			Response = *ViewerResource
+			Params   = GetSessionRtcConfigurationParams
+			Response = *RtcConfiguration
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -5159,14 +6073,14 @@ func (s *Server) handleGetViewerRequest(args [2]string, argsEscaped bool, w http
 		](
 			m,
 			mreq,
-			unpackGetViewerParams,
+			unpackGetSessionRtcConfigurationParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetViewer(ctx, params)
+				response, err = s.h.GetSessionRtcConfiguration(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.GetViewer(ctx, params)
+		response, err = s.h.GetSessionRtcConfiguration(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -5185,7 +6099,7 @@ func (s *Server) handleGetViewerRequest(args [2]string, argsEscaped bool, w http
 		return
 	}
 
-	if err := encodeGetViewerResponse(response, w, span); err != nil {
+	if err := encodeGetSessionRtcConfigurationResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -6865,24 +7779,24 @@ func (s *Server) handleListPrivilegeRequestsRequest(args [0]string, argsEscaped 
 	}
 }
 
-// handleListSessionViewersRequest handles list-session-viewers operation.
+// handleListSessionParticipantsRequest handles list-session-participants operation.
 //
-// Returns the viewers connected to the session, in the order they connected.
+// Returns the participants of the session, in the order they joined.
 //
-// GET /api/v1/sessions/{sessionId}/viewers
-func (s *Server) handleListSessionViewersRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/sessions/{sessionId}/participants
+func (s *Server) handleListSessionParticipantsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-session-viewers"),
+		otelogen.OperationID("list-session-participants"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/viewers"),
+		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/participants"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListSessionViewersOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListSessionParticipantsOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -6937,15 +7851,15 @@ func (s *Server) handleListSessionViewersRequest(args [1]string, argsEscaped boo
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListSessionViewersOperation,
-			ID:   "list-session-viewers",
+			Name: ListSessionParticipantsOperation,
+			ID:   "list-session-participants",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListSessionViewersOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, ListSessionParticipantsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -6987,7 +7901,7 @@ func (s *Server) handleListSessionViewersRequest(args [1]string, argsEscaped boo
 			return
 		}
 	}
-	params, err := decodeListSessionViewersParams(args, argsEscaped, r)
+	params, err := decodeListSessionParticipantsParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -7000,13 +7914,13 @@ func (s *Server) handleListSessionViewersRequest(args [1]string, argsEscaped boo
 
 	var rawBody []byte
 
-	var response *ViewerList
+	var response *ParticipantList
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListSessionViewersOperation,
-			OperationSummary: "List the viewers of a session",
-			OperationID:      "list-session-viewers",
+			OperationName:    ListSessionParticipantsOperation,
+			OperationSummary: "List the participants of a session",
+			OperationID:      "list-session-participants",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -7020,8 +7934,8 @@ func (s *Server) handleListSessionViewersRequest(args [1]string, argsEscaped boo
 
 		type (
 			Request  = struct{}
-			Params   = ListSessionViewersParams
-			Response = *ViewerList
+			Params   = ListSessionParticipantsParams
+			Response = *ParticipantList
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -7030,14 +7944,14 @@ func (s *Server) handleListSessionViewersRequest(args [1]string, argsEscaped boo
 		](
 			m,
 			mreq,
-			unpackListSessionViewersParams,
+			unpackListSessionParticipantsParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListSessionViewers(ctx, params)
+				response, err = s.h.ListSessionParticipants(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListSessionViewers(ctx, params)
+		response, err = s.h.ListSessionParticipants(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -7056,7 +7970,7 @@ func (s *Server) handleListSessionViewersRequest(args [1]string, argsEscaped boo
 		return
 	}
 
-	if err := encodeListSessionViewersResponse(response, w, span); err != nil {
+	if err := encodeListSessionParticipantsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -7282,36 +8196,35 @@ func (s *Server) handleListSessionsRequest(args [0]string, argsEscaped bool, w h
 	}
 }
 
-// handleRenewViewerRequest handles renew-viewer operation.
+// handlePrepareParticipantMigrationRequest handles prepare-participant-migration operation.
 //
-// Extends the viewer connection's lease and returns renewed PeerAuthorizations for the PeerConnections
-// whose current ones the request presents; the session receives them too. A presented authorization
-// that the service did not sign for this viewer connection, or whose attempt has ended, is left out of
-// the answer. When the viewer's authorization nears its end, the answer carries a renewed one, which
-// the session already holds.
+// Passes the participant's checkpoint for the next epoch to the session and returns the session's
+// checkpoint for it: the `prepare` and `prepared` steps of `Migration` in
+// `leaflow/fleet/transport/v1/transport.proto`. Repeating the step returns the same answer.
 //
-// Only the viewer connection's user may renew it.
+// Only the participant's user may migrate it.
 //
 // Fails with:
 //
-//   - `VIEWER_NOT_FOUND` when the viewer connection has ended; create another;
-//   - `VIEWER_RIGHTS_CHANGED` when the caller's permissions no longer grant what the viewer connection
-//     holds; it has ended, and another can be created with the current rights.
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `CHECKPOINT_INVALID` when the checkpoint is not a serialized `Checkpoint`;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+//     again after the error's `retry_delay`.
 //
-// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}:renew
-func (s *Server) handleRenewViewerRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:prepare-migration
+func (s *Server) handlePrepareParticipantMigrationRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("renew-viewer"),
+		otelogen.OperationID("prepare-participant-migration"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/viewers/{connectionId}:renew"),
+		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}:prepare-migration"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), RenewViewerOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), PrepareParticipantMigrationOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -7366,15 +8279,15 @@ func (s *Server) handleRenewViewerRequest(args [2]string, argsEscaped bool, w ht
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: RenewViewerOperation,
-			ID:   "renew-viewer",
+			Name: PrepareParticipantMigrationOperation,
+			ID:   "prepare-participant-migration",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, RenewViewerOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, PrepareParticipantMigrationOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -7416,7 +8329,7 @@ func (s *Server) handleRenewViewerRequest(args [2]string, argsEscaped bool, w ht
 			return
 		}
 	}
-	params, err := decodeRenewViewerParams(args, argsEscaped, r)
+	params, err := decodePrepareParticipantMigrationParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -7428,7 +8341,7 @@ func (s *Server) handleRenewViewerRequest(args [2]string, argsEscaped bool, w ht
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeRenewViewerRequest(r)
+	request, rawBody, close, err := s.decodePrepareParticipantMigrationRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -7444,13 +8357,13 @@ func (s *Server) handleRenewViewerRequest(args [2]string, argsEscaped bool, w ht
 		}
 	}()
 
-	var response *RenewViewerResponse
+	var response *MigrationStep
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    RenewViewerOperation,
-			OperationSummary: "Renew a viewer connection",
-			OperationID:      "renew-viewer",
+			OperationName:    PrepareParticipantMigrationOperation,
+			OperationSummary: "Prepare a migration",
+			OperationID:      "prepare-participant-migration",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -7467,9 +8380,9 @@ func (s *Server) handleRenewViewerRequest(args [2]string, argsEscaped bool, w ht
 		}
 
 		type (
-			Request  = *RenewViewerRequest
-			Params   = RenewViewerParams
-			Response = *RenewViewerResponse
+			Request  = *MigrationStep
+			Params   = PrepareParticipantMigrationParams
+			Response = *MigrationStep
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -7478,14 +8391,14 @@ func (s *Server) handleRenewViewerRequest(args [2]string, argsEscaped bool, w ht
 		](
 			m,
 			mreq,
-			unpackRenewViewerParams,
+			unpackPrepareParticipantMigrationParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.RenewViewer(ctx, request, params)
+				response, err = s.h.PrepareParticipantMigration(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.RenewViewer(ctx, request, params)
+		response, err = s.h.PrepareParticipantMigration(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -7504,7 +8417,238 @@ func (s *Server) handleRenewViewerRequest(args [2]string, argsEscaped bool, w ht
 		return
 	}
 
-	if err := encodeRenewViewerResponse(response, w, span); err != nil {
+	if err := encodePrepareParticipantMigrationResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleRenewParticipantRequest handles renew-participant operation.
+//
+// Extends the participant's lease and returns renewed PeerAuthorizations for the PeerConnections whose
+// current ones the request presents; the session receives them too. A presented authorization that the
+// service did not sign for this participant, or whose attempt has ended, is left out of the answer.
+// When the participant's authorization nears its end, the answer carries a renewed one, which the
+// session already holds.
+//
+// Only the participant's user may renew it.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended; create another;
+//   - `PARTICIPANT_RIGHTS_CHANGED` when the caller's permissions no longer grant what the participant
+//     holds; it has ended, and another can be created with the current rights.
+//
+// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:renew
+func (s *Server) handleRenewParticipantRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("renew-participant"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}:renew"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RenewParticipantOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: RenewParticipantOperation,
+			ID:   "renew-participant",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, RenewParticipantOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeRenewParticipantParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeRenewParticipantRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *RenewParticipantResponse
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    RenewParticipantOperation,
+			OperationSummary: "Renew a participant",
+			OperationID:      "renew-participant",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "sessionId",
+					In:   "path",
+				}: params.SessionId,
+				{
+					Name: "connectionId",
+					In:   "path",
+				}: params.ConnectionId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *RenewParticipantRequest
+			Params   = RenewParticipantParams
+			Response = *RenewParticipantResponse
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackRenewParticipantParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.RenewParticipant(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.RenewParticipant(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeRenewParticipantResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)

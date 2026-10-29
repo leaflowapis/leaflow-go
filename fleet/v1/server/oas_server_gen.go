@@ -37,6 +37,59 @@ type Handler interface {
 	//
 	// POST /api/v1/sessions/{sessionId}:close
 	CloseSession(ctx context.Context, params CloseSessionParams) (*SessionResource, error)
+	// CommitParticipantMigration implements commit-participant-migration operation.
+	//
+	// Commits the epoch the participant prepared and returns the session's checkpoint once it committed
+	// it: the `commit` and `committed` steps of `Migration` in
+	// `leaflow/fleet/transport/v1/transport.proto`. Repeating the step returns the same answer.
+	//
+	// Only the participant's user may migrate it.
+	//
+	// Fails with:
+	//
+	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+	//  - `CHECKPOINT_INVALID` when the checkpoint is not a serialized `Checkpoint`;
+	//  - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+	//    again after the error's `retry_delay`.
+	//
+	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:commit-migration
+	CommitParticipantMigration(ctx context.Context, req *MigrationStep, params CommitParticipantMigrationParams) (*MigrationStep, error)
+	// CreateAttempt implements create-attempt operation.
+	//
+	// Starts another PeerConnection of the participant with the offer, such as after a path failed, and
+	// returns the session's answer, its ICE candidates and the signed PeerAuthorization. Move the
+	// connection to it with `prepare-participant-migration` and `commit-participant-migration`.
+	//
+	// Only the participant's user may start one.
+	//
+	// Fails with:
+	//
+	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+	//  - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
+	//  - `TOO_MANY_ATTEMPTS` when the participant started too many PeerConnections in the last minute; try
+	//    again after the error's `retry_delay`;
+	//  - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+	//    again after the error's `retry_delay`;
+	//  - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; start another.
+	//
+	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts
+	CreateAttempt(ctx context.Context, req *CreateAttemptRequest, params CreateAttemptParams) (*Attempt, error)
+	// CreateAttemptCandidates implements create-attempt-candidates operation.
+	//
+	// Passes the ICE candidates the participant gathered after its offer to the session, and with
+	// `end_of_candidates`, that it has gathered all (RFC 8838). The session ignores those of an attempt
+	// that has ended.
+	//
+	// Only the participant's user may add them.
+	//
+	// Fails with:
+	//
+	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+	//  - `SESSION_UNAVAILABLE` when the session's process is not connected; try again after the error's
+	//    `retry_delay`.
+	//
+	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}/candidates
+	CreateAttemptCandidates(ctx context.Context, req *CreateAttemptCandidatesRequest, params CreateAttemptCandidatesParams) error
 	// CreateGroup implements create-group operation.
 	//
 	// Creates a group in the project's directory. It reaches the machines within about a minute.
@@ -67,6 +120,33 @@ type Handler interface {
 	//
 	// POST /api/v1/machine-registrations
 	CreateMachineRegistration(ctx context.Context, req *CreateMachineRegistrationRequest) (*CreateMachineRegistrationResponse, error)
+	// CreateParticipant implements create-participant operation.
+	//
+	// Admits one participant with the given public key to the session: signs its authorization, has the
+	// session accept it, and starts its first PeerConnection with the offer. The answer carries the
+	// participant, its authorization and the attempt with the session's answer. The participant lasts
+	// while it is renewed.
+	//
+	// The owner of a session may operate it. Joining another member's session requires
+	// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
+	// operating it. Each further capability of the session — file transfer, the clipboard, terminals and
+	// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
+	// requests and reading logs — is granted only with its permission; a participant that may only watch
+	// gets none of them. A request may ask for less: to watch only, or for some of the capabilities.
+	//
+	// Fails with the following, and then no participant was created:
+	//
+	//  - `SESSION_CLOSED` when the session has ended;
+	//  - `SESSION_ACCESS_DENIED` when the caller may not join the session;
+	//  - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
+	//  - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time, such
+	//    as while it restarts; try again after the error's `retry_delay`;
+	//  - `PARTICIPANT_LIMIT_REACHED` when the session has as many participants as it admits;
+	//  - `PARTICIPANT_REFUSED` when the session refused the participant;
+	//  - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; try again with a new offer.
+	//
+	// POST /api/v1/sessions/{sessionId}/participants
+	CreateParticipant(ctx context.Context, req *CreateParticipantRequest, params CreateParticipantParams) (*ParticipantConnection, error)
 	// CreateSession implements create-session operation.
 	//
 	// Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
@@ -76,7 +156,7 @@ type Handler interface {
 	//
 	// On a machine an account has at most one session with a desktop and at most 8 sessions in all.
 	// Sessions without a desktop run side by side, such as one for a program and one for a person; several
-	// viewers can also share one session.
+	// participants can also share one session.
 	//
 	// Fails with:
 	//
@@ -97,39 +177,17 @@ type Handler interface {
 	//
 	// POST /api/v1/sessions
 	CreateSession(ctx context.Context, req *CreateSessionRequest) (*SessionResource, error)
-	// CreateSignalingTicket implements create-signaling-ticket operation.
+	// DeleteAttempt implements delete-attempt operation.
 	//
-	// Issues a single-use ticket for one signaling WebSocket of the viewer connection, valid for 60
-	// seconds. Only the viewer connection's user may ask for one.
+	// Tells the session to give up the attempt and close its PeerConnection. Abandoning an attempt that
+	// has ended succeeds.
 	//
-	// Fails with `VIEWER_NOT_FOUND` when the viewer connection has ended.
+	// Only the participant's user may abandon it.
 	//
-	// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}/signaling-tickets
-	CreateSignalingTicket(ctx context.Context, params CreateSignalingTicketParams) (*SignalingTicket, error)
-	// CreateViewer implements create-viewer operation.
+	// Fails with `PARTICIPANT_NOT_FOUND` when the participant has ended.
 	//
-	// Admits one viewer with the given public key to the session: signs its authorization, has the session
-	// accept it, and returns it with a first signaling ticket. The viewer connection lasts while it is
-	// renewed.
-	//
-	// The owner of a session may operate it. Viewing another member's session requires
-	// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
-	// operating it. Each further capability of the session — file transfer, the clipboard, terminals and
-	// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
-	// requests and reading logs — is granted only with its permission; a viewer that may only watch gets
-	// none of them. A request may ask for less: to watch only, or for some of the capabilities.
-	//
-	// Fails with:
-	//
-	//  - `SESSION_CLOSED` when the session has ended;
-	//  - `SESSION_ACCESS_DENIED` when the caller may not view the session;
-	//  - `SESSION_UNAVAILABLE` when the session's process is not connected, such as while it restarts; try
-	//    again after the error's `retry_delay`;
-	//  - `VIEWER_LIMIT_REACHED` when the session has as many viewers as it admits;
-	//  - `VIEWER_REFUSED` when the session refused the viewer.
-	//
-	// POST /api/v1/sessions/{sessionId}/viewers
-	CreateViewer(ctx context.Context, req *CreateViewerRequest, params CreateViewerParams) (*ViewerConnection, error)
+	// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}
+	DeleteAttempt(ctx context.Context, params DeleteAttemptParams) error
 	// DeleteGroup implements delete-group operation.
 	//
 	// Removes the group from the directory. Machines stop resolving it within about a minute; files keep
@@ -149,10 +207,10 @@ type Handler interface {
 	DeleteGroupMember(ctx context.Context, params DeleteGroupMemberParams) error
 	// DeleteMachine implements delete-machine operation.
 	//
-	// Removes the machine from the project. Every viewer of its sessions is disconnected at once and the
-	// Agent is refused from then on; to use the machine again, enroll it again. Sessions still open on the
-	// machine can no longer be reached and end according to their own timeouts. Nothing on the machine is
-	// deleted.
+	// Removes the machine from the project. Every participant of its sessions is disconnected at once and
+	// the Agent is refused from then on; to use the machine again, enroll it again. Sessions still open on
+	// the machine can no longer be reached and end according to their own timeouts. Nothing on the machine
+	// is deleted.
 	//
 	// Requires `fleet:machines.manage`.
 	//
@@ -168,16 +226,16 @@ type Handler interface {
 	//
 	// DELETE /api/v1/machine-registrations/{registrationId}
 	DeleteMachineRegistration(ctx context.Context, params DeleteMachineRegistrationParams) error
-	// DeleteViewer implements delete-viewer operation.
+	// DeleteParticipant implements delete-participant operation.
 	//
-	// Ends the viewer connection: the session detaches the viewer and closes its PeerConnections, and the
-	// session goes on. A viewer leaves this way; others are disconnected this way.
+	// Ends the participant: the session detaches it and closes its PeerConnections, and the session goes
+	// on. A participant leaves this way; others are disconnected this way.
 	//
-	// The viewer connection's user and the owner of the session may end it; otherwise this requires
+	// The participant's user and the owner of the session may end it; otherwise this requires
 	// `fleet:sessions.manage`.
 	//
-	// DELETE /api/v1/sessions/{sessionId}/viewers/{connectionId}
-	DeleteViewer(ctx context.Context, params DeleteViewerParams) error
+	// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}
+	DeleteParticipant(ctx context.Context, params DeleteParticipantParams) error
 	// DenyEnrollment implements deny-enrollment operation.
 	//
 	// Refuses the request. The decision is final for the machine's key: the Agent stops polling and
@@ -233,6 +291,12 @@ type Handler interface {
 	//
 	// GET /api/v1/machine-registrations/{registrationId}
 	GetMachineRegistration(ctx context.Context, params GetMachineRegistrationParams) (*MachineRegistrationResource, error)
+	// GetParticipant implements get-participant operation.
+	//
+	// Returns a participant of the session.
+	//
+	// GET /api/v1/sessions/{sessionId}/participants/{connectionId}
+	GetParticipant(ctx context.Context, params GetParticipantParams) (*ParticipantResource, error)
 	// GetPrivilegeApproval implements get-privilege-approval operation.
 	//
 	// Returns whether the caller's elevations on the machine are approved without asking. A caller who
@@ -252,12 +316,21 @@ type Handler interface {
 	//
 	// GET /api/v1/sessions/{sessionId}
 	GetSession(ctx context.Context, params GetSessionParams) (*SessionResource, error)
-	// GetViewer implements get-viewer operation.
+	// GetSessionRtcConfiguration implements get-session-rtc-configuration operation.
 	//
-	// Returns a viewer connected to the session.
+	// Returns the STUN and TURN servers for the PeerConnections the caller starts to the session, with
+	// TURN credentials of its own, and the policy for using them. Ask again once `expires_at` has passed;
+	// the credentials of a PeerConnection already relayed last longer.
 	//
-	// GET /api/v1/sessions/{sessionId}/viewers/{connectionId}
-	GetViewer(ctx context.Context, params GetViewerParams) (*ViewerResource, error)
+	// Requires that the caller may join the session, as for `create-participant`.
+	//
+	// Fails with:
+	//
+	//  - `SESSION_CLOSED` when the session has ended;
+	//  - `SESSION_ACCESS_DENIED` when the caller may not join the session.
+	//
+	// GET /api/v1/sessions/{sessionId}/rtc-configuration
+	GetSessionRtcConfiguration(ctx context.Context, params GetSessionRtcConfigurationParams) (*RtcConfiguration, error)
 	// ListAccounts implements list-accounts operation.
 	//
 	// Returns the accounts of the project's members, ordered by username. A member who has never been able
@@ -313,12 +386,12 @@ type Handler interface {
 	//
 	// GET /api/v1/privilege-requests
 	ListPrivilegeRequests(ctx context.Context, params ListPrivilegeRequestsParams) (*PrivilegeRequestList, error)
-	// ListSessionViewers implements list-session-viewers operation.
+	// ListSessionParticipants implements list-session-participants operation.
 	//
-	// Returns the viewers connected to the session, in the order they connected.
+	// Returns the participants of the session, in the order they joined.
 	//
-	// GET /api/v1/sessions/{sessionId}/viewers
-	ListSessionViewers(ctx context.Context, params ListSessionViewersParams) (*ViewerList, error)
+	// GET /api/v1/sessions/{sessionId}/participants
+	ListSessionParticipants(ctx context.Context, params ListSessionParticipantsParams) (*ParticipantList, error)
 	// ListSessions implements list-sessions operation.
 	//
 	// Returns the sessions of the current project's machines, newest first. Closed sessions are omitted
@@ -326,24 +399,41 @@ type Handler interface {
 	//
 	// GET /api/v1/sessions
 	ListSessions(ctx context.Context, params ListSessionsParams) (*SessionList, error)
-	// RenewViewer implements renew-viewer operation.
+	// PrepareParticipantMigration implements prepare-participant-migration operation.
 	//
-	// Extends the viewer connection's lease and returns renewed PeerAuthorizations for the PeerConnections
-	// whose current ones the request presents; the session receives them too. A presented authorization
-	// that the service did not sign for this viewer connection, or whose attempt has ended, is left out of
-	// the answer. When the viewer's authorization nears its end, the answer carries a renewed one, which
-	// the session already holds.
+	// Passes the participant's checkpoint for the next epoch to the session and returns the session's
+	// checkpoint for it: the `prepare` and `prepared` steps of `Migration` in
+	// `leaflow/fleet/transport/v1/transport.proto`. Repeating the step returns the same answer.
 	//
-	// Only the viewer connection's user may renew it.
+	// Only the participant's user may migrate it.
 	//
 	// Fails with:
 	//
-	//  - `VIEWER_NOT_FOUND` when the viewer connection has ended; create another;
-	//  - `VIEWER_RIGHTS_CHANGED` when the caller's permissions no longer grant what the viewer connection
+	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+	//  - `CHECKPOINT_INVALID` when the checkpoint is not a serialized `Checkpoint`;
+	//  - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+	//    again after the error's `retry_delay`.
+	//
+	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:prepare-migration
+	PrepareParticipantMigration(ctx context.Context, req *MigrationStep, params PrepareParticipantMigrationParams) (*MigrationStep, error)
+	// RenewParticipant implements renew-participant operation.
+	//
+	// Extends the participant's lease and returns renewed PeerAuthorizations for the PeerConnections whose
+	// current ones the request presents; the session receives them too. A presented authorization that the
+	// service did not sign for this participant, or whose attempt has ended, is left out of the answer.
+	// When the participant's authorization nears its end, the answer carries a renewed one, which the
+	// session already holds.
+	//
+	// Only the participant's user may renew it.
+	//
+	// Fails with:
+	//
+	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended; create another;
+	//  - `PARTICIPANT_RIGHTS_CHANGED` when the caller's permissions no longer grant what the participant
 	//    holds; it has ended, and another can be created with the current rights.
 	//
-	// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}:renew
-	RenewViewer(ctx context.Context, req *RenewViewerRequest, params RenewViewerParams) (*RenewViewerResponse, error)
+	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:renew
+	RenewParticipant(ctx context.Context, req *RenewParticipantRequest, params RenewParticipantParams) (*RenewParticipantResponse, error)
 	// RunMachineCommand implements run-machine-command operation.
 	//
 	// Runs one command line on the machine as the caller's account, with its login shell, and returns once

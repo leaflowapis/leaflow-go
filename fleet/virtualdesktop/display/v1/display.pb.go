@@ -26,7 +26,7 @@ type SessionMode int32
 
 const (
 	SessionMode_SESSION_MODE_UNSPECIFIED SessionMode = 0
-	// Every application window is sent on its own and the viewer composes
+	// Every application window is sent on its own and the participant composes
 	// them; the Agent is the window manager (Xpra seamless mode; MS-RDPERP
 	// RemoteApp).
 	SessionMode_SESSION_MODE_SEAMLESS SessionMode = 1
@@ -76,7 +76,7 @@ func (SessionMode) EnumDescriptor() ([]byte, []int) {
 	return file_leaflow_fleet_virtualdesktop_display_v1_display_proto_rawDescGZIP(), []int{0}
 }
 
-// A message from the viewer.
+// A message from the participant.
 type ClientMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The message.
@@ -140,7 +140,7 @@ type isClientMessage_Message interface {
 }
 
 type ClientMessage_Configure struct {
-	// The viewer's viewport changed.
+	// The participant's viewport changed.
 	Configure *DisplayConfigure `protobuf:"bytes,1,opt,name=configure,proto3,oneof"`
 }
 
@@ -316,30 +316,30 @@ func (x *Display) GetRootWindowId() uint64 {
 	return 0
 }
 
-// The viewer's viewport, sent when the channel opens and after the viewport
-// or the device pixel ratio changes, debounced (Xpra configure-display;
-// MS-RDPEDISP DISPLAYCONTROL_MONITOR_LAYOUT_PDU). The session remembers the
-// latest of every viewer and applies the driver's: the canvas follows one
-// viewer at a time (see the window channel). Read-only viewers never drive,
-// and the DisplayConfigure of a viewer that shows native windows is
-// ignored.
+// The participant's viewport, sent when the channel opens and after the
+// viewport or the device pixel ratio changes, debounced (Xpra
+// configure-display; MS-RDPEDISP DISPLAYCONTROL_MONITOR_LAYOUT_PDU). The
+// session remembers the latest of every participant and applies the driver's:
+// the canvas follows one participant at a time (see the window channel).
+// Read-only participants never drive, and the DisplayConfigure of a participant
+// that shows native windows is ignored.
 type DisplayConfigure struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The viewport size in CSS pixels. The session clamps it to
 	// Display.max_size. Even sizes avoid encoder padding.
 	Size *Size `protobuf:"bytes,1,opt,name=size,proto3" json:"size,omitempty"`
-	// window.devicePixelRatio of the viewer (CSSOM View), greater than 0 and
+	// window.devicePixelRatio of the participant (CSSOM View), greater than 0 and
 	// at most 8.
 	DevicePixelRatio float64 `protobuf:"fixed64,2,opt,name=device_pixel_ratio,json=devicePixelRatio,proto3" json:"device_pixel_ratio,omitempty"`
-	// The part of the viewport the viewer's own interface leaves free, in
+	// The part of the viewport the participant's own interface leaves free, in
 	// canvas coordinates. Unset: all of it.
 	WorkArea *Rectangle `protobuf:"bytes,3,opt,name=work_area,json=workArea,proto3" json:"work_area,omitempty"`
-	// The decorations the viewer draws around decorated windows. The session
+	// The decorations the participant draws around decorated windows. The session
 	// reports them to applications as _NET_FRAME_EXTENTS. Unset: none.
 	FrameExtents *FrameExtents `protobuf:"bytes,4,opt,name=frame_extents,json=frameExtents,proto3" json:"frame_extents,omitempty"`
-	// Makes this viewer the driver and applies its configuration now. A viewer
-	// leaves it false when it only reports its viewport, such as when it
-	// joins a session somebody else is using.
+	// Makes this participant the driver and applies its configuration now. A
+	// participant leaves it false when it only reports its viewport, such as when
+	// it joins a session somebody else is using.
 	Drive         bool `protobuf:"varint,5,opt,name=drive,proto3" json:"drive,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -651,15 +651,15 @@ func (x *Rectangle) GetHeight() uint32 {
 }
 
 // A still image, such as an icon, sent as PNG. It comes from the session, so
-// the viewer decodes it only as a bitmap.
+// the participant decodes it only as a bitmap.
 //
-// Each channel caches the last 256 images it carried, keyed by content_hash
-// and evicting the least recently used; the cache starts empty when the
-// channel opens. Both ends apply every Image of a channel in order: the image
-// becomes the most recently used, and an Image with data adds its entry. The
-// session mirrors the viewer's cache and leaves data empty only for an image
-// the viewer holds. A viewer that still meets an unknown hash without data
-// falls back to Icon.icon_name or a placeholder.
+// Each channel caches the last 256 images it carried, keyed by content_hash and
+// evicting the least recently used; the cache starts empty when the channel
+// opens. Both ends apply every Image of a channel in order: the image becomes
+// the most recently used, and an Image with data adds its entry. The session
+// mirrors the participant's cache and leaves data empty only for an image the
+// participant holds. A participant that still meets an unknown hash without
+// data falls back to Icon.icon_name or a placeholder.
 type Image struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Always "image/png".

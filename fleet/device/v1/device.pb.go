@@ -22,7 +22,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// A type of device a viewer can provide.
+// A type of device a participant can provide.
 type DeviceType int32
 
 const (
@@ -97,7 +97,7 @@ const (
 	// session's audio source, or a streaming video capture. Opening, probing
 	// or listing the device does not count.
 	DemandState_DEMAND_STATE_ACTIVE DemandState = 2
-	// The session cannot tell. Providers stop; viewers never poll instead.
+	// The session cannot tell. Providers stop; participants never poll instead.
 	DemandState_DEMAND_STATE_UNAVAILABLE DemandState = 3
 )
 
@@ -151,15 +151,15 @@ const (
 	CaptureEndReason_CAPTURE_END_REASON_UNSPECIFIED CaptureEndReason = 0
 	// No application uses the device anymore.
 	CaptureEndReason_CAPTURE_END_REASON_NO_CONSUMERS CaptureEndReason = 1
-	// The viewer's authorization no longer allows it.
+	// The participant's authorization no longer allows it.
 	CaptureEndReason_CAPTURE_END_REASON_PERMISSION_REVOKED CaptureEndReason = 2
 	// The session's virtual device went away.
 	CaptureEndReason_CAPTURE_END_REASON_DEVICE_UNAVAILABLE CaptureEndReason = 3
-	// A viewer with a higher provider priority took over.
+	// A participant with a higher provider priority took over.
 	CaptureEndReason_CAPTURE_END_REASON_PROVIDER_REPLACED CaptureEndReason = 4
 	// The longest capture the policy allows has passed.
 	CaptureEndReason_CAPTURE_END_REASON_DEADLINE_EXCEEDED CaptureEndReason = 5
-	// No format of the viewer can be used.
+	// No format of the participant can be used.
 	CaptureEndReason_CAPTURE_END_REASON_UNSUPPORTED_FORMAT CaptureEndReason = 6
 )
 
@@ -314,7 +314,7 @@ type DeviceDemand struct {
 	// The applications using it, as far as the session can tell them apart,
 	// at most 32. Empty does not mean that nothing uses it.
 	Consumers []*DeviceConsumer `protobuf:"bytes,5,rep,name=consumers,proto3" json:"consumers,omitempty"`
-	// The connection that provides the device, as in ViewerList. 0: none.
+	// The connection that provides the device, as in ParticipantList. 0: none.
 	ProviderConnectionId uint64 `protobuf:"varint,6,opt,name=provider_connection_id,json=providerConnectionId,proto3" json:"provider_connection_id,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -530,17 +530,17 @@ func (x *CaptureEnd) GetReason() CaptureEndReason {
 	return CaptureEndReason_CAPTURE_END_REASON_UNSPECIFIED
 }
 
-// What devices a viewer may provide. Carried in the viewer's signed
-// authorization; without it the viewer provides none. The microphone also
+// What devices a participant may provide. Carried in the participant's signed
+// authorization; without it the participant provides none. The microphone also
 // needs AudioPolicy.
 type DevicePolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The device types the viewer may provide.
+	// The device types the participant may provide.
 	AllowedTypes []DeviceType `protobuf:"varint,1,rep,packed,name=allowed_types,json=allowedTypes,proto3,enum=leaflow.fleet.device.v1.DeviceType" json:"allowed_types,omitempty"`
-	// Decides between viewers that may provide the same device: the higher
+	// Decides between participants that may provide the same device: the higher
 	// wins, and on a tie the current provider stays.
 	ProviderPriority uint32 `protobuf:"varint,2,opt,name=provider_priority,json=providerPriority,proto3" json:"provider_priority,omitempty"`
-	// The longest the viewer may capture the microphone or the camera at a
+	// The longest the participant may capture the microphone or the camera at a
 	// stretch. Unset or 0: the session's limit.
 	MaxCaptureDuration *durationpb.Duration `protobuf:"bytes,3,opt,name=max_capture_duration,json=maxCaptureDuration,proto3" json:"max_capture_duration,omitempty"`
 	// Limits of the camera.
@@ -617,7 +617,7 @@ func (x *DevicePolicy) GetGamepadLimits() *GamepadLimits {
 }
 
 // Limits of the camera. The effective limits are the smallest of these, the
-// viewer's and the session's. 0: the session's limit.
+// participant's and the session's. 0: the session's limit.
 type CameraLimits struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The widest frame, in pixels.
@@ -708,7 +708,7 @@ func (x *CameraLimits) GetMaxQueueTime() *durationpb.Duration {
 	return nil
 }
 
-// Limits of the gamepads one viewer provides. 0: the session's limit.
+// Limits of the gamepads one participant provides. 0: the session's limit.
 type GamepadLimits struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The most gamepads, at most 8.

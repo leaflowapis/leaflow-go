@@ -31,7 +31,7 @@ const (
 	// Uncompressed pixels, rows top to bottom without padding, 4 bytes per
 	// pixel in the order R, G, B, A with straight alpha (RFC 6143 Raw).
 	Encoding_ENCODING_RAW Encoding = 1
-	// A copy of another area of the same window as the viewer shows it now,
+	// A copy of another area of the same window as the participant shows it now,
 	// from source_x and source_y; the areas may overlap. data is empty. The
 	// frame needs an exact dependency (RFC 6143 CopyRect).
 	Encoding_ENCODING_COPY_RECT Encoding = 2
@@ -101,7 +101,7 @@ func (Encoding) EnumDescriptor() ([]byte, []int) {
 	return file_leaflow_fleet_virtualdesktop_draw_v1_draw_proto_rawDescGZIP(), []int{0}
 }
 
-// A message from the viewer on the draw channel.
+// A message from the participant on the draw channel.
 type ClientMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The message.
@@ -195,12 +195,12 @@ type isClientMessage_Message interface {
 }
 
 type ClientMessage_ClientHello struct {
-	// The encodings the viewer decodes. The first message of the channel.
+	// The encodings the participant decodes. The first message of the channel.
 	ClientHello *ClientHello `protobuf:"bytes,1,opt,name=client_hello,json=clientHello,proto3,oneof"`
 }
 
 type ClientMessage_FrameAcknowledge struct {
-	// Frames the viewer finished with.
+	// Frames the participant finished with.
 	FrameAcknowledge *FrameAcknowledge `protobuf:"bytes,2,opt,name=frame_acknowledge,json=frameAcknowledge,proto3,oneof"`
 }
 
@@ -210,7 +210,7 @@ type ClientMessage_WindowRefresh struct {
 }
 
 type ClientMessage_SuppressOutput struct {
-	// Stops or resumes frames to this viewer.
+	// Stops or resumes frames to this participant.
 	SuppressOutput *SuppressOutput `protobuf:"bytes,4,opt,name=suppress_output,json=suppressOutput,proto3,oneof"`
 }
 
@@ -413,14 +413,14 @@ func (*FrameMessage_WindowDraw) isFrameMessage_Message() {}
 
 func (*FrameMessage_FrameEnd) isFrameMessage_Message() {}
 
-// What the viewer can decode (RFC 6143 §7.5.2 SetEncodings).
+// What the participant can decode (RFC 6143 §7.5.2 SetEncodings).
 type ClientHello struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Encodings the viewer decodes, most preferred first. COPY_RECT and
+	// Encodings the participant decodes, most preferred first. COPY_RECT and
 	// SOLID_FILL are always supported and need not be listed.
 	Encodings []Encoding `protobuf:"varint,1,rep,packed,name=encodings,proto3,enum=leaflow.fleet.virtualdesktop.draw.v1.Encoding" json:"encodings,omitempty"`
-	// WebCodecs codec strings the viewer decodes, most preferred first, such as
-	// "avc1.42E01F". Empty: no video.
+	// WebCodecs codec strings the participant decodes, most preferred first, such
+	// as "avc1.42E01F". Empty: no video.
 	Codecs        []string `protobuf:"bytes,2,rep,name=codecs,proto3" json:"codecs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -470,7 +470,7 @@ func (x *ClientHello) GetCodecs() []string {
 	return nil
 }
 
-// What the session will send this viewer.
+// What the session will send this participant.
 type ServerHello struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The encodings it may use: those of ClientHello.encodings it supports.
@@ -543,10 +543,10 @@ func (x *ServerHello) GetMaxQuality() uint32 {
 	return 0
 }
 
-// Starts a frame: draws the viewer presents together. The session sends one
-// frame per window with updates at each tick of its frame clock, and puts
-// several windows in one frame only when they must change together, such as
-// a menu opening while its window repaints.
+// Starts a frame: draws the participant presents together. The session sends
+// one frame per window with updates at each tick of its frame clock, and puts
+// several windows in one frame only when they must change together, such as a
+// menu opening while its window repaints.
 type FrameStart struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The frame.
@@ -604,10 +604,10 @@ func (x *FrameStart) GetReferences() []*FrameReference {
 // What a frame needs of one window's earlier content.
 type FrameReference struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The window. When the viewer does not know it yet it holds the frame for
-	// up to one second.
+	// The window. When the participant does not know it yet it holds the frame
+	// for up to one second.
 	WindowId uint64 `protobuf:"varint,1,opt,name=window_id,json=windowId,proto3" json:"window_id,omitempty"`
-	// The frame of this window the draws were encoded on top of. The viewer
+	// The frame of this window the draws were encoded on top of. The participant
 	// presents the frame only when the window's last presented frame is not
 	// older; with COPY_RECT or a video delta it must be exactly this frame.
 	// 0: the frame repaints the window and depends on nothing. The first frame
@@ -615,8 +615,8 @@ type FrameReference struct {
 	// WindowRefresh use 0; a repaint too large for one frame continues in
 	// frames that depend on it.
 	ReferenceFrameId uint64 `protobuf:"varint,2,opt,name=reference_frame_id,json=referenceFrameId,proto3" json:"reference_frame_id,omitempty"`
-	// Window.resize_counter the draws were encoded for. The viewer waits up to
-	// one second for the window with this counter and discards the frame once
+	// Window.resize_counter the draws were encoded for. The participant waits up
+	// to one second for the window with this counter and discards the frame once
 	// a larger counter is shown. The new window size and the frame appear
 	// together.
 	ResizeCounter uint64 `protobuf:"varint,3,opt,name=resize_counter,json=resizeCounter,proto3" json:"resize_counter,omitempty"`
@@ -702,8 +702,8 @@ type WindowDraw struct {
 	// COPY_RECT only: the top edge of the source area.
 	SourceY uint32 `protobuf:"varint,11,opt,name=source_y,json=sourceY,proto3" json:"source_y,omitempty"`
 	// The size of the encoded image when the session scaled it down; the
-	// viewer scales it to width × height. Unset: width × height. Not for RAW,
-	// COPY_RECT or SOLID_FILL.
+	// participant scales it to width × height. Unset: width × height. Not for
+	// RAW, COPY_RECT or SOLID_FILL.
 	ScaledSize *v1.Size `protobuf:"bytes,12,opt,name=scaled_size,json=scaledSize,proto3" json:"scaled_size,omitempty"`
 	// H264 only: a key frame, decodable without earlier video frames (WebCodecs
 	// EncodedVideoChunkType "key").
@@ -711,11 +711,11 @@ type WindowDraw struct {
 	// H264 only: the presentation time in microseconds, increasing within the
 	// window's video (WebCodecs EncodedVideoChunk timestamp).
 	TimestampUs int64 `protobuf:"varint,14,opt,name=timestamp_us,json=timestampUs,proto3" json:"timestamp_us,omitempty"`
-	// H264 only, on every key frame: the WebCodecs codec string. The viewer
+	// H264 only, on every key frame: the WebCodecs codec string. The participant
 	// reconfigures the window's decoder when it changes.
 	Codec string `protobuf:"bytes,15,opt,name=codec,proto3" json:"codec,omitempty"`
 	// H264 only: the next WindowDraw of this frame continues the same access
-	// unit. The viewer joins the data of such draws before decoding.
+	// unit. The participant joins the data of such draws before decoding.
 	MoreFragments bool `protobuf:"varint,16,opt,name=more_fragments,json=moreFragments,proto3" json:"more_fragments,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -919,8 +919,8 @@ func (x *FrameEnd) GetDrawCount() uint32 {
 	return 0
 }
 
-// Frames the session withdrew. The viewer treats each as completed: it drops
-// what it received of it and ignores the rest. One it already presented
+// Frames the session withdrew. The participant treats each as completed: it
+// drops what it received of it and ignores the rest. One it already presented
 // stays presented.
 type FrameCancel struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -967,14 +967,14 @@ func (x *FrameCancel) GetFrameIds() []uint64 {
 	return nil
 }
 
-// The frames the viewer has completed, sent after presenting them rather than
-// on receipt, so that the session sees decoding backlog as well as network
+// The frames the participant has completed, sent after presenting them rather
+// than on receipt, so that the session sees decoding backlog as well as network
 // delay and can pace itself (after MS-RDPEGFX RDPGFX_FRAME_ACKNOWLEDGE_PDU).
-// Frames of different windows complete out of order and a datagram may be
-// lost, so every acknowledgement states all completed frames: a watermark and
-// the completed frames above it. The viewer sends one per animation frame in
-// which it completed a frame, as a datagram when it can, and at least every
-// 250 milliseconds on the channel itself.
+// Frames of different windows complete out of order and a datagram may be lost,
+// so every acknowledgement states all completed frames: a watermark and the
+// completed frames above it. The participant sends one per animation frame in
+// which it completed a frame, as a datagram when it can, and at least every 250
+// milliseconds on the channel itself.
 type FrameAcknowledge struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Every frame up to and including this one is completed.
@@ -1105,9 +1105,9 @@ func (x *WindowRefresh) GetWindowId() uint64 {
 	return 0
 }
 
-// Stops or resumes the frames sent to this viewer, such as while its window
-// is hidden (MS-RDPBCGR §2.2.11.3 Suppress Output PDU). While stopped the
-// session keeps the damage and sends one update covering it when frames
+// Stops or resumes the frames sent to this participant, such as while its
+// window is hidden (MS-RDPBCGR §2.2.11.3 Suppress Output PDU). While stopped
+// the session keeps the damage and sends one update covering it when frames
 // resume. Nothing but frames is affected. Frames are allowed when the
 // connection starts.
 type SuppressOutput struct {

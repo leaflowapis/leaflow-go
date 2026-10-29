@@ -134,7 +134,7 @@ func (Sides) EnumDescriptor() ([]byte, []int) {
 	return file_leaflow_fleet_printing_v1_printing_proto_rawDescGZIP(), []int{1}
 }
 
-// How far the viewer got with a job.
+// How far the participant got with a job.
 type PrintJobPhase int32
 
 const (
@@ -143,7 +143,7 @@ const (
 	PrintJobPhase_PRINT_JOB_PHASE_RECEIVING PrintJobPhase = 1
 	// The document is stored and verified.
 	PrintJobPhase_PRINT_JOB_PHASE_VERIFIED PrintJobPhase = 2
-	// The job is in the viewer's print queue.
+	// The job is in the participant's print queue.
 	PrintJobPhase_PRINT_JOB_PHASE_SUBMITTED PrintJobPhase = 3
 	// The submission may have happened, but its outcome is unknown.
 	PrintJobPhase_PRINT_JOB_PHASE_UNKNOWN PrintJobPhase = 4
@@ -211,7 +211,7 @@ const (
 	PrintJobState_PRINT_JOB_STATE_CANCELED PrintJobState = 7
 	// Failed ("aborted").
 	PrintJobState_PRINT_JOB_STATE_ABORTED PrintJobState = 8
-	// Printed, as the viewer's print queue reports ("completed").
+	// Printed, as the participant's print queue reports ("completed").
 	PrintJobState_PRINT_JOB_STATE_COMPLETED PrintJobState = 9
 )
 
@@ -266,7 +266,7 @@ func (PrintJobState) EnumDescriptor() ([]byte, []int) {
 	return file_leaflow_fleet_printing_v1_printing_proto_rawDescGZIP(), []int{3}
 }
 
-// A message from the viewer on the printing channel.
+// A message from the participant on the printing channel.
 type ClientMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The message.
@@ -360,12 +360,12 @@ type isClientMessage_Message interface {
 }
 
 type ClientMessage_PrinterList struct {
-	// The printers the viewer shares now, in full.
+	// The printers the participant shares now, in full.
 	PrinterList *PrinterList `protobuf:"bytes,1,opt,name=printer_list,json=printerList,proto3,oneof"`
 }
 
 type ClientMessage_JobCreateResponse struct {
-	// The viewer accepts or refuses a job.
+	// The participant accepts or refuses a job.
 	JobCreateResponse *PrintJobCreateResponse `protobuf:"bytes,2,opt,name=job_create_response,json=jobCreateResponse,proto3,oneof"`
 }
 
@@ -375,7 +375,7 @@ type ClientMessage_JobStatus struct {
 }
 
 type ClientMessage_JobCancel struct {
-	// The viewer cancelled a job, such as at its person's request.
+	// The participant cancelled a job, such as at its person's request.
 	JobCancel *PrintJobCancel `protobuf:"bytes,4,opt,name=job_cancel,json=jobCancel,proto3,oneof"`
 }
 
@@ -491,7 +491,7 @@ type ServerMessage_JobCreate struct {
 }
 
 type ServerMessage_JobSubmit struct {
-	// The viewer may submit a job it stored.
+	// The participant may submit a job it stored.
 	JobSubmit *PrintJobSubmit `protobuf:"bytes,3,opt,name=job_submit,json=jobSubmit,proto3,oneof"`
 }
 
@@ -508,7 +508,7 @@ func (*ServerMessage_JobSubmit) isServerMessage_Message() {}
 
 func (*ServerMessage_JobCancel) isServerMessage_Message() {}
 
-// The printers the viewer shares, replacing the previous list.
+// The printers the participant shares, replacing the previous list.
 type PrinterList struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// At most PrintingPolicy.max_printers.
@@ -601,10 +601,10 @@ func (x *PrinterListResponse) GetError() *status.Status {
 	return nil
 }
 
-// A printer of the viewer.
+// A printer of the participant.
 type Printer struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Chosen by the viewer, never reused on the connection.
+	// Chosen by the participant, never reused on the connection.
 	PrinterId string `protobuf:"bytes,1,opt,name=printer_id,json=printerId,proto3" json:"printer_id,omitempty"`
 	// Its name for people (printer-name), at most 256 bytes. Plain text.
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
@@ -1021,12 +1021,12 @@ func (x *PrintJobCreate) GetOptions() *PrintOptions {
 	return nil
 }
 
-// The viewer accepts or refuses a job.
+// The participant accepts or refuses a job.
 type PrintJobCreateResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The job.
 	JobId string `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
-	// Why the viewer refused it, such as an unknown printer, unsupported
+	// Why the participant refused it, such as an unknown printer, unsupported
 	// options or too many jobs. Unset when it accepted it.
 	Error         *status.Status `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1077,7 +1077,7 @@ func (x *PrintJobCreateResponse) GetError() *status.Status {
 	return nil
 }
 
-// The viewer may submit a job it stored.
+// The participant may submit a job it stored.
 type PrintJobSubmit struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The job.
@@ -1174,9 +1174,9 @@ type PrintJobStatus struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The job.
 	JobId string `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
-	// How far the viewer got with it.
+	// How far the participant got with it.
 	Phase PrintJobPhase `protobuf:"varint,2,opt,name=phase,proto3,enum=leaflow.fleet.printing.v1.PrintJobPhase" json:"phase,omitempty"`
-	// Its state in the viewer's print queue, once submitted.
+	// Its state in the participant's print queue, once submitted.
 	State PrintJobState `protobuf:"varint,3,opt,name=state,proto3,enum=leaflow.fleet.printing.v1.PrintJobState" json:"state,omitempty"`
 	// Why it failed. Unset otherwise.
 	Error         *status.Status `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
@@ -1393,7 +1393,7 @@ func (*PrintDocument_End) isPrintDocument_Part() {}
 
 func (*PrintDocument_Error) isPrintDocument_Part() {}
 
-// The end of a document. The viewer checks the size and the digest before
+// The end of a document. The participant checks the size and the digest before
 // storing it.
 type PrintDocumentEnd struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1440,9 +1440,9 @@ func (x *PrintDocumentEnd) GetSha256() []byte {
 	return nil
 }
 
-// What a viewer may print. Carried in the viewer's signed authorization;
-// without it the viewer shares no printers. It shares nothing else, such as
-// files or devices.
+// What a participant may print. Carried in the participant's signed
+// authorization; without it the participant shares no printers. It shares
+// nothing else, such as files or devices.
 type PrintingPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The largest document, at most 128 MiB. 0: no documents.

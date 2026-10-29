@@ -188,7 +188,7 @@ func (x *DataTransferItem) GetData() []byte {
 	return nil
 }
 
-// A message from the viewer on the clipboard channel.
+// A message from the participant on the clipboard channel.
 type ClipboardClientMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The message.
@@ -262,12 +262,12 @@ type isClipboardClientMessage_Message interface {
 }
 
 type ClipboardClientMessage_FormatList struct {
-	// The viewer became the owner of a selection.
+	// The participant became the owner of a selection.
 	FormatList *ClipboardFormatList `protobuf:"bytes,1,opt,name=format_list,json=formatList,proto3,oneof"`
 }
 
 type ClipboardClientMessage_FormatListResponse struct {
-	// The viewer applied a format list of the session.
+	// The participant applied a format list of the session.
 	FormatListResponse *ClipboardFormatListResponse `protobuf:"bytes,2,opt,name=format_list_response,json=formatListResponse,proto3,oneof"`
 }
 
@@ -369,7 +369,7 @@ type isClipboardServerMessage_Message interface {
 }
 
 type ClipboardServerMessage_Status struct {
-	// What this viewer may do, first in the snapshot and again whenever it
+	// What this participant may do, first in the snapshot and again whenever it
 	// changes.
 	Status *ClipboardStatus `protobuf:"bytes,1,opt,name=status,proto3,oneof"`
 }
@@ -380,7 +380,7 @@ type ClipboardServerMessage_FormatList struct {
 }
 
 type ClipboardServerMessage_FormatListResponse struct {
-	// The session applied a format list of the viewer.
+	// The session applied a format list of the participant.
 	FormatListResponse *ClipboardFormatListResponse `protobuf:"bytes,3,opt,name=format_list_response,json=formatListResponse,proto3,oneof"`
 }
 
@@ -397,14 +397,14 @@ func (*ClipboardServerMessage_FormatListResponse) isClipboardServerMessage_Messa
 
 func (*ClipboardServerMessage_SnapshotEnd) isClipboardServerMessage_Message() {}
 
-// What the viewer may do with the clipboard. The viewer does not offer, read
-// or accept what it forbids.
+// What the participant may do with the clipboard. The participant does not
+// offer, read or accept what it forbids.
 type ClipboardStatus struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The viewer receives the session's format lists and reads their data
+	// The participant receives the session's format lists and reads their data
 	// (ClipboardPolicy.read_allowed).
 	ReadAllowed bool `protobuf:"varint,1,opt,name=read_allowed,json=readAllowed,proto3" json:"read_allowed,omitempty"`
-	// The viewer's format lists are applied to the session
+	// The participant's format lists are applied to the session
 	// (ClipboardPolicy.write_allowed).
 	WriteAllowed bool `protobuf:"varint,2,opt,name=write_allowed,json=writeAllowed,proto3" json:"write_allowed,omitempty"`
 	// The selections shared. For now only CLIPBOARD.
@@ -466,8 +466,8 @@ func (x *ClipboardStatus) GetSelections() []Selection {
 
 // The sender became the owner of a selection (MS-RDPECLIP Format List PDU).
 // From the session: an application copied; the session read its targets. From
-// the viewer: its person copied, or is about to paste into a session window;
-// the session takes ownership of the selection, then answers.
+// the participant: its person copied, or is about to paste into a session
+// window; the session takes ownership of the selection, then answers.
 type ClipboardFormatList struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The selection.
@@ -661,7 +661,7 @@ func (*SnapshotEnd) Descriptor() ([]byte, []int) {
 	return file_leaflow_fleet_virtualdesktop_datatransfer_v1_datatransfer_proto_rawDescGZIP(), []int{6}
 }
 
-// A message from the viewer on the drag channel.
+// A message from the participant on the drag channel.
 type DragClientMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The message.
@@ -835,47 +835,47 @@ type DragClientMessage_SourceCancel struct {
 }
 
 type DragClientMessage_Start struct {
-	// A drag of the viewer reaches the session.
+	// A drag of the participant reaches the session.
 	Start *DragStart `protobuf:"bytes,3,opt,name=start,proto3,oneof"`
 }
 
 type DragClientMessage_StartResponse struct {
-	// The viewer confirms a drag of the session.
+	// The participant confirms a drag of the session.
 	StartResponse *DragStartResponse `protobuf:"bytes,4,opt,name=start_response,json=startResponse,proto3,oneof"`
 }
 
 type DragClientMessage_Enter struct {
-	// The viewer's drag loop entered a target.
+	// The participant's drag loop entered a target.
 	Enter *DragEnter `protobuf:"bytes,5,opt,name=enter,proto3,oneof"`
 }
 
 type DragClientMessage_Position struct {
-	// The viewer's drag loop moved over its target.
+	// The participant's drag loop moved over its target.
 	Position *DragPosition `protobuf:"bytes,6,opt,name=position,proto3,oneof"`
 }
 
 type DragClientMessage_Leave struct {
-	// The viewer's drag loop left its target.
+	// The participant's drag loop left its target.
 	Leave *DragLeave `protobuf:"bytes,7,opt,name=leave,proto3,oneof"`
 }
 
 type DragClientMessage_Drop struct {
-	// The viewer's drag loop dropped on its target.
+	// The participant's drag loop dropped on its target.
 	Drop *DragDrop `protobuf:"bytes,8,opt,name=drop,proto3,oneof"`
 }
 
 type DragClientMessage_Status struct {
-	// What a target of the viewer's desktop would do with a drop.
+	// What a target of the participant's desktop would do with a drop.
 	Status *DragStatus `protobuf:"bytes,9,opt,name=status,proto3,oneof"`
 }
 
 type DragClientMessage_Finish struct {
-	// A drag of the session ended on the viewer's desktop.
+	// A drag of the session ended on the participant's desktop.
 	Finish *DragFinish `protobuf:"bytes,10,opt,name=finish,proto3,oneof"`
 }
 
 type DragClientMessage_Cancel struct {
-	// The viewer abandoned a drag.
+	// The participant abandoned a drag.
 	Cancel *DragCancel `protobuf:"bytes,11,opt,name=cancel,proto3,oneof"`
 }
 
@@ -1010,7 +1010,7 @@ type DragServerMessage_SourceResponse struct {
 }
 
 type DragServerMessage_StartResponse struct {
-	// The session confirms a drag of the viewer.
+	// The session confirms a drag of the participant.
 	StartResponse *DragStartResponse `protobuf:"bytes,2,opt,name=start_response,json=startResponse,proto3,oneof"`
 }
 
@@ -1020,7 +1020,7 @@ type DragServerMessage_Status struct {
 }
 
 type DragServerMessage_Finish struct {
-	// A drag of the viewer ended in the session.
+	// A drag of the participant ended in the session.
 	Finish *DragFinish `protobuf:"bytes,4,opt,name=finish,proto3,oneof"`
 }
 
@@ -1039,17 +1039,17 @@ func (*DragServerMessage_Finish) isDragServerMessage_Message() {}
 
 func (*DragServerMessage_Cancel) isDragServerMessage_Message() {}
 
-// Asks the session for the native drag that a session window started with
-// the viewer's held button. The session answers with DragSourceResponse: the
-// DragStart once the source's XdndEnter reached the session's own XDND
-// target, or an error when no drag comes, such as on a timeout.
+// Asks the session for the native drag that a session window started with the
+// participant's held button. The session answers with DragSourceResponse: the
+// DragStart once the source's XdndEnter reached the session's own XDND target,
+// or an error when no drag comes, such as on a timeout.
 type DragSourceRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Chosen by the viewer, never reused on the connection.
+	// Chosen by the participant, never reused on the connection.
 	RequestId uint64 `protobuf:"varint,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	// The window the drag started in.
 	SourceWindowId uint64 `protobuf:"varint,2,opt,name=source_window_id,json=sourceWindowId,proto3" json:"source_window_id,omitempty"`
-	// input_seq of the viewer's latest input of the gesture.
+	// input_seq of the participant's latest input of the gesture.
 	InputSeq      uint64 `protobuf:"varint,3,opt,name=input_seq,json=inputSeq,proto3" json:"input_seq,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1189,7 +1189,7 @@ type isDragSourceResponse_Result interface {
 }
 
 type DragSourceResponse_Start struct {
-	// The drag. The viewer confirms it with DragStartResponse before
+	// The drag. The participant confirms it with DragStartResponse before
 	// starting its own drag loop.
 	Start *DragStart `protobuf:"bytes,2,opt,name=start,proto3,oneof"`
 }
@@ -1257,15 +1257,15 @@ type DragStart struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Chosen by the source side, unique on the connection.
 	DragId string `protobuf:"bytes,1,opt,name=drag_id,json=dragId,proto3" json:"drag_id,omitempty"`
-	// The session window the drag came from. 0 for a drag of the viewer.
+	// The session window the drag came from. 0 for a drag of the participant.
 	SourceWindowId uint64 `protobuf:"varint,2,opt,name=source_window_id,json=sourceWindowId,proto3" json:"source_window_id,omitempty"`
 	// The formats the source provides, most faithful first, at most 32 unique
 	// ones of at most 255 bytes each.
 	MimeTypes []string `protobuf:"bytes,3,rep,name=mime_types,json=mimeTypes,proto3" json:"mime_types,omitempty"`
 	// The actions the source allows, most preferred first.
 	Actions []DragAction `protobuf:"varint,4,rep,packed,name=actions,proto3,enum=leaflow.fleet.virtualdesktop.datatransfer.v1.DragAction" json:"actions,omitempty"`
-	// input_seq of the viewer's latest input of the gesture. 0 for a drag from
-	// the viewer's desktop into the session.
+	// input_seq of the participant's latest input of the gesture. 0 for a drag
+	// from the participant's desktop into the session.
 	InputSeq uint64 `protobuf:"varint,5,opt,name=input_seq,json=inputSeq,proto3" json:"input_seq,omitempty"`
 	// The files dragged, as names, types and sizes. Unset when no files are
 	// dragged or they are provided only when read.
@@ -1411,14 +1411,14 @@ func (x *DragStartResponse) GetError() *status.Status {
 	return nil
 }
 
-// The viewer's drag loop entered a target.
+// The participant's drag loop entered a target.
 type DragEnter struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The drag.
 	DragId string `protobuf:"bytes,1,opt,name=drag_id,json=dragId,proto3" json:"drag_id,omitempty"`
-	// A new id for this target, chosen by the viewer.
+	// A new id for this target, chosen by the participant.
 	TargetId string `protobuf:"bytes,2,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
-	// The session window under the pointer. 0: a target of the viewer's own
+	// The session window under the pointer. 0: a target of the participant's own
 	// desktop.
 	WindowId uint64 `protobuf:"varint,3,opt,name=window_id,json=windowId,proto3" json:"window_id,omitempty"`
 	// The point relative to the window.
@@ -1429,7 +1429,7 @@ type DragEnter struct {
 	ResizeCounter uint64 `protobuf:"varint,6,opt,name=resize_counter,json=resizeCounter,proto3" json:"resize_counter,omitempty"`
 	// The position in the drag's order.
 	Sequence uint64 `protobuf:"varint,7,opt,name=sequence,proto3" json:"sequence,omitempty"`
-	// The action the viewer proposes, such as MOVE while Shift is held.
+	// The action the participant proposes, such as MOVE while Shift is held.
 	ProposedAction DragAction `protobuf:"varint,8,opt,name=proposed_action,json=proposedAction,proto3,enum=leaflow.fleet.virtualdesktop.datatransfer.v1.DragAction" json:"proposed_action,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -1521,7 +1521,7 @@ func (x *DragEnter) GetProposedAction() DragAction {
 	return DragAction_DRAG_ACTION_UNSPECIFIED
 }
 
-// The viewer's drag loop moved over its current target.
+// The participant's drag loop moved over its current target.
 type DragPosition struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The drag.
@@ -1536,7 +1536,7 @@ type DragPosition struct {
 	ResizeCounter uint64 `protobuf:"varint,5,opt,name=resize_counter,json=resizeCounter,proto3" json:"resize_counter,omitempty"`
 	// The position in the drag's order.
 	Sequence uint64 `protobuf:"varint,6,opt,name=sequence,proto3" json:"sequence,omitempty"`
-	// The action the viewer proposes.
+	// The action the participant proposes.
 	ProposedAction DragAction `protobuf:"varint,7,opt,name=proposed_action,json=proposedAction,proto3,enum=leaflow.fleet.virtualdesktop.datatransfer.v1.DragAction" json:"proposed_action,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -1712,7 +1712,7 @@ func (x *DragStatus) GetError() *status.Status {
 	return nil
 }
 
-// The viewer's drag loop left its target (XdndLeave). The drag goes on.
+// The participant's drag loop left its target (XdndLeave). The drag goes on.
 type DragLeave struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The drag.
@@ -1776,7 +1776,7 @@ func (x *DragLeave) GetSequence() uint64 {
 	return 0
 }
 
-// The viewer's drag loop dropped on its target (XdndDrop).
+// The participant's drag loop dropped on its target (XdndDrop).
 type DragDrop struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The drag.
@@ -2874,13 +2874,13 @@ func (x *DropDataResponse) GetRevision() uint64 {
 	return 0
 }
 
-// What a viewer may do with the clipboard. Carried in the viewer's signed
-// authorization; without it the viewer shares no clipboard.
+// What a participant may do with the clipboard. Carried in the participant's
+// signed authorization; without it the participant shares no clipboard.
 type ClipboardPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The viewer may read the session's clipboard.
+	// The participant may read the session's clipboard.
 	ReadAllowed bool `protobuf:"varint,1,opt,name=read_allowed,json=readAllowed,proto3" json:"read_allowed,omitempty"`
-	// The viewer may write the session's clipboard.
+	// The participant may write the session's clipboard.
 	WriteAllowed  bool `protobuf:"varint,2,opt,name=write_allowed,json=writeAllowed,proto3" json:"write_allowed,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2930,14 +2930,14 @@ func (x *ClipboardPolicy) GetWriteAllowed() bool {
 	return false
 }
 
-// What a viewer may drag. Carried in the viewer's signed authorization;
-// without it the viewer drags nothing. Dragging files also needs the matching
-// direction of FileTransferPolicy.
+// What a participant may drag. Carried in the participant's signed
+// authorization; without it the participant drags nothing. Dragging files also
+// needs the matching direction of FileTransferPolicy.
 type DragPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The viewer may drag into the session.
+	// The participant may drag into the session.
 	UploadAllowed bool `protobuf:"varint,1,opt,name=upload_allowed,json=uploadAllowed,proto3" json:"upload_allowed,omitempty"`
-	// The viewer may drag out of the session.
+	// The participant may drag out of the session.
 	DownloadAllowed bool `protobuf:"varint,2,opt,name=download_allowed,json=downloadAllowed,proto3" json:"download_allowed,omitempty"`
 	// The formats that may be dragged, exactly. Empty: none; files travel only
 	// as offers.

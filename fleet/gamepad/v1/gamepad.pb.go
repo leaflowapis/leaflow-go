@@ -80,13 +80,13 @@ type GamepadCloseReason int32
 
 const (
 	GamepadCloseReason_GAMEPAD_CLOSE_REASON_UNSPECIFIED GamepadCloseReason = 0
-	// The viewer's authorization does not allow it.
+	// The participant's authorization does not allow it.
 	GamepadCloseReason_GAMEPAD_CLOSE_REASON_PERMISSION_DENIED GamepadCloseReason = 1
-	// The viewer's authorization no longer allows it.
+	// The participant's authorization no longer allows it.
 	GamepadCloseReason_GAMEPAD_CLOSE_REASON_PERMISSION_REVOKED GamepadCloseReason = 2
 	// The session cannot create or keep the virtual device.
 	GamepadCloseReason_GAMEPAD_CLOSE_REASON_DEVICE_UNAVAILABLE GamepadCloseReason = 3
-	// The viewer broke the rules above.
+	// The participant broke the rules above.
 	GamepadCloseReason_GAMEPAD_CLOSE_REASON_PROTOCOL_ERROR GamepadCloseReason = 4
 	// A limit of GamepadLimits was exceeded.
 	GamepadCloseReason_GAMEPAD_CLOSE_REASON_RESOURCE_EXHAUSTED GamepadCloseReason = 5
@@ -139,7 +139,7 @@ func (GamepadCloseReason) EnumDescriptor() ([]byte, []int) {
 	return file_leaflow_fleet_gamepad_v1_gamepad_proto_rawDescGZIP(), []int{1}
 }
 
-// A message from the viewer.
+// A message from the participant.
 type GamepadClientMessage struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The message.
@@ -426,7 +426,7 @@ func (x *GamepadDescriptor) GetNeutralAxes() []float32 {
 // The virtual device exists.
 type GamepadOpen struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The descriptor in effect: the viewer's, with the standard mapping
+	// The descriptor in effect: the participant's, with the standard mapping
 	// normalized.
 	Descriptor_   *GamepadDescriptor `protobuf:"bytes,1,opt,name=descriptor,proto3" json:"descriptor,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -475,7 +475,7 @@ type GamepadState struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Grows by one with every state of the channel, starting at 1.
 	Sequence uint64 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
-	// When the viewer read it, in microseconds on its own clock
+	// When the participant read it, in microseconds on its own clock
 	// (Gamepad.timestamp). Informational.
 	TimestampUs int64 `protobuf:"varint,2,opt,name=timestamp_us,json=timestampUs,proto3" json:"timestamp_us,omitempty"`
 	// The axes, each from -1 to 1, as many as the descriptor has.
