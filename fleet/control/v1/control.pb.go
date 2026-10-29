@@ -163,9 +163,9 @@ const (
 	ParticipantEndReason_PARTICIPANT_END_REASON_SESSION_ENDED ParticipantEndReason = 4
 	// The session's process did not connect again within Welcome.resume_grace.
 	ParticipantEndReason_PARTICIPANT_END_REASON_SESSION_PROCESS_LOST ParticipantEndReason = 5
-	// Its user's permissions no longer grant what it holds, or the user left
-	// the project.
-	ParticipantEndReason_PARTICIPANT_END_REASON_RIGHTS_CHANGED ParticipantEndReason = 6
+	// A permission it was created with was revoked from its user: what the
+	// user is granted in the machine's project no longer covers what it may do.
+	ParticipantEndReason_PARTICIPANT_END_REASON_PERMISSION_REVOKED ParticipantEndReason = 6
 	// Its machine was removed from the project.
 	ParticipantEndReason_PARTICIPANT_END_REASON_MACHINE_REMOVED ParticipantEndReason = 7
 	// The key that signed its authorization was revoked.
@@ -173,33 +173,47 @@ const (
 	// Its first PeerConnection did not start, so it was never handed to its
 	// client.
 	ParticipantEndReason_PARTICIPANT_END_REASON_NOT_ADMITTED ParticipantEndReason = 9
+	// Its user is no longer a member of the machine's project: the user left
+	// or was removed.
+	ParticipantEndReason_PARTICIPANT_END_REASON_MEMBERSHIP_ENDED ParticipantEndReason = 10
+	// Its user's account is no longer active: it was suspended or banned, or
+	// its deletion was requested.
+	ParticipantEndReason_PARTICIPANT_END_REASON_USER_INACTIVE ParticipantEndReason = 11
+	// Deletion of the machine's project was requested.
+	ParticipantEndReason_PARTICIPANT_END_REASON_PROJECT_DELETION_REQUESTED ParticipantEndReason = 12
 )
 
 // Enum value maps for ParticipantEndReason.
 var (
 	ParticipantEndReason_name = map[int32]string{
-		0: "PARTICIPANT_END_REASON_UNSPECIFIED",
-		1: "PARTICIPANT_END_REASON_LEFT",
-		2: "PARTICIPANT_END_REASON_REMOVED",
-		3: "PARTICIPANT_END_REASON_LEASE_EXPIRED",
-		4: "PARTICIPANT_END_REASON_SESSION_ENDED",
-		5: "PARTICIPANT_END_REASON_SESSION_PROCESS_LOST",
-		6: "PARTICIPANT_END_REASON_RIGHTS_CHANGED",
-		7: "PARTICIPANT_END_REASON_MACHINE_REMOVED",
-		8: "PARTICIPANT_END_REASON_KEY_REVOKED",
-		9: "PARTICIPANT_END_REASON_NOT_ADMITTED",
+		0:  "PARTICIPANT_END_REASON_UNSPECIFIED",
+		1:  "PARTICIPANT_END_REASON_LEFT",
+		2:  "PARTICIPANT_END_REASON_REMOVED",
+		3:  "PARTICIPANT_END_REASON_LEASE_EXPIRED",
+		4:  "PARTICIPANT_END_REASON_SESSION_ENDED",
+		5:  "PARTICIPANT_END_REASON_SESSION_PROCESS_LOST",
+		6:  "PARTICIPANT_END_REASON_PERMISSION_REVOKED",
+		7:  "PARTICIPANT_END_REASON_MACHINE_REMOVED",
+		8:  "PARTICIPANT_END_REASON_KEY_REVOKED",
+		9:  "PARTICIPANT_END_REASON_NOT_ADMITTED",
+		10: "PARTICIPANT_END_REASON_MEMBERSHIP_ENDED",
+		11: "PARTICIPANT_END_REASON_USER_INACTIVE",
+		12: "PARTICIPANT_END_REASON_PROJECT_DELETION_REQUESTED",
 	}
 	ParticipantEndReason_value = map[string]int32{
-		"PARTICIPANT_END_REASON_UNSPECIFIED":          0,
-		"PARTICIPANT_END_REASON_LEFT":                 1,
-		"PARTICIPANT_END_REASON_REMOVED":              2,
-		"PARTICIPANT_END_REASON_LEASE_EXPIRED":        3,
-		"PARTICIPANT_END_REASON_SESSION_ENDED":        4,
-		"PARTICIPANT_END_REASON_SESSION_PROCESS_LOST": 5,
-		"PARTICIPANT_END_REASON_RIGHTS_CHANGED":       6,
-		"PARTICIPANT_END_REASON_MACHINE_REMOVED":      7,
-		"PARTICIPANT_END_REASON_KEY_REVOKED":          8,
-		"PARTICIPANT_END_REASON_NOT_ADMITTED":         9,
+		"PARTICIPANT_END_REASON_UNSPECIFIED":                0,
+		"PARTICIPANT_END_REASON_LEFT":                       1,
+		"PARTICIPANT_END_REASON_REMOVED":                    2,
+		"PARTICIPANT_END_REASON_LEASE_EXPIRED":              3,
+		"PARTICIPANT_END_REASON_SESSION_ENDED":              4,
+		"PARTICIPANT_END_REASON_SESSION_PROCESS_LOST":       5,
+		"PARTICIPANT_END_REASON_PERMISSION_REVOKED":         6,
+		"PARTICIPANT_END_REASON_MACHINE_REMOVED":            7,
+		"PARTICIPANT_END_REASON_KEY_REVOKED":                8,
+		"PARTICIPANT_END_REASON_NOT_ADMITTED":               9,
+		"PARTICIPANT_END_REASON_MEMBERSHIP_ENDED":           10,
+		"PARTICIPANT_END_REASON_USER_INACTIVE":              11,
+		"PARTICIPANT_END_REASON_PROJECT_DELETION_REQUESTED": 12,
 	}
 )
 
@@ -2354,18 +2368,22 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\x1dCLOSE_REASON_POLICY_VIOLATION\x10\x10\x12\x1f\n" +
 	"\x1bCLOSE_REASON_INTERNAL_ERROR\x10\x11\x12\x1b\n" +
 	"\x17CLOSE_REASON_OVERLOADED\x10\x12\x12\"\n" +
-	"\x1eCLOSE_REASON_ENDPOINT_TOO_SLOW\x10\x13*\xb0\x03\n" +
+	"\x1eCLOSE_REASON_ENDPOINT_TOO_SLOW\x10\x13*\xc2\x04\n" +
 	"\x14ParticipantEndReason\x12&\n" +
 	"\"PARTICIPANT_END_REASON_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bPARTICIPANT_END_REASON_LEFT\x10\x01\x12\"\n" +
 	"\x1ePARTICIPANT_END_REASON_REMOVED\x10\x02\x12(\n" +
 	"$PARTICIPANT_END_REASON_LEASE_EXPIRED\x10\x03\x12(\n" +
 	"$PARTICIPANT_END_REASON_SESSION_ENDED\x10\x04\x12/\n" +
-	"+PARTICIPANT_END_REASON_SESSION_PROCESS_LOST\x10\x05\x12)\n" +
-	"%PARTICIPANT_END_REASON_RIGHTS_CHANGED\x10\x06\x12*\n" +
+	"+PARTICIPANT_END_REASON_SESSION_PROCESS_LOST\x10\x05\x12-\n" +
+	")PARTICIPANT_END_REASON_PERMISSION_REVOKED\x10\x06\x12*\n" +
 	"&PARTICIPANT_END_REASON_MACHINE_REMOVED\x10\a\x12&\n" +
 	"\"PARTICIPANT_END_REASON_KEY_REVOKED\x10\b\x12'\n" +
-	"#PARTICIPANT_END_REASON_NOT_ADMITTED\x10\t2\xc7\x03\n" +
+	"#PARTICIPANT_END_REASON_NOT_ADMITTED\x10\t\x12+\n" +
+	"'PARTICIPANT_END_REASON_MEMBERSHIP_ENDED\x10\n" +
+	"\x12(\n" +
+	"$PARTICIPANT_END_REASON_USER_INACTIVE\x10\v\x125\n" +
+	"1PARTICIPANT_END_REASON_PROJECT_DELETION_REQUESTED\x10\f2\xc7\x03\n" +
 	"\x12ParticipantService\x12\x81\x01\n" +
 	"\x11AttachParticipant\x122.leaflow.fleet.control.v1.AttachParticipantRequest\x1a3.leaflow.fleet.control.v1.AttachParticipantResponse\"\x03\x90\x02\x02\x12\xa8\x01\n" +
 	"\x1eUpdateParticipantAuthorization\x12?.leaflow.fleet.control.v1.UpdateParticipantAuthorizationRequest\x1a@.leaflow.fleet.control.v1.UpdateParticipantAuthorizationResponse\"\x03\x90\x02\x02\x12\x81\x01\n" +

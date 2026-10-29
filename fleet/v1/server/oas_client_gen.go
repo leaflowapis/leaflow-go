@@ -530,8 +530,11 @@ type Invoker interface {
 	// Fails with:
 	//
 	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended; create another;
-	//  - `PARTICIPANT_RIGHTS_CHANGED` when the caller's permissions no longer grant what the participant
-	//    holds; it has ended, and another can be created with the current rights.
+	//  - `PARTICIPANT_PERMISSION_REVOKED` when a permission the participant was created with has been
+	//    revoked from the caller; it has ended, and another can be created with the permissions the caller
+	//    holds now;
+	//  - `PROJECT_MEMBERSHIP_REQUIRED` when the caller is no longer a member of the project; the
+	//    participant has ended.
 	//
 	// POST /api/v1/sessions/{sessionId}/participants/{participantId}:renew
 	RenewParticipant(ctx context.Context, request *RenewParticipantRequest, params RenewParticipantParams) (*RenewParticipantResponse, error)
@@ -7643,8 +7646,11 @@ func (c *Client) sendPrepareParticipantMigration(ctx context.Context, request *M
 // Fails with:
 //
 //   - `PARTICIPANT_NOT_FOUND` when the participant has ended; create another;
-//   - `PARTICIPANT_RIGHTS_CHANGED` when the caller's permissions no longer grant what the participant
-//     holds; it has ended, and another can be created with the current rights.
+//   - `PARTICIPANT_PERMISSION_REVOKED` when a permission the participant was created with has been
+//     revoked from the caller; it has ended, and another can be created with the permissions the caller
+//     holds now;
+//   - `PROJECT_MEMBERSHIP_REQUIRED` when the caller is no longer a member of the project; the
+//     participant has ended.
 //
 // POST /api/v1/sessions/{sessionId}/participants/{participantId}:renew
 func (c *Client) RenewParticipant(ctx context.Context, request *RenewParticipantRequest, params RenewParticipantParams) (*RenewParticipantResponse, error) {
