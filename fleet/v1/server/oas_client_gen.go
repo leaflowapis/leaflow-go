@@ -55,7 +55,9 @@ type Invoker interface {
 	// in a path is called with `send-mcp-request`. Neither the arguments nor the result is hidden from the
 	// platform. Requires `fleet:machines.login` on the machine.
 	//
-	// Fails as sending a request does.
+	// Fails as sending a request does, and with `MCP_REQUEST_FAILED` when the server answers with a
+	// JSON-RPC error, such as for a tool it does not offer or arguments it does not accept, with the
+	// error's `metadata.code` and `metadata.message`.
 	//
 	// POST /api/v1/machines/{machineId}/mcp-servers/{serverName}/tools/{toolName}:call
 	CallMcpTool(ctx context.Context, request *CallMcpToolRequest, params CallMcpToolParams) (*CallMcpToolResponse, error)
@@ -1007,7 +1009,9 @@ func (c *Client) sendApprovePrivilegeRequest(ctx context.Context, params Approve
 // in a path is called with `send-mcp-request`. Neither the arguments nor the result is hidden from the
 // platform. Requires `fleet:machines.login` on the machine.
 //
-// Fails as sending a request does.
+// Fails as sending a request does, and with `MCP_REQUEST_FAILED` when the server answers with a
+// JSON-RPC error, such as for a tool it does not offer or arguments it does not accept, with the
+// error's `metadata.code` and `metadata.message`.
 //
 // POST /api/v1/machines/{machineId}/mcp-servers/{serverName}/tools/{toolName}:call
 func (c *Client) CallMcpTool(ctx context.Context, request *CallMcpToolRequest, params CallMcpToolParams) (*CallMcpToolResponse, error) {
