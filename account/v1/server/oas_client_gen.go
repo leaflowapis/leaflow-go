@@ -77,9 +77,6 @@ type Invoker interface {
 	CreateProject(ctx context.Context, request *CreateProjectRequestBody) (*ProjectAccessResource, error)
 	// CreateSSHKey invokes create-ssh-key operation.
 	//
-	// The key takes effect in every project the caller belongs to: Fleet machines accept it within about a
-	// minute, and Compute installs it on the servers the caller creates or reinstalls from then on.
-	//
 	// Fails with 409 `SSH_KEY_ALREADY_EXISTS` while the same key is active on any account, this one
 	// included, and with 412 `SSH_KEY_QUOTA_EXCEEDED` while the account already holds 50 active keys.
 	//
@@ -299,8 +296,7 @@ type Invoker interface {
 	// RevokeSSHKey invokes revoke-ssh-key operation.
 	//
 	// The row remains and its status becomes `REVOKED`, so it stays answerable afterwards which key was
-	// trusted at the time. Fleet machines stop accepting the key within about a minute. A server on which
-	// Compute installed the key keeps it until it is removed there.
+	// trusted at the time.
 	//
 	// The same key can then be added again, to this account or another.
 	//
@@ -1008,9 +1004,6 @@ func (c *Client) sendCreateProject(ctx context.Context, request *CreateProjectRe
 }
 
 // CreateSSHKey invokes create-ssh-key operation.
-//
-// The key takes effect in every project the caller belongs to: Fleet machines accept it within about a
-// minute, and Compute installs it on the servers the caller creates or reinstalls from then on.
 //
 // Fails with 409 `SSH_KEY_ALREADY_EXISTS` while the same key is active on any account, this one
 // included, and with 412 `SSH_KEY_QUOTA_EXCEEDED` while the account already holds 50 active keys.
@@ -3586,8 +3579,7 @@ func (c *Client) sendRequestAccountDeletion(ctx context.Context, params RequestA
 // RevokeSSHKey invokes revoke-ssh-key operation.
 //
 // The row remains and its status becomes `REVOKED`, so it stays answerable afterwards which key was
-// trusted at the time. Fleet machines stop accepting the key within about a minute. A server on which
-// Compute installed the key keeps it until it is removed there.
+// trusted at the time.
 //
 // The same key can then be added again, to this account or another.
 //

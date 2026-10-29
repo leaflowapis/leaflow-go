@@ -74,10 +74,9 @@ type Invoker interface {
 	CreateRole(ctx context.Context, request *CreateRoleRequestBody) (*RoleResource, error)
 	// CreateSSHKey invokes create-ssh-key operation.
 	//
-	// Adds a key the project shares, such as one used by CI or a bastion. Compute installs it on every
-	// server created in the project afterwards. It belongs to no member, so it signs in as nobody on Fleet
-	// machines; a member adds a key of their own to their account (`POST /account/v1/me/ssh-keys` on the
-	// account API).
+	// Adds a key the project shares, such as one used by CI or a bastion. It belongs to the project rather
+	// than to the member adding it; a member adds a key of their own to their account
+	// (`POST /account/v1/me/ssh-keys` on the account API).
 	//
 	// Requires `iam:ssh_keys.manage`.
 	//
@@ -236,8 +235,7 @@ type Invoker interface {
 	// RevokeSSHKey invokes revoke-ssh-key operation.
 	//
 	// The row remains and its status becomes `REVOKED`, so it stays answerable afterwards which key was
-	// trusted at the time. A server on which Compute installed the key keeps it until it is removed there.
-	// Requires `iam:ssh_keys.manage`.
+	// trusted at the time. Requires `iam:ssh_keys.manage`.
 	//
 	// DELETE /api/v1/ssh-keys/{keyId}
 	RevokeSSHKey(ctx context.Context, params RevokeSSHKeyParams) (*SSHKeyResource, error)
@@ -882,10 +880,9 @@ func (c *Client) sendCreateRole(ctx context.Context, request *CreateRoleRequestB
 
 // CreateSSHKey invokes create-ssh-key operation.
 //
-// Adds a key the project shares, such as one used by CI or a bastion. Compute installs it on every
-// server created in the project afterwards. It belongs to no member, so it signs in as nobody on Fleet
-// machines; a member adds a key of their own to their account (`POST /account/v1/me/ssh-keys` on the
-// account API).
+// Adds a key the project shares, such as one used by CI or a bastion. It belongs to the project rather
+// than to the member adding it; a member adds a key of their own to their account
+// (`POST /account/v1/me/ssh-keys` on the account API).
 //
 // Requires `iam:ssh_keys.manage`.
 //
@@ -3929,8 +3926,7 @@ func (c *Client) sendRevokeInvitation(ctx context.Context, params RevokeInvitati
 // RevokeSSHKey invokes revoke-ssh-key operation.
 //
 // The row remains and its status becomes `REVOKED`, so it stays answerable afterwards which key was
-// trusted at the time. A server on which Compute installed the key keeps it until it is removed there.
-// Requires `iam:ssh_keys.manage`.
+// trusted at the time. Requires `iam:ssh_keys.manage`.
 //
 // DELETE /api/v1/ssh-keys/{keyId}
 func (c *Client) RevokeSSHKey(ctx context.Context, params RevokeSSHKeyParams) (*SSHKeyResource, error) {
