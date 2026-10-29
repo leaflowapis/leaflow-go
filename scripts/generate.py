@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""用 pinned 原生 ogen 在 server 包生成客户端和服务端。"""
 import os
 import pathlib
 import subprocess
@@ -14,7 +13,6 @@ def require_source(source, ref):
     head = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
     if head != ref:
         raise ValueError("source HEAD differs from CONTRACTS_REF")
-    # 拒绝同 HEAD 下的未提交契约漂移，避免把他人的 WIP 当成固定 source 生成。
     dirty = subprocess.check_output(["git", "-C", str(source), "status", "--porcelain", "--untracked-files=all"], text=True)
     if dirty:
         raise ValueError("CONTRACTS_DIR must be a clean checkout of CONTRACTS_REF")
@@ -22,11 +20,8 @@ def require_source(source, ref):
 
 
 def generate_services(source):
-    # 直接读取固定契约，不改 scratch/schema，不注入外部类型或生成额外业务操作。
     for spec in sorted((source / "leaflow").glob("**/openapi.yaml")):
         relative = spec.parent.relative_to(source / "leaflow")
-        # A Go package name has no hyphen while a contract directory may (swas-legacy): ogen refuses the name rather
-        # than fixing it, and the whole generation stops on that one service.
         package = ("".join(relative.parts[:-1]) + relative.parts[-1]).replace("-", "")
         ogen.generate_api(spec, ROOT / relative, package, ROOT)
         print(str(relative), "native client + server + referenced models", flush=True)

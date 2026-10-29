@@ -9,7 +9,6 @@ OGEN = "github.com/ogen-go/ogen/cmd/ogen@v1.24.0"
 
 
 def generate_api(spec, output, package, cwd):
-    """只编排官方 ogen；直接生成各 API 的引用模型、校验、客户端和服务端。"""
     target = output / "server"
     target.mkdir(parents=True, exist_ok=True)
     config = {
@@ -29,6 +28,5 @@ def generate_api(spec, output, package, cwd):
             command + ["-config", str(path), "-target", str(target), "-package", package + "server", "-clean", str(spec)],
             cwd=cwd, env={**os.environ, "GOWORK": "off", "GOTOOLCHAIN": "local"}, check=True,
         )
-    # 成功后仅移除已废弃的生成客户端和手产 defaults，保留手写测试和其他 WIP。
     for path in (output / "client.gen.go", output / "defaults.gen.go", target / "defaults.gen.go"):
         path.unlink(missing_ok=True)

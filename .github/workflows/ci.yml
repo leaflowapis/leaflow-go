@@ -1,13 +1,3 @@
-# 校验生成产物与契约一致，并逐模块编译。
-#
-# Go 模块无发布动作：打 tag 即发布，go get 直接从 git 读取。因此本流水线保证的是提交在仓库中的
-# .gen.go 与契约一致——该文件即使用方获得的内容，构建期不存在补救环节，且 tag 不可变。
-#
-# 每个服务一个模块，仓库根不存在模块，`go build ./...` 在根目录不做任何事。逐模块编译由 find
-# 展开，不写死服务名单：新增服务时若遗漏，表现为该模块从未被编译而流水线为绿。
-#
-# 子包也是模块（billing/catalog），比服务多一层，tag 带两段前缀（billing/catalog/v0.1.0）。
-# tags 的过滤用 **：单个 * 不匹配斜杠，两段前缀的 tag 会不触发任何检查而照常可被 go get。
 name: ci
 
 on:
@@ -26,28 +16,26 @@ jobs:
           go-version: '1.27.3'
       - run: pip install pyyaml
 
-      # 先 add -A 再比对暂存区：`git diff` 只看已跟踪的文件，而新增一个服务时它的
-      # defaults.gen.go 属于未跟踪，遗漏提交同样为绿。
-      - name: 生成产物与契约一致
+      - name: Verify generated code matches the pinned contract
         run: |
           python3 scripts/generate.py
           git add -A
           if ! git diff --cached --quiet; then
-            echo "::error::契约已变更但生成产物未更新。执行 python3 scripts/generate.py 后提交。" >&2
+            echo "::error::Contracts changed but generated code is out of date. Run python3 scripts/generate.py and commit the result." >&2
             git --no-pager diff --cached --stat >&2
             exit 1
           fi
 
-      - name: 产物已格式化
+      - name: Verify generated code is formatted
         run: |
           unformatted=$(gofmt -l . | grep -v '^leaflowapis/' || true)
           if [ -n "$unformatted" ]; then
-            echo "::error::以下文件未经 gofmt 格式化。" >&2
+            echo "::error::The following files are not formatted with gofmt." >&2
             echo "$unformatted" >&2
             exit 1
           fi
 
-      - name: 逐模块编译
+      - name: Build each module
         run: |
           if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
             module="${GITHUB_REF_NAME%/v*}"
@@ -60,6 +48,6 @@ jobs:
             done
           fi
           for module in "${modules[@]}"; do
-            echo "── $module"
+            echo "Building $module"
             (cd "$module" && go build ./... && go vet ./...)
           done
