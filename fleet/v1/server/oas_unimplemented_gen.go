@@ -38,6 +38,20 @@ func (UnimplementedHandler) ApprovePrivilegeRequest(ctx context.Context, params 
 	return r, ht.ErrNotImplemented
 }
 
+// CallMcpTool implements call-mcp-tool operation.
+//
+// Calls one tool of one of the caller's servers on the machine and returns its MCP `CallToolResult`. A
+// tool that reports an error, with `isError`, is a successful request. A tool whose name cannot appear
+// in a path is called with `send-mcp-request`. Neither the arguments nor the result is hidden from the
+// platform. Requires `fleet:machines.login` on the machine.
+//
+// Fails as sending a request does.
+//
+// POST /api/v1/machines/{machineId}/mcp-servers/{serverName}/tools/{toolName}:call
+func (UnimplementedHandler) CallMcpTool(ctx context.Context, req *CallMcpToolRequest, params CallMcpToolParams) (r *CallMcpToolResponse, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CloseSession implements close-session operation.
 //
 // Ends the session in order: its applications are asked to exit and get a grace period before the
@@ -278,6 +292,18 @@ func (UnimplementedHandler) DeleteMachineRegistration(ctx context.Context, param
 	return ht.ErrNotImplemented
 }
 
+// DeleteMcpServer implements delete-mcp-server operation.
+//
+// Removes a server from the caller's MCP configuration on the machine and stops it. Removing one that
+// is not configured succeeds. Requires `fleet:machines.login` on the machine.
+//
+// Fails as replacing a server does.
+//
+// DELETE /api/v1/machines/{machineId}/mcp-servers/{serverName}
+func (UnimplementedHandler) DeleteMcpServer(ctx context.Context, params DeleteMcpServerParams) (r *McpConfigurationFile, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // DeleteParticipant implements delete-participant operation.
 //
 // Ends the participant: the session detaches it and closes its PeerConnections, and the session goes
@@ -388,6 +414,25 @@ func (UnimplementedHandler) GetMachine(ctx context.Context, params GetMachinePar
 //
 // GET /api/v1/machine-registrations/{registrationId}
 func (UnimplementedHandler) GetMachineRegistration(ctx context.Context, params GetMachineRegistrationParams) (r *MachineRegistrationResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetMcpConfiguration implements get-mcp-configuration operation.
+//
+// Returns the caller's MCP configuration file on the machine and every server in it, with what each is
+// doing now. The values of `env` and `headers` are never returned, only their keys. Requires
+// `fleet:machines.login` on the machine.
+//
+// Fails with:
+//
+//   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+//     machine refuses the account, as for opening a session;
+//   - `MACHINE_TIMEOUT` when the machine did not answer in time.
+//
+// GET /api/v1/machines/{machineId}/mcp-configuration
+func (UnimplementedHandler) GetMcpConfiguration(ctx context.Context, params GetMcpConfigurationParams) (r *McpConfigurationResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -505,6 +550,29 @@ func (UnimplementedHandler) ListMachines(ctx context.Context, params ListMachine
 	return r, ht.ErrNotImplemented
 }
 
+// ListMcpTools implements list-mcp-tools operation.
+//
+// Lists the tools of the caller's servers on the machine, or of one of them, that match `query`: every
+// word of it, ignoring case, in the tool's name, title or description. They are ordered by server,
+// then by tool name. Servers that are not running are started to learn their tools; one that cannot be
+// is named in `unavailable_servers`, and the others are listed anyway. Slow servers do not hold the
+// request up: those still starting are named with `timeout` and go on starting, so that a later
+// request lists their tools. Requires `fleet:machines.login` on the machine.
+//
+// Fails with:
+//
+//   - `MCP_SERVER_NOT_FOUND` when `server` is not configured;
+//   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+//     machine refuses the account, as for opening a session;
+//   - `MACHINE_TIMEOUT` when the machine did not answer in time.
+//
+// GET /api/v1/machines/{machineId}/mcp-tools
+func (UnimplementedHandler) ListMcpTools(ctx context.Context, params ListMcpToolsParams) (r *McpToolList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListPrivilegeAutoApprovals implements list-privilege-auto-approvals operation.
 //
 // Returns the caller's automatic approvals on the machines of the current project that are in effect,
@@ -587,6 +655,30 @@ func (UnimplementedHandler) RenewParticipant(ctx context.Context, req *RenewPart
 	return r, ht.ErrNotImplemented
 }
 
+// ReplaceMcpConfiguration implements replace-mcp-configuration operation.
+//
+// Replaces the caller's MCP configuration file on the machine as a whole, also one that cannot be read
+// or is not valid. The machine starts the servers that were added, stops the ones that were removed
+// and restarts the ones that changed when they are next used. The account is created if the caller has
+// none yet. The content, secrets included, passes through the platform. Requires
+// `fleet:machines.login` on the machine.
+//
+// Fails with:
+//
+//   - `MCP_CONFIGURATION_CHANGED` when the file is no longer at `expected_revision`;
+//   - `MCP_CONFIGURATION_INVALID` when `content` is not an object with an object `mcpServers`, with
+//     `metadata.line` and `metadata.column`;
+//   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+//     machine refuses the account, as for opening a session;
+//   - `MACHINE_TIMEOUT` when the machine did not answer in time.
+//
+// PUT /api/v1/machines/{machineId}/mcp-configuration
+func (UnimplementedHandler) ReplaceMcpConfiguration(ctx context.Context, req *ReplaceMcpConfigurationRequest, params ReplaceMcpConfigurationParams) (r *McpConfigurationFile, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // RunMachineCommand implements run-machine-command operation.
 //
 // Runs one command line on the machine as the caller's account, with its login shell, and returns once
@@ -616,6 +708,35 @@ func (UnimplementedHandler) RenewParticipant(ctx context.Context, req *RenewPart
 //
 // POST /api/v1/machines/{machineId}:runCommand
 func (UnimplementedHandler) RunMachineCommand(ctx context.Context, req *RunCommandRequest, params RunMachineCommandParams) (r *RunCommandResponse, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SendMcpRequest implements send-mcp-request operation.
+//
+// Sends one JSON-RPC request of MCP to one of the caller's servers on the machine, such as
+// `tools/call`, `resources/read` or `prompts/get`, and returns the server's response. The machine
+// starts or connects to the server if it is not running, and handles its initialization itself; a
+// request still running when `timeout_seconds` passes is cancelled at the server. Requests the server
+// makes of the client, such as for sampling, are refused, and its notifications, such as of progress,
+// are dropped. A response with a JSON-RPC error is a successful request. Neither the request nor the
+// response is hidden from the platform. Requires `fleet:machines.login` on the machine.
+//
+// Fails with:
+//
+//   - `MCP_SERVER_NOT_FOUND` when the server is not configured;
+//   - `MCP_SERVER_UNAVAILABLE` when it could not be started or reached, with `metadata.failure`, an
+//     `McpServerFailure`;
+//   - `INVALID_ARGUMENT` when `request` is not one JSON-RPC request, such as a notification, or is one
+//     of initialization;
+//   - `RESULT_TOO_LARGE` when the response is larger than 8 MiB;
+//   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+//     machine refuses the account, as for opening a session;
+//   - `MACHINE_TIMEOUT` when the machine did not answer in time.
+//
+// POST /api/v1/machines/{machineId}/mcp-servers/{serverName}:send
+func (UnimplementedHandler) SendMcpRequest(ctx context.Context, req *SendMcpRequestRequest, params SendMcpRequestParams) (r *SendMcpRequestResponse, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -665,6 +786,28 @@ func (UnimplementedHandler) UpdateGroup(ctx context.Context, req *UpdateGroupReq
 //
 // PATCH /api/v1/machines/{machineId}
 func (UnimplementedHandler) UpdateMachine(ctx context.Context, req *UpdateMachineRequest, params UpdateMachineParams) (r *MachineResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateMcpServer implements update-mcp-server operation.
+//
+// Adds a server to the caller's MCP configuration on the machine, or replaces the one with the same
+// name. The values of `env` and `headers` the request gives, secrets included, pass through the
+// platform; those named in `keep_env` and `keep_headers` stay as they are on the machine. The account
+// is created if the caller has none yet. Requires `fleet:machines.login` on the machine.
+//
+// Fails with:
+//
+//   - `MCP_CONFIGURATION_CHANGED` when the file is no longer at `expected_revision`;
+//   - `MCP_CONFIGURATION_INVALID` when the file cannot be read or is not valid; replace it whole first;
+//   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+//     machine refuses the account, as for opening a session;
+//   - `MACHINE_TIMEOUT` when the machine did not answer in time.
+//
+// PUT /api/v1/machines/{machineId}/mcp-servers/{serverName}
+func (UnimplementedHandler) UpdateMcpServer(ctx context.Context, req *UpdateMcpServerRequest, params UpdateMcpServerParams) (r *UpdateMcpServerResponse, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

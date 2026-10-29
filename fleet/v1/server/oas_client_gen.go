@@ -48,6 +48,17 @@ type Invoker interface {
 	//
 	// POST /api/v1/privilege-requests/{requestId}:approve
 	ApprovePrivilegeRequest(ctx context.Context, params ApprovePrivilegeRequestParams) (*PrivilegeRequestResource, error)
+	// CallMcpTool invokes call-mcp-tool operation.
+	//
+	// Calls one tool of one of the caller's servers on the machine and returns its MCP `CallToolResult`. A
+	// tool that reports an error, with `isError`, is a successful request. A tool whose name cannot appear
+	// in a path is called with `send-mcp-request`. Neither the arguments nor the result is hidden from the
+	// platform. Requires `fleet:machines.login` on the machine.
+	//
+	// Fails as sending a request does.
+	//
+	// POST /api/v1/machines/{machineId}/mcp-servers/{serverName}/tools/{toolName}:call
+	CallMcpTool(ctx context.Context, request *CallMcpToolRequest, params CallMcpToolParams) (*CallMcpToolResponse, error)
 	// CloseSession invokes close-session operation.
 	//
 	// Ends the session in order: its applications are asked to exit and get a grace period before the
@@ -249,6 +260,15 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/machine-registrations/{registrationId}
 	DeleteMachineRegistration(ctx context.Context, params DeleteMachineRegistrationParams) error
+	// DeleteMcpServer invokes delete-mcp-server operation.
+	//
+	// Removes a server from the caller's MCP configuration on the machine and stops it. Removing one that
+	// is not configured succeeds. Requires `fleet:machines.login` on the machine.
+	//
+	// Fails as replacing a server does.
+	//
+	// DELETE /api/v1/machines/{machineId}/mcp-servers/{serverName}
+	DeleteMcpServer(ctx context.Context, params DeleteMcpServerParams) (*McpConfigurationFile, error)
 	// DeleteParticipant invokes delete-participant operation.
 	//
 	// Ends the participant: the session detaches it and closes its PeerConnections, and the session goes
@@ -332,6 +352,22 @@ type Invoker interface {
 	//
 	// GET /api/v1/machine-registrations/{registrationId}
 	GetMachineRegistration(ctx context.Context, params GetMachineRegistrationParams) (*MachineRegistrationResource, error)
+	// GetMcpConfiguration invokes get-mcp-configuration operation.
+	//
+	// Returns the caller's MCP configuration file on the machine and every server in it, with what each is
+	// doing now. The values of `env` and `headers` are never returned, only their keys. Requires
+	// `fleet:machines.login` on the machine.
+	//
+	// Fails with:
+	//
+	//  - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
+	//  - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+	//  - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+	//    machine refuses the account, as for opening a session;
+	//  - `MACHINE_TIMEOUT` when the machine did not answer in time.
+	//
+	// GET /api/v1/machines/{machineId}/mcp-configuration
+	GetMcpConfiguration(ctx context.Context, params GetMcpConfigurationParams) (*McpConfigurationResource, error)
 	// GetParticipant invokes get-participant operation.
 	//
 	// Returns a participant of the session.
@@ -413,6 +449,26 @@ type Invoker interface {
 	//
 	// GET /api/v1/machines
 	ListMachines(ctx context.Context, params ListMachinesParams) (*MachineList, error)
+	// ListMcpTools invokes list-mcp-tools operation.
+	//
+	// Lists the tools of the caller's servers on the machine, or of one of them, that match `query`: every
+	// word of it, ignoring case, in the tool's name, title or description. They are ordered by server,
+	// then by tool name. Servers that are not running are started to learn their tools; one that cannot be
+	// is named in `unavailable_servers`, and the others are listed anyway. Slow servers do not hold the
+	// request up: those still starting are named with `timeout` and go on starting, so that a later
+	// request lists their tools. Requires `fleet:machines.login` on the machine.
+	//
+	// Fails with:
+	//
+	//  - `MCP_SERVER_NOT_FOUND` when `server` is not configured;
+	//  - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
+	//  - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+	//  - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+	//    machine refuses the account, as for opening a session;
+	//  - `MACHINE_TIMEOUT` when the machine did not answer in time.
+	//
+	// GET /api/v1/machines/{machineId}/mcp-tools
+	ListMcpTools(ctx context.Context, params ListMcpToolsParams) (*McpToolList, error)
 	// ListPrivilegeAutoApprovals invokes list-privilege-auto-approvals operation.
 	//
 	// Returns the caller's automatic approvals on the machines of the current project that are in effect,
@@ -477,6 +533,27 @@ type Invoker interface {
 	//
 	// POST /api/v1/sessions/{sessionId}/participants/{participantId}:renew
 	RenewParticipant(ctx context.Context, request *RenewParticipantRequest, params RenewParticipantParams) (*RenewParticipantResponse, error)
+	// ReplaceMcpConfiguration invokes replace-mcp-configuration operation.
+	//
+	// Replaces the caller's MCP configuration file on the machine as a whole, also one that cannot be read
+	// or is not valid. The machine starts the servers that were added, stops the ones that were removed
+	// and restarts the ones that changed when they are next used. The account is created if the caller has
+	// none yet. The content, secrets included, passes through the platform. Requires
+	// `fleet:machines.login` on the machine.
+	//
+	// Fails with:
+	//
+	//  - `MCP_CONFIGURATION_CHANGED` when the file is no longer at `expected_revision`;
+	//  - `MCP_CONFIGURATION_INVALID` when `content` is not an object with an object `mcpServers`, with
+	//    `metadata.line` and `metadata.column`;
+	//  - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
+	//  - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+	//  - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+	//    machine refuses the account, as for opening a session;
+	//  - `MACHINE_TIMEOUT` when the machine did not answer in time.
+	//
+	// PUT /api/v1/machines/{machineId}/mcp-configuration
+	ReplaceMcpConfiguration(ctx context.Context, request *ReplaceMcpConfigurationRequest, params ReplaceMcpConfigurationParams) (*McpConfigurationFile, error)
 	// RunMachineCommand invokes run-machine-command operation.
 	//
 	// Runs one command line on the machine as the caller's account, with its login shell, and returns once
@@ -506,6 +583,32 @@ type Invoker interface {
 	//
 	// POST /api/v1/machines/{machineId}:runCommand
 	RunMachineCommand(ctx context.Context, request *RunCommandRequest, params RunMachineCommandParams) (*RunCommandResponse, error)
+	// SendMcpRequest invokes send-mcp-request operation.
+	//
+	// Sends one JSON-RPC request of MCP to one of the caller's servers on the machine, such as
+	// `tools/call`, `resources/read` or `prompts/get`, and returns the server's response. The machine
+	// starts or connects to the server if it is not running, and handles its initialization itself; a
+	// request still running when `timeout_seconds` passes is cancelled at the server. Requests the server
+	// makes of the client, such as for sampling, are refused, and its notifications, such as of progress,
+	// are dropped. A response with a JSON-RPC error is a successful request. Neither the request nor the
+	// response is hidden from the platform. Requires `fleet:machines.login` on the machine.
+	//
+	// Fails with:
+	//
+	//  - `MCP_SERVER_NOT_FOUND` when the server is not configured;
+	//  - `MCP_SERVER_UNAVAILABLE` when it could not be started or reached, with `metadata.failure`, an
+	//    `McpServerFailure`;
+	//  - `INVALID_ARGUMENT` when `request` is not one JSON-RPC request, such as a notification, or is one
+	//    of initialization;
+	//  - `RESULT_TOO_LARGE` when the response is larger than 8 MiB;
+	//  - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
+	//  - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+	//  - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+	//    machine refuses the account, as for opening a session;
+	//  - `MACHINE_TIMEOUT` when the machine did not answer in time.
+	//
+	// POST /api/v1/machines/{machineId}/mcp-servers/{serverName}:send
+	SendMcpRequest(ctx context.Context, request *SendMcpRequestRequest, params SendMcpRequestParams) (*SendMcpRequestResponse, error)
 	// TerminateSession invokes terminate-session operation.
 	//
 	// Ends the session at once, killing every process in it. Returns once the session is closed.
@@ -543,6 +646,25 @@ type Invoker interface {
 	//
 	// PATCH /api/v1/machines/{machineId}
 	UpdateMachine(ctx context.Context, request *UpdateMachineRequest, params UpdateMachineParams) (*MachineResource, error)
+	// UpdateMcpServer invokes update-mcp-server operation.
+	//
+	// Adds a server to the caller's MCP configuration on the machine, or replaces the one with the same
+	// name. The values of `env` and `headers` the request gives, secrets included, pass through the
+	// platform; those named in `keep_env` and `keep_headers` stay as they are on the machine. The account
+	// is created if the caller has none yet. Requires `fleet:machines.login` on the machine.
+	//
+	// Fails with:
+	//
+	//  - `MCP_CONFIGURATION_CHANGED` when the file is no longer at `expected_revision`;
+	//  - `MCP_CONFIGURATION_INVALID` when the file cannot be read or is not valid; replace it whole first;
+	//  - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
+	//  - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+	//  - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+	//    machine refuses the account, as for opening a session;
+	//  - `MACHINE_TIMEOUT` when the machine did not answer in time.
+	//
+	// PUT /api/v1/machines/{machineId}/mcp-servers/{serverName}
+	UpdateMcpServer(ctx context.Context, request *UpdateMcpServerRequest, params UpdateMcpServerParams) (*UpdateMcpServerResponse, error)
 	// UpdatePrivilegeAutoApproval invokes update-privilege-auto-approval operation.
 	//
 	// Approves the caller's privilege requests on the machine at once, until `expires_at`, or until
@@ -871,6 +993,193 @@ func (c *Client) sendApprovePrivilegeRequest(ctx context.Context, params Approve
 
 	stage = "DecodeResponse"
 	result, err := decodeApprovePrivilegeRequestResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CallMcpTool invokes call-mcp-tool operation.
+//
+// Calls one tool of one of the caller's servers on the machine and returns its MCP `CallToolResult`. A
+// tool that reports an error, with `isError`, is a successful request. A tool whose name cannot appear
+// in a path is called with `send-mcp-request`. Neither the arguments nor the result is hidden from the
+// platform. Requires `fleet:machines.login` on the machine.
+//
+// Fails as sending a request does.
+//
+// POST /api/v1/machines/{machineId}/mcp-servers/{serverName}/tools/{toolName}:call
+func (c *Client) CallMcpTool(ctx context.Context, request *CallMcpToolRequest, params CallMcpToolParams) (*CallMcpToolResponse, error) {
+	res, err := c.sendCallMcpTool(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCallMcpTool(ctx context.Context, request *CallMcpToolRequest, params CallMcpToolParams) (res *CallMcpToolResponse, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("call-mcp-tool"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/mcp-servers/{serverName}/tools/{toolName}:call"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CallMcpToolOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [7]string
+	pathParts[0] = "/api/v1/machines/"
+	{
+		// Encode "machineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "machineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/mcp-servers/"
+	{
+		// Encode "serverName" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "serverName",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.ServerName))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = "/tools/"
+	{
+		// Encode "toolName" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "toolName",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.ToolName))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[5] = encoded
+	}
+	pathParts[6] = ":call"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCallMcpToolRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CallMcpToolOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCallMcpToolResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2838,6 +3147,180 @@ func (c *Client) sendDeleteMachineRegistration(ctx context.Context, params Delet
 	return result, nil
 }
 
+// DeleteMcpServer invokes delete-mcp-server operation.
+//
+// Removes a server from the caller's MCP configuration on the machine and stops it. Removing one that
+// is not configured succeeds. Requires `fleet:machines.login` on the machine.
+//
+// Fails as replacing a server does.
+//
+// DELETE /api/v1/machines/{machineId}/mcp-servers/{serverName}
+func (c *Client) DeleteMcpServer(ctx context.Context, params DeleteMcpServerParams) (*McpConfigurationFile, error) {
+	res, err := c.sendDeleteMcpServer(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeleteMcpServer(ctx context.Context, params DeleteMcpServerParams) (res *McpConfigurationFile, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-mcp-server"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/mcp-servers/{serverName}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteMcpServerOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/machines/"
+	{
+		// Encode "machineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "machineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/mcp-servers/"
+	{
+		// Encode "serverName" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "serverName",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.ServerName))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "expected_revision" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "expected_revision",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ExpectedRevision.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, DeleteMcpServerOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteMcpServerResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // DeleteParticipant invokes delete-participant operation.
 //
 // Ends the participant: the session detaches it and closes its PeerConnections, and the session goes
@@ -4224,6 +4707,148 @@ func (c *Client) sendGetMachineRegistration(ctx context.Context, params GetMachi
 
 	stage = "DecodeResponse"
 	result, err := decodeGetMachineRegistrationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetMcpConfiguration invokes get-mcp-configuration operation.
+//
+// Returns the caller's MCP configuration file on the machine and every server in it, with what each is
+// doing now. The values of `env` and `headers` are never returned, only their keys. Requires
+// `fleet:machines.login` on the machine.
+//
+// Fails with:
+//
+//   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+//     machine refuses the account, as for opening a session;
+//   - `MACHINE_TIMEOUT` when the machine did not answer in time.
+//
+// GET /api/v1/machines/{machineId}/mcp-configuration
+func (c *Client) GetMcpConfiguration(ctx context.Context, params GetMcpConfigurationParams) (*McpConfigurationResource, error) {
+	res, err := c.sendGetMcpConfiguration(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetMcpConfiguration(ctx context.Context, params GetMcpConfigurationParams) (res *McpConfigurationResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-mcp-configuration"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/mcp-configuration"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetMcpConfigurationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/machines/"
+	{
+		// Encode "machineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "machineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/mcp-configuration"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetMcpConfigurationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetMcpConfigurationResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5934,6 +6559,224 @@ func (c *Client) sendListMachines(ctx context.Context, params ListMachinesParams
 	return result, nil
 }
 
+// ListMcpTools invokes list-mcp-tools operation.
+//
+// Lists the tools of the caller's servers on the machine, or of one of them, that match `query`: every
+// word of it, ignoring case, in the tool's name, title or description. They are ordered by server,
+// then by tool name. Servers that are not running are started to learn their tools; one that cannot be
+// is named in `unavailable_servers`, and the others are listed anyway. Slow servers do not hold the
+// request up: those still starting are named with `timeout` and go on starting, so that a later
+// request lists their tools. Requires `fleet:machines.login` on the machine.
+//
+// Fails with:
+//
+//   - `MCP_SERVER_NOT_FOUND` when `server` is not configured;
+//   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+//     machine refuses the account, as for opening a session;
+//   - `MACHINE_TIMEOUT` when the machine did not answer in time.
+//
+// GET /api/v1/machines/{machineId}/mcp-tools
+func (c *Client) ListMcpTools(ctx context.Context, params ListMcpToolsParams) (*McpToolList, error) {
+	res, err := c.sendListMcpTools(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListMcpTools(ctx context.Context, params ListMcpToolsParams) (res *McpToolList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-mcp-tools"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/mcp-tools"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListMcpToolsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/machines/"
+	{
+		// Encode "machineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "machineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/mcp-tools"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "server" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "server",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Server.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "query" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "query",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Query.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_token" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_token",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageToken.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListMcpToolsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListMcpToolsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListPrivilegeAutoApprovals invokes list-privilege-auto-approvals operation.
 //
 // Returns the caller's automatic approvals on the machines of the current project that are in effect,
@@ -6958,6 +7801,165 @@ func (c *Client) sendRenewParticipant(ctx context.Context, request *RenewPartici
 	return result, nil
 }
 
+// ReplaceMcpConfiguration invokes replace-mcp-configuration operation.
+//
+// Replaces the caller's MCP configuration file on the machine as a whole, also one that cannot be read
+// or is not valid. The machine starts the servers that were added, stops the ones that were removed
+// and restarts the ones that changed when they are next used. The account is created if the caller has
+// none yet. The content, secrets included, passes through the platform. Requires
+// `fleet:machines.login` on the machine.
+//
+// Fails with:
+//
+//   - `MCP_CONFIGURATION_CHANGED` when the file is no longer at `expected_revision`;
+//   - `MCP_CONFIGURATION_INVALID` when `content` is not an object with an object `mcpServers`, with
+//     `metadata.line` and `metadata.column`;
+//   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+//     machine refuses the account, as for opening a session;
+//   - `MACHINE_TIMEOUT` when the machine did not answer in time.
+//
+// PUT /api/v1/machines/{machineId}/mcp-configuration
+func (c *Client) ReplaceMcpConfiguration(ctx context.Context, request *ReplaceMcpConfigurationRequest, params ReplaceMcpConfigurationParams) (*McpConfigurationFile, error) {
+	res, err := c.sendReplaceMcpConfiguration(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendReplaceMcpConfiguration(ctx context.Context, request *ReplaceMcpConfigurationRequest, params ReplaceMcpConfigurationParams) (res *McpConfigurationFile, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("replace-mcp-configuration"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/mcp-configuration"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ReplaceMcpConfigurationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/machines/"
+	{
+		// Encode "machineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "machineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/mcp-configuration"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeReplaceMcpConfigurationRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ReplaceMcpConfigurationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeReplaceMcpConfigurationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // RunMachineCommand invokes run-machine-command operation.
 //
 // Runs one command line on the machine as the caller's account, with its login shell, and returns once
@@ -7118,6 +8120,189 @@ func (c *Client) sendRunMachineCommand(ctx context.Context, request *RunCommandR
 
 	stage = "DecodeResponse"
 	result, err := decodeRunMachineCommandResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// SendMcpRequest invokes send-mcp-request operation.
+//
+// Sends one JSON-RPC request of MCP to one of the caller's servers on the machine, such as
+// `tools/call`, `resources/read` or `prompts/get`, and returns the server's response. The machine
+// starts or connects to the server if it is not running, and handles its initialization itself; a
+// request still running when `timeout_seconds` passes is cancelled at the server. Requests the server
+// makes of the client, such as for sampling, are refused, and its notifications, such as of progress,
+// are dropped. A response with a JSON-RPC error is a successful request. Neither the request nor the
+// response is hidden from the platform. Requires `fleet:machines.login` on the machine.
+//
+// Fails with:
+//
+//   - `MCP_SERVER_NOT_FOUND` when the server is not configured;
+//   - `MCP_SERVER_UNAVAILABLE` when it could not be started or reached, with `metadata.failure`, an
+//     `McpServerFailure`;
+//   - `INVALID_ARGUMENT` when `request` is not one JSON-RPC request, such as a notification, or is one
+//     of initialization;
+//   - `RESULT_TOO_LARGE` when the response is larger than 8 MiB;
+//   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+//     machine refuses the account, as for opening a session;
+//   - `MACHINE_TIMEOUT` when the machine did not answer in time.
+//
+// POST /api/v1/machines/{machineId}/mcp-servers/{serverName}:send
+func (c *Client) SendMcpRequest(ctx context.Context, request *SendMcpRequestRequest, params SendMcpRequestParams) (*SendMcpRequestResponse, error) {
+	res, err := c.sendSendMcpRequest(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendSendMcpRequest(ctx context.Context, request *SendMcpRequestRequest, params SendMcpRequestParams) (res *SendMcpRequestResponse, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("send-mcp-request"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/mcp-servers/{serverName}:send"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SendMcpRequestOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [5]string
+	pathParts[0] = "/api/v1/machines/"
+	{
+		// Encode "machineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "machineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/mcp-servers/"
+	{
+		// Encode "serverName" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "serverName",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.ServerName))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = ":send"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSendMcpRequestRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, SendMcpRequestOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSendMcpRequestResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -7692,6 +8877,181 @@ func (c *Client) sendUpdateMachine(ctx context.Context, request *UpdateMachineRe
 
 	stage = "DecodeResponse"
 	result, err := decodeUpdateMachineResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateMcpServer invokes update-mcp-server operation.
+//
+// Adds a server to the caller's MCP configuration on the machine, or replaces the one with the same
+// name. The values of `env` and `headers` the request gives, secrets included, pass through the
+// platform; those named in `keep_env` and `keep_headers` stay as they are on the machine. The account
+// is created if the caller has none yet. Requires `fleet:machines.login` on the machine.
+//
+// Fails with:
+//
+//   - `MCP_CONFIGURATION_CHANGED` when the file is no longer at `expected_revision`;
+//   - `MCP_CONFIGURATION_INVALID` when the file cannot be read or is not valid; replace it whole first;
+//   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
+//     machine refuses the account, as for opening a session;
+//   - `MACHINE_TIMEOUT` when the machine did not answer in time.
+//
+// PUT /api/v1/machines/{machineId}/mcp-servers/{serverName}
+func (c *Client) UpdateMcpServer(ctx context.Context, request *UpdateMcpServerRequest, params UpdateMcpServerParams) (*UpdateMcpServerResponse, error) {
+	res, err := c.sendUpdateMcpServer(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateMcpServer(ctx context.Context, request *UpdateMcpServerRequest, params UpdateMcpServerParams) (res *UpdateMcpServerResponse, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-mcp-server"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/mcp-servers/{serverName}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateMcpServerOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/machines/"
+	{
+		// Encode "machineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "machineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/mcp-servers/"
+	{
+		// Encode "serverName" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "serverName",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.ServerName))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateMcpServerRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, UpdateMcpServerOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateMcpServerResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

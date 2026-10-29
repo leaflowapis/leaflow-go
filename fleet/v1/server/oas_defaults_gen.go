@@ -3,6 +3,14 @@
 package fleetv1server
 
 // setDefaults set default value of fields.
+func (s *CallMcpToolRequest) setDefaults() {
+	{
+		val := int64(60)
+		s.TimeoutSeconds.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
 func (s *CreateMachineRegistrationRequest) setDefaults() {
 	{
 		val := int64(3600)
@@ -15,5 +23,21 @@ func (s *RunCommandRequest) setDefaults() {
 	{
 		val := int64(60)
 		s.TimeoutSeconds.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
+func (s *SendMcpRequestRequest) setDefaults() {
+	{
+		val := int64(60)
+		s.TimeoutSeconds.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
+func (s *UpdateMcpServerRequest) setDefaults() {
+	{
+		val := bool(false)
+		s.Disabled.SetTo(val)
 	}
 }

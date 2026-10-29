@@ -214,7 +214,8 @@ type McpServerFailure int32
 
 const (
 	McpServerFailure_MCP_SERVER_FAILURE_UNSPECIFIED McpServerFailure = 0
-	// Its entry is not valid, such as with neither "command" nor "url".
+	// Its name or entry is not valid, such as an entry with neither "command"
+	// nor "url".
 	McpServerFailure_MCP_SERVER_FAILURE_INVALID_DEFINITION McpServerFailure = 1
 	// Its program could not be started, such as when it is not installed.
 	McpServerFailure_MCP_SERVER_FAILURE_START_FAILED McpServerFailure = 2
@@ -447,7 +448,8 @@ type McpConfigurationFile struct {
 	InvalidLine   uint32 `protobuf:"varint,3,opt,name=invalid_line,json=invalidLine,proto3" json:"invalid_line,omitempty"`
 	InvalidColumn uint32 `protobuf:"varint,4,opt,name=invalid_column,json=invalidColumn,proto3" json:"invalid_column,omitempty"`
 	// The name, in the same directory, under which the Agent set aside a file
-	// that was not valid when it started; empty when it did not.
+	// that was not valid when it started to serve the account; empty when it
+	// did not.
 	SetAside      string `protobuf:"bytes,5,opt,name=set_aside,json=setAside,proto3" json:"set_aside,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -773,8 +775,8 @@ func (x *McpImplementation) GetTitle() string {
 type PutMcpServerRequest struct {
 	state   protoimpl.MessageState `protogen:"open.v1"`
 	Account *McpAccount            `protobuf:"bytes,1,opt,name=account,proto3" json:"account,omitempty"`
-	// The server's key in "mcpServers": 1 to 64 letters, digits, "_" or "-",
-	// since tools of every server are named "<server>__<tool>" together.
+	// The server's key in "mcpServers", by the rule of Configuration; any other
+	// fails the call with INVALID_REQUEST.
 	Name       string               `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Definition *McpServerDefinition `protobuf:"bytes,3,opt,name=definition,proto3" json:"definition,omitempty"`
 	// Keys of the server's current env whose values stay as they are, when
@@ -783,7 +785,8 @@ type PutMcpServerRequest struct {
 	KeepEnv []string `protobuf:"bytes,4,rep,name=keep_env,json=keepEnv,proto3" json:"keep_env,omitempty"`
 	// Keys of the server's current headers whose values stay, as keep_env.
 	KeepHeaders []string `protobuf:"bytes,5,rep,name=keep_headers,json=keepHeaders,proto3" json:"keep_headers,omitempty"`
-	// McpConfigurationFile.revision as last read.
+	// McpConfigurationFile.revision as last read, empty only for a file that
+	// was MISSING.
 	ExpectedRevision string `protobuf:"bytes,6,opt,name=expected_revision,json=expectedRevision,proto3" json:"expected_revision,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -919,7 +922,8 @@ type DeleteMcpServerRequest struct {
 	state   protoimpl.MessageState `protogen:"open.v1"`
 	Account *McpAccount            `protobuf:"bytes,1,opt,name=account,proto3" json:"account,omitempty"`
 	Name    string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	// McpConfigurationFile.revision as last read.
+	// McpConfigurationFile.revision as last read, empty only for a file that
+	// was MISSING.
 	ExpectedRevision string `protobuf:"bytes,3,opt,name=expected_revision,json=expectedRevision,proto3" json:"expected_revision,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -1215,7 +1219,8 @@ func (x *ListMcpToolsRequest) GetPageToken() string {
 // The response of ListMcpTools.
 type ListMcpToolsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Ordered by server, then by tool name.
+	// Ordered by server, then by tool name; fewer than page_size when more
+	// would make the response larger than 8 MiB.
 	Tools []*McpTool `protobuf:"bytes,1,rep,name=tools,proto3" json:"tools,omitempty"`
 	// Empty on the last page.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`

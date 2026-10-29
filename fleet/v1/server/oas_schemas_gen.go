@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-faster/errors"
+	"github.com/go-faster/jx"
 	"github.com/google/uuid"
 )
 
@@ -231,6 +232,74 @@ func (s *BearerAuth) SetToken(val string) {
 // SetRoles sets the value of Roles.
 func (s *BearerAuth) SetRoles(val []string) {
 	s.Roles = val
+}
+
+// Ref: #/components/schemas/CallMcpToolRequest
+type CallMcpToolRequest struct {
+	// The tool's arguments, as its `input_schema` describes them.
+	Arguments OptCallMcpToolRequestArguments `json:"arguments"`
+	// How long to wait for the result.
+	TimeoutSeconds OptInt64 `json:"timeout_seconds"`
+}
+
+// GetArguments returns the value of Arguments.
+func (s *CallMcpToolRequest) GetArguments() OptCallMcpToolRequestArguments {
+	return s.Arguments
+}
+
+// GetTimeoutSeconds returns the value of TimeoutSeconds.
+func (s *CallMcpToolRequest) GetTimeoutSeconds() OptInt64 {
+	return s.TimeoutSeconds
+}
+
+// SetArguments sets the value of Arguments.
+func (s *CallMcpToolRequest) SetArguments(val OptCallMcpToolRequestArguments) {
+	s.Arguments = val
+}
+
+// SetTimeoutSeconds sets the value of TimeoutSeconds.
+func (s *CallMcpToolRequest) SetTimeoutSeconds(val OptInt64) {
+	s.TimeoutSeconds = val
+}
+
+// The tool's arguments, as its `input_schema` describes them.
+type CallMcpToolRequestArguments map[string]jx.Raw
+
+func (s *CallMcpToolRequestArguments) init() CallMcpToolRequestArguments {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/CallMcpToolResponse
+type CallMcpToolResponse struct {
+	// The tool's MCP `CallToolResult`, with `content`, `structuredContent` and `isError`.
+	Result CallMcpToolResponseResult `json:"result"`
+}
+
+// GetResult returns the value of Result.
+func (s *CallMcpToolResponse) GetResult() CallMcpToolResponseResult {
+	return s.Result
+}
+
+// SetResult sets the value of Result.
+func (s *CallMcpToolResponse) SetResult(val CallMcpToolResponseResult) {
+	s.Result = val
+}
+
+// The tool's MCP `CallToolResult`, with `content`, `structuredContent` and `isError`.
+type CallMcpToolResponseResult map[string]jx.Raw
+
+func (s *CallMcpToolResponseResult) init() CallMcpToolResponseResult {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
 }
 
 // Ref: #/components/schemas/CreateGroupMemberRequest
@@ -1966,6 +2035,730 @@ func (s *MachineResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
 }
 
+// Ref: #/components/schemas/McpConfigurationFile
+type McpConfigurationFile struct {
+	// `ok` when the file was read in full; `missing` when there is none, which is no server; `unreadable`
+	// when it cannot be read and `invalid` when it is not an object with an object `mcpServers`: then the
+	// machine serves the servers of the file it last read in full, if any, and none otherwise.
+	State McpConfigurationFileState `json:"state"`
+	// SHA-256 of the file in lower-case hex, empty while it is `missing`. Edits carry it as
+	// `expected_revision`, so that they fail rather than undo an edit made in between.
+	Revision string `json:"revision"`
+	// With `invalid`, the line of the first error, counted from 1; null otherwise.
+	InvalidLine NilInt64 `json:"invalid_line"`
+	// With `invalid`, the column of the first error, counted from 1; null otherwise.
+	InvalidColumn NilInt64 `json:"invalid_column"`
+	// The name, in the file's directory, under which the machine set aside a file that was not valid when
+	// it started to serve the account, and put an empty configuration in its place; null when it did not.
+	SetAside NilString `json:"set_aside"`
+}
+
+// GetState returns the value of State.
+func (s *McpConfigurationFile) GetState() McpConfigurationFileState {
+	return s.State
+}
+
+// GetRevision returns the value of Revision.
+func (s *McpConfigurationFile) GetRevision() string {
+	return s.Revision
+}
+
+// GetInvalidLine returns the value of InvalidLine.
+func (s *McpConfigurationFile) GetInvalidLine() NilInt64 {
+	return s.InvalidLine
+}
+
+// GetInvalidColumn returns the value of InvalidColumn.
+func (s *McpConfigurationFile) GetInvalidColumn() NilInt64 {
+	return s.InvalidColumn
+}
+
+// GetSetAside returns the value of SetAside.
+func (s *McpConfigurationFile) GetSetAside() NilString {
+	return s.SetAside
+}
+
+// SetState sets the value of State.
+func (s *McpConfigurationFile) SetState(val McpConfigurationFileState) {
+	s.State = val
+}
+
+// SetRevision sets the value of Revision.
+func (s *McpConfigurationFile) SetRevision(val string) {
+	s.Revision = val
+}
+
+// SetInvalidLine sets the value of InvalidLine.
+func (s *McpConfigurationFile) SetInvalidLine(val NilInt64) {
+	s.InvalidLine = val
+}
+
+// SetInvalidColumn sets the value of InvalidColumn.
+func (s *McpConfigurationFile) SetInvalidColumn(val NilInt64) {
+	s.InvalidColumn = val
+}
+
+// SetSetAside sets the value of SetAside.
+func (s *McpConfigurationFile) SetSetAside(val NilString) {
+	s.SetAside = val
+}
+
+// `ok` when the file was read in full; `missing` when there is none, which is no server; `unreadable`
+// when it cannot be read and `invalid` when it is not an object with an object `mcpServers`: then the
+// machine serves the servers of the file it last read in full, if any, and none otherwise.
+type McpConfigurationFileState string
+
+const (
+	McpConfigurationFileStateOk         McpConfigurationFileState = "ok"
+	McpConfigurationFileStateMissing    McpConfigurationFileState = "missing"
+	McpConfigurationFileStateUnreadable McpConfigurationFileState = "unreadable"
+	McpConfigurationFileStateInvalid    McpConfigurationFileState = "invalid"
+)
+
+// AllValues returns all McpConfigurationFileState values.
+func (McpConfigurationFileState) AllValues() []McpConfigurationFileState {
+	return []McpConfigurationFileState{
+		McpConfigurationFileStateOk,
+		McpConfigurationFileStateMissing,
+		McpConfigurationFileStateUnreadable,
+		McpConfigurationFileStateInvalid,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s McpConfigurationFileState) MarshalText() ([]byte, error) {
+	switch s {
+	case McpConfigurationFileStateOk:
+		return []byte(s), nil
+	case McpConfigurationFileStateMissing:
+		return []byte(s), nil
+	case McpConfigurationFileStateUnreadable:
+		return []byte(s), nil
+	case McpConfigurationFileStateInvalid:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *McpConfigurationFileState) UnmarshalText(data []byte) error {
+	switch McpConfigurationFileState(data) {
+	case McpConfigurationFileStateOk:
+		*s = McpConfigurationFileStateOk
+		return nil
+	case McpConfigurationFileStateMissing:
+		*s = McpConfigurationFileStateMissing
+		return nil
+	case McpConfigurationFileStateUnreadable:
+		*s = McpConfigurationFileStateUnreadable
+		return nil
+	case McpConfigurationFileStateInvalid:
+		*s = McpConfigurationFileStateInvalid
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/McpConfigurationResource
+type McpConfigurationResource struct {
+	File    McpConfigurationFile `json:"file"`
+	Servers []McpServerResource  `json:"servers"`
+}
+
+// GetFile returns the value of File.
+func (s *McpConfigurationResource) GetFile() McpConfigurationFile {
+	return s.File
+}
+
+// GetServers returns the value of Servers.
+func (s *McpConfigurationResource) GetServers() []McpServerResource {
+	return s.Servers
+}
+
+// SetFile sets the value of File.
+func (s *McpConfigurationResource) SetFile(val McpConfigurationFile) {
+	s.File = val
+}
+
+// SetServers sets the value of Servers.
+func (s *McpConfigurationResource) SetServers(val []McpServerResource) {
+	s.Servers = val
+}
+
+// Ref: #/components/schemas/McpImplementation
+type McpImplementation struct {
+	Name    string    `json:"name"`
+	Version string    `json:"version"`
+	Title   OptString `json:"title"`
+}
+
+// GetName returns the value of Name.
+func (s *McpImplementation) GetName() string {
+	return s.Name
+}
+
+// GetVersion returns the value of Version.
+func (s *McpImplementation) GetVersion() string {
+	return s.Version
+}
+
+// GetTitle returns the value of Title.
+func (s *McpImplementation) GetTitle() OptString {
+	return s.Title
+}
+
+// SetName sets the value of Name.
+func (s *McpImplementation) SetName(val string) {
+	s.Name = val
+}
+
+// SetVersion sets the value of Version.
+func (s *McpImplementation) SetVersion(val string) {
+	s.Version = val
+}
+
+// SetTitle sets the value of Title.
+func (s *McpImplementation) SetTitle(val OptString) {
+	s.Title = val
+}
+
+// Why a server failed or is not valid: `invalid_definition`, `start_failed` (its program could not be
+// started), `exited`, `unreachable`, `unauthorized` (it asked for authorization the headers do not
+// give, such as through OAuth), `protocol_error` or `timeout`.
+// Ref: #/components/schemas/McpServerFailure
+type McpServerFailure string
+
+const (
+	McpServerFailureInvalidDefinition McpServerFailure = "invalid_definition"
+	McpServerFailureStartFailed       McpServerFailure = "start_failed"
+	McpServerFailureExited            McpServerFailure = "exited"
+	McpServerFailureUnreachable       McpServerFailure = "unreachable"
+	McpServerFailureUnauthorized      McpServerFailure = "unauthorized"
+	McpServerFailureProtocolError     McpServerFailure = "protocol_error"
+	McpServerFailureTimeout           McpServerFailure = "timeout"
+)
+
+// AllValues returns all McpServerFailure values.
+func (McpServerFailure) AllValues() []McpServerFailure {
+	return []McpServerFailure{
+		McpServerFailureInvalidDefinition,
+		McpServerFailureStartFailed,
+		McpServerFailureExited,
+		McpServerFailureUnreachable,
+		McpServerFailureUnauthorized,
+		McpServerFailureProtocolError,
+		McpServerFailureTimeout,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s McpServerFailure) MarshalText() ([]byte, error) {
+	switch s {
+	case McpServerFailureInvalidDefinition:
+		return []byte(s), nil
+	case McpServerFailureStartFailed:
+		return []byte(s), nil
+	case McpServerFailureExited:
+		return []byte(s), nil
+	case McpServerFailureUnreachable:
+		return []byte(s), nil
+	case McpServerFailureUnauthorized:
+		return []byte(s), nil
+	case McpServerFailureProtocolError:
+		return []byte(s), nil
+	case McpServerFailureTimeout:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *McpServerFailure) UnmarshalText(data []byte) error {
+	switch McpServerFailure(data) {
+	case McpServerFailureInvalidDefinition:
+		*s = McpServerFailureInvalidDefinition
+		return nil
+	case McpServerFailureStartFailed:
+		*s = McpServerFailureStartFailed
+		return nil
+	case McpServerFailureExited:
+		*s = McpServerFailureExited
+		return nil
+	case McpServerFailureUnreachable:
+		*s = McpServerFailureUnreachable
+		return nil
+	case McpServerFailureUnauthorized:
+		*s = McpServerFailureUnauthorized
+		return nil
+	case McpServerFailureProtocolError:
+		*s = McpServerFailureProtocolError
+		return nil
+	case McpServerFailureTimeout:
+		*s = McpServerFailureTimeout
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/McpServerResource
+type McpServerResource struct {
+	// Its key in `mcpServers`.
+	Name      string       `json:"name"`
+	Transport McpTransport `json:"transport"`
+	// With `stdio`, the program.
+	Command string   `json:"command"`
+	Args    []string `json:"args"`
+	// The variables `env` sets; their values are never returned.
+	EnvKeys []string `json:"env_keys"`
+	// With `http` and `sse`, the endpoint.
+	URL string `json:"url"`
+	// The headers `headers` sends; their values are never returned.
+	HeaderKeys []string `json:"header_keys"`
+	// Configured but kept stopped.
+	Disabled bool `json:"disabled"`
+	// `stopped` before its first use or after it was idle, `starting`, `running`, `failed` (it is tried
+	// again when next used), `disabled` or `invalid`.
+	State McpServerResourceState `json:"state"`
+	// With `failed` and `invalid`, why; null otherwise.
+	Failure NilMcpServerFailure `json:"failure"`
+	// With `running`, what the server said of itself; null otherwise.
+	Implementation NilMcpImplementation `json:"implementation"`
+	// With `running`, how many tools it offers; null otherwise.
+	ToolCount NilInt64 `json:"tool_count"`
+}
+
+// GetName returns the value of Name.
+func (s *McpServerResource) GetName() string {
+	return s.Name
+}
+
+// GetTransport returns the value of Transport.
+func (s *McpServerResource) GetTransport() McpTransport {
+	return s.Transport
+}
+
+// GetCommand returns the value of Command.
+func (s *McpServerResource) GetCommand() string {
+	return s.Command
+}
+
+// GetArgs returns the value of Args.
+func (s *McpServerResource) GetArgs() []string {
+	return s.Args
+}
+
+// GetEnvKeys returns the value of EnvKeys.
+func (s *McpServerResource) GetEnvKeys() []string {
+	return s.EnvKeys
+}
+
+// GetURL returns the value of URL.
+func (s *McpServerResource) GetURL() string {
+	return s.URL
+}
+
+// GetHeaderKeys returns the value of HeaderKeys.
+func (s *McpServerResource) GetHeaderKeys() []string {
+	return s.HeaderKeys
+}
+
+// GetDisabled returns the value of Disabled.
+func (s *McpServerResource) GetDisabled() bool {
+	return s.Disabled
+}
+
+// GetState returns the value of State.
+func (s *McpServerResource) GetState() McpServerResourceState {
+	return s.State
+}
+
+// GetFailure returns the value of Failure.
+func (s *McpServerResource) GetFailure() NilMcpServerFailure {
+	return s.Failure
+}
+
+// GetImplementation returns the value of Implementation.
+func (s *McpServerResource) GetImplementation() NilMcpImplementation {
+	return s.Implementation
+}
+
+// GetToolCount returns the value of ToolCount.
+func (s *McpServerResource) GetToolCount() NilInt64 {
+	return s.ToolCount
+}
+
+// SetName sets the value of Name.
+func (s *McpServerResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetTransport sets the value of Transport.
+func (s *McpServerResource) SetTransport(val McpTransport) {
+	s.Transport = val
+}
+
+// SetCommand sets the value of Command.
+func (s *McpServerResource) SetCommand(val string) {
+	s.Command = val
+}
+
+// SetArgs sets the value of Args.
+func (s *McpServerResource) SetArgs(val []string) {
+	s.Args = val
+}
+
+// SetEnvKeys sets the value of EnvKeys.
+func (s *McpServerResource) SetEnvKeys(val []string) {
+	s.EnvKeys = val
+}
+
+// SetURL sets the value of URL.
+func (s *McpServerResource) SetURL(val string) {
+	s.URL = val
+}
+
+// SetHeaderKeys sets the value of HeaderKeys.
+func (s *McpServerResource) SetHeaderKeys(val []string) {
+	s.HeaderKeys = val
+}
+
+// SetDisabled sets the value of Disabled.
+func (s *McpServerResource) SetDisabled(val bool) {
+	s.Disabled = val
+}
+
+// SetState sets the value of State.
+func (s *McpServerResource) SetState(val McpServerResourceState) {
+	s.State = val
+}
+
+// SetFailure sets the value of Failure.
+func (s *McpServerResource) SetFailure(val NilMcpServerFailure) {
+	s.Failure = val
+}
+
+// SetImplementation sets the value of Implementation.
+func (s *McpServerResource) SetImplementation(val NilMcpImplementation) {
+	s.Implementation = val
+}
+
+// SetToolCount sets the value of ToolCount.
+func (s *McpServerResource) SetToolCount(val NilInt64) {
+	s.ToolCount = val
+}
+
+// `stopped` before its first use or after it was idle, `starting`, `running`, `failed` (it is tried
+// again when next used), `disabled` or `invalid`.
+type McpServerResourceState string
+
+const (
+	McpServerResourceStateStopped  McpServerResourceState = "stopped"
+	McpServerResourceStateStarting McpServerResourceState = "starting"
+	McpServerResourceStateRunning  McpServerResourceState = "running"
+	McpServerResourceStateFailed   McpServerResourceState = "failed"
+	McpServerResourceStateDisabled McpServerResourceState = "disabled"
+	McpServerResourceStateInvalid  McpServerResourceState = "invalid"
+)
+
+// AllValues returns all McpServerResourceState values.
+func (McpServerResourceState) AllValues() []McpServerResourceState {
+	return []McpServerResourceState{
+		McpServerResourceStateStopped,
+		McpServerResourceStateStarting,
+		McpServerResourceStateRunning,
+		McpServerResourceStateFailed,
+		McpServerResourceStateDisabled,
+		McpServerResourceStateInvalid,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s McpServerResourceState) MarshalText() ([]byte, error) {
+	switch s {
+	case McpServerResourceStateStopped:
+		return []byte(s), nil
+	case McpServerResourceStateStarting:
+		return []byte(s), nil
+	case McpServerResourceStateRunning:
+		return []byte(s), nil
+	case McpServerResourceStateFailed:
+		return []byte(s), nil
+	case McpServerResourceStateDisabled:
+		return []byte(s), nil
+	case McpServerResourceStateInvalid:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *McpServerResourceState) UnmarshalText(data []byte) error {
+	switch McpServerResourceState(data) {
+	case McpServerResourceStateStopped:
+		*s = McpServerResourceStateStopped
+		return nil
+	case McpServerResourceStateStarting:
+		*s = McpServerResourceStateStarting
+		return nil
+	case McpServerResourceStateRunning:
+		*s = McpServerResourceStateRunning
+		return nil
+	case McpServerResourceStateFailed:
+		*s = McpServerResourceStateFailed
+		return nil
+	case McpServerResourceStateDisabled:
+		*s = McpServerResourceStateDisabled
+		return nil
+	case McpServerResourceStateInvalid:
+		*s = McpServerResourceStateInvalid
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/McpToolList
+type McpToolList struct {
+	Items []McpToolResource `json:"items"`
+	// Null on the last page.
+	NextPageToken NilString `json:"next_page_token"`
+	// Servers whose tools are missing because they could not be started or reached.
+	UnavailableServers []McpUnavailableServer `json:"unavailable_servers"`
+}
+
+// GetItems returns the value of Items.
+func (s *McpToolList) GetItems() []McpToolResource {
+	return s.Items
+}
+
+// GetNextPageToken returns the value of NextPageToken.
+func (s *McpToolList) GetNextPageToken() NilString {
+	return s.NextPageToken
+}
+
+// GetUnavailableServers returns the value of UnavailableServers.
+func (s *McpToolList) GetUnavailableServers() []McpUnavailableServer {
+	return s.UnavailableServers
+}
+
+// SetItems sets the value of Items.
+func (s *McpToolList) SetItems(val []McpToolResource) {
+	s.Items = val
+}
+
+// SetNextPageToken sets the value of NextPageToken.
+func (s *McpToolList) SetNextPageToken(val NilString) {
+	s.NextPageToken = val
+}
+
+// SetUnavailableServers sets the value of UnavailableServers.
+func (s *McpToolList) SetUnavailableServers(val []McpUnavailableServer) {
+	s.UnavailableServers = val
+}
+
+// Ref: #/components/schemas/McpToolResource
+type McpToolResource struct {
+	// The server that offers it.
+	Server      string `json:"server"`
+	Name        string `json:"name"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	// The JSON Schema of its arguments.
+	InputSchema McpToolResourceInputSchema `json:"input_schema"`
+	// The JSON Schema of its structured result; null when it has none.
+	OutputSchema NilMcpToolResourceOutputSchema `json:"output_schema"`
+	// Its MCP `ToolAnnotations`, such as `readOnlyHint`; hints of the server, not guarantees.
+	Annotations NilMcpToolResourceAnnotations `json:"annotations"`
+}
+
+// GetServer returns the value of Server.
+func (s *McpToolResource) GetServer() string {
+	return s.Server
+}
+
+// GetName returns the value of Name.
+func (s *McpToolResource) GetName() string {
+	return s.Name
+}
+
+// GetTitle returns the value of Title.
+func (s *McpToolResource) GetTitle() string {
+	return s.Title
+}
+
+// GetDescription returns the value of Description.
+func (s *McpToolResource) GetDescription() string {
+	return s.Description
+}
+
+// GetInputSchema returns the value of InputSchema.
+func (s *McpToolResource) GetInputSchema() McpToolResourceInputSchema {
+	return s.InputSchema
+}
+
+// GetOutputSchema returns the value of OutputSchema.
+func (s *McpToolResource) GetOutputSchema() NilMcpToolResourceOutputSchema {
+	return s.OutputSchema
+}
+
+// GetAnnotations returns the value of Annotations.
+func (s *McpToolResource) GetAnnotations() NilMcpToolResourceAnnotations {
+	return s.Annotations
+}
+
+// SetServer sets the value of Server.
+func (s *McpToolResource) SetServer(val string) {
+	s.Server = val
+}
+
+// SetName sets the value of Name.
+func (s *McpToolResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetTitle sets the value of Title.
+func (s *McpToolResource) SetTitle(val string) {
+	s.Title = val
+}
+
+// SetDescription sets the value of Description.
+func (s *McpToolResource) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetInputSchema sets the value of InputSchema.
+func (s *McpToolResource) SetInputSchema(val McpToolResourceInputSchema) {
+	s.InputSchema = val
+}
+
+// SetOutputSchema sets the value of OutputSchema.
+func (s *McpToolResource) SetOutputSchema(val NilMcpToolResourceOutputSchema) {
+	s.OutputSchema = val
+}
+
+// SetAnnotations sets the value of Annotations.
+func (s *McpToolResource) SetAnnotations(val NilMcpToolResourceAnnotations) {
+	s.Annotations = val
+}
+
+// Its MCP `ToolAnnotations`, such as `readOnlyHint`; hints of the server, not guarantees.
+type McpToolResourceAnnotations map[string]jx.Raw
+
+func (s *McpToolResourceAnnotations) init() McpToolResourceAnnotations {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// The JSON Schema of its arguments.
+type McpToolResourceInputSchema map[string]jx.Raw
+
+func (s *McpToolResourceInputSchema) init() McpToolResourceInputSchema {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// The JSON Schema of its structured result; null when it has none.
+type McpToolResourceOutputSchema map[string]jx.Raw
+
+func (s *McpToolResourceOutputSchema) init() McpToolResourceOutputSchema {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// `stdio` for a program the machine starts as the account, `http` for Streamable HTTP and `sse` for
+// HTTP with Server-Sent Events, the transport of earlier revisions of MCP.
+// Ref: #/components/schemas/McpTransport
+type McpTransport string
+
+const (
+	McpTransportStdio McpTransport = "stdio"
+	McpTransportHTTP  McpTransport = "http"
+	McpTransportSse   McpTransport = "sse"
+)
+
+// AllValues returns all McpTransport values.
+func (McpTransport) AllValues() []McpTransport {
+	return []McpTransport{
+		McpTransportStdio,
+		McpTransportHTTP,
+		McpTransportSse,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s McpTransport) MarshalText() ([]byte, error) {
+	switch s {
+	case McpTransportStdio:
+		return []byte(s), nil
+	case McpTransportHTTP:
+		return []byte(s), nil
+	case McpTransportSse:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *McpTransport) UnmarshalText(data []byte) error {
+	switch McpTransport(data) {
+	case McpTransportStdio:
+		*s = McpTransportStdio
+		return nil
+	case McpTransportHTTP:
+		*s = McpTransportHTTP
+		return nil
+	case McpTransportSse:
+		*s = McpTransportSse
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/McpUnavailableServer
+type McpUnavailableServer struct {
+	Name    string           `json:"name"`
+	Failure McpServerFailure `json:"failure"`
+}
+
+// GetName returns the value of Name.
+func (s *McpUnavailableServer) GetName() string {
+	return s.Name
+}
+
+// GetFailure returns the value of Failure.
+func (s *McpUnavailableServer) GetFailure() McpServerFailure {
+	return s.Failure
+}
+
+// SetName sets the value of Name.
+func (s *McpUnavailableServer) SetName(val string) {
+	s.Name = val
+}
+
+// SetFailure sets the value of Failure.
+func (s *McpUnavailableServer) SetFailure(val McpServerFailure) {
+	s.Failure = val
+}
+
 // Ref: #/components/schemas/MigrationStep
 type MigrationStep struct {
 	// A serialized `Checkpoint` of `leaflow/fleet/transport/v1/transport.proto`.
@@ -2145,6 +2938,231 @@ func (o NilInt32) Get() (v int32, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilInt32) Or(d int32) int32 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilInt64 returns new NilInt64 with value set to v.
+func NewNilInt64(v int64) NilInt64 {
+	return NilInt64{
+		Value: v,
+	}
+}
+
+// NilInt64 is nullable int64.
+type NilInt64 struct {
+	Value int64
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilInt64) SetTo(v int64) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilInt64) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilInt64) SetToNull() {
+	o.Null = true
+	var v int64
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilInt64) Get() (v int64, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilInt64) Or(d int64) int64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilMcpImplementation returns new NilMcpImplementation with value set to v.
+func NewNilMcpImplementation(v McpImplementation) NilMcpImplementation {
+	return NilMcpImplementation{
+		Value: v,
+	}
+}
+
+// NilMcpImplementation is nullable McpImplementation.
+type NilMcpImplementation struct {
+	Value McpImplementation
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilMcpImplementation) SetTo(v McpImplementation) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilMcpImplementation) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilMcpImplementation) SetToNull() {
+	o.Null = true
+	var v McpImplementation
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilMcpImplementation) Get() (v McpImplementation, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilMcpImplementation) Or(d McpImplementation) McpImplementation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilMcpServerFailure returns new NilMcpServerFailure with value set to v.
+func NewNilMcpServerFailure(v McpServerFailure) NilMcpServerFailure {
+	return NilMcpServerFailure{
+		Value: v,
+	}
+}
+
+// NilMcpServerFailure is nullable McpServerFailure.
+type NilMcpServerFailure struct {
+	Value McpServerFailure
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilMcpServerFailure) SetTo(v McpServerFailure) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilMcpServerFailure) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilMcpServerFailure) SetToNull() {
+	o.Null = true
+	var v McpServerFailure
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilMcpServerFailure) Get() (v McpServerFailure, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilMcpServerFailure) Or(d McpServerFailure) McpServerFailure {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilMcpToolResourceAnnotations returns new NilMcpToolResourceAnnotations with value set to v.
+func NewNilMcpToolResourceAnnotations(v McpToolResourceAnnotations) NilMcpToolResourceAnnotations {
+	return NilMcpToolResourceAnnotations{
+		Value: v,
+	}
+}
+
+// NilMcpToolResourceAnnotations is nullable McpToolResourceAnnotations.
+type NilMcpToolResourceAnnotations struct {
+	Value McpToolResourceAnnotations
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilMcpToolResourceAnnotations) SetTo(v McpToolResourceAnnotations) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilMcpToolResourceAnnotations) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilMcpToolResourceAnnotations) SetToNull() {
+	o.Null = true
+	var v McpToolResourceAnnotations
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilMcpToolResourceAnnotations) Get() (v McpToolResourceAnnotations, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilMcpToolResourceAnnotations) Or(d McpToolResourceAnnotations) McpToolResourceAnnotations {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilMcpToolResourceOutputSchema returns new NilMcpToolResourceOutputSchema with value set to v.
+func NewNilMcpToolResourceOutputSchema(v McpToolResourceOutputSchema) NilMcpToolResourceOutputSchema {
+	return NilMcpToolResourceOutputSchema{
+		Value: v,
+	}
+}
+
+// NilMcpToolResourceOutputSchema is nullable McpToolResourceOutputSchema.
+type NilMcpToolResourceOutputSchema struct {
+	Value McpToolResourceOutputSchema
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilMcpToolResourceOutputSchema) SetTo(v McpToolResourceOutputSchema) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilMcpToolResourceOutputSchema) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilMcpToolResourceOutputSchema) SetToNull() {
+	o.Null = true
+	var v McpToolResourceOutputSchema
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilMcpToolResourceOutputSchema) Get() (v McpToolResourceOutputSchema, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilMcpToolResourceOutputSchema) Or(d McpToolResourceOutputSchema) McpToolResourceOutputSchema {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -2463,6 +3481,52 @@ func (o OptBool) Or(d bool) bool {
 	return d
 }
 
+// NewOptCallMcpToolRequestArguments returns new OptCallMcpToolRequestArguments with value set to v.
+func NewOptCallMcpToolRequestArguments(v CallMcpToolRequestArguments) OptCallMcpToolRequestArguments {
+	return OptCallMcpToolRequestArguments{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCallMcpToolRequestArguments is optional CallMcpToolRequestArguments.
+type OptCallMcpToolRequestArguments struct {
+	Value CallMcpToolRequestArguments
+	Set   bool
+}
+
+// IsSet returns true if OptCallMcpToolRequestArguments was set.
+func (o OptCallMcpToolRequestArguments) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCallMcpToolRequestArguments) Reset() {
+	var v CallMcpToolRequestArguments
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCallMcpToolRequestArguments) SetTo(v CallMcpToolRequestArguments) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCallMcpToolRequestArguments) Get() (v CallMcpToolRequestArguments, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCallMcpToolRequestArguments) Or(d CallMcpToolRequestArguments) CallMcpToolRequestArguments {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptDesktopOptions returns new OptDesktopOptions with value set to v.
 func NewOptDesktopOptions(v DesktopOptions) OptDesktopOptions {
 	return OptDesktopOptions{
@@ -2739,6 +3803,52 @@ func (o OptMachineEventType) Or(d MachineEventType) MachineEventType {
 	return d
 }
 
+// NewOptMcpTransport returns new OptMcpTransport with value set to v.
+func NewOptMcpTransport(v McpTransport) OptMcpTransport {
+	return OptMcpTransport{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptMcpTransport is optional McpTransport.
+type OptMcpTransport struct {
+	Value McpTransport
+	Set   bool
+}
+
+// IsSet returns true if OptMcpTransport was set.
+func (o OptMcpTransport) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptMcpTransport) Reset() {
+	var v McpTransport
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptMcpTransport) SetTo(v McpTransport) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptMcpTransport) Get() (v McpTransport, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptMcpTransport) Or(d McpTransport) McpTransport {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilUUID returns new OptNilUUID with value set to v.
 func NewOptNilUUID(v uuid.UUID) OptNilUUID {
 	return OptNilUUID{
@@ -2985,6 +4095,98 @@ func (o OptUUID) Get() (v uuid.UUID, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptUpdateMcpServerRequestEnv returns new OptUpdateMcpServerRequestEnv with value set to v.
+func NewOptUpdateMcpServerRequestEnv(v UpdateMcpServerRequestEnv) OptUpdateMcpServerRequestEnv {
+	return OptUpdateMcpServerRequestEnv{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptUpdateMcpServerRequestEnv is optional UpdateMcpServerRequestEnv.
+type OptUpdateMcpServerRequestEnv struct {
+	Value UpdateMcpServerRequestEnv
+	Set   bool
+}
+
+// IsSet returns true if OptUpdateMcpServerRequestEnv was set.
+func (o OptUpdateMcpServerRequestEnv) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptUpdateMcpServerRequestEnv) Reset() {
+	var v UpdateMcpServerRequestEnv
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptUpdateMcpServerRequestEnv) SetTo(v UpdateMcpServerRequestEnv) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptUpdateMcpServerRequestEnv) Get() (v UpdateMcpServerRequestEnv, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptUpdateMcpServerRequestEnv) Or(d UpdateMcpServerRequestEnv) UpdateMcpServerRequestEnv {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptUpdateMcpServerRequestHeaders returns new OptUpdateMcpServerRequestHeaders with value set to v.
+func NewOptUpdateMcpServerRequestHeaders(v UpdateMcpServerRequestHeaders) OptUpdateMcpServerRequestHeaders {
+	return OptUpdateMcpServerRequestHeaders{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptUpdateMcpServerRequestHeaders is optional UpdateMcpServerRequestHeaders.
+type OptUpdateMcpServerRequestHeaders struct {
+	Value UpdateMcpServerRequestHeaders
+	Set   bool
+}
+
+// IsSet returns true if OptUpdateMcpServerRequestHeaders was set.
+func (o OptUpdateMcpServerRequestHeaders) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptUpdateMcpServerRequestHeaders) Reset() {
+	var v UpdateMcpServerRequestHeaders
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptUpdateMcpServerRequestHeaders) SetTo(v UpdateMcpServerRequestHeaders) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptUpdateMcpServerRequestHeaders) Get() (v UpdateMcpServerRequestHeaders, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptUpdateMcpServerRequestHeaders) Or(d UpdateMcpServerRequestHeaders) UpdateMcpServerRequestHeaders {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -3651,6 +4853,47 @@ func (s *RenewParticipantResponse) SetSigningKeys(val []SigningKey) {
 	s.SigningKeys = val
 }
 
+// Ref: #/components/schemas/ReplaceMcpConfigurationRequest
+type ReplaceMcpConfigurationRequest struct {
+	// The new file, an object with an object `mcpServers`, at most 1 MiB as JSON.
+	Content ReplaceMcpConfigurationRequestContent `json:"content"`
+	// The configuration's `revision` as last read; absent replaces whatever is there, such as a file that
+	// cannot be read.
+	ExpectedRevision OptString `json:"expected_revision"`
+}
+
+// GetContent returns the value of Content.
+func (s *ReplaceMcpConfigurationRequest) GetContent() ReplaceMcpConfigurationRequestContent {
+	return s.Content
+}
+
+// GetExpectedRevision returns the value of ExpectedRevision.
+func (s *ReplaceMcpConfigurationRequest) GetExpectedRevision() OptString {
+	return s.ExpectedRevision
+}
+
+// SetContent sets the value of Content.
+func (s *ReplaceMcpConfigurationRequest) SetContent(val ReplaceMcpConfigurationRequestContent) {
+	s.Content = val
+}
+
+// SetExpectedRevision sets the value of ExpectedRevision.
+func (s *ReplaceMcpConfigurationRequest) SetExpectedRevision(val OptString) {
+	s.ExpectedRevision = val
+}
+
+// The new file, an object with an object `mcpServers`, at most 1 MiB as JSON.
+type ReplaceMcpConfigurationRequestContent map[string]jx.Raw
+
+func (s *ReplaceMcpConfigurationRequestContent) init() ReplaceMcpConfigurationRequestContent {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
 // The ICE servers for the PeerConnections the caller starts, as W3C RTCConfiguration.
 // Ref: #/components/schemas/RtcConfiguration
 type RtcConfiguration struct {
@@ -3845,6 +5088,74 @@ func (s *RunCommandResponse) SetStderr(val string) {
 // SetStderrTruncated sets the value of StderrTruncated.
 func (s *RunCommandResponse) SetStderrTruncated(val bool) {
 	s.StderrTruncated = val
+}
+
+// Ref: #/components/schemas/SendMcpRequestRequest
+type SendMcpRequestRequest struct {
+	// One JSON-RPC 2.0 request of MCP, at most 4 MiB.
+	Request SendMcpRequestRequestRequest `json:"request"`
+	// How long to wait for the response.
+	TimeoutSeconds OptInt64 `json:"timeout_seconds"`
+}
+
+// GetRequest returns the value of Request.
+func (s *SendMcpRequestRequest) GetRequest() SendMcpRequestRequestRequest {
+	return s.Request
+}
+
+// GetTimeoutSeconds returns the value of TimeoutSeconds.
+func (s *SendMcpRequestRequest) GetTimeoutSeconds() OptInt64 {
+	return s.TimeoutSeconds
+}
+
+// SetRequest sets the value of Request.
+func (s *SendMcpRequestRequest) SetRequest(val SendMcpRequestRequestRequest) {
+	s.Request = val
+}
+
+// SetTimeoutSeconds sets the value of TimeoutSeconds.
+func (s *SendMcpRequestRequest) SetTimeoutSeconds(val OptInt64) {
+	s.TimeoutSeconds = val
+}
+
+// One JSON-RPC 2.0 request of MCP, at most 4 MiB.
+type SendMcpRequestRequestRequest map[string]jx.Raw
+
+func (s *SendMcpRequestRequestRequest) init() SendMcpRequestRequestRequest {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/SendMcpRequestResponse
+type SendMcpRequestResponse struct {
+	// The server's JSON-RPC 2.0 response, with the id of the request.
+	Response SendMcpRequestResponseResponse `json:"response"`
+}
+
+// GetResponse returns the value of Response.
+func (s *SendMcpRequestResponse) GetResponse() SendMcpRequestResponseResponse {
+	return s.Response
+}
+
+// SetResponse sets the value of Response.
+func (s *SendMcpRequestResponse) SetResponse(val SendMcpRequestResponseResponse) {
+	s.Response = val
+}
+
+// The server's JSON-RPC 2.0 response, with the id of the request.
+type SendMcpRequestResponseResponse map[string]jx.Raw
+
+func (s *SendMcpRequestResponseResponse) init() SendMcpRequestResponseResponse {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
 }
 
 // Why a session ended. `close_requested` and `terminate_requested` follow a request; `logout` the user
@@ -4368,6 +5679,180 @@ func (s *UpdateMachineRequest) GetName() string {
 // SetName sets the value of Name.
 func (s *UpdateMachineRequest) SetName(val string) {
 	s.Name = val
+}
+
+// Ref: #/components/schemas/UpdateMcpServerRequest
+type UpdateMcpServerRequest struct {
+	// Unset for `stdio` with `command` and `http` with `url`.
+	Transport OptMcpTransport `json:"transport"`
+	// With `stdio`, the program, looked up in the account's `PATH`.
+	Command OptString `json:"command"`
+	// With `stdio`; shown to anyone who reads the configuration, so no place for credentials.
+	Args []string `json:"args"`
+	// With `stdio`, variables added to the account's environment.
+	Env OptUpdateMcpServerRequestEnv `json:"env"`
+	// With `http` and `sse`, the endpoint; shown to anyone who reads the configuration.
+	URL OptString `json:"url"`
+	// With `http` and `sse`, headers sent with every request.
+	Headers OptUpdateMcpServerRequestHeaders `json:"headers"`
+	// Configured but kept stopped.
+	Disabled OptBool `json:"disabled"`
+	// Variables of the server's current `env` whose values stay as they are.
+	KeepEnv []string `json:"keep_env"`
+	// Headers of the server's current `headers` whose values stay as they are.
+	KeepHeaders []string `json:"keep_headers"`
+	// The configuration's `revision` as last read; absent only for one that was `missing`.
+	ExpectedRevision OptString `json:"expected_revision"`
+}
+
+// GetTransport returns the value of Transport.
+func (s *UpdateMcpServerRequest) GetTransport() OptMcpTransport {
+	return s.Transport
+}
+
+// GetCommand returns the value of Command.
+func (s *UpdateMcpServerRequest) GetCommand() OptString {
+	return s.Command
+}
+
+// GetArgs returns the value of Args.
+func (s *UpdateMcpServerRequest) GetArgs() []string {
+	return s.Args
+}
+
+// GetEnv returns the value of Env.
+func (s *UpdateMcpServerRequest) GetEnv() OptUpdateMcpServerRequestEnv {
+	return s.Env
+}
+
+// GetURL returns the value of URL.
+func (s *UpdateMcpServerRequest) GetURL() OptString {
+	return s.URL
+}
+
+// GetHeaders returns the value of Headers.
+func (s *UpdateMcpServerRequest) GetHeaders() OptUpdateMcpServerRequestHeaders {
+	return s.Headers
+}
+
+// GetDisabled returns the value of Disabled.
+func (s *UpdateMcpServerRequest) GetDisabled() OptBool {
+	return s.Disabled
+}
+
+// GetKeepEnv returns the value of KeepEnv.
+func (s *UpdateMcpServerRequest) GetKeepEnv() []string {
+	return s.KeepEnv
+}
+
+// GetKeepHeaders returns the value of KeepHeaders.
+func (s *UpdateMcpServerRequest) GetKeepHeaders() []string {
+	return s.KeepHeaders
+}
+
+// GetExpectedRevision returns the value of ExpectedRevision.
+func (s *UpdateMcpServerRequest) GetExpectedRevision() OptString {
+	return s.ExpectedRevision
+}
+
+// SetTransport sets the value of Transport.
+func (s *UpdateMcpServerRequest) SetTransport(val OptMcpTransport) {
+	s.Transport = val
+}
+
+// SetCommand sets the value of Command.
+func (s *UpdateMcpServerRequest) SetCommand(val OptString) {
+	s.Command = val
+}
+
+// SetArgs sets the value of Args.
+func (s *UpdateMcpServerRequest) SetArgs(val []string) {
+	s.Args = val
+}
+
+// SetEnv sets the value of Env.
+func (s *UpdateMcpServerRequest) SetEnv(val OptUpdateMcpServerRequestEnv) {
+	s.Env = val
+}
+
+// SetURL sets the value of URL.
+func (s *UpdateMcpServerRequest) SetURL(val OptString) {
+	s.URL = val
+}
+
+// SetHeaders sets the value of Headers.
+func (s *UpdateMcpServerRequest) SetHeaders(val OptUpdateMcpServerRequestHeaders) {
+	s.Headers = val
+}
+
+// SetDisabled sets the value of Disabled.
+func (s *UpdateMcpServerRequest) SetDisabled(val OptBool) {
+	s.Disabled = val
+}
+
+// SetKeepEnv sets the value of KeepEnv.
+func (s *UpdateMcpServerRequest) SetKeepEnv(val []string) {
+	s.KeepEnv = val
+}
+
+// SetKeepHeaders sets the value of KeepHeaders.
+func (s *UpdateMcpServerRequest) SetKeepHeaders(val []string) {
+	s.KeepHeaders = val
+}
+
+// SetExpectedRevision sets the value of ExpectedRevision.
+func (s *UpdateMcpServerRequest) SetExpectedRevision(val OptString) {
+	s.ExpectedRevision = val
+}
+
+// With `stdio`, variables added to the account's environment.
+type UpdateMcpServerRequestEnv map[string]string
+
+func (s *UpdateMcpServerRequestEnv) init() UpdateMcpServerRequestEnv {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+// With `http` and `sse`, headers sent with every request.
+type UpdateMcpServerRequestHeaders map[string]string
+
+func (s *UpdateMcpServerRequestHeaders) init() UpdateMcpServerRequestHeaders {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/UpdateMcpServerResponse
+type UpdateMcpServerResponse struct {
+	File   McpConfigurationFile `json:"file"`
+	Server McpServerResource    `json:"server"`
+}
+
+// GetFile returns the value of File.
+func (s *UpdateMcpServerResponse) GetFile() McpConfigurationFile {
+	return s.File
+}
+
+// GetServer returns the value of Server.
+func (s *UpdateMcpServerResponse) GetServer() McpServerResource {
+	return s.Server
+}
+
+// SetFile sets the value of File.
+func (s *UpdateMcpServerResponse) SetFile(val McpConfigurationFile) {
+	s.File = val
+}
+
+// SetServer sets the value of Server.
+func (s *UpdateMcpServerResponse) SetServer(val McpServerResource) {
+	s.Server = val
 }
 
 // Ref: #/components/schemas/UpdatePrivilegeAutoApprovalRequest

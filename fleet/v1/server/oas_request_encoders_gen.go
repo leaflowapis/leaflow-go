@@ -24,6 +24,20 @@ func encodeApproveEnrollmentRequest(
 	return nil
 }
 
+func encodeCallMcpToolRequest(
+	req *CallMcpToolRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCommitParticipantMigrationRequest(
 	req *MigrationStep,
 	r *http.Request,
@@ -164,8 +178,36 @@ func encodeRenewParticipantRequest(
 	return nil
 }
 
+func encodeReplaceMcpConfigurationRequest(
+	req *ReplaceMcpConfigurationRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeRunMachineCommandRequest(
 	req *RunCommandRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeSendMcpRequestRequest(
+	req *SendMcpRequestRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -208,6 +250,20 @@ func encodeUpdateGroupRequest(
 
 func encodeUpdateMachineRequest(
 	req *UpdateMachineRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateMcpServerRequest(
+	req *UpdateMcpServerRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
