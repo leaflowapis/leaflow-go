@@ -103,9 +103,6 @@ type Handler interface {
 	// requests and reading logs — is granted only with its permission; a viewer that may only watch gets
 	// none of them. A ticket may ask for less: to watch only, or for some of the capabilities.
 	//
-	// A request made by a browser binds the ticket to its `Origin`, which the WebSocket connection must
-	// carry too.
-	//
 	// Fails with:
 	//
 	//  - `SESSION_CLOSED` when the session has ended;
@@ -235,6 +232,12 @@ type Handler interface {
 	//
 	// GET /api/v1/sessions/{sessionId}
 	GetSession(ctx context.Context, params GetSessionParams) (*SessionResource, error)
+	// GetViewer implements get-viewer operation.
+	//
+	// Returns a viewer connected to the session.
+	//
+	// GET /api/v1/sessions/{sessionId}/viewers/{connectionId}
+	GetViewer(ctx context.Context, params GetViewerParams) (*ViewerResource, error)
 	// ListAccounts implements list-accounts operation.
 	//
 	// Returns the accounts of the project's members, ordered by username. A member who has never been able
@@ -275,6 +278,14 @@ type Handler interface {
 	//
 	// GET /api/v1/machines
 	ListMachines(ctx context.Context, params ListMachinesParams) (*MachineList, error)
+	// ListPrivilegeApprovals implements list-privilege-approvals operation.
+	//
+	// Returns the machines of the current project on which the caller has set privilege requests to be
+	// approved without asking, with the setting of each, the most recently set first. A machine whose
+	// setting is `never`, or whose `until` has passed, is not listed.
+	//
+	// GET /api/v1/privilege-approvals
+	ListPrivilegeApprovals(ctx context.Context, params ListPrivilegeApprovalsParams) (*PrivilegeApprovalList, error)
 	// ListPrivilegeRequests implements list-privilege-requests operation.
 	//
 	// Returns the caller's privilege requests on the project's machines, newest first. Requests are kept

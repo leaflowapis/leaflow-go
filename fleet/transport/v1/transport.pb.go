@@ -1428,7 +1428,7 @@ type Signal struct {
 	//	*Signal_EndOfCandidates
 	//	*Signal_Abort
 	//	*Signal_Authorization
-	//	*Signal_RenewLease
+	//	*Signal_Renewal
 	Signal        isSignal_Signal `protobuf_oneof:"signal"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1544,13 +1544,13 @@ func (x *Signal) GetAuthorization() *SignedPeerAuthorization {
 	return nil
 }
 
-func (x *Signal) GetRenewLease() bool {
+func (x *Signal) GetRenewal() *SignedPeerAuthorization {
 	if x != nil {
-		if x, ok := x.Signal.(*Signal_RenewLease); ok {
-			return x.RenewLease
+		if x, ok := x.Signal.(*Signal_Renewal); ok {
+			return x.Renewal
 		}
 	}
-	return false
+	return nil
 }
 
 type isSignal_Signal interface {
@@ -1583,9 +1583,13 @@ type Signal_Authorization struct {
 	Authorization *SignedPeerAuthorization `protobuf:"bytes,9,opt,name=authorization,proto3,oneof"`
 }
 
-type Signal_RenewLease struct {
-	// The viewer asks for a new lease of the same attempt.
-	RenewLease bool `protobuf:"varint,10,opt,name=renew_lease,json=renewLease,proto3,oneof"`
+type Signal_Renewal struct {
+	// The viewer asks for a new lease of the attempt this authorization is
+	// for, the latest it holds. The service checks that it signed it, for
+	// this connection, and that the viewer's connection is still attached,
+	// and sends both ends a new authorization of the attempt. A viewer that
+	// resumed its connection renews this way too.
+	Renewal *SignedPeerAuthorization `protobuf:"bytes,11,opt,name=renewal,proto3,oneof"`
 }
 
 func (*Signal_Description) isSignal_Signal() {}
@@ -1598,7 +1602,7 @@ func (*Signal_Abort) isSignal_Signal() {}
 
 func (*Signal_Authorization) isSignal_Signal() {}
 
-func (*Signal_RenewLease) isSignal_Signal() {}
+func (*Signal_Renewal) isSignal_Signal() {}
 
 // An SDP offer or answer (RFC 8866), as in W3C RTCSessionDescriptionInit.
 type SessionDescription struct {
@@ -1928,15 +1932,18 @@ type PeerAuthorization struct {
 	// SHA-256 fingerprint of the Agent's DTLS certificate, from its answer.
 	AgentFingerprintSha256 []byte `protobuf:"bytes,7,opt,name=agent_fingerprint_sha256,json=agentFingerprintSha256,proto3" json:"agent_fingerprint_sha256,omitempty"`
 	// SHA-256 of the viewer's authorization that both ends hold for the
-	// connection: the exact serialized bytes the service signed.
+	// connection: the exact serialized bytes the service signed. A renewal
+	// names the viewer's current authorization, which may be a renewed one
+	// (leaflow.fleet.control.v1 RefreshAuthorization).
 	ViewerAuthorizationSha256 []byte `protobuf:"bytes,8,opt,name=viewer_authorization_sha256,json=viewerAuthorizationSha256,proto3" json:"viewer_authorization_sha256,omitempty"`
 	// When the service signed it.
 	IssuedAt *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
-	// The end of the attempt's authorization, no later than the viewer's.
+	// The end of the attempt's authorization: the end of the viewer's current
+	// authorization.
 	ExpiresAt *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
 	// The end of the current lease, at most 30 seconds after issued_at and no
-	// later than expires_at. A renewal moves only this time. Each end stops
-	// sending application data when the lease runs out.
+	// later than expires_at. Each end stops sending application data when the
+	// lease runs out, and goes on once it holds a later one.
 	LeaseExpiresAt *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=lease_expires_at,json=leaseExpiresAt,proto3" json:"lease_expires_at,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -2126,7 +2133,7 @@ const file_leaflow_fleet_transport_v1_transport_proto_rawDesc = "" +
 	"\arequest\x18\x06 \x01(\bH\x00R\arequestB\x06\n" +
 	"\x04step\"3\n" +
 	"\x05Close\x12*\n" +
-	"\x06status\x18\x01 \x01(\v2\x12.google.rpc.StatusR\x06status\"\xaa\x04\n" +
+	"\x06status\x18\x01 \x01(\v2\x12.google.rpc.StatusR\x06status\"\xd8\x04\n" +
 	"\x06Signal\x12\x1d\n" +
 	"\n" +
 	"attempt_id\x18\x01 \x01(\fR\tattemptId\x12#\n" +
@@ -2137,10 +2144,8 @@ const file_leaflow_fleet_transport_v1_transport_proto_rawDesc = "" +
 	"\tcandidate\x18\x06 \x01(\v2(.leaflow.fleet.transport.v1.IceCandidateH\x00R\tcandidate\x12,\n" +
 	"\x11end_of_candidates\x18\a \x01(\bH\x00R\x0fendOfCandidates\x12\x16\n" +
 	"\x05abort\x18\b \x01(\bH\x00R\x05abort\x12[\n" +
-	"\rauthorization\x18\t \x01(\v23.leaflow.fleet.transport.v1.SignedPeerAuthorizationH\x00R\rauthorization\x12!\n" +
-	"\vrenew_lease\x18\n" +
-	" \x01(\bH\x00R\n" +
-	"renewLeaseB\b\n" +
+	"\rauthorization\x18\t \x01(\v23.leaflow.fleet.transport.v1.SignedPeerAuthorizationH\x00R\rauthorization\x12O\n" +
+	"\arenewal\x18\v \x01(\v23.leaflow.fleet.transport.v1.SignedPeerAuthorizationH\x00R\arenewalB\b\n" +
 	"\x06signal\"_\n" +
 	"\x12SessionDescription\x127\n" +
 	"\x04type\x18\x01 \x01(\x0e2#.leaflow.fleet.transport.v1.SdpTypeR\x04type\x12\x10\n" +
@@ -2268,18 +2273,19 @@ var file_leaflow_fleet_transport_v1_transport_proto_depIdxs = []int32{
 	18, // 19: leaflow.fleet.transport.v1.Signal.description:type_name -> leaflow.fleet.transport.v1.SessionDescription
 	19, // 20: leaflow.fleet.transport.v1.Signal.candidate:type_name -> leaflow.fleet.transport.v1.IceCandidate
 	22, // 21: leaflow.fleet.transport.v1.Signal.authorization:type_name -> leaflow.fleet.transport.v1.SignedPeerAuthorization
-	2,  // 22: leaflow.fleet.transport.v1.SessionDescription.type:type_name -> leaflow.fleet.transport.v1.SdpType
-	21, // 23: leaflow.fleet.transport.v1.RtcConfiguration.ice_servers:type_name -> leaflow.fleet.transport.v1.IceServer
-	3,  // 24: leaflow.fleet.transport.v1.RtcConfiguration.ice_transport_policy:type_name -> leaflow.fleet.transport.v1.IceTransportPolicy
-	25, // 25: leaflow.fleet.transport.v1.RtcConfiguration.expires_at:type_name -> google.protobuf.Timestamp
-	25, // 26: leaflow.fleet.transport.v1.PeerAuthorization.issued_at:type_name -> google.protobuf.Timestamp
-	25, // 27: leaflow.fleet.transport.v1.PeerAuthorization.expires_at:type_name -> google.protobuf.Timestamp
-	25, // 28: leaflow.fleet.transport.v1.PeerAuthorization.lease_expires_at:type_name -> google.protobuf.Timestamp
-	29, // [29:29] is the sub-list for method output_type
-	29, // [29:29] is the sub-list for method input_type
-	29, // [29:29] is the sub-list for extension type_name
-	29, // [29:29] is the sub-list for extension extendee
-	0,  // [0:29] is the sub-list for field type_name
+	22, // 22: leaflow.fleet.transport.v1.Signal.renewal:type_name -> leaflow.fleet.transport.v1.SignedPeerAuthorization
+	2,  // 23: leaflow.fleet.transport.v1.SessionDescription.type:type_name -> leaflow.fleet.transport.v1.SdpType
+	21, // 24: leaflow.fleet.transport.v1.RtcConfiguration.ice_servers:type_name -> leaflow.fleet.transport.v1.IceServer
+	3,  // 25: leaflow.fleet.transport.v1.RtcConfiguration.ice_transport_policy:type_name -> leaflow.fleet.transport.v1.IceTransportPolicy
+	25, // 26: leaflow.fleet.transport.v1.RtcConfiguration.expires_at:type_name -> google.protobuf.Timestamp
+	25, // 27: leaflow.fleet.transport.v1.PeerAuthorization.issued_at:type_name -> google.protobuf.Timestamp
+	25, // 28: leaflow.fleet.transport.v1.PeerAuthorization.expires_at:type_name -> google.protobuf.Timestamp
+	25, // 29: leaflow.fleet.transport.v1.PeerAuthorization.lease_expires_at:type_name -> google.protobuf.Timestamp
+	30, // [30:30] is the sub-list for method output_type
+	30, // [30:30] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_leaflow_fleet_transport_v1_transport_proto_init() }
@@ -2315,7 +2321,7 @@ func file_leaflow_fleet_transport_v1_transport_proto_init() {
 		(*Signal_EndOfCandidates)(nil),
 		(*Signal_Abort)(nil),
 		(*Signal_Authorization)(nil),
-		(*Signal_RenewLease)(nil),
+		(*Signal_Renewal)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

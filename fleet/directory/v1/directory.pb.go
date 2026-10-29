@@ -596,7 +596,12 @@ type ReportDirectoryStatusRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Directory.revision of the copy the Agent serves. Empty before the first
 	// SetDirectory.
-	Revision      string `protobuf:"bytes,1,opt,name=revision,proto3" json:"revision,omitempty"`
+	Revision string `protobuf:"bytes,1,opt,name=revision,proto3" json:"revision,omitempty"`
+	// Orders the reports the daemon sends on this connection by when it
+	// observed what they report (leaflow.fleet.control.v1 Reports): it
+	// increases with every report, 1 for the first, and a report sent again
+	// keeps its sequence.
+	Sequence      uint64 `protobuf:"varint,2,opt,name=sequence,proto3" json:"sequence,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -636,6 +641,13 @@ func (x *ReportDirectoryStatusRequest) GetRevision() string {
 		return x.Revision
 	}
 	return ""
+}
+
+func (x *ReportDirectoryStatusRequest) GetSequence() uint64 {
+	if x != nil {
+		return x.Sequence
+	}
+	return 0
 }
 
 // The response of ReportDirectoryStatus.
@@ -714,9 +726,10 @@ const file_leaflow_fleet_directory_v1_directory_proto_rawDesc = "" +
 	"\x11GetAccountRequest\x12\x1a\n" +
 	"\busername\x18\x01 \x01(\tR\busername\"S\n" +
 	"\x12GetAccountResponse\x12=\n" +
-	"\aaccount\x18\x01 \x01(\v2#.leaflow.fleet.directory.v1.AccountR\aaccount\":\n" +
+	"\aaccount\x18\x01 \x01(\v2#.leaflow.fleet.directory.v1.AccountR\aaccount\"V\n" +
 	"\x1cReportDirectoryStatusRequest\x12\x1a\n" +
-	"\brevision\x18\x01 \x01(\tR\brevision\"\x1f\n" +
+	"\brevision\x18\x01 \x01(\tR\brevision\x12\x1a\n" +
+	"\bsequence\x18\x02 \x01(\x04R\bsequence\"\x1f\n" +
 	"\x1dReportDirectoryStatusResponse2\x92\x02\n" +
 	"\x17MachineDirectoryService\x12v\n" +
 	"\fSetDirectory\x12/.leaflow.fleet.directory.v1.SetDirectoryRequest\x1a0.leaflow.fleet.directory.v1.SetDirectoryResponse\"\x03\x90\x02\x02\x12\x7f\n" +

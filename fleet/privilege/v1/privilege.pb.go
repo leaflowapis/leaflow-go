@@ -1186,9 +1186,9 @@ const file_leaflow_fleet_privilege_v1_privilege_proto_rawDesc = "" +
 	"\x1aPRIVILEGE_OUTCOME_APPROVED\x10\x01\x12\x1c\n" +
 	"\x18PRIVILEGE_OUTCOME_DENIED\x10\x02\x12\x1d\n" +
 	"\x19PRIVILEGE_OUTCOME_EXPIRED\x10\x03\x12\x1f\n" +
-	"\x1bPRIVILEGE_OUTCOME_CANCELLED\x10\x042\xa4\x01\n" +
-	"\x10PrivilegeService\x12\x8f\x01\n" +
-	"\x16DecidePrivilegeRequest\x129.leaflow.fleet.privilege.v1.DecidePrivilegeRequestRequest\x1a:.leaflow.fleet.privilege.v1.DecidePrivilegeRequestResponseBBZ@github.com/leaflowapis/leaflow-go/fleet/privilege/v1;privilegev1b\x06proto3"
+	"\x1bPRIVILEGE_OUTCOME_CANCELLED\x10\x042\xa9\x01\n" +
+	"\x10PrivilegeService\x12\x94\x01\n" +
+	"\x16DecidePrivilegeRequest\x129.leaflow.fleet.privilege.v1.DecidePrivilegeRequestRequest\x1a:.leaflow.fleet.privilege.v1.DecidePrivilegeRequestResponse\"\x03\x90\x02\x02BBZ@github.com/leaflowapis/leaflow-go/fleet/privilege/v1;privilegev1b\x06proto3"
 
 var (
 	file_leaflow_fleet_privilege_v1_privilege_proto_rawDescOnce sync.Once

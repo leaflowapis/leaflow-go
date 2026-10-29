@@ -74,6 +74,12 @@ const (
 	CloseReason_CLOSE_REASON_POLICY_VIOLATION CloseReason = 16
 	// The sender failed. Either side.
 	CloseReason_CLOSE_REASON_INTERNAL_ERROR CloseReason = 17
+	// The service cannot serve the connection now; connect again after
+	// retry_delay, which is always set. Service only.
+	CloseReason_CLOSE_REASON_OVERLOADED CloseReason = 18
+	// The endpoint did not read what the service sent as it arrived. Service
+	// only.
+	CloseReason_CLOSE_REASON_ENDPOINT_TOO_SLOW CloseReason = 19
 )
 
 // Enum value maps for CloseReason.
@@ -97,6 +103,8 @@ var (
 		15: "CLOSE_REASON_DETACH_REQUEST",
 		16: "CLOSE_REASON_POLICY_VIOLATION",
 		17: "CLOSE_REASON_INTERNAL_ERROR",
+		18: "CLOSE_REASON_OVERLOADED",
+		19: "CLOSE_REASON_ENDPOINT_TOO_SLOW",
 	}
 	CloseReason_value = map[string]int32{
 		"CLOSE_REASON_UNSPECIFIED":           0,
@@ -117,6 +125,8 @@ var (
 		"CLOSE_REASON_DETACH_REQUEST":        15,
 		"CLOSE_REASON_POLICY_VIOLATION":      16,
 		"CLOSE_REASON_INTERNAL_ERROR":        17,
+		"CLOSE_REASON_OVERLOADED":            18,
+		"CLOSE_REASON_ENDPOINT_TOO_SLOW":     19,
 	}
 )
 
@@ -643,8 +653,14 @@ type ServerHello struct {
 	// The largest WebSocket message, in bytes, either end may send. At least
 	// 512 KiB, so that a Fragment always fits.
 	MaxMessageSize uint32 `protobuf:"varint,5,opt,name=max_message_size,json=maxMessageSize,proto3" json:"max_message_size,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// How many calls of the endpoint may run on the service at a time.
+	MaxConcurrentCalls uint32 `protobuf:"varint,6,opt,name=max_concurrent_calls,json=maxConcurrentCalls,proto3" json:"max_concurrent_calls,omitempty"`
+	// How many messages a second the endpoint may send on average.
+	MessagesPerSecond uint32 `protobuf:"varint,7,opt,name=messages_per_second,json=messagesPerSecond,proto3" json:"messages_per_second,omitempty"`
+	// How many messages the endpoint may send at once, above the average.
+	MessageBurst  uint32 `protobuf:"varint,8,opt,name=message_burst,json=messageBurst,proto3" json:"message_burst,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ServerHello) Reset() {
@@ -708,6 +724,27 @@ func (x *ServerHello) GetIdleTimeout() *durationpb.Duration {
 func (x *ServerHello) GetMaxMessageSize() uint32 {
 	if x != nil {
 		return x.MaxMessageSize
+	}
+	return 0
+}
+
+func (x *ServerHello) GetMaxConcurrentCalls() uint32 {
+	if x != nil {
+		return x.MaxConcurrentCalls
+	}
+	return 0
+}
+
+func (x *ServerHello) GetMessagesPerSecond() uint32 {
+	if x != nil {
+		return x.MessagesPerSecond
+	}
+	return 0
+}
+
+func (x *ServerHello) GetMessageBurst() uint32 {
+	if x != nil {
+		return x.MessageBurst
 	}
 	return 0
 }
@@ -1120,9 +1157,10 @@ func (x *SessionDelegation) GetExpiresAt() *timestamppb.Timestamp {
 type ViewerCredential struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// A single-use ticket the service issued to a signed-in user for one
-	// session, this viewer key and, for a browser, the Origin it asked from
-	// (RFC 6454), which the WebSocket handshake must carry. Valid for at most
-	// 60 seconds. It authenticates nothing by itself. Never put into a URL.
+	// session and this viewer key. Valid for at most 60 seconds. It
+	// authenticates nothing by itself: the signature below proves the key.
+	// Whoever asked for it, a browser through its console, a desktop client or
+	// a program, connects with it the same way. Never put into a URL.
 	Ticket string `protobuf:"bytes,1,opt,name=ticket,proto3" json:"ticket,omitempty"`
 	// Resumes the viewer connection with this id. 0: a new connection.
 	ResumeConnectionId uint64 `protobuf:"varint,2,opt,name=resume_connection_id,json=resumeConnectionId,proto3" json:"resume_connection_id,omitempty"`
@@ -1816,9 +1854,9 @@ type Close struct {
 	Reason CloseReason `protobuf:"varint,1,opt,name=reason,proto3,enum=leaflow.fleet.control.v1.CloseReason" json:"reason,omitempty"`
 	// Plain text for logs, at most 1024 bytes.
 	ReasonPhrase string `protobuf:"bytes,2,opt,name=reason_phrase,json=reasonPhrase,proto3" json:"reason_phrase,omitempty"`
-	// How long to wait before connecting again. Set with SERVER_UPGRADE and
-	// SESSION_RESTARTING. Unset: back off between 0.5 and 30 seconds with
-	// jitter.
+	// How long to wait at least before connecting again (see Reconnection).
+	// Always set with OVERLOADED; set with SERVER_UPGRADE and
+	// SESSION_RESTARTING.
 	RetryDelay    *durationpb.Duration `protobuf:"bytes,3,opt,name=retry_delay,json=retryDelay,proto3" json:"retry_delay,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2271,13 +2309,16 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	" \x01(\v2%.leaflow.fleet.control.v1.ServiceKeysH\x00R\vserviceKeys\x127\n" +
 	"\x05close\x18\v \x01(\v2\x1f.leaflow.fleet.control.v1.CloseH\x00R\x05close\x12@\n" +
 	"\bfragment\x18\f \x01(\v2\".leaflow.fleet.control.v1.FragmentH\x00R\bfragmentB\t\n" +
-	"\amessage\"\xeb\x01\n" +
+	"\amessage\"\xf2\x02\n" +
 	"\vServerHello\x12\x16\n" +
 	"\x06issuer\x18\x01 \x01(\tR\x06issuer\x12\x1c\n" +
 	"\tchallenge\x18\x02 \x01(\fR\tchallenge\x12>\n" +
 	"\rping_interval\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\fpingInterval\x12<\n" +
 	"\fidle_timeout\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\vidleTimeout\x12(\n" +
-	"\x10max_message_size\x18\x05 \x01(\rR\x0emaxMessageSize\"\xe4\x02\n" +
+	"\x10max_message_size\x18\x05 \x01(\rR\x0emaxMessageSize\x120\n" +
+	"\x14max_concurrent_calls\x18\x06 \x01(\rR\x12maxConcurrentCalls\x12.\n" +
+	"\x13messages_per_second\x18\a \x01(\rR\x11messagesPerSecond\x12#\n" +
+	"\rmessage_burst\x18\b \x01(\rR\fmessageBurst\"\xe4\x02\n" +
 	"\vClientHello\x12G\n" +
 	"\amachine\x18\x01 \x01(\v2+.leaflow.fleet.control.v1.MachineCredentialH\x00R\amachine\x12P\n" +
 	"\n" +
@@ -2381,7 +2422,7 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\x13DetachViewerRequest\x12#\n" +
 	"\rconnection_id\x18\x01 \x01(\x04R\fconnectionId\x12=\n" +
 	"\x06reason\x18\x02 \x01(\x0e2%.leaflow.fleet.control.v1.CloseReasonR\x06reason\"\x16\n" +
-	"\x14DetachViewerResponse*\xdb\x04\n" +
+	"\x14DetachViewerResponse*\x9c\x05\n" +
 	"\vCloseReason\x12\x1c\n" +
 	"\x18CLOSE_REASON_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11CLOSE_REASON_DONE\x10\x01\x12\x1c\n" +
@@ -2401,12 +2442,14 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\x1fCLOSE_REASON_SESSION_RESTARTING\x10\x0e\x12\x1f\n" +
 	"\x1bCLOSE_REASON_DETACH_REQUEST\x10\x0f\x12!\n" +
 	"\x1dCLOSE_REASON_POLICY_VIOLATION\x10\x10\x12\x1f\n" +
-	"\x1bCLOSE_REASON_INTERNAL_ERROR\x10\x112\x9e\x01\n" +
+	"\x1bCLOSE_REASON_INTERNAL_ERROR\x10\x11\x12\x1b\n" +
+	"\x17CLOSE_REASON_OVERLOADED\x10\x12\x12\"\n" +
+	"\x1eCLOSE_REASON_ENDPOINT_TOO_SLOW\x10\x132\x9e\x01\n" +
 	"\x14AuthorizationService\x12\x85\x01\n" +
-	"\x14RefreshAuthorization\x125.leaflow.fleet.control.v1.RefreshAuthorizationRequest\x1a6.leaflow.fleet.control.v1.RefreshAuthorizationResponse2\x89\x03\n" +
-	"\rViewerService\x12m\n" +
-	"\fAttachViewer\x12-.leaflow.fleet.control.v1.AttachViewerRequest\x1a..leaflow.fleet.control.v1.AttachViewerResponse\x12\x94\x01\n" +
-	"\x19UpdateViewerAuthorization\x12:.leaflow.fleet.control.v1.UpdateViewerAuthorizationRequest\x1a;.leaflow.fleet.control.v1.UpdateViewerAuthorizationResponse\x12r\n" +
+	"\x14RefreshAuthorization\x125.leaflow.fleet.control.v1.RefreshAuthorizationRequest\x1a6.leaflow.fleet.control.v1.RefreshAuthorizationResponse2\x93\x03\n" +
+	"\rViewerService\x12r\n" +
+	"\fAttachViewer\x12-.leaflow.fleet.control.v1.AttachViewerRequest\x1a..leaflow.fleet.control.v1.AttachViewerResponse\"\x03\x90\x02\x02\x12\x99\x01\n" +
+	"\x19UpdateViewerAuthorization\x12:.leaflow.fleet.control.v1.UpdateViewerAuthorizationRequest\x1a;.leaflow.fleet.control.v1.UpdateViewerAuthorizationResponse\"\x03\x90\x02\x02\x12r\n" +
 	"\fDetachViewer\x12-.leaflow.fleet.control.v1.DetachViewerRequest\x1a..leaflow.fleet.control.v1.DetachViewerResponse\"\x03\x90\x02\x02B>Z<github.com/leaflowapis/leaflow-go/fleet/control/v1;controlv1b\x06proto3"
 
 var (

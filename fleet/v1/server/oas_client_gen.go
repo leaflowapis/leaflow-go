@@ -124,9 +124,6 @@ type Invoker interface {
 	// requests and reading logs — is granted only with its permission; a viewer that may only watch gets
 	// none of them. A ticket may ask for less: to watch only, or for some of the capabilities.
 	//
-	// A request made by a browser binds the ticket to its `Origin`, which the WebSocket connection must
-	// carry too.
-	//
 	// Fails with:
 	//
 	//  - `SESSION_CLOSED` when the session has ended;
@@ -256,6 +253,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/sessions/{sessionId}
 	GetSession(ctx context.Context, params GetSessionParams) (*SessionResource, error)
+	// GetViewer invokes get-viewer operation.
+	//
+	// Returns a viewer connected to the session.
+	//
+	// GET /api/v1/sessions/{sessionId}/viewers/{connectionId}
+	GetViewer(ctx context.Context, params GetViewerParams) (*ViewerResource, error)
 	// ListAccounts invokes list-accounts operation.
 	//
 	// Returns the accounts of the project's members, ordered by username. A member who has never been able
@@ -296,6 +299,14 @@ type Invoker interface {
 	//
 	// GET /api/v1/machines
 	ListMachines(ctx context.Context, params ListMachinesParams) (*MachineList, error)
+	// ListPrivilegeApprovals invokes list-privilege-approvals operation.
+	//
+	// Returns the machines of the current project on which the caller has set privilege requests to be
+	// approved without asking, with the setting of each, the most recently set first. A machine whose
+	// setting is `never`, or whose `until` has passed, is not listed.
+	//
+	// GET /api/v1/privilege-approvals
+	ListPrivilegeApprovals(ctx context.Context, params ListPrivilegeApprovalsParams) (*PrivilegeApprovalList, error)
 	// ListPrivilegeRequests invokes list-privilege-requests operation.
 	//
 	// Returns the caller's privilege requests on the project's machines, newest first. Requests are kept
@@ -1404,9 +1415,6 @@ func (c *Client) sendCreateSession(ctx context.Context, request *CreateSessionRe
 // programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
 // requests and reading logs — is granted only with its permission; a viewer that may only watch gets
 // none of them. A ticket may ask for less: to watch only, or for some of the capabilities.
-//
-// A request made by a browser binds the ticket to its `Origin`, which the WebSocket connection must
-// carry too.
 //
 // Fails with:
 //
@@ -3591,6 +3599,156 @@ func (c *Client) sendGetSession(ctx context.Context, params GetSessionParams) (r
 	return result, nil
 }
 
+// GetViewer invokes get-viewer operation.
+//
+// Returns a viewer connected to the session.
+//
+// GET /api/v1/sessions/{sessionId}/viewers/{connectionId}
+func (c *Client) GetViewer(ctx context.Context, params GetViewerParams) (*ViewerResource, error) {
+	res, err := c.sendGetViewer(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetViewer(ctx context.Context, params GetViewerParams) (res *ViewerResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-viewer"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/viewers/{connectionId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetViewerOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/sessions/"
+	{
+		// Encode "sessionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "sessionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.SessionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/viewers/"
+	{
+		// Encode "connectionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "connectionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.ConnectionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetViewerOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetViewerResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListAccounts invokes list-accounts operation.
 //
 // Returns the accounts of the project's members, ordered by username. A member who has never been able
@@ -4600,6 +4758,159 @@ func (c *Client) sendListMachines(ctx context.Context, params ListMachinesParams
 
 	stage = "DecodeResponse"
 	result, err := decodeListMachinesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListPrivilegeApprovals invokes list-privilege-approvals operation.
+//
+// Returns the machines of the current project on which the caller has set privilege requests to be
+// approved without asking, with the setting of each, the most recently set first. A machine whose
+// setting is `never`, or whose `until` has passed, is not listed.
+//
+// GET /api/v1/privilege-approvals
+func (c *Client) ListPrivilegeApprovals(ctx context.Context, params ListPrivilegeApprovalsParams) (*PrivilegeApprovalList, error) {
+	res, err := c.sendListPrivilegeApprovals(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListPrivilegeApprovals(ctx context.Context, params ListPrivilegeApprovalsParams) (res *PrivilegeApprovalList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-privilege-approvals"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/privilege-approvals"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListPrivilegeApprovalsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/privilege-approvals"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListPrivilegeApprovalsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListPrivilegeApprovalsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

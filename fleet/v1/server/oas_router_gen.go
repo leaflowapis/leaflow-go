@@ -66,10 +66,13 @@ var (
 		"GET": "Authorization",
 		"PUT": "Authorization,Content-Type",
 	}
-	rn43AllowedHeaders = map[string]string{
+	rn45AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn41AllowedHeaders = map[string]string{
+	rn42AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
+	rn43AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn6AllowedHeaders = map[string]string{
@@ -91,16 +94,17 @@ var (
 	rn17AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn42AllowedHeaders = map[string]string{
+	rn44AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn27AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
+		"GET":    "Authorization",
 	}
 	rn10AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
-	rn45AllowedHeaders = map[string]string{
+	rn47AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
 )
@@ -731,7 +735,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn43AllowedHeaders,
+										allowedHeaders: rn45AllowedHeaders,
 										acceptPost:     "application/json",
 										acceptPatch:    "",
 									})
@@ -746,57 +750,59 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 				}
 
-			case 'p': // Prefix: "privilege-requests"
+			case 'p': // Prefix: "privilege-"
 
-				if l := len("privilege-requests"); len(elem) >= l && elem[0:l] == "privilege-requests" {
+				if l := len("privilege-"); len(elem) >= l && elem[0:l] == "privilege-" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
-					switch r.Method {
-					case "GET":
-						s.handleListPrivilegeRequestsRequest([0]string{}, elemIsEscaped, w, r)
-					default:
-						s.notAllowed(w, r, notAllowedParams{
-							allowedMethods: "GET",
-							allowedHeaders: rn41AllowedHeaders,
-							acceptPost:     "",
-							acceptPatch:    "",
-						})
-					}
-
-					return
+					break
 				}
 				switch elem[0] {
-				case '/': // Prefix: "/"
+				case 'a': // Prefix: "approvals"
 
-					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+					if l := len("approvals"); len(elem) >= l && elem[0:l] == "approvals" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
-					// Param: "requestId"
-					// Match until ":"
-					idx := strings.IndexByte(elem, ':')
-					if idx < 0 {
-						idx = len(elem)
+					if len(elem) == 0 {
+						// Leaf node.
+						switch r.Method {
+						case "GET":
+							s.handleListPrivilegeApprovalsRequest([0]string{}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "GET",
+								allowedHeaders: rn42AllowedHeaders,
+								acceptPost:     "",
+								acceptPatch:    "",
+							})
+						}
+
+						return
 					}
-					args[0] = elem[:idx]
-					elem = elem[idx:]
+
+				case 'r': // Prefix: "requests"
+
+					if l := len("requests"); len(elem) >= l && elem[0:l] == "requests" {
+						elem = elem[l:]
+					} else {
+						break
+					}
 
 					if len(elem) == 0 {
 						switch r.Method {
 						case "GET":
-							s.handleGetPrivilegeRequestRequest([1]string{
-								args[0],
-							}, elemIsEscaped, w, r)
+							s.handleListPrivilegeRequestsRequest([0]string{}, elemIsEscaped, w, r)
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
-								allowedHeaders: rn6AllowedHeaders,
+								allowedHeaders: rn43AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -805,70 +811,107 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 					switch elem[0] {
-					case ':': // Prefix: ":"
+					case '/': // Prefix: "/"
 
-						if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
+						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
+						// Param: "requestId"
+						// Match until ":"
+						idx := strings.IndexByte(elem, ':')
+						if idx < 0 {
+							idx = len(elem)
+						}
+						args[0] = elem[:idx]
+						elem = elem[idx:]
+
 						if len(elem) == 0 {
-							break
+							switch r.Method {
+							case "GET":
+								s.handleGetPrivilegeRequestRequest([1]string{
+									args[0],
+								}, elemIsEscaped, w, r)
+							default:
+								s.notAllowed(w, r, notAllowedParams{
+									allowedMethods: "GET",
+									allowedHeaders: rn6AllowedHeaders,
+									acceptPost:     "",
+									acceptPatch:    "",
+								})
+							}
+
+							return
 						}
 						switch elem[0] {
-						case 'a': // Prefix: "approve"
+						case ':': // Prefix: ":"
 
-							if l := len("approve"); len(elem) >= l && elem[0:l] == "approve" {
+							if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "POST":
-									s.handleApprovePrivilegeRequestRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "POST",
-										allowedHeaders: rn7AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
-						case 'd': // Prefix: "deny"
-
-							if l := len("deny"); len(elem) >= l && elem[0:l] == "deny" {
-								elem = elem[l:]
-							} else {
 								break
 							}
+							switch elem[0] {
+							case 'a': // Prefix: "approve"
 
-							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "POST":
-									s.handleDenyPrivilegeRequestRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "POST",
-										allowedHeaders: rn31AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
+								if l := len("approve"); len(elem) >= l && elem[0:l] == "approve" {
+									elem = elem[l:]
+								} else {
+									break
 								}
 
-								return
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "POST":
+										s.handleApprovePrivilegeRequestRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "POST",
+											allowedHeaders: rn7AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
+							case 'd': // Prefix: "deny"
+
+								if l := len("deny"); len(elem) >= l && elem[0:l] == "deny" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "POST":
+										s.handleDenyPrivilegeRequestRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "POST",
+											allowedHeaders: rn31AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
 							}
 
 						}
@@ -994,7 +1037,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "GET",
-										allowedHeaders: rn42AllowedHeaders,
+										allowedHeaders: rn44AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -1028,9 +1071,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											args[0],
 											args[1],
 										}, elemIsEscaped, w, r)
+									case "GET":
+										s.handleGetViewerRequest([2]string{
+											args[0],
+											args[1],
+										}, elemIsEscaped, w, r)
 									default:
 										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "DELETE",
+											allowedMethods: "DELETE,GET",
 											allowedHeaders: rn27AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
@@ -1101,7 +1149,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn45AllowedHeaders,
+										allowedHeaders: rn47AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -1837,123 +1885,162 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 				}
 
-			case 'p': // Prefix: "privilege-requests"
+			case 'p': // Prefix: "privilege-"
 
-				if l := len("privilege-requests"); len(elem) >= l && elem[0:l] == "privilege-requests" {
+				if l := len("privilege-"); len(elem) >= l && elem[0:l] == "privilege-" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
-					switch method {
-					case "GET":
-						r.name = ListPrivilegeRequestsOperation
-						r.summary = "List the caller's privilege requests"
-						r.operationID = "list-privilege-requests"
-						r.operationGroup = ""
-						r.pathPattern = "/api/v1/privilege-requests"
-						r.args = args
-						r.count = 0
-						return r, true
-					default:
-						return
-					}
+					break
 				}
 				switch elem[0] {
-				case '/': // Prefix: "/"
+				case 'a': // Prefix: "approvals"
 
-					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+					if l := len("approvals"); len(elem) >= l && elem[0:l] == "approvals" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
-					// Param: "requestId"
-					// Match until ":"
-					idx := strings.IndexByte(elem, ':')
-					if idx < 0 {
-						idx = len(elem)
+					if len(elem) == 0 {
+						// Leaf node.
+						switch method {
+						case "GET":
+							r.name = ListPrivilegeApprovalsOperation
+							r.summary = "List the caller's privilege approval settings"
+							r.operationID = "list-privilege-approvals"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/privilege-approvals"
+							r.args = args
+							r.count = 0
+							return r, true
+						default:
+							return
+						}
 					}
-					args[0] = elem[:idx]
-					elem = elem[idx:]
+
+				case 'r': // Prefix: "requests"
+
+					if l := len("requests"); len(elem) >= l && elem[0:l] == "requests" {
+						elem = elem[l:]
+					} else {
+						break
+					}
 
 					if len(elem) == 0 {
 						switch method {
 						case "GET":
-							r.name = GetPrivilegeRequestOperation
-							r.summary = "Get a privilege request"
-							r.operationID = "get-privilege-request"
+							r.name = ListPrivilegeRequestsOperation
+							r.summary = "List the caller's privilege requests"
+							r.operationID = "list-privilege-requests"
 							r.operationGroup = ""
-							r.pathPattern = "/api/v1/privilege-requests/{requestId}"
+							r.pathPattern = "/api/v1/privilege-requests"
 							r.args = args
-							r.count = 1
+							r.count = 0
 							return r, true
 						default:
 							return
 						}
 					}
 					switch elem[0] {
-					case ':': // Prefix: ":"
+					case '/': // Prefix: "/"
 
-						if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
+						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
+						// Param: "requestId"
+						// Match until ":"
+						idx := strings.IndexByte(elem, ':')
+						if idx < 0 {
+							idx = len(elem)
+						}
+						args[0] = elem[:idx]
+						elem = elem[idx:]
+
 						if len(elem) == 0 {
-							break
+							switch method {
+							case "GET":
+								r.name = GetPrivilegeRequestOperation
+								r.summary = "Get a privilege request"
+								r.operationID = "get-privilege-request"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/privilege-requests/{requestId}"
+								r.args = args
+								r.count = 1
+								return r, true
+							default:
+								return
+							}
 						}
 						switch elem[0] {
-						case 'a': // Prefix: "approve"
+						case ':': // Prefix: ":"
 
-							if l := len("approve"); len(elem) >= l && elem[0:l] == "approve" {
+							if l := len(":"); len(elem) >= l && elem[0:l] == ":" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "POST":
-									r.name = ApprovePrivilegeRequestOperation
-									r.summary = "Approve a privilege request"
-									r.operationID = "approve-privilege-request"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/privilege-requests/{requestId}:approve"
-									r.args = args
-									r.count = 1
-									return r, true
-								default:
-									return
-								}
-							}
-
-						case 'd': // Prefix: "deny"
-
-							if l := len("deny"); len(elem) >= l && elem[0:l] == "deny" {
-								elem = elem[l:]
-							} else {
 								break
 							}
+							switch elem[0] {
+							case 'a': // Prefix: "approve"
 
-							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "POST":
-									r.name = DenyPrivilegeRequestOperation
-									r.summary = "Deny a privilege request"
-									r.operationID = "deny-privilege-request"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/privilege-requests/{requestId}:deny"
-									r.args = args
-									r.count = 1
-									return r, true
-								default:
-									return
+								if l := len("approve"); len(elem) >= l && elem[0:l] == "approve" {
+									elem = elem[l:]
+								} else {
+									break
 								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "POST":
+										r.name = ApprovePrivilegeRequestOperation
+										r.summary = "Approve a privilege request"
+										r.operationID = "approve-privilege-request"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/privilege-requests/{requestId}:approve"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+
+							case 'd': // Prefix: "deny"
+
+								if l := len("deny"); len(elem) >= l && elem[0:l] == "deny" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "POST":
+										r.name = DenyPrivilegeRequestOperation
+										r.summary = "Deny a privilege request"
+										r.operationID = "deny-privilege-request"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/privilege-requests/{requestId}:deny"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+
 							}
 
 						}
@@ -2113,6 +2200,15 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										r.name = DeleteViewerOperation
 										r.summary = "Disconnect a viewer"
 										r.operationID = "delete-viewer"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/sessions/{sessionId}/viewers/{connectionId}"
+										r.args = args
+										r.count = 2
+										return r, true
+									case "GET":
+										r.name = GetViewerOperation
+										r.summary = "Get a viewer of a session"
+										r.operationID = "get-viewer"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/sessions/{sessionId}/viewers/{connectionId}"
 										r.args = args

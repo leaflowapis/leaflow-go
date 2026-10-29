@@ -805,9 +805,14 @@ type ReportSessionsRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// /proc/sys/kernel/random/boot_id, new on every boot.
 	BootId string `protobuf:"bytes,1,opt,name=boot_id,json=bootId,proto3" json:"boot_id,omitempty"`
-	// Every session since the machine booted, closed ones included until the
-	// service has seen them closed once.
-	Sessions      []*Session `protobuf:"bytes,2,rep,name=sessions,proto3" json:"sessions,omitempty"`
+	// Every session since the machine booted, closed ones included until a
+	// report that carried them closed was answered with success.
+	Sessions []*Session `protobuf:"bytes,2,rep,name=sessions,proto3" json:"sessions,omitempty"`
+	// Orders the reports the daemon sends on this connection by when it
+	// observed what they report (leaflow.fleet.control.v1 Reports): it
+	// increases with every report, 1 for the first, and a report sent again
+	// keeps its sequence.
+	Sequence      uint64 `protobuf:"varint,3,opt,name=sequence,proto3" json:"sequence,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -856,6 +861,13 @@ func (x *ReportSessionsRequest) GetSessions() []*Session {
 	return nil
 }
 
+func (x *ReportSessionsRequest) GetSequence() uint64 {
+	if x != nil {
+		return x.Sequence
+	}
+	return 0
+}
+
 // The response of ReportSessions.
 type ReportSessionsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -898,7 +910,12 @@ type ReportSessionStateRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The session as it is now. Its user_id must be the one the service holds
 	// for it.
-	Session       *Session `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
+	Session *Session `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
+	// Orders the reports the daemon sends on this connection by when it
+	// observed what they report (leaflow.fleet.control.v1 Reports): it
+	// increases with every report, 1 for the first, and a report sent again
+	// keeps its sequence.
+	Sequence      uint64 `protobuf:"varint,2,opt,name=sequence,proto3" json:"sequence,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -938,6 +955,13 @@ func (x *ReportSessionStateRequest) GetSession() *Session {
 		return x.Session
 	}
 	return nil
+}
+
+func (x *ReportSessionStateRequest) GetSequence() uint64 {
+	if x != nil {
+		return x.Sequence
+	}
+	return 0
 }
 
 // The response of ReportSessionState.
@@ -1029,13 +1053,15 @@ const file_leaflow_fleet_host_v1_host_proto_rawDesc = "" +
 	"\x17TerminateSessionRequest\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\"\x1a\n" +
-	"\x18TerminateSessionResponse\"l\n" +
+	"\x18TerminateSessionResponse\"\x88\x01\n" +
 	"\x15ReportSessionsRequest\x12\x17\n" +
 	"\aboot_id\x18\x01 \x01(\tR\x06bootId\x12:\n" +
-	"\bsessions\x18\x02 \x03(\v2\x1e.leaflow.fleet.host.v1.SessionR\bsessions\"\x18\n" +
-	"\x16ReportSessionsResponse\"U\n" +
+	"\bsessions\x18\x02 \x03(\v2\x1e.leaflow.fleet.host.v1.SessionR\bsessions\x12\x1a\n" +
+	"\bsequence\x18\x03 \x01(\x04R\bsequence\"\x18\n" +
+	"\x16ReportSessionsResponse\"q\n" +
 	"\x19ReportSessionStateRequest\x128\n" +
-	"\asession\x18\x01 \x01(\v2\x1e.leaflow.fleet.host.v1.SessionR\asession\"\x1c\n" +
+	"\asession\x18\x01 \x01(\v2\x1e.leaflow.fleet.host.v1.SessionR\asession\x12\x1a\n" +
+	"\bsequence\x18\x02 \x01(\x04R\bsequence\"\x1c\n" +
 	"\x1aReportSessionStateResponse*\xb1\x01\n" +
 	"\fSessionState\x12\x1d\n" +
 	"\x19SESSION_STATE_UNSPECIFIED\x10\x00\x12\x19\n" +

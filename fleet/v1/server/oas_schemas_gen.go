@@ -2800,6 +2800,135 @@ func (s *PrivilegeApprovalAutoApprove) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/PrivilegeApprovalList
+type PrivilegeApprovalList struct {
+	Items      []PrivilegeApprovalResource `json:"items"`
+	TotalCount int64                       `json:"total_count"`
+	Page       int64                       `json:"page"`
+	PageSize   int64                       `json:"page_size"`
+}
+
+// GetItems returns the value of Items.
+func (s *PrivilegeApprovalList) GetItems() []PrivilegeApprovalResource {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *PrivilegeApprovalList) GetTotalCount() int64 {
+	return s.TotalCount
+}
+
+// GetPage returns the value of Page.
+func (s *PrivilegeApprovalList) GetPage() int64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *PrivilegeApprovalList) GetPageSize() int64 {
+	return s.PageSize
+}
+
+// SetItems sets the value of Items.
+func (s *PrivilegeApprovalList) SetItems(val []PrivilegeApprovalResource) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *PrivilegeApprovalList) SetTotalCount(val int64) {
+	s.TotalCount = val
+}
+
+// SetPage sets the value of Page.
+func (s *PrivilegeApprovalList) SetPage(val int64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *PrivilegeApprovalList) SetPageSize(val int64) {
+	s.PageSize = val
+}
+
+// Ref: #/components/schemas/PrivilegeApprovalResource
+type PrivilegeApprovalResource struct {
+	MachineID uuid.UUID `json:"machine_id"`
+	// `until` or `forever`; see PrivilegeApproval.
+	AutoApprove PrivilegeApprovalResourceAutoApprove `json:"auto_approve"`
+	// Only with `until`.
+	AutoApproveUntil OptDateTime `json:"auto_approve_until"`
+}
+
+// GetMachineID returns the value of MachineID.
+func (s *PrivilegeApprovalResource) GetMachineID() uuid.UUID {
+	return s.MachineID
+}
+
+// GetAutoApprove returns the value of AutoApprove.
+func (s *PrivilegeApprovalResource) GetAutoApprove() PrivilegeApprovalResourceAutoApprove {
+	return s.AutoApprove
+}
+
+// GetAutoApproveUntil returns the value of AutoApproveUntil.
+func (s *PrivilegeApprovalResource) GetAutoApproveUntil() OptDateTime {
+	return s.AutoApproveUntil
+}
+
+// SetMachineID sets the value of MachineID.
+func (s *PrivilegeApprovalResource) SetMachineID(val uuid.UUID) {
+	s.MachineID = val
+}
+
+// SetAutoApprove sets the value of AutoApprove.
+func (s *PrivilegeApprovalResource) SetAutoApprove(val PrivilegeApprovalResourceAutoApprove) {
+	s.AutoApprove = val
+}
+
+// SetAutoApproveUntil sets the value of AutoApproveUntil.
+func (s *PrivilegeApprovalResource) SetAutoApproveUntil(val OptDateTime) {
+	s.AutoApproveUntil = val
+}
+
+// `until` or `forever`; see PrivilegeApproval.
+type PrivilegeApprovalResourceAutoApprove string
+
+const (
+	PrivilegeApprovalResourceAutoApproveUntil   PrivilegeApprovalResourceAutoApprove = "until"
+	PrivilegeApprovalResourceAutoApproveForever PrivilegeApprovalResourceAutoApprove = "forever"
+)
+
+// AllValues returns all PrivilegeApprovalResourceAutoApprove values.
+func (PrivilegeApprovalResourceAutoApprove) AllValues() []PrivilegeApprovalResourceAutoApprove {
+	return []PrivilegeApprovalResourceAutoApprove{
+		PrivilegeApprovalResourceAutoApproveUntil,
+		PrivilegeApprovalResourceAutoApproveForever,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PrivilegeApprovalResourceAutoApprove) MarshalText() ([]byte, error) {
+	switch s {
+	case PrivilegeApprovalResourceAutoApproveUntil:
+		return []byte(s), nil
+	case PrivilegeApprovalResourceAutoApproveForever:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PrivilegeApprovalResourceAutoApprove) UnmarshalText(data []byte) error {
+	switch PrivilegeApprovalResourceAutoApprove(data) {
+	case PrivilegeApprovalResourceAutoApproveUntil:
+		*s = PrivilegeApprovalResourceAutoApproveUntil
+		return nil
+	case PrivilegeApprovalResourceAutoApproveForever:
+		*s = PrivilegeApprovalResourceAutoApproveForever
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/PrivilegeRequestList
 type PrivilegeRequestList struct {
 	Items      []PrivilegeRequestResource `json:"items"`

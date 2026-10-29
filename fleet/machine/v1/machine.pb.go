@@ -483,7 +483,12 @@ type ReportMachineStatusRequest struct {
 	AgentVersion string `protobuf:"bytes,6,opt,name=agent_version,json=agentVersion,proto3" json:"agent_version,omitempty"`
 	// The features the Agent has installed, available or not. A feature
 	// missing here is not installed.
-	Features      []*Feature `protobuf:"bytes,7,rep,name=features,proto3" json:"features,omitempty"`
+	Features []*Feature `protobuf:"bytes,7,rep,name=features,proto3" json:"features,omitempty"`
+	// Orders the reports the daemon sends on this connection by when it
+	// observed what they report (leaflow.fleet.control.v1 Reports): it
+	// increases with every report, 1 for the first, and a report sent again
+	// keeps its sequence.
+	Sequence      uint64 `protobuf:"varint,8,opt,name=sequence,proto3" json:"sequence,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -565,6 +570,13 @@ func (x *ReportMachineStatusRequest) GetFeatures() []*Feature {
 		return x.Features
 	}
 	return nil
+}
+
+func (x *ReportMachineStatusRequest) GetSequence() uint64 {
+	if x != nil {
+		return x.Sequence
+	}
+	return 0
 }
 
 // The response of ReportMachineStatus.
@@ -787,7 +799,7 @@ const file_leaflow_fleet_machine_v1_machine_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12<\n" +
 	"\x05state\x18\x02 \x01(\x0e2&.leaflow.fleet.machine.v1.FeatureStateR\x05state\x12\x16\n" +
 	"\x06reason\x18\x03 \x01(\tR\x06reason\x12\x18\n" +
-	"\adetails\x18\x04 \x03(\tR\adetails\"\xc4\x02\n" +
+	"\adetails\x18\x04 \x03(\tR\adetails\"\xe0\x02\n" +
 	"\x1aReportMachineStatusRequest\x12\x17\n" +
 	"\aboot_id\x18\x01 \x01(\tR\x06bootId\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12B\n" +
@@ -796,7 +808,8 @@ const file_leaflow_fleet_machine_v1_machine_proto_rawDesc = "" +
 	"\x0ekernel_release\x18\x04 \x01(\tR\rkernelRelease\x12\"\n" +
 	"\farchitecture\x18\x05 \x01(\tR\farchitecture\x12#\n" +
 	"\ragent_version\x18\x06 \x01(\tR\fagentVersion\x12=\n" +
-	"\bfeatures\x18\a \x03(\v2!.leaflow.fleet.machine.v1.FeatureR\bfeatures\"\x1d\n" +
+	"\bfeatures\x18\a \x03(\v2!.leaflow.fleet.machine.v1.FeatureR\bfeatures\x12\x1a\n" +
+	"\bsequence\x18\b \x01(\x04R\bsequence\"\x1d\n" +
 	"\x1bReportMachineStatusResponse\"\\\n" +
 	"\x1aReportMachineEventsRequest\x12>\n" +
 	"\x06events\x18\x01 \x03(\v2&.leaflow.fleet.machine.v1.MachineEventR\x06events\"\x1d\n" +
