@@ -1578,12 +1578,6 @@ func (s *CreateSSHKeyRequestBody) encodeFields(e *jx.Encoder) {
 		e.Str(s.Name)
 	}
 	{
-		if s.Owner.Set {
-			e.FieldStart("owner")
-			s.Owner.Encode(e)
-		}
-	}
-	{
 		e.FieldStart("public_key")
 		e.Str(s.PublicKey)
 	}
@@ -1595,11 +1589,10 @@ func (s *CreateSSHKeyRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateSSHKeyRequestBody = [4]string{
+var jsonFieldsNameOfCreateSSHKeyRequestBody = [3]string{
 	0: "name",
-	1: "owner",
-	2: "public_key",
-	3: "purposes",
+	1: "public_key",
+	2: "purposes",
 }
 
 // Decode decodes CreateSSHKeyRequestBody from json.
@@ -1608,7 +1601,6 @@ func (s *CreateSSHKeyRequestBody) Decode(d *jx.Decoder) error {
 		return errors.New("invalid: unable to decode CreateSSHKeyRequestBody to nil")
 	}
 	var requiredBitSet [1]uint8
-	s.setDefaults()
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -1624,18 +1616,8 @@ func (s *CreateSSHKeyRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
-		case "owner":
-			if err := func() error {
-				s.Owner.Reset()
-				if err := s.Owner.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"owner\"")
-			}
 		case "public_key":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.PublicKey = string(v)
@@ -1666,7 +1648,7 @@ func (s *CreateSSHKeyRequestBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000101,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -1708,46 +1690,6 @@ func (s *CreateSSHKeyRequestBody) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *CreateSSHKeyRequestBody) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes CreateSSHKeyRequestBodyOwner as json.
-func (s CreateSSHKeyRequestBodyOwner) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes CreateSSHKeyRequestBodyOwner from json.
-func (s *CreateSSHKeyRequestBodyOwner) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode CreateSSHKeyRequestBodyOwner to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch CreateSSHKeyRequestBodyOwner(v) {
-	case CreateSSHKeyRequestBodyOwnerMe:
-		*s = CreateSSHKeyRequestBodyOwnerMe
-	case CreateSSHKeyRequestBodyOwnerProject:
-		*s = CreateSSHKeyRequestBodyOwnerProject
-	default:
-		*s = CreateSSHKeyRequestBodyOwner(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s CreateSSHKeyRequestBodyOwner) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *CreateSSHKeyRequestBodyOwner) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -4014,39 +3956,6 @@ func (s NilString) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NilString) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes CreateSSHKeyRequestBodyOwner as json.
-func (o OptCreateSSHKeyRequestBodyOwner) Encode(e *jx.Encoder) {
-	if !o.Set {
-		return
-	}
-	e.Str(string(o.Value))
-}
-
-// Decode decodes CreateSSHKeyRequestBodyOwner from json.
-func (o *OptCreateSSHKeyRequestBodyOwner) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode OptCreateSSHKeyRequestBodyOwner to nil")
-	}
-	o.Set = true
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s OptCreateSSHKeyRequestBodyOwner) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptCreateSSHKeyRequestBodyOwner) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -6998,12 +6907,6 @@ func (s *SSHKeyResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.Name)
 	}
 	{
-		if s.OwnerUserID.Set {
-			e.FieldStart("owner_user_id")
-			s.OwnerUserID.Encode(e)
-		}
-	}
-	{
 		e.FieldStart("public_key")
 		e.Str(s.PublicKey)
 	}
@@ -7025,17 +6928,16 @@ func (s *SSHKeyResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfSSHKeyResource = [10]string{
+var jsonFieldsNameOfSSHKeyResource = [9]string{
 	0: "created_at",
 	1: "fingerprint",
 	2: "has_private_key",
 	3: "id",
 	4: "key_type",
 	5: "name",
-	6: "owner_user_id",
-	7: "public_key",
-	8: "purposes",
-	9: "status",
+	6: "public_key",
+	7: "purposes",
+	8: "status",
 }
 
 // Decode decodes SSHKeyResource from json.
@@ -7119,18 +7021,8 @@ func (s *SSHKeyResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
-		case "owner_user_id":
-			if err := func() error {
-				s.OwnerUserID.Reset()
-				if err := s.OwnerUserID.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"owner_user_id\"")
-			}
 		case "public_key":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := d.Str()
 				s.PublicKey = string(v)
@@ -7142,7 +7034,7 @@ func (s *SSHKeyResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"public_key\"")
 			}
 		case "purposes":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				switch tt := d.Next(); tt {
 				case jx.Null:
@@ -7169,7 +7061,7 @@ func (s *SSHKeyResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"purposes\"")
 			}
 		case "status":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -7188,8 +7080,8 @@ func (s *SSHKeyResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b10111111,
-		0b00000011,
+		0b11111111,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

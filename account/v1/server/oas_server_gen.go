@@ -54,6 +54,16 @@ type Handler interface {
 	//
 	// POST /account/v1/projects
 	CreateProject(ctx context.Context, req *CreateProjectRequestBody) (*ProjectAccessResource, error)
+	// CreateSSHKey implements create-ssh-key operation.
+	//
+	// The key takes effect in every project the caller belongs to: Fleet machines accept it within about a
+	// minute, and Compute installs it on the servers the caller creates or reinstalls from then on.
+	//
+	// Fails with 409 `SSH_KEY_ALREADY_EXISTS` while the same key is active on any account, this one
+	// included, and with 412 `SSH_KEY_QUOTA_EXCEEDED` while the account already holds 50 active keys.
+	//
+	// POST /account/v1/me/ssh-keys
+	CreateSSHKey(ctx context.Context, req *CreateSSHKeyRequestBody) (*SSHKeyResource, error)
 	// CreateScopedToken implements create-scoped-token operation.
 	//
 	// Once a project has been chosen, exchange the access token for a scoped token for that project.
@@ -142,6 +152,12 @@ type Handler interface {
 	//
 	// GET /account/v1/project-slugs/{slug}/availability
 	GetProjectSlugAvailability(ctx context.Context, params GetProjectSlugAvailabilityParams) (*ProjectSlugAvailabilityResource, error)
+	// GetSSHKey implements get-ssh-key operation.
+	//
+	// Get an SSH key of the current account.
+	//
+	// GET /account/v1/me/ssh-keys/{keyId}
+	GetSSHKey(ctx context.Context, params GetSSHKeyParams) (*SSHKeyResource, error)
 	// GetSettings implements get-settings operation.
 	//
 	// No token required.
@@ -199,6 +215,12 @@ type Handler interface {
 	//
 	// GET /account/v1/projects
 	ListProjects(ctx context.Context, params ListProjectsParams) (*LengthAwarePageProjectAccessResource, error)
+	// ListSSHKeys implements list-ssh-keys operation.
+	//
+	// Most recent first.
+	//
+	// GET /account/v1/me/ssh-keys
+	ListSSHKeys(ctx context.Context, params ListSSHKeysParams) (*LengthAwarePageSSHKeyResource, error)
 	// PreviewInvitationByToken implements preview-invitation-by-token operation.
 	//
 	// No token required: whoever follows the link in an invitation email has usually not signed in, and
@@ -223,6 +245,13 @@ type Handler interface {
 	//
 	// POST /account/v1/me:register
 	Register(ctx context.Context, req *RegisterRequestBody) (*AccountResource, error)
+	// RenameSSHKey implements rename-ssh-key operation.
+	//
+	// Only the name can change. The key, its type and its fingerprint are three statements about one
+	// thing, and changing one of them would leave the row describing a key that does not exist.
+	//
+	// PATCH /account/v1/me/ssh-keys/{keyId}
+	RenameSSHKey(ctx context.Context, req *RenameSSHKeyRequestBody, params RenameSSHKeyParams) (*SSHKeyResource, error)
 	// RequestAccountDeletion implements request-account-deletion operation.
 	//
 	// The account is frozen at once: it can no longer enter a project or change anything in one. The
@@ -246,6 +275,16 @@ type Handler interface {
 	//
 	// DELETE /account/v1/me
 	RequestAccountDeletion(ctx context.Context, params RequestAccountDeletionParams) (*AccountDeletionResource, error)
+	// RevokeSSHKey implements revoke-ssh-key operation.
+	//
+	// The row remains and its status becomes `REVOKED`, so it stays answerable afterwards which key was
+	// trusted at the time. Fleet machines stop accepting the key within about a minute. A server on which
+	// Compute installed the key keeps it until it is removed there.
+	//
+	// The same key can then be added again, to this account or another.
+	//
+	// DELETE /account/v1/me/ssh-keys/{keyId}
+	RevokeSSHKey(ctx context.Context, params RevokeSSHKeyParams) (*SSHKeyResource, error)
 	// SearchProjects implements search-projects operation.
 	//
 	// Projects the caller belongs to, most recently created first. The conditions in the body are combined

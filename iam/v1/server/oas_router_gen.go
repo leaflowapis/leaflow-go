@@ -1657,7 +1657,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						return r, true
 					case "POST":
 						r.name = CreateSSHKeyOperation
-						r.summary = "Add an SSH key"
+						r.summary = "Add an SSH key to this project"
 						r.operationID = "create-ssh-key"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/ssh-keys"

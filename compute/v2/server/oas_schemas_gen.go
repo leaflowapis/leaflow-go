@@ -1025,7 +1025,8 @@ type CreateInstanceRequestBody struct {
 	// but then it is two operations and a failure in between leaves an instance you cannot reach. Omitted,
 	// the instance has no public address.
 	ElasticIP OptInstanceElasticIP `json:"elastic_ip"`
-	// The login account's password. Omitted, only the SSH public keys of the project log in.
+	// The login account's password. Omitted, only SSH keys log in, those the project shares and those of
+	// the caller's account.
 	Password OptPasswordChoice `json:"password"`
 	// Your own classification of each instance, as key-value pairs. A key may not contain a colon,
 	// whitespace or control characters.
@@ -12263,8 +12264,8 @@ type RebuildInstanceRequestBody struct {
 	// A public image (`/public-images`), which must be on sale unless it is the one this instance already
 	// runs, or an available private image of this project (`/private-images`).
 	ImageID ImageID `json:"image_id"`
-	// The login account's password on the reinstalled system. Omitted, only the SSH public keys of the
-	// project log in.
+	// The login account's password on the reinstalled system. Omitted, only SSH keys log in, those the
+	// project shares and those of the caller's account.
 	Password OptPasswordChoice `json:"password"`
 }
 

@@ -52,8 +52,36 @@ func encodeCreateProjectRequest(
 	return nil
 }
 
+func encodeCreateSSHKeyRequest(
+	req *CreateSSHKeyRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeRegisterRequest(
 	req *RegisterRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeRenameSSHKeyRequest(
+	req *RenameSSHKeyRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

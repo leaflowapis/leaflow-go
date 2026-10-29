@@ -849,6 +849,34 @@ func (s *CreateProjectRequestBody) SetSlug(val OptString) {
 	s.Slug = val
 }
 
+// Ref: #/components/schemas/CreateSSHKeyRequestBody
+type CreateSSHKeyRequestBody struct {
+	Name string `json:"name"`
+	// The public key in OpenSSH format. The type and the fingerprint are derived from it and cannot be
+	// changed. A certificate is refused, being a signature rather than a key.
+	PublicKey string `json:"public_key"`
+}
+
+// GetName returns the value of Name.
+func (s *CreateSSHKeyRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetPublicKey returns the value of PublicKey.
+func (s *CreateSSHKeyRequestBody) GetPublicKey() string {
+	return s.PublicKey
+}
+
+// SetName sets the value of Name.
+func (s *CreateSSHKeyRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetPublicKey sets the value of PublicKey.
+func (s *CreateSSHKeyRequestBody) SetPublicKey(val string) {
+	s.PublicKey = val
+}
+
 // A failed request. The envelope follows the Google REST error format: `code` is the HTTP status,
 // `status` is its canonical name, and `reason` is the stable machine-readable code that identifies the
 // failure.
@@ -1520,6 +1548,100 @@ func (s *LengthAwarePageProjectAccessResource) SetTotal(val int64) {
 	s.Total = val
 }
 
+// Ref: #/components/schemas/LengthAwarePageSSHKeyResource
+type LengthAwarePageSSHKeyResource struct {
+	// The items in this page.
+	Items []SSHKeyResource `json:"items"`
+	// Maximum number of items in this page, echoing the request.
+	Limit int64 `json:"limit"`
+	// Number of items skipped, echoing the request.
+	Offset int64 `json:"offset"`
+	// Total number of matches, not only this page.
+	Total int64 `json:"total"`
+}
+
+// GetItems returns the value of Items.
+func (s *LengthAwarePageSSHKeyResource) GetItems() []SSHKeyResource {
+	return s.Items
+}
+
+// GetLimit returns the value of Limit.
+func (s *LengthAwarePageSSHKeyResource) GetLimit() int64 {
+	return s.Limit
+}
+
+// GetOffset returns the value of Offset.
+func (s *LengthAwarePageSSHKeyResource) GetOffset() int64 {
+	return s.Offset
+}
+
+// GetTotal returns the value of Total.
+func (s *LengthAwarePageSSHKeyResource) GetTotal() int64 {
+	return s.Total
+}
+
+// SetItems sets the value of Items.
+func (s *LengthAwarePageSSHKeyResource) SetItems(val []SSHKeyResource) {
+	s.Items = val
+}
+
+// SetLimit sets the value of Limit.
+func (s *LengthAwarePageSSHKeyResource) SetLimit(val int64) {
+	s.Limit = val
+}
+
+// SetOffset sets the value of Offset.
+func (s *LengthAwarePageSSHKeyResource) SetOffset(val int64) {
+	s.Offset = val
+}
+
+// SetTotal sets the value of Total.
+func (s *LengthAwarePageSSHKeyResource) SetTotal(val int64) {
+	s.Total = val
+}
+
+// Both kinds are returned while this is absent.
+type ListSSHKeysStatus string
+
+const (
+	ListSSHKeysStatusACTIVE  ListSSHKeysStatus = "ACTIVE"
+	ListSSHKeysStatusREVOKED ListSSHKeysStatus = "REVOKED"
+)
+
+// AllValues returns all ListSSHKeysStatus values.
+func (ListSSHKeysStatus) AllValues() []ListSSHKeysStatus {
+	return []ListSSHKeysStatus{
+		ListSSHKeysStatusACTIVE,
+		ListSSHKeysStatusREVOKED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ListSSHKeysStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ListSSHKeysStatusACTIVE:
+		return []byte(s), nil
+	case ListSSHKeysStatusREVOKED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ListSSHKeysStatus) UnmarshalText(data []byte) error {
+	switch ListSSHKeysStatus(data) {
+	case ListSSHKeysStatusACTIVE:
+		*s = ListSSHKeysStatusACTIVE
+		return nil
+	case ListSSHKeysStatusREVOKED:
+		*s = ListSSHKeysStatusREVOKED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // The language used for the interface and for email. It is independent of `country`, and neither can
 // be inferred from the other.
 // Ref: #/components/schemas/Locale
@@ -1813,6 +1935,52 @@ func (o OptInt64) Get() (v int64, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptInt64) Or(d int64) int64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptListSSHKeysStatus returns new OptListSSHKeysStatus with value set to v.
+func NewOptListSSHKeysStatus(v ListSSHKeysStatus) OptListSSHKeysStatus {
+	return OptListSSHKeysStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptListSSHKeysStatus is optional ListSSHKeysStatus.
+type OptListSSHKeysStatus struct {
+	Value ListSSHKeysStatus
+	Set   bool
+}
+
+// IsSet returns true if OptListSSHKeysStatus was set.
+func (o OptListSSHKeysStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptListSSHKeysStatus) Reset() {
+	var v ListSSHKeysStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptListSSHKeysStatus) SetTo(v ListSSHKeysStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptListSSHKeysStatus) Get() (v ListSSHKeysStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptListSSHKeysStatus) Or(d ListSSHKeysStatus) ListSSHKeysStatus {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -2352,6 +2520,21 @@ func (s *RegisterRequestBody) SetLocale(val Locale) {
 	s.Locale = val
 }
 
+// Ref: #/components/schemas/RenameSSHKeyRequestBody
+type RenameSSHKeyRequestBody struct {
+	Name string `json:"name"`
+}
+
+// GetName returns the value of Name.
+func (s *RenameSSHKeyRequestBody) GetName() string {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *RenameSSHKeyRequestBody) SetName(val string) {
+	s.Name = val
+}
+
 // Ref: #/components/schemas/ResourceRefResource
 type ResourceRefResource struct {
 	// A string rather than a UUID; a DNS zone, for one, is named by its domain. Matching is glob, so
@@ -2457,6 +2640,131 @@ func (s *RuleResourceEffect) UnmarshalText(data []byte) error {
 		return nil
 	case RuleResourceEffectDeny:
 		*s = RuleResourceEffectDeny
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/SSHKeyResource
+type SSHKeyResource struct {
+	CreatedAt time.Time `json:"created_at"`
+	// The SHA-256 fingerprint, as `ssh-keygen -l` prints it.
+	Fingerprint string    `json:"fingerprint"`
+	ID          uuid.UUID `json:"id"`
+	// The algorithm, such as `ssh-ed25519`.
+	KeyType string `json:"key_type"`
+	Name    string `json:"name"`
+	// The key in OpenSSH format, without the comment it was added with.
+	PublicKey string               `json:"public_key"`
+	Status    SSHKeyResourceStatus `json:"status"`
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *SSHKeyResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetFingerprint returns the value of Fingerprint.
+func (s *SSHKeyResource) GetFingerprint() string {
+	return s.Fingerprint
+}
+
+// GetID returns the value of ID.
+func (s *SSHKeyResource) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetKeyType returns the value of KeyType.
+func (s *SSHKeyResource) GetKeyType() string {
+	return s.KeyType
+}
+
+// GetName returns the value of Name.
+func (s *SSHKeyResource) GetName() string {
+	return s.Name
+}
+
+// GetPublicKey returns the value of PublicKey.
+func (s *SSHKeyResource) GetPublicKey() string {
+	return s.PublicKey
+}
+
+// GetStatus returns the value of Status.
+func (s *SSHKeyResource) GetStatus() SSHKeyResourceStatus {
+	return s.Status
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *SSHKeyResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetFingerprint sets the value of Fingerprint.
+func (s *SSHKeyResource) SetFingerprint(val string) {
+	s.Fingerprint = val
+}
+
+// SetID sets the value of ID.
+func (s *SSHKeyResource) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetKeyType sets the value of KeyType.
+func (s *SSHKeyResource) SetKeyType(val string) {
+	s.KeyType = val
+}
+
+// SetName sets the value of Name.
+func (s *SSHKeyResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetPublicKey sets the value of PublicKey.
+func (s *SSHKeyResource) SetPublicKey(val string) {
+	s.PublicKey = val
+}
+
+// SetStatus sets the value of Status.
+func (s *SSHKeyResource) SetStatus(val SSHKeyResourceStatus) {
+	s.Status = val
+}
+
+type SSHKeyResourceStatus string
+
+const (
+	SSHKeyResourceStatusACTIVE  SSHKeyResourceStatus = "ACTIVE"
+	SSHKeyResourceStatusREVOKED SSHKeyResourceStatus = "REVOKED"
+)
+
+// AllValues returns all SSHKeyResourceStatus values.
+func (SSHKeyResourceStatus) AllValues() []SSHKeyResourceStatus {
+	return []SSHKeyResourceStatus{
+		SSHKeyResourceStatusACTIVE,
+		SSHKeyResourceStatusREVOKED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SSHKeyResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case SSHKeyResourceStatusACTIVE:
+		return []byte(s), nil
+	case SSHKeyResourceStatusREVOKED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SSHKeyResourceStatus) UnmarshalText(data []byte) error {
+	switch SSHKeyResourceStatus(data) {
+	case SSHKeyResourceStatusACTIVE:
+		*s = SSHKeyResourceStatusACTIVE
+		return nil
+	case SSHKeyResourceStatusREVOKED:
+		*s = SSHKeyResourceStatusREVOKED
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)

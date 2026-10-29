@@ -577,24 +577,6 @@ func (s *CreateSSHKeyRequestBody) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.Owner.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "owner",
-			Error: err,
-		})
-	}
-	if err := func() error {
 		if err := (validate.String{
 			MinLength:     1,
 			MinLengthSet:  true,
@@ -647,17 +629,6 @@ func (s *CreateSSHKeyRequestBody) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
-}
-
-func (s CreateSSHKeyRequestBodyOwner) Validate() error {
-	switch s {
-	case "me":
-		return nil
-	case "project":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
 }
 
 func (s *GrantResource) Validate() error {

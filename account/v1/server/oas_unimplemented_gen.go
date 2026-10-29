@@ -74,6 +74,19 @@ func (UnimplementedHandler) CreateProject(ctx context.Context, req *CreateProjec
 	return r, ht.ErrNotImplemented
 }
 
+// CreateSSHKey implements create-ssh-key operation.
+//
+// The key takes effect in every project the caller belongs to: Fleet machines accept it within about a
+// minute, and Compute installs it on the servers the caller creates or reinstalls from then on.
+//
+// Fails with 409 `SSH_KEY_ALREADY_EXISTS` while the same key is active on any account, this one
+// included, and with 412 `SSH_KEY_QUOTA_EXCEEDED` while the account already holds 50 active keys.
+//
+// POST /account/v1/me/ssh-keys
+func (UnimplementedHandler) CreateSSHKey(ctx context.Context, req *CreateSSHKeyRequestBody) (r *SSHKeyResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CreateScopedToken implements create-scoped-token operation.
 //
 // Once a project has been chosen, exchange the access token for a scoped token for that project.
@@ -183,6 +196,15 @@ func (UnimplementedHandler) GetProjectSlugAvailability(ctx context.Context, para
 	return r, ht.ErrNotImplemented
 }
 
+// GetSSHKey implements get-ssh-key operation.
+//
+// Get an SSH key of the current account.
+//
+// GET /account/v1/me/ssh-keys/{keyId}
+func (UnimplementedHandler) GetSSHKey(ctx context.Context, params GetSSHKeyParams) (r *SSHKeyResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetSettings implements get-settings operation.
 //
 // No token required.
@@ -258,6 +280,15 @@ func (UnimplementedHandler) ListProjects(ctx context.Context, params ListProject
 	return r, ht.ErrNotImplemented
 }
 
+// ListSSHKeys implements list-ssh-keys operation.
+//
+// Most recent first.
+//
+// GET /account/v1/me/ssh-keys
+func (UnimplementedHandler) ListSSHKeys(ctx context.Context, params ListSSHKeysParams) (r *LengthAwarePageSSHKeyResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // PreviewInvitationByToken implements preview-invitation-by-token operation.
 //
 // No token required: whoever follows the link in an invitation email has usually not signed in, and
@@ -288,6 +319,16 @@ func (UnimplementedHandler) Register(ctx context.Context, req *RegisterRequestBo
 	return r, ht.ErrNotImplemented
 }
 
+// RenameSSHKey implements rename-ssh-key operation.
+//
+// Only the name can change. The key, its type and its fingerprint are three statements about one
+// thing, and changing one of them would leave the row describing a key that does not exist.
+//
+// PATCH /account/v1/me/ssh-keys/{keyId}
+func (UnimplementedHandler) RenameSSHKey(ctx context.Context, req *RenameSSHKeyRequestBody, params RenameSSHKeyParams) (r *SSHKeyResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // RequestAccountDeletion implements request-account-deletion operation.
 //
 // The account is frozen at once: it can no longer enter a project or change anything in one. The
@@ -311,6 +352,19 @@ func (UnimplementedHandler) Register(ctx context.Context, req *RegisterRequestBo
 //
 // DELETE /account/v1/me
 func (UnimplementedHandler) RequestAccountDeletion(ctx context.Context, params RequestAccountDeletionParams) (r *AccountDeletionResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RevokeSSHKey implements revoke-ssh-key operation.
+//
+// The row remains and its status becomes `REVOKED`, so it stays answerable afterwards which key was
+// trusted at the time. Fleet machines stop accepting the key within about a minute. A server on which
+// Compute installed the key keeps it until it is removed there.
+//
+// The same key can then be added again, to this account or another.
+//
+// DELETE /account/v1/me/ssh-keys/{keyId}
+func (UnimplementedHandler) RevokeSSHKey(ctx context.Context, params RevokeSSHKeyParams) (r *SSHKeyResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

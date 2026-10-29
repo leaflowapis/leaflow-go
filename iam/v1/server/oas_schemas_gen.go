@@ -632,8 +632,6 @@ func (s *CreateRoleRequestBody) SetPermissions(val OptNilStringArray) {
 // Ref: #/components/schemas/CreateSSHKeyRequestBody
 type CreateSSHKeyRequestBody struct {
 	Name string `json:"name"`
-	// Who this key belongs to.
-	Owner OptCreateSSHKeyRequestBodyOwner `json:"owner"`
 	// The public key in OpenSSH format. The type and the fingerprint are derived from it and cannot be
 	// changed.
 	PublicKey string `json:"public_key"`
@@ -644,11 +642,6 @@ type CreateSSHKeyRequestBody struct {
 // GetName returns the value of Name.
 func (s *CreateSSHKeyRequestBody) GetName() string {
 	return s.Name
-}
-
-// GetOwner returns the value of Owner.
-func (s *CreateSSHKeyRequestBody) GetOwner() OptCreateSSHKeyRequestBodyOwner {
-	return s.Owner
 }
 
 // GetPublicKey returns the value of PublicKey.
@@ -666,11 +659,6 @@ func (s *CreateSSHKeyRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// SetOwner sets the value of Owner.
-func (s *CreateSSHKeyRequestBody) SetOwner(val OptCreateSSHKeyRequestBodyOwner) {
-	s.Owner = val
-}
-
 // SetPublicKey sets the value of PublicKey.
 func (s *CreateSSHKeyRequestBody) SetPublicKey(val string) {
 	s.PublicKey = val
@@ -679,48 +667,6 @@ func (s *CreateSSHKeyRequestBody) SetPublicKey(val string) {
 // SetPurposes sets the value of Purposes.
 func (s *CreateSSHKeyRequestBody) SetPurposes(val OptNilStringArray) {
 	s.Purposes = val
-}
-
-// Who this key belongs to.
-type CreateSSHKeyRequestBodyOwner string
-
-const (
-	CreateSSHKeyRequestBodyOwnerMe      CreateSSHKeyRequestBodyOwner = "me"
-	CreateSSHKeyRequestBodyOwnerProject CreateSSHKeyRequestBodyOwner = "project"
-)
-
-// AllValues returns all CreateSSHKeyRequestBodyOwner values.
-func (CreateSSHKeyRequestBodyOwner) AllValues() []CreateSSHKeyRequestBodyOwner {
-	return []CreateSSHKeyRequestBodyOwner{
-		CreateSSHKeyRequestBodyOwnerMe,
-		CreateSSHKeyRequestBodyOwnerProject,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CreateSSHKeyRequestBodyOwner) MarshalText() ([]byte, error) {
-	switch s {
-	case CreateSSHKeyRequestBodyOwnerMe:
-		return []byte(s), nil
-	case CreateSSHKeyRequestBodyOwnerProject:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CreateSSHKeyRequestBodyOwner) UnmarshalText(data []byte) error {
-	switch CreateSSHKeyRequestBodyOwner(data) {
-	case CreateSSHKeyRequestBodyOwnerMe:
-		*s = CreateSSHKeyRequestBodyOwnerMe
-		return nil
-	case CreateSSHKeyRequestBodyOwnerProject:
-		*s = CreateSSHKeyRequestBodyOwnerProject
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // DeleteRoleNoContent is response for DeleteRole operation.
@@ -1650,52 +1596,6 @@ func (o OptBool) Get() (v bool, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptBool) Or(d bool) bool {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptCreateSSHKeyRequestBodyOwner returns new OptCreateSSHKeyRequestBodyOwner with value set to v.
-func NewOptCreateSSHKeyRequestBodyOwner(v CreateSSHKeyRequestBodyOwner) OptCreateSSHKeyRequestBodyOwner {
-	return OptCreateSSHKeyRequestBodyOwner{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptCreateSSHKeyRequestBodyOwner is optional CreateSSHKeyRequestBodyOwner.
-type OptCreateSSHKeyRequestBodyOwner struct {
-	Value CreateSSHKeyRequestBodyOwner
-	Set   bool
-}
-
-// IsSet returns true if OptCreateSSHKeyRequestBodyOwner was set.
-func (o OptCreateSSHKeyRequestBodyOwner) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptCreateSSHKeyRequestBodyOwner) Reset() {
-	var v CreateSSHKeyRequestBodyOwner
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptCreateSSHKeyRequestBodyOwner) SetTo(v CreateSSHKeyRequestBodyOwner) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptCreateSSHKeyRequestBodyOwner) Get() (v CreateSSHKeyRequestBodyOwner, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptCreateSSHKeyRequestBodyOwner) Or(d CreateSSHKeyRequestBodyOwner) CreateSSHKeyRequestBodyOwner {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -2992,9 +2892,7 @@ type SSHKeyResource struct {
 	ID            uuid.UUID `json:"id"`
 	KeyType       string    `json:"key_type"`
 	Name          string    `json:"name"`
-	// Who the key belongs to. Absent means it belongs to the project itself.
-	OwnerUserID OptString `json:"owner_user_id"`
-	PublicKey   string    `json:"public_key"`
+	PublicKey     string    `json:"public_key"`
 	// A purpose label. The key the platform generates carries `platform`.
 	Purposes []string             `json:"purposes"`
 	Status   SSHKeyResourceStatus `json:"status"`
@@ -3028,11 +2926,6 @@ func (s *SSHKeyResource) GetKeyType() string {
 // GetName returns the value of Name.
 func (s *SSHKeyResource) GetName() string {
 	return s.Name
-}
-
-// GetOwnerUserID returns the value of OwnerUserID.
-func (s *SSHKeyResource) GetOwnerUserID() OptString {
-	return s.OwnerUserID
 }
 
 // GetPublicKey returns the value of PublicKey.
@@ -3078,11 +2971,6 @@ func (s *SSHKeyResource) SetKeyType(val string) {
 // SetName sets the value of Name.
 func (s *SSHKeyResource) SetName(val string) {
 	s.Name = val
-}
-
-// SetOwnerUserID sets the value of OwnerUserID.
-func (s *SSHKeyResource) SetOwnerUserID(val OptString) {
-	s.OwnerUserID = val
 }
 
 // SetPublicKey sets the value of PublicKey.

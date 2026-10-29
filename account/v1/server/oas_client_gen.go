@@ -75,6 +75,16 @@ type Invoker interface {
 	//
 	// POST /account/v1/projects
 	CreateProject(ctx context.Context, request *CreateProjectRequestBody) (*ProjectAccessResource, error)
+	// CreateSSHKey invokes create-ssh-key operation.
+	//
+	// The key takes effect in every project the caller belongs to: Fleet machines accept it within about a
+	// minute, and Compute installs it on the servers the caller creates or reinstalls from then on.
+	//
+	// Fails with 409 `SSH_KEY_ALREADY_EXISTS` while the same key is active on any account, this one
+	// included, and with 412 `SSH_KEY_QUOTA_EXCEEDED` while the account already holds 50 active keys.
+	//
+	// POST /account/v1/me/ssh-keys
+	CreateSSHKey(ctx context.Context, request *CreateSSHKeyRequestBody) (*SSHKeyResource, error)
 	// CreateScopedToken invokes create-scoped-token operation.
 	//
 	// Once a project has been chosen, exchange the access token for a scoped token for that project.
@@ -163,6 +173,12 @@ type Invoker interface {
 	//
 	// GET /account/v1/project-slugs/{slug}/availability
 	GetProjectSlugAvailability(ctx context.Context, params GetProjectSlugAvailabilityParams) (*ProjectSlugAvailabilityResource, error)
+	// GetSSHKey invokes get-ssh-key operation.
+	//
+	// Get an SSH key of the current account.
+	//
+	// GET /account/v1/me/ssh-keys/{keyId}
+	GetSSHKey(ctx context.Context, params GetSSHKeyParams) (*SSHKeyResource, error)
 	// GetSettings invokes get-settings operation.
 	//
 	// No token required.
@@ -220,6 +236,12 @@ type Invoker interface {
 	//
 	// GET /account/v1/projects
 	ListProjects(ctx context.Context, params ListProjectsParams) (*LengthAwarePageProjectAccessResource, error)
+	// ListSSHKeys invokes list-ssh-keys operation.
+	//
+	// Most recent first.
+	//
+	// GET /account/v1/me/ssh-keys
+	ListSSHKeys(ctx context.Context, params ListSSHKeysParams) (*LengthAwarePageSSHKeyResource, error)
 	// PreviewInvitationByToken invokes preview-invitation-by-token operation.
 	//
 	// No token required: whoever follows the link in an invitation email has usually not signed in, and
@@ -244,6 +266,13 @@ type Invoker interface {
 	//
 	// POST /account/v1/me:register
 	Register(ctx context.Context, request *RegisterRequestBody) (*AccountResource, error)
+	// RenameSSHKey invokes rename-ssh-key operation.
+	//
+	// Only the name can change. The key, its type and its fingerprint are three statements about one
+	// thing, and changing one of them would leave the row describing a key that does not exist.
+	//
+	// PATCH /account/v1/me/ssh-keys/{keyId}
+	RenameSSHKey(ctx context.Context, request *RenameSSHKeyRequestBody, params RenameSSHKeyParams) (*SSHKeyResource, error)
 	// RequestAccountDeletion invokes request-account-deletion operation.
 	//
 	// The account is frozen at once: it can no longer enter a project or change anything in one. The
@@ -267,6 +296,16 @@ type Invoker interface {
 	//
 	// DELETE /account/v1/me
 	RequestAccountDeletion(ctx context.Context, params RequestAccountDeletionParams) (*AccountDeletionResource, error)
+	// RevokeSSHKey invokes revoke-ssh-key operation.
+	//
+	// The row remains and its status becomes `REVOKED`, so it stays answerable afterwards which key was
+	// trusted at the time. Fleet machines stop accepting the key within about a minute. A server on which
+	// Compute installed the key keeps it until it is removed there.
+	//
+	// The same key can then be added again, to this account or another.
+	//
+	// DELETE /account/v1/me/ssh-keys/{keyId}
+	RevokeSSHKey(ctx context.Context, params RevokeSSHKeyParams) (*SSHKeyResource, error)
 	// SearchProjects invokes search-projects operation.
 	//
 	// Projects the caller belongs to, most recently created first. The conditions in the body are combined
@@ -961,6 +1000,135 @@ func (c *Client) sendCreateProject(ctx context.Context, request *CreateProjectRe
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateProjectResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateSSHKey invokes create-ssh-key operation.
+//
+// The key takes effect in every project the caller belongs to: Fleet machines accept it within about a
+// minute, and Compute installs it on the servers the caller creates or reinstalls from then on.
+//
+// Fails with 409 `SSH_KEY_ALREADY_EXISTS` while the same key is active on any account, this one
+// included, and with 412 `SSH_KEY_QUOTA_EXCEEDED` while the account already holds 50 active keys.
+//
+// POST /account/v1/me/ssh-keys
+func (c *Client) CreateSSHKey(ctx context.Context, request *CreateSSHKeyRequestBody) (*SSHKeyResource, error) {
+	res, err := c.sendCreateSSHKey(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateSSHKey(ctx context.Context, request *CreateSSHKeyRequestBody) (res *SSHKeyResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-ssh-key"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/me/ssh-keys"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateSSHKeyOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/me/ssh-keys"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateSSHKeyRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreateSSHKeyOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateSSHKeyResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1879,6 +2047,137 @@ func (c *Client) sendGetProjectSlugAvailability(ctx context.Context, params GetP
 	return result, nil
 }
 
+// GetSSHKey invokes get-ssh-key operation.
+//
+// Get an SSH key of the current account.
+//
+// GET /account/v1/me/ssh-keys/{keyId}
+func (c *Client) GetSSHKey(ctx context.Context, params GetSSHKeyParams) (*SSHKeyResource, error) {
+	res, err := c.sendGetSSHKey(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetSSHKey(ctx context.Context, params GetSSHKeyParams) (res *SSHKeyResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-ssh-key"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/me/ssh-keys/{keyId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetSSHKeyOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/account/v1/me/ssh-keys/"
+	{
+		// Encode "keyId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "keyId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.KeyId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetSSHKeyOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetSSHKeyResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetSettings invokes get-settings operation.
 //
 // No token required.
@@ -2589,6 +2888,174 @@ func (c *Client) sendListProjects(ctx context.Context, params ListProjectsParams
 	return result, nil
 }
 
+// ListSSHKeys invokes list-ssh-keys operation.
+//
+// Most recent first.
+//
+// GET /account/v1/me/ssh-keys
+func (c *Client) ListSSHKeys(ctx context.Context, params ListSSHKeysParams) (*LengthAwarePageSSHKeyResource, error) {
+	res, err := c.sendListSSHKeys(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListSSHKeys(ctx context.Context, params ListSSHKeysParams) (res *LengthAwarePageSSHKeyResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-ssh-keys"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/me/ssh-keys"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListSSHKeysOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/me/ssh-keys"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "limit" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Limit.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "offset" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "offset",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Offset.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "status" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Status.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListSSHKeysOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListSSHKeysResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // PreviewInvitationByToken invokes preview-invitation-by-token operation.
 //
 // No token required: whoever follows the link in an invitation email has usually not signed in, and
@@ -2824,6 +3291,150 @@ func (c *Client) sendRegister(ctx context.Context, request *RegisterRequestBody)
 	return result, nil
 }
 
+// RenameSSHKey invokes rename-ssh-key operation.
+//
+// Only the name can change. The key, its type and its fingerprint are three statements about one
+// thing, and changing one of them would leave the row describing a key that does not exist.
+//
+// PATCH /account/v1/me/ssh-keys/{keyId}
+func (c *Client) RenameSSHKey(ctx context.Context, request *RenameSSHKeyRequestBody, params RenameSSHKeyParams) (*SSHKeyResource, error) {
+	res, err := c.sendRenameSSHKey(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendRenameSSHKey(ctx context.Context, request *RenameSSHKeyRequestBody, params RenameSSHKeyParams) (res *SSHKeyResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("rename-ssh-key"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/account/v1/me/ssh-keys/{keyId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RenameSSHKeyOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/account/v1/me/ssh-keys/"
+	{
+		// Encode "keyId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "keyId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.KeyId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRenameSSHKeyRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, RenameSSHKeyOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRenameSSHKeyResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // RequestAccountDeletion invokes request-account-deletion operation.
 //
 // The account is frozen at once: it can no longer enter a project or change anything in one. The
@@ -2965,6 +3576,141 @@ func (c *Client) sendRequestAccountDeletion(ctx context.Context, params RequestA
 
 	stage = "DecodeResponse"
 	result, err := decodeRequestAccountDeletionResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// RevokeSSHKey invokes revoke-ssh-key operation.
+//
+// The row remains and its status becomes `REVOKED`, so it stays answerable afterwards which key was
+// trusted at the time. Fleet machines stop accepting the key within about a minute. A server on which
+// Compute installed the key keeps it until it is removed there.
+//
+// The same key can then be added again, to this account or another.
+//
+// DELETE /account/v1/me/ssh-keys/{keyId}
+func (c *Client) RevokeSSHKey(ctx context.Context, params RevokeSSHKeyParams) (*SSHKeyResource, error) {
+	res, err := c.sendRevokeSSHKey(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendRevokeSSHKey(ctx context.Context, params RevokeSSHKeyParams) (res *SSHKeyResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("revoke-ssh-key"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/account/v1/me/ssh-keys/{keyId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RevokeSSHKeyOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/account/v1/me/ssh-keys/"
+	{
+		// Encode "keyId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "keyId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.KeyId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, RevokeSSHKeyOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRevokeSSHKeyResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

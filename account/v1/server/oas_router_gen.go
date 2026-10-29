@@ -20,10 +20,10 @@ var (
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
-	rn15AllowedHeaders = map[string]string{
+	rn16AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn17AllowedHeaders = map[string]string{
+	rn18AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
@@ -36,13 +36,22 @@ var (
 	rn7AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn29AllowedHeaders = map[string]string{
+	rn12AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
+		"POST": "Authorization,Content-Type",
+	}
+	rn26AllowedHeaders = map[string]string{
+		"DELETE": "Authorization",
+		"GET":    "Authorization",
+		"PATCH":  "Authorization,Content-Type",
+	}
+	rn32AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
 	rn9AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
-	rn23AllowedHeaders = map[string]string{
+	rn24AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn11AllowedHeaders = map[string]string{
@@ -50,13 +59,13 @@ var (
 		"POST":  "Authorization,Content-Type",
 		"QUERY": "Authorization,Content-Type",
 	}
-	rn19AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn13AllowedHeaders = map[string]string{
+	rn20AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn14AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
+	rn15AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
 )
@@ -270,7 +279,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "GET",
-									allowedHeaders: rn15AllowedHeaders,
+									allowedHeaders: rn16AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -309,7 +318,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "GET,POST",
-										allowedHeaders: rn17AllowedHeaders,
+										allowedHeaders: rn18AllowedHeaders,
 										acceptPost:     "application/json",
 										acceptPatch:    "",
 									})
@@ -421,6 +430,78 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 						}
 
+					case 's': // Prefix: "ssh-keys"
+
+						if l := len("ssh-keys"); len(elem) >= l && elem[0:l] == "ssh-keys" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							switch r.Method {
+							case "GET":
+								s.handleListSSHKeysRequest([0]string{}, elemIsEscaped, w, r)
+							case "POST":
+								s.handleCreateSSHKeyRequest([0]string{}, elemIsEscaped, w, r)
+							default:
+								s.notAllowed(w, r, notAllowedParams{
+									allowedMethods: "GET,POST",
+									allowedHeaders: rn12AllowedHeaders,
+									acceptPost:     "application/json",
+									acceptPatch:    "",
+								})
+							}
+
+							return
+						}
+						switch elem[0] {
+						case '/': // Prefix: "/"
+
+							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							// Param: "keyId"
+							// Leaf parameter, slashes are prohibited
+							idx := strings.IndexByte(elem, '/')
+							if idx >= 0 {
+								break
+							}
+							args[0] = elem
+							elem = ""
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "DELETE":
+									s.handleRevokeSSHKeyRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								case "GET":
+									s.handleGetSSHKeyRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								case "PATCH":
+									s.handleRenameSSHKeyRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "DELETE,GET,PATCH",
+										allowedHeaders: rn26AllowedHeaders,
+										acceptPost:     "",
+										acceptPatch:    "application/json",
+									})
+								}
+
+								return
+							}
+
+						}
+
 					}
 
 				case ':': // Prefix: ":"
@@ -451,7 +532,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "POST",
-									allowedHeaders: rn29AllowedHeaders,
+									allowedHeaders: rn32AllowedHeaders,
 									acceptPost:     "application/json",
 									acceptPatch:    "",
 								})
@@ -540,7 +621,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "GET",
-									allowedHeaders: rn23AllowedHeaders,
+									allowedHeaders: rn24AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -618,7 +699,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "GET",
-										allowedHeaders: rn19AllowedHeaders,
+										allowedHeaders: rn20AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -647,7 +728,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "GET",
-									allowedHeaders: rn13AllowedHeaders,
+									allowedHeaders: rn14AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -674,7 +755,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn14AllowedHeaders,
+										allowedHeaders: rn15AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -1145,6 +1226,93 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									}
 								}
 
+							}
+
+						}
+
+					case 's': // Prefix: "ssh-keys"
+
+						if l := len("ssh-keys"); len(elem) >= l && elem[0:l] == "ssh-keys" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							switch method {
+							case "GET":
+								r.name = ListSSHKeysOperation
+								r.summary = "List the SSH keys of the current account"
+								r.operationID = "list-ssh-keys"
+								r.operationGroup = ""
+								r.pathPattern = "/account/v1/me/ssh-keys"
+								r.args = args
+								r.count = 0
+								return r, true
+							case "POST":
+								r.name = CreateSSHKeyOperation
+								r.summary = "Add an SSH key to the current account"
+								r.operationID = "create-ssh-key"
+								r.operationGroup = ""
+								r.pathPattern = "/account/v1/me/ssh-keys"
+								r.args = args
+								r.count = 0
+								return r, true
+							default:
+								return
+							}
+						}
+						switch elem[0] {
+						case '/': // Prefix: "/"
+
+							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							// Param: "keyId"
+							// Leaf parameter, slashes are prohibited
+							idx := strings.IndexByte(elem, '/')
+							if idx >= 0 {
+								break
+							}
+							args[0] = elem
+							elem = ""
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "DELETE":
+									r.name = RevokeSSHKeyOperation
+									r.summary = "Revoke an SSH key of the current account"
+									r.operationID = "revoke-ssh-key"
+									r.operationGroup = ""
+									r.pathPattern = "/account/v1/me/ssh-keys/{keyId}"
+									r.args = args
+									r.count = 1
+									return r, true
+								case "GET":
+									r.name = GetSSHKeyOperation
+									r.summary = "Get an SSH key of the current account"
+									r.operationID = "get-ssh-key"
+									r.operationGroup = ""
+									r.pathPattern = "/account/v1/me/ssh-keys/{keyId}"
+									r.args = args
+									r.count = 1
+									return r, true
+								case "PATCH":
+									r.name = RenameSSHKeyOperation
+									r.summary = "Rename an SSH key of the current account"
+									r.operationID = "rename-ssh-key"
+									r.operationGroup = ""
+									r.pathPattern = "/account/v1/me/ssh-keys/{keyId}"
+									r.args = args
+									r.count = 1
+									return r, true
+								default:
+									return
+								}
 							}
 
 						}
