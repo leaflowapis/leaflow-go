@@ -1400,6 +1400,12 @@ func (x *Close) GetStatus() *status.Status {
 // service passes on the session's candidates that arrive until the session
 // sends end_of_candidates, and at most 2 seconds after the answer; the session
 // therefore sends end_of_candidates as soon as it gathered.
+//
+// The offer is the first signal of a PeerConnection: the service sends it
+// before any other signal of that PeerConnection. The participant's later
+// candidates, its end of candidates and the abort come from separate requests
+// and may reach the session in any order; a candidate or an end of candidates
+// of a PeerConnection that has ended is ignored.
 type Signal struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// 16 random bytes the service chose for the PeerConnection: the id of the
@@ -1407,8 +1413,6 @@ type Signal struct {
 	PeerConnectionId []byte `protobuf:"bytes,1,opt,name=peer_connection_id,json=peerConnectionId,proto3" json:"peer_connection_id,omitempty"`
 	// The participant.
 	ParticipantId uint64 `protobuf:"varint,2,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
-	// Increases with every signal of one sender for the PeerConnection.
-	Sequence uint64 `protobuf:"varint,3,opt,name=sequence,proto3" json:"sequence,omitempty"`
 	// The ICE servers and policy for the session's end of the PeerConnection.
 	// Set by the service on the offer.
 	Configuration *RtcConfiguration `protobuf:"bytes,4,opt,name=configuration,proto3" json:"configuration,omitempty"`
@@ -1466,13 +1470,6 @@ func (x *Signal) GetPeerConnectionId() []byte {
 func (x *Signal) GetParticipantId() uint64 {
 	if x != nil {
 		return x.ParticipantId
-	}
-	return 0
-}
-
-func (x *Signal) GetSequence() uint64 {
-	if x != nil {
-		return x.Sequence
 	}
 	return 0
 }
@@ -2110,11 +2107,10 @@ const file_leaflow_fleet_transport_v1_transport_proto_rawDesc = "" +
 	"\tcommitted\x18\x05 \x01(\v2&.leaflow.fleet.transport.v1.CheckpointH\x00R\tcommittedB\x06\n" +
 	"\x04step\"3\n" +
 	"\x05Close\x12*\n" +
-	"\x06status\x18\x01 \x01(\v2\x12.google.rpc.StatusR\x06status\"\x98\x04\n" +
+	"\x06status\x18\x01 \x01(\v2\x12.google.rpc.StatusR\x06status\"\xfc\x03\n" +
 	"\x06Signal\x12,\n" +
 	"\x12peer_connection_id\x18\x01 \x01(\fR\x10peerConnectionId\x12%\n" +
-	"\x0eparticipant_id\x18\x02 \x01(\x04R\rparticipantId\x12\x1a\n" +
-	"\bsequence\x18\x03 \x01(\x04R\bsequence\x12R\n" +
+	"\x0eparticipant_id\x18\x02 \x01(\x04R\rparticipantId\x12R\n" +
 	"\rconfiguration\x18\x04 \x01(\v2,.leaflow.fleet.transport.v1.RtcConfigurationR\rconfiguration\x12R\n" +
 	"\vdescription\x18\x05 \x01(\v2..leaflow.fleet.transport.v1.SessionDescriptionH\x00R\vdescription\x12H\n" +
 	"\tcandidate\x18\x06 \x01(\v2(.leaflow.fleet.transport.v1.IceCandidateH\x00R\tcandidate\x12,\n" +
