@@ -312,11 +312,11 @@ type Invoker interface {
 	DenyEnrollment(ctx context.Context, params DenyEnrollmentParams) (*EnrollmentResource, error)
 	// DenyPrivilegeRequest invokes deny-privilege-request operation.
 	//
-	// Denies one of the caller's pending requests; the waiting sudo fails. Fails with
-	// `PRIVILEGE_REQUEST_CLOSED` as for approving.
+	// Denies one of the caller's pending requests; the waiting sudo fails and shows `reason`, when given,
+	// to whoever ran it. Fails with `PRIVILEGE_REQUEST_CLOSED` as for approving.
 	//
 	// POST /api/v1/privilege-requests/{requestId}:deny
-	DenyPrivilegeRequest(ctx context.Context, params DenyPrivilegeRequestParams) (*PrivilegeRequestResource, error)
+	DenyPrivilegeRequest(ctx context.Context, request OptDenyPrivilegeRequestRequest, params DenyPrivilegeRequestParams) (*PrivilegeRequestResource, error)
 	// FindEnrollmentByPairingCode invokes find-enrollment-by-pairing-code operation.
 	//
 	// Returns the pending enrollment request whose pairing code matches, or no enrollment when none does.
@@ -680,10 +680,12 @@ type Invoker interface {
 	UpdateMcpServer(ctx context.Context, request *UpdateMcpServerRequest, params UpdateMcpServerParams) (*UpdateMcpServerResponse, error)
 	// UpdatePrivilegeAutoApproval invokes update-privilege-auto-approval operation.
 	//
-	// Approves the caller's privilege requests on the machine at once, until `expires_at`, or until
-	// removed when `expires_at` is null, replacing any earlier automatic approval. It applies to the
-	// caller's own account only, which is created if the caller has none yet, and only while they may
-	// become root on the machine. Fails with `INVALID_ARGUMENT` when `expires_at` has passed.
+	// Has the caller's privilege requests on the machine decided without asking them, in `mode`, until
+	// `expires_at`, or until removed when `expires_at` is null, replacing any earlier automatic approval.
+	// `automatic_review` is recommended; with `always_approve` any program that runs as the account
+	// becomes root without anyone being asked. It applies to the caller's own account only, which is
+	// created if the caller has none yet, and only while they may become root on the machine. Fails with
+	// `INVALID_ARGUMENT` when `expires_at` has passed.
 	//
 	// PUT /api/v1/machines/{machineId}/privilege-auto-approval
 	UpdatePrivilegeAutoApproval(ctx context.Context, request *UpdatePrivilegeAutoApprovalRequest, params UpdatePrivilegeAutoApprovalParams) (*PrivilegeAutoApprovalResource, error)
@@ -3936,16 +3938,32 @@ func (c *Client) sendDenyEnrollment(ctx context.Context, params DenyEnrollmentPa
 
 // DenyPrivilegeRequest invokes deny-privilege-request operation.
 //
-// Denies one of the caller's pending requests; the waiting sudo fails. Fails with
-// `PRIVILEGE_REQUEST_CLOSED` as for approving.
+// Denies one of the caller's pending requests; the waiting sudo fails and shows `reason`, when given,
+// to whoever ran it. Fails with `PRIVILEGE_REQUEST_CLOSED` as for approving.
 //
 // POST /api/v1/privilege-requests/{requestId}:deny
-func (c *Client) DenyPrivilegeRequest(ctx context.Context, params DenyPrivilegeRequestParams) (*PrivilegeRequestResource, error) {
-	res, err := c.sendDenyPrivilegeRequest(ctx, params)
+func (c *Client) DenyPrivilegeRequest(ctx context.Context, request OptDenyPrivilegeRequestRequest, params DenyPrivilegeRequestParams) (*PrivilegeRequestResource, error) {
+	res, err := c.sendDenyPrivilegeRequest(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendDenyPrivilegeRequest(ctx context.Context, params DenyPrivilegeRequestParams) (res *PrivilegeRequestResource, err error) {
+func (c *Client) sendDenyPrivilegeRequest(ctx context.Context, request OptDenyPrivilegeRequestRequest, params DenyPrivilegeRequestParams) (res *PrivilegeRequestResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if value, ok := request.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("deny-privilege-request"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -4009,6 +4027,9 @@ func (c *Client) sendDenyPrivilegeRequest(ctx context.Context, params DenyPrivil
 	r, err := ht.NewRequest(ctx, "POST", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeDenyPrivilegeRequestRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
 	}
 
 	{
@@ -9087,10 +9108,12 @@ func (c *Client) sendUpdateMcpServer(ctx context.Context, request *UpdateMcpServ
 
 // UpdatePrivilegeAutoApproval invokes update-privilege-auto-approval operation.
 //
-// Approves the caller's privilege requests on the machine at once, until `expires_at`, or until
-// removed when `expires_at` is null, replacing any earlier automatic approval. It applies to the
-// caller's own account only, which is created if the caller has none yet, and only while they may
-// become root on the machine. Fails with `INVALID_ARGUMENT` when `expires_at` has passed.
+// Has the caller's privilege requests on the machine decided without asking them, in `mode`, until
+// `expires_at`, or until removed when `expires_at` is null, replacing any earlier automatic approval.
+// `automatic_review` is recommended; with `always_approve` any program that runs as the account
+// becomes root without anyone being asked. It applies to the caller's own account only, which is
+// created if the caller has none yet, and only while they may become root on the machine. Fails with
+// `INVALID_ARGUMENT` when `expires_at` has passed.
 //
 // PUT /api/v1/machines/{machineId}/privilege-auto-approval
 func (c *Client) UpdatePrivilegeAutoApproval(ctx context.Context, request *UpdatePrivilegeAutoApprovalRequest, params UpdatePrivilegeAutoApprovalParams) (*PrivilegeAutoApprovalResource, error) {
@@ -9099,6 +9122,15 @@ func (c *Client) UpdatePrivilegeAutoApproval(ctx context.Context, request *Updat
 }
 
 func (c *Client) sendUpdatePrivilegeAutoApproval(ctx context.Context, request *UpdatePrivilegeAutoApprovalRequest, params UpdatePrivilegeAutoApprovalParams) (res *PrivilegeAutoApprovalResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-privilege-auto-approval"),
 		semconv.HTTPRequestMethodKey.String("PUT"),

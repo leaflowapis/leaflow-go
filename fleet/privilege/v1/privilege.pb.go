@@ -184,7 +184,11 @@ func (x *DecidePrivilegeRequestRequest) GetRequest() *PrivilegeRequest {
 type DecidePrivilegeRequestResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// APPROVED, DENIED or EXPIRED.
-	Outcome       PrivilegeOutcome `protobuf:"varint,1,opt,name=outcome,proto3,enum=leaflow.fleet.privilege.v1.PrivilegeOutcome" json:"outcome,omitempty"`
+	Outcome PrivilegeOutcome `protobuf:"varint,1,opt,name=outcome,proto3,enum=leaflow.fleet.privilege.v1.PrivilegeOutcome" json:"outcome,omitempty"`
+	// DENIED only: why, as the platform gives it, to show whoever asked. Plain
+	// text of at most 200 characters; empty when the platform gives none. The
+	// daemon shows it without control characters.
+	Reason        string `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -224,6 +228,13 @@ func (x *DecidePrivilegeRequestResponse) GetOutcome() PrivilegeOutcome {
 		return x.Outcome
 	}
 	return PrivilegeOutcome_PRIVILEGE_OUTCOME_UNSPECIFIED
+}
+
+func (x *DecidePrivilegeRequestResponse) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
 }
 
 // A message from the participant.
@@ -910,7 +921,11 @@ type PrivilegeDecision struct {
 	// The person approved the request. False: denied.
 	Approved bool `protobuf:"varint,2,opt,name=approved,proto3" json:"approved,omitempty"`
 	// When the person decided. Informational.
-	DecidedAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=decided_at,json=decidedAt,proto3" json:"decided_at,omitempty"`
+	DecidedAt *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=decided_at,json=decidedAt,proto3" json:"decided_at,omitempty"`
+	// Denied only: why, as the person gave it, to show whoever asked. Plain
+	// text of at most 200 characters; empty when they gave none. The daemon
+	// shows it without control characters.
+	Reason        string `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -964,6 +979,13 @@ func (x *PrivilegeDecision) GetDecidedAt() *timestamppb.Timestamp {
 		return x.DecidedAt
 	}
 	return nil
+}
+
+func (x *PrivilegeDecision) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
 }
 
 // A request is no longer pending.
@@ -1112,9 +1134,10 @@ const file_leaflow_fleet_privilege_v1_privilege_proto_rawDesc = "" +
 	"\n" +
 	"*leaflow/fleet/privilege/v1/privilege.proto\x12\x1aleaflow.fleet.privilege.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"g\n" +
 	"\x1dDecidePrivilegeRequestRequest\x12F\n" +
-	"\arequest\x18\x01 \x01(\v2,.leaflow.fleet.privilege.v1.PrivilegeRequestR\arequest\"h\n" +
+	"\arequest\x18\x01 \x01(\v2,.leaflow.fleet.privilege.v1.PrivilegeRequestR\arequest\"\x80\x01\n" +
 	"\x1eDecidePrivilegeRequestResponse\x12F\n" +
-	"\aoutcome\x18\x01 \x01(\x0e2,.leaflow.fleet.privilege.v1.PrivilegeOutcomeR\aoutcome\"m\n" +
+	"\aoutcome\x18\x01 \x01(\x0e2,.leaflow.fleet.privilege.v1.PrivilegeOutcomeR\aoutcome\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\"m\n" +
 	"\rClientMessage\x12Q\n" +
 	"\bdecision\x18\x01 \x01(\v23.leaflow.fleet.privilege.v1.SignedPrivilegeDecisionH\x00R\bdecisionB\t\n" +
 	"\amessage\"\xda\x02\n" +
@@ -1164,12 +1187,13 @@ const file_leaflow_fleet_privilege_v1_privilege_proto_rawDesc = "" +
 	"\x10collection_label\x18\x02 \x01(\tR\x0fcollectionLabel\"S\n" +
 	"\x17SignedPrivilegeDecision\x12\x1a\n" +
 	"\bdecision\x18\x01 \x01(\fR\bdecision\x12\x1c\n" +
-	"\tsignature\x18\x02 \x01(\fR\tsignature\"\x91\x01\n" +
+	"\tsignature\x18\x02 \x01(\fR\tsignature\"\xa9\x01\n" +
 	"\x11PrivilegeDecision\x12%\n" +
 	"\x0erequest_sha256\x18\x01 \x01(\fR\rrequestSha256\x12\x1a\n" +
 	"\bapproved\x18\x02 \x01(\bR\bapproved\x129\n" +
 	"\n" +
-	"decided_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tdecidedAt\"\x7f\n" +
+	"decided_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tdecidedAt\x12\x16\n" +
+	"\x06reason\x18\x04 \x01(\tR\x06reason\"\x7f\n" +
 	"\x16PrivilegeRequestClosed\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12F\n" +

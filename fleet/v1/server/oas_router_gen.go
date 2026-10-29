@@ -100,7 +100,7 @@ var (
 		"POST": "Authorization",
 	}
 	rn42AllowedHeaders = map[string]string{
-		"POST": "Authorization",
+		"POST": "Authorization,Content-Type",
 	}
 	rn32AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
@@ -1140,7 +1140,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "POST",
 											allowedHeaders: rn42AllowedHeaders,
-											acceptPost:     "",
+											acceptPost:     "application/json",
 											acceptPatch:    "",
 										})
 									}
@@ -2475,7 +2475,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										return r, true
 									case "PUT":
 										r.name = UpdatePrivilegeAutoApprovalOperation
-										r.summary = "Approve the caller's privilege requests on a machine without asking"
+										r.summary = "Decide the caller's privilege requests on a machine without asking"
 										r.operationID = "update-privilege-auto-approval"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/machines/{machineId}/privilege-auto-approval"

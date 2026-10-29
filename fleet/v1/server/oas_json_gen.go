@@ -1961,6 +1961,69 @@ func (s *CreateSessionRequest) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *DenyPrivilegeRequestRequest) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *DenyPrivilegeRequestRequest) encodeFields(e *jx.Encoder) {
+	{
+		if s.Reason.Set {
+			e.FieldStart("reason")
+			s.Reason.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfDenyPrivilegeRequestRequest = [1]string{
+	0: "reason",
+}
+
+// Decode decodes DenyPrivilegeRequestRequest from json.
+func (s *DenyPrivilegeRequestRequest) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode DenyPrivilegeRequestRequest to nil")
+	}
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "reason":
+			if err := func() error {
+				s.Reason.Reset()
+				if err := s.Reason.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"reason\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode DenyPrivilegeRequestRequest")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *DenyPrivilegeRequestRequest) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *DenyPrivilegeRequestRequest) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *DesktopOptions) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -7686,6 +7749,39 @@ func (s *OptCallMcpToolRequestArguments) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes DenyPrivilegeRequestRequest as json.
+func (o OptDenyPrivilegeRequestRequest) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes DenyPrivilegeRequestRequest from json.
+func (o *OptDenyPrivilegeRequestRequest) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptDenyPrivilegeRequestRequest to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptDenyPrivilegeRequestRequest) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptDenyPrivilegeRequestRequest) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes DesktopOptions as json.
 func (o OptDesktopOptions) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -8700,6 +8796,46 @@ func (s *PrivilegeAutoApprovalList) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes PrivilegeAutoApprovalMode as json.
+func (s PrivilegeAutoApprovalMode) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes PrivilegeAutoApprovalMode from json.
+func (s *PrivilegeAutoApprovalMode) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PrivilegeAutoApprovalMode to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch PrivilegeAutoApprovalMode(v) {
+	case PrivilegeAutoApprovalModeAutomaticReview:
+		*s = PrivilegeAutoApprovalModeAutomaticReview
+	case PrivilegeAutoApprovalModeAlwaysApprove:
+		*s = PrivilegeAutoApprovalModeAlwaysApprove
+	default:
+		*s = PrivilegeAutoApprovalMode(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s PrivilegeAutoApprovalMode) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PrivilegeAutoApprovalMode) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode implements json.Marshaler.
 func (s *PrivilegeAutoApprovalResource) Encode(e *jx.Encoder) {
 	e.ObjStart()
@@ -8718,6 +8854,10 @@ func (s *PrivilegeAutoApprovalResource) encodeFields(e *jx.Encoder) {
 		json.EncodeUUID(e, s.MachineID)
 	}
 	{
+		e.FieldStart("mode")
+		s.Mode.Encode(e)
+	}
+	{
 		e.FieldStart("expires_at")
 		s.ExpiresAt.Encode(e, json.EncodeDateTime)
 	}
@@ -8731,12 +8871,13 @@ func (s *PrivilegeAutoApprovalResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPrivilegeAutoApprovalResource = [5]string{
+var jsonFieldsNameOfPrivilegeAutoApprovalResource = [6]string{
 	0: "id",
 	1: "machine_id",
-	2: "expires_at",
-	3: "created_at",
-	4: "updated_at",
+	2: "mode",
+	3: "expires_at",
+	4: "created_at",
+	5: "updated_at",
 }
 
 // Decode decodes PrivilegeAutoApprovalResource from json.
@@ -8772,8 +8913,18 @@ func (s *PrivilegeAutoApprovalResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"machine_id\"")
 			}
-		case "expires_at":
+		case "mode":
 			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.Mode.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"mode\"")
+			}
+		case "expires_at":
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				if err := s.ExpiresAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -8783,7 +8934,7 @@ func (s *PrivilegeAutoApprovalResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"expires_at\"")
 			}
 		case "created_at":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -8795,7 +8946,7 @@ func (s *PrivilegeAutoApprovalResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "updated_at":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -8816,7 +8967,7 @@ func (s *PrivilegeAutoApprovalResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00011111,
+		0b00111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -8880,8 +9031,10 @@ func (s *PrivilegeDecider) Decode(d *jx.Decoder) error {
 	switch PrivilegeDecider(v) {
 	case PrivilegeDeciderUser:
 		*s = PrivilegeDeciderUser
-	case PrivilegeDeciderAutoApproval:
-		*s = PrivilegeDeciderAutoApproval
+	case PrivilegeDeciderAlwaysApprove:
+		*s = PrivilegeDeciderAlwaysApprove
+	case PrivilegeDeciderAutomaticReview:
+		*s = PrivilegeDeciderAutomaticReview
 	default:
 		*s = PrivilegeDecider(v)
 	}
@@ -9109,6 +9262,10 @@ func (s *PrivilegeRequestResource) encodeFields(e *jx.Encoder) {
 		s.DecidedBy.Encode(e)
 	}
 	{
+		e.FieldStart("reason")
+		s.Reason.Encode(e)
+	}
+	{
 		e.FieldStart("created_at")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
@@ -9122,7 +9279,7 @@ func (s *PrivilegeRequestResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPrivilegeRequestResource = [13]string{
+var jsonFieldsNameOfPrivilegeRequestResource = [14]string{
 	0:  "id",
 	1:  "machine_id",
 	2:  "session_id",
@@ -9133,9 +9290,10 @@ var jsonFieldsNameOfPrivilegeRequestResource = [13]string{
 	7:  "tty",
 	8:  "state",
 	9:  "decided_by",
-	10: "created_at",
-	11: "expires_at",
-	12: "decided_at",
+	10: "reason",
+	11: "created_at",
+	12: "expires_at",
+	13: "decided_at",
 }
 
 // Decode decodes PrivilegeRequestResource from json.
@@ -9261,8 +9419,18 @@ func (s *PrivilegeRequestResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"decided_by\"")
 			}
-		case "created_at":
+		case "reason":
 			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				if err := s.Reason.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"reason\"")
+			}
+		case "created_at":
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -9274,7 +9442,7 @@ func (s *PrivilegeRequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "expires_at":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.ExpiresAt = v
@@ -9286,7 +9454,7 @@ func (s *PrivilegeRequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"expires_at\"")
 			}
 		case "decided_at":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				if err := s.DecidedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -9306,7 +9474,7 @@ func (s *PrivilegeRequestResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00011111,
+		0b00111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -12247,13 +12415,18 @@ func (s *UpdatePrivilegeAutoApprovalRequest) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *UpdatePrivilegeAutoApprovalRequest) encodeFields(e *jx.Encoder) {
 	{
+		e.FieldStart("mode")
+		s.Mode.Encode(e)
+	}
+	{
 		e.FieldStart("expires_at")
 		s.ExpiresAt.Encode(e, json.EncodeDateTime)
 	}
 }
 
-var jsonFieldsNameOfUpdatePrivilegeAutoApprovalRequest = [1]string{
-	0: "expires_at",
+var jsonFieldsNameOfUpdatePrivilegeAutoApprovalRequest = [2]string{
+	0: "mode",
+	1: "expires_at",
 }
 
 // Decode decodes UpdatePrivilegeAutoApprovalRequest from json.
@@ -12265,8 +12438,18 @@ func (s *UpdatePrivilegeAutoApprovalRequest) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "expires_at":
+		case "mode":
 			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Mode.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"mode\"")
+			}
+		case "expires_at":
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				if err := s.ExpiresAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -12285,7 +12468,7 @@ func (s *UpdatePrivilegeAutoApprovalRequest) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000001,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

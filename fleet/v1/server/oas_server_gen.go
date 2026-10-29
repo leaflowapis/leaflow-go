@@ -291,11 +291,11 @@ type Handler interface {
 	DenyEnrollment(ctx context.Context, params DenyEnrollmentParams) (*EnrollmentResource, error)
 	// DenyPrivilegeRequest implements deny-privilege-request operation.
 	//
-	// Denies one of the caller's pending requests; the waiting sudo fails. Fails with
-	// `PRIVILEGE_REQUEST_CLOSED` as for approving.
+	// Denies one of the caller's pending requests; the waiting sudo fails and shows `reason`, when given,
+	// to whoever ran it. Fails with `PRIVILEGE_REQUEST_CLOSED` as for approving.
 	//
 	// POST /api/v1/privilege-requests/{requestId}:deny
-	DenyPrivilegeRequest(ctx context.Context, params DenyPrivilegeRequestParams) (*PrivilegeRequestResource, error)
+	DenyPrivilegeRequest(ctx context.Context, req OptDenyPrivilegeRequestRequest, params DenyPrivilegeRequestParams) (*PrivilegeRequestResource, error)
 	// FindEnrollmentByPairingCode implements find-enrollment-by-pairing-code operation.
 	//
 	// Returns the pending enrollment request whose pairing code matches, or no enrollment when none does.
@@ -659,10 +659,12 @@ type Handler interface {
 	UpdateMcpServer(ctx context.Context, req *UpdateMcpServerRequest, params UpdateMcpServerParams) (*UpdateMcpServerResponse, error)
 	// UpdatePrivilegeAutoApproval implements update-privilege-auto-approval operation.
 	//
-	// Approves the caller's privilege requests on the machine at once, until `expires_at`, or until
-	// removed when `expires_at` is null, replacing any earlier automatic approval. It applies to the
-	// caller's own account only, which is created if the caller has none yet, and only while they may
-	// become root on the machine. Fails with `INVALID_ARGUMENT` when `expires_at` has passed.
+	// Has the caller's privilege requests on the machine decided without asking them, in `mode`, until
+	// `expires_at`, or until removed when `expires_at` is null, replacing any earlier automatic approval.
+	// `automatic_review` is recommended; with `always_approve` any program that runs as the account
+	// becomes root without anyone being asked. It applies to the caller's own account only, which is
+	// created if the caller has none yet, and only while they may become root on the machine. Fails with
+	// `INVALID_ARGUMENT` when `expires_at` has passed.
 	//
 	// PUT /api/v1/machines/{machineId}/privilege-auto-approval
 	UpdatePrivilegeAutoApproval(ctx context.Context, req *UpdatePrivilegeAutoApprovalRequest, params UpdatePrivilegeAutoApprovalParams) (*PrivilegeAutoApprovalResource, error)

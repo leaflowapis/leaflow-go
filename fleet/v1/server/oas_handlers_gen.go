@@ -4543,8 +4543,8 @@ func (s *Server) handleDenyEnrollmentRequest(args [1]string, argsEscaped bool, w
 
 // handleDenyPrivilegeRequestRequest handles deny-privilege-request operation.
 //
-// Denies one of the caller's pending requests; the waiting sudo fails. Fails with
-// `PRIVILEGE_REQUEST_CLOSED` as for approving.
+// Denies one of the caller's pending requests; the waiting sudo fails and shows `reason`, when given,
+// to whoever ran it. Fails with `PRIVILEGE_REQUEST_CLOSED` as for approving.
 //
 // POST /api/v1/privilege-requests/{requestId}:deny
 func (s *Server) handleDenyPrivilegeRequestRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4676,6 +4676,21 @@ func (s *Server) handleDenyPrivilegeRequestRequest(args [1]string, argsEscaped b
 	}
 
 	var rawBody []byte
+	request, rawBody, close, err := s.decodeDenyPrivilegeRequestRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
 
 	var response *PrivilegeRequestResource
 	if m := s.cfg.Middleware; m != nil {
@@ -4684,7 +4699,7 @@ func (s *Server) handleDenyPrivilegeRequestRequest(args [1]string, argsEscaped b
 			OperationName:    DenyPrivilegeRequestOperation,
 			OperationSummary: "Deny a privilege request",
 			OperationID:      "deny-privilege-request",
-			Body:             nil,
+			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
@@ -4696,7 +4711,7 @@ func (s *Server) handleDenyPrivilegeRequestRequest(args [1]string, argsEscaped b
 		}
 
 		type (
-			Request  = struct{}
+			Request  = OptDenyPrivilegeRequestRequest
 			Params   = DenyPrivilegeRequestParams
 			Response = *PrivilegeRequestResource
 		)
@@ -4709,12 +4724,12 @@ func (s *Server) handleDenyPrivilegeRequestRequest(args [1]string, argsEscaped b
 			mreq,
 			unpackDenyPrivilegeRequestParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DenyPrivilegeRequest(ctx, params)
+				response, err = s.h.DenyPrivilegeRequest(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.DenyPrivilegeRequest(ctx, params)
+		response, err = s.h.DenyPrivilegeRequest(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -11564,10 +11579,12 @@ func (s *Server) handleUpdateMcpServerRequest(args [2]string, argsEscaped bool, 
 
 // handleUpdatePrivilegeAutoApprovalRequest handles update-privilege-auto-approval operation.
 //
-// Approves the caller's privilege requests on the machine at once, until `expires_at`, or until
-// removed when `expires_at` is null, replacing any earlier automatic approval. It applies to the
-// caller's own account only, which is created if the caller has none yet, and only while they may
-// become root on the machine. Fails with `INVALID_ARGUMENT` when `expires_at` has passed.
+// Has the caller's privilege requests on the machine decided without asking them, in `mode`, until
+// `expires_at`, or until removed when `expires_at` is null, replacing any earlier automatic approval.
+// `automatic_review` is recommended; with `always_approve` any program that runs as the account
+// becomes root without anyone being asked. It applies to the caller's own account only, which is
+// created if the caller has none yet, and only while they may become root on the machine. Fails with
+// `INVALID_ARGUMENT` when `expires_at` has passed.
 //
 // PUT /api/v1/machines/{machineId}/privilege-auto-approval
 func (s *Server) handleUpdatePrivilegeAutoApprovalRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -11720,7 +11737,7 @@ func (s *Server) handleUpdatePrivilegeAutoApprovalRequest(args [1]string, argsEs
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    UpdatePrivilegeAutoApprovalOperation,
-			OperationSummary: "Approve the caller's privilege requests on a machine without asking",
+			OperationSummary: "Decide the caller's privilege requests on a machine without asking",
 			OperationID:      "update-privilege-auto-approval",
 			Body:             request,
 			RawBody:          rawBody,

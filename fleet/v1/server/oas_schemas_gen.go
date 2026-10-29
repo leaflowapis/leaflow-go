@@ -713,6 +713,22 @@ type DeletePeerConnectionNoContent struct{}
 // DeletePrivilegeAutoApprovalNoContent is response for DeletePrivilegeAutoApproval operation.
 type DeletePrivilegeAutoApprovalNoContent struct{}
 
+// Ref: #/components/schemas/DenyPrivilegeRequestRequest
+type DenyPrivilegeRequestRequest struct {
+	// Why, shown to whoever ran sudo: plain text without control characters.
+	Reason OptString `json:"reason"`
+}
+
+// GetReason returns the value of Reason.
+func (s *DenyPrivilegeRequestRequest) GetReason() OptString {
+	return s.Reason
+}
+
+// SetReason sets the value of Reason.
+func (s *DenyPrivilegeRequestRequest) SetReason(val OptString) {
+	s.Reason = val
+}
+
 // A desktop for the session, on a machine that offers `leaflow.fleet.virtualdesktop.host.v1`.
 // Ref: #/components/schemas/DesktopOptions
 type DesktopOptions struct {
@@ -3519,6 +3535,52 @@ func (o OptCallMcpToolRequestArguments) Or(d CallMcpToolRequestArguments) CallMc
 	return d
 }
 
+// NewOptDenyPrivilegeRequestRequest returns new OptDenyPrivilegeRequestRequest with value set to v.
+func NewOptDenyPrivilegeRequestRequest(v DenyPrivilegeRequestRequest) OptDenyPrivilegeRequestRequest {
+	return OptDenyPrivilegeRequestRequest{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptDenyPrivilegeRequestRequest is optional DenyPrivilegeRequestRequest.
+type OptDenyPrivilegeRequestRequest struct {
+	Value DenyPrivilegeRequestRequest
+	Set   bool
+}
+
+// IsSet returns true if OptDenyPrivilegeRequestRequest was set.
+func (o OptDenyPrivilegeRequestRequest) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptDenyPrivilegeRequestRequest) Reset() {
+	var v DenyPrivilegeRequestRequest
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptDenyPrivilegeRequestRequest) SetTo(v DenyPrivilegeRequestRequest) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptDenyPrivilegeRequestRequest) Get() (v DenyPrivilegeRequestRequest, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptDenyPrivilegeRequestRequest) Or(d DenyPrivilegeRequestRequest) DenyPrivilegeRequestRequest {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptDesktopOptions returns new OptDesktopOptions with value set to v.
 func NewOptDesktopOptions(v DesktopOptions) OptDesktopOptions {
 	return OptDesktopOptions{
@@ -4392,10 +4454,63 @@ func (s *PrivilegeAutoApprovalList) SetPageSize(val int64) {
 	s.PageSize = val
 }
 
+// How the caller's privilege requests on the machine are decided without asking them:
+//
+//   - `automatic_review`, recommended: a large language model reviews each request from what the
+//     machine reports about it, chiefly the command line, and approves or denies it with a reason. It
+//     stops most dangerous requests, but not all of them. Each review is a request to Canopy through
+//     the project's Canopy service and may incur Canopy charges. A request that cannot be reviewed,
+//     such as when the project has not enabled Canopy, is denied.
+//   - `always_approve`: every request is approved at once. Dangerous: any program that runs as the
+//     account, such as a script or an AI agent, becomes root without anyone being asked.
+//
+// Ref: #/components/schemas/PrivilegeAutoApprovalMode
+type PrivilegeAutoApprovalMode string
+
+const (
+	PrivilegeAutoApprovalModeAutomaticReview PrivilegeAutoApprovalMode = "automatic_review"
+	PrivilegeAutoApprovalModeAlwaysApprove   PrivilegeAutoApprovalMode = "always_approve"
+)
+
+// AllValues returns all PrivilegeAutoApprovalMode values.
+func (PrivilegeAutoApprovalMode) AllValues() []PrivilegeAutoApprovalMode {
+	return []PrivilegeAutoApprovalMode{
+		PrivilegeAutoApprovalModeAutomaticReview,
+		PrivilegeAutoApprovalModeAlwaysApprove,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PrivilegeAutoApprovalMode) MarshalText() ([]byte, error) {
+	switch s {
+	case PrivilegeAutoApprovalModeAutomaticReview:
+		return []byte(s), nil
+	case PrivilegeAutoApprovalModeAlwaysApprove:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PrivilegeAutoApprovalMode) UnmarshalText(data []byte) error {
+	switch PrivilegeAutoApprovalMode(data) {
+	case PrivilegeAutoApprovalModeAutomaticReview:
+		*s = PrivilegeAutoApprovalModeAutomaticReview
+		return nil
+	case PrivilegeAutoApprovalModeAlwaysApprove:
+		*s = PrivilegeAutoApprovalModeAlwaysApprove
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/PrivilegeAutoApprovalResource
 type PrivilegeAutoApprovalResource struct {
-	ID        uuid.UUID `json:"id"`
-	MachineID uuid.UUID `json:"machine_id"`
+	ID        uuid.UUID                 `json:"id"`
+	MachineID uuid.UUID                 `json:"machine_id"`
+	Mode      PrivilegeAutoApprovalMode `json:"mode"`
 	// When the automatic approval ends; null for one that lasts until removed.
 	ExpiresAt NilDateTime `json:"expires_at"`
 	CreatedAt time.Time   `json:"created_at"`
@@ -4410,6 +4525,11 @@ func (s *PrivilegeAutoApprovalResource) GetID() uuid.UUID {
 // GetMachineID returns the value of MachineID.
 func (s *PrivilegeAutoApprovalResource) GetMachineID() uuid.UUID {
 	return s.MachineID
+}
+
+// GetMode returns the value of Mode.
+func (s *PrivilegeAutoApprovalResource) GetMode() PrivilegeAutoApprovalMode {
+	return s.Mode
 }
 
 // GetExpiresAt returns the value of ExpiresAt.
@@ -4437,6 +4557,11 @@ func (s *PrivilegeAutoApprovalResource) SetMachineID(val uuid.UUID) {
 	s.MachineID = val
 }
 
+// SetMode sets the value of Mode.
+func (s *PrivilegeAutoApprovalResource) SetMode(val PrivilegeAutoApprovalMode) {
+	s.Mode = val
+}
+
 // SetExpiresAt sets the value of ExpiresAt.
 func (s *PrivilegeAutoApprovalResource) SetExpiresAt(val NilDateTime) {
 	s.ExpiresAt = val
@@ -4452,21 +4577,24 @@ func (s *PrivilegeAutoApprovalResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
 }
 
-// Who decided a request on the platform: `user` the user, or `auto_approval` the user's automatic
-// approval for the machine, at once.
+// Who decided a request on the platform: `user` the user, `always_approve` the user's automatic
+// approval that approves every request, or `automatic_review` the large language model that reviewed
+// it.
 // Ref: #/components/schemas/PrivilegeDecider
 type PrivilegeDecider string
 
 const (
-	PrivilegeDeciderUser         PrivilegeDecider = "user"
-	PrivilegeDeciderAutoApproval PrivilegeDecider = "auto_approval"
+	PrivilegeDeciderUser            PrivilegeDecider = "user"
+	PrivilegeDeciderAlwaysApprove   PrivilegeDecider = "always_approve"
+	PrivilegeDeciderAutomaticReview PrivilegeDecider = "automatic_review"
 )
 
 // AllValues returns all PrivilegeDecider values.
 func (PrivilegeDecider) AllValues() []PrivilegeDecider {
 	return []PrivilegeDecider{
 		PrivilegeDeciderUser,
-		PrivilegeDeciderAutoApproval,
+		PrivilegeDeciderAlwaysApprove,
+		PrivilegeDeciderAutomaticReview,
 	}
 }
 
@@ -4475,7 +4603,9 @@ func (s PrivilegeDecider) MarshalText() ([]byte, error) {
 	switch s {
 	case PrivilegeDeciderUser:
 		return []byte(s), nil
-	case PrivilegeDeciderAutoApproval:
+	case PrivilegeDeciderAlwaysApprove:
+		return []byte(s), nil
+	case PrivilegeDeciderAutomaticReview:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -4488,8 +4618,11 @@ func (s *PrivilegeDecider) UnmarshalText(data []byte) error {
 	case PrivilegeDeciderUser:
 		*s = PrivilegeDeciderUser
 		return nil
-	case PrivilegeDeciderAutoApproval:
-		*s = PrivilegeDeciderAutoApproval
+	case PrivilegeDeciderAlwaysApprove:
+		*s = PrivilegeDeciderAlwaysApprove
+		return nil
+	case PrivilegeDeciderAutomaticReview:
+		*s = PrivilegeDeciderAutomaticReview
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -4564,8 +4697,11 @@ type PrivilegeRequestResource struct {
 	State PrivilegeRequestState `json:"state"`
 	// Who decided an `approved` or `denied` request; null in any other state.
 	DecidedBy NilPrivilegeDecider `json:"decided_by"`
-	CreatedAt time.Time           `json:"created_at"`
-	ExpiresAt time.Time           `json:"expires_at"`
+	// Why the request was decided so: as the user gave it when denying, or as the automatic review gave
+	// it, including why a review could not be made; null when none was given.
+	Reason    NilString `json:"reason"`
+	CreatedAt time.Time `json:"created_at"`
+	ExpiresAt time.Time `json:"expires_at"`
 	// When the request stopped pending; null while pending.
 	DecidedAt NilDateTime `json:"decided_at"`
 }
@@ -4618,6 +4754,11 @@ func (s *PrivilegeRequestResource) GetState() PrivilegeRequestState {
 // GetDecidedBy returns the value of DecidedBy.
 func (s *PrivilegeRequestResource) GetDecidedBy() NilPrivilegeDecider {
 	return s.DecidedBy
+}
+
+// GetReason returns the value of Reason.
+func (s *PrivilegeRequestResource) GetReason() NilString {
+	return s.Reason
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -4683,6 +4824,11 @@ func (s *PrivilegeRequestResource) SetState(val PrivilegeRequestState) {
 // SetDecidedBy sets the value of DecidedBy.
 func (s *PrivilegeRequestResource) SetDecidedBy(val NilPrivilegeDecider) {
 	s.DecidedBy = val
+}
+
+// SetReason sets the value of Reason.
+func (s *PrivilegeRequestResource) SetReason(val NilString) {
+	s.Reason = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -5849,13 +5995,24 @@ func (s *UpdateMcpServerResponse) SetServer(val McpServerResource) {
 
 // Ref: #/components/schemas/UpdatePrivilegeAutoApprovalRequest
 type UpdatePrivilegeAutoApprovalRequest struct {
+	Mode PrivilegeAutoApprovalMode `json:"mode"`
 	// When the automatic approval ends; null for one that lasts until removed.
 	ExpiresAt NilDateTime `json:"expires_at"`
+}
+
+// GetMode returns the value of Mode.
+func (s *UpdatePrivilegeAutoApprovalRequest) GetMode() PrivilegeAutoApprovalMode {
+	return s.Mode
 }
 
 // GetExpiresAt returns the value of ExpiresAt.
 func (s *UpdatePrivilegeAutoApprovalRequest) GetExpiresAt() NilDateTime {
 	return s.ExpiresAt
+}
+
+// SetMode sets the value of Mode.
+func (s *UpdatePrivilegeAutoApprovalRequest) SetMode(val PrivilegeAutoApprovalMode) {
+	s.Mode = val
 }
 
 // SetExpiresAt sets the value of ExpiresAt.
