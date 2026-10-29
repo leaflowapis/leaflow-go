@@ -208,62 +208,6 @@ func (s *ApproveEnrollmentRequest) SetName(val string) {
 	s.Name = val
 }
 
-// One PeerConnection of a participant, as the session answered it. Set the answer as the remote
-// description, add the candidates, and verify the authorization before sending application data; its
-// SHA-256 goes into `Hello.authorization_sha256`.
-// Ref: #/components/schemas/Attempt
-type Attempt struct {
-	// The attempt, as `attempt_id` of the transport protocol in its 16 bytes.
-	AttemptID uuid.UUID `json:"attempt_id"`
-	// The session's SDP answer (RFC 8866); it holds ICE credentials, so never log it.
-	Answer string `json:"answer"`
-	// The session's ICE candidates gathered until it reported the end of its candidates, or until 2
-	// seconds after its answer.
-	Candidates []IceCandidate `json:"candidates"`
-	// The signed `PeerAuthorization` of the attempt, the same one the session holds.
-	Authorization Signed `json:"authorization"`
-}
-
-// GetAttemptID returns the value of AttemptID.
-func (s *Attempt) GetAttemptID() uuid.UUID {
-	return s.AttemptID
-}
-
-// GetAnswer returns the value of Answer.
-func (s *Attempt) GetAnswer() string {
-	return s.Answer
-}
-
-// GetCandidates returns the value of Candidates.
-func (s *Attempt) GetCandidates() []IceCandidate {
-	return s.Candidates
-}
-
-// GetAuthorization returns the value of Authorization.
-func (s *Attempt) GetAuthorization() Signed {
-	return s.Authorization
-}
-
-// SetAttemptID sets the value of AttemptID.
-func (s *Attempt) SetAttemptID(val uuid.UUID) {
-	s.AttemptID = val
-}
-
-// SetAnswer sets the value of Answer.
-func (s *Attempt) SetAnswer(val string) {
-	s.Answer = val
-}
-
-// SetCandidates sets the value of Candidates.
-func (s *Attempt) SetCandidates(val []IceCandidate) {
-	s.Candidates = val
-}
-
-// SetAuthorization sets the value of Authorization.
-func (s *Attempt) SetAuthorization(val Signed) {
-	s.Authorization = val
-}
-
 type BearerAuth struct {
 	Token string
 	Roles []string
@@ -287,53 +231,6 @@ func (s *BearerAuth) SetToken(val string) {
 // SetRoles sets the value of Roles.
 func (s *BearerAuth) SetRoles(val []string) {
 	s.Roles = val
-}
-
-// CreateAttemptCandidatesNoContent is response for CreateAttemptCandidates operation.
-type CreateAttemptCandidatesNoContent struct{}
-
-// Ref: #/components/schemas/CreateAttemptCandidatesRequest
-type CreateAttemptCandidatesRequest struct {
-	Candidates []IceCandidate `json:"candidates"`
-	// The participant has gathered all its candidates.
-	EndOfCandidates OptBool `json:"end_of_candidates"`
-}
-
-// GetCandidates returns the value of Candidates.
-func (s *CreateAttemptCandidatesRequest) GetCandidates() []IceCandidate {
-	return s.Candidates
-}
-
-// GetEndOfCandidates returns the value of EndOfCandidates.
-func (s *CreateAttemptCandidatesRequest) GetEndOfCandidates() OptBool {
-	return s.EndOfCandidates
-}
-
-// SetCandidates sets the value of Candidates.
-func (s *CreateAttemptCandidatesRequest) SetCandidates(val []IceCandidate) {
-	s.Candidates = val
-}
-
-// SetEndOfCandidates sets the value of EndOfCandidates.
-func (s *CreateAttemptCandidatesRequest) SetEndOfCandidates(val OptBool) {
-	s.EndOfCandidates = val
-}
-
-// Ref: #/components/schemas/CreateAttemptRequest
-type CreateAttemptRequest struct {
-	// The SDP offer (RFC 8866) of the PeerConnection, with the ICE candidates gathered so far; it holds
-	// ICE credentials, so never log it.
-	Offer string `json:"offer"`
-}
-
-// GetOffer returns the value of Offer.
-func (s *CreateAttemptRequest) GetOffer() string {
-	return s.Offer
-}
-
-// SetOffer sets the value of Offer.
-func (s *CreateAttemptRequest) SetOffer(val string) {
-	s.Offer = val
 }
 
 // Ref: #/components/schemas/CreateGroupMemberRequest
@@ -426,9 +323,9 @@ func (s *CreateMachineRegistrationResponse) SetToken(val string) {
 // Ref: #/components/schemas/CreateParticipantRequest
 type CreateParticipantRequest struct {
 	PublicKey PublicKey `json:"public_key"`
-	// A label for the client that joins, such as `console` or `assistant`, shown to the other
-	// participants. It is neither unique nor verified.
-	ClientID OptString `json:"client_id"`
+	// A name for the client that joins, such as `console` or `assistant`, shown to the other participants.
+	// It is neither unique nor verified.
+	ClientName OptString `json:"client_name"`
 	// The participant only watches, even if the caller may operate the session.
 	ReadOnly OptBool `json:"read_only"`
 	// The capabilities the participant may use, as permission names such as `fleet:files.transfer`; when
@@ -444,9 +341,9 @@ func (s *CreateParticipantRequest) GetPublicKey() PublicKey {
 	return s.PublicKey
 }
 
-// GetClientID returns the value of ClientID.
-func (s *CreateParticipantRequest) GetClientID() OptString {
-	return s.ClientID
+// GetClientName returns the value of ClientName.
+func (s *CreateParticipantRequest) GetClientName() OptString {
+	return s.ClientName
 }
 
 // GetReadOnly returns the value of ReadOnly.
@@ -469,9 +366,9 @@ func (s *CreateParticipantRequest) SetPublicKey(val PublicKey) {
 	s.PublicKey = val
 }
 
-// SetClientID sets the value of ClientID.
-func (s *CreateParticipantRequest) SetClientID(val OptString) {
-	s.ClientID = val
+// SetClientName sets the value of ClientName.
+func (s *CreateParticipantRequest) SetClientName(val OptString) {
+	s.ClientName = val
 }
 
 // SetReadOnly sets the value of ReadOnly.
@@ -579,6 +476,127 @@ func (s *CreateParticipantRequestPermissionsItem) UnmarshalText(data []byte) err
 	}
 }
 
+// Ref: #/components/schemas/CreateParticipantResponse
+type CreateParticipantResponse struct {
+	Participant ParticipantResource `json:"participant"`
+	// The participant's signed `Authorization`, the same one the session holds.
+	Authorization SignedMessage `json:"authorization"`
+	// The ICE servers for later PeerConnections of the participant.
+	RtcConfiguration RtcConfiguration `json:"rtc_configuration"`
+	SigningKeys      []SigningKey     `json:"signing_keys"`
+	// When the participant ends unless renewed.
+	LeaseExpiresAt time.Time `json:"lease_expires_at"`
+	// The first PeerConnection, started with the request's offer.
+	PeerConnection PeerConnection `json:"peer_connection"`
+}
+
+// GetParticipant returns the value of Participant.
+func (s *CreateParticipantResponse) GetParticipant() ParticipantResource {
+	return s.Participant
+}
+
+// GetAuthorization returns the value of Authorization.
+func (s *CreateParticipantResponse) GetAuthorization() SignedMessage {
+	return s.Authorization
+}
+
+// GetRtcConfiguration returns the value of RtcConfiguration.
+func (s *CreateParticipantResponse) GetRtcConfiguration() RtcConfiguration {
+	return s.RtcConfiguration
+}
+
+// GetSigningKeys returns the value of SigningKeys.
+func (s *CreateParticipantResponse) GetSigningKeys() []SigningKey {
+	return s.SigningKeys
+}
+
+// GetLeaseExpiresAt returns the value of LeaseExpiresAt.
+func (s *CreateParticipantResponse) GetLeaseExpiresAt() time.Time {
+	return s.LeaseExpiresAt
+}
+
+// GetPeerConnection returns the value of PeerConnection.
+func (s *CreateParticipantResponse) GetPeerConnection() PeerConnection {
+	return s.PeerConnection
+}
+
+// SetParticipant sets the value of Participant.
+func (s *CreateParticipantResponse) SetParticipant(val ParticipantResource) {
+	s.Participant = val
+}
+
+// SetAuthorization sets the value of Authorization.
+func (s *CreateParticipantResponse) SetAuthorization(val SignedMessage) {
+	s.Authorization = val
+}
+
+// SetRtcConfiguration sets the value of RtcConfiguration.
+func (s *CreateParticipantResponse) SetRtcConfiguration(val RtcConfiguration) {
+	s.RtcConfiguration = val
+}
+
+// SetSigningKeys sets the value of SigningKeys.
+func (s *CreateParticipantResponse) SetSigningKeys(val []SigningKey) {
+	s.SigningKeys = val
+}
+
+// SetLeaseExpiresAt sets the value of LeaseExpiresAt.
+func (s *CreateParticipantResponse) SetLeaseExpiresAt(val time.Time) {
+	s.LeaseExpiresAt = val
+}
+
+// SetPeerConnection sets the value of PeerConnection.
+func (s *CreateParticipantResponse) SetPeerConnection(val PeerConnection) {
+	s.PeerConnection = val
+}
+
+// CreatePeerConnectionCandidatesNoContent is response for CreatePeerConnectionCandidates operation.
+type CreatePeerConnectionCandidatesNoContent struct{}
+
+// Ref: #/components/schemas/CreatePeerConnectionCandidatesRequest
+type CreatePeerConnectionCandidatesRequest struct {
+	Candidates []IceCandidate `json:"candidates"`
+	// The participant has gathered all its candidates.
+	EndOfCandidates OptBool `json:"end_of_candidates"`
+}
+
+// GetCandidates returns the value of Candidates.
+func (s *CreatePeerConnectionCandidatesRequest) GetCandidates() []IceCandidate {
+	return s.Candidates
+}
+
+// GetEndOfCandidates returns the value of EndOfCandidates.
+func (s *CreatePeerConnectionCandidatesRequest) GetEndOfCandidates() OptBool {
+	return s.EndOfCandidates
+}
+
+// SetCandidates sets the value of Candidates.
+func (s *CreatePeerConnectionCandidatesRequest) SetCandidates(val []IceCandidate) {
+	s.Candidates = val
+}
+
+// SetEndOfCandidates sets the value of EndOfCandidates.
+func (s *CreatePeerConnectionCandidatesRequest) SetEndOfCandidates(val OptBool) {
+	s.EndOfCandidates = val
+}
+
+// Ref: #/components/schemas/CreatePeerConnectionRequest
+type CreatePeerConnectionRequest struct {
+	// The SDP offer (RFC 8866) of the PeerConnection, with the ICE candidates gathered so far; it holds
+	// ICE credentials, so never log it.
+	Offer string `json:"offer"`
+}
+
+// GetOffer returns the value of Offer.
+func (s *CreatePeerConnectionRequest) GetOffer() string {
+	return s.Offer
+}
+
+// SetOffer sets the value of Offer.
+func (s *CreatePeerConnectionRequest) SetOffer(val string) {
+	s.Offer = val
+}
+
 // Ref: #/components/schemas/CreateSessionRequest
 type CreateSessionRequest struct {
 	MachineID uuid.UUID         `json:"machine_id"`
@@ -605,9 +623,6 @@ func (s *CreateSessionRequest) SetDesktop(val OptDesktopOptions) {
 	s.Desktop = val
 }
 
-// DeleteAttemptNoContent is response for DeleteAttempt operation.
-type DeleteAttemptNoContent struct{}
-
 // DeleteGroupMemberNoContent is response for DeleteGroupMember operation.
 type DeleteGroupMemberNoContent struct{}
 
@@ -622,6 +637,9 @@ type DeleteMachineRegistrationNoContent struct{}
 
 // DeleteParticipantNoContent is response for DeleteParticipant operation.
 type DeleteParticipantNoContent struct{}
+
+// DeletePeerConnectionNoContent is response for DeletePeerConnection operation.
+type DeletePeerConnectionNoContent struct{}
 
 // A desktop for the session, on a machine that offers `leaflow.fleet.virtualdesktop.host.v1`.
 // Ref: #/components/schemas/DesktopOptions
@@ -2832,38 +2850,38 @@ func (o OptPrivilegeRequestState) Or(d PrivilegeRequestState) PrivilegeRequestSt
 	return d
 }
 
-// NewOptSigned returns new OptSigned with value set to v.
-func NewOptSigned(v Signed) OptSigned {
-	return OptSigned{
+// NewOptSignedMessage returns new OptSignedMessage with value set to v.
+func NewOptSignedMessage(v SignedMessage) OptSignedMessage {
+	return OptSignedMessage{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptSigned is optional Signed.
-type OptSigned struct {
-	Value Signed
+// OptSignedMessage is optional SignedMessage.
+type OptSignedMessage struct {
+	Value SignedMessage
 	Set   bool
 }
 
-// IsSet returns true if OptSigned was set.
-func (o OptSigned) IsSet() bool { return o.Set }
+// IsSet returns true if OptSignedMessage was set.
+func (o OptSignedMessage) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptSigned) Reset() {
-	var v Signed
+func (o *OptSignedMessage) Reset() {
+	var v SignedMessage
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptSigned) SetTo(v Signed) {
+func (o *OptSignedMessage) SetTo(v SignedMessage) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptSigned) Get() (v Signed, ok bool) {
+func (o OptSignedMessage) Get() (v SignedMessage, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -2871,7 +2889,7 @@ func (o OptSigned) Get() (v Signed, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptSigned) Or(d Signed) Signed {
+func (o OptSignedMessage) Or(d SignedMessage) SignedMessage {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -2970,80 +2988,6 @@ func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
-// Ref: #/components/schemas/ParticipantConnection
-type ParticipantConnection struct {
-	Participant ParticipantResource `json:"participant"`
-	// The participant's signed `Authorization`, the same one the session holds.
-	Authorization Signed `json:"authorization"`
-	// The ICE servers for later PeerConnections of the participant.
-	RtcConfiguration RtcConfiguration `json:"rtc_configuration"`
-	ServiceKeys      []ServiceKey     `json:"service_keys"`
-	// When the participant ends unless renewed.
-	LeaseExpiresAt time.Time `json:"lease_expires_at"`
-	// The first PeerConnection, started with the request's offer.
-	Attempt Attempt `json:"attempt"`
-}
-
-// GetParticipant returns the value of Participant.
-func (s *ParticipantConnection) GetParticipant() ParticipantResource {
-	return s.Participant
-}
-
-// GetAuthorization returns the value of Authorization.
-func (s *ParticipantConnection) GetAuthorization() Signed {
-	return s.Authorization
-}
-
-// GetRtcConfiguration returns the value of RtcConfiguration.
-func (s *ParticipantConnection) GetRtcConfiguration() RtcConfiguration {
-	return s.RtcConfiguration
-}
-
-// GetServiceKeys returns the value of ServiceKeys.
-func (s *ParticipantConnection) GetServiceKeys() []ServiceKey {
-	return s.ServiceKeys
-}
-
-// GetLeaseExpiresAt returns the value of LeaseExpiresAt.
-func (s *ParticipantConnection) GetLeaseExpiresAt() time.Time {
-	return s.LeaseExpiresAt
-}
-
-// GetAttempt returns the value of Attempt.
-func (s *ParticipantConnection) GetAttempt() Attempt {
-	return s.Attempt
-}
-
-// SetParticipant sets the value of Participant.
-func (s *ParticipantConnection) SetParticipant(val ParticipantResource) {
-	s.Participant = val
-}
-
-// SetAuthorization sets the value of Authorization.
-func (s *ParticipantConnection) SetAuthorization(val Signed) {
-	s.Authorization = val
-}
-
-// SetRtcConfiguration sets the value of RtcConfiguration.
-func (s *ParticipantConnection) SetRtcConfiguration(val RtcConfiguration) {
-	s.RtcConfiguration = val
-}
-
-// SetServiceKeys sets the value of ServiceKeys.
-func (s *ParticipantConnection) SetServiceKeys(val []ServiceKey) {
-	s.ServiceKeys = val
-}
-
-// SetLeaseExpiresAt sets the value of LeaseExpiresAt.
-func (s *ParticipantConnection) SetLeaseExpiresAt(val time.Time) {
-	s.LeaseExpiresAt = val
-}
-
-// SetAttempt sets the value of Attempt.
-func (s *ParticipantConnection) SetAttempt(val Attempt) {
-	s.Attempt = val
-}
-
 // Ref: #/components/schemas/ParticipantList
 type ParticipantList struct {
 	Items []ParticipantResource `json:"items"`
@@ -3061,26 +3005,25 @@ func (s *ParticipantList) SetItems(val []ParticipantResource) {
 
 // Ref: #/components/schemas/ParticipantResource
 type ParticipantResource struct {
-	// The participant's connection.
-	ConnectionID int64         `json:"connection_id"`
-	User         NamedIdentity `json:"user"`
-	// The label the participant's client chose, such as `console` or `assistant`; neither unique nor
+	// The participant; `participant_id` of the protocol.
+	ID   int64         `json:"id"`
+	User NamedIdentity `json:"user"`
+	// The name the participant's client gave itself, such as `console` or `assistant`; neither unique nor
 	// verified.
-	ClientID string `json:"client_id"`
+	ClientName string `json:"client_name"`
 	// The participant may only watch.
 	ReadOnly bool `json:"read_only"`
-	// The capabilities granted to the participant, as the full names of their policy messages, such as
-	// `leaflow.fleet.filetransfer.v1.FileTransferPolicy`.
-	Policies []string `json:"policies"`
-	// The IP address the participant joined from.
-	RemoteAddress string `json:"remote_address"`
+	// The capabilities granted to the participant, as permission names such as `fleet:files.transfer`.
+	Permissions []string `json:"permissions"`
+	// The IP address the participant joined from; empty when it joined through a platform service.
+	SourceAddress string `json:"source_address"`
 	// When the participant joined.
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// GetConnectionID returns the value of ConnectionID.
-func (s *ParticipantResource) GetConnectionID() int64 {
-	return s.ConnectionID
+// GetID returns the value of ID.
+func (s *ParticipantResource) GetID() int64 {
+	return s.ID
 }
 
 // GetUser returns the value of User.
@@ -3088,9 +3031,9 @@ func (s *ParticipantResource) GetUser() NamedIdentity {
 	return s.User
 }
 
-// GetClientID returns the value of ClientID.
-func (s *ParticipantResource) GetClientID() string {
-	return s.ClientID
+// GetClientName returns the value of ClientName.
+func (s *ParticipantResource) GetClientName() string {
+	return s.ClientName
 }
 
 // GetReadOnly returns the value of ReadOnly.
@@ -3098,14 +3041,14 @@ func (s *ParticipantResource) GetReadOnly() bool {
 	return s.ReadOnly
 }
 
-// GetPolicies returns the value of Policies.
-func (s *ParticipantResource) GetPolicies() []string {
-	return s.Policies
+// GetPermissions returns the value of Permissions.
+func (s *ParticipantResource) GetPermissions() []string {
+	return s.Permissions
 }
 
-// GetRemoteAddress returns the value of RemoteAddress.
-func (s *ParticipantResource) GetRemoteAddress() string {
-	return s.RemoteAddress
+// GetSourceAddress returns the value of SourceAddress.
+func (s *ParticipantResource) GetSourceAddress() string {
+	return s.SourceAddress
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -3113,9 +3056,9 @@ func (s *ParticipantResource) GetCreatedAt() time.Time {
 	return s.CreatedAt
 }
 
-// SetConnectionID sets the value of ConnectionID.
-func (s *ParticipantResource) SetConnectionID(val int64) {
-	s.ConnectionID = val
+// SetID sets the value of ID.
+func (s *ParticipantResource) SetID(val int64) {
+	s.ID = val
 }
 
 // SetUser sets the value of User.
@@ -3123,9 +3066,9 @@ func (s *ParticipantResource) SetUser(val NamedIdentity) {
 	s.User = val
 }
 
-// SetClientID sets the value of ClientID.
-func (s *ParticipantResource) SetClientID(val string) {
-	s.ClientID = val
+// SetClientName sets the value of ClientName.
+func (s *ParticipantResource) SetClientName(val string) {
+	s.ClientName = val
 }
 
 // SetReadOnly sets the value of ReadOnly.
@@ -3133,19 +3076,75 @@ func (s *ParticipantResource) SetReadOnly(val bool) {
 	s.ReadOnly = val
 }
 
-// SetPolicies sets the value of Policies.
-func (s *ParticipantResource) SetPolicies(val []string) {
-	s.Policies = val
+// SetPermissions sets the value of Permissions.
+func (s *ParticipantResource) SetPermissions(val []string) {
+	s.Permissions = val
 }
 
-// SetRemoteAddress sets the value of RemoteAddress.
-func (s *ParticipantResource) SetRemoteAddress(val string) {
-	s.RemoteAddress = val
+// SetSourceAddress sets the value of SourceAddress.
+func (s *ParticipantResource) SetSourceAddress(val string) {
+	s.SourceAddress = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
 func (s *ParticipantResource) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
+}
+
+// One PeerConnection of a participant, as the session answered it. Set the answer as the remote
+// description, add the candidates, and verify the authorization before sending application data; the
+// SHA-256 of its `message` goes into `Hello.authorization_sha256`.
+// Ref: #/components/schemas/PeerConnection
+type PeerConnection struct {
+	// The PeerConnection; its 16 bytes are `peer_connection_id` of the transport protocol.
+	ID uuid.UUID `json:"id"`
+	// The session's SDP answer (RFC 8866); it holds ICE credentials, so never log it.
+	Answer string `json:"answer"`
+	// The session's ICE candidates gathered until it reported the end of its candidates, or until 2
+	// seconds after its answer.
+	Candidates []IceCandidate `json:"candidates"`
+	// The signed `PeerAuthorization` of the PeerConnection, the same one the session holds.
+	Authorization SignedMessage `json:"authorization"`
+}
+
+// GetID returns the value of ID.
+func (s *PeerConnection) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetAnswer returns the value of Answer.
+func (s *PeerConnection) GetAnswer() string {
+	return s.Answer
+}
+
+// GetCandidates returns the value of Candidates.
+func (s *PeerConnection) GetCandidates() []IceCandidate {
+	return s.Candidates
+}
+
+// GetAuthorization returns the value of Authorization.
+func (s *PeerConnection) GetAuthorization() SignedMessage {
+	return s.Authorization
+}
+
+// SetID sets the value of ID.
+func (s *PeerConnection) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetAnswer sets the value of Answer.
+func (s *PeerConnection) SetAnswer(val string) {
+	s.Answer = val
+}
+
+// SetCandidates sets the value of Candidates.
+func (s *PeerConnection) SetCandidates(val []IceCandidate) {
+	s.Candidates = val
+}
+
+// SetAuthorization sets the value of Authorization.
+func (s *PeerConnection) SetAuthorization(val SignedMessage) {
+	s.Authorization = val
 }
 
 // Ref: #/components/schemas/PrivilegeApproval
@@ -3619,16 +3618,16 @@ type PublicKey string
 // Ref: #/components/schemas/RenewParticipantRequest
 type RenewParticipantRequest struct {
 	// The current signed `PeerAuthorization` of each PeerConnection to renew.
-	PeerAuthorizations []Signed `json:"peer_authorizations"`
+	PeerAuthorizations []SignedMessage `json:"peer_authorizations"`
 }
 
 // GetPeerAuthorizations returns the value of PeerAuthorizations.
-func (s *RenewParticipantRequest) GetPeerAuthorizations() []Signed {
+func (s *RenewParticipantRequest) GetPeerAuthorizations() []SignedMessage {
 	return s.PeerAuthorizations
 }
 
 // SetPeerAuthorizations sets the value of PeerAuthorizations.
-func (s *RenewParticipantRequest) SetPeerAuthorizations(val []Signed) {
+func (s *RenewParticipantRequest) SetPeerAuthorizations(val []SignedMessage) {
 	s.PeerAuthorizations = val
 }
 
@@ -3636,11 +3635,11 @@ func (s *RenewParticipantRequest) SetPeerAuthorizations(val []Signed) {
 type RenewParticipantResponse struct {
 	LeaseExpiresAt time.Time `json:"lease_expires_at"`
 	// The renewed signed `PeerAuthorization`s, in the order of the request.
-	PeerAuthorizations []Signed `json:"peer_authorizations"`
+	PeerAuthorizations []SignedMessage `json:"peer_authorizations"`
 	// A renewed signed `Authorization`, when the current one nears its end.
-	Authorization    OptSigned        `json:"authorization"`
+	Authorization    OptSignedMessage `json:"authorization"`
 	RtcConfiguration RtcConfiguration `json:"rtc_configuration"`
-	ServiceKeys      []ServiceKey     `json:"service_keys"`
+	SigningKeys      []SigningKey     `json:"signing_keys"`
 }
 
 // GetLeaseExpiresAt returns the value of LeaseExpiresAt.
@@ -3649,12 +3648,12 @@ func (s *RenewParticipantResponse) GetLeaseExpiresAt() time.Time {
 }
 
 // GetPeerAuthorizations returns the value of PeerAuthorizations.
-func (s *RenewParticipantResponse) GetPeerAuthorizations() []Signed {
+func (s *RenewParticipantResponse) GetPeerAuthorizations() []SignedMessage {
 	return s.PeerAuthorizations
 }
 
 // GetAuthorization returns the value of Authorization.
-func (s *RenewParticipantResponse) GetAuthorization() OptSigned {
+func (s *RenewParticipantResponse) GetAuthorization() OptSignedMessage {
 	return s.Authorization
 }
 
@@ -3663,9 +3662,9 @@ func (s *RenewParticipantResponse) GetRtcConfiguration() RtcConfiguration {
 	return s.RtcConfiguration
 }
 
-// GetServiceKeys returns the value of ServiceKeys.
-func (s *RenewParticipantResponse) GetServiceKeys() []ServiceKey {
-	return s.ServiceKeys
+// GetSigningKeys returns the value of SigningKeys.
+func (s *RenewParticipantResponse) GetSigningKeys() []SigningKey {
+	return s.SigningKeys
 }
 
 // SetLeaseExpiresAt sets the value of LeaseExpiresAt.
@@ -3674,12 +3673,12 @@ func (s *RenewParticipantResponse) SetLeaseExpiresAt(val time.Time) {
 }
 
 // SetPeerAuthorizations sets the value of PeerAuthorizations.
-func (s *RenewParticipantResponse) SetPeerAuthorizations(val []Signed) {
+func (s *RenewParticipantResponse) SetPeerAuthorizations(val []SignedMessage) {
 	s.PeerAuthorizations = val
 }
 
 // SetAuthorization sets the value of Authorization.
-func (s *RenewParticipantResponse) SetAuthorization(val OptSigned) {
+func (s *RenewParticipantResponse) SetAuthorization(val OptSignedMessage) {
 	s.Authorization = val
 }
 
@@ -3688,9 +3687,9 @@ func (s *RenewParticipantResponse) SetRtcConfiguration(val RtcConfiguration) {
 	s.RtcConfiguration = val
 }
 
-// SetServiceKeys sets the value of ServiceKeys.
-func (s *RenewParticipantResponse) SetServiceKeys(val []ServiceKey) {
-	s.ServiceKeys = val
+// SetSigningKeys sets the value of SigningKeys.
+func (s *RenewParticipantResponse) SetSigningKeys(val []SigningKey) {
+	s.SigningKeys = val
 }
 
 // The ICE servers for the PeerConnections the caller starts, as W3C RTCConfiguration.
@@ -3889,54 +3888,27 @@ func (s *RunCommandResponse) SetStderrTruncated(val bool) {
 	s.StderrTruncated = val
 }
 
-// A key the service signs with, as `ServiceKeys` of the protocol.
-// Ref: #/components/schemas/ServiceKey
-type ServiceKey struct {
-	KeyID   string    `json:"key_id"`
-	Ed25519 PublicKey `json:"ed25519"`
-}
-
-// GetKeyID returns the value of KeyID.
-func (s *ServiceKey) GetKeyID() string {
-	return s.KeyID
-}
-
-// GetEd25519 returns the value of Ed25519.
-func (s *ServiceKey) GetEd25519() PublicKey {
-	return s.Ed25519
-}
-
-// SetKeyID sets the value of KeyID.
-func (s *ServiceKey) SetKeyID(val string) {
-	s.KeyID = val
-}
-
-// SetEd25519 sets the value of Ed25519.
-func (s *ServiceKey) SetEd25519(val PublicKey) {
-	s.Ed25519 = val
-}
-
 // Why a session ended. `close_requested` and `terminate_requested` follow a request; `logout` the user
-// logged out; `disconnected_timeout`, `no_client_timeout` and `max_lifetime` a time limit passed;
-// `display_exit` and `helper_lost` the session failed; `open_failed` it never opened; `access_revoked`
-// its user may no longer log in; `machine_restarted` the machine restarted; `unknown` the machine no
-// longer reports it.
+// logged out; `disconnected_timeout`, `no_participant_timeout` and `max_lifetime` a time limit passed;
+// `display_exit` and `process_lost` the session failed; `open_failed` it never opened;
+// `access_revoked` its user may no longer log in; `machine_restarted` the machine restarted; `unknown`
+// the machine no longer reports it.
 // Ref: #/components/schemas/SessionCloseReason
 type SessionCloseReason string
 
 const (
-	SessionCloseReasonCloseRequested      SessionCloseReason = "close_requested"
-	SessionCloseReasonTerminateRequested  SessionCloseReason = "terminate_requested"
-	SessionCloseReasonLogout              SessionCloseReason = "logout"
-	SessionCloseReasonDisconnectedTimeout SessionCloseReason = "disconnected_timeout"
-	SessionCloseReasonNoClientTimeout     SessionCloseReason = "no_client_timeout"
-	SessionCloseReasonMaxLifetime         SessionCloseReason = "max_lifetime"
-	SessionCloseReasonDisplayExit         SessionCloseReason = "display_exit"
-	SessionCloseReasonHelperLost          SessionCloseReason = "helper_lost"
-	SessionCloseReasonOpenFailed          SessionCloseReason = "open_failed"
-	SessionCloseReasonAccessRevoked       SessionCloseReason = "access_revoked"
-	SessionCloseReasonMachineRestarted    SessionCloseReason = "machine_restarted"
-	SessionCloseReasonUnknown             SessionCloseReason = "unknown"
+	SessionCloseReasonCloseRequested       SessionCloseReason = "close_requested"
+	SessionCloseReasonTerminateRequested   SessionCloseReason = "terminate_requested"
+	SessionCloseReasonLogout               SessionCloseReason = "logout"
+	SessionCloseReasonDisconnectedTimeout  SessionCloseReason = "disconnected_timeout"
+	SessionCloseReasonNoParticipantTimeout SessionCloseReason = "no_participant_timeout"
+	SessionCloseReasonMaxLifetime          SessionCloseReason = "max_lifetime"
+	SessionCloseReasonDisplayExit          SessionCloseReason = "display_exit"
+	SessionCloseReasonProcessLost          SessionCloseReason = "process_lost"
+	SessionCloseReasonOpenFailed           SessionCloseReason = "open_failed"
+	SessionCloseReasonAccessRevoked        SessionCloseReason = "access_revoked"
+	SessionCloseReasonMachineRestarted     SessionCloseReason = "machine_restarted"
+	SessionCloseReasonUnknown              SessionCloseReason = "unknown"
 )
 
 // AllValues returns all SessionCloseReason values.
@@ -3946,10 +3918,10 @@ func (SessionCloseReason) AllValues() []SessionCloseReason {
 		SessionCloseReasonTerminateRequested,
 		SessionCloseReasonLogout,
 		SessionCloseReasonDisconnectedTimeout,
-		SessionCloseReasonNoClientTimeout,
+		SessionCloseReasonNoParticipantTimeout,
 		SessionCloseReasonMaxLifetime,
 		SessionCloseReasonDisplayExit,
-		SessionCloseReasonHelperLost,
+		SessionCloseReasonProcessLost,
 		SessionCloseReasonOpenFailed,
 		SessionCloseReasonAccessRevoked,
 		SessionCloseReasonMachineRestarted,
@@ -3968,13 +3940,13 @@ func (s SessionCloseReason) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case SessionCloseReasonDisconnectedTimeout:
 		return []byte(s), nil
-	case SessionCloseReasonNoClientTimeout:
+	case SessionCloseReasonNoParticipantTimeout:
 		return []byte(s), nil
 	case SessionCloseReasonMaxLifetime:
 		return []byte(s), nil
 	case SessionCloseReasonDisplayExit:
 		return []byte(s), nil
-	case SessionCloseReasonHelperLost:
+	case SessionCloseReasonProcessLost:
 		return []byte(s), nil
 	case SessionCloseReasonOpenFailed:
 		return []byte(s), nil
@@ -4004,8 +3976,8 @@ func (s *SessionCloseReason) UnmarshalText(data []byte) error {
 	case SessionCloseReasonDisconnectedTimeout:
 		*s = SessionCloseReasonDisconnectedTimeout
 		return nil
-	case SessionCloseReasonNoClientTimeout:
-		*s = SessionCloseReasonNoClientTimeout
+	case SessionCloseReasonNoParticipantTimeout:
+		*s = SessionCloseReasonNoParticipantTimeout
 		return nil
 	case SessionCloseReasonMaxLifetime:
 		*s = SessionCloseReasonMaxLifetime
@@ -4013,8 +3985,8 @@ func (s *SessionCloseReason) UnmarshalText(data []byte) error {
 	case SessionCloseReasonDisplayExit:
 		*s = SessionCloseReasonDisplayExit
 		return nil
-	case SessionCloseReasonHelperLost:
-		*s = SessionCloseReasonHelperLost
+	case SessionCloseReasonProcessLost:
+		*s = SessionCloseReasonProcessLost
 		return nil
 	case SessionCloseReasonOpenFailed:
 		*s = SessionCloseReasonOpenFailed
@@ -4135,9 +4107,10 @@ type SessionResource struct {
 	State    SessionState `json:"state"`
 	// The session's desktop; null for a session without one.
 	Desktop NilDesktopState `json:"desktop"`
-	// The session can admit participants. False while its process restarts; requests that signal are then
-	// answered with `SESSION_UNAVAILABLE` and succeed again shortly.
-	ProcessRunning bool `json:"process_running"`
+	// The session's process is connected to the service, so participants can join and start
+	// PeerConnections. False while it restarts; such requests are then answered with `SESSION_UNAVAILABLE`
+	// and succeed again shortly.
+	ProcessConnected bool `json:"process_connected"`
 	// The last input of a person in the session.
 	LastInputAt NilDateTime `json:"last_input_at"`
 	// Null until the session is closed.
@@ -4176,9 +4149,9 @@ func (s *SessionResource) GetDesktop() NilDesktopState {
 	return s.Desktop
 }
 
-// GetProcessRunning returns the value of ProcessRunning.
-func (s *SessionResource) GetProcessRunning() bool {
-	return s.ProcessRunning
+// GetProcessConnected returns the value of ProcessConnected.
+func (s *SessionResource) GetProcessConnected() bool {
+	return s.ProcessConnected
 }
 
 // GetLastInputAt returns the value of LastInputAt.
@@ -4231,9 +4204,9 @@ func (s *SessionResource) SetDesktop(val NilDesktopState) {
 	s.Desktop = val
 }
 
-// SetProcessRunning sets the value of ProcessRunning.
-func (s *SessionResource) SetProcessRunning(val bool) {
-	s.ProcessRunning = val
+// SetProcessConnected sets the value of ProcessConnected.
+func (s *SessionResource) SetProcessConnected(val bool) {
+	s.ProcessConnected = val
 }
 
 // SetLastInputAt sets the value of LastInputAt.
@@ -4256,15 +4229,13 @@ func (s *SessionResource) SetClosedAt(val NilDateTime) {
 	s.ClosedAt = val
 }
 
-// `opening` starts; `online` is logged in but not in the foreground; `active` runs; `closing` is
-// ending; `closed` has ended.
+// `opening` starts; `open` runs; `closing` is ending; `closed` has ended.
 // Ref: #/components/schemas/SessionState
 type SessionState string
 
 const (
 	SessionStateOpening SessionState = "opening"
-	SessionStateOnline  SessionState = "online"
-	SessionStateActive  SessionState = "active"
+	SessionStateOpen    SessionState = "open"
 	SessionStateClosing SessionState = "closing"
 	SessionStateClosed  SessionState = "closed"
 )
@@ -4273,8 +4244,7 @@ const (
 func (SessionState) AllValues() []SessionState {
 	return []SessionState{
 		SessionStateOpening,
-		SessionStateOnline,
-		SessionStateActive,
+		SessionStateOpen,
 		SessionStateClosing,
 		SessionStateClosed,
 	}
@@ -4285,9 +4255,7 @@ func (s SessionState) MarshalText() ([]byte, error) {
 	switch s {
 	case SessionStateOpening:
 		return []byte(s), nil
-	case SessionStateOnline:
-		return []byte(s), nil
-	case SessionStateActive:
+	case SessionStateOpen:
 		return []byte(s), nil
 	case SessionStateClosing:
 		return []byte(s), nil
@@ -4304,11 +4272,8 @@ func (s *SessionState) UnmarshalText(data []byte) error {
 	case SessionStateOpening:
 		*s = SessionStateOpening
 		return nil
-	case SessionStateOnline:
-		*s = SessionStateOnline
-		return nil
-	case SessionStateActive:
-		*s = SessionStateActive
+	case SessionStateOpen:
+		*s = SessionStateOpen
 		return nil
 	case SessionStateClosing:
 		*s = SessionStateClosing
@@ -4324,8 +4289,8 @@ func (s *SessionState) UnmarshalText(data []byte) error {
 // A message the service signed: the serialized message, the key that signed it and the signature, as
 // in `SignedAuthorization` and `SignedPeerAuthorization` of the protocol. Each byte string is standard
 // Base64.
-// Ref: #/components/schemas/Signed
-type Signed struct {
+// Ref: #/components/schemas/SignedMessage
+type SignedMessage struct {
 	KeyID string `json:"key_id"`
 	// The serialized message; decode it only after the signature verified.
 	Message   []byte `json:"message"`
@@ -4333,33 +4298,60 @@ type Signed struct {
 }
 
 // GetKeyID returns the value of KeyID.
-func (s *Signed) GetKeyID() string {
+func (s *SignedMessage) GetKeyID() string {
 	return s.KeyID
 }
 
 // GetMessage returns the value of Message.
-func (s *Signed) GetMessage() []byte {
+func (s *SignedMessage) GetMessage() []byte {
 	return s.Message
 }
 
 // GetSignature returns the value of Signature.
-func (s *Signed) GetSignature() []byte {
+func (s *SignedMessage) GetSignature() []byte {
 	return s.Signature
 }
 
 // SetKeyID sets the value of KeyID.
-func (s *Signed) SetKeyID(val string) {
+func (s *SignedMessage) SetKeyID(val string) {
 	s.KeyID = val
 }
 
 // SetMessage sets the value of Message.
-func (s *Signed) SetMessage(val []byte) {
+func (s *SignedMessage) SetMessage(val []byte) {
 	s.Message = val
 }
 
 // SetSignature sets the value of Signature.
-func (s *Signed) SetSignature(val []byte) {
+func (s *SignedMessage) SetSignature(val []byte) {
 	s.Signature = val
+}
+
+// A key the service signs with, as `SigningKeys` of the protocol.
+// Ref: #/components/schemas/SigningKey
+type SigningKey struct {
+	KeyID     string    `json:"key_id"`
+	PublicKey PublicKey `json:"public_key"`
+}
+
+// GetKeyID returns the value of KeyID.
+func (s *SigningKey) GetKeyID() string {
+	return s.KeyID
+}
+
+// GetPublicKey returns the value of PublicKey.
+func (s *SigningKey) GetPublicKey() PublicKey {
+	return s.PublicKey
+}
+
+// SetKeyID sets the value of KeyID.
+func (s *SigningKey) SetKeyID(val string) {
+	s.KeyID = val
+}
+
+// SetPublicKey sets the value of PublicKey.
+func (s *SigningKey) SetPublicKey(val PublicKey) {
+	s.PublicKey = val
 }
 
 // Ref: #/components/schemas/UpdateAccountRequest

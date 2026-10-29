@@ -26,8 +26,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Why a control connection ends, and why a participant ends
-// (DetachParticipantRequest.reason).
+// Why a control connection ends.
 type CloseReason int32
 
 const (
@@ -40,8 +39,7 @@ const (
 	CloseReason_CLOSE_REASON_SERVER_SHUTDOWN CloseReason = 3
 	// The service restarts; connect again after retry_delay. Service only.
 	CloseReason_CLOSE_REASON_SERVER_UPGRADE CloseReason = 4
-	// Nothing arrived for idle_timeout. Either side. For a participant, its
-	// lease ran out.
+	// Nothing arrived for idle_timeout. Either side.
 	CloseReason_CLOSE_REASON_PING_TIMEOUT CloseReason = 5
 	// ClientHello did not arrive in time. Service only.
 	CloseReason_CLOSE_REASON_HELLO_TIMEOUT CloseReason = 6
@@ -54,25 +52,17 @@ const (
 	// key. For a machine credential it is final: the daemon stops and its
 	// machine must enroll again. Service only.
 	CloseReason_CLOSE_REASON_AUTHENTICATION_FAILED CloseReason = 9
-	// The endpoint is known but not allowed, such as a removed machine or a
-	// participant whose rights were withdrawn. Service only.
+	// The endpoint is known but not allowed, such as the daemon of a removed
+	// machine. Service only.
 	CloseReason_CLOSE_REASON_PERMISSION_DENIED CloseReason = 10
 	// The session named by the credential does not exist or has ended.
 	// Service only.
 	CloseReason_CLOSE_REASON_SESSION_NOT_FOUND CloseReason = 11
 	// A newer connection with the same identity replaced this one, such as a
 	// daemon that connected again. Service only.
-	CloseReason_CLOSE_REASON_NEW_CLIENT CloseReason = 12
-	// The session ended. The session process before it ends, and the service
-	// for the session's participants.
+	CloseReason_CLOSE_REASON_CONNECTION_REPLACED CloseReason = 12
+	// The session ends. Session process only, just before its session ends.
 	CloseReason_CLOSE_REASON_SESSION_EXIT CloseReason = 13
-	// The session's process did not connect again within
-	// Welcome.resume_grace. Service only, for the session's participants.
-	CloseReason_CLOSE_REASON_SESSION_RESTARTING CloseReason = 14
-	// The participant was ended on request, such as when it left or another
-	// member disconnected it; the session goes on. Service only, for
-	// participants.
-	CloseReason_CLOSE_REASON_DETACH_REQUEST CloseReason = 15
 	// A rule or a rate limit was broken. Either side.
 	CloseReason_CLOSE_REASON_POLICY_VIOLATION CloseReason = 16
 	// The sender failed. Either side.
@@ -100,10 +90,8 @@ var (
 		9:  "CLOSE_REASON_AUTHENTICATION_FAILED",
 		10: "CLOSE_REASON_PERMISSION_DENIED",
 		11: "CLOSE_REASON_SESSION_NOT_FOUND",
-		12: "CLOSE_REASON_NEW_CLIENT",
+		12: "CLOSE_REASON_CONNECTION_REPLACED",
 		13: "CLOSE_REASON_SESSION_EXIT",
-		14: "CLOSE_REASON_SESSION_RESTARTING",
-		15: "CLOSE_REASON_DETACH_REQUEST",
 		16: "CLOSE_REASON_POLICY_VIOLATION",
 		17: "CLOSE_REASON_INTERNAL_ERROR",
 		18: "CLOSE_REASON_OVERLOADED",
@@ -122,10 +110,8 @@ var (
 		"CLOSE_REASON_AUTHENTICATION_FAILED": 9,
 		"CLOSE_REASON_PERMISSION_DENIED":     10,
 		"CLOSE_REASON_SESSION_NOT_FOUND":     11,
-		"CLOSE_REASON_NEW_CLIENT":            12,
+		"CLOSE_REASON_CONNECTION_REPLACED":   12,
 		"CLOSE_REASON_SESSION_EXIT":          13,
-		"CLOSE_REASON_SESSION_RESTARTING":    14,
-		"CLOSE_REASON_DETACH_REQUEST":        15,
 		"CLOSE_REASON_POLICY_VIOLATION":      16,
 		"CLOSE_REASON_INTERNAL_ERROR":        17,
 		"CLOSE_REASON_OVERLOADED":            18,
@@ -158,6 +144,89 @@ func (x CloseReason) Number() protoreflect.EnumNumber {
 // Deprecated: Use CloseReason.Descriptor instead.
 func (CloseReason) EnumDescriptor() ([]byte, []int) {
 	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{0}
+}
+
+// Why a participant ends. The session learns it with DetachParticipant, and the
+// participant's user through the participant.ended event of the Fleet API.
+type ParticipantEndReason int32
+
+const (
+	ParticipantEndReason_PARTICIPANT_END_REASON_UNSPECIFIED ParticipantEndReason = 0
+	// Its user ended it.
+	ParticipantEndReason_PARTICIPANT_END_REASON_LEFT ParticipantEndReason = 1
+	// Someone else ended it, such as the owner of the session or an operator.
+	ParticipantEndReason_PARTICIPANT_END_REASON_REMOVED ParticipantEndReason = 2
+	// It was not renewed before its lease ran out.
+	ParticipantEndReason_PARTICIPANT_END_REASON_LEASE_EXPIRED ParticipantEndReason = 3
+	// Its session ended.
+	ParticipantEndReason_PARTICIPANT_END_REASON_SESSION_ENDED ParticipantEndReason = 4
+	// The session's process did not connect again within Welcome.resume_grace.
+	ParticipantEndReason_PARTICIPANT_END_REASON_SESSION_PROCESS_LOST ParticipantEndReason = 5
+	// Its user's permissions no longer grant what it holds, or the user left
+	// the project.
+	ParticipantEndReason_PARTICIPANT_END_REASON_RIGHTS_CHANGED ParticipantEndReason = 6
+	// Its machine was removed from the project.
+	ParticipantEndReason_PARTICIPANT_END_REASON_MACHINE_REMOVED ParticipantEndReason = 7
+	// The key that signed its authorization was revoked.
+	ParticipantEndReason_PARTICIPANT_END_REASON_KEY_REVOKED ParticipantEndReason = 8
+	// Its first PeerConnection did not start, so it was never handed to its
+	// client.
+	ParticipantEndReason_PARTICIPANT_END_REASON_NOT_ADMITTED ParticipantEndReason = 9
+)
+
+// Enum value maps for ParticipantEndReason.
+var (
+	ParticipantEndReason_name = map[int32]string{
+		0: "PARTICIPANT_END_REASON_UNSPECIFIED",
+		1: "PARTICIPANT_END_REASON_LEFT",
+		2: "PARTICIPANT_END_REASON_REMOVED",
+		3: "PARTICIPANT_END_REASON_LEASE_EXPIRED",
+		4: "PARTICIPANT_END_REASON_SESSION_ENDED",
+		5: "PARTICIPANT_END_REASON_SESSION_PROCESS_LOST",
+		6: "PARTICIPANT_END_REASON_RIGHTS_CHANGED",
+		7: "PARTICIPANT_END_REASON_MACHINE_REMOVED",
+		8: "PARTICIPANT_END_REASON_KEY_REVOKED",
+		9: "PARTICIPANT_END_REASON_NOT_ADMITTED",
+	}
+	ParticipantEndReason_value = map[string]int32{
+		"PARTICIPANT_END_REASON_UNSPECIFIED":          0,
+		"PARTICIPANT_END_REASON_LEFT":                 1,
+		"PARTICIPANT_END_REASON_REMOVED":              2,
+		"PARTICIPANT_END_REASON_LEASE_EXPIRED":        3,
+		"PARTICIPANT_END_REASON_SESSION_ENDED":        4,
+		"PARTICIPANT_END_REASON_SESSION_PROCESS_LOST": 5,
+		"PARTICIPANT_END_REASON_RIGHTS_CHANGED":       6,
+		"PARTICIPANT_END_REASON_MACHINE_REMOVED":      7,
+		"PARTICIPANT_END_REASON_KEY_REVOKED":          8,
+		"PARTICIPANT_END_REASON_NOT_ADMITTED":         9,
+	}
+)
+
+func (x ParticipantEndReason) Enum() *ParticipantEndReason {
+	p := new(ParticipantEndReason)
+	*p = x
+	return p
+}
+
+func (x ParticipantEndReason) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ParticipantEndReason) Descriptor() protoreflect.EnumDescriptor {
+	return file_leaflow_fleet_control_v1_control_proto_enumTypes[1].Descriptor()
+}
+
+func (ParticipantEndReason) Type() protoreflect.EnumType {
+	return &file_leaflow_fleet_control_v1_control_proto_enumTypes[1]
+}
+
+func (x ParticipantEndReason) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ParticipantEndReason.Descriptor instead.
+func (ParticipantEndReason) EnumDescriptor() ([]byte, []int) {
+	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{1}
 }
 
 // A message from an endpoint.
@@ -399,7 +468,7 @@ type ServerMessage struct {
 	//	*ServerMessage_CallCancel
 	//	*ServerMessage_Signal
 	//	*ServerMessage_Migration
-	//	*ServerMessage_ServiceKeys
+	//	*ServerMessage_SigningKeys
 	//	*ServerMessage_Close
 	//	*ServerMessage_Fragment
 	Message       isServerMessage_Message `protobuf_oneof:"message"`
@@ -525,10 +594,10 @@ func (x *ServerMessage) GetMigration() *v11.Migration {
 	return nil
 }
 
-func (x *ServerMessage) GetServiceKeys() *ServiceKeys {
+func (x *ServerMessage) GetSigningKeys() *SigningKeys {
 	if x != nil {
-		if x, ok := x.Message.(*ServerMessage_ServiceKeys); ok {
-			return x.ServiceKeys
+		if x, ok := x.Message.(*ServerMessage_SigningKeys); ok {
+			return x.SigningKeys
 		}
 	}
 	return nil
@@ -603,9 +672,9 @@ type ServerMessage_Migration struct {
 	Migration *v11.Migration `protobuf:"bytes,9,opt,name=migration,proto3,oneof"`
 }
 
-type ServerMessage_ServiceKeys struct {
+type ServerMessage_SigningKeys struct {
 	// The keys the service signs with, after they changed.
-	ServiceKeys *ServiceKeys `protobuf:"bytes,10,opt,name=service_keys,json=serviceKeys,proto3,oneof"`
+	SigningKeys *SigningKeys `protobuf:"bytes,10,opt,name=signing_keys,json=signingKeys,proto3,oneof"`
 }
 
 type ServerMessage_Close struct {
@@ -636,7 +705,7 @@ func (*ServerMessage_Signal) isServerMessage_Message() {}
 
 func (*ServerMessage_Migration) isServerMessage_Message() {}
 
-func (*ServerMessage_ServiceKeys) isServerMessage_Message() {}
+func (*ServerMessage_SigningKeys) isServerMessage_Message() {}
 
 func (*ServerMessage_Close) isServerMessage_Message() {}
 
@@ -1154,7 +1223,7 @@ type Welcome struct {
 	// The session. Session processes only.
 	SessionId string `protobuf:"bytes,3,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	// The keys the service signs with.
-	ServiceKeys *ServiceKeys `protobuf:"bytes,4,opt,name=service_keys,json=serviceKeys,proto3" json:"service_keys,omitempty"`
+	SigningKeys *SigningKeys `protobuf:"bytes,4,opt,name=signing_keys,json=signingKeys,proto3" json:"signing_keys,omitempty"`
 	// How long the service keeps the session's participants when this connection
 	// drops. Session processes only.
 	ResumeGrace *durationpb.Duration `protobuf:"bytes,5,opt,name=resume_grace,json=resumeGrace,proto3" json:"resume_grace,omitempty"`
@@ -1216,9 +1285,9 @@ func (x *Welcome) GetSessionId() string {
 	return ""
 }
 
-func (x *Welcome) GetServiceKeys() *ServiceKeys {
+func (x *Welcome) GetSigningKeys() *SigningKeys {
 	if x != nil {
-		return x.ServiceKeys
+		return x.SigningKeys
 	}
 	return nil
 }
@@ -1238,7 +1307,7 @@ func (x *Welcome) GetResumed() bool {
 }
 
 // The keys the service signs with, all of them. Replaces the previous set.
-type ServiceKeys struct {
+type SigningKeys struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// At most 8.
 	Keys          []*PublicKey `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys,omitempty"`
@@ -1246,20 +1315,20 @@ type ServiceKeys struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ServiceKeys) Reset() {
-	*x = ServiceKeys{}
+func (x *SigningKeys) Reset() {
+	*x = SigningKeys{}
 	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ServiceKeys) String() string {
+func (x *SigningKeys) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ServiceKeys) ProtoMessage() {}
+func (*SigningKeys) ProtoMessage() {}
 
-func (x *ServiceKeys) ProtoReflect() protoreflect.Message {
+func (x *SigningKeys) ProtoReflect() protoreflect.Message {
 	mi := &file_leaflow_fleet_control_v1_control_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1271,12 +1340,12 @@ func (x *ServiceKeys) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ServiceKeys.ProtoReflect.Descriptor instead.
-func (*ServiceKeys) Descriptor() ([]byte, []int) {
+// Deprecated: Use SigningKeys.ProtoReflect.Descriptor instead.
+func (*SigningKeys) Descriptor() ([]byte, []int) {
 	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *ServiceKeys) GetKeys() []*PublicKey {
+func (x *SigningKeys) GetKeys() []*PublicKey {
 	if x != nil {
 		return x.Keys
 	}
@@ -1373,16 +1442,16 @@ type Authorization struct {
 	MachineId string `protobuf:"bytes,2,opt,name=machine_id,json=machineId,proto3" json:"machine_id,omitempty"`
 	// The session.
 	SessionId string `protobuf:"bytes,3,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	// The participant's connection.
-	ConnectionId uint64 `protobuf:"varint,4,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
+	// The participant.
+	ParticipantId uint64 `protobuf:"varint,4,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
 	// The platform user the participant acts for.
 	UserId string `protobuf:"bytes,5,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	// The user's name, plain text.
 	DisplayName string `protobuf:"bytes,6,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	// The label the client gave itself when it created the participant, such
+	// The name the client gave itself when it created the participant, such
 	// as "console" or "assistant", at most 64 bytes. Neither unique nor
 	// verified: it lets people tell participants apart and grants nothing.
-	ClientId string `protobuf:"bytes,7,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	ClientName string `protobuf:"bytes,7,opt,name=client_name,json=clientName,proto3" json:"client_name,omitempty"`
 	// The participant's Ed25519 public key, 32 bytes. The session accepts only
 	// a PeerConnection whose participant Hello is signed with it
 	// (leaflow.fleet.transport.v1).
@@ -1455,9 +1524,9 @@ func (x *Authorization) GetSessionId() string {
 	return ""
 }
 
-func (x *Authorization) GetConnectionId() uint64 {
+func (x *Authorization) GetParticipantId() uint64 {
 	if x != nil {
-		return x.ConnectionId
+		return x.ParticipantId
 	}
 	return 0
 }
@@ -1476,9 +1545,9 @@ func (x *Authorization) GetDisplayName() string {
 	return ""
 }
 
-func (x *Authorization) GetClientId() string {
+func (x *Authorization) GetClientName() string {
 	if x != nil {
-		return x.ClientId
+		return x.ClientName
 	}
 	return ""
 }
@@ -1982,11 +2051,10 @@ func (*UpdateParticipantAuthorizationResponse) Descriptor() ([]byte, []int) {
 // The request of DetachParticipant.
 type DetachParticipantRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The participant's connection.
-	ConnectionId uint64 `protobuf:"varint,1,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
-	// Why it ends, such as DETACH_REQUEST when it was ended through the Fleet
-	// API or PING_TIMEOUT when its lease ran out.
-	Reason        CloseReason `protobuf:"varint,2,opt,name=reason,proto3,enum=leaflow.fleet.control.v1.CloseReason" json:"reason,omitempty"`
+	// The participant.
+	ParticipantId uint64 `protobuf:"varint,1,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
+	// Why it ends.
+	Reason        ParticipantEndReason `protobuf:"varint,2,opt,name=reason,proto3,enum=leaflow.fleet.control.v1.ParticipantEndReason" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2021,18 +2089,18 @@ func (*DetachParticipantRequest) Descriptor() ([]byte, []int) {
 	return file_leaflow_fleet_control_v1_control_proto_rawDescGZIP(), []int{21}
 }
 
-func (x *DetachParticipantRequest) GetConnectionId() uint64 {
+func (x *DetachParticipantRequest) GetParticipantId() uint64 {
 	if x != nil {
-		return x.ConnectionId
+		return x.ParticipantId
 	}
 	return 0
 }
 
-func (x *DetachParticipantRequest) GetReason() CloseReason {
+func (x *DetachParticipantRequest) GetReason() ParticipantEndReason {
 	if x != nil {
 		return x.Reason
 	}
-	return CloseReason_CLOSE_REASON_UNSPECIFIED
+	return ParticipantEndReason_PARTICIPANT_END_REASON_UNSPECIFIED
 }
 
 // The response of DetachParticipant.
@@ -2104,8 +2172,8 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"callCancel\x12<\n" +
 	"\x06signal\x18\b \x01(\v2\".leaflow.fleet.transport.v1.SignalH\x00R\x06signal\x12E\n" +
 	"\tmigration\x18\t \x01(\v2%.leaflow.fleet.transport.v1.MigrationH\x00R\tmigration\x12J\n" +
-	"\fservice_keys\x18\n" +
-	" \x01(\v2%.leaflow.fleet.control.v1.ServiceKeysH\x00R\vserviceKeys\x127\n" +
+	"\fsigning_keys\x18\n" +
+	" \x01(\v2%.leaflow.fleet.control.v1.SigningKeysH\x00R\vsigningKeys\x127\n" +
 	"\x05close\x18\v \x01(\v2\x1f.leaflow.fleet.control.v1.CloseH\x00R\x05close\x12@\n" +
 	"\bfragment\x18\f \x01(\v2\".leaflow.fleet.control.v1.FragmentH\x00R\bfragmentB\t\n" +
 	"\amessage\"\xf2\x02\n" +
@@ -2157,25 +2225,26 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"machine_id\x18\x02 \x01(\tR\tmachineId\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x03 \x01(\tR\tsessionId\x12H\n" +
-	"\fservice_keys\x18\x04 \x01(\v2%.leaflow.fleet.control.v1.ServiceKeysR\vserviceKeys\x12<\n" +
+	"\fsigning_keys\x18\x04 \x01(\v2%.leaflow.fleet.control.v1.SigningKeysR\vsigningKeys\x12<\n" +
 	"\fresume_grace\x18\x05 \x01(\v2\x19.google.protobuf.DurationR\vresumeGrace\x12\x18\n" +
 	"\aresumed\x18\x06 \x01(\bR\aresumed\"F\n" +
-	"\vServiceKeys\x127\n" +
+	"\vSigningKeys\x127\n" +
 	"\x04keys\x18\x01 \x03(\v2#.leaflow.fleet.control.v1.PublicKeyR\x04keys\"E\n" +
 	"\tPublicKey\x12\x15\n" +
 	"\x06key_id\x18\x01 \x01(\tR\x05keyId\x12\x1a\n" +
 	"\aed25519\x18\x02 \x01(\fH\x00R\aed25519B\x05\n" +
-	"\x03key\"\xdc\x03\n" +
+	"\x03key\"\xe2\x03\n" +
 	"\rAuthorization\x12\x16\n" +
 	"\x06issuer\x18\x01 \x01(\tR\x06issuer\x12\x1d\n" +
 	"\n" +
 	"machine_id\x18\x02 \x01(\tR\tmachineId\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x03 \x01(\tR\tsessionId\x12#\n" +
-	"\rconnection_id\x18\x04 \x01(\x04R\fconnectionId\x12\x17\n" +
+	"session_id\x18\x03 \x01(\tR\tsessionId\x12%\n" +
+	"\x0eparticipant_id\x18\x04 \x01(\x04R\rparticipantId\x12\x17\n" +
 	"\auser_id\x18\x05 \x01(\tR\x06userId\x12!\n" +
-	"\fdisplay_name\x18\x06 \x01(\tR\vdisplayName\x12\x1b\n" +
-	"\tclient_id\x18\a \x01(\tR\bclientId\x124\n" +
+	"\fdisplay_name\x18\x06 \x01(\tR\vdisplayName\x12\x1f\n" +
+	"\vclient_name\x18\a \x01(\tR\n" +
+	"clientName\x124\n" +
 	"\x16participant_public_key\x18\t \x01(\fR\x14participantPublicKey\x12\x1b\n" +
 	"\tread_only\x18\v \x01(\bR\breadOnly\x120\n" +
 	"\bpolicies\x18\f \x03(\v2\x14.google.protobuf.AnyR\bpolicies\x127\n" +
@@ -2205,11 +2274,11 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\x19AttachParticipantResponse\"|\n" +
 	"%UpdateParticipantAuthorizationRequest\x12S\n" +
 	"\rauthorization\x18\x01 \x01(\v2-.leaflow.fleet.control.v1.SignedAuthorizationR\rauthorization\"(\n" +
-	"&UpdateParticipantAuthorizationResponse\"~\n" +
-	"\x18DetachParticipantRequest\x12#\n" +
-	"\rconnection_id\x18\x01 \x01(\x04R\fconnectionId\x12=\n" +
-	"\x06reason\x18\x02 \x01(\x0e2%.leaflow.fleet.control.v1.CloseReasonR\x06reason\"\x1b\n" +
-	"\x19DetachParticipantResponse*\x9c\x05\n" +
+	"&UpdateParticipantAuthorizationResponse\"\x89\x01\n" +
+	"\x18DetachParticipantRequest\x12%\n" +
+	"\x0eparticipant_id\x18\x01 \x01(\x04R\rparticipantId\x12F\n" +
+	"\x06reason\x18\x02 \x01(\x0e2..leaflow.fleet.control.v1.ParticipantEndReasonR\x06reason\"\x1b\n" +
+	"\x19DetachParticipantResponse*\xdf\x04\n" +
 	"\vCloseReason\x12\x1c\n" +
 	"\x18CLOSE_REASON_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11CLOSE_REASON_DONE\x10\x01\x12\x1c\n" +
@@ -2223,15 +2292,24 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\"CLOSE_REASON_AUTHENTICATION_FAILED\x10\t\x12\"\n" +
 	"\x1eCLOSE_REASON_PERMISSION_DENIED\x10\n" +
 	"\x12\"\n" +
-	"\x1eCLOSE_REASON_SESSION_NOT_FOUND\x10\v\x12\x1b\n" +
-	"\x17CLOSE_REASON_NEW_CLIENT\x10\f\x12\x1d\n" +
-	"\x19CLOSE_REASON_SESSION_EXIT\x10\r\x12#\n" +
-	"\x1fCLOSE_REASON_SESSION_RESTARTING\x10\x0e\x12\x1f\n" +
-	"\x1bCLOSE_REASON_DETACH_REQUEST\x10\x0f\x12!\n" +
+	"\x1eCLOSE_REASON_SESSION_NOT_FOUND\x10\v\x12$\n" +
+	" CLOSE_REASON_CONNECTION_REPLACED\x10\f\x12\x1d\n" +
+	"\x19CLOSE_REASON_SESSION_EXIT\x10\r\x12!\n" +
 	"\x1dCLOSE_REASON_POLICY_VIOLATION\x10\x10\x12\x1f\n" +
 	"\x1bCLOSE_REASON_INTERNAL_ERROR\x10\x11\x12\x1b\n" +
 	"\x17CLOSE_REASON_OVERLOADED\x10\x12\x12\"\n" +
-	"\x1eCLOSE_REASON_ENDPOINT_TOO_SLOW\x10\x132\xc7\x03\n" +
+	"\x1eCLOSE_REASON_ENDPOINT_TOO_SLOW\x10\x13*\xb0\x03\n" +
+	"\x14ParticipantEndReason\x12&\n" +
+	"\"PARTICIPANT_END_REASON_UNSPECIFIED\x10\x00\x12\x1f\n" +
+	"\x1bPARTICIPANT_END_REASON_LEFT\x10\x01\x12\"\n" +
+	"\x1ePARTICIPANT_END_REASON_REMOVED\x10\x02\x12(\n" +
+	"$PARTICIPANT_END_REASON_LEASE_EXPIRED\x10\x03\x12(\n" +
+	"$PARTICIPANT_END_REASON_SESSION_ENDED\x10\x04\x12/\n" +
+	"+PARTICIPANT_END_REASON_SESSION_PROCESS_LOST\x10\x05\x12)\n" +
+	"%PARTICIPANT_END_REASON_RIGHTS_CHANGED\x10\x06\x12*\n" +
+	"&PARTICIPANT_END_REASON_MACHINE_REMOVED\x10\a\x12&\n" +
+	"\"PARTICIPANT_END_REASON_KEY_REVOKED\x10\b\x12'\n" +
+	"#PARTICIPANT_END_REASON_NOT_ADMITTED\x10\t2\xc7\x03\n" +
 	"\x12ParticipantService\x12\x81\x01\n" +
 	"\x11AttachParticipant\x122.leaflow.fleet.control.v1.AttachParticipantRequest\x1a3.leaflow.fleet.control.v1.AttachParticipantResponse\"\x03\x90\x02\x02\x12\xa8\x01\n" +
 	"\x1eUpdateParticipantAuthorization\x12?.leaflow.fleet.control.v1.UpdateParticipantAuthorizationRequest\x1a@.leaflow.fleet.control.v1.UpdateParticipantAuthorizationResponse\"\x03\x90\x02\x02\x12\x81\x01\n" +
@@ -2249,89 +2327,90 @@ func file_leaflow_fleet_control_v1_control_proto_rawDescGZIP() []byte {
 	return file_leaflow_fleet_control_v1_control_proto_rawDescData
 }
 
-var file_leaflow_fleet_control_v1_control_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_leaflow_fleet_control_v1_control_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_leaflow_fleet_control_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_leaflow_fleet_control_v1_control_proto_goTypes = []any{
 	(CloseReason)(0),                               // 0: leaflow.fleet.control.v1.CloseReason
-	(*ClientMessage)(nil),                          // 1: leaflow.fleet.control.v1.ClientMessage
-	(*ServerMessage)(nil),                          // 2: leaflow.fleet.control.v1.ServerMessage
-	(*ServerHello)(nil),                            // 3: leaflow.fleet.control.v1.ServerHello
-	(*ClientHello)(nil),                            // 4: leaflow.fleet.control.v1.ClientHello
-	(*MachineCredential)(nil),                      // 5: leaflow.fleet.control.v1.MachineCredential
-	(*EnrollmentCredential)(nil),                   // 6: leaflow.fleet.control.v1.EnrollmentCredential
-	(*SessionCredential)(nil),                      // 7: leaflow.fleet.control.v1.SessionCredential
-	(*SessionDelegation)(nil),                      // 8: leaflow.fleet.control.v1.SessionDelegation
-	(*Welcome)(nil),                                // 9: leaflow.fleet.control.v1.Welcome
-	(*ServiceKeys)(nil),                            // 10: leaflow.fleet.control.v1.ServiceKeys
-	(*PublicKey)(nil),                              // 11: leaflow.fleet.control.v1.PublicKey
-	(*Authorization)(nil),                          // 12: leaflow.fleet.control.v1.Authorization
-	(*SignedAuthorization)(nil),                    // 13: leaflow.fleet.control.v1.SignedAuthorization
-	(*Ping)(nil),                                   // 14: leaflow.fleet.control.v1.Ping
-	(*Pong)(nil),                                   // 15: leaflow.fleet.control.v1.Pong
-	(*Fragment)(nil),                               // 16: leaflow.fleet.control.v1.Fragment
-	(*Close)(nil),                                  // 17: leaflow.fleet.control.v1.Close
-	(*AttachParticipantRequest)(nil),               // 18: leaflow.fleet.control.v1.AttachParticipantRequest
-	(*AttachParticipantResponse)(nil),              // 19: leaflow.fleet.control.v1.AttachParticipantResponse
-	(*UpdateParticipantAuthorizationRequest)(nil),  // 20: leaflow.fleet.control.v1.UpdateParticipantAuthorizationRequest
-	(*UpdateParticipantAuthorizationResponse)(nil), // 21: leaflow.fleet.control.v1.UpdateParticipantAuthorizationResponse
-	(*DetachParticipantRequest)(nil),               // 22: leaflow.fleet.control.v1.DetachParticipantRequest
-	(*DetachParticipantResponse)(nil),              // 23: leaflow.fleet.control.v1.DetachParticipantResponse
-	(*v1.Call)(nil),                                // 24: leaflow.fleet.rpc.v1.Call
-	(*v1.CallResult)(nil),                          // 25: leaflow.fleet.rpc.v1.CallResult
-	(*v1.CallCancel)(nil),                          // 26: leaflow.fleet.rpc.v1.CallCancel
-	(*v11.Signal)(nil),                             // 27: leaflow.fleet.transport.v1.Signal
-	(*v11.Migration)(nil),                          // 28: leaflow.fleet.transport.v1.Migration
-	(*durationpb.Duration)(nil),                    // 29: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil),                  // 30: google.protobuf.Timestamp
-	(*anypb.Any)(nil),                              // 31: google.protobuf.Any
+	(ParticipantEndReason)(0),                      // 1: leaflow.fleet.control.v1.ParticipantEndReason
+	(*ClientMessage)(nil),                          // 2: leaflow.fleet.control.v1.ClientMessage
+	(*ServerMessage)(nil),                          // 3: leaflow.fleet.control.v1.ServerMessage
+	(*ServerHello)(nil),                            // 4: leaflow.fleet.control.v1.ServerHello
+	(*ClientHello)(nil),                            // 5: leaflow.fleet.control.v1.ClientHello
+	(*MachineCredential)(nil),                      // 6: leaflow.fleet.control.v1.MachineCredential
+	(*EnrollmentCredential)(nil),                   // 7: leaflow.fleet.control.v1.EnrollmentCredential
+	(*SessionCredential)(nil),                      // 8: leaflow.fleet.control.v1.SessionCredential
+	(*SessionDelegation)(nil),                      // 9: leaflow.fleet.control.v1.SessionDelegation
+	(*Welcome)(nil),                                // 10: leaflow.fleet.control.v1.Welcome
+	(*SigningKeys)(nil),                            // 11: leaflow.fleet.control.v1.SigningKeys
+	(*PublicKey)(nil),                              // 12: leaflow.fleet.control.v1.PublicKey
+	(*Authorization)(nil),                          // 13: leaflow.fleet.control.v1.Authorization
+	(*SignedAuthorization)(nil),                    // 14: leaflow.fleet.control.v1.SignedAuthorization
+	(*Ping)(nil),                                   // 15: leaflow.fleet.control.v1.Ping
+	(*Pong)(nil),                                   // 16: leaflow.fleet.control.v1.Pong
+	(*Fragment)(nil),                               // 17: leaflow.fleet.control.v1.Fragment
+	(*Close)(nil),                                  // 18: leaflow.fleet.control.v1.Close
+	(*AttachParticipantRequest)(nil),               // 19: leaflow.fleet.control.v1.AttachParticipantRequest
+	(*AttachParticipantResponse)(nil),              // 20: leaflow.fleet.control.v1.AttachParticipantResponse
+	(*UpdateParticipantAuthorizationRequest)(nil),  // 21: leaflow.fleet.control.v1.UpdateParticipantAuthorizationRequest
+	(*UpdateParticipantAuthorizationResponse)(nil), // 22: leaflow.fleet.control.v1.UpdateParticipantAuthorizationResponse
+	(*DetachParticipantRequest)(nil),               // 23: leaflow.fleet.control.v1.DetachParticipantRequest
+	(*DetachParticipantResponse)(nil),              // 24: leaflow.fleet.control.v1.DetachParticipantResponse
+	(*v1.Call)(nil),                                // 25: leaflow.fleet.rpc.v1.Call
+	(*v1.CallResult)(nil),                          // 26: leaflow.fleet.rpc.v1.CallResult
+	(*v1.CallCancel)(nil),                          // 27: leaflow.fleet.rpc.v1.CallCancel
+	(*v11.Signal)(nil),                             // 28: leaflow.fleet.transport.v1.Signal
+	(*v11.Migration)(nil),                          // 29: leaflow.fleet.transport.v1.Migration
+	(*durationpb.Duration)(nil),                    // 30: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil),                  // 31: google.protobuf.Timestamp
+	(*anypb.Any)(nil),                              // 32: google.protobuf.Any
 }
 var file_leaflow_fleet_control_v1_control_proto_depIdxs = []int32{
-	4,  // 0: leaflow.fleet.control.v1.ClientMessage.client_hello:type_name -> leaflow.fleet.control.v1.ClientHello
-	14, // 1: leaflow.fleet.control.v1.ClientMessage.ping:type_name -> leaflow.fleet.control.v1.Ping
-	15, // 2: leaflow.fleet.control.v1.ClientMessage.pong:type_name -> leaflow.fleet.control.v1.Pong
-	24, // 3: leaflow.fleet.control.v1.ClientMessage.call:type_name -> leaflow.fleet.rpc.v1.Call
-	25, // 4: leaflow.fleet.control.v1.ClientMessage.call_result:type_name -> leaflow.fleet.rpc.v1.CallResult
-	26, // 5: leaflow.fleet.control.v1.ClientMessage.call_cancel:type_name -> leaflow.fleet.rpc.v1.CallCancel
-	27, // 6: leaflow.fleet.control.v1.ClientMessage.signal:type_name -> leaflow.fleet.transport.v1.Signal
-	28, // 7: leaflow.fleet.control.v1.ClientMessage.migration:type_name -> leaflow.fleet.transport.v1.Migration
-	17, // 8: leaflow.fleet.control.v1.ClientMessage.close:type_name -> leaflow.fleet.control.v1.Close
-	16, // 9: leaflow.fleet.control.v1.ClientMessage.fragment:type_name -> leaflow.fleet.control.v1.Fragment
-	3,  // 10: leaflow.fleet.control.v1.ServerMessage.server_hello:type_name -> leaflow.fleet.control.v1.ServerHello
-	9,  // 11: leaflow.fleet.control.v1.ServerMessage.welcome:type_name -> leaflow.fleet.control.v1.Welcome
-	14, // 12: leaflow.fleet.control.v1.ServerMessage.ping:type_name -> leaflow.fleet.control.v1.Ping
-	15, // 13: leaflow.fleet.control.v1.ServerMessage.pong:type_name -> leaflow.fleet.control.v1.Pong
-	24, // 14: leaflow.fleet.control.v1.ServerMessage.call:type_name -> leaflow.fleet.rpc.v1.Call
-	25, // 15: leaflow.fleet.control.v1.ServerMessage.call_result:type_name -> leaflow.fleet.rpc.v1.CallResult
-	26, // 16: leaflow.fleet.control.v1.ServerMessage.call_cancel:type_name -> leaflow.fleet.rpc.v1.CallCancel
-	27, // 17: leaflow.fleet.control.v1.ServerMessage.signal:type_name -> leaflow.fleet.transport.v1.Signal
-	28, // 18: leaflow.fleet.control.v1.ServerMessage.migration:type_name -> leaflow.fleet.transport.v1.Migration
-	10, // 19: leaflow.fleet.control.v1.ServerMessage.service_keys:type_name -> leaflow.fleet.control.v1.ServiceKeys
-	17, // 20: leaflow.fleet.control.v1.ServerMessage.close:type_name -> leaflow.fleet.control.v1.Close
-	16, // 21: leaflow.fleet.control.v1.ServerMessage.fragment:type_name -> leaflow.fleet.control.v1.Fragment
-	29, // 22: leaflow.fleet.control.v1.ServerHello.ping_interval:type_name -> google.protobuf.Duration
-	29, // 23: leaflow.fleet.control.v1.ServerHello.idle_timeout:type_name -> google.protobuf.Duration
-	5,  // 24: leaflow.fleet.control.v1.ClientHello.machine:type_name -> leaflow.fleet.control.v1.MachineCredential
-	6,  // 25: leaflow.fleet.control.v1.ClientHello.enrollment:type_name -> leaflow.fleet.control.v1.EnrollmentCredential
-	7,  // 26: leaflow.fleet.control.v1.ClientHello.session:type_name -> leaflow.fleet.control.v1.SessionCredential
-	30, // 27: leaflow.fleet.control.v1.SessionDelegation.issued_at:type_name -> google.protobuf.Timestamp
-	30, // 28: leaflow.fleet.control.v1.SessionDelegation.expires_at:type_name -> google.protobuf.Timestamp
-	10, // 29: leaflow.fleet.control.v1.Welcome.service_keys:type_name -> leaflow.fleet.control.v1.ServiceKeys
-	29, // 30: leaflow.fleet.control.v1.Welcome.resume_grace:type_name -> google.protobuf.Duration
-	11, // 31: leaflow.fleet.control.v1.ServiceKeys.keys:type_name -> leaflow.fleet.control.v1.PublicKey
-	31, // 32: leaflow.fleet.control.v1.Authorization.policies:type_name -> google.protobuf.Any
-	30, // 33: leaflow.fleet.control.v1.Authorization.issued_at:type_name -> google.protobuf.Timestamp
-	30, // 34: leaflow.fleet.control.v1.Authorization.expires_at:type_name -> google.protobuf.Timestamp
+	5,  // 0: leaflow.fleet.control.v1.ClientMessage.client_hello:type_name -> leaflow.fleet.control.v1.ClientHello
+	15, // 1: leaflow.fleet.control.v1.ClientMessage.ping:type_name -> leaflow.fleet.control.v1.Ping
+	16, // 2: leaflow.fleet.control.v1.ClientMessage.pong:type_name -> leaflow.fleet.control.v1.Pong
+	25, // 3: leaflow.fleet.control.v1.ClientMessage.call:type_name -> leaflow.fleet.rpc.v1.Call
+	26, // 4: leaflow.fleet.control.v1.ClientMessage.call_result:type_name -> leaflow.fleet.rpc.v1.CallResult
+	27, // 5: leaflow.fleet.control.v1.ClientMessage.call_cancel:type_name -> leaflow.fleet.rpc.v1.CallCancel
+	28, // 6: leaflow.fleet.control.v1.ClientMessage.signal:type_name -> leaflow.fleet.transport.v1.Signal
+	29, // 7: leaflow.fleet.control.v1.ClientMessage.migration:type_name -> leaflow.fleet.transport.v1.Migration
+	18, // 8: leaflow.fleet.control.v1.ClientMessage.close:type_name -> leaflow.fleet.control.v1.Close
+	17, // 9: leaflow.fleet.control.v1.ClientMessage.fragment:type_name -> leaflow.fleet.control.v1.Fragment
+	4,  // 10: leaflow.fleet.control.v1.ServerMessage.server_hello:type_name -> leaflow.fleet.control.v1.ServerHello
+	10, // 11: leaflow.fleet.control.v1.ServerMessage.welcome:type_name -> leaflow.fleet.control.v1.Welcome
+	15, // 12: leaflow.fleet.control.v1.ServerMessage.ping:type_name -> leaflow.fleet.control.v1.Ping
+	16, // 13: leaflow.fleet.control.v1.ServerMessage.pong:type_name -> leaflow.fleet.control.v1.Pong
+	25, // 14: leaflow.fleet.control.v1.ServerMessage.call:type_name -> leaflow.fleet.rpc.v1.Call
+	26, // 15: leaflow.fleet.control.v1.ServerMessage.call_result:type_name -> leaflow.fleet.rpc.v1.CallResult
+	27, // 16: leaflow.fleet.control.v1.ServerMessage.call_cancel:type_name -> leaflow.fleet.rpc.v1.CallCancel
+	28, // 17: leaflow.fleet.control.v1.ServerMessage.signal:type_name -> leaflow.fleet.transport.v1.Signal
+	29, // 18: leaflow.fleet.control.v1.ServerMessage.migration:type_name -> leaflow.fleet.transport.v1.Migration
+	11, // 19: leaflow.fleet.control.v1.ServerMessage.signing_keys:type_name -> leaflow.fleet.control.v1.SigningKeys
+	18, // 20: leaflow.fleet.control.v1.ServerMessage.close:type_name -> leaflow.fleet.control.v1.Close
+	17, // 21: leaflow.fleet.control.v1.ServerMessage.fragment:type_name -> leaflow.fleet.control.v1.Fragment
+	30, // 22: leaflow.fleet.control.v1.ServerHello.ping_interval:type_name -> google.protobuf.Duration
+	30, // 23: leaflow.fleet.control.v1.ServerHello.idle_timeout:type_name -> google.protobuf.Duration
+	6,  // 24: leaflow.fleet.control.v1.ClientHello.machine:type_name -> leaflow.fleet.control.v1.MachineCredential
+	7,  // 25: leaflow.fleet.control.v1.ClientHello.enrollment:type_name -> leaflow.fleet.control.v1.EnrollmentCredential
+	8,  // 26: leaflow.fleet.control.v1.ClientHello.session:type_name -> leaflow.fleet.control.v1.SessionCredential
+	31, // 27: leaflow.fleet.control.v1.SessionDelegation.issued_at:type_name -> google.protobuf.Timestamp
+	31, // 28: leaflow.fleet.control.v1.SessionDelegation.expires_at:type_name -> google.protobuf.Timestamp
+	11, // 29: leaflow.fleet.control.v1.Welcome.signing_keys:type_name -> leaflow.fleet.control.v1.SigningKeys
+	30, // 30: leaflow.fleet.control.v1.Welcome.resume_grace:type_name -> google.protobuf.Duration
+	12, // 31: leaflow.fleet.control.v1.SigningKeys.keys:type_name -> leaflow.fleet.control.v1.PublicKey
+	32, // 32: leaflow.fleet.control.v1.Authorization.policies:type_name -> google.protobuf.Any
+	31, // 33: leaflow.fleet.control.v1.Authorization.issued_at:type_name -> google.protobuf.Timestamp
+	31, // 34: leaflow.fleet.control.v1.Authorization.expires_at:type_name -> google.protobuf.Timestamp
 	0,  // 35: leaflow.fleet.control.v1.Close.reason:type_name -> leaflow.fleet.control.v1.CloseReason
-	29, // 36: leaflow.fleet.control.v1.Close.retry_delay:type_name -> google.protobuf.Duration
-	13, // 37: leaflow.fleet.control.v1.AttachParticipantRequest.authorization:type_name -> leaflow.fleet.control.v1.SignedAuthorization
-	13, // 38: leaflow.fleet.control.v1.UpdateParticipantAuthorizationRequest.authorization:type_name -> leaflow.fleet.control.v1.SignedAuthorization
-	0,  // 39: leaflow.fleet.control.v1.DetachParticipantRequest.reason:type_name -> leaflow.fleet.control.v1.CloseReason
-	18, // 40: leaflow.fleet.control.v1.ParticipantService.AttachParticipant:input_type -> leaflow.fleet.control.v1.AttachParticipantRequest
-	20, // 41: leaflow.fleet.control.v1.ParticipantService.UpdateParticipantAuthorization:input_type -> leaflow.fleet.control.v1.UpdateParticipantAuthorizationRequest
-	22, // 42: leaflow.fleet.control.v1.ParticipantService.DetachParticipant:input_type -> leaflow.fleet.control.v1.DetachParticipantRequest
-	19, // 43: leaflow.fleet.control.v1.ParticipantService.AttachParticipant:output_type -> leaflow.fleet.control.v1.AttachParticipantResponse
-	21, // 44: leaflow.fleet.control.v1.ParticipantService.UpdateParticipantAuthorization:output_type -> leaflow.fleet.control.v1.UpdateParticipantAuthorizationResponse
-	23, // 45: leaflow.fleet.control.v1.ParticipantService.DetachParticipant:output_type -> leaflow.fleet.control.v1.DetachParticipantResponse
+	30, // 36: leaflow.fleet.control.v1.Close.retry_delay:type_name -> google.protobuf.Duration
+	14, // 37: leaflow.fleet.control.v1.AttachParticipantRequest.authorization:type_name -> leaflow.fleet.control.v1.SignedAuthorization
+	14, // 38: leaflow.fleet.control.v1.UpdateParticipantAuthorizationRequest.authorization:type_name -> leaflow.fleet.control.v1.SignedAuthorization
+	1,  // 39: leaflow.fleet.control.v1.DetachParticipantRequest.reason:type_name -> leaflow.fleet.control.v1.ParticipantEndReason
+	19, // 40: leaflow.fleet.control.v1.ParticipantService.AttachParticipant:input_type -> leaflow.fleet.control.v1.AttachParticipantRequest
+	21, // 41: leaflow.fleet.control.v1.ParticipantService.UpdateParticipantAuthorization:input_type -> leaflow.fleet.control.v1.UpdateParticipantAuthorizationRequest
+	23, // 42: leaflow.fleet.control.v1.ParticipantService.DetachParticipant:input_type -> leaflow.fleet.control.v1.DetachParticipantRequest
+	20, // 43: leaflow.fleet.control.v1.ParticipantService.AttachParticipant:output_type -> leaflow.fleet.control.v1.AttachParticipantResponse
+	22, // 44: leaflow.fleet.control.v1.ParticipantService.UpdateParticipantAuthorization:output_type -> leaflow.fleet.control.v1.UpdateParticipantAuthorizationResponse
+	24, // 45: leaflow.fleet.control.v1.ParticipantService.DetachParticipant:output_type -> leaflow.fleet.control.v1.DetachParticipantResponse
 	43, // [43:46] is the sub-list for method output_type
 	40, // [40:43] is the sub-list for method input_type
 	40, // [40:40] is the sub-list for extension type_name
@@ -2366,7 +2445,7 @@ func file_leaflow_fleet_control_v1_control_proto_init() {
 		(*ServerMessage_CallCancel)(nil),
 		(*ServerMessage_Signal)(nil),
 		(*ServerMessage_Migration)(nil),
-		(*ServerMessage_ServiceKeys)(nil),
+		(*ServerMessage_SigningKeys)(nil),
 		(*ServerMessage_Close)(nil),
 		(*ServerMessage_Fragment)(nil),
 	}
@@ -2383,7 +2462,7 @@ func file_leaflow_fleet_control_v1_control_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_leaflow_fleet_control_v1_control_proto_rawDesc), len(file_leaflow_fleet_control_v1_control_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,

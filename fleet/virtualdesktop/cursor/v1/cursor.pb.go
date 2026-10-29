@@ -243,9 +243,9 @@ type PointerPosition struct {
 	X int32 `protobuf:"zigzag32,2,opt,name=x,proto3" json:"x,omitempty"`
 	// See x.
 	Y int32 `protobuf:"zigzag32,3,opt,name=y,proto3" json:"y,omitempty"`
-	// The connection whose input moved it, as in ParticipantList. 0: an
+	// The participant whose input moved it, as in ParticipantList. 0: an
 	// application moved it.
-	ConnectionId  uint64 `protobuf:"varint,4,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
+	ParticipantId uint64 `protobuf:"varint,4,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -301,9 +301,9 @@ func (x *PointerPosition) GetY() int32 {
 	return 0
 }
 
-func (x *PointerPosition) GetConnectionId() uint64 {
+func (x *PointerPosition) GetParticipantId() uint64 {
 	if x != nil {
-		return x.ConnectionId
+		return x.ParticipantId
 	}
 	return 0
 }
@@ -315,8 +315,8 @@ func (x *PointerPosition) GetConnectionId() uint64 {
 // it briefly.
 type Highlight struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The connection that acted, as in ParticipantList.
-	ConnectionId uint64 `protobuf:"varint,1,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
+	// The participant that acted, as in ParticipantList.
+	ParticipantId uint64 `protobuf:"varint,1,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
 	// The window the area is relative to. 0: canvas coordinates.
 	WindowId uint64 `protobuf:"varint,2,opt,name=window_id,json=windowId,proto3" json:"window_id,omitempty"`
 	// The area: the bounds of the node acted on, or a small square around the
@@ -359,9 +359,9 @@ func (*Highlight) Descriptor() ([]byte, []int) {
 	return file_leaflow_fleet_virtualdesktop_cursor_v1_cursor_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *Highlight) GetConnectionId() uint64 {
+func (x *Highlight) GetParticipantId() uint64 {
 	if x != nil {
-		return x.ConnectionId
+		return x.ParticipantId
 	}
 	return 0
 }
@@ -440,14 +440,14 @@ const file_leaflow_fleet_virtualdesktop_cursor_v1_cursor_proto_rawDesc = "" +
 	"\x05image\x18\x02 \x01(\v2..leaflow.fleet.virtualdesktop.display.v1.ImageR\x05image\x12\x1b\n" +
 	"\thotspot_x\x18\x03 \x01(\rR\bhotspotX\x12\x1b\n" +
 	"\thotspot_y\x18\x04 \x01(\rR\bhotspotY\x12\x16\n" +
-	"\x06serial\x18\x05 \x01(\x04R\x06serial\"o\n" +
+	"\x06serial\x18\x05 \x01(\x04R\x06serial\"q\n" +
 	"\x0fPointerPosition\x12\x1b\n" +
 	"\twindow_id\x18\x01 \x01(\x04R\bwindowId\x12\f\n" +
 	"\x01x\x18\x02 \x01(\x11R\x01x\x12\f\n" +
-	"\x01y\x18\x03 \x01(\x11R\x01y\x12#\n" +
-	"\rconnection_id\x18\x04 \x01(\x04R\fconnectionId\"\xab\x01\n" +
-	"\tHighlight\x12#\n" +
-	"\rconnection_id\x18\x01 \x01(\x04R\fconnectionId\x12\x1b\n" +
+	"\x01y\x18\x03 \x01(\x11R\x01y\x12%\n" +
+	"\x0eparticipant_id\x18\x04 \x01(\x04R\rparticipantId\"\xad\x01\n" +
+	"\tHighlight\x12%\n" +
+	"\x0eparticipant_id\x18\x01 \x01(\x04R\rparticipantId\x12\x1b\n" +
 	"\twindow_id\x18\x02 \x01(\x04R\bwindowId\x12F\n" +
 	"\x04area\x18\x03 \x01(\v22.leaflow.fleet.virtualdesktop.display.v1.RectangleR\x04area\x12\x14\n" +
 	"\x05label\x18\x04 \x01(\tR\x05label\"\r\n" +

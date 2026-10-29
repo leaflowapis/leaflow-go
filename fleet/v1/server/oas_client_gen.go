@@ -73,44 +73,8 @@ type Invoker interface {
 	//  - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
 	//    again after the error's `retry_delay`.
 	//
-	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:commit-migration
+	// POST /api/v1/sessions/{sessionId}/participants/{participantId}:commitMigration
 	CommitParticipantMigration(ctx context.Context, request *MigrationStep, params CommitParticipantMigrationParams) (*MigrationStep, error)
-	// CreateAttempt invokes create-attempt operation.
-	//
-	// Starts another PeerConnection of the participant with the offer, such as after a path failed, and
-	// returns the session's answer, its ICE candidates and the signed PeerAuthorization. Move the
-	// connection to it with `prepare-participant-migration` and `commit-participant-migration`.
-	//
-	// Only the participant's user may start one.
-	//
-	// Fails with:
-	//
-	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended;
-	//  - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
-	//  - `TOO_MANY_ATTEMPTS` when the participant started too many PeerConnections in the last minute; try
-	//    again after the error's `retry_delay`;
-	//  - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
-	//    again after the error's `retry_delay`;
-	//  - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; start another.
-	//
-	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts
-	CreateAttempt(ctx context.Context, request *CreateAttemptRequest, params CreateAttemptParams) (*Attempt, error)
-	// CreateAttemptCandidates invokes create-attempt-candidates operation.
-	//
-	// Passes the ICE candidates the participant gathered after its offer to the session, and with
-	// `end_of_candidates`, that it has gathered all (RFC 8838). The session ignores those of an attempt
-	// that has ended.
-	//
-	// Only the participant's user may add them.
-	//
-	// Fails with:
-	//
-	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended;
-	//  - `SESSION_UNAVAILABLE` when the session's process is not connected; try again after the error's
-	//    `retry_delay`.
-	//
-	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}/candidates
-	CreateAttemptCandidates(ctx context.Context, request *CreateAttemptCandidatesRequest, params CreateAttemptCandidatesParams) error
 	// CreateGroup invokes create-group operation.
 	//
 	// Creates a group in the project's directory. It reaches the machines within about a minute.
@@ -145,8 +109,8 @@ type Invoker interface {
 	//
 	// Admits one participant with the given public key to the session: signs its authorization, has the
 	// session accept it, and starts its first PeerConnection with the offer. The answer carries the
-	// participant, its authorization and the attempt with the session's answer. The participant lasts
-	// while it is renewed.
+	// participant, its authorization and the PeerConnection with the session's answer. The participant
+	// lasts while it is renewed.
 	//
 	// The owner of a session may operate it. Joining another member's session requires
 	// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
@@ -164,10 +128,48 @@ type Invoker interface {
 	//    as while it restarts; try again after the error's `retry_delay`;
 	//  - `PARTICIPANT_LIMIT_REACHED` when the session has as many participants as it admits;
 	//  - `PARTICIPANT_REFUSED` when the session refused the participant;
-	//  - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; try again with a new offer.
+	//  - `PEER_CONNECTION_ABORTED` when the session gave up the PeerConnection; try again with a new
+	//    offer.
 	//
 	// POST /api/v1/sessions/{sessionId}/participants
-	CreateParticipant(ctx context.Context, request *CreateParticipantRequest, params CreateParticipantParams) (*ParticipantConnection, error)
+	CreateParticipant(ctx context.Context, request *CreateParticipantRequest, params CreateParticipantParams) (*CreateParticipantResponse, error)
+	// CreatePeerConnection invokes create-peer-connection operation.
+	//
+	// Starts another PeerConnection of the participant with the offer, such as after a path failed, and
+	// returns the session's answer, its ICE candidates and the signed PeerAuthorization. Move the
+	// participant's connection to it with `prepare-participant-migration` and
+	// `commit-participant-migration`.
+	//
+	// Only the participant's user may start one.
+	//
+	// Fails with:
+	//
+	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+	//  - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
+	//  - `RATE_LIMIT_EXCEEDED` when the participant started too many PeerConnections in the last minute;
+	//    try again after the error's `retry_delay`;
+	//  - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+	//    again after the error's `retry_delay`;
+	//  - `PEER_CONNECTION_ABORTED` when the session gave up the PeerConnection; start another.
+	//
+	// POST /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections
+	CreatePeerConnection(ctx context.Context, request *CreatePeerConnectionRequest, params CreatePeerConnectionParams) (*PeerConnection, error)
+	// CreatePeerConnectionCandidates invokes create-peer-connection-candidates operation.
+	//
+	// Passes the ICE candidates the participant gathered after its offer to the session, and with
+	// `end_of_candidates`, that it has gathered all (RFC 8838). The session ignores those of a
+	// PeerConnection that has ended.
+	//
+	// Only the participant's user may add them.
+	//
+	// Fails with:
+	//
+	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+	//  - `SESSION_UNAVAILABLE` when the session's process is not connected; try again after the error's
+	//    `retry_delay`.
+	//
+	// POST /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}/candidates
+	CreatePeerConnectionCandidates(ctx context.Context, request *CreatePeerConnectionCandidatesRequest, params CreatePeerConnectionCandidatesParams) error
 	// CreateSession invokes create-session operation.
 	//
 	// Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
@@ -198,17 +200,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/sessions
 	CreateSession(ctx context.Context, request *CreateSessionRequest) (*SessionResource, error)
-	// DeleteAttempt invokes delete-attempt operation.
-	//
-	// Tells the session to give up the attempt and close its PeerConnection. Abandoning an attempt that
-	// has ended succeeds.
-	//
-	// Only the participant's user may abandon it.
-	//
-	// Fails with `PARTICIPANT_NOT_FOUND` when the participant has ended.
-	//
-	// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}
-	DeleteAttempt(ctx context.Context, params DeleteAttemptParams) error
 	// DeleteGroup invokes delete-group operation.
 	//
 	// Removes the group from the directory. Machines stop resolving it within about a minute; files keep
@@ -255,8 +246,19 @@ type Invoker interface {
 	// The participant's user and the owner of the session may end it; otherwise this requires
 	// `fleet:sessions.manage`.
 	//
-	// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}
+	// DELETE /api/v1/sessions/{sessionId}/participants/{participantId}
 	DeleteParticipant(ctx context.Context, params DeleteParticipantParams) error
+	// DeletePeerConnection invokes delete-peer-connection operation.
+	//
+	// Tells the session to give up the PeerConnection and close it. Abandoning a PeerConnection that has
+	// ended succeeds.
+	//
+	// Only the participant's user may abandon it.
+	//
+	// Fails with `PARTICIPANT_NOT_FOUND` when the participant has ended.
+	//
+	// DELETE /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}
+	DeletePeerConnection(ctx context.Context, params DeletePeerConnectionParams) error
 	// DenyEnrollment invokes deny-enrollment operation.
 	//
 	// Refuses the request. The decision is final for the machine's key: the Agent stops polling and
@@ -316,7 +318,7 @@ type Invoker interface {
 	//
 	// Returns a participant of the session.
 	//
-	// GET /api/v1/sessions/{sessionId}/participants/{connectionId}
+	// GET /api/v1/sessions/{sessionId}/participants/{participantId}
 	GetParticipant(ctx context.Context, params GetParticipantParams) (*ParticipantResource, error)
 	// GetPrivilegeApproval invokes get-privilege-approval operation.
 	//
@@ -435,15 +437,15 @@ type Invoker interface {
 	//  - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
 	//    again after the error's `retry_delay`.
 	//
-	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:prepare-migration
+	// POST /api/v1/sessions/{sessionId}/participants/{participantId}:prepareMigration
 	PrepareParticipantMigration(ctx context.Context, request *MigrationStep, params PrepareParticipantMigrationParams) (*MigrationStep, error)
 	// RenewParticipant invokes renew-participant operation.
 	//
 	// Extends the participant's lease and returns renewed PeerAuthorizations for the PeerConnections whose
 	// current ones the request presents; the session receives them too. A presented authorization that the
-	// service did not sign for this participant, or whose attempt has ended, is left out of the answer.
-	// When the participant's authorization nears its end, the answer carries a renewed one, which the
-	// session already holds.
+	// service did not sign for this participant, or whose PeerConnection has ended, is left out of the
+	// answer. When the participant's authorization nears its end, the answer carries a renewed one, which
+	// the session already holds.
 	//
 	// Only the participant's user may renew it.
 	//
@@ -453,7 +455,7 @@ type Invoker interface {
 	//  - `PARTICIPANT_RIGHTS_CHANGED` when the caller's permissions no longer grant what the participant
 	//    holds; it has ended, and another can be created with the current rights.
 	//
-	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:renew
+	// POST /api/v1/sessions/{sessionId}/participants/{participantId}:renew
 	RenewParticipant(ctx context.Context, request *RenewParticipantRequest, params RenewParticipantParams) (*RenewParticipantResponse, error)
 	// RunMachineCommand invokes run-machine-command operation.
 	//
@@ -1007,7 +1009,7 @@ func (c *Client) sendCloseSession(ctx context.Context, params CloseSessionParams
 //   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
 //     again after the error's `retry_delay`.
 //
-// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:commit-migration
+// POST /api/v1/sessions/{sessionId}/participants/{participantId}:commitMigration
 func (c *Client) CommitParticipantMigration(ctx context.Context, request *MigrationStep, params CommitParticipantMigrationParams) (*MigrationStep, error) {
 	res, err := c.sendCommitParticipantMigration(ctx, request, params)
 	return res, err
@@ -1026,7 +1028,7 @@ func (c *Client) sendCommitParticipantMigration(ctx context.Context, request *Mi
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("commit-participant-migration"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}:commit-migration"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{participantId}:commitMigration"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1081,14 +1083,14 @@ func (c *Client) sendCommitParticipantMigration(ctx context.Context, request *Mi
 	}
 	pathParts[2] = "/participants/"
 	{
-		// Encode "connectionId" parameter.
+		// Encode "participantId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "connectionId",
+			Param:   "participantId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.Int64ToString(params.ConnectionId))
+			return e.EncodeValue(conv.Int64ToString(params.ParticipantId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -1098,7 +1100,7 @@ func (c *Client) sendCommitParticipantMigration(ctx context.Context, request *Mi
 		}
 		pathParts[3] = encoded
 	}
-	pathParts[4] = ":commit-migration"
+	pathParts[4] = ":commitMigration"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -1159,375 +1161,6 @@ func (c *Client) sendCommitParticipantMigration(ctx context.Context, request *Mi
 
 	stage = "DecodeResponse"
 	result, err := decodeCommitParticipantMigrationResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateAttempt invokes create-attempt operation.
-//
-// Starts another PeerConnection of the participant with the offer, such as after a path failed, and
-// returns the session's answer, its ICE candidates and the signed PeerAuthorization. Move the
-// connection to it with `prepare-participant-migration` and `commit-participant-migration`.
-//
-// Only the participant's user may start one.
-//
-// Fails with:
-//
-//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
-//   - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
-//   - `TOO_MANY_ATTEMPTS` when the participant started too many PeerConnections in the last minute; try
-//     again after the error's `retry_delay`;
-//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
-//     again after the error's `retry_delay`;
-//   - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; start another.
-//
-// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts
-func (c *Client) CreateAttempt(ctx context.Context, request *CreateAttemptRequest, params CreateAttemptParams) (*Attempt, error) {
-	res, err := c.sendCreateAttempt(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendCreateAttempt(ctx context.Context, request *CreateAttemptRequest, params CreateAttemptParams) (res *Attempt, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-attempt"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}/attempts"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateAttemptOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [5]string
-	pathParts[0] = "/api/v1/sessions/"
-	{
-		// Encode "sessionId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "sessionId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.SessionId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/participants/"
-	{
-		// Encode "connectionId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "connectionId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.Int64ToString(params.ConnectionId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	pathParts[4] = "/attempts"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateAttemptRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateAttemptOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateAttemptResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateAttemptCandidates invokes create-attempt-candidates operation.
-//
-// Passes the ICE candidates the participant gathered after its offer to the session, and with
-// `end_of_candidates`, that it has gathered all (RFC 8838). The session ignores those of an attempt
-// that has ended.
-//
-// Only the participant's user may add them.
-//
-// Fails with:
-//
-//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
-//   - `SESSION_UNAVAILABLE` when the session's process is not connected; try again after the error's
-//     `retry_delay`.
-//
-// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}/candidates
-func (c *Client) CreateAttemptCandidates(ctx context.Context, request *CreateAttemptCandidatesRequest, params CreateAttemptCandidatesParams) error {
-	_, err := c.sendCreateAttemptCandidates(ctx, request, params)
-	return err
-}
-
-func (c *Client) sendCreateAttemptCandidates(ctx context.Context, request *CreateAttemptCandidatesRequest, params CreateAttemptCandidatesParams) (res *CreateAttemptCandidatesNoContent, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-attempt-candidates"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}/candidates"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateAttemptCandidatesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [7]string
-	pathParts[0] = "/api/v1/sessions/"
-	{
-		// Encode "sessionId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "sessionId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.SessionId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/participants/"
-	{
-		// Encode "connectionId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "connectionId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.Int64ToString(params.ConnectionId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	pathParts[4] = "/attempts/"
-	{
-		// Encode "attemptId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "attemptId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.AttemptId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[5] = encoded
-	}
-	pathParts[6] = "/candidates"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateAttemptCandidatesRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateAttemptCandidatesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateAttemptCandidatesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1936,8 +1569,8 @@ func (c *Client) sendCreateMachineRegistration(ctx context.Context, request *Cre
 //
 // Admits one participant with the given public key to the session: signs its authorization, has the
 // session accept it, and starts its first PeerConnection with the offer. The answer carries the
-// participant, its authorization and the attempt with the session's answer. The participant lasts
-// while it is renewed.
+// participant, its authorization and the PeerConnection with the session's answer. The participant
+// lasts while it is renewed.
 //
 // The owner of a session may operate it. Joining another member's session requires
 // `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
@@ -1955,15 +1588,16 @@ func (c *Client) sendCreateMachineRegistration(ctx context.Context, request *Cre
 //     as while it restarts; try again after the error's `retry_delay`;
 //   - `PARTICIPANT_LIMIT_REACHED` when the session has as many participants as it admits;
 //   - `PARTICIPANT_REFUSED` when the session refused the participant;
-//   - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; try again with a new offer.
+//   - `PEER_CONNECTION_ABORTED` when the session gave up the PeerConnection; try again with a new
+//     offer.
 //
 // POST /api/v1/sessions/{sessionId}/participants
-func (c *Client) CreateParticipant(ctx context.Context, request *CreateParticipantRequest, params CreateParticipantParams) (*ParticipantConnection, error) {
+func (c *Client) CreateParticipant(ctx context.Context, request *CreateParticipantRequest, params CreateParticipantParams) (*CreateParticipantResponse, error) {
 	res, err := c.sendCreateParticipant(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendCreateParticipant(ctx context.Context, request *CreateParticipantRequest, params CreateParticipantParams) (res *ParticipantConnection, err error) {
+func (c *Client) sendCreateParticipant(ctx context.Context, request *CreateParticipantRequest, params CreateParticipantParams) (res *CreateParticipantResponse, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -2090,6 +1724,376 @@ func (c *Client) sendCreateParticipant(ctx context.Context, request *CreateParti
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateParticipantResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreatePeerConnection invokes create-peer-connection operation.
+//
+// Starts another PeerConnection of the participant with the offer, such as after a path failed, and
+// returns the session's answer, its ICE candidates and the signed PeerAuthorization. Move the
+// participant's connection to it with `prepare-participant-migration` and
+// `commit-participant-migration`.
+//
+// Only the participant's user may start one.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
+//   - `RATE_LIMIT_EXCEEDED` when the participant started too many PeerConnections in the last minute;
+//     try again after the error's `retry_delay`;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+//     again after the error's `retry_delay`;
+//   - `PEER_CONNECTION_ABORTED` when the session gave up the PeerConnection; start another.
+//
+// POST /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections
+func (c *Client) CreatePeerConnection(ctx context.Context, request *CreatePeerConnectionRequest, params CreatePeerConnectionParams) (*PeerConnection, error) {
+	res, err := c.sendCreatePeerConnection(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCreatePeerConnection(ctx context.Context, request *CreatePeerConnectionRequest, params CreatePeerConnectionParams) (res *PeerConnection, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-peer-connection"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreatePeerConnectionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [5]string
+	pathParts[0] = "/api/v1/sessions/"
+	{
+		// Encode "sessionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "sessionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.SessionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/participants/"
+	{
+		// Encode "participantId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "participantId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.ParticipantId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = "/peer-connections"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreatePeerConnectionRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreatePeerConnectionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreatePeerConnectionResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreatePeerConnectionCandidates invokes create-peer-connection-candidates operation.
+//
+// Passes the ICE candidates the participant gathered after its offer to the session, and with
+// `end_of_candidates`, that it has gathered all (RFC 8838). The session ignores those of a
+// PeerConnection that has ended.
+//
+// Only the participant's user may add them.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected; try again after the error's
+//     `retry_delay`.
+//
+// POST /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}/candidates
+func (c *Client) CreatePeerConnectionCandidates(ctx context.Context, request *CreatePeerConnectionCandidatesRequest, params CreatePeerConnectionCandidatesParams) error {
+	_, err := c.sendCreatePeerConnectionCandidates(ctx, request, params)
+	return err
+}
+
+func (c *Client) sendCreatePeerConnectionCandidates(ctx context.Context, request *CreatePeerConnectionCandidatesRequest, params CreatePeerConnectionCandidatesParams) (res *CreatePeerConnectionCandidatesNoContent, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-peer-connection-candidates"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}/candidates"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreatePeerConnectionCandidatesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [7]string
+	pathParts[0] = "/api/v1/sessions/"
+	{
+		// Encode "sessionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "sessionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.SessionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/participants/"
+	{
+		// Encode "participantId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "participantId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.ParticipantId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = "/peer-connections/"
+	{
+		// Encode "peerConnectionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "peerConnectionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.PeerConnectionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[5] = encoded
+	}
+	pathParts[6] = "/candidates"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreatePeerConnectionCandidatesRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreatePeerConnectionCandidatesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreatePeerConnectionCandidatesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2239,180 +2243,6 @@ func (c *Client) sendCreateSession(ctx context.Context, request *CreateSessionRe
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateSessionResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// DeleteAttempt invokes delete-attempt operation.
-//
-// Tells the session to give up the attempt and close its PeerConnection. Abandoning an attempt that
-// has ended succeeds.
-//
-// Only the participant's user may abandon it.
-//
-// Fails with `PARTICIPANT_NOT_FOUND` when the participant has ended.
-//
-// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}
-func (c *Client) DeleteAttempt(ctx context.Context, params DeleteAttemptParams) error {
-	_, err := c.sendDeleteAttempt(ctx, params)
-	return err
-}
-
-func (c *Client) sendDeleteAttempt(ctx context.Context, params DeleteAttemptParams) (res *DeleteAttemptNoContent, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-attempt"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DeleteAttemptOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [6]string
-	pathParts[0] = "/api/v1/sessions/"
-	{
-		// Encode "sessionId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "sessionId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.SessionId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/participants/"
-	{
-		// Encode "connectionId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "connectionId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.Int64ToString(params.ConnectionId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	pathParts[4] = "/attempts/"
-	{
-		// Encode "attemptId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "attemptId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.AttemptId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[5] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeleteAttemptOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeDeleteAttemptResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2985,7 +2815,7 @@ func (c *Client) sendDeleteMachineRegistration(ctx context.Context, params Delet
 // The participant's user and the owner of the session may end it; otherwise this requires
 // `fleet:sessions.manage`.
 //
-// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}
+// DELETE /api/v1/sessions/{sessionId}/participants/{participantId}
 func (c *Client) DeleteParticipant(ctx context.Context, params DeleteParticipantParams) error {
 	_, err := c.sendDeleteParticipant(ctx, params)
 	return err
@@ -2995,7 +2825,7 @@ func (c *Client) sendDeleteParticipant(ctx context.Context, params DeletePartici
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("delete-participant"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{participantId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3050,14 +2880,14 @@ func (c *Client) sendDeleteParticipant(ctx context.Context, params DeletePartici
 	}
 	pathParts[2] = "/participants/"
 	{
-		// Encode "connectionId" parameter.
+		// Encode "participantId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "connectionId",
+			Param:   "participantId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.Int64ToString(params.ConnectionId))
+			return e.EncodeValue(conv.Int64ToString(params.ParticipantId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -3124,6 +2954,180 @@ func (c *Client) sendDeleteParticipant(ctx context.Context, params DeletePartici
 
 	stage = "DecodeResponse"
 	result, err := decodeDeleteParticipantResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeletePeerConnection invokes delete-peer-connection operation.
+//
+// Tells the session to give up the PeerConnection and close it. Abandoning a PeerConnection that has
+// ended succeeds.
+//
+// Only the participant's user may abandon it.
+//
+// Fails with `PARTICIPANT_NOT_FOUND` when the participant has ended.
+//
+// DELETE /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}
+func (c *Client) DeletePeerConnection(ctx context.Context, params DeletePeerConnectionParams) error {
+	_, err := c.sendDeletePeerConnection(ctx, params)
+	return err
+}
+
+func (c *Client) sendDeletePeerConnection(ctx context.Context, params DeletePeerConnectionParams) (res *DeletePeerConnectionNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-peer-connection"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeletePeerConnectionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [6]string
+	pathParts[0] = "/api/v1/sessions/"
+	{
+		// Encode "sessionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "sessionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.SessionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/participants/"
+	{
+		// Encode "participantId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "participantId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.ParticipantId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = "/peer-connections/"
+	{
+		// Encode "peerConnectionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "peerConnectionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.PeerConnectionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[5] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, DeletePeerConnectionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeletePeerConnectionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4067,7 +4071,7 @@ func (c *Client) sendGetMachineRegistration(ctx context.Context, params GetMachi
 //
 // Returns a participant of the session.
 //
-// GET /api/v1/sessions/{sessionId}/participants/{connectionId}
+// GET /api/v1/sessions/{sessionId}/participants/{participantId}
 func (c *Client) GetParticipant(ctx context.Context, params GetParticipantParams) (*ParticipantResource, error) {
 	res, err := c.sendGetParticipant(ctx, params)
 	return res, err
@@ -4077,7 +4081,7 @@ func (c *Client) sendGetParticipant(ctx context.Context, params GetParticipantPa
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-participant"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{participantId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -4132,14 +4136,14 @@ func (c *Client) sendGetParticipant(ctx context.Context, params GetParticipantPa
 	}
 	pathParts[2] = "/participants/"
 	{
-		// Encode "connectionId" parameter.
+		// Encode "participantId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "connectionId",
+			Param:   "participantId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.Int64ToString(params.ConnectionId))
+			return e.EncodeValue(conv.Int64ToString(params.ParticipantId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -6454,7 +6458,7 @@ func (c *Client) sendListSessions(ctx context.Context, params ListSessionsParams
 //   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
 //     again after the error's `retry_delay`.
 //
-// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:prepare-migration
+// POST /api/v1/sessions/{sessionId}/participants/{participantId}:prepareMigration
 func (c *Client) PrepareParticipantMigration(ctx context.Context, request *MigrationStep, params PrepareParticipantMigrationParams) (*MigrationStep, error) {
 	res, err := c.sendPrepareParticipantMigration(ctx, request, params)
 	return res, err
@@ -6473,7 +6477,7 @@ func (c *Client) sendPrepareParticipantMigration(ctx context.Context, request *M
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("prepare-participant-migration"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}:prepare-migration"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{participantId}:prepareMigration"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -6528,14 +6532,14 @@ func (c *Client) sendPrepareParticipantMigration(ctx context.Context, request *M
 	}
 	pathParts[2] = "/participants/"
 	{
-		// Encode "connectionId" parameter.
+		// Encode "participantId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "connectionId",
+			Param:   "participantId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.Int64ToString(params.ConnectionId))
+			return e.EncodeValue(conv.Int64ToString(params.ParticipantId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -6545,7 +6549,7 @@ func (c *Client) sendPrepareParticipantMigration(ctx context.Context, request *M
 		}
 		pathParts[3] = encoded
 	}
-	pathParts[4] = ":prepare-migration"
+	pathParts[4] = ":prepareMigration"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -6617,9 +6621,9 @@ func (c *Client) sendPrepareParticipantMigration(ctx context.Context, request *M
 //
 // Extends the participant's lease and returns renewed PeerAuthorizations for the PeerConnections whose
 // current ones the request presents; the session receives them too. A presented authorization that the
-// service did not sign for this participant, or whose attempt has ended, is left out of the answer.
-// When the participant's authorization nears its end, the answer carries a renewed one, which the
-// session already holds.
+// service did not sign for this participant, or whose PeerConnection has ended, is left out of the
+// answer. When the participant's authorization nears its end, the answer carries a renewed one, which
+// the session already holds.
 //
 // Only the participant's user may renew it.
 //
@@ -6629,7 +6633,7 @@ func (c *Client) sendPrepareParticipantMigration(ctx context.Context, request *M
 //   - `PARTICIPANT_RIGHTS_CHANGED` when the caller's permissions no longer grant what the participant
 //     holds; it has ended, and another can be created with the current rights.
 //
-// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:renew
+// POST /api/v1/sessions/{sessionId}/participants/{participantId}:renew
 func (c *Client) RenewParticipant(ctx context.Context, request *RenewParticipantRequest, params RenewParticipantParams) (*RenewParticipantResponse, error) {
 	res, err := c.sendRenewParticipant(ctx, request, params)
 	return res, err
@@ -6648,7 +6652,7 @@ func (c *Client) sendRenewParticipant(ctx context.Context, request *RenewPartici
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("renew-participant"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{connectionId}:renew"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{participantId}:renew"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -6703,14 +6707,14 @@ func (c *Client) sendRenewParticipant(ctx context.Context, request *RenewPartici
 	}
 	pathParts[2] = "/participants/"
 	{
-		// Encode "connectionId" parameter.
+		// Encode "participantId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "connectionId",
+			Param:   "participantId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.Int64ToString(params.ConnectionId))
+			return e.EncodeValue(conv.Int64ToString(params.ParticipantId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}

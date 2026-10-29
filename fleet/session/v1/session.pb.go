@@ -459,8 +459,8 @@ type ServerHello struct {
 	// The participant may only watch. The session refuses or ignores everything
 	// that would change it.
 	ReadOnly bool `protobuf:"varint,2,opt,name=read_only,json=readOnly,proto3" json:"read_only,omitempty"`
-	// This participant's connection, as it appears in ParticipantList.
-	ConnectionId  uint64 `protobuf:"varint,3,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
+	// This participant, as it appears in ParticipantList.
+	ParticipantId uint64 `protobuf:"varint,3,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -509,9 +509,9 @@ func (x *ServerHello) GetReadOnly() bool {
 	return false
 }
 
-func (x *ServerHello) GetConnectionId() uint64 {
+func (x *ServerHello) GetParticipantId() uint64 {
 	if x != nil {
-		return x.ConnectionId
+		return x.ParticipantId
 	}
 	return 0
 }
@@ -519,17 +519,17 @@ func (x *ServerHello) GetConnectionId() uint64 {
 // One participant attached to the session.
 type Participant struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The participant's connection.
-	ConnectionId uint64 `protobuf:"varint,1,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
+	// The participant.
+	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	// The platform user the participant acts for.
 	UserId string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	// The user's name, plain text.
 	DisplayName string `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	// The participant may only watch.
 	ReadOnly bool `protobuf:"varint,4,opt,name=read_only,json=readOnly,proto3" json:"read_only,omitempty"`
-	// The label the client gave itself, such as "console" or "assistant".
-	// Neither unique nor verified: it lets people tell connections apart.
-	ClientId      string `protobuf:"bytes,5,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	// The name the client gave itself, such as "console" or "assistant".
+	// Neither unique nor verified: it lets people tell participants apart.
+	ClientName    string `protobuf:"bytes,5,opt,name=client_name,json=clientName,proto3" json:"client_name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -564,9 +564,9 @@ func (*Participant) Descriptor() ([]byte, []int) {
 	return file_leaflow_fleet_session_v1_session_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *Participant) GetConnectionId() uint64 {
+func (x *Participant) GetId() uint64 {
 	if x != nil {
-		return x.ConnectionId
+		return x.Id
 	}
 	return 0
 }
@@ -592,9 +592,9 @@ func (x *Participant) GetReadOnly() bool {
 	return false
 }
 
-func (x *Participant) GetClientId() string {
+func (x *Participant) GetClientName() string {
 	if x != nil {
-		return x.ClientId
+		return x.ClientName
 	}
 	return ""
 }
@@ -606,11 +606,11 @@ type ParticipantList struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The participants.
 	Participants []*Participant `protobuf:"bytes,1,rep,name=participants,proto3" json:"participants,omitempty"`
-	// The participant whose settings the session follows, such as the size of its
-	// desktop. 0 before any participant has driven.
-	DriverConnectionId uint64 `protobuf:"varint,2,opt,name=driver_connection_id,json=driverConnectionId,proto3" json:"driver_connection_id,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// The participant whose settings the session follows, such as the size of
+	// its desktop. 0 before any participant has driven.
+	DriverParticipantId uint64 `protobuf:"varint,2,opt,name=driver_participant_id,json=driverParticipantId,proto3" json:"driver_participant_id,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *ParticipantList) Reset() {
@@ -650,9 +650,9 @@ func (x *ParticipantList) GetParticipants() []*Participant {
 	return nil
 }
 
-func (x *ParticipantList) GetDriverConnectionId() uint64 {
+func (x *ParticipantList) GetDriverParticipantId() uint64 {
 	if x != nil {
-		return x.DriverConnectionId
+		return x.DriverParticipantId
 	}
 	return 0
 }
@@ -866,20 +866,21 @@ const file_leaflow_fleet_session_v1_session_proto_rawDesc = "" +
 	"\rchannel_types\x18\x01 \x03(\tR\fchannelTypes\x12#\n" +
 	"\rlanguage_code\x18\x02 \x01(\tR\flanguageCode\x12\x1d\n" +
 	"\n" +
-	"user_agent\x18\x03 \x01(\tR\tuserAgent\"t\n" +
+	"user_agent\x18\x03 \x01(\tR\tuserAgent\"v\n" +
 	"\vServerHello\x12#\n" +
 	"\rchannel_types\x18\x01 \x03(\tR\fchannelTypes\x12\x1b\n" +
-	"\tread_only\x18\x02 \x01(\bR\breadOnly\x12#\n" +
-	"\rconnection_id\x18\x03 \x01(\x04R\fconnectionId\"\xa8\x01\n" +
-	"\vParticipant\x12#\n" +
-	"\rconnection_id\x18\x01 \x01(\x04R\fconnectionId\x12\x17\n" +
+	"\tread_only\x18\x02 \x01(\bR\breadOnly\x12%\n" +
+	"\x0eparticipant_id\x18\x03 \x01(\x04R\rparticipantId\"\x97\x01\n" +
+	"\vParticipant\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12!\n" +
 	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x12\x1b\n" +
-	"\tread_only\x18\x04 \x01(\bR\breadOnly\x12\x1b\n" +
-	"\tclient_id\x18\x05 \x01(\tR\bclientId\"\x8e\x01\n" +
+	"\tread_only\x18\x04 \x01(\bR\breadOnly\x12\x1f\n" +
+	"\vclient_name\x18\x05 \x01(\tR\n" +
+	"clientName\"\x90\x01\n" +
 	"\x0fParticipantList\x12I\n" +
-	"\fparticipants\x18\x01 \x03(\v2%.leaflow.fleet.session.v1.ParticipantR\fparticipants\x120\n" +
-	"\x14driver_connection_id\x18\x02 \x01(\x04R\x12driverConnectionId\"\r\n" +
+	"\fparticipants\x18\x01 \x03(\v2%.leaflow.fleet.session.v1.ParticipantR\fparticipants\x122\n" +
+	"\x15driver_participant_id\x18\x02 \x01(\x04R\x13driverParticipantId\"\r\n" +
 	"\vSnapshotEnd\")\n" +
 	"\x04Ping\x12!\n" +
 	"\fmonotonic_ms\x18\x01 \x01(\x04R\vmonotonicMs\")\n" +

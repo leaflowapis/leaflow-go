@@ -24,18 +24,15 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Where a session is in its life. ONLINE, ACTIVE and CLOSING are the logind
-// session states (org.freedesktop.login1 Session.State).
+// Where a session is in its life.
 type SessionState int32
 
 const (
 	SessionState_SESSION_STATE_UNSPECIFIED SessionState = 0
 	// The PAM session opens and the session process starts.
 	SessionState_SESSION_STATE_OPENING SessionState = 1
-	// Logged in but not in the foreground.
-	SessionState_SESSION_STATE_ONLINE SessionState = 2
-	// Logged in and active: a running session.
-	SessionState_SESSION_STATE_ACTIVE SessionState = 3
+	// Logged in: the session runs.
+	SessionState_SESSION_STATE_OPEN SessionState = 2
 	// Logged out; its processes are being cleaned up.
 	SessionState_SESSION_STATE_CLOSING SessionState = 4
 	// Gone.
@@ -47,16 +44,14 @@ var (
 	SessionState_name = map[int32]string{
 		0: "SESSION_STATE_UNSPECIFIED",
 		1: "SESSION_STATE_OPENING",
-		2: "SESSION_STATE_ONLINE",
-		3: "SESSION_STATE_ACTIVE",
+		2: "SESSION_STATE_OPEN",
 		4: "SESSION_STATE_CLOSING",
 		5: "SESSION_STATE_CLOSED",
 	}
 	SessionState_value = map[string]int32{
 		"SESSION_STATE_UNSPECIFIED": 0,
 		"SESSION_STATE_OPENING":     1,
-		"SESSION_STATE_ONLINE":      2,
-		"SESSION_STATE_ACTIVE":      3,
+		"SESSION_STATE_OPEN":        2,
 		"SESSION_STATE_CLOSING":     4,
 		"SESSION_STATE_CLOSED":      5,
 	}
@@ -102,16 +97,15 @@ const (
 	SessionCloseReason_SESSION_CLOSE_REASON_LOGOUT SessionCloseReason = 3
 	// SessionPolicy.disconnected_timeout passed.
 	SessionCloseReason_SESSION_CLOSE_REASON_DISCONNECTED_TIMEOUT SessionCloseReason = 4
-	// SessionPolicy.no_client_timeout passed.
-	SessionCloseReason_SESSION_CLOSE_REASON_NO_CLIENT_TIMEOUT SessionCloseReason = 5
+	// SessionPolicy.no_participant_timeout passed.
+	SessionCloseReason_SESSION_CLOSE_REASON_NO_PARTICIPANT_TIMEOUT SessionCloseReason = 5
 	// SessionPolicy.max_lifetime passed.
 	SessionCloseReason_SESSION_CLOSE_REASON_MAX_LIFETIME SessionCloseReason = 6
 	// What an option added and the session cannot go on without exited
 	// unexpectedly, such as the X server of a desktop.
 	SessionCloseReason_SESSION_CLOSE_REASON_DISPLAY_EXIT SessionCloseReason = 7
-	// The process that held the session died, and the daemon cleaned up what
-	// was left.
-	SessionCloseReason_SESSION_CLOSE_REASON_HELPER_LOST SessionCloseReason = 8
+	// The session process died, and the daemon cleaned up what was left.
+	SessionCloseReason_SESSION_CLOSE_REASON_PROCESS_LOST SessionCloseReason = 8
 	// Opening failed and was undone.
 	SessionCloseReason_SESSION_CLOSE_REASON_OPEN_FAILED SessionCloseReason = 9
 	// The account may no longer log in to the machine.
@@ -126,25 +120,25 @@ var (
 		2:  "SESSION_CLOSE_REASON_TERMINATE_REQUESTED",
 		3:  "SESSION_CLOSE_REASON_LOGOUT",
 		4:  "SESSION_CLOSE_REASON_DISCONNECTED_TIMEOUT",
-		5:  "SESSION_CLOSE_REASON_NO_CLIENT_TIMEOUT",
+		5:  "SESSION_CLOSE_REASON_NO_PARTICIPANT_TIMEOUT",
 		6:  "SESSION_CLOSE_REASON_MAX_LIFETIME",
 		7:  "SESSION_CLOSE_REASON_DISPLAY_EXIT",
-		8:  "SESSION_CLOSE_REASON_HELPER_LOST",
+		8:  "SESSION_CLOSE_REASON_PROCESS_LOST",
 		9:  "SESSION_CLOSE_REASON_OPEN_FAILED",
 		10: "SESSION_CLOSE_REASON_ACCESS_REVOKED",
 	}
 	SessionCloseReason_value = map[string]int32{
-		"SESSION_CLOSE_REASON_UNSPECIFIED":          0,
-		"SESSION_CLOSE_REASON_CLOSE_REQUESTED":      1,
-		"SESSION_CLOSE_REASON_TERMINATE_REQUESTED":  2,
-		"SESSION_CLOSE_REASON_LOGOUT":               3,
-		"SESSION_CLOSE_REASON_DISCONNECTED_TIMEOUT": 4,
-		"SESSION_CLOSE_REASON_NO_CLIENT_TIMEOUT":    5,
-		"SESSION_CLOSE_REASON_MAX_LIFETIME":         6,
-		"SESSION_CLOSE_REASON_DISPLAY_EXIT":         7,
-		"SESSION_CLOSE_REASON_HELPER_LOST":          8,
-		"SESSION_CLOSE_REASON_OPEN_FAILED":          9,
-		"SESSION_CLOSE_REASON_ACCESS_REVOKED":       10,
+		"SESSION_CLOSE_REASON_UNSPECIFIED":            0,
+		"SESSION_CLOSE_REASON_CLOSE_REQUESTED":        1,
+		"SESSION_CLOSE_REASON_TERMINATE_REQUESTED":    2,
+		"SESSION_CLOSE_REASON_LOGOUT":                 3,
+		"SESSION_CLOSE_REASON_DISCONNECTED_TIMEOUT":   4,
+		"SESSION_CLOSE_REASON_NO_PARTICIPANT_TIMEOUT": 5,
+		"SESSION_CLOSE_REASON_MAX_LIFETIME":           6,
+		"SESSION_CLOSE_REASON_DISPLAY_EXIT":           7,
+		"SESSION_CLOSE_REASON_PROCESS_LOST":           8,
+		"SESSION_CLOSE_REASON_OPEN_FAILED":            9,
+		"SESSION_CLOSE_REASON_ACCESS_REVOKED":         10,
 	}
 )
 
@@ -196,8 +190,6 @@ type Session struct {
 	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	// The last input of a person in the session. Informational.
 	LastInputAt *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=last_input_at,json=lastInputAt,proto3" json:"last_input_at,omitempty"`
-	// The session process runs. False while it restarts.
-	SessionProcessRunning bool `protobuf:"varint,9,opt,name=session_process_running,json=sessionProcessRunning,proto3" json:"session_process_running,omitempty"`
 	// Why the session ended. CLOSED only.
 	CloseReason SessionCloseReason `protobuf:"varint,10,opt,name=close_reason,json=closeReason,proto3,enum=leaflow.fleet.host.v1.SessionCloseReason" json:"close_reason,omitempty"`
 	// Plain text for logs about close_reason, at most 1024 bytes.
@@ -296,13 +288,6 @@ func (x *Session) GetLastInputAt() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *Session) GetSessionProcessRunning() bool {
-	if x != nil {
-		return x.SessionProcessRunning
-	}
-	return false
-}
-
 func (x *Session) GetCloseReason() SessionCloseReason {
 	if x != nil {
 		return x.CloseReason
@@ -334,7 +319,7 @@ type SessionPolicy struct {
 	// Ends the session this long after it opened.
 	MaxLifetime *durationpb.Duration `protobuf:"bytes,2,opt,name=max_lifetime,json=maxLifetime,proto3" json:"max_lifetime,omitempty"`
 	// Ends the session when no participant came this long after it opened.
-	NoClientTimeout *durationpb.Duration `protobuf:"bytes,3,opt,name=no_client_timeout,json=noClientTimeout,proto3" json:"no_client_timeout,omitempty"`
+	NoParticipantTimeout *durationpb.Duration `protobuf:"bytes,3,opt,name=no_participant_timeout,json=noParticipantTimeout,proto3" json:"no_participant_timeout,omitempty"`
 	// Limits on the user's resources.
 	ResourceControl *ResourceControl `protobuf:"bytes,4,opt,name=resource_control,json=resourceControl,proto3" json:"resource_control,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -385,9 +370,9 @@ func (x *SessionPolicy) GetMaxLifetime() *durationpb.Duration {
 	return nil
 }
 
-func (x *SessionPolicy) GetNoClientTimeout() *durationpb.Duration {
+func (x *SessionPolicy) GetNoParticipantTimeout() *durationpb.Duration {
 	if x != nil {
-		return x.NoClientTimeout
+		return x.NoParticipantTimeout
 	}
 	return nil
 }
@@ -581,7 +566,7 @@ func (x *OpenSessionRequest) GetOptions() []*anypb.Any {
 // The response of OpenSession.
 type OpenSessionResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The session, ACTIVE.
+	// The session, OPEN.
 	Session       *Session `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1005,7 +990,7 @@ var File_leaflow_fleet_host_v1_host_proto protoreflect.FileDescriptor
 
 const file_leaflow_fleet_host_v1_host_proto_rawDesc = "" +
 	"\n" +
-	" leaflow/fleet/host/v1/host.proto\x12\x15leaflow.fleet.host.v1\x1a\x19google/protobuf/any.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa6\x04\n" +
+	" leaflow/fleet/host/v1/host.proto\x12\x15leaflow.fleet.host.v1\x1a\x19google/protobuf/any.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xee\x03\n" +
 	"\aSession\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x17\n" +
@@ -1016,16 +1001,15 @@ const file_leaflow_fleet_host_v1_host_proto_rawDesc = "" +
 	"\x0exdg_session_id\x18\x06 \x01(\tR\fxdgSessionId\x129\n" +
 	"\n" +
 	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12>\n" +
-	"\rlast_input_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\vlastInputAt\x126\n" +
-	"\x17session_process_running\x18\t \x01(\bR\x15sessionProcessRunning\x12L\n" +
+	"\rlast_input_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\vlastInputAt\x12L\n" +
 	"\fclose_reason\x18\n" +
 	" \x01(\x0e2).leaflow.fleet.host.v1.SessionCloseReasonR\vcloseReason\x12#\n" +
 	"\rreason_phrase\x18\v \x01(\tR\freasonPhrase\x12.\n" +
-	"\adetails\x18\f \x03(\v2\x14.google.protobuf.AnyR\adetails\"\xb5\x02\n" +
+	"\adetails\x18\f \x03(\v2\x14.google.protobuf.AnyR\adetails\"\xbf\x02\n" +
 	"\rSessionPolicy\x12L\n" +
 	"\x14disconnected_timeout\x18\x01 \x01(\v2\x19.google.protobuf.DurationR\x13disconnectedTimeout\x12<\n" +
-	"\fmax_lifetime\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\vmaxLifetime\x12E\n" +
-	"\x11no_client_timeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\x0fnoClientTimeout\x12Q\n" +
+	"\fmax_lifetime\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\vmaxLifetime\x12O\n" +
+	"\x16no_participant_timeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\x14noParticipantTimeout\x12Q\n" +
 	"\x10resource_control\x18\x04 \x01(\v2&.leaflow.fleet.host.v1.ResourceControlR\x0fresourceControl\"\xcf\x01\n" +
 	"\x0fResourceControl\x12*\n" +
 	"\x11memory_high_bytes\x18\x01 \x01(\x04R\x0fmemoryHighBytes\x12(\n" +
@@ -1062,24 +1046,23 @@ const file_leaflow_fleet_host_v1_host_proto_rawDesc = "" +
 	"\x19ReportSessionStateRequest\x128\n" +
 	"\asession\x18\x01 \x01(\v2\x1e.leaflow.fleet.host.v1.SessionR\asession\x12\x1a\n" +
 	"\bsequence\x18\x02 \x01(\x04R\bsequence\"\x1c\n" +
-	"\x1aReportSessionStateResponse*\xb1\x01\n" +
+	"\x1aReportSessionStateResponse*\x95\x01\n" +
 	"\fSessionState\x12\x1d\n" +
 	"\x19SESSION_STATE_UNSPECIFIED\x10\x00\x12\x19\n" +
-	"\x15SESSION_STATE_OPENING\x10\x01\x12\x18\n" +
-	"\x14SESSION_STATE_ONLINE\x10\x02\x12\x18\n" +
-	"\x14SESSION_STATE_ACTIVE\x10\x03\x12\x19\n" +
+	"\x15SESSION_STATE_OPENING\x10\x01\x12\x16\n" +
+	"\x12SESSION_STATE_OPEN\x10\x02\x12\x19\n" +
 	"\x15SESSION_STATE_CLOSING\x10\x04\x12\x18\n" +
-	"\x14SESSION_STATE_CLOSED\x10\x05*\xd1\x03\n" +
+	"\x14SESSION_STATE_CLOSED\x10\x05*\xd7\x03\n" +
 	"\x12SessionCloseReason\x12$\n" +
 	" SESSION_CLOSE_REASON_UNSPECIFIED\x10\x00\x12(\n" +
 	"$SESSION_CLOSE_REASON_CLOSE_REQUESTED\x10\x01\x12,\n" +
 	"(SESSION_CLOSE_REASON_TERMINATE_REQUESTED\x10\x02\x12\x1f\n" +
 	"\x1bSESSION_CLOSE_REASON_LOGOUT\x10\x03\x12-\n" +
-	")SESSION_CLOSE_REASON_DISCONNECTED_TIMEOUT\x10\x04\x12*\n" +
-	"&SESSION_CLOSE_REASON_NO_CLIENT_TIMEOUT\x10\x05\x12%\n" +
+	")SESSION_CLOSE_REASON_DISCONNECTED_TIMEOUT\x10\x04\x12/\n" +
+	"+SESSION_CLOSE_REASON_NO_PARTICIPANT_TIMEOUT\x10\x05\x12%\n" +
 	"!SESSION_CLOSE_REASON_MAX_LIFETIME\x10\x06\x12%\n" +
-	"!SESSION_CLOSE_REASON_DISPLAY_EXIT\x10\a\x12$\n" +
-	" SESSION_CLOSE_REASON_HELPER_LOST\x10\b\x12$\n" +
+	"!SESSION_CLOSE_REASON_DISPLAY_EXIT\x10\a\x12%\n" +
+	"!SESSION_CLOSE_REASON_PROCESS_LOST\x10\b\x12$\n" +
 	" SESSION_CLOSE_REASON_OPEN_FAILED\x10\t\x12'\n" +
 	"#SESSION_CLOSE_REASON_ACCESS_REVOKED\x10\n" +
 	"2\xe7\x02\n" +
@@ -1133,7 +1116,7 @@ var file_leaflow_fleet_host_v1_host_proto_depIdxs = []int32{
 	16, // 4: leaflow.fleet.host.v1.Session.details:type_name -> google.protobuf.Any
 	17, // 5: leaflow.fleet.host.v1.SessionPolicy.disconnected_timeout:type_name -> google.protobuf.Duration
 	17, // 6: leaflow.fleet.host.v1.SessionPolicy.max_lifetime:type_name -> google.protobuf.Duration
-	17, // 7: leaflow.fleet.host.v1.SessionPolicy.no_client_timeout:type_name -> google.protobuf.Duration
+	17, // 7: leaflow.fleet.host.v1.SessionPolicy.no_participant_timeout:type_name -> google.protobuf.Duration
 	4,  // 8: leaflow.fleet.host.v1.SessionPolicy.resource_control:type_name -> leaflow.fleet.host.v1.ResourceControl
 	3,  // 9: leaflow.fleet.host.v1.OpenSessionRequest.policy:type_name -> leaflow.fleet.host.v1.SessionPolicy
 	16, // 10: leaflow.fleet.host.v1.OpenSessionRequest.options:type_name -> google.protobuf.Any

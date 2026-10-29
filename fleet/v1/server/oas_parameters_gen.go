@@ -232,8 +232,8 @@ func decodeCloseSessionParams(args [1]string, argsEscaped bool, r *http.Request)
 
 // CommitParticipantMigrationParams is parameters of commit-participant-migration operation.
 type CommitParticipantMigrationParams struct {
-	SessionId    string
-	ConnectionId int64
+	SessionId     string
+	ParticipantId int64
 }
 
 func unpackCommitParticipantMigrationParams(packed middleware.Parameters) (params CommitParticipantMigrationParams) {
@@ -246,10 +246,10 @@ func unpackCommitParticipantMigrationParams(packed middleware.Parameters) (param
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "connectionId",
+			Name: "participantId",
 			In:   "path",
 		}
-		params.ConnectionId = packed[key].(int64)
+		params.ParticipantId = packed[key].(int64)
 	}
 	return params
 }
@@ -320,7 +320,7 @@ func decodeCommitParticipantMigrationParams(args [2]string, argsEscaped bool, r 
 			Err:  err,
 		}
 	}
-	// Decode path: connectionId.
+	// Decode path: participantId.
 	if err := func() error {
 		param := args[1]
 		if argsEscaped {
@@ -332,7 +332,7 @@ func decodeCommitParticipantMigrationParams(args [2]string, argsEscaped bool, r 
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "connectionId",
+				Param:   "participantId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -349,7 +349,7 @@ func decodeCommitParticipantMigrationParams(args [2]string, argsEscaped bool, r 
 					return err
 				}
 
-				params.ConnectionId = c
+				params.ParticipantId = c
 				return nil
 			}(); err != nil {
 				return err
@@ -365,7 +365,7 @@ func decodeCommitParticipantMigrationParams(args [2]string, argsEscaped bool, r 
 					MultipleOfSet: false,
 					MultipleOf:    0,
 					Pattern:       nil,
-				}).Validate(int64(params.ConnectionId)); err != nil {
+				}).Validate(int64(params.ParticipantId)); err != nil {
 					return errors.Wrap(err, "int")
 				}
 				return nil
@@ -378,372 +378,7 @@ func decodeCommitParticipantMigrationParams(args [2]string, argsEscaped bool, r 
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "connectionId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// CreateAttemptParams is parameters of create-attempt operation.
-type CreateAttemptParams struct {
-	SessionId    string
-	ConnectionId int64
-}
-
-func unpackCreateAttemptParams(packed middleware.Parameters) (params CreateAttemptParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "sessionId",
-			In:   "path",
-		}
-		params.SessionId = packed[key].(string)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "connectionId",
-			In:   "path",
-		}
-		params.ConnectionId = packed[key].(int64)
-	}
-	return params
-}
-
-func decodeCreateAttemptParams(args [2]string, argsEscaped bool, r *http.Request) (params CreateAttemptParams, _ error) {
-	// Decode path: sessionId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "sessionId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.SessionId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     40,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         regexMap["^[a-z0-9-]+$"],
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.SessionId)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "sessionId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode path: connectionId.
-	if err := func() error {
-		param := args[1]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[1])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "connectionId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToInt64(val)
-				if err != nil {
-					return err
-				}
-
-				params.ConnectionId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.Int{
-					MinSet:        true,
-					Min:           1,
-					MaxSet:        false,
-					Max:           0,
-					MinExclusive:  false,
-					MaxExclusive:  false,
-					MultipleOfSet: false,
-					MultipleOf:    0,
-					Pattern:       nil,
-				}).Validate(int64(params.ConnectionId)); err != nil {
-					return errors.Wrap(err, "int")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "connectionId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// CreateAttemptCandidatesParams is parameters of create-attempt-candidates operation.
-type CreateAttemptCandidatesParams struct {
-	SessionId    string
-	ConnectionId int64
-	AttemptId    uuid.UUID
-}
-
-func unpackCreateAttemptCandidatesParams(packed middleware.Parameters) (params CreateAttemptCandidatesParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "sessionId",
-			In:   "path",
-		}
-		params.SessionId = packed[key].(string)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "connectionId",
-			In:   "path",
-		}
-		params.ConnectionId = packed[key].(int64)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "attemptId",
-			In:   "path",
-		}
-		params.AttemptId = packed[key].(uuid.UUID)
-	}
-	return params
-}
-
-func decodeCreateAttemptCandidatesParams(args [3]string, argsEscaped bool, r *http.Request) (params CreateAttemptCandidatesParams, _ error) {
-	// Decode path: sessionId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "sessionId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.SessionId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     40,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         regexMap["^[a-z0-9-]+$"],
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.SessionId)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "sessionId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode path: connectionId.
-	if err := func() error {
-		param := args[1]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[1])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "connectionId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToInt64(val)
-				if err != nil {
-					return err
-				}
-
-				params.ConnectionId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.Int{
-					MinSet:        true,
-					Min:           1,
-					MaxSet:        false,
-					Max:           0,
-					MinExclusive:  false,
-					MaxExclusive:  false,
-					MultipleOfSet: false,
-					MultipleOf:    0,
-					Pattern:       nil,
-				}).Validate(int64(params.ConnectionId)); err != nil {
-					return errors.Wrap(err, "int")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "connectionId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode path: attemptId.
-	if err := func() error {
-		param := args[2]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[2])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "attemptId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToUUID(val)
-				if err != nil {
-					return err
-				}
-
-				params.AttemptId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "attemptId",
+			Name: "participantId",
 			In:   "path",
 			Err:  err,
 		}
@@ -901,14 +536,13 @@ func decodeCreateParticipantParams(args [1]string, argsEscaped bool, r *http.Req
 	return params, nil
 }
 
-// DeleteAttemptParams is parameters of delete-attempt operation.
-type DeleteAttemptParams struct {
-	SessionId    string
-	ConnectionId int64
-	AttemptId    uuid.UUID
+// CreatePeerConnectionParams is parameters of create-peer-connection operation.
+type CreatePeerConnectionParams struct {
+	SessionId     string
+	ParticipantId int64
 }
 
-func unpackDeleteAttemptParams(packed middleware.Parameters) (params DeleteAttemptParams) {
+func unpackCreatePeerConnectionParams(packed middleware.Parameters) (params CreatePeerConnectionParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "sessionId",
@@ -918,22 +552,15 @@ func unpackDeleteAttemptParams(packed middleware.Parameters) (params DeleteAttem
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "connectionId",
+			Name: "participantId",
 			In:   "path",
 		}
-		params.ConnectionId = packed[key].(int64)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "attemptId",
-			In:   "path",
-		}
-		params.AttemptId = packed[key].(uuid.UUID)
+		params.ParticipantId = packed[key].(int64)
 	}
 	return params
 }
 
-func decodeDeleteAttemptParams(args [3]string, argsEscaped bool, r *http.Request) (params DeleteAttemptParams, _ error) {
+func decodeCreatePeerConnectionParams(args [2]string, argsEscaped bool, r *http.Request) (params CreatePeerConnectionParams, _ error) {
 	// Decode path: sessionId.
 	if err := func() error {
 		param := args[0]
@@ -999,7 +626,7 @@ func decodeDeleteAttemptParams(args [3]string, argsEscaped bool, r *http.Request
 			Err:  err,
 		}
 	}
-	// Decode path: connectionId.
+	// Decode path: participantId.
 	if err := func() error {
 		param := args[1]
 		if argsEscaped {
@@ -1011,7 +638,7 @@ func decodeDeleteAttemptParams(args [3]string, argsEscaped bool, r *http.Request
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "connectionId",
+				Param:   "participantId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -1028,7 +655,7 @@ func decodeDeleteAttemptParams(args [3]string, argsEscaped bool, r *http.Request
 					return err
 				}
 
-				params.ConnectionId = c
+				params.ParticipantId = c
 				return nil
 			}(); err != nil {
 				return err
@@ -1044,7 +671,7 @@ func decodeDeleteAttemptParams(args [3]string, argsEscaped bool, r *http.Request
 					MultipleOfSet: false,
 					MultipleOf:    0,
 					Pattern:       nil,
-				}).Validate(int64(params.ConnectionId)); err != nil {
+				}).Validate(int64(params.ParticipantId)); err != nil {
 					return errors.Wrap(err, "int")
 				}
 				return nil
@@ -1057,12 +684,176 @@ func decodeDeleteAttemptParams(args [3]string, argsEscaped bool, r *http.Request
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "connectionId",
+			Name: "participantId",
 			In:   "path",
 			Err:  err,
 		}
 	}
-	// Decode path: attemptId.
+	return params, nil
+}
+
+// CreatePeerConnectionCandidatesParams is parameters of create-peer-connection-candidates operation.
+type CreatePeerConnectionCandidatesParams struct {
+	SessionId        string
+	ParticipantId    int64
+	PeerConnectionId uuid.UUID
+}
+
+func unpackCreatePeerConnectionCandidatesParams(packed middleware.Parameters) (params CreatePeerConnectionCandidatesParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "sessionId",
+			In:   "path",
+		}
+		params.SessionId = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "participantId",
+			In:   "path",
+		}
+		params.ParticipantId = packed[key].(int64)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "peerConnectionId",
+			In:   "path",
+		}
+		params.PeerConnectionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCreatePeerConnectionCandidatesParams(args [3]string, argsEscaped bool, r *http.Request) (params CreatePeerConnectionCandidatesParams, _ error) {
+	// Decode path: sessionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "sessionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.SessionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     1,
+					MinLengthSet:  true,
+					MaxLength:     40,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^[a-z0-9-]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.SessionId)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "sessionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: participantId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "participantId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToInt64(val)
+				if err != nil {
+					return err
+				}
+
+				params.ParticipantId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.Int{
+					MinSet:        true,
+					Min:           1,
+					MaxSet:        false,
+					Max:           0,
+					MinExclusive:  false,
+					MaxExclusive:  false,
+					MultipleOfSet: false,
+					MultipleOf:    0,
+					Pattern:       nil,
+				}).Validate(int64(params.ParticipantId)); err != nil {
+					return errors.Wrap(err, "int")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "participantId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: peerConnectionId.
 	if err := func() error {
 		param := args[2]
 		if argsEscaped {
@@ -1074,7 +865,7 @@ func decodeDeleteAttemptParams(args [3]string, argsEscaped bool, r *http.Request
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "attemptId",
+				Param:   "peerConnectionId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -1091,7 +882,7 @@ func decodeDeleteAttemptParams(args [3]string, argsEscaped bool, r *http.Request
 					return err
 				}
 
-				params.AttemptId = c
+				params.PeerConnectionId = c
 				return nil
 			}(); err != nil {
 				return err
@@ -1102,7 +893,7 @@ func decodeDeleteAttemptParams(args [3]string, argsEscaped bool, r *http.Request
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "attemptId",
+			Name: "peerConnectionId",
 			In:   "path",
 			Err:  err,
 		}
@@ -1425,8 +1216,8 @@ func decodeDeleteMachineRegistrationParams(args [1]string, argsEscaped bool, r *
 
 // DeleteParticipantParams is parameters of delete-participant operation.
 type DeleteParticipantParams struct {
-	SessionId    string
-	ConnectionId int64
+	SessionId     string
+	ParticipantId int64
 }
 
 func unpackDeleteParticipantParams(packed middleware.Parameters) (params DeleteParticipantParams) {
@@ -1439,10 +1230,10 @@ func unpackDeleteParticipantParams(packed middleware.Parameters) (params DeleteP
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "connectionId",
+			Name: "participantId",
 			In:   "path",
 		}
-		params.ConnectionId = packed[key].(int64)
+		params.ParticipantId = packed[key].(int64)
 	}
 	return params
 }
@@ -1513,7 +1304,7 @@ func decodeDeleteParticipantParams(args [2]string, argsEscaped bool, r *http.Req
 			Err:  err,
 		}
 	}
-	// Decode path: connectionId.
+	// Decode path: participantId.
 	if err := func() error {
 		param := args[1]
 		if argsEscaped {
@@ -1525,7 +1316,7 @@ func decodeDeleteParticipantParams(args [2]string, argsEscaped bool, r *http.Req
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "connectionId",
+				Param:   "participantId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -1542,7 +1333,7 @@ func decodeDeleteParticipantParams(args [2]string, argsEscaped bool, r *http.Req
 					return err
 				}
 
-				params.ConnectionId = c
+				params.ParticipantId = c
 				return nil
 			}(); err != nil {
 				return err
@@ -1558,7 +1349,7 @@ func decodeDeleteParticipantParams(args [2]string, argsEscaped bool, r *http.Req
 					MultipleOfSet: false,
 					MultipleOf:    0,
 					Pattern:       nil,
-				}).Validate(int64(params.ConnectionId)); err != nil {
+				}).Validate(int64(params.ParticipantId)); err != nil {
 					return errors.Wrap(err, "int")
 				}
 				return nil
@@ -1571,7 +1362,216 @@ func decodeDeleteParticipantParams(args [2]string, argsEscaped bool, r *http.Req
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "connectionId",
+			Name: "participantId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// DeletePeerConnectionParams is parameters of delete-peer-connection operation.
+type DeletePeerConnectionParams struct {
+	SessionId        string
+	ParticipantId    int64
+	PeerConnectionId uuid.UUID
+}
+
+func unpackDeletePeerConnectionParams(packed middleware.Parameters) (params DeletePeerConnectionParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "sessionId",
+			In:   "path",
+		}
+		params.SessionId = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "participantId",
+			In:   "path",
+		}
+		params.ParticipantId = packed[key].(int64)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "peerConnectionId",
+			In:   "path",
+		}
+		params.PeerConnectionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeDeletePeerConnectionParams(args [3]string, argsEscaped bool, r *http.Request) (params DeletePeerConnectionParams, _ error) {
+	// Decode path: sessionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "sessionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.SessionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     1,
+					MinLengthSet:  true,
+					MaxLength:     40,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^[a-z0-9-]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.SessionId)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "sessionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: participantId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "participantId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToInt64(val)
+				if err != nil {
+					return err
+				}
+
+				params.ParticipantId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.Int{
+					MinSet:        true,
+					Min:           1,
+					MaxSet:        false,
+					Max:           0,
+					MinExclusive:  false,
+					MaxExclusive:  false,
+					MultipleOfSet: false,
+					MultipleOf:    0,
+					Pattern:       nil,
+				}).Validate(int64(params.ParticipantId)); err != nil {
+					return errors.Wrap(err, "int")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "participantId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: peerConnectionId.
+	if err := func() error {
+		param := args[2]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[2])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "peerConnectionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.PeerConnectionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "peerConnectionId",
 			In:   "path",
 			Err:  err,
 		}
@@ -2049,8 +2049,8 @@ func decodeGetMachineRegistrationParams(args [1]string, argsEscaped bool, r *htt
 
 // GetParticipantParams is parameters of get-participant operation.
 type GetParticipantParams struct {
-	SessionId    string
-	ConnectionId int64
+	SessionId     string
+	ParticipantId int64
 }
 
 func unpackGetParticipantParams(packed middleware.Parameters) (params GetParticipantParams) {
@@ -2063,10 +2063,10 @@ func unpackGetParticipantParams(packed middleware.Parameters) (params GetPartici
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "connectionId",
+			Name: "participantId",
 			In:   "path",
 		}
-		params.ConnectionId = packed[key].(int64)
+		params.ParticipantId = packed[key].(int64)
 	}
 	return params
 }
@@ -2137,7 +2137,7 @@ func decodeGetParticipantParams(args [2]string, argsEscaped bool, r *http.Reques
 			Err:  err,
 		}
 	}
-	// Decode path: connectionId.
+	// Decode path: participantId.
 	if err := func() error {
 		param := args[1]
 		if argsEscaped {
@@ -2149,7 +2149,7 @@ func decodeGetParticipantParams(args [2]string, argsEscaped bool, r *http.Reques
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "connectionId",
+				Param:   "participantId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -2166,7 +2166,7 @@ func decodeGetParticipantParams(args [2]string, argsEscaped bool, r *http.Reques
 					return err
 				}
 
-				params.ConnectionId = c
+				params.ParticipantId = c
 				return nil
 			}(); err != nil {
 				return err
@@ -2182,7 +2182,7 @@ func decodeGetParticipantParams(args [2]string, argsEscaped bool, r *http.Reques
 					MultipleOfSet: false,
 					MultipleOf:    0,
 					Pattern:       nil,
-				}).Validate(int64(params.ConnectionId)); err != nil {
+				}).Validate(int64(params.ParticipantId)); err != nil {
 					return errors.Wrap(err, "int")
 				}
 				return nil
@@ -2195,7 +2195,7 @@ func decodeGetParticipantParams(args [2]string, argsEscaped bool, r *http.Reques
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "connectionId",
+			Name: "participantId",
 			In:   "path",
 			Err:  err,
 		}
@@ -4846,8 +4846,8 @@ func decodeListSessionsParams(args [0]string, argsEscaped bool, r *http.Request)
 
 // PrepareParticipantMigrationParams is parameters of prepare-participant-migration operation.
 type PrepareParticipantMigrationParams struct {
-	SessionId    string
-	ConnectionId int64
+	SessionId     string
+	ParticipantId int64
 }
 
 func unpackPrepareParticipantMigrationParams(packed middleware.Parameters) (params PrepareParticipantMigrationParams) {
@@ -4860,10 +4860,10 @@ func unpackPrepareParticipantMigrationParams(packed middleware.Parameters) (para
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "connectionId",
+			Name: "participantId",
 			In:   "path",
 		}
-		params.ConnectionId = packed[key].(int64)
+		params.ParticipantId = packed[key].(int64)
 	}
 	return params
 }
@@ -4934,7 +4934,7 @@ func decodePrepareParticipantMigrationParams(args [2]string, argsEscaped bool, r
 			Err:  err,
 		}
 	}
-	// Decode path: connectionId.
+	// Decode path: participantId.
 	if err := func() error {
 		param := args[1]
 		if argsEscaped {
@@ -4946,7 +4946,7 @@ func decodePrepareParticipantMigrationParams(args [2]string, argsEscaped bool, r
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "connectionId",
+				Param:   "participantId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -4963,7 +4963,7 @@ func decodePrepareParticipantMigrationParams(args [2]string, argsEscaped bool, r
 					return err
 				}
 
-				params.ConnectionId = c
+				params.ParticipantId = c
 				return nil
 			}(); err != nil {
 				return err
@@ -4979,7 +4979,7 @@ func decodePrepareParticipantMigrationParams(args [2]string, argsEscaped bool, r
 					MultipleOfSet: false,
 					MultipleOf:    0,
 					Pattern:       nil,
-				}).Validate(int64(params.ConnectionId)); err != nil {
+				}).Validate(int64(params.ParticipantId)); err != nil {
 					return errors.Wrap(err, "int")
 				}
 				return nil
@@ -4992,7 +4992,7 @@ func decodePrepareParticipantMigrationParams(args [2]string, argsEscaped bool, r
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "connectionId",
+			Name: "participantId",
 			In:   "path",
 			Err:  err,
 		}
@@ -5002,8 +5002,8 @@ func decodePrepareParticipantMigrationParams(args [2]string, argsEscaped bool, r
 
 // RenewParticipantParams is parameters of renew-participant operation.
 type RenewParticipantParams struct {
-	SessionId    string
-	ConnectionId int64
+	SessionId     string
+	ParticipantId int64
 }
 
 func unpackRenewParticipantParams(packed middleware.Parameters) (params RenewParticipantParams) {
@@ -5016,10 +5016,10 @@ func unpackRenewParticipantParams(packed middleware.Parameters) (params RenewPar
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "connectionId",
+			Name: "participantId",
 			In:   "path",
 		}
-		params.ConnectionId = packed[key].(int64)
+		params.ParticipantId = packed[key].(int64)
 	}
 	return params
 }
@@ -5090,7 +5090,7 @@ func decodeRenewParticipantParams(args [2]string, argsEscaped bool, r *http.Requ
 			Err:  err,
 		}
 	}
-	// Decode path: connectionId.
+	// Decode path: participantId.
 	if err := func() error {
 		param := args[1]
 		if argsEscaped {
@@ -5102,7 +5102,7 @@ func decodeRenewParticipantParams(args [2]string, argsEscaped bool, r *http.Requ
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "connectionId",
+				Param:   "participantId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -5119,7 +5119,7 @@ func decodeRenewParticipantParams(args [2]string, argsEscaped bool, r *http.Requ
 					return err
 				}
 
-				params.ConnectionId = c
+				params.ParticipantId = c
 				return nil
 			}(); err != nil {
 				return err
@@ -5135,7 +5135,7 @@ func decodeRenewParticipantParams(args [2]string, argsEscaped bool, r *http.Requ
 					MultipleOfSet: false,
 					MultipleOf:    0,
 					Pattern:       nil,
-				}).Validate(int64(params.ConnectionId)); err != nil {
+				}).Validate(int64(params.ParticipantId)); err != nil {
 					return errors.Wrap(err, "int")
 				}
 				return nil
@@ -5148,7 +5148,7 @@ func decodeRenewParticipantParams(args [2]string, argsEscaped bool, r *http.Requ
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "connectionId",
+			Name: "participantId",
 			In:   "path",
 			Err:  err,
 		}

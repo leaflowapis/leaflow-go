@@ -393,28 +393,28 @@ func (*Packet_Close) isPacket_Packet() {}
 
 // Each end sends Hello twice: first with its own challenge and an empty
 // response, then, once the peer's Hello arrived, again with response set to
-// the peer's challenge. A Hello that names another attempt, another
-// connection, an unexpected epoch or another PeerAuthorization than the one
-// the receiver holds ends the attempt.
+// the peer's challenge. A Hello that names another PeerConnection, another
+// participant, an unexpected epoch or another PeerAuthorization than the one
+// the receiver holds ends the PeerConnection.
 type Hello struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The attempt this PeerConnection belongs to (Signal.attempt_id).
-	AttemptId []byte `protobuf:"bytes,1,opt,name=attempt_id,json=attemptId,proto3" json:"attempt_id,omitempty"`
-	// The logical connection.
-	ConnectionId uint64 `protobuf:"varint,2,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
-	// The epoch of this path, chosen by the participant: 1 for the first attempt
-	// of the connection, then one more than the committed epoch, since the
-	// session may have taken an earlier attempt that the participant did not. The
-	// session accepts one more than its committed epoch, or 1 while no path has
-	// carried the connection, and greets with the same epoch.
+	// The PeerConnection (Signal.peer_connection_id).
+	PeerConnectionId []byte `protobuf:"bytes,1,opt,name=peer_connection_id,json=peerConnectionId,proto3" json:"peer_connection_id,omitempty"`
+	// The participant.
+	ParticipantId uint64 `protobuf:"varint,2,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
+	// The epoch of this path, chosen by the participant: 1 for its first
+	// PeerConnection, then one more than the committed epoch, since the session
+	// may have taken an earlier PeerConnection that the participant did not.
+	// The session accepts one more than its committed epoch, or 1 while no path
+	// has carried the connection, and greets with the same epoch.
 	Epoch uint64 `protobuf:"varint,3,opt,name=epoch,proto3" json:"epoch,omitempty"`
 	// 32 unpredictable bytes.
 	Challenge []byte `protobuf:"bytes,4,opt,name=challenge,proto3" json:"challenge,omitempty"`
 	// The peer's challenge. Empty in the first Hello.
 	Response []byte `protobuf:"bytes,5,opt,name=response,proto3" json:"response,omitempty"`
 	// SHA-256 of the bytes of the first PeerAuthorization the service signed
-	// for this attempt (SignedPeerAuthorization.authorization). Renewed ones do
-	// not change it.
+	// for this PeerConnection (SignedPeerAuthorization.authorization). Renewed
+	// ones do not change it.
 	AuthorizationSha256 []byte `protobuf:"bytes,6,opt,name=authorization_sha256,json=authorizationSha256,proto3" json:"authorization_sha256,omitempty"`
 	// The Ed25519 public key (RFC 8032) that vouches for the sender's DTLS
 	// certificate: the machine key for the Agent, the participant's own key for
@@ -423,8 +423,8 @@ type Hello struct {
 	// than the one in the participant's authorization.
 	PublicKey []byte `protobuf:"bytes,7,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
 	// Ed25519 signature by public_key over the UTF-8 string
-	// "leaflow.fleet.transport.v1.Hello", one zero byte, attempt_id,
-	// connection_id as 8 big-endian bytes, one byte for the role of the
+	// "leaflow.fleet.transport.v1.Hello", one zero byte, peer_connection_id,
+	// participant_id as 8 big-endian bytes, one byte for the role of the
 	// sender (1 participant, 2 Agent) and the SHA-256 fingerprint of the
 	// sender's own DTLS certificate (RFC 8122).
 	DtlsAttestation []byte `protobuf:"bytes,8,opt,name=dtls_attestation,json=dtlsAttestation,proto3" json:"dtls_attestation,omitempty"`
@@ -436,10 +436,10 @@ type Hello struct {
 	InitialMaxData uint64 `protobuf:"varint,10,opt,name=initial_max_data,json=initialMaxData,proto3" json:"initial_max_data,omitempty"`
 	// The largest Datagram.data, in bytes, the sender accepts. 0: none.
 	MaxDatagramSize uint32 `protobuf:"varint,11,opt,name=max_datagram_size,json=maxDatagramSize,proto3" json:"max_datagram_size,omitempty"`
-	// 16 bytes that identify the process holding this end of the connection.
-	// It stays the same across migrations; a migration that reaches another
-	// owner ends the connection.
-	OwnerId       []byte `protobuf:"bytes,12,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	// 16 bytes that identify the process instance holding this end of the
+	// connection. It stays the same across migrations; a migration that reaches
+	// another instance ends the connection.
+	InstanceId    []byte `protobuf:"bytes,12,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -474,16 +474,16 @@ func (*Hello) Descriptor() ([]byte, []int) {
 	return file_leaflow_fleet_transport_v1_transport_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *Hello) GetAttemptId() []byte {
+func (x *Hello) GetPeerConnectionId() []byte {
 	if x != nil {
-		return x.AttemptId
+		return x.PeerConnectionId
 	}
 	return nil
 }
 
-func (x *Hello) GetConnectionId() uint64 {
+func (x *Hello) GetParticipantId() uint64 {
 	if x != nil {
-		return x.ConnectionId
+		return x.ParticipantId
 	}
 	return 0
 }
@@ -551,9 +551,9 @@ func (x *Hello) GetMaxDatagramSize() uint32 {
 	return 0
 }
 
-func (x *Hello) GetOwnerId() []byte {
+func (x *Hello) GetInstanceId() []byte {
 	if x != nil {
-		return x.OwnerId
+		return x.InstanceId
 	}
 	return nil
 }
@@ -1027,8 +1027,8 @@ type Checkpoint struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The epoch the checkpoint belongs to.
 	Epoch uint64 `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty"`
-	// Hello.owner_id of the end that took it.
-	OwnerId []byte `protobuf:"bytes,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	// Hello.instance_id of the end that took it.
+	InstanceId []byte `protobuf:"bytes,2,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
 	// The last admitted envelope of every live channel, at most 4096.
 	Cursors []*ChannelCursor `protobuf:"bytes,3,rep,name=cursors,proto3" json:"cursors,omitempty"`
 	// Channels both ends have closed, compacted into ranges. Envelopes of these
@@ -1075,9 +1075,9 @@ func (x *Checkpoint) GetEpoch() uint64 {
 	return 0
 }
 
-func (x *Checkpoint) GetOwnerId() []byte {
+func (x *Checkpoint) GetInstanceId() []byte {
 	if x != nil {
-		return x.OwnerId
+		return x.InstanceId
 	}
 	return nil
 }
@@ -1219,8 +1219,8 @@ func (x *RetiredRange) GetLastChannelId() uint64 {
 // the participant's side fails too.
 type Migration struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The logical connection.
-	ConnectionId uint64 `protobuf:"varint,1,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
+	// The participant.
+	ParticipantId uint64 `protobuf:"varint,1,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
 	// The step.
 	//
 	// Types that are valid to be assigned to Step:
@@ -1264,9 +1264,9 @@ func (*Migration) Descriptor() ([]byte, []int) {
 	return file_leaflow_fleet_transport_v1_transport_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *Migration) GetConnectionId() uint64 {
+func (x *Migration) GetParticipantId() uint64 {
 	if x != nil {
-		return x.ConnectionId
+		return x.ParticipantId
 	}
 	return 0
 }
@@ -1392,25 +1392,25 @@ func (x *Close) GetStatus() *status.Status {
 	return nil
 }
 
-// Signaling for one PeerConnection attempt (RFC 9429 JSEP; RFC 8838 trickle
-// ICE) between the session process and the service, which stands for the
+// Signaling for one PeerConnection (RFC 9429 JSEP; RFC 8838 trickle ICE)
+// between the session process and the service, which stands for the
 // participant: the participant sends its offer, its candidates and the end of
-// an attempt through the Fleet API, and receives the session's answer,
+// a PeerConnection through the Fleet API, and receives the session's answer,
 // candidates and the PeerAuthorization in the answer of its request. The
 // service passes on the session's candidates that arrive until the session
 // sends end_of_candidates, and at most 2 seconds after the answer; the session
 // therefore sends end_of_candidates as soon as it gathered.
 type Signal struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// 16 random bytes the service chose for the attempt: the attempt_id of the
-	// Fleet API, a UUID.
-	AttemptId []byte `protobuf:"bytes,1,opt,name=attempt_id,json=attemptId,proto3" json:"attempt_id,omitempty"`
-	// The logical connection.
-	ConnectionId uint64 `protobuf:"varint,2,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
-	// Increases with every signal of one sender in the attempt.
+	// 16 random bytes the service chose for the PeerConnection: the id of the
+	// PeerConnection in the Fleet API, a UUID.
+	PeerConnectionId []byte `protobuf:"bytes,1,opt,name=peer_connection_id,json=peerConnectionId,proto3" json:"peer_connection_id,omitempty"`
+	// The participant.
+	ParticipantId uint64 `protobuf:"varint,2,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
+	// Increases with every signal of one sender for the PeerConnection.
 	Sequence uint64 `protobuf:"varint,3,opt,name=sequence,proto3" json:"sequence,omitempty"`
-	// The ICE servers and policy for the session's end of the attempt. Set by
-	// the service on the offer.
+	// The ICE servers and policy for the session's end of the PeerConnection.
+	// Set by the service on the offer.
 	Configuration *RtcConfiguration `protobuf:"bytes,4,opt,name=configuration,proto3" json:"configuration,omitempty"`
 	// The signal.
 	//
@@ -1456,16 +1456,16 @@ func (*Signal) Descriptor() ([]byte, []int) {
 	return file_leaflow_fleet_transport_v1_transport_proto_rawDescGZIP(), []int{13}
 }
 
-func (x *Signal) GetAttemptId() []byte {
+func (x *Signal) GetPeerConnectionId() []byte {
 	if x != nil {
-		return x.AttemptId
+		return x.PeerConnectionId
 	}
 	return nil
 }
 
-func (x *Signal) GetConnectionId() uint64 {
+func (x *Signal) GetParticipantId() uint64 {
 	if x != nil {
-		return x.ConnectionId
+		return x.ParticipantId
 	}
 	return 0
 }
@@ -1556,15 +1556,15 @@ type Signal_EndOfCandidates struct {
 }
 
 type Signal_Abort struct {
-	// The sender gave up the attempt: the participant ended it through the
-	// Fleet API, or the session could not take it. The participant starts
+	// The sender gave up the PeerConnection: the participant ended it through
+	// the Fleet API, or the session could not take it. The participant starts
 	// another one.
 	Abort bool `protobuf:"varint,8,opt,name=abort,proto3,oneof"`
 }
 
 type Signal_Authorization struct {
-	// The service's authorization of the attempt, sent to the session this
-	// way and to the participant with the answer, before either may send
+	// The service's authorization of the PeerConnection, sent to the session
+	// this way and to the participant with the answer, before either may send
 	// application data. Renewed ones reach the session this way too, and the
 	// participant in the answer of its renewal through the Fleet API.
 	Authorization *SignedPeerAuthorization `protobuf:"bytes,9,opt,name=authorization,proto3,oneof"`
@@ -1640,7 +1640,7 @@ func (x *SessionDescription) GetSdp() string {
 type IceCandidate struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The candidate attribute, at most 4096 bytes. At most 64 per end and
-	// attempt.
+	// PeerConnection.
 	Candidate string `protobuf:"bytes,1,opt,name=candidate,proto3" json:"candidate,omitempty"`
 	// The media stream identification tag of the candidate (RFC 5888).
 	SdpMid        string `protobuf:"bytes,2,opt,name=sdp_mid,json=sdpMid,proto3" json:"sdp_mid,omitempty"`
@@ -1824,7 +1824,7 @@ func (x *IceServer) GetCredential() string {
 // A PeerAuthorization signed by the service.
 type SignedPeerAuthorization struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The service key that signed it.
+	// The signing key that signed it.
 	KeyId string `protobuf:"bytes,1,opt,name=key_id,json=keyId,proto3" json:"key_id,omitempty"`
 	// A serialized PeerAuthorization.
 	Authorization []byte `protobuf:"bytes,2,opt,name=authorization,proto3" json:"authorization,omitempty"`
@@ -1887,8 +1887,8 @@ func (x *SignedPeerAuthorization) GetSignature() []byte {
 	return nil
 }
 
-// The service's statement that one attempt joins this participant to this
-// session with these two DTLS certificates. Both ends check the signature,
+// The service's statement that one PeerConnection joins this participant to
+// this session with these two DTLS certificates. Both ends check the signature,
 // every field and the lifetime before sending application data; DTLS alone does
 // not authorize.
 type PeerAuthorization struct {
@@ -1899,23 +1899,23 @@ type PeerAuthorization struct {
 	MachineId string `protobuf:"bytes,2,opt,name=machine_id,json=machineId,proto3" json:"machine_id,omitempty"`
 	// The session.
 	SessionId string `protobuf:"bytes,3,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	// The logical connection of the participant.
-	ConnectionId uint64 `protobuf:"varint,4,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
-	// The attempt.
-	AttemptId []byte `protobuf:"bytes,5,opt,name=attempt_id,json=attemptId,proto3" json:"attempt_id,omitempty"`
+	// The participant.
+	ParticipantId uint64 `protobuf:"varint,4,opt,name=participant_id,json=participantId,proto3" json:"participant_id,omitempty"`
+	// The PeerConnection.
+	PeerConnectionId []byte `protobuf:"bytes,5,opt,name=peer_connection_id,json=peerConnectionId,proto3" json:"peer_connection_id,omitempty"`
 	// SHA-256 fingerprint of the participant's DTLS certificate, from its offer.
 	ParticipantFingerprintSha256 []byte `protobuf:"bytes,6,opt,name=participant_fingerprint_sha256,json=participantFingerprintSha256,proto3" json:"participant_fingerprint_sha256,omitempty"`
 	// SHA-256 fingerprint of the Agent's DTLS certificate, from its answer.
 	AgentFingerprintSha256 []byte `protobuf:"bytes,7,opt,name=agent_fingerprint_sha256,json=agentFingerprintSha256,proto3" json:"agent_fingerprint_sha256,omitempty"`
-	// SHA-256 of the participant's authorization that both ends hold for the
-	// connection: the exact serialized bytes the service signed. A renewal
+	// SHA-256 of the participant's authorization that both ends hold: the exact
+	// serialized bytes the service signed. A renewal
 	// names the participant's current authorization, which may be a renewed one
 	// through the Fleet API.
 	ParticipantAuthorizationSha256 []byte `protobuf:"bytes,8,opt,name=participant_authorization_sha256,json=participantAuthorizationSha256,proto3" json:"participant_authorization_sha256,omitempty"`
 	// When the service signed it.
 	IssuedAt *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
-	// The end of the attempt's authorization: the end of the participant's
-	// current authorization.
+	// The end of the PeerConnection's authorization: the end of the
+	// participant's current authorization.
 	ExpiresAt *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
 	// The end of the current lease, at most 30 seconds after issued_at and no
 	// later than expires_at. The participant renews it through the Fleet API with
@@ -1977,16 +1977,16 @@ func (x *PeerAuthorization) GetSessionId() string {
 	return ""
 }
 
-func (x *PeerAuthorization) GetConnectionId() uint64 {
+func (x *PeerAuthorization) GetParticipantId() uint64 {
 	if x != nil {
-		return x.ConnectionId
+		return x.ParticipantId
 	}
 	return 0
 }
 
-func (x *PeerAuthorization) GetAttemptId() []byte {
+func (x *PeerAuthorization) GetPeerConnectionId() []byte {
 	if x != nil {
-		return x.AttemptId
+		return x.PeerConnectionId
 	}
 	return nil
 }
@@ -2044,11 +2044,10 @@ const file_leaflow_fleet_transport_v1_transport_proto_rawDesc = "" +
 	"\bdatagram\x18\x03 \x01(\v2$.leaflow.fleet.transport.v1.DatagramH\x00R\bdatagram\x12B\n" +
 	"\areceipt\x18\x04 \x01(\v2&.leaflow.fleet.transport.v1.CheckpointH\x00R\areceipt\x129\n" +
 	"\x05close\x18\x05 \x01(\v2!.leaflow.fleet.transport.v1.CloseH\x00R\x05closeB\b\n" +
-	"\x06packet\"\xb3\x03\n" +
-	"\x05Hello\x12\x1d\n" +
-	"\n" +
-	"attempt_id\x18\x01 \x01(\fR\tattemptId\x12#\n" +
-	"\rconnection_id\x18\x02 \x01(\x04R\fconnectionId\x12\x14\n" +
+	"\x06packet\"\xca\x03\n" +
+	"\x05Hello\x12,\n" +
+	"\x12peer_connection_id\x18\x01 \x01(\fR\x10peerConnectionId\x12%\n" +
+	"\x0eparticipant_id\x18\x02 \x01(\x04R\rparticipantId\x12\x14\n" +
 	"\x05epoch\x18\x03 \x01(\x04R\x05epoch\x12\x1c\n" +
 	"\tchallenge\x18\x04 \x01(\fR\tchallenge\x12\x1a\n" +
 	"\bresponse\x18\x05 \x01(\fR\bresponse\x121\n" +
@@ -2059,8 +2058,9 @@ const file_leaflow_fleet_transport_v1_transport_proto_rawDesc = "" +
 	"\x10max_message_size\x18\t \x01(\rR\x0emaxMessageSize\x12(\n" +
 	"\x10initial_max_data\x18\n" +
 	" \x01(\x04R\x0einitialMaxData\x12*\n" +
-	"\x11max_datagram_size\x18\v \x01(\rR\x0fmaxDatagramSize\x12\x19\n" +
-	"\bowner_id\x18\f \x01(\fR\aownerId\"\xdd\x03\n" +
+	"\x11max_datagram_size\x18\v \x01(\rR\x0fmaxDatagramSize\x12\x1f\n" +
+	"\vinstance_id\x18\f \x01(\fR\n" +
+	"instanceId\"\xdd\x03\n" +
 	"\bEnvelope\x12\x1d\n" +
 	"\n" +
 	"channel_id\x18\x01 \x01(\x04R\tchannelId\x12\x1a\n" +
@@ -2087,11 +2087,12 @@ const file_leaflow_fleet_transport_v1_transport_proto_rawDesc = "" +
 	"\bDatagram\x12\x1d\n" +
 	"\n" +
 	"channel_id\x18\x01 \x01(\x04R\tchannelId\x12\x12\n" +
-	"\x04data\x18\x02 \x01(\fR\x04data\"\xd3\x01\n" +
+	"\x04data\x18\x02 \x01(\fR\x04data\"\xd9\x01\n" +
 	"\n" +
 	"Checkpoint\x12\x14\n" +
-	"\x05epoch\x18\x01 \x01(\x04R\x05epoch\x12\x19\n" +
-	"\bowner_id\x18\x02 \x01(\fR\aownerId\x12C\n" +
+	"\x05epoch\x18\x01 \x01(\x04R\x05epoch\x12\x1f\n" +
+	"\vinstance_id\x18\x02 \x01(\fR\n" +
+	"instanceId\x12C\n" +
 	"\acursors\x18\x03 \x03(\v2).leaflow.fleet.transport.v1.ChannelCursorR\acursors\x12O\n" +
 	"\x0eretired_ranges\x18\x04 \x03(\v2(.leaflow.fleet.transport.v1.RetiredRangeR\rretiredRanges\"J\n" +
 	"\rChannelCursor\x12\x1d\n" +
@@ -2100,20 +2101,19 @@ const file_leaflow_fleet_transport_v1_transport_proto_rawDesc = "" +
 	"\bsequence\x18\x02 \x01(\x04R\bsequence\"`\n" +
 	"\fRetiredRange\x12(\n" +
 	"\x10first_channel_id\x18\x01 \x01(\x04R\x0efirstChannelId\x12&\n" +
-	"\x0flast_channel_id\x18\x02 \x01(\x04R\rlastChannelId\"\xcc\x02\n" +
-	"\tMigration\x12#\n" +
-	"\rconnection_id\x18\x01 \x01(\x04R\fconnectionId\x12B\n" +
+	"\x0flast_channel_id\x18\x02 \x01(\x04R\rlastChannelId\"\xce\x02\n" +
+	"\tMigration\x12%\n" +
+	"\x0eparticipant_id\x18\x01 \x01(\x04R\rparticipantId\x12B\n" +
 	"\aprepare\x18\x02 \x01(\v2&.leaflow.fleet.transport.v1.CheckpointH\x00R\aprepare\x12D\n" +
 	"\bprepared\x18\x03 \x01(\v2&.leaflow.fleet.transport.v1.CheckpointH\x00R\bprepared\x12@\n" +
 	"\x06commit\x18\x04 \x01(\v2&.leaflow.fleet.transport.v1.CheckpointH\x00R\x06commit\x12F\n" +
 	"\tcommitted\x18\x05 \x01(\v2&.leaflow.fleet.transport.v1.CheckpointH\x00R\tcommittedB\x06\n" +
 	"\x04step\"3\n" +
 	"\x05Close\x12*\n" +
-	"\x06status\x18\x01 \x01(\v2\x12.google.rpc.StatusR\x06status\"\x87\x04\n" +
-	"\x06Signal\x12\x1d\n" +
-	"\n" +
-	"attempt_id\x18\x01 \x01(\fR\tattemptId\x12#\n" +
-	"\rconnection_id\x18\x02 \x01(\x04R\fconnectionId\x12\x1a\n" +
+	"\x06status\x18\x01 \x01(\v2\x12.google.rpc.StatusR\x06status\"\x98\x04\n" +
+	"\x06Signal\x12,\n" +
+	"\x12peer_connection_id\x18\x01 \x01(\fR\x10peerConnectionId\x12%\n" +
+	"\x0eparticipant_id\x18\x02 \x01(\x04R\rparticipantId\x12\x1a\n" +
 	"\bsequence\x18\x03 \x01(\x04R\bsequence\x12R\n" +
 	"\rconfiguration\x18\x04 \x01(\v2,.leaflow.fleet.transport.v1.RtcConfigurationR\rconfiguration\x12R\n" +
 	"\vdescription\x18\x05 \x01(\v2..leaflow.fleet.transport.v1.SessionDescriptionH\x00R\vdescription\x12H\n" +
@@ -2143,16 +2143,15 @@ const file_leaflow_fleet_transport_v1_transport_proto_rawDesc = "" +
 	"\x17SignedPeerAuthorization\x12\x15\n" +
 	"\x06key_id\x18\x01 \x01(\tR\x05keyId\x12$\n" +
 	"\rauthorization\x18\x02 \x01(\fR\rauthorization\x12\x1c\n" +
-	"\tsignature\x18\x03 \x01(\fR\tsignature\"\xb1\x04\n" +
+	"\tsignature\x18\x03 \x01(\fR\tsignature\"\xc2\x04\n" +
 	"\x11PeerAuthorization\x12\x16\n" +
 	"\x06issuer\x18\x01 \x01(\tR\x06issuer\x12\x1d\n" +
 	"\n" +
 	"machine_id\x18\x02 \x01(\tR\tmachineId\x12\x1d\n" +
 	"\n" +
-	"session_id\x18\x03 \x01(\tR\tsessionId\x12#\n" +
-	"\rconnection_id\x18\x04 \x01(\x04R\fconnectionId\x12\x1d\n" +
-	"\n" +
-	"attempt_id\x18\x05 \x01(\fR\tattemptId\x12D\n" +
+	"session_id\x18\x03 \x01(\tR\tsessionId\x12%\n" +
+	"\x0eparticipant_id\x18\x04 \x01(\x04R\rparticipantId\x12,\n" +
+	"\x12peer_connection_id\x18\x05 \x01(\fR\x10peerConnectionId\x12D\n" +
 	"\x1eparticipant_fingerprint_sha256\x18\x06 \x01(\fR\x1cparticipantFingerprintSha256\x128\n" +
 	"\x18agent_fingerprint_sha256\x18\a \x01(\fR\x16agentFingerprintSha256\x12H\n" +
 	" participant_authorization_sha256\x18\b \x01(\fR\x1eparticipantAuthorizationSha256\x127\n" +

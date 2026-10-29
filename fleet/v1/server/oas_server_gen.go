@@ -52,44 +52,8 @@ type Handler interface {
 	//  - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
 	//    again after the error's `retry_delay`.
 	//
-	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:commit-migration
+	// POST /api/v1/sessions/{sessionId}/participants/{participantId}:commitMigration
 	CommitParticipantMigration(ctx context.Context, req *MigrationStep, params CommitParticipantMigrationParams) (*MigrationStep, error)
-	// CreateAttempt implements create-attempt operation.
-	//
-	// Starts another PeerConnection of the participant with the offer, such as after a path failed, and
-	// returns the session's answer, its ICE candidates and the signed PeerAuthorization. Move the
-	// connection to it with `prepare-participant-migration` and `commit-participant-migration`.
-	//
-	// Only the participant's user may start one.
-	//
-	// Fails with:
-	//
-	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended;
-	//  - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
-	//  - `TOO_MANY_ATTEMPTS` when the participant started too many PeerConnections in the last minute; try
-	//    again after the error's `retry_delay`;
-	//  - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
-	//    again after the error's `retry_delay`;
-	//  - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; start another.
-	//
-	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts
-	CreateAttempt(ctx context.Context, req *CreateAttemptRequest, params CreateAttemptParams) (*Attempt, error)
-	// CreateAttemptCandidates implements create-attempt-candidates operation.
-	//
-	// Passes the ICE candidates the participant gathered after its offer to the session, and with
-	// `end_of_candidates`, that it has gathered all (RFC 8838). The session ignores those of an attempt
-	// that has ended.
-	//
-	// Only the participant's user may add them.
-	//
-	// Fails with:
-	//
-	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended;
-	//  - `SESSION_UNAVAILABLE` when the session's process is not connected; try again after the error's
-	//    `retry_delay`.
-	//
-	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}/candidates
-	CreateAttemptCandidates(ctx context.Context, req *CreateAttemptCandidatesRequest, params CreateAttemptCandidatesParams) error
 	// CreateGroup implements create-group operation.
 	//
 	// Creates a group in the project's directory. It reaches the machines within about a minute.
@@ -124,8 +88,8 @@ type Handler interface {
 	//
 	// Admits one participant with the given public key to the session: signs its authorization, has the
 	// session accept it, and starts its first PeerConnection with the offer. The answer carries the
-	// participant, its authorization and the attempt with the session's answer. The participant lasts
-	// while it is renewed.
+	// participant, its authorization and the PeerConnection with the session's answer. The participant
+	// lasts while it is renewed.
 	//
 	// The owner of a session may operate it. Joining another member's session requires
 	// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
@@ -143,10 +107,48 @@ type Handler interface {
 	//    as while it restarts; try again after the error's `retry_delay`;
 	//  - `PARTICIPANT_LIMIT_REACHED` when the session has as many participants as it admits;
 	//  - `PARTICIPANT_REFUSED` when the session refused the participant;
-	//  - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; try again with a new offer.
+	//  - `PEER_CONNECTION_ABORTED` when the session gave up the PeerConnection; try again with a new
+	//    offer.
 	//
 	// POST /api/v1/sessions/{sessionId}/participants
-	CreateParticipant(ctx context.Context, req *CreateParticipantRequest, params CreateParticipantParams) (*ParticipantConnection, error)
+	CreateParticipant(ctx context.Context, req *CreateParticipantRequest, params CreateParticipantParams) (*CreateParticipantResponse, error)
+	// CreatePeerConnection implements create-peer-connection operation.
+	//
+	// Starts another PeerConnection of the participant with the offer, such as after a path failed, and
+	// returns the session's answer, its ICE candidates and the signed PeerAuthorization. Move the
+	// participant's connection to it with `prepare-participant-migration` and
+	// `commit-participant-migration`.
+	//
+	// Only the participant's user may start one.
+	//
+	// Fails with:
+	//
+	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+	//  - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
+	//  - `RATE_LIMIT_EXCEEDED` when the participant started too many PeerConnections in the last minute;
+	//    try again after the error's `retry_delay`;
+	//  - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+	//    again after the error's `retry_delay`;
+	//  - `PEER_CONNECTION_ABORTED` when the session gave up the PeerConnection; start another.
+	//
+	// POST /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections
+	CreatePeerConnection(ctx context.Context, req *CreatePeerConnectionRequest, params CreatePeerConnectionParams) (*PeerConnection, error)
+	// CreatePeerConnectionCandidates implements create-peer-connection-candidates operation.
+	//
+	// Passes the ICE candidates the participant gathered after its offer to the session, and with
+	// `end_of_candidates`, that it has gathered all (RFC 8838). The session ignores those of a
+	// PeerConnection that has ended.
+	//
+	// Only the participant's user may add them.
+	//
+	// Fails with:
+	//
+	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+	//  - `SESSION_UNAVAILABLE` when the session's process is not connected; try again after the error's
+	//    `retry_delay`.
+	//
+	// POST /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}/candidates
+	CreatePeerConnectionCandidates(ctx context.Context, req *CreatePeerConnectionCandidatesRequest, params CreatePeerConnectionCandidatesParams) error
 	// CreateSession implements create-session operation.
 	//
 	// Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
@@ -177,17 +179,6 @@ type Handler interface {
 	//
 	// POST /api/v1/sessions
 	CreateSession(ctx context.Context, req *CreateSessionRequest) (*SessionResource, error)
-	// DeleteAttempt implements delete-attempt operation.
-	//
-	// Tells the session to give up the attempt and close its PeerConnection. Abandoning an attempt that
-	// has ended succeeds.
-	//
-	// Only the participant's user may abandon it.
-	//
-	// Fails with `PARTICIPANT_NOT_FOUND` when the participant has ended.
-	//
-	// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}
-	DeleteAttempt(ctx context.Context, params DeleteAttemptParams) error
 	// DeleteGroup implements delete-group operation.
 	//
 	// Removes the group from the directory. Machines stop resolving it within about a minute; files keep
@@ -234,8 +225,19 @@ type Handler interface {
 	// The participant's user and the owner of the session may end it; otherwise this requires
 	// `fleet:sessions.manage`.
 	//
-	// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}
+	// DELETE /api/v1/sessions/{sessionId}/participants/{participantId}
 	DeleteParticipant(ctx context.Context, params DeleteParticipantParams) error
+	// DeletePeerConnection implements delete-peer-connection operation.
+	//
+	// Tells the session to give up the PeerConnection and close it. Abandoning a PeerConnection that has
+	// ended succeeds.
+	//
+	// Only the participant's user may abandon it.
+	//
+	// Fails with `PARTICIPANT_NOT_FOUND` when the participant has ended.
+	//
+	// DELETE /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}
+	DeletePeerConnection(ctx context.Context, params DeletePeerConnectionParams) error
 	// DenyEnrollment implements deny-enrollment operation.
 	//
 	// Refuses the request. The decision is final for the machine's key: the Agent stops polling and
@@ -295,7 +297,7 @@ type Handler interface {
 	//
 	// Returns a participant of the session.
 	//
-	// GET /api/v1/sessions/{sessionId}/participants/{connectionId}
+	// GET /api/v1/sessions/{sessionId}/participants/{participantId}
 	GetParticipant(ctx context.Context, params GetParticipantParams) (*ParticipantResource, error)
 	// GetPrivilegeApproval implements get-privilege-approval operation.
 	//
@@ -414,15 +416,15 @@ type Handler interface {
 	//  - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
 	//    again after the error's `retry_delay`.
 	//
-	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:prepare-migration
+	// POST /api/v1/sessions/{sessionId}/participants/{participantId}:prepareMigration
 	PrepareParticipantMigration(ctx context.Context, req *MigrationStep, params PrepareParticipantMigrationParams) (*MigrationStep, error)
 	// RenewParticipant implements renew-participant operation.
 	//
 	// Extends the participant's lease and returns renewed PeerAuthorizations for the PeerConnections whose
 	// current ones the request presents; the session receives them too. A presented authorization that the
-	// service did not sign for this participant, or whose attempt has ended, is left out of the answer.
-	// When the participant's authorization nears its end, the answer carries a renewed one, which the
-	// session already holds.
+	// service did not sign for this participant, or whose PeerConnection has ended, is left out of the
+	// answer. When the participant's authorization nears its end, the answer carries a renewed one, which
+	// the session already holds.
 	//
 	// Only the participant's user may renew it.
 	//
@@ -432,7 +434,7 @@ type Handler interface {
 	//  - `PARTICIPANT_RIGHTS_CHANGED` when the caller's permissions no longer grant what the participant
 	//    holds; it has ended, and another can be created with the current rights.
 	//
-	// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:renew
+	// POST /api/v1/sessions/{sessionId}/participants/{participantId}:renew
 	RenewParticipant(ctx context.Context, req *RenewParticipantRequest, params RenewParticipantParams) (*RenewParticipantResponse, error)
 	// RunMachineCommand implements run-machine-command operation.
 	//

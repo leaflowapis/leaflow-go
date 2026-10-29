@@ -27,23 +27,23 @@ var (
 	rn37AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn18AllowedHeaders = map[string]string{
+	rn14AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
-	rn20AllowedHeaders = map[string]string{
+	rn16AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
-	rn21AllowedHeaders = map[string]string{
+	rn17AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
 	rn26AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
-	rn22AllowedHeaders = map[string]string{
+	rn18AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
@@ -91,7 +91,7 @@ var (
 	rn9AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn23AllowedHeaders = map[string]string{
+	rn19AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
@@ -99,13 +99,13 @@ var (
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 	}
-	rn14AllowedHeaders = map[string]string{
+	rn20AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn16AllowedHeaders = map[string]string{
+	rn22AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
-	rn17AllowedHeaders = map[string]string{
+	rn23AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
 	rn13AllowedHeaders = map[string]string{
@@ -392,7 +392,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET,POST",
-							allowedHeaders: rn18AllowedHeaders,
+							allowedHeaders: rn14AllowedHeaders,
 							acceptPost:     "application/json",
 							acceptPatch:    "",
 						})
@@ -435,7 +435,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "DELETE,GET,PATCH",
-								allowedHeaders: rn20AllowedHeaders,
+								allowedHeaders: rn16AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "application/json",
 							})
@@ -465,7 +465,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "GET,POST",
-									allowedHeaders: rn21AllowedHeaders,
+									allowedHeaders: rn17AllowedHeaders,
 									acceptPost:     "application/json",
 									acceptPatch:    "",
 								})
@@ -546,7 +546,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET,POST",
-								allowedHeaders: rn22AllowedHeaders,
+								allowedHeaders: rn18AllowedHeaders,
 								acceptPost:     "application/json",
 								acceptPatch:    "",
 							})
@@ -1033,7 +1033,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "GET,POST",
-										allowedHeaders: rn23AllowedHeaders,
+										allowedHeaders: rn19AllowedHeaders,
 										acceptPost:     "application/json",
 										acceptPatch:    "",
 									})
@@ -1050,7 +1050,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									break
 								}
 
-								// Param: "connectionId"
+								// Param: "participantId"
 								// Match until one of "/:"
 								idx := strings.IndexAny(elem, "/:")
 								if idx < 0 {
@@ -1083,9 +1083,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									return
 								}
 								switch elem[0] {
-								case '/': // Prefix: "/attempts"
+								case '/': // Prefix: "/peer-connections"
 
-									if l := len("/attempts"); len(elem) >= l && elem[0:l] == "/attempts" {
+									if l := len("/peer-connections"); len(elem) >= l && elem[0:l] == "/peer-connections" {
 										elem = elem[l:]
 									} else {
 										break
@@ -1094,14 +1094,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									if len(elem) == 0 {
 										switch r.Method {
 										case "POST":
-											s.handleCreateAttemptRequest([2]string{
+											s.handleCreatePeerConnectionRequest([2]string{
 												args[0],
 												args[1],
 											}, elemIsEscaped, w, r)
 										default:
 											s.notAllowed(w, r, notAllowedParams{
 												allowedMethods: "POST",
-												allowedHeaders: rn14AllowedHeaders,
+												allowedHeaders: rn20AllowedHeaders,
 												acceptPost:     "application/json",
 												acceptPatch:    "",
 											})
@@ -1118,7 +1118,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											break
 										}
 
-										// Param: "attemptId"
+										// Param: "peerConnectionId"
 										// Match until "/"
 										idx := strings.IndexByte(elem, '/')
 										if idx < 0 {
@@ -1130,7 +1130,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										if len(elem) == 0 {
 											switch r.Method {
 											case "DELETE":
-												s.handleDeleteAttemptRequest([3]string{
+												s.handleDeletePeerConnectionRequest([3]string{
 													args[0],
 													args[1],
 													args[2],
@@ -1138,7 +1138,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											default:
 												s.notAllowed(w, r, notAllowedParams{
 													allowedMethods: "DELETE",
-													allowedHeaders: rn16AllowedHeaders,
+													allowedHeaders: rn22AllowedHeaders,
 													acceptPost:     "",
 													acceptPatch:    "",
 												})
@@ -1159,7 +1159,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 												// Leaf node.
 												switch r.Method {
 												case "POST":
-													s.handleCreateAttemptCandidatesRequest([3]string{
+													s.handleCreatePeerConnectionCandidatesRequest([3]string{
 														args[0],
 														args[1],
 														args[2],
@@ -1167,7 +1167,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 												default:
 													s.notAllowed(w, r, notAllowedParams{
 														allowedMethods: "POST",
-														allowedHeaders: rn17AllowedHeaders,
+														allowedHeaders: rn23AllowedHeaders,
 														acceptPost:     "application/json",
 														acceptPatch:    "",
 													})
@@ -1192,9 +1192,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										break
 									}
 									switch elem[0] {
-									case 'c': // Prefix: "commit-migration"
+									case 'c': // Prefix: "commitMigration"
 
-										if l := len("commit-migration"); len(elem) >= l && elem[0:l] == "commit-migration" {
+										if l := len("commitMigration"); len(elem) >= l && elem[0:l] == "commitMigration" {
 											elem = elem[l:]
 										} else {
 											break
@@ -1220,9 +1220,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											return
 										}
 
-									case 'p': // Prefix: "prepare-migration"
+									case 'p': // Prefix: "prepareMigration"
 
-										if l := len("prepare-migration"); len(elem) >= l && elem[0:l] == "prepare-migration" {
+										if l := len("prepareMigration"); len(elem) >= l && elem[0:l] == "prepareMigration" {
 											elem = elem[l:]
 										} else {
 											break
@@ -2387,7 +2387,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									break
 								}
 
-								// Param: "connectionId"
+								// Param: "participantId"
 								// Match until one of "/:"
 								idx := strings.IndexAny(elem, "/:")
 								if idx < 0 {
@@ -2403,7 +2403,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										r.summary = "End a participant"
 										r.operationID = "delete-participant"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{connectionId}"
+										r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{participantId}"
 										r.args = args
 										r.count = 2
 										return r, true
@@ -2412,7 +2412,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										r.summary = "Get a participant of a session"
 										r.operationID = "get-participant"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{connectionId}"
+										r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{participantId}"
 										r.args = args
 										r.count = 2
 										return r, true
@@ -2421,9 +2421,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									}
 								}
 								switch elem[0] {
-								case '/': // Prefix: "/attempts"
+								case '/': // Prefix: "/peer-connections"
 
-									if l := len("/attempts"); len(elem) >= l && elem[0:l] == "/attempts" {
+									if l := len("/peer-connections"); len(elem) >= l && elem[0:l] == "/peer-connections" {
 										elem = elem[l:]
 									} else {
 										break
@@ -2432,11 +2432,11 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									if len(elem) == 0 {
 										switch method {
 										case "POST":
-											r.name = CreateAttemptOperation
+											r.name = CreatePeerConnectionOperation
 											r.summary = "Start a PeerConnection"
-											r.operationID = "create-attempt"
+											r.operationID = "create-peer-connection"
 											r.operationGroup = ""
-											r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{connectionId}/attempts"
+											r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections"
 											r.args = args
 											r.count = 2
 											return r, true
@@ -2453,7 +2453,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											break
 										}
 
-										// Param: "attemptId"
+										// Param: "peerConnectionId"
 										// Match until "/"
 										idx := strings.IndexByte(elem, '/')
 										if idx < 0 {
@@ -2465,11 +2465,11 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										if len(elem) == 0 {
 											switch method {
 											case "DELETE":
-												r.name = DeleteAttemptOperation
+												r.name = DeletePeerConnectionOperation
 												r.summary = "Abandon a PeerConnection"
-												r.operationID = "delete-attempt"
+												r.operationID = "delete-peer-connection"
 												r.operationGroup = ""
-												r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}"
+												r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}"
 												r.args = args
 												r.count = 3
 												return r, true
@@ -2490,11 +2490,11 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												// Leaf node.
 												switch method {
 												case "POST":
-													r.name = CreateAttemptCandidatesOperation
+													r.name = CreatePeerConnectionCandidatesOperation
 													r.summary = "Add ICE candidates to a PeerConnection"
-													r.operationID = "create-attempt-candidates"
+													r.operationID = "create-peer-connection-candidates"
 													r.operationGroup = ""
-													r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}/candidates"
+													r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}/candidates"
 													r.args = args
 													r.count = 3
 													return r, true
@@ -2519,9 +2519,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										break
 									}
 									switch elem[0] {
-									case 'c': // Prefix: "commit-migration"
+									case 'c': // Prefix: "commitMigration"
 
-										if l := len("commit-migration"); len(elem) >= l && elem[0:l] == "commit-migration" {
+										if l := len("commitMigration"); len(elem) >= l && elem[0:l] == "commitMigration" {
 											elem = elem[l:]
 										} else {
 											break
@@ -2535,7 +2535,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												r.summary = "Commit a migration"
 												r.operationID = "commit-participant-migration"
 												r.operationGroup = ""
-												r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{connectionId}:commit-migration"
+												r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{participantId}:commitMigration"
 												r.args = args
 												r.count = 2
 												return r, true
@@ -2544,9 +2544,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											}
 										}
 
-									case 'p': // Prefix: "prepare-migration"
+									case 'p': // Prefix: "prepareMigration"
 
-										if l := len("prepare-migration"); len(elem) >= l && elem[0:l] == "prepare-migration" {
+										if l := len("prepareMigration"); len(elem) >= l && elem[0:l] == "prepareMigration" {
 											elem = elem[l:]
 										} else {
 											break
@@ -2560,7 +2560,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												r.summary = "Prepare a migration"
 												r.operationID = "prepare-participant-migration"
 												r.operationGroup = ""
-												r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{connectionId}:prepare-migration"
+												r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{participantId}:prepareMigration"
 												r.args = args
 												r.count = 2
 												return r, true
@@ -2585,7 +2585,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												r.summary = "Renew a participant"
 												r.operationID = "renew-participant"
 												r.operationGroup = ""
-												r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{connectionId}:renew"
+												r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{participantId}:renew"
 												r.args = args
 												r.count = 2
 												return r, true

@@ -314,10 +314,10 @@ type DeviceDemand struct {
 	// The applications using it, as far as the session can tell them apart,
 	// at most 32. Empty does not mean that nothing uses it.
 	Consumers []*DeviceConsumer `protobuf:"bytes,5,rep,name=consumers,proto3" json:"consumers,omitempty"`
-	// The connection that provides the device, as in ParticipantList. 0: none.
-	ProviderConnectionId uint64 `protobuf:"varint,6,opt,name=provider_connection_id,json=providerConnectionId,proto3" json:"provider_connection_id,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// The participant that provides the device, as in ParticipantList. 0: none.
+	ProviderParticipantId uint64 `protobuf:"varint,6,opt,name=provider_participant_id,json=providerParticipantId,proto3" json:"provider_participant_id,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *DeviceDemand) Reset() {
@@ -385,9 +385,9 @@ func (x *DeviceDemand) GetConsumers() []*DeviceConsumer {
 	return nil
 }
 
-func (x *DeviceDemand) GetProviderConnectionId() uint64 {
+func (x *DeviceDemand) GetProviderParticipantId() uint64 {
 	if x != nil {
-		return x.ProviderConnectionId
+		return x.ProviderParticipantId
 	}
 	return 0
 }
@@ -808,14 +808,14 @@ const file_leaflow_fleet_device_v1_device_proto_rawDesc = "" +
 	"\rServerMessage\x12?\n" +
 	"\x06demand\x18\x01 \x01(\v2%.leaflow.fleet.device.v1.DeviceDemandH\x00R\x06demand\x12I\n" +
 	"\fsnapshot_end\x18\x02 \x01(\v2$.leaflow.fleet.device.v1.SnapshotEndH\x00R\vsnapshotEndB\t\n" +
-	"\amessage\"\xd9\x02\n" +
+	"\amessage\"\xdb\x02\n" +
 	"\fDeviceDemand\x127\n" +
 	"\x04type\x18\x01 \x01(\x0e2#.leaflow.fleet.device.v1.DeviceTypeR\x04type\x12:\n" +
 	"\x05state\x18\x02 \x01(\x0e2$.leaflow.fleet.device.v1.DemandStateR\x05state\x12%\n" +
 	"\x0econsumer_count\x18\x03 \x01(\rR\rconsumerCount\x120\n" +
 	"\x14consumer_count_exact\x18\x04 \x01(\bR\x12consumerCountExact\x12E\n" +
-	"\tconsumers\x18\x05 \x03(\v2'.leaflow.fleet.device.v1.DeviceConsumerR\tconsumers\x124\n" +
-	"\x16provider_connection_id\x18\x06 \x01(\x04R\x14providerConnectionId\"\\\n" +
+	"\tconsumers\x18\x05 \x03(\v2'.leaflow.fleet.device.v1.DeviceConsumerR\tconsumers\x126\n" +
+	"\x17provider_participant_id\x18\x06 \x01(\x04R\x15providerParticipantId\"\\\n" +
 	"\x0eDeviceConsumer\x12\x1f\n" +
 	"\vconsumer_id\x18\x01 \x01(\tR\n" +
 	"consumerId\x12)\n" +

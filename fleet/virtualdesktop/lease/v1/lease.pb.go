@@ -113,8 +113,8 @@ func (*ServerMessage_SnapshotEnd) isServerMessage_Message() {}
 // so that every participant sees who operates the session.
 type InputLease struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The connection that holds it. 0: nobody; the next input takes it.
-	HolderConnectionId uint64 `protobuf:"varint,1,opt,name=holder_connection_id,json=holderConnectionId,proto3" json:"holder_connection_id,omitempty"`
+	// The participant that holds it. 0: nobody; the next input takes it.
+	HolderParticipantId uint64 `protobuf:"varint,1,opt,name=holder_participant_id,json=holderParticipantId,proto3" json:"holder_participant_id,omitempty"`
 	// The platform user of the holder.
 	HolderUserId string `protobuf:"bytes,2,opt,name=holder_user_id,json=holderUserId,proto3" json:"holder_user_id,omitempty"`
 	// When the holder took it.
@@ -156,9 +156,9 @@ func (*InputLease) Descriptor() ([]byte, []int) {
 	return file_leaflow_fleet_virtualdesktop_lease_v1_lease_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *InputLease) GetHolderConnectionId() uint64 {
+func (x *InputLease) GetHolderParticipantId() uint64 {
 	if x != nil {
-		return x.HolderConnectionId
+		return x.HolderParticipantId
 	}
 	return 0
 }
@@ -230,10 +230,10 @@ const file_leaflow_fleet_virtualdesktop_lease_v1_lease_proto_rawDesc = "" +
 	"\vinput_lease\x18\x01 \x01(\v21.leaflow.fleet.virtualdesktop.lease.v1.InputLeaseH\x00R\n" +
 	"inputLease\x12W\n" +
 	"\fsnapshot_end\x18\x02 \x01(\v22.leaflow.fleet.virtualdesktop.lease.v1.SnapshotEndH\x00R\vsnapshotEndB\t\n" +
-	"\amessage\"\xdc\x01\n" +
+	"\amessage\"\xde\x01\n" +
 	"\n" +
-	"InputLease\x120\n" +
-	"\x14holder_connection_id\x18\x01 \x01(\x04R\x12holderConnectionId\x12$\n" +
+	"InputLease\x122\n" +
+	"\x15holder_participant_id\x18\x01 \x01(\x04R\x13holderParticipantId\x12$\n" +
 	"\x0eholder_user_id\x18\x02 \x01(\tR\fholderUserId\x12;\n" +
 	"\vacquired_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"acquiredAt\x129\n" +

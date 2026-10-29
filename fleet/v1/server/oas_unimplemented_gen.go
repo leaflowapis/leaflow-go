@@ -66,51 +66,9 @@ func (UnimplementedHandler) CloseSession(ctx context.Context, params CloseSessio
 //   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
 //     again after the error's `retry_delay`.
 //
-// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:commit-migration
+// POST /api/v1/sessions/{sessionId}/participants/{participantId}:commitMigration
 func (UnimplementedHandler) CommitParticipantMigration(ctx context.Context, req *MigrationStep, params CommitParticipantMigrationParams) (r *MigrationStep, _ error) {
 	return r, ht.ErrNotImplemented
-}
-
-// CreateAttempt implements create-attempt operation.
-//
-// Starts another PeerConnection of the participant with the offer, such as after a path failed, and
-// returns the session's answer, its ICE candidates and the signed PeerAuthorization. Move the
-// connection to it with `prepare-participant-migration` and `commit-participant-migration`.
-//
-// Only the participant's user may start one.
-//
-// Fails with:
-//
-//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
-//   - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
-//   - `TOO_MANY_ATTEMPTS` when the participant started too many PeerConnections in the last minute; try
-//     again after the error's `retry_delay`;
-//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
-//     again after the error's `retry_delay`;
-//   - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; start another.
-//
-// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts
-func (UnimplementedHandler) CreateAttempt(ctx context.Context, req *CreateAttemptRequest, params CreateAttemptParams) (r *Attempt, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateAttemptCandidates implements create-attempt-candidates operation.
-//
-// Passes the ICE candidates the participant gathered after its offer to the session, and with
-// `end_of_candidates`, that it has gathered all (RFC 8838). The session ignores those of an attempt
-// that has ended.
-//
-// Only the participant's user may add them.
-//
-// Fails with:
-//
-//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
-//   - `SESSION_UNAVAILABLE` when the session's process is not connected; try again after the error's
-//     `retry_delay`.
-//
-// POST /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}/candidates
-func (UnimplementedHandler) CreateAttemptCandidates(ctx context.Context, req *CreateAttemptCandidatesRequest, params CreateAttemptCandidatesParams) error {
-	return ht.ErrNotImplemented
 }
 
 // CreateGroup implements create-group operation.
@@ -156,8 +114,8 @@ func (UnimplementedHandler) CreateMachineRegistration(ctx context.Context, req *
 //
 // Admits one participant with the given public key to the session: signs its authorization, has the
 // session accept it, and starts its first PeerConnection with the offer. The answer carries the
-// participant, its authorization and the attempt with the session's answer. The participant lasts
-// while it is renewed.
+// participant, its authorization and the PeerConnection with the session's answer. The participant
+// lasts while it is renewed.
 //
 // The owner of a session may operate it. Joining another member's session requires
 // `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
@@ -175,11 +133,55 @@ func (UnimplementedHandler) CreateMachineRegistration(ctx context.Context, req *
 //     as while it restarts; try again after the error's `retry_delay`;
 //   - `PARTICIPANT_LIMIT_REACHED` when the session has as many participants as it admits;
 //   - `PARTICIPANT_REFUSED` when the session refused the participant;
-//   - `ATTEMPT_ABORTED` when the session gave up the PeerConnection; try again with a new offer.
+//   - `PEER_CONNECTION_ABORTED` when the session gave up the PeerConnection; try again with a new
+//     offer.
 //
 // POST /api/v1/sessions/{sessionId}/participants
-func (UnimplementedHandler) CreateParticipant(ctx context.Context, req *CreateParticipantRequest, params CreateParticipantParams) (r *ParticipantConnection, _ error) {
+func (UnimplementedHandler) CreateParticipant(ctx context.Context, req *CreateParticipantRequest, params CreateParticipantParams) (r *CreateParticipantResponse, _ error) {
 	return r, ht.ErrNotImplemented
+}
+
+// CreatePeerConnection implements create-peer-connection operation.
+//
+// Starts another PeerConnection of the participant with the offer, such as after a path failed, and
+// returns the session's answer, its ICE candidates and the signed PeerAuthorization. Move the
+// participant's connection to it with `prepare-participant-migration` and
+// `commit-participant-migration`.
+//
+// Only the participant's user may start one.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `OFFER_INVALID` when the offer is not an SDP offer that names a SHA-256 DTLS fingerprint;
+//   - `RATE_LIMIT_EXCEEDED` when the participant started too many PeerConnections in the last minute;
+//     try again after the error's `retry_delay`;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
+//     again after the error's `retry_delay`;
+//   - `PEER_CONNECTION_ABORTED` when the session gave up the PeerConnection; start another.
+//
+// POST /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections
+func (UnimplementedHandler) CreatePeerConnection(ctx context.Context, req *CreatePeerConnectionRequest, params CreatePeerConnectionParams) (r *PeerConnection, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreatePeerConnectionCandidates implements create-peer-connection-candidates operation.
+//
+// Passes the ICE candidates the participant gathered after its offer to the session, and with
+// `end_of_candidates`, that it has gathered all (RFC 8838). The session ignores those of a
+// PeerConnection that has ended.
+//
+// Only the participant's user may add them.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected; try again after the error's
+//     `retry_delay`.
+//
+// POST /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}/candidates
+func (UnimplementedHandler) CreatePeerConnectionCandidates(ctx context.Context, req *CreatePeerConnectionCandidatesRequest, params CreatePeerConnectionCandidatesParams) error {
+	return ht.ErrNotImplemented
 }
 
 // CreateSession implements create-session operation.
@@ -213,20 +215,6 @@ func (UnimplementedHandler) CreateParticipant(ctx context.Context, req *CreatePa
 // POST /api/v1/sessions
 func (UnimplementedHandler) CreateSession(ctx context.Context, req *CreateSessionRequest) (r *SessionResource, _ error) {
 	return r, ht.ErrNotImplemented
-}
-
-// DeleteAttempt implements delete-attempt operation.
-//
-// Tells the session to give up the attempt and close its PeerConnection. Abandoning an attempt that
-// has ended succeeds.
-//
-// Only the participant's user may abandon it.
-//
-// Fails with `PARTICIPANT_NOT_FOUND` when the participant has ended.
-//
-// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}/attempts/{attemptId}
-func (UnimplementedHandler) DeleteAttempt(ctx context.Context, params DeleteAttemptParams) error {
-	return ht.ErrNotImplemented
 }
 
 // DeleteGroup implements delete-group operation.
@@ -287,8 +275,22 @@ func (UnimplementedHandler) DeleteMachineRegistration(ctx context.Context, param
 // The participant's user and the owner of the session may end it; otherwise this requires
 // `fleet:sessions.manage`.
 //
-// DELETE /api/v1/sessions/{sessionId}/participants/{connectionId}
+// DELETE /api/v1/sessions/{sessionId}/participants/{participantId}
 func (UnimplementedHandler) DeleteParticipant(ctx context.Context, params DeleteParticipantParams) error {
+	return ht.ErrNotImplemented
+}
+
+// DeletePeerConnection implements delete-peer-connection operation.
+//
+// Tells the session to give up the PeerConnection and close it. Abandoning a PeerConnection that has
+// ended succeeds.
+//
+// Only the participant's user may abandon it.
+//
+// Fails with `PARTICIPANT_NOT_FOUND` when the participant has ended.
+//
+// DELETE /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}
+func (UnimplementedHandler) DeletePeerConnection(ctx context.Context, params DeletePeerConnectionParams) error {
 	return ht.ErrNotImplemented
 }
 
@@ -372,7 +374,7 @@ func (UnimplementedHandler) GetMachineRegistration(ctx context.Context, params G
 //
 // Returns a participant of the session.
 //
-// GET /api/v1/sessions/{sessionId}/participants/{connectionId}
+// GET /api/v1/sessions/{sessionId}/participants/{participantId}
 func (UnimplementedHandler) GetParticipant(ctx context.Context, params GetParticipantParams) (r *ParticipantResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -536,7 +538,7 @@ func (UnimplementedHandler) ListSessions(ctx context.Context, params ListSession
 //   - `SESSION_UNAVAILABLE` when the session's process is not connected or did not answer in time; try
 //     again after the error's `retry_delay`.
 //
-// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:prepare-migration
+// POST /api/v1/sessions/{sessionId}/participants/{participantId}:prepareMigration
 func (UnimplementedHandler) PrepareParticipantMigration(ctx context.Context, req *MigrationStep, params PrepareParticipantMigrationParams) (r *MigrationStep, _ error) {
 	return r, ht.ErrNotImplemented
 }
@@ -545,9 +547,9 @@ func (UnimplementedHandler) PrepareParticipantMigration(ctx context.Context, req
 //
 // Extends the participant's lease and returns renewed PeerAuthorizations for the PeerConnections whose
 // current ones the request presents; the session receives them too. A presented authorization that the
-// service did not sign for this participant, or whose attempt has ended, is left out of the answer.
-// When the participant's authorization nears its end, the answer carries a renewed one, which the
-// session already holds.
+// service did not sign for this participant, or whose PeerConnection has ended, is left out of the
+// answer. When the participant's authorization nears its end, the answer carries a renewed one, which
+// the session already holds.
 //
 // Only the participant's user may renew it.
 //
@@ -557,7 +559,7 @@ func (UnimplementedHandler) PrepareParticipantMigration(ctx context.Context, req
 //   - `PARTICIPANT_RIGHTS_CHANGED` when the caller's permissions no longer grant what the participant
 //     holds; it has ended, and another can be created with the current rights.
 //
-// POST /api/v1/sessions/{sessionId}/participants/{connectionId}:renew
+// POST /api/v1/sessions/{sessionId}/participants/{participantId}:renew
 func (UnimplementedHandler) RenewParticipant(ctx context.Context, req *RenewParticipantRequest, params RenewParticipantParams) (r *RenewParticipantResponse, _ error) {
 	return r, ht.ErrNotImplemented
 }

@@ -64,25 +64,6 @@ func encodeCommitParticipantMigrationResponse(response *MigrationStep, w http.Re
 	return nil
 }
 
-func encodeCreateAttemptResponse(response *Attempt, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(201)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeCreateAttemptCandidatesResponse(response *CreateAttemptCandidatesNoContent, w http.ResponseWriter, span trace.Span) error {
-	w.WriteHeader(204)
-
-	return nil
-}
-
 func encodeCreateGroupResponse(response *GroupResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
@@ -122,7 +103,7 @@ func encodeCreateMachineRegistrationResponse(response *CreateMachineRegistration
 	return nil
 }
 
-func encodeCreateParticipantResponse(response *ParticipantConnection, w http.ResponseWriter, span trace.Span) error {
+func encodeCreateParticipantResponse(response *CreateParticipantResponse, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
 
@@ -131,6 +112,25 @@ func encodeCreateParticipantResponse(response *ParticipantConnection, w http.Res
 	if _, err := e.WriteTo(w); err != nil {
 		return errors.Wrap(err, "write")
 	}
+
+	return nil
+}
+
+func encodeCreatePeerConnectionResponse(response *PeerConnection, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeCreatePeerConnectionCandidatesResponse(response *CreatePeerConnectionCandidatesNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
 
 	return nil
 }
@@ -144,12 +144,6 @@ func encodeCreateSessionResponse(response *SessionResource, w http.ResponseWrite
 	if _, err := e.WriteTo(w); err != nil {
 		return errors.Wrap(err, "write")
 	}
-
-	return nil
-}
-
-func encodeDeleteAttemptResponse(response *DeleteAttemptNoContent, w http.ResponseWriter, span trace.Span) error {
-	w.WriteHeader(204)
 
 	return nil
 }
@@ -179,6 +173,12 @@ func encodeDeleteMachineRegistrationResponse(response *DeleteMachineRegistration
 }
 
 func encodeDeleteParticipantResponse(response *DeleteParticipantNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
+}
+
+func encodeDeletePeerConnectionResponse(response *DeletePeerConnectionNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
 	return nil
