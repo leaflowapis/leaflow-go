@@ -97,12 +97,18 @@ func (UnimplementedHandler) CreateMachineRegistration(ctx context.Context, req *
 // sound, devices, printers and privilege approvals. The account is created if the caller has none yet.
 // Requires `fleet:machines.login` on the machine.
 //
+// On a machine an account has at most one session with a desktop and at most 8 sessions in all.
+// Sessions without a desktop run side by side, such as one for a program and one for a person; several
+// viewers can also share one session.
+//
 // Fails with:
 //
 //   - `MACHINE_OFFLINE` when the machine is not connected;
 //   - `FEATURE_UNAVAILABLE` when the machine does not offer sessions, or with `desktop`, desktops;
-//   - `USER_HAS_SESSION` when the account already has a session on the machine, which
-//     `metadata.sessionId` names; connect to it instead;
+//   - `USER_HAS_DESKTOP_SESSION` with `desktop` when the account already has a session with a desktop
+//     on the machine, which `metadata.sessionId` names; connect to it instead;
+//   - `SESSION_LIMIT_REACHED` when the account already has 8 open sessions on the machine; close one
+//     first;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, such as while it has not received the account yet or a local account
 //     uses its name; `PAM_PERMISSION_DENIED` carries the machine's message in `metadata.pamMessage`;
@@ -117,25 +123,42 @@ func (UnimplementedHandler) CreateSession(ctx context.Context, req *CreateSessio
 	return r, ht.ErrNotImplemented
 }
 
-// CreateViewerTicket implements create-viewer-ticket operation.
+// CreateSignalingTicket implements create-signaling-ticket operation.
 //
-// Issues a single-use ticket that admits one viewer connection with the given public key to the
-// session. It is valid for 60 seconds.
+// Issues a single-use ticket for one signaling WebSocket of the viewer connection, valid for 60
+// seconds. Only the viewer connection's user may ask for one.
+//
+// Fails with `VIEWER_NOT_FOUND` when the viewer connection has ended.
+//
+// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}/signaling-tickets
+func (UnimplementedHandler) CreateSignalingTicket(ctx context.Context, params CreateSignalingTicketParams) (r *SignalingTicket, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateViewer implements create-viewer operation.
+//
+// Admits one viewer with the given public key to the session: signs its authorization, has the session
+// accept it, and returns it with a first signaling ticket. The viewer connection lasts while it is
+// renewed.
 //
 // The owner of a session may operate it. Viewing another member's session requires
 // `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
 // operating it. Each further capability of the session — file transfer, the clipboard, terminals and
 // programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
 // requests and reading logs — is granted only with its permission; a viewer that may only watch gets
-// none of them. A ticket may ask for less: to watch only, or for some of the capabilities.
+// none of them. A request may ask for less: to watch only, or for some of the capabilities.
 //
 // Fails with:
 //
 //   - `SESSION_CLOSED` when the session has ended;
-//   - `SESSION_ACCESS_DENIED` when the caller may not view the session.
+//   - `SESSION_ACCESS_DENIED` when the caller may not view the session;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected, such as while it restarts; try
+//     again after `Retry-After`;
+//   - `VIEWER_LIMIT_REACHED` when the session has as many viewers as it admits;
+//   - `VIEWER_REFUSED` when the session refused the viewer.
 //
-// POST /api/v1/sessions/{sessionId}/viewer-tickets
-func (UnimplementedHandler) CreateViewerTicket(ctx context.Context, req *CreateViewerTicketRequest, params CreateViewerTicketParams) (r *ViewerTicketResource, _ error) {
+// POST /api/v1/sessions/{sessionId}/viewers
+func (UnimplementedHandler) CreateViewer(ctx context.Context, req *CreateViewerRequest, params CreateViewerParams) (r *ViewerConnection, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -191,10 +214,10 @@ func (UnimplementedHandler) DeleteMachineRegistration(ctx context.Context, param
 
 // DeleteViewer implements delete-viewer operation.
 //
-// Disconnects the viewer from the session; the session goes on. The viewer can connect again only with
-// a new ticket.
+// Ends the viewer connection: the session detaches the viewer and closes its PeerConnections, and the
+// session goes on. A viewer leaves this way; others are disconnected this way.
 //
-// The owner of the session may disconnect its viewers; otherwise this requires
+// The viewer connection's user and the owner of the session may end it; otherwise this requires
 // `fleet:sessions.manage`.
 //
 // DELETE /api/v1/sessions/{sessionId}/viewers/{connectionId}
@@ -410,6 +433,27 @@ func (UnimplementedHandler) ListSessionViewers(ctx context.Context, params ListS
 //
 // GET /api/v1/sessions
 func (UnimplementedHandler) ListSessions(ctx context.Context, params ListSessionsParams) (r *SessionList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RenewViewer implements renew-viewer operation.
+//
+// Extends the viewer connection's lease and returns renewed PeerAuthorizations for the PeerConnections
+// whose current ones the request presents; the session receives them too. A presented authorization
+// that the service did not sign for this viewer connection, or whose attempt has ended, is left out of
+// the answer. When the viewer's authorization nears its end, the answer carries a renewed one, which
+// the session already holds.
+//
+// Only the viewer connection's user may renew it.
+//
+// Fails with:
+//
+//   - `VIEWER_NOT_FOUND` when the viewer connection has ended; create another;
+//   - `VIEWER_RIGHTS_CHANGED` when the caller's permissions no longer grant what the viewer connection
+//     holds; it has ended, and another can be created with the current rights.
+//
+// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}:renew
+func (UnimplementedHandler) RenewViewer(ctx context.Context, req *RenewViewerRequest, params RenewViewerParams) (r *RenewViewerResponse, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

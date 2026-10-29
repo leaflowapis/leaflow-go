@@ -95,12 +95,18 @@ type Invoker interface {
 	// sound, devices, printers and privilege approvals. The account is created if the caller has none yet.
 	// Requires `fleet:machines.login` on the machine.
 	//
+	// On a machine an account has at most one session with a desktop and at most 8 sessions in all.
+	// Sessions without a desktop run side by side, such as one for a program and one for a person; several
+	// viewers can also share one session.
+	//
 	// Fails with:
 	//
 	//  - `MACHINE_OFFLINE` when the machine is not connected;
 	//  - `FEATURE_UNAVAILABLE` when the machine does not offer sessions, or with `desktop`, desktops;
-	//  - `USER_HAS_SESSION` when the account already has a session on the machine, which
-	//    `metadata.sessionId` names; connect to it instead;
+	//  - `USER_HAS_DESKTOP_SESSION` with `desktop` when the account already has a session with a desktop
+	//    on the machine, which `metadata.sessionId` names; connect to it instead;
+	//  - `SESSION_LIMIT_REACHED` when the account already has 8 open sessions on the machine; close one
+	//    first;
 	//  - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 	//    machine refuses the account, such as while it has not received the account yet or a local account
 	//    uses its name; `PAM_PERMISSION_DENIED` carries the machine's message in `metadata.pamMessage`;
@@ -112,25 +118,39 @@ type Invoker interface {
 	//
 	// POST /api/v1/sessions
 	CreateSession(ctx context.Context, request *CreateSessionRequest) (*SessionResource, error)
-	// CreateViewerTicket invokes create-viewer-ticket operation.
+	// CreateSignalingTicket invokes create-signaling-ticket operation.
 	//
-	// Issues a single-use ticket that admits one viewer connection with the given public key to the
-	// session. It is valid for 60 seconds.
+	// Issues a single-use ticket for one signaling WebSocket of the viewer connection, valid for 60
+	// seconds. Only the viewer connection's user may ask for one.
+	//
+	// Fails with `VIEWER_NOT_FOUND` when the viewer connection has ended.
+	//
+	// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}/signaling-tickets
+	CreateSignalingTicket(ctx context.Context, params CreateSignalingTicketParams) (*SignalingTicket, error)
+	// CreateViewer invokes create-viewer operation.
+	//
+	// Admits one viewer with the given public key to the session: signs its authorization, has the session
+	// accept it, and returns it with a first signaling ticket. The viewer connection lasts while it is
+	// renewed.
 	//
 	// The owner of a session may operate it. Viewing another member's session requires
 	// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
 	// operating it. Each further capability of the session — file transfer, the clipboard, terminals and
 	// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
 	// requests and reading logs — is granted only with its permission; a viewer that may only watch gets
-	// none of them. A ticket may ask for less: to watch only, or for some of the capabilities.
+	// none of them. A request may ask for less: to watch only, or for some of the capabilities.
 	//
 	// Fails with:
 	//
 	//  - `SESSION_CLOSED` when the session has ended;
-	//  - `SESSION_ACCESS_DENIED` when the caller may not view the session.
+	//  - `SESSION_ACCESS_DENIED` when the caller may not view the session;
+	//  - `SESSION_UNAVAILABLE` when the session's process is not connected, such as while it restarts; try
+	//    again after `Retry-After`;
+	//  - `VIEWER_LIMIT_REACHED` when the session has as many viewers as it admits;
+	//  - `VIEWER_REFUSED` when the session refused the viewer.
 	//
-	// POST /api/v1/sessions/{sessionId}/viewer-tickets
-	CreateViewerTicket(ctx context.Context, request *CreateViewerTicketRequest, params CreateViewerTicketParams) (*ViewerTicketResource, error)
+	// POST /api/v1/sessions/{sessionId}/viewers
+	CreateViewer(ctx context.Context, request *CreateViewerRequest, params CreateViewerParams) (*ViewerConnection, error)
 	// DeleteGroup invokes delete-group operation.
 	//
 	// Removes the group from the directory. Machines stop resolving it within about a minute; files keep
@@ -171,10 +191,10 @@ type Invoker interface {
 	DeleteMachineRegistration(ctx context.Context, params DeleteMachineRegistrationParams) error
 	// DeleteViewer invokes delete-viewer operation.
 	//
-	// Disconnects the viewer from the session; the session goes on. The viewer can connect again only with
-	// a new ticket.
+	// Ends the viewer connection: the session detaches the viewer and closes its PeerConnections, and the
+	// session goes on. A viewer leaves this way; others are disconnected this way.
 	//
-	// The owner of the session may disconnect its viewers; otherwise this requires
+	// The viewer connection's user and the owner of the session may end it; otherwise this requires
 	// `fleet:sessions.manage`.
 	//
 	// DELETE /api/v1/sessions/{sessionId}/viewers/{connectionId}
@@ -327,6 +347,24 @@ type Invoker interface {
 	//
 	// GET /api/v1/sessions
 	ListSessions(ctx context.Context, params ListSessionsParams) (*SessionList, error)
+	// RenewViewer invokes renew-viewer operation.
+	//
+	// Extends the viewer connection's lease and returns renewed PeerAuthorizations for the PeerConnections
+	// whose current ones the request presents; the session receives them too. A presented authorization
+	// that the service did not sign for this viewer connection, or whose attempt has ended, is left out of
+	// the answer. When the viewer's authorization nears its end, the answer carries a renewed one, which
+	// the session already holds.
+	//
+	// Only the viewer connection's user may renew it.
+	//
+	// Fails with:
+	//
+	//  - `VIEWER_NOT_FOUND` when the viewer connection has ended; create another;
+	//  - `VIEWER_RIGHTS_CHANGED` when the caller's permissions no longer grant what the viewer connection
+	//    holds; it has ended, and another can be created with the current rights.
+	//
+	// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}:renew
+	RenewViewer(ctx context.Context, request *RenewViewerRequest, params RenewViewerParams) (*RenewViewerResponse, error)
 	// RunMachineCommand invokes run-machine-command operation.
 	//
 	// Runs one command line on the machine as the caller's account, with its login shell, and returns once
@@ -1268,12 +1306,18 @@ func (c *Client) sendCreateMachineRegistration(ctx context.Context, request *Cre
 // sound, devices, printers and privilege approvals. The account is created if the caller has none yet.
 // Requires `fleet:machines.login` on the machine.
 //
+// On a machine an account has at most one session with a desktop and at most 8 sessions in all.
+// Sessions without a desktop run side by side, such as one for a program and one for a person; several
+// viewers can also share one session.
+//
 // Fails with:
 //
 //   - `MACHINE_OFFLINE` when the machine is not connected;
 //   - `FEATURE_UNAVAILABLE` when the machine does not offer sessions, or with `desktop`, desktops;
-//   - `USER_HAS_SESSION` when the account already has a session on the machine, which
-//     `metadata.sessionId` names; connect to it instead;
+//   - `USER_HAS_DESKTOP_SESSION` with `desktop` when the account already has a session with a desktop
+//     on the machine, which `metadata.sessionId` names; connect to it instead;
+//   - `SESSION_LIMIT_REACHED` when the account already has 8 open sessions on the machine; close one
+//     first;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, such as while it has not received the account yet or a local account
 //     uses its name; `PAM_PERMISSION_DENIED` carries the machine's message in `metadata.pamMessage`;
@@ -1404,43 +1448,24 @@ func (c *Client) sendCreateSession(ctx context.Context, request *CreateSessionRe
 	return result, nil
 }
 
-// CreateViewerTicket invokes create-viewer-ticket operation.
+// CreateSignalingTicket invokes create-signaling-ticket operation.
 //
-// Issues a single-use ticket that admits one viewer connection with the given public key to the
-// session. It is valid for 60 seconds.
+// Issues a single-use ticket for one signaling WebSocket of the viewer connection, valid for 60
+// seconds. Only the viewer connection's user may ask for one.
 //
-// The owner of a session may operate it. Viewing another member's session requires
-// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
-// operating it. Each further capability of the session — file transfer, the clipboard, terminals and
-// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
-// requests and reading logs — is granted only with its permission; a viewer that may only watch gets
-// none of them. A ticket may ask for less: to watch only, or for some of the capabilities.
+// Fails with `VIEWER_NOT_FOUND` when the viewer connection has ended.
 //
-// Fails with:
-//
-//   - `SESSION_CLOSED` when the session has ended;
-//   - `SESSION_ACCESS_DENIED` when the caller may not view the session.
-//
-// POST /api/v1/sessions/{sessionId}/viewer-tickets
-func (c *Client) CreateViewerTicket(ctx context.Context, request *CreateViewerTicketRequest, params CreateViewerTicketParams) (*ViewerTicketResource, error) {
-	res, err := c.sendCreateViewerTicket(ctx, request, params)
+// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}/signaling-tickets
+func (c *Client) CreateSignalingTicket(ctx context.Context, params CreateSignalingTicketParams) (*SignalingTicket, error) {
+	res, err := c.sendCreateSignalingTicket(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendCreateViewerTicket(ctx context.Context, request *CreateViewerTicketRequest, params CreateViewerTicketParams) (res *ViewerTicketResource, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
+func (c *Client) sendCreateSignalingTicket(ctx context.Context, params CreateSignalingTicketParams) (res *SignalingTicket, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-viewer-ticket"),
+		otelogen.OperationID("create-signaling-ticket"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/viewer-tickets"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/viewers/{connectionId}/signaling-tickets"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1456,7 +1481,7 @@ func (c *Client) sendCreateViewerTicket(ctx context.Context, request *CreateView
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateViewerTicketOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateSignalingTicketOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -1473,7 +1498,7 @@ func (c *Client) sendCreateViewerTicket(ctx context.Context, request *CreateView
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
+	var pathParts [5]string
 	pathParts[0] = "/api/v1/sessions/"
 	{
 		// Encode "sessionId" parameter.
@@ -1493,7 +1518,26 @@ func (c *Client) sendCreateViewerTicket(ctx context.Context, request *CreateView
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/viewer-tickets"
+	pathParts[2] = "/viewers/"
+	{
+		// Encode "connectionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "connectionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.ConnectionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = "/signaling-tickets"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -1501,16 +1545,13 @@ func (c *Client) sendCreateViewerTicket(ctx context.Context, request *CreateView
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeCreateViewerTicketRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
 
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateViewerTicketOperation, r); {
+			switch err := c.securityBearerAuth(ctx, CreateSignalingTicketOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -1553,7 +1594,169 @@ func (c *Client) sendCreateViewerTicket(ctx context.Context, request *CreateView
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeCreateViewerTicketResponse(resp)
+	result, err := decodeCreateSignalingTicketResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateViewer invokes create-viewer operation.
+//
+// Admits one viewer with the given public key to the session: signs its authorization, has the session
+// accept it, and returns it with a first signaling ticket. The viewer connection lasts while it is
+// renewed.
+//
+// The owner of a session may operate it. Viewing another member's session requires
+// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
+// operating it. Each further capability of the session — file transfer, the clipboard, terminals and
+// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
+// requests and reading logs — is granted only with its permission; a viewer that may only watch gets
+// none of them. A request may ask for less: to watch only, or for some of the capabilities.
+//
+// Fails with:
+//
+//   - `SESSION_CLOSED` when the session has ended;
+//   - `SESSION_ACCESS_DENIED` when the caller may not view the session;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected, such as while it restarts; try
+//     again after `Retry-After`;
+//   - `VIEWER_LIMIT_REACHED` when the session has as many viewers as it admits;
+//   - `VIEWER_REFUSED` when the session refused the viewer.
+//
+// POST /api/v1/sessions/{sessionId}/viewers
+func (c *Client) CreateViewer(ctx context.Context, request *CreateViewerRequest, params CreateViewerParams) (*ViewerConnection, error) {
+	res, err := c.sendCreateViewer(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCreateViewer(ctx context.Context, request *CreateViewerRequest, params CreateViewerParams) (res *ViewerConnection, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-viewer"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/viewers"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateViewerOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/sessions/"
+	{
+		// Encode "sessionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "sessionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.SessionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/viewers"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateViewerRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreateViewerOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateViewerResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2120,10 +2323,10 @@ func (c *Client) sendDeleteMachineRegistration(ctx context.Context, params Delet
 
 // DeleteViewer invokes delete-viewer operation.
 //
-// Disconnects the viewer from the session; the session goes on. The viewer can connect again only with
-// a new ticket.
+// Ends the viewer connection: the session detaches the viewer and closes its PeerConnections, and the
+// session goes on. A viewer leaves this way; others are disconnected this way.
 //
-// The owner of the session may disconnect its viewers; otherwise this requires
+// The viewer connection's user and the owner of the session may end it; otherwise this requires
 // `fleet:sessions.manage`.
 //
 // DELETE /api/v1/sessions/{sessionId}/viewers/{connectionId}
@@ -5432,6 +5635,181 @@ func (c *Client) sendListSessions(ctx context.Context, params ListSessionsParams
 
 	stage = "DecodeResponse"
 	result, err := decodeListSessionsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// RenewViewer invokes renew-viewer operation.
+//
+// Extends the viewer connection's lease and returns renewed PeerAuthorizations for the PeerConnections
+// whose current ones the request presents; the session receives them too. A presented authorization
+// that the service did not sign for this viewer connection, or whose attempt has ended, is left out of
+// the answer. When the viewer's authorization nears its end, the answer carries a renewed one, which
+// the session already holds.
+//
+// Only the viewer connection's user may renew it.
+//
+// Fails with:
+//
+//   - `VIEWER_NOT_FOUND` when the viewer connection has ended; create another;
+//   - `VIEWER_RIGHTS_CHANGED` when the caller's permissions no longer grant what the viewer connection
+//     holds; it has ended, and another can be created with the current rights.
+//
+// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}:renew
+func (c *Client) RenewViewer(ctx context.Context, request *RenewViewerRequest, params RenewViewerParams) (*RenewViewerResponse, error) {
+	res, err := c.sendRenewViewer(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendRenewViewer(ctx context.Context, request *RenewViewerRequest, params RenewViewerParams) (res *RenewViewerResponse, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("renew-viewer"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/viewers/{connectionId}:renew"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RenewViewerOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [5]string
+	pathParts[0] = "/api/v1/sessions/"
+	{
+		// Encode "sessionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "sessionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.SessionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/viewers/"
+	{
+		// Encode "connectionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "connectionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.ConnectionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = ":renew"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRenewViewerRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, RenewViewerOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRenewViewerResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

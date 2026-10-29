@@ -40,21 +40,21 @@ var (
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
-	rn19AllowedHeaders = map[string]string{
+	rn22AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
 	rn15AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
-	rn24AllowedHeaders = map[string]string{
+	rn27AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 	}
 	rn40AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn22AllowedHeaders = map[string]string{
+	rn25AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
@@ -91,15 +91,19 @@ var (
 	rn9AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn17AllowedHeaders = map[string]string{
+	rn20AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
-	rn44AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn27AllowedHeaders = map[string]string{
+	rn18AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
+	}
+	rn19AllowedHeaders = map[string]string{
+		"POST": "Authorization",
+	}
+	rn44AllowedHeaders = map[string]string{
+		"POST": "Authorization,Content-Type",
 	}
 	rn10AllowedHeaders = map[string]string{
 		"POST": "Authorization",
@@ -483,7 +487,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "DELETE",
-										allowedHeaders: rn19AllowedHeaders,
+										allowedHeaders: rn22AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -567,7 +571,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "DELETE,GET",
-									allowedHeaders: rn24AllowedHeaders,
+									allowedHeaders: rn27AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -636,7 +640,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "DELETE,GET,PATCH",
-									allowedHeaders: rn22AllowedHeaders,
+									allowedHeaders: rn25AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "application/json",
 								})
@@ -981,63 +985,69 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/viewer"
+					case '/': // Prefix: "/viewers"
 
-						if l := len("/viewer"); len(elem) >= l && elem[0:l] == "/viewer" {
+						if l := len("/viewers"); len(elem) >= l && elem[0:l] == "/viewers" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
 						if len(elem) == 0 {
-							break
+							switch r.Method {
+							case "GET":
+								s.handleListSessionViewersRequest([1]string{
+									args[0],
+								}, elemIsEscaped, w, r)
+							case "POST":
+								s.handleCreateViewerRequest([1]string{
+									args[0],
+								}, elemIsEscaped, w, r)
+							default:
+								s.notAllowed(w, r, notAllowedParams{
+									allowedMethods: "GET,POST",
+									allowedHeaders: rn20AllowedHeaders,
+									acceptPost:     "application/json",
+									acceptPatch:    "",
+								})
+							}
+
+							return
 						}
 						switch elem[0] {
-						case '-': // Prefix: "-tickets"
+						case '/': // Prefix: "/"
 
-							if l := len("-tickets"); len(elem) >= l && elem[0:l] == "-tickets" {
+							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
+							// Param: "connectionId"
+							// Match until one of "/:"
+							idx := strings.IndexAny(elem, "/:")
+							if idx < 0 {
+								idx = len(elem)
+							}
+							args[1] = elem[:idx]
+							elem = elem[idx:]
+
 							if len(elem) == 0 {
-								// Leaf node.
 								switch r.Method {
-								case "POST":
-									s.handleCreateViewerTicketRequest([1]string{
+								case "DELETE":
+									s.handleDeleteViewerRequest([2]string{
 										args[0],
+										args[1],
 									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "POST",
-										allowedHeaders: rn17AllowedHeaders,
-										acceptPost:     "application/json",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
-						case 's': // Prefix: "s"
-
-							if l := len("s"); len(elem) >= l && elem[0:l] == "s" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								switch r.Method {
 								case "GET":
-									s.handleListSessionViewersRequest([1]string{
+									s.handleGetViewerRequest([2]string{
 										args[0],
+										args[1],
 									}, elemIsEscaped, w, r)
 								default:
 									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "GET",
-										allowedHeaders: rn44AllowedHeaders,
+										allowedMethods: "DELETE,GET",
+										allowedHeaders: rn18AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -1046,41 +1056,55 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								return
 							}
 							switch elem[0] {
-							case '/': // Prefix: "/"
+							case '/': // Prefix: "/signaling-tickets"
 
-								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+								if l := len("/signaling-tickets"); len(elem) >= l && elem[0:l] == "/signaling-tickets" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
-								// Param: "connectionId"
-								// Leaf parameter, slashes are prohibited
-								idx := strings.IndexByte(elem, '/')
-								if idx >= 0 {
-									break
-								}
-								args[1] = elem
-								elem = ""
-
 								if len(elem) == 0 {
 									// Leaf node.
 									switch r.Method {
-									case "DELETE":
-										s.handleDeleteViewerRequest([2]string{
-											args[0],
-											args[1],
-										}, elemIsEscaped, w, r)
-									case "GET":
-										s.handleGetViewerRequest([2]string{
+									case "POST":
+										s.handleCreateSignalingTicketRequest([2]string{
 											args[0],
 											args[1],
 										}, elemIsEscaped, w, r)
 									default:
 										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "DELETE,GET",
-											allowedHeaders: rn27AllowedHeaders,
+											allowedMethods: "POST",
+											allowedHeaders: rn19AllowedHeaders,
 											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
+							case ':': // Prefix: ":renew"
+
+								if l := len(":renew"); len(elem) >= l && elem[0:l] == ":renew" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "POST":
+										s.handleRenewViewerRequest([2]string{
+											args[0],
+											args[1],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "POST",
+											allowedHeaders: rn44AllowedHeaders,
+											acceptPost:     "application/json",
 											acceptPatch:    "",
 										})
 									}
@@ -2115,102 +2139,123 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						}
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/viewer"
+					case '/': // Prefix: "/viewers"
 
-						if l := len("/viewer"); len(elem) >= l && elem[0:l] == "/viewer" {
+						if l := len("/viewers"); len(elem) >= l && elem[0:l] == "/viewers" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
 						if len(elem) == 0 {
-							break
+							switch method {
+							case "GET":
+								r.name = ListSessionViewersOperation
+								r.summary = "List the viewers of a session"
+								r.operationID = "list-session-viewers"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/sessions/{sessionId}/viewers"
+								r.args = args
+								r.count = 1
+								return r, true
+							case "POST":
+								r.name = CreateViewerOperation
+								r.summary = "Create a viewer connection"
+								r.operationID = "create-viewer"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/sessions/{sessionId}/viewers"
+								r.args = args
+								r.count = 1
+								return r, true
+							default:
+								return
+							}
 						}
 						switch elem[0] {
-						case '-': // Prefix: "-tickets"
+						case '/': // Prefix: "/"
 
-							if l := len("-tickets"); len(elem) >= l && elem[0:l] == "-tickets" {
+							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
+							// Param: "connectionId"
+							// Match until one of "/:"
+							idx := strings.IndexAny(elem, "/:")
+							if idx < 0 {
+								idx = len(elem)
+							}
+							args[1] = elem[:idx]
+							elem = elem[idx:]
+
 							if len(elem) == 0 {
-								// Leaf node.
 								switch method {
-								case "POST":
-									r.name = CreateViewerTicketOperation
-									r.summary = "Create a viewer ticket"
-									r.operationID = "create-viewer-ticket"
+								case "DELETE":
+									r.name = DeleteViewerOperation
+									r.summary = "End a viewer connection"
+									r.operationID = "delete-viewer"
 									r.operationGroup = ""
-									r.pathPattern = "/api/v1/sessions/{sessionId}/viewer-tickets"
+									r.pathPattern = "/api/v1/sessions/{sessionId}/viewers/{connectionId}"
 									r.args = args
-									r.count = 1
+									r.count = 2
 									return r, true
-								default:
-									return
-								}
-							}
-
-						case 's': // Prefix: "s"
-
-							if l := len("s"); len(elem) >= l && elem[0:l] == "s" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								switch method {
 								case "GET":
-									r.name = ListSessionViewersOperation
-									r.summary = "List the viewers of a session"
-									r.operationID = "list-session-viewers"
+									r.name = GetViewerOperation
+									r.summary = "Get a viewer of a session"
+									r.operationID = "get-viewer"
 									r.operationGroup = ""
-									r.pathPattern = "/api/v1/sessions/{sessionId}/viewers"
+									r.pathPattern = "/api/v1/sessions/{sessionId}/viewers/{connectionId}"
 									r.args = args
-									r.count = 1
+									r.count = 2
 									return r, true
 								default:
 									return
 								}
 							}
 							switch elem[0] {
-							case '/': // Prefix: "/"
+							case '/': // Prefix: "/signaling-tickets"
 
-								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+								if l := len("/signaling-tickets"); len(elem) >= l && elem[0:l] == "/signaling-tickets" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
-								// Param: "connectionId"
-								// Leaf parameter, slashes are prohibited
-								idx := strings.IndexByte(elem, '/')
-								if idx >= 0 {
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "POST":
+										r.name = CreateSignalingTicketOperation
+										r.summary = "Create a signaling ticket"
+										r.operationID = "create-signaling-ticket"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/sessions/{sessionId}/viewers/{connectionId}/signaling-tickets"
+										r.args = args
+										r.count = 2
+										return r, true
+									default:
+										return
+									}
+								}
+
+							case ':': // Prefix: ":renew"
+
+								if l := len(":renew"); len(elem) >= l && elem[0:l] == ":renew" {
+									elem = elem[l:]
+								} else {
 									break
 								}
-								args[1] = elem
-								elem = ""
 
 								if len(elem) == 0 {
 									// Leaf node.
 									switch method {
-									case "DELETE":
-										r.name = DeleteViewerOperation
-										r.summary = "Disconnect a viewer"
-										r.operationID = "delete-viewer"
+									case "POST":
+										r.name = RenewViewerOperation
+										r.summary = "Renew a viewer connection"
+										r.operationID = "renew-viewer"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/sessions/{sessionId}/viewers/{connectionId}"
-										r.args = args
-										r.count = 2
-										return r, true
-									case "GET":
-										r.name = GetViewerOperation
-										r.summary = "Get a viewer of a session"
-										r.operationID = "get-viewer"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/sessions/{sessionId}/viewers/{connectionId}"
+										r.pathPattern = "/api/v1/sessions/{sessionId}/viewers/{connectionId}:renew"
 										r.args = args
 										r.count = 2
 										return r, true

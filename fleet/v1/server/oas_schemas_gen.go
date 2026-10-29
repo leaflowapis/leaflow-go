@@ -347,8 +347,8 @@ func (s *CreateSessionRequest) SetDesktop(val OptDesktopOptions) {
 	s.Desktop = val
 }
 
-// Ref: #/components/schemas/CreateViewerTicketRequest
-type CreateViewerTicketRequest struct {
+// Ref: #/components/schemas/CreateViewerRequest
+type CreateViewerRequest struct {
 	PublicKey PublicKey `json:"public_key"`
 	// A label for the client that connects, such as `console` or `assistant`, shown to the other viewers.
 	// It is neither unique nor verified.
@@ -357,98 +357,98 @@ type CreateViewerTicketRequest struct {
 	ReadOnly OptBool `json:"read_only"`
 	// The capabilities the viewer may use, as permission names such as `fleet:files.transfer`; when
 	// omitted, every capability the caller holds. A capability the caller does not hold is not granted.
-	Permissions []CreateViewerTicketRequestPermissionsItem `json:"permissions"`
+	Permissions []CreateViewerRequestPermissionsItem `json:"permissions"`
 }
 
 // GetPublicKey returns the value of PublicKey.
-func (s *CreateViewerTicketRequest) GetPublicKey() PublicKey {
+func (s *CreateViewerRequest) GetPublicKey() PublicKey {
 	return s.PublicKey
 }
 
 // GetClientID returns the value of ClientID.
-func (s *CreateViewerTicketRequest) GetClientID() OptString {
+func (s *CreateViewerRequest) GetClientID() OptString {
 	return s.ClientID
 }
 
 // GetReadOnly returns the value of ReadOnly.
-func (s *CreateViewerTicketRequest) GetReadOnly() OptBool {
+func (s *CreateViewerRequest) GetReadOnly() OptBool {
 	return s.ReadOnly
 }
 
 // GetPermissions returns the value of Permissions.
-func (s *CreateViewerTicketRequest) GetPermissions() []CreateViewerTicketRequestPermissionsItem {
+func (s *CreateViewerRequest) GetPermissions() []CreateViewerRequestPermissionsItem {
 	return s.Permissions
 }
 
 // SetPublicKey sets the value of PublicKey.
-func (s *CreateViewerTicketRequest) SetPublicKey(val PublicKey) {
+func (s *CreateViewerRequest) SetPublicKey(val PublicKey) {
 	s.PublicKey = val
 }
 
 // SetClientID sets the value of ClientID.
-func (s *CreateViewerTicketRequest) SetClientID(val OptString) {
+func (s *CreateViewerRequest) SetClientID(val OptString) {
 	s.ClientID = val
 }
 
 // SetReadOnly sets the value of ReadOnly.
-func (s *CreateViewerTicketRequest) SetReadOnly(val OptBool) {
+func (s *CreateViewerRequest) SetReadOnly(val OptBool) {
 	s.ReadOnly = val
 }
 
 // SetPermissions sets the value of Permissions.
-func (s *CreateViewerTicketRequest) SetPermissions(val []CreateViewerTicketRequestPermissionsItem) {
+func (s *CreateViewerRequest) SetPermissions(val []CreateViewerRequestPermissionsItem) {
 	s.Permissions = val
 }
 
-type CreateViewerTicketRequestPermissionsItem string
+type CreateViewerRequestPermissionsItem string
 
 const (
-	CreateViewerTicketRequestPermissionsItemFleetFilesTransfer    CreateViewerTicketRequestPermissionsItem = "fleet:files.transfer"
-	CreateViewerTicketRequestPermissionsItemFleetClipboardUse     CreateViewerTicketRequestPermissionsItem = "fleet:clipboard.use"
-	CreateViewerTicketRequestPermissionsItemFleetTerminalUse      CreateViewerTicketRequestPermissionsItem = "fleet:terminal.use"
-	CreateViewerTicketRequestPermissionsItemFleetPortsForward     CreateViewerTicketRequestPermissionsItem = "fleet:ports.forward"
-	CreateViewerTicketRequestPermissionsItemFleetDevicesUse       CreateViewerTicketRequestPermissionsItem = "fleet:devices.use"
-	CreateViewerTicketRequestPermissionsItemFleetPrintingUse      CreateViewerTicketRequestPermissionsItem = "fleet:printing.use"
-	CreateViewerTicketRequestPermissionsItemFleetSSHAgentUse      CreateViewerTicketRequestPermissionsItem = "fleet:ssh_agent.use"
-	CreateViewerTicketRequestPermissionsItemFleetPrivilegeApprove CreateViewerTicketRequestPermissionsItem = "fleet:privilege.approve"
-	CreateViewerTicketRequestPermissionsItemFleetLogsRead         CreateViewerTicketRequestPermissionsItem = "fleet:logs.read"
+	CreateViewerRequestPermissionsItemFleetFilesTransfer    CreateViewerRequestPermissionsItem = "fleet:files.transfer"
+	CreateViewerRequestPermissionsItemFleetClipboardUse     CreateViewerRequestPermissionsItem = "fleet:clipboard.use"
+	CreateViewerRequestPermissionsItemFleetTerminalUse      CreateViewerRequestPermissionsItem = "fleet:terminal.use"
+	CreateViewerRequestPermissionsItemFleetPortsForward     CreateViewerRequestPermissionsItem = "fleet:ports.forward"
+	CreateViewerRequestPermissionsItemFleetDevicesUse       CreateViewerRequestPermissionsItem = "fleet:devices.use"
+	CreateViewerRequestPermissionsItemFleetPrintingUse      CreateViewerRequestPermissionsItem = "fleet:printing.use"
+	CreateViewerRequestPermissionsItemFleetSSHAgentUse      CreateViewerRequestPermissionsItem = "fleet:ssh_agent.use"
+	CreateViewerRequestPermissionsItemFleetPrivilegeApprove CreateViewerRequestPermissionsItem = "fleet:privilege.approve"
+	CreateViewerRequestPermissionsItemFleetLogsRead         CreateViewerRequestPermissionsItem = "fleet:logs.read"
 )
 
-// AllValues returns all CreateViewerTicketRequestPermissionsItem values.
-func (CreateViewerTicketRequestPermissionsItem) AllValues() []CreateViewerTicketRequestPermissionsItem {
-	return []CreateViewerTicketRequestPermissionsItem{
-		CreateViewerTicketRequestPermissionsItemFleetFilesTransfer,
-		CreateViewerTicketRequestPermissionsItemFleetClipboardUse,
-		CreateViewerTicketRequestPermissionsItemFleetTerminalUse,
-		CreateViewerTicketRequestPermissionsItemFleetPortsForward,
-		CreateViewerTicketRequestPermissionsItemFleetDevicesUse,
-		CreateViewerTicketRequestPermissionsItemFleetPrintingUse,
-		CreateViewerTicketRequestPermissionsItemFleetSSHAgentUse,
-		CreateViewerTicketRequestPermissionsItemFleetPrivilegeApprove,
-		CreateViewerTicketRequestPermissionsItemFleetLogsRead,
+// AllValues returns all CreateViewerRequestPermissionsItem values.
+func (CreateViewerRequestPermissionsItem) AllValues() []CreateViewerRequestPermissionsItem {
+	return []CreateViewerRequestPermissionsItem{
+		CreateViewerRequestPermissionsItemFleetFilesTransfer,
+		CreateViewerRequestPermissionsItemFleetClipboardUse,
+		CreateViewerRequestPermissionsItemFleetTerminalUse,
+		CreateViewerRequestPermissionsItemFleetPortsForward,
+		CreateViewerRequestPermissionsItemFleetDevicesUse,
+		CreateViewerRequestPermissionsItemFleetPrintingUse,
+		CreateViewerRequestPermissionsItemFleetSSHAgentUse,
+		CreateViewerRequestPermissionsItemFleetPrivilegeApprove,
+		CreateViewerRequestPermissionsItemFleetLogsRead,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s CreateViewerTicketRequestPermissionsItem) MarshalText() ([]byte, error) {
+func (s CreateViewerRequestPermissionsItem) MarshalText() ([]byte, error) {
 	switch s {
-	case CreateViewerTicketRequestPermissionsItemFleetFilesTransfer:
+	case CreateViewerRequestPermissionsItemFleetFilesTransfer:
 		return []byte(s), nil
-	case CreateViewerTicketRequestPermissionsItemFleetClipboardUse:
+	case CreateViewerRequestPermissionsItemFleetClipboardUse:
 		return []byte(s), nil
-	case CreateViewerTicketRequestPermissionsItemFleetTerminalUse:
+	case CreateViewerRequestPermissionsItemFleetTerminalUse:
 		return []byte(s), nil
-	case CreateViewerTicketRequestPermissionsItemFleetPortsForward:
+	case CreateViewerRequestPermissionsItemFleetPortsForward:
 		return []byte(s), nil
-	case CreateViewerTicketRequestPermissionsItemFleetDevicesUse:
+	case CreateViewerRequestPermissionsItemFleetDevicesUse:
 		return []byte(s), nil
-	case CreateViewerTicketRequestPermissionsItemFleetPrintingUse:
+	case CreateViewerRequestPermissionsItemFleetPrintingUse:
 		return []byte(s), nil
-	case CreateViewerTicketRequestPermissionsItemFleetSSHAgentUse:
+	case CreateViewerRequestPermissionsItemFleetSSHAgentUse:
 		return []byte(s), nil
-	case CreateViewerTicketRequestPermissionsItemFleetPrivilegeApprove:
+	case CreateViewerRequestPermissionsItemFleetPrivilegeApprove:
 		return []byte(s), nil
-	case CreateViewerTicketRequestPermissionsItemFleetLogsRead:
+	case CreateViewerRequestPermissionsItemFleetLogsRead:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -456,34 +456,34 @@ func (s CreateViewerTicketRequestPermissionsItem) MarshalText() ([]byte, error) 
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CreateViewerTicketRequestPermissionsItem) UnmarshalText(data []byte) error {
-	switch CreateViewerTicketRequestPermissionsItem(data) {
-	case CreateViewerTicketRequestPermissionsItemFleetFilesTransfer:
-		*s = CreateViewerTicketRequestPermissionsItemFleetFilesTransfer
+func (s *CreateViewerRequestPermissionsItem) UnmarshalText(data []byte) error {
+	switch CreateViewerRequestPermissionsItem(data) {
+	case CreateViewerRequestPermissionsItemFleetFilesTransfer:
+		*s = CreateViewerRequestPermissionsItemFleetFilesTransfer
 		return nil
-	case CreateViewerTicketRequestPermissionsItemFleetClipboardUse:
-		*s = CreateViewerTicketRequestPermissionsItemFleetClipboardUse
+	case CreateViewerRequestPermissionsItemFleetClipboardUse:
+		*s = CreateViewerRequestPermissionsItemFleetClipboardUse
 		return nil
-	case CreateViewerTicketRequestPermissionsItemFleetTerminalUse:
-		*s = CreateViewerTicketRequestPermissionsItemFleetTerminalUse
+	case CreateViewerRequestPermissionsItemFleetTerminalUse:
+		*s = CreateViewerRequestPermissionsItemFleetTerminalUse
 		return nil
-	case CreateViewerTicketRequestPermissionsItemFleetPortsForward:
-		*s = CreateViewerTicketRequestPermissionsItemFleetPortsForward
+	case CreateViewerRequestPermissionsItemFleetPortsForward:
+		*s = CreateViewerRequestPermissionsItemFleetPortsForward
 		return nil
-	case CreateViewerTicketRequestPermissionsItemFleetDevicesUse:
-		*s = CreateViewerTicketRequestPermissionsItemFleetDevicesUse
+	case CreateViewerRequestPermissionsItemFleetDevicesUse:
+		*s = CreateViewerRequestPermissionsItemFleetDevicesUse
 		return nil
-	case CreateViewerTicketRequestPermissionsItemFleetPrintingUse:
-		*s = CreateViewerTicketRequestPermissionsItemFleetPrintingUse
+	case CreateViewerRequestPermissionsItemFleetPrintingUse:
+		*s = CreateViewerRequestPermissionsItemFleetPrintingUse
 		return nil
-	case CreateViewerTicketRequestPermissionsItemFleetSSHAgentUse:
-		*s = CreateViewerTicketRequestPermissionsItemFleetSSHAgentUse
+	case CreateViewerRequestPermissionsItemFleetSSHAgentUse:
+		*s = CreateViewerRequestPermissionsItemFleetSSHAgentUse
 		return nil
-	case CreateViewerTicketRequestPermissionsItemFleetPrivilegeApprove:
-		*s = CreateViewerTicketRequestPermissionsItemFleetPrivilegeApprove
+	case CreateViewerRequestPermissionsItemFleetPrivilegeApprove:
+		*s = CreateViewerRequestPermissionsItemFleetPrivilegeApprove
 		return nil
-	case CreateViewerTicketRequestPermissionsItemFleetLogsRead:
-		*s = CreateViewerTicketRequestPermissionsItemFleetLogsRead
+	case CreateViewerRequestPermissionsItemFleetLogsRead:
+		*s = CreateViewerRequestPermissionsItemFleetLogsRead
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -1116,6 +1116,46 @@ func (s *GroupResource) SetCreatedAt(val time.Time) {
 // SetUpdatedAt sets the value of UpdatedAt.
 func (s *GroupResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
+}
+
+// A STUN or TURN server, as W3C RTCIceServer.
+// Ref: #/components/schemas/IceServer
+type IceServer struct {
+	Urls []string `json:"urls"`
+	// TURN only.
+	Username OptString `json:"username"`
+	// TURN only. A secret for the relay; never log it.
+	Credential OptString `json:"credential"`
+}
+
+// GetUrls returns the value of Urls.
+func (s *IceServer) GetUrls() []string {
+	return s.Urls
+}
+
+// GetUsername returns the value of Username.
+func (s *IceServer) GetUsername() OptString {
+	return s.Username
+}
+
+// GetCredential returns the value of Credential.
+func (s *IceServer) GetCredential() OptString {
+	return s.Credential
+}
+
+// SetUrls sets the value of Urls.
+func (s *IceServer) SetUrls(val []string) {
+	s.Urls = val
+}
+
+// SetUsername sets the value of Username.
+func (s *IceServer) SetUsername(val OptString) {
+	s.Username = val
+}
+
+// SetCredential sets the value of Credential.
+func (s *IceServer) SetCredential(val OptString) {
+	s.Credential = val
 }
 
 // Ref: #/components/schemas/MachineEventList
@@ -2629,6 +2669,52 @@ func (o OptPrivilegeRequestState) Or(d PrivilegeRequestState) PrivilegeRequestSt
 	return d
 }
 
+// NewOptSigned returns new OptSigned with value set to v.
+func NewOptSigned(v Signed) OptSigned {
+	return OptSigned{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSigned is optional Signed.
+type OptSigned struct {
+	Value Signed
+	Set   bool
+}
+
+// IsSet returns true if OptSigned was set.
+func (o OptSigned) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSigned) Reset() {
+	var v Signed
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSigned) SetTo(v Signed) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSigned) Get() (v Signed, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSigned) Or(d Signed) Signed {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptString returns new OptString with value set to v.
 func NewOptString(v string) OptString {
 	return OptString{
@@ -3189,6 +3275,163 @@ func (s *PrivilegeRequestState) UnmarshalText(data []byte) error {
 
 type PublicKey string
 
+// Ref: #/components/schemas/RenewViewerRequest
+type RenewViewerRequest struct {
+	// The current signed `PeerAuthorization` of each PeerConnection to renew.
+	PeerAuthorizations []Signed `json:"peer_authorizations"`
+}
+
+// GetPeerAuthorizations returns the value of PeerAuthorizations.
+func (s *RenewViewerRequest) GetPeerAuthorizations() []Signed {
+	return s.PeerAuthorizations
+}
+
+// SetPeerAuthorizations sets the value of PeerAuthorizations.
+func (s *RenewViewerRequest) SetPeerAuthorizations(val []Signed) {
+	s.PeerAuthorizations = val
+}
+
+// Ref: #/components/schemas/RenewViewerResponse
+type RenewViewerResponse struct {
+	LeaseExpiresAt time.Time `json:"lease_expires_at"`
+	// The renewed signed `PeerAuthorization`s, in the order of the request.
+	PeerAuthorizations []Signed `json:"peer_authorizations"`
+	// A renewed signed `Authorization`, when the current one nears its end.
+	Authorization    OptSigned        `json:"authorization"`
+	RtcConfiguration RtcConfiguration `json:"rtc_configuration"`
+	ServiceKeys      []ServiceKey     `json:"service_keys"`
+}
+
+// GetLeaseExpiresAt returns the value of LeaseExpiresAt.
+func (s *RenewViewerResponse) GetLeaseExpiresAt() time.Time {
+	return s.LeaseExpiresAt
+}
+
+// GetPeerAuthorizations returns the value of PeerAuthorizations.
+func (s *RenewViewerResponse) GetPeerAuthorizations() []Signed {
+	return s.PeerAuthorizations
+}
+
+// GetAuthorization returns the value of Authorization.
+func (s *RenewViewerResponse) GetAuthorization() OptSigned {
+	return s.Authorization
+}
+
+// GetRtcConfiguration returns the value of RtcConfiguration.
+func (s *RenewViewerResponse) GetRtcConfiguration() RtcConfiguration {
+	return s.RtcConfiguration
+}
+
+// GetServiceKeys returns the value of ServiceKeys.
+func (s *RenewViewerResponse) GetServiceKeys() []ServiceKey {
+	return s.ServiceKeys
+}
+
+// SetLeaseExpiresAt sets the value of LeaseExpiresAt.
+func (s *RenewViewerResponse) SetLeaseExpiresAt(val time.Time) {
+	s.LeaseExpiresAt = val
+}
+
+// SetPeerAuthorizations sets the value of PeerAuthorizations.
+func (s *RenewViewerResponse) SetPeerAuthorizations(val []Signed) {
+	s.PeerAuthorizations = val
+}
+
+// SetAuthorization sets the value of Authorization.
+func (s *RenewViewerResponse) SetAuthorization(val OptSigned) {
+	s.Authorization = val
+}
+
+// SetRtcConfiguration sets the value of RtcConfiguration.
+func (s *RenewViewerResponse) SetRtcConfiguration(val RtcConfiguration) {
+	s.RtcConfiguration = val
+}
+
+// SetServiceKeys sets the value of ServiceKeys.
+func (s *RenewViewerResponse) SetServiceKeys(val []ServiceKey) {
+	s.ServiceKeys = val
+}
+
+// The ICE servers for the PeerConnections the viewer starts.
+// Ref: #/components/schemas/RtcConfiguration
+type RtcConfiguration struct {
+	IceServers         []IceServer                        `json:"ice_servers"`
+	IceTransportPolicy RtcConfigurationIceTransportPolicy `json:"ice_transport_policy"`
+	// No PeerConnection starts with these servers after this time.
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+// GetIceServers returns the value of IceServers.
+func (s *RtcConfiguration) GetIceServers() []IceServer {
+	return s.IceServers
+}
+
+// GetIceTransportPolicy returns the value of IceTransportPolicy.
+func (s *RtcConfiguration) GetIceTransportPolicy() RtcConfigurationIceTransportPolicy {
+	return s.IceTransportPolicy
+}
+
+// GetExpiresAt returns the value of ExpiresAt.
+func (s *RtcConfiguration) GetExpiresAt() time.Time {
+	return s.ExpiresAt
+}
+
+// SetIceServers sets the value of IceServers.
+func (s *RtcConfiguration) SetIceServers(val []IceServer) {
+	s.IceServers = val
+}
+
+// SetIceTransportPolicy sets the value of IceTransportPolicy.
+func (s *RtcConfiguration) SetIceTransportPolicy(val RtcConfigurationIceTransportPolicy) {
+	s.IceTransportPolicy = val
+}
+
+// SetExpiresAt sets the value of ExpiresAt.
+func (s *RtcConfiguration) SetExpiresAt(val time.Time) {
+	s.ExpiresAt = val
+}
+
+type RtcConfigurationIceTransportPolicy string
+
+const (
+	RtcConfigurationIceTransportPolicyAll   RtcConfigurationIceTransportPolicy = "all"
+	RtcConfigurationIceTransportPolicyRelay RtcConfigurationIceTransportPolicy = "relay"
+)
+
+// AllValues returns all RtcConfigurationIceTransportPolicy values.
+func (RtcConfigurationIceTransportPolicy) AllValues() []RtcConfigurationIceTransportPolicy {
+	return []RtcConfigurationIceTransportPolicy{
+		RtcConfigurationIceTransportPolicyAll,
+		RtcConfigurationIceTransportPolicyRelay,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RtcConfigurationIceTransportPolicy) MarshalText() ([]byte, error) {
+	switch s {
+	case RtcConfigurationIceTransportPolicyAll:
+		return []byte(s), nil
+	case RtcConfigurationIceTransportPolicyRelay:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RtcConfigurationIceTransportPolicy) UnmarshalText(data []byte) error {
+	switch RtcConfigurationIceTransportPolicy(data) {
+	case RtcConfigurationIceTransportPolicyAll:
+		*s = RtcConfigurationIceTransportPolicyAll
+		return nil
+	case RtcConfigurationIceTransportPolicyRelay:
+		*s = RtcConfigurationIceTransportPolicyRelay
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/RunCommandRequest
 type RunCommandRequest struct {
 	// The command line, which the account's login shell runs with `-c`; at most 65536 bytes and no NUL.
@@ -3303,6 +3546,33 @@ func (s *RunCommandResponse) SetStderr(val string) {
 // SetStderrTruncated sets the value of StderrTruncated.
 func (s *RunCommandResponse) SetStderrTruncated(val bool) {
 	s.StderrTruncated = val
+}
+
+// A key the service signs with, as `ServiceKeys` of the protocol.
+// Ref: #/components/schemas/ServiceKey
+type ServiceKey struct {
+	KeyID   string    `json:"key_id"`
+	Ed25519 PublicKey `json:"ed25519"`
+}
+
+// GetKeyID returns the value of KeyID.
+func (s *ServiceKey) GetKeyID() string {
+	return s.KeyID
+}
+
+// GetEd25519 returns the value of Ed25519.
+func (s *ServiceKey) GetEd25519() PublicKey {
+	return s.Ed25519
+}
+
+// SetKeyID sets the value of KeyID.
+func (s *ServiceKey) SetKeyID(val string) {
+	s.KeyID = val
+}
+
+// SetEd25519 sets the value of Ed25519.
+func (s *ServiceKey) SetEd25519(val PublicKey) {
+	s.Ed25519 = val
 }
 
 // Why a session ended. `close_requested` and `terminate_requested` follow a request; `logout` the user
@@ -3710,6 +3980,86 @@ func (s *SessionState) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/SignalingTicket
+type SignalingTicket struct {
+	// The ticket to send in `ViewerCredential.ticket`. Never put it in a URL.
+	Ticket string `json:"ticket"`
+	// The WebSocket URL of the control connection.
+	URL       url.URL   `json:"url"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+// GetTicket returns the value of Ticket.
+func (s *SignalingTicket) GetTicket() string {
+	return s.Ticket
+}
+
+// GetURL returns the value of URL.
+func (s *SignalingTicket) GetURL() url.URL {
+	return s.URL
+}
+
+// GetExpiresAt returns the value of ExpiresAt.
+func (s *SignalingTicket) GetExpiresAt() time.Time {
+	return s.ExpiresAt
+}
+
+// SetTicket sets the value of Ticket.
+func (s *SignalingTicket) SetTicket(val string) {
+	s.Ticket = val
+}
+
+// SetURL sets the value of URL.
+func (s *SignalingTicket) SetURL(val url.URL) {
+	s.URL = val
+}
+
+// SetExpiresAt sets the value of ExpiresAt.
+func (s *SignalingTicket) SetExpiresAt(val time.Time) {
+	s.ExpiresAt = val
+}
+
+// A message the service signed: the serialized message, the key that signed it and the signature, as
+// in `SignedAuthorization` and `SignedPeerAuthorization` of the protocol. Each byte string is standard
+// Base64.
+// Ref: #/components/schemas/Signed
+type Signed struct {
+	KeyID string `json:"key_id"`
+	// The serialized message; decode it only after the signature verified.
+	Message   []byte `json:"message"`
+	Signature []byte `json:"signature"`
+}
+
+// GetKeyID returns the value of KeyID.
+func (s *Signed) GetKeyID() string {
+	return s.KeyID
+}
+
+// GetMessage returns the value of Message.
+func (s *Signed) GetMessage() []byte {
+	return s.Message
+}
+
+// GetSignature returns the value of Signature.
+func (s *Signed) GetSignature() []byte {
+	return s.Signature
+}
+
+// SetKeyID sets the value of KeyID.
+func (s *Signed) SetKeyID(val string) {
+	s.KeyID = val
+}
+
+// SetMessage sets the value of Message.
+func (s *Signed) SetMessage(val []byte) {
+	s.Message = val
+}
+
+// SetSignature sets the value of Signature.
+func (s *Signed) SetSignature(val []byte) {
+	s.Signature = val
+}
+
 // Ref: #/components/schemas/UpdateAccountRequest
 type UpdateAccountRequest struct {
 	Username OptDirectoryName `json:"username"`
@@ -3765,6 +4115,78 @@ func (s *UpdateMachineRequest) GetName() string {
 // SetName sets the value of Name.
 func (s *UpdateMachineRequest) SetName(val string) {
 	s.Name = val
+}
+
+// Ref: #/components/schemas/ViewerConnection
+type ViewerConnection struct {
+	Viewer ViewerResource `json:"viewer"`
+	// The viewer's signed `Authorization`, the same one the session holds.
+	Authorization    Signed           `json:"authorization"`
+	RtcConfiguration RtcConfiguration `json:"rtc_configuration"`
+	ServiceKeys      []ServiceKey     `json:"service_keys"`
+	Signaling        SignalingTicket  `json:"signaling"`
+	// When the viewer connection ends unless renewed.
+	LeaseExpiresAt time.Time `json:"lease_expires_at"`
+}
+
+// GetViewer returns the value of Viewer.
+func (s *ViewerConnection) GetViewer() ViewerResource {
+	return s.Viewer
+}
+
+// GetAuthorization returns the value of Authorization.
+func (s *ViewerConnection) GetAuthorization() Signed {
+	return s.Authorization
+}
+
+// GetRtcConfiguration returns the value of RtcConfiguration.
+func (s *ViewerConnection) GetRtcConfiguration() RtcConfiguration {
+	return s.RtcConfiguration
+}
+
+// GetServiceKeys returns the value of ServiceKeys.
+func (s *ViewerConnection) GetServiceKeys() []ServiceKey {
+	return s.ServiceKeys
+}
+
+// GetSignaling returns the value of Signaling.
+func (s *ViewerConnection) GetSignaling() SignalingTicket {
+	return s.Signaling
+}
+
+// GetLeaseExpiresAt returns the value of LeaseExpiresAt.
+func (s *ViewerConnection) GetLeaseExpiresAt() time.Time {
+	return s.LeaseExpiresAt
+}
+
+// SetViewer sets the value of Viewer.
+func (s *ViewerConnection) SetViewer(val ViewerResource) {
+	s.Viewer = val
+}
+
+// SetAuthorization sets the value of Authorization.
+func (s *ViewerConnection) SetAuthorization(val Signed) {
+	s.Authorization = val
+}
+
+// SetRtcConfiguration sets the value of RtcConfiguration.
+func (s *ViewerConnection) SetRtcConfiguration(val RtcConfiguration) {
+	s.RtcConfiguration = val
+}
+
+// SetServiceKeys sets the value of ServiceKeys.
+func (s *ViewerConnection) SetServiceKeys(val []ServiceKey) {
+	s.ServiceKeys = val
+}
+
+// SetSignaling sets the value of Signaling.
+func (s *ViewerConnection) SetSignaling(val SignalingTicket) {
+	s.Signaling = val
+}
+
+// SetLeaseExpiresAt sets the value of LeaseExpiresAt.
+func (s *ViewerConnection) SetLeaseExpiresAt(val time.Time) {
+	s.LeaseExpiresAt = val
 }
 
 // Ref: #/components/schemas/ViewerList
@@ -3868,43 +4290,4 @@ func (s *ViewerResource) SetRemoteAddress(val string) {
 // SetCreatedAt sets the value of CreatedAt.
 func (s *ViewerResource) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
-}
-
-// Ref: #/components/schemas/ViewerTicketResource
-type ViewerTicketResource struct {
-	// The ticket to send in `ViewerCredential.ticket`. Never put it in a URL.
-	Ticket string `json:"ticket"`
-	// The WebSocket URL of the control connection.
-	URL       url.URL   `json:"url"`
-	ExpiresAt time.Time `json:"expires_at"`
-}
-
-// GetTicket returns the value of Ticket.
-func (s *ViewerTicketResource) GetTicket() string {
-	return s.Ticket
-}
-
-// GetURL returns the value of URL.
-func (s *ViewerTicketResource) GetURL() url.URL {
-	return s.URL
-}
-
-// GetExpiresAt returns the value of ExpiresAt.
-func (s *ViewerTicketResource) GetExpiresAt() time.Time {
-	return s.ExpiresAt
-}
-
-// SetTicket sets the value of Ticket.
-func (s *ViewerTicketResource) SetTicket(val string) {
-	s.Ticket = val
-}
-
-// SetURL sets the value of URL.
-func (s *ViewerTicketResource) SetURL(val url.URL) {
-	s.URL = val
-}
-
-// SetExpiresAt sets the value of ExpiresAt.
-func (s *ViewerTicketResource) SetExpiresAt(val time.Time) {
-	s.ExpiresAt = val
 }

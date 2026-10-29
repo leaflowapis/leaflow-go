@@ -80,8 +80,22 @@ func encodeCreateSessionRequest(
 	return nil
 }
 
-func encodeCreateViewerTicketRequest(
-	req *CreateViewerTicketRequest,
+func encodeCreateViewerRequest(
+	req *CreateViewerRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeRenewViewerRequest(
+	req *RenewViewerRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

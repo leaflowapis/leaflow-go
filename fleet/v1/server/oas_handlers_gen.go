@@ -1293,12 +1293,18 @@ func (s *Server) handleCreateMachineRegistrationRequest(args [0]string, argsEsca
 // sound, devices, printers and privilege approvals. The account is created if the caller has none yet.
 // Requires `fleet:machines.login` on the machine.
 //
+// On a machine an account has at most one session with a desktop and at most 8 sessions in all.
+// Sessions without a desktop run side by side, such as one for a program and one for a person; several
+// viewers can also share one session.
+//
 // Fails with:
 //
 //   - `MACHINE_OFFLINE` when the machine is not connected;
 //   - `FEATURE_UNAVAILABLE` when the machine does not offer sessions, or with `desktop`, desktops;
-//   - `USER_HAS_SESSION` when the account already has a session on the machine, which
-//     `metadata.sessionId` names; connect to it instead;
+//   - `USER_HAS_DESKTOP_SESSION` with `desktop` when the account already has a session with a desktop
+//     on the machine, which `metadata.sessionId` names; connect to it instead;
+//   - `SESSION_LIMIT_REACHED` when the account already has 8 open sessions on the machine; close one
+//     first;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, such as while it has not received the account yet or a local account
 //     uses its name; `PAM_PERMISSION_DENIED` carries the machine's message in `metadata.pamMessage`;
@@ -1504,37 +1510,27 @@ func (s *Server) handleCreateSessionRequest(args [0]string, argsEscaped bool, w 
 	}
 }
 
-// handleCreateViewerTicketRequest handles create-viewer-ticket operation.
+// handleCreateSignalingTicketRequest handles create-signaling-ticket operation.
 //
-// Issues a single-use ticket that admits one viewer connection with the given public key to the
-// session. It is valid for 60 seconds.
+// Issues a single-use ticket for one signaling WebSocket of the viewer connection, valid for 60
+// seconds. Only the viewer connection's user may ask for one.
 //
-// The owner of a session may operate it. Viewing another member's session requires
-// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
-// operating it. Each further capability of the session — file transfer, the clipboard, terminals and
-// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
-// requests and reading logs — is granted only with its permission; a viewer that may only watch gets
-// none of them. A ticket may ask for less: to watch only, or for some of the capabilities.
+// Fails with `VIEWER_NOT_FOUND` when the viewer connection has ended.
 //
-// Fails with:
-//
-//   - `SESSION_CLOSED` when the session has ended;
-//   - `SESSION_ACCESS_DENIED` when the caller may not view the session.
-//
-// POST /api/v1/sessions/{sessionId}/viewer-tickets
-func (s *Server) handleCreateViewerTicketRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}/signaling-tickets
+func (s *Server) handleCreateSignalingTicketRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-viewer-ticket"),
+		otelogen.OperationID("create-signaling-ticket"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/viewer-tickets"),
+		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/viewers/{connectionId}/signaling-tickets"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateViewerTicketOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateSignalingTicketOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -1589,15 +1585,15 @@ func (s *Server) handleCreateViewerTicketRequest(args [1]string, argsEscaped boo
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: CreateViewerTicketOperation,
-			ID:   "create-viewer-ticket",
+			Name: CreateSignalingTicketOperation,
+			ID:   "create-signaling-ticket",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CreateViewerTicketOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, CreateSignalingTicketOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -1639,7 +1635,7 @@ func (s *Server) handleCreateViewerTicketRequest(args [1]string, argsEscaped boo
 			return
 		}
 	}
-	params, err := decodeCreateViewerTicketParams(args, argsEscaped, r)
+	params, err := decodeCreateSignalingTicketParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -1651,44 +1647,33 @@ func (s *Server) handleCreateViewerTicketRequest(args [1]string, argsEscaped boo
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeCreateViewerTicketRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
 
-	var response *ViewerTicketResource
+	var response *SignalingTicket
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    CreateViewerTicketOperation,
-			OperationSummary: "Create a viewer ticket",
-			OperationID:      "create-viewer-ticket",
-			Body:             request,
+			OperationName:    CreateSignalingTicketOperation,
+			OperationSummary: "Create a signaling ticket",
+			OperationID:      "create-signaling-ticket",
+			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
 					Name: "sessionId",
 					In:   "path",
 				}: params.SessionId,
+				{
+					Name: "connectionId",
+					In:   "path",
+				}: params.ConnectionId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *CreateViewerTicketRequest
-			Params   = CreateViewerTicketParams
-			Response = *ViewerTicketResource
+			Request  = struct{}
+			Params   = CreateSignalingTicketParams
+			Response = *SignalingTicket
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1697,14 +1682,14 @@ func (s *Server) handleCreateViewerTicketRequest(args [1]string, argsEscaped boo
 		](
 			m,
 			mreq,
-			unpackCreateViewerTicketParams,
+			unpackCreateSignalingTicketParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateViewerTicket(ctx, request, params)
+				response, err = s.h.CreateSignalingTicket(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.CreateViewerTicket(ctx, request, params)
+		response, err = s.h.CreateSignalingTicket(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -1723,7 +1708,240 @@ func (s *Server) handleCreateViewerTicketRequest(args [1]string, argsEscaped boo
 		return
 	}
 
-	if err := encodeCreateViewerTicketResponse(response, w, span); err != nil {
+	if err := encodeCreateSignalingTicketResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateViewerRequest handles create-viewer operation.
+//
+// Admits one viewer with the given public key to the session: signs its authorization, has the session
+// accept it, and returns it with a first signaling ticket. The viewer connection lasts while it is
+// renewed.
+//
+// The owner of a session may operate it. Viewing another member's session requires
+// `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
+// operating it. Each further capability of the session — file transfer, the clipboard, terminals and
+// programs, port forwarding, devices and audio, printing, SSH agent forwarding, approving privilege
+// requests and reading logs — is granted only with its permission; a viewer that may only watch gets
+// none of them. A request may ask for less: to watch only, or for some of the capabilities.
+//
+// Fails with:
+//
+//   - `SESSION_CLOSED` when the session has ended;
+//   - `SESSION_ACCESS_DENIED` when the caller may not view the session;
+//   - `SESSION_UNAVAILABLE` when the session's process is not connected, such as while it restarts; try
+//     again after `Retry-After`;
+//   - `VIEWER_LIMIT_REACHED` when the session has as many viewers as it admits;
+//   - `VIEWER_REFUSED` when the session refused the viewer.
+//
+// POST /api/v1/sessions/{sessionId}/viewers
+func (s *Server) handleCreateViewerRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-viewer"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/viewers"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateViewerOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateViewerOperation,
+			ID:   "create-viewer",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, CreateViewerOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCreateViewerParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateViewerRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *ViewerConnection
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateViewerOperation,
+			OperationSummary: "Create a viewer connection",
+			OperationID:      "create-viewer",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "sessionId",
+					In:   "path",
+				}: params.SessionId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *CreateViewerRequest
+			Params   = CreateViewerParams
+			Response = *ViewerConnection
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCreateViewerParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateViewer(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateViewer(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateViewerResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -2552,10 +2770,10 @@ func (s *Server) handleDeleteMachineRegistrationRequest(args [1]string, argsEsca
 
 // handleDeleteViewerRequest handles delete-viewer operation.
 //
-// Disconnects the viewer from the session; the session goes on. The viewer can connect again only with
-// a new ticket.
+// Ends the viewer connection: the session detaches the viewer and closes its PeerConnections, and the
+// session goes on. A viewer leaves this way; others are disconnected this way.
 //
-// The owner of the session may disconnect its viewers; otherwise this requires
+// The viewer connection's user and the owner of the session may end it; otherwise this requires
 // `fleet:sessions.manage`.
 //
 // DELETE /api/v1/sessions/{sessionId}/viewers/{connectionId}
@@ -2694,7 +2912,7 @@ func (s *Server) handleDeleteViewerRequest(args [2]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeleteViewerOperation,
-			OperationSummary: "Disconnect a viewer",
+			OperationSummary: "End a viewer connection",
 			OperationID:      "delete-viewer",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -7056,6 +7274,237 @@ func (s *Server) handleListSessionsRequest(args [0]string, argsEscaped bool, w h
 	}
 
 	if err := encodeListSessionsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleRenewViewerRequest handles renew-viewer operation.
+//
+// Extends the viewer connection's lease and returns renewed PeerAuthorizations for the PeerConnections
+// whose current ones the request presents; the session receives them too. A presented authorization
+// that the service did not sign for this viewer connection, or whose attempt has ended, is left out of
+// the answer. When the viewer's authorization nears its end, the answer carries a renewed one, which
+// the session already holds.
+//
+// Only the viewer connection's user may renew it.
+//
+// Fails with:
+//
+//   - `VIEWER_NOT_FOUND` when the viewer connection has ended; create another;
+//   - `VIEWER_RIGHTS_CHANGED` when the caller's permissions no longer grant what the viewer connection
+//     holds; it has ended, and another can be created with the current rights.
+//
+// POST /api/v1/sessions/{sessionId}/viewers/{connectionId}:renew
+func (s *Server) handleRenewViewerRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("renew-viewer"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/viewers/{connectionId}:renew"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RenewViewerOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: RenewViewerOperation,
+			ID:   "renew-viewer",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, RenewViewerOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeRenewViewerParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeRenewViewerRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *RenewViewerResponse
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    RenewViewerOperation,
+			OperationSummary: "Renew a viewer connection",
+			OperationID:      "renew-viewer",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "sessionId",
+					In:   "path",
+				}: params.SessionId,
+				{
+					Name: "connectionId",
+					In:   "path",
+				}: params.ConnectionId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *RenewViewerRequest
+			Params   = RenewViewerParams
+			Response = *RenewViewerResponse
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackRenewViewerParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.RenewViewer(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.RenewViewer(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeRenewViewerResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
