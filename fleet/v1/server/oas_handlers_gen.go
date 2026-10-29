@@ -1523,6 +1523,12 @@ func (s *Server) handleCreateMachineRegistrationRequest(args [0]string, argsEsca
 // participant, its authorization and the PeerConnection with the session's answer. The participant
 // lasts while it is renewed.
 //
+// Joining again with the public key of one of the caller's participants of the session that has not
+// ended, with the same `client_name`, `read_only` and `permissions`, returns that participant with a
+// new PeerConnection for the offer, and the session gains no second participant: a request whose
+// answer was lost, such as on an unreliable network, is sent again as it was. Its earlier
+// PeerConnection, whose answer the client never received, is given up by the session once it fails.
+//
 // The owner of a session may operate it. Joining another member's session requires
 // `fleet:sessions.view`, which admits watching only, or `fleet:sessions.control`, which also admits
 // operating it. Each further capability of the session — file transfer, the clipboard, terminals and
@@ -1539,8 +1545,11 @@ func (s *Server) handleCreateMachineRegistrationRequest(args [0]string, argsEsca
 //     as while it restarts; try again after the error's `retry_delay`;
 //   - `PARTICIPANT_LIMIT_REACHED` when the session has as many participants as it admits;
 //   - `PARTICIPANT_REFUSED` when the session refused the participant;
+//   - `PARTICIPANT_KEY_IN_USE` when the public key belongs to a participant of the session that another
+//     user holds, or that was created with another `client_name`, `read_only` or `permissions`; join
+//     with a new key;
 //   - `PEER_CONNECTION_ABORTED` when the session gave up the PeerConnection; try again with a new
-//     offer.
+//     offer. The participant of a repeated request stays.
 //
 // POST /api/v1/sessions/{sessionId}/participants
 func (s *Server) handleCreateParticipantRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8431,10 +8440,12 @@ func (s *Server) handlePrepareParticipantMigrationRequest(args [2]string, argsEs
 // handleRenewParticipantRequest handles renew-participant operation.
 //
 // Extends the participant's lease and returns renewed PeerAuthorizations for the PeerConnections whose
-// current ones the request presents; the session receives them too. A presented authorization that the
-// service did not sign for this participant, or whose PeerConnection has ended, is left out of the
-// answer. When the participant's authorization nears its end, the answer carries a renewed one, which
-// the session already holds.
+// current ones the request presents. The service sends them to the session as well, and the
+// participant passes each one to the session over its PeerConnection (`Packet.peer_authorization` of
+// the transport protocol), so that the lease holds while either path to the session is down. A
+// presented authorization that the service did not sign for this participant, or whose PeerConnection
+// has ended, is left out of the answer. When the participant's authorization nears its end, the answer
+// carries a renewed one, which the session already holds.
 //
 // Only the participant's user may renew it.
 //

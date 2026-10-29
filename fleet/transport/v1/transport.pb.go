@@ -264,6 +264,7 @@ type Packet struct {
 	//	*Packet_Datagram
 	//	*Packet_Receipt
 	//	*Packet_Close
+	//	*Packet_PeerAuthorization
 	Packet        isPacket_Packet `protobuf_oneof:"packet"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -351,6 +352,15 @@ func (x *Packet) GetClose() *Close {
 	return nil
 }
 
+func (x *Packet) GetPeerAuthorization() *SignedPeerAuthorization {
+	if x != nil {
+		if x, ok := x.Packet.(*Packet_PeerAuthorization); ok {
+			return x.PeerAuthorization
+		}
+	}
+	return nil
+}
+
 type isPacket_Packet interface {
 	isPacket_Packet()
 }
@@ -381,6 +391,13 @@ type Packet_Close struct {
 	Close *Close `protobuf:"bytes,5,opt,name=close,proto3,oneof"`
 }
 
+type Packet_PeerAuthorization struct {
+	// A renewed PeerAuthorization of this PeerConnection that the participant
+	// received from the Fleet API. On "binding" only, from the participant,
+	// after both Hellos verified.
+	PeerAuthorization *SignedPeerAuthorization `protobuf:"bytes,6,opt,name=peer_authorization,json=peerAuthorization,proto3,oneof"`
+}
+
 func (*Packet_Hello) isPacket_Packet() {}
 
 func (*Packet_Envelope) isPacket_Packet() {}
@@ -390,6 +407,8 @@ func (*Packet_Datagram) isPacket_Packet() {}
 func (*Packet_Receipt) isPacket_Packet() {}
 
 func (*Packet_Close) isPacket_Packet() {}
+
+func (*Packet_PeerAuthorization) isPacket_Packet() {}
 
 // Each end sends Hello twice: first with its own challenge and an empty
 // response, then, once the peer's Hello arrived, again with response set to
@@ -1398,8 +1417,9 @@ func (x *Close) GetStatus() *status.Status {
 // a PeerConnection through the Fleet API, and receives the session's answer,
 // candidates and the PeerAuthorization in the answer of its request. The
 // service passes on the session's candidates that arrive until the session
-// sends end_of_candidates, and at most 2 seconds after the answer; the session
-// therefore sends end_of_candidates as soon as it gathered.
+// sends end_of_candidates, and at most 10 seconds after the answer; the
+// session therefore sends end_of_candidates as soon as it gathered, and the
+// participant's request waits no longer than that.
 //
 // The offer is the first signal of a PeerConnection: the service sends it
 // before any other signal of that PeerConnection. The participant's later
@@ -1916,8 +1936,17 @@ type PeerAuthorization struct {
 	ExpiresAt *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
 	// The end of the current lease, at most 30 seconds after issued_at and no
 	// later than expires_at. The participant renews it through the Fleet API with
-	// the PeerAuthorization it holds. Each end stops sending application data
-	// when the lease runs out, and goes on once it holds a later one.
+	// the PeerAuthorization it holds, and passes each renewed one to the session
+	// on "binding" (Packet.peer_authorization); the service also sends it on the
+	// session's control connection, so that either path keeps the lease while
+	// the other is down. The session takes whichever arrives first and ignores
+	// one whose lease does not end later than the one it holds. It takes one
+	// that the service signed with a key of its SigningKeys, that names the
+	// same PeerConnection, participant, fingerprints and session, and whose
+	// participant_authorization_sha256 names the participant's authorization it
+	// holds or, while that one has not expired, the authorization it replaced.
+	// Each end stops sending application data when the lease runs out, and goes
+	// on once it holds a later one.
 	LeaseExpiresAt *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=lease_expires_at,json=leaseExpiresAt,proto3" json:"lease_expires_at,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -2034,13 +2063,14 @@ var File_leaflow_fleet_transport_v1_transport_proto protoreflect.FileDescriptor
 
 const file_leaflow_fleet_transport_v1_transport_proto_rawDesc = "" +
 	"\n" +
-	"*leaflow/fleet/transport/v1/transport.proto\x12\x1aleaflow.fleet.transport.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17google/rpc/status.proto\"\xd4\x02\n" +
+	"*leaflow/fleet/transport/v1/transport.proto\x12\x1aleaflow.fleet.transport.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17google/rpc/status.proto\"\xba\x03\n" +
 	"\x06Packet\x129\n" +
 	"\x05hello\x18\x01 \x01(\v2!.leaflow.fleet.transport.v1.HelloH\x00R\x05hello\x12B\n" +
 	"\benvelope\x18\x02 \x01(\v2$.leaflow.fleet.transport.v1.EnvelopeH\x00R\benvelope\x12B\n" +
 	"\bdatagram\x18\x03 \x01(\v2$.leaflow.fleet.transport.v1.DatagramH\x00R\bdatagram\x12B\n" +
 	"\areceipt\x18\x04 \x01(\v2&.leaflow.fleet.transport.v1.CheckpointH\x00R\areceipt\x129\n" +
-	"\x05close\x18\x05 \x01(\v2!.leaflow.fleet.transport.v1.CloseH\x00R\x05closeB\b\n" +
+	"\x05close\x18\x05 \x01(\v2!.leaflow.fleet.transport.v1.CloseH\x00R\x05close\x12d\n" +
+	"\x12peer_authorization\x18\x06 \x01(\v23.leaflow.fleet.transport.v1.SignedPeerAuthorizationH\x00R\x11peerAuthorizationB\b\n" +
 	"\x06packet\"\xca\x03\n" +
 	"\x05Hello\x12,\n" +
 	"\x12peer_connection_id\x18\x01 \x01(\fR\x10peerConnectionId\x12%\n" +
@@ -2226,35 +2256,36 @@ var file_leaflow_fleet_transport_v1_transport_proto_depIdxs = []int32{
 	11, // 2: leaflow.fleet.transport.v1.Packet.datagram:type_name -> leaflow.fleet.transport.v1.Datagram
 	12, // 3: leaflow.fleet.transport.v1.Packet.receipt:type_name -> leaflow.fleet.transport.v1.Checkpoint
 	16, // 4: leaflow.fleet.transport.v1.Packet.close:type_name -> leaflow.fleet.transport.v1.Close
-	7,  // 5: leaflow.fleet.transport.v1.Envelope.open:type_name -> leaflow.fleet.transport.v1.ChannelOpen
-	8,  // 6: leaflow.fleet.transport.v1.Envelope.open_confirmation:type_name -> leaflow.fleet.transport.v1.ChannelOpenConfirmation
-	9,  // 7: leaflow.fleet.transport.v1.Envelope.open_failure:type_name -> leaflow.fleet.transport.v1.ChannelOpenFailure
-	10, // 8: leaflow.fleet.transport.v1.Envelope.close:type_name -> leaflow.fleet.transport.v1.ChannelClose
-	0,  // 9: leaflow.fleet.transport.v1.ChannelOpenFailure.reason:type_name -> leaflow.fleet.transport.v1.ChannelOpenFailureReason
-	1,  // 10: leaflow.fleet.transport.v1.ChannelClose.error_code:type_name -> leaflow.fleet.transport.v1.ChannelErrorCode
-	13, // 11: leaflow.fleet.transport.v1.Checkpoint.cursors:type_name -> leaflow.fleet.transport.v1.ChannelCursor
-	14, // 12: leaflow.fleet.transport.v1.Checkpoint.retired_ranges:type_name -> leaflow.fleet.transport.v1.RetiredRange
-	12, // 13: leaflow.fleet.transport.v1.Migration.prepare:type_name -> leaflow.fleet.transport.v1.Checkpoint
-	12, // 14: leaflow.fleet.transport.v1.Migration.prepared:type_name -> leaflow.fleet.transport.v1.Checkpoint
-	12, // 15: leaflow.fleet.transport.v1.Migration.commit:type_name -> leaflow.fleet.transport.v1.Checkpoint
-	12, // 16: leaflow.fleet.transport.v1.Migration.committed:type_name -> leaflow.fleet.transport.v1.Checkpoint
-	24, // 17: leaflow.fleet.transport.v1.Close.status:type_name -> google.rpc.Status
-	20, // 18: leaflow.fleet.transport.v1.Signal.configuration:type_name -> leaflow.fleet.transport.v1.RtcConfiguration
-	18, // 19: leaflow.fleet.transport.v1.Signal.description:type_name -> leaflow.fleet.transport.v1.SessionDescription
-	19, // 20: leaflow.fleet.transport.v1.Signal.candidate:type_name -> leaflow.fleet.transport.v1.IceCandidate
-	22, // 21: leaflow.fleet.transport.v1.Signal.authorization:type_name -> leaflow.fleet.transport.v1.SignedPeerAuthorization
-	2,  // 22: leaflow.fleet.transport.v1.SessionDescription.type:type_name -> leaflow.fleet.transport.v1.SdpType
-	21, // 23: leaflow.fleet.transport.v1.RtcConfiguration.ice_servers:type_name -> leaflow.fleet.transport.v1.IceServer
-	3,  // 24: leaflow.fleet.transport.v1.RtcConfiguration.ice_transport_policy:type_name -> leaflow.fleet.transport.v1.IceTransportPolicy
-	25, // 25: leaflow.fleet.transport.v1.RtcConfiguration.expires_at:type_name -> google.protobuf.Timestamp
-	25, // 26: leaflow.fleet.transport.v1.PeerAuthorization.issued_at:type_name -> google.protobuf.Timestamp
-	25, // 27: leaflow.fleet.transport.v1.PeerAuthorization.expires_at:type_name -> google.protobuf.Timestamp
-	25, // 28: leaflow.fleet.transport.v1.PeerAuthorization.lease_expires_at:type_name -> google.protobuf.Timestamp
-	29, // [29:29] is the sub-list for method output_type
-	29, // [29:29] is the sub-list for method input_type
-	29, // [29:29] is the sub-list for extension type_name
-	29, // [29:29] is the sub-list for extension extendee
-	0,  // [0:29] is the sub-list for field type_name
+	22, // 5: leaflow.fleet.transport.v1.Packet.peer_authorization:type_name -> leaflow.fleet.transport.v1.SignedPeerAuthorization
+	7,  // 6: leaflow.fleet.transport.v1.Envelope.open:type_name -> leaflow.fleet.transport.v1.ChannelOpen
+	8,  // 7: leaflow.fleet.transport.v1.Envelope.open_confirmation:type_name -> leaflow.fleet.transport.v1.ChannelOpenConfirmation
+	9,  // 8: leaflow.fleet.transport.v1.Envelope.open_failure:type_name -> leaflow.fleet.transport.v1.ChannelOpenFailure
+	10, // 9: leaflow.fleet.transport.v1.Envelope.close:type_name -> leaflow.fleet.transport.v1.ChannelClose
+	0,  // 10: leaflow.fleet.transport.v1.ChannelOpenFailure.reason:type_name -> leaflow.fleet.transport.v1.ChannelOpenFailureReason
+	1,  // 11: leaflow.fleet.transport.v1.ChannelClose.error_code:type_name -> leaflow.fleet.transport.v1.ChannelErrorCode
+	13, // 12: leaflow.fleet.transport.v1.Checkpoint.cursors:type_name -> leaflow.fleet.transport.v1.ChannelCursor
+	14, // 13: leaflow.fleet.transport.v1.Checkpoint.retired_ranges:type_name -> leaflow.fleet.transport.v1.RetiredRange
+	12, // 14: leaflow.fleet.transport.v1.Migration.prepare:type_name -> leaflow.fleet.transport.v1.Checkpoint
+	12, // 15: leaflow.fleet.transport.v1.Migration.prepared:type_name -> leaflow.fleet.transport.v1.Checkpoint
+	12, // 16: leaflow.fleet.transport.v1.Migration.commit:type_name -> leaflow.fleet.transport.v1.Checkpoint
+	12, // 17: leaflow.fleet.transport.v1.Migration.committed:type_name -> leaflow.fleet.transport.v1.Checkpoint
+	24, // 18: leaflow.fleet.transport.v1.Close.status:type_name -> google.rpc.Status
+	20, // 19: leaflow.fleet.transport.v1.Signal.configuration:type_name -> leaflow.fleet.transport.v1.RtcConfiguration
+	18, // 20: leaflow.fleet.transport.v1.Signal.description:type_name -> leaflow.fleet.transport.v1.SessionDescription
+	19, // 21: leaflow.fleet.transport.v1.Signal.candidate:type_name -> leaflow.fleet.transport.v1.IceCandidate
+	22, // 22: leaflow.fleet.transport.v1.Signal.authorization:type_name -> leaflow.fleet.transport.v1.SignedPeerAuthorization
+	2,  // 23: leaflow.fleet.transport.v1.SessionDescription.type:type_name -> leaflow.fleet.transport.v1.SdpType
+	21, // 24: leaflow.fleet.transport.v1.RtcConfiguration.ice_servers:type_name -> leaflow.fleet.transport.v1.IceServer
+	3,  // 25: leaflow.fleet.transport.v1.RtcConfiguration.ice_transport_policy:type_name -> leaflow.fleet.transport.v1.IceTransportPolicy
+	25, // 26: leaflow.fleet.transport.v1.RtcConfiguration.expires_at:type_name -> google.protobuf.Timestamp
+	25, // 27: leaflow.fleet.transport.v1.PeerAuthorization.issued_at:type_name -> google.protobuf.Timestamp
+	25, // 28: leaflow.fleet.transport.v1.PeerAuthorization.expires_at:type_name -> google.protobuf.Timestamp
+	25, // 29: leaflow.fleet.transport.v1.PeerAuthorization.lease_expires_at:type_name -> google.protobuf.Timestamp
+	30, // [30:30] is the sub-list for method output_type
+	30, // [30:30] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_leaflow_fleet_transport_v1_transport_proto_init() }
@@ -2268,6 +2299,7 @@ func file_leaflow_fleet_transport_v1_transport_proto_init() {
 		(*Packet_Datagram)(nil),
 		(*Packet_Receipt)(nil),
 		(*Packet_Close)(nil),
+		(*Packet_PeerAuthorization)(nil),
 	}
 	file_leaflow_fleet_transport_v1_transport_proto_msgTypes[2].OneofWrappers = []any{
 		(*Envelope_Open)(nil),
