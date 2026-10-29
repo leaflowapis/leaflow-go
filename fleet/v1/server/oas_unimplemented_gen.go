@@ -305,6 +305,16 @@ func (UnimplementedHandler) DeletePeerConnection(ctx context.Context, params Del
 	return ht.ErrNotImplemented
 }
 
+// DeletePrivilegeAutoApproval implements delete-privilege-auto-approval operation.
+//
+// Removes it: the caller is asked about every later privilege request on the machine. Removing one
+// that does not exist succeeds.
+//
+// DELETE /api/v1/machines/{machineId}/privilege-auto-approval
+func (UnimplementedHandler) DeletePrivilegeAutoApproval(ctx context.Context, params DeletePrivilegeAutoApprovalParams) error {
+	return ht.ErrNotImplemented
+}
+
 // DenyEnrollment implements deny-enrollment operation.
 //
 // Refuses the request. The decision is final for the machine's key: the Agent stops polling and
@@ -390,13 +400,14 @@ func (UnimplementedHandler) GetParticipant(ctx context.Context, params GetPartic
 	return r, ht.ErrNotImplemented
 }
 
-// GetPrivilegeApproval implements get-privilege-approval operation.
+// GetPrivilegeAutoApproval implements get-privilege-auto-approval operation.
 //
-// Returns whether the caller's elevations on the machine are approved without asking. A caller who
-// never set it gets `never`.
+// Returns the caller's automatic approval of their privilege requests on the machine. Fails with
+// `PRIVILEGE_AUTO_APPROVAL_NOT_FOUND` while the caller is asked every time, including after its
+// `expires_at` has passed.
 //
-// GET /api/v1/machines/{machineId}/privilege-approval
-func (UnimplementedHandler) GetPrivilegeApproval(ctx context.Context, params GetPrivilegeApprovalParams) (r *PrivilegeApproval, _ error) {
+// GET /api/v1/machines/{machineId}/privilege-auto-approval
+func (UnimplementedHandler) GetPrivilegeAutoApproval(ctx context.Context, params GetPrivilegeAutoApprovalParams) (r *PrivilegeAutoApprovalResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -494,14 +505,13 @@ func (UnimplementedHandler) ListMachines(ctx context.Context, params ListMachine
 	return r, ht.ErrNotImplemented
 }
 
-// ListPrivilegeApprovals implements list-privilege-approvals operation.
+// ListPrivilegeAutoApprovals implements list-privilege-auto-approvals operation.
 //
-// Returns the machines of the current project on which the caller has set privilege requests to be
-// approved without asking, with the setting of each, the most recently set first. A machine whose
-// setting is `never`, or whose `until` has passed, is not listed.
+// Returns the caller's automatic approvals on the machines of the current project that are in effect,
+// the most recently set first.
 //
-// GET /api/v1/privilege-approvals
-func (UnimplementedHandler) ListPrivilegeApprovals(ctx context.Context, params ListPrivilegeApprovalsParams) (r *PrivilegeApprovalList, _ error) {
+// GET /api/v1/privilege-auto-approvals
+func (UnimplementedHandler) ListPrivilegeAutoApprovals(ctx context.Context, params ListPrivilegeAutoApprovalsParams) (r *PrivilegeAutoApprovalList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -658,15 +668,15 @@ func (UnimplementedHandler) UpdateMachine(ctx context.Context, req *UpdateMachin
 	return r, ht.ErrNotImplemented
 }
 
-// UpdatePrivilegeApproval implements update-privilege-approval operation.
+// UpdatePrivilegeAutoApproval implements update-privilege-auto-approval operation.
 //
-// Sets whether the caller's elevations on the machine are approved without asking: `never` asks every
-// time, `until` approves without asking until `auto_approve_until`, `forever` always does. It applies
-// to the caller's own account only, and only while they may become root on the machine. Fails with
-// `INVALID_ARGUMENT` when `auto_approve_until` is missing or past for `until`, or present otherwise.
+// Approves the caller's privilege requests on the machine at once, until `expires_at`, or until
+// removed when `expires_at` is null, replacing any earlier automatic approval. It applies to the
+// caller's own account only, which is created if the caller has none yet, and only while they may
+// become root on the machine. Fails with `INVALID_ARGUMENT` when `expires_at` has passed.
 //
-// PUT /api/v1/machines/{machineId}/privilege-approval
-func (UnimplementedHandler) UpdatePrivilegeApproval(ctx context.Context, req *PrivilegeApproval, params UpdatePrivilegeApprovalParams) (r *PrivilegeApproval, _ error) {
+// PUT /api/v1/machines/{machineId}/privilege-auto-approval
+func (UnimplementedHandler) UpdatePrivilegeAutoApproval(ctx context.Context, req *UpdatePrivilegeAutoApprovalRequest, params UpdatePrivilegeAutoApprovalParams) (r *PrivilegeAutoApprovalResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

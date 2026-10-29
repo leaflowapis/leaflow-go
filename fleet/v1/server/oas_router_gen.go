@@ -14,17 +14,17 @@ var (
 	rn43AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn39AllowedHeaders = map[string]string{
+	rn40AllowedHeaders = map[string]string{
 		"GET":   "Authorization",
 		"PATCH": "Authorization,Content-Type",
 	}
 	rn3AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn33AllowedHeaders = map[string]string{
+	rn34AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
-	rn37AllowedHeaders = map[string]string{
+	rn38AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn14AllowedHeaders = map[string]string{
@@ -62,9 +62,10 @@ var (
 	rn45AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn40AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-		"PUT": "Authorization,Content-Type",
+	rn32AllowedHeaders = map[string]string{
+		"DELETE": "Authorization",
+		"GET":    "Authorization",
+		"PUT":    "Authorization,Content-Type",
 	}
 	rn53AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
@@ -81,7 +82,7 @@ var (
 	rn7AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
-	rn35AllowedHeaders = map[string]string{
+	rn36AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
 	rn24AllowedHeaders = map[string]string{
@@ -234,7 +235,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET,PATCH",
-								allowedHeaders: rn39AllowedHeaders,
+								allowedHeaders: rn40AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "application/json",
 							})
@@ -335,7 +336,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn33AllowedHeaders,
+										allowedHeaders: rn34AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -364,7 +365,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
-								allowedHeaders: rn37AllowedHeaders,
+								allowedHeaders: rn38AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -703,9 +704,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									return
 								}
 
-							case 'p': // Prefix: "privilege-approval"
+							case 'p': // Prefix: "privilege-auto-approval"
 
-								if l := len("privilege-approval"); len(elem) >= l && elem[0:l] == "privilege-approval" {
+								if l := len("privilege-auto-approval"); len(elem) >= l && elem[0:l] == "privilege-auto-approval" {
 									elem = elem[l:]
 								} else {
 									break
@@ -714,18 +715,22 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								if len(elem) == 0 {
 									// Leaf node.
 									switch r.Method {
+									case "DELETE":
+										s.handleDeletePrivilegeAutoApprovalRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
 									case "GET":
-										s.handleGetPrivilegeApprovalRequest([1]string{
+										s.handleGetPrivilegeAutoApprovalRequest([1]string{
 											args[0],
 										}, elemIsEscaped, w, r)
 									case "PUT":
-										s.handleUpdatePrivilegeApprovalRequest([1]string{
+										s.handleUpdatePrivilegeAutoApprovalRequest([1]string{
 											args[0],
 										}, elemIsEscaped, w, r)
 									default:
 										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "GET,PUT",
-											allowedHeaders: rn40AllowedHeaders,
+											allowedMethods: "DELETE,GET,PUT",
+											allowedHeaders: rn32AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -781,9 +786,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 				switch elem[0] {
-				case 'a': // Prefix: "approvals"
+				case 'a': // Prefix: "auto-approvals"
 
-					if l := len("approvals"); len(elem) >= l && elem[0:l] == "approvals" {
+					if l := len("auto-approvals"); len(elem) >= l && elem[0:l] == "auto-approvals" {
 						elem = elem[l:]
 					} else {
 						break
@@ -793,7 +798,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						// Leaf node.
 						switch r.Method {
 						case "GET":
-							s.handleListPrivilegeApprovalsRequest([0]string{}, elemIsEscaped, w, r)
+							s.handleListPrivilegeAutoApprovalsRequest([0]string{}, elemIsEscaped, w, r)
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
@@ -922,7 +927,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "POST",
-											allowedHeaders: rn35AllowedHeaders,
+											allowedHeaders: rn36AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -2037,9 +2042,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									}
 								}
 
-							case 'p': // Prefix: "privilege-approval"
+							case 'p': // Prefix: "privilege-auto-approval"
 
-								if l := len("privilege-approval"); len(elem) >= l && elem[0:l] == "privilege-approval" {
+								if l := len("privilege-auto-approval"); len(elem) >= l && elem[0:l] == "privilege-auto-approval" {
 									elem = elem[l:]
 								} else {
 									break
@@ -2048,21 +2053,30 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								if len(elem) == 0 {
 									// Leaf node.
 									switch method {
-									case "GET":
-										r.name = GetPrivilegeApprovalOperation
-										r.summary = "Get the caller's privilege approval setting for a machine"
-										r.operationID = "get-privilege-approval"
+									case "DELETE":
+										r.name = DeletePrivilegeAutoApprovalOperation
+										r.summary = "Remove the caller's automatic approval for a machine"
+										r.operationID = "delete-privilege-auto-approval"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/machines/{machineId}/privilege-approval"
+										r.pathPattern = "/api/v1/machines/{machineId}/privilege-auto-approval"
+										r.args = args
+										r.count = 1
+										return r, true
+									case "GET":
+										r.name = GetPrivilegeAutoApprovalOperation
+										r.summary = "Get the caller's automatic approval for a machine"
+										r.operationID = "get-privilege-auto-approval"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/machines/{machineId}/privilege-auto-approval"
 										r.args = args
 										r.count = 1
 										return r, true
 									case "PUT":
-										r.name = UpdatePrivilegeApprovalOperation
-										r.summary = "Set the caller's privilege approval setting for a machine"
-										r.operationID = "update-privilege-approval"
+										r.name = UpdatePrivilegeAutoApprovalOperation
+										r.summary = "Approve the caller's privilege requests on a machine without asking"
+										r.operationID = "update-privilege-auto-approval"
 										r.operationGroup = ""
-										r.pathPattern = "/api/v1/machines/{machineId}/privilege-approval"
+										r.pathPattern = "/api/v1/machines/{machineId}/privilege-auto-approval"
 										r.args = args
 										r.count = 1
 										return r, true
@@ -2116,9 +2130,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					break
 				}
 				switch elem[0] {
-				case 'a': // Prefix: "approvals"
+				case 'a': // Prefix: "auto-approvals"
 
-					if l := len("approvals"); len(elem) >= l && elem[0:l] == "approvals" {
+					if l := len("auto-approvals"); len(elem) >= l && elem[0:l] == "auto-approvals" {
 						elem = elem[l:]
 					} else {
 						break
@@ -2128,11 +2142,11 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						// Leaf node.
 						switch method {
 						case "GET":
-							r.name = ListPrivilegeApprovalsOperation
-							r.summary = "List the caller's privilege approval settings"
-							r.operationID = "list-privilege-approvals"
+							r.name = ListPrivilegeAutoApprovalsOperation
+							r.summary = "List the caller's automatic approvals"
+							r.operationID = "list-privilege-auto-approvals"
 							r.operationGroup = ""
-							r.pathPattern = "/api/v1/privilege-approvals"
+							r.pathPattern = "/api/v1/privilege-auto-approvals"
 							r.args = args
 							r.count = 0
 							return r, true

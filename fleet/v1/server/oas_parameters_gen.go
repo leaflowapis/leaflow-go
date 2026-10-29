@@ -1579,6 +1579,71 @@ func decodeDeletePeerConnectionParams(args [3]string, argsEscaped bool, r *http.
 	return params, nil
 }
 
+// DeletePrivilegeAutoApprovalParams is parameters of delete-privilege-auto-approval operation.
+type DeletePrivilegeAutoApprovalParams struct {
+	MachineId uuid.UUID
+}
+
+func unpackDeletePrivilegeAutoApprovalParams(packed middleware.Parameters) (params DeletePrivilegeAutoApprovalParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "machineId",
+			In:   "path",
+		}
+		params.MachineId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeDeletePrivilegeAutoApprovalParams(args [1]string, argsEscaped bool, r *http.Request) (params DeletePrivilegeAutoApprovalParams, _ error) {
+	// Decode path: machineId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "machineId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.MachineId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "machineId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // DenyEnrollmentParams is parameters of deny-enrollment operation.
 type DenyEnrollmentParams struct {
 	EnrollmentId uuid.UUID
@@ -2203,12 +2268,12 @@ func decodeGetParticipantParams(args [2]string, argsEscaped bool, r *http.Reques
 	return params, nil
 }
 
-// GetPrivilegeApprovalParams is parameters of get-privilege-approval operation.
-type GetPrivilegeApprovalParams struct {
+// GetPrivilegeAutoApprovalParams is parameters of get-privilege-auto-approval operation.
+type GetPrivilegeAutoApprovalParams struct {
 	MachineId uuid.UUID
 }
 
-func unpackGetPrivilegeApprovalParams(packed middleware.Parameters) (params GetPrivilegeApprovalParams) {
+func unpackGetPrivilegeAutoApprovalParams(packed middleware.Parameters) (params GetPrivilegeAutoApprovalParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "machineId",
@@ -2219,7 +2284,7 @@ func unpackGetPrivilegeApprovalParams(packed middleware.Parameters) (params GetP
 	return params
 }
 
-func decodeGetPrivilegeApprovalParams(args [1]string, argsEscaped bool, r *http.Request) (params GetPrivilegeApprovalParams, _ error) {
+func decodeGetPrivilegeAutoApprovalParams(args [1]string, argsEscaped bool, r *http.Request) (params GetPrivilegeAutoApprovalParams, _ error) {
 	// Decode path: machineId.
 	if err := func() error {
 		param := args[0]
@@ -3948,15 +4013,15 @@ func decodeListMachinesParams(args [0]string, argsEscaped bool, r *http.Request)
 	return params, nil
 }
 
-// ListPrivilegeApprovalsParams is parameters of list-privilege-approvals operation.
-type ListPrivilegeApprovalsParams struct {
+// ListPrivilegeAutoApprovalsParams is parameters of list-privilege-auto-approvals operation.
+type ListPrivilegeAutoApprovalsParams struct {
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 }
 
-func unpackListPrivilegeApprovalsParams(packed middleware.Parameters) (params ListPrivilegeApprovalsParams) {
+func unpackListPrivilegeAutoApprovalsParams(packed middleware.Parameters) (params ListPrivilegeAutoApprovalsParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "page",
@@ -3978,7 +4043,7 @@ func unpackListPrivilegeApprovalsParams(packed middleware.Parameters) (params Li
 	return params
 }
 
-func decodeListPrivilegeApprovalsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListPrivilegeApprovalsParams, _ error) {
+func decodeListPrivilegeAutoApprovalsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListPrivilegeAutoApprovalsParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
 	// Set default value for query: page.
 	{
@@ -5501,12 +5566,12 @@ func decodeUpdateMachineParams(args [1]string, argsEscaped bool, r *http.Request
 	return params, nil
 }
 
-// UpdatePrivilegeApprovalParams is parameters of update-privilege-approval operation.
-type UpdatePrivilegeApprovalParams struct {
+// UpdatePrivilegeAutoApprovalParams is parameters of update-privilege-auto-approval operation.
+type UpdatePrivilegeAutoApprovalParams struct {
 	MachineId uuid.UUID
 }
 
-func unpackUpdatePrivilegeApprovalParams(packed middleware.Parameters) (params UpdatePrivilegeApprovalParams) {
+func unpackUpdatePrivilegeAutoApprovalParams(packed middleware.Parameters) (params UpdatePrivilegeAutoApprovalParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "machineId",
@@ -5517,7 +5582,7 @@ func unpackUpdatePrivilegeApprovalParams(packed middleware.Parameters) (params U
 	return params
 }
 
-func decodeUpdatePrivilegeApprovalParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdatePrivilegeApprovalParams, _ error) {
+func decodeUpdatePrivilegeAutoApprovalParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdatePrivilegeAutoApprovalParams, _ error) {
 	// Decode path: machineId.
 	if err := func() error {
 		param := args[0]

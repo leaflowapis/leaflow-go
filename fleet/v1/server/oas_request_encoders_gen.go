@@ -220,8 +220,8 @@ func encodeUpdateMachineRequest(
 	return nil
 }
 
-func encodeUpdatePrivilegeApprovalRequest(
-	req *PrivilegeApproval,
+func encodeUpdatePrivilegeAutoApprovalRequest(
+	req *UpdatePrivilegeAutoApprovalRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

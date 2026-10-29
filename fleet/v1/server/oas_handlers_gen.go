@@ -3694,6 +3694,207 @@ func (s *Server) handleDeletePeerConnectionRequest(args [3]string, argsEscaped b
 	}
 }
 
+// handleDeletePrivilegeAutoApprovalRequest handles delete-privilege-auto-approval operation.
+//
+// Removes it: the caller is asked about every later privilege request on the machine. Removing one
+// that does not exist succeeds.
+//
+// DELETE /api/v1/machines/{machineId}/privilege-auto-approval
+func (s *Server) handleDeletePrivilegeAutoApprovalRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-privilege-auto-approval"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/api/v1/machines/{machineId}/privilege-auto-approval"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DeletePrivilegeAutoApprovalOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: DeletePrivilegeAutoApprovalOperation,
+			ID:   "delete-privilege-auto-approval",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, DeletePrivilegeAutoApprovalOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeDeletePrivilegeAutoApprovalParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *DeletePrivilegeAutoApprovalNoContent
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    DeletePrivilegeAutoApprovalOperation,
+			OperationSummary: "Remove the caller's automatic approval for a machine",
+			OperationID:      "delete-privilege-auto-approval",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "machineId",
+					In:   "path",
+				}: params.MachineId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = DeletePrivilegeAutoApprovalParams
+			Response = *DeletePrivilegeAutoApprovalNoContent
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackDeletePrivilegeAutoApprovalParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				err = s.h.DeletePrivilegeAutoApproval(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		err = s.h.DeletePrivilegeAutoApproval(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeDeletePrivilegeAutoApprovalResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleDenyEnrollmentRequest handles deny-enrollment operation.
 //
 // Refuses the request. The decision is final for the machine's key: the Agent stops polling and
@@ -5311,25 +5512,26 @@ func (s *Server) handleGetParticipantRequest(args [2]string, argsEscaped bool, w
 	}
 }
 
-// handleGetPrivilegeApprovalRequest handles get-privilege-approval operation.
+// handleGetPrivilegeAutoApprovalRequest handles get-privilege-auto-approval operation.
 //
-// Returns whether the caller's elevations on the machine are approved without asking. A caller who
-// never set it gets `never`.
+// Returns the caller's automatic approval of their privilege requests on the machine. Fails with
+// `PRIVILEGE_AUTO_APPROVAL_NOT_FOUND` while the caller is asked every time, including after its
+// `expires_at` has passed.
 //
-// GET /api/v1/machines/{machineId}/privilege-approval
-func (s *Server) handleGetPrivilegeApprovalRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/machines/{machineId}/privilege-auto-approval
+func (s *Server) handleGetPrivilegeAutoApprovalRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-privilege-approval"),
+		otelogen.OperationID("get-privilege-auto-approval"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/machines/{machineId}/privilege-approval"),
+		semconv.HTTPRouteKey.String("/api/v1/machines/{machineId}/privilege-auto-approval"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetPrivilegeApprovalOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetPrivilegeAutoApprovalOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -5384,15 +5586,15 @@ func (s *Server) handleGetPrivilegeApprovalRequest(args [1]string, argsEscaped b
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: GetPrivilegeApprovalOperation,
-			ID:   "get-privilege-approval",
+			Name: GetPrivilegeAutoApprovalOperation,
+			ID:   "get-privilege-auto-approval",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetPrivilegeApprovalOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, GetPrivilegeAutoApprovalOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -5434,7 +5636,7 @@ func (s *Server) handleGetPrivilegeApprovalRequest(args [1]string, argsEscaped b
 			return
 		}
 	}
-	params, err := decodeGetPrivilegeApprovalParams(args, argsEscaped, r)
+	params, err := decodeGetPrivilegeAutoApprovalParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -5447,13 +5649,13 @@ func (s *Server) handleGetPrivilegeApprovalRequest(args [1]string, argsEscaped b
 
 	var rawBody []byte
 
-	var response *PrivilegeApproval
+	var response *PrivilegeAutoApprovalResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    GetPrivilegeApprovalOperation,
-			OperationSummary: "Get the caller's privilege approval setting for a machine",
-			OperationID:      "get-privilege-approval",
+			OperationName:    GetPrivilegeAutoApprovalOperation,
+			OperationSummary: "Get the caller's automatic approval for a machine",
+			OperationID:      "get-privilege-auto-approval",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -5467,8 +5669,8 @@ func (s *Server) handleGetPrivilegeApprovalRequest(args [1]string, argsEscaped b
 
 		type (
 			Request  = struct{}
-			Params   = GetPrivilegeApprovalParams
-			Response = *PrivilegeApproval
+			Params   = GetPrivilegeAutoApprovalParams
+			Response = *PrivilegeAutoApprovalResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -5477,14 +5679,14 @@ func (s *Server) handleGetPrivilegeApprovalRequest(args [1]string, argsEscaped b
 		](
 			m,
 			mreq,
-			unpackGetPrivilegeApprovalParams,
+			unpackGetPrivilegeAutoApprovalParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetPrivilegeApproval(ctx, params)
+				response, err = s.h.GetPrivilegeAutoApproval(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.GetPrivilegeApproval(ctx, params)
+		response, err = s.h.GetPrivilegeAutoApproval(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -5503,7 +5705,7 @@ func (s *Server) handleGetPrivilegeApprovalRequest(args [1]string, argsEscaped b
 		return
 	}
 
-	if err := encodeGetPrivilegeApprovalResponse(response, w, span); err != nil {
+	if err := encodeGetPrivilegeAutoApprovalResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -7373,26 +7575,25 @@ func (s *Server) handleListMachinesRequest(args [0]string, argsEscaped bool, w h
 	}
 }
 
-// handleListPrivilegeApprovalsRequest handles list-privilege-approvals operation.
+// handleListPrivilegeAutoApprovalsRequest handles list-privilege-auto-approvals operation.
 //
-// Returns the machines of the current project on which the caller has set privilege requests to be
-// approved without asking, with the setting of each, the most recently set first. A machine whose
-// setting is `never`, or whose `until` has passed, is not listed.
+// Returns the caller's automatic approvals on the machines of the current project that are in effect,
+// the most recently set first.
 //
-// GET /api/v1/privilege-approvals
-func (s *Server) handleListPrivilegeApprovalsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/privilege-auto-approvals
+func (s *Server) handleListPrivilegeAutoApprovalsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-privilege-approvals"),
+		otelogen.OperationID("list-privilege-auto-approvals"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/privilege-approvals"),
+		semconv.HTTPRouteKey.String("/api/v1/privilege-auto-approvals"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListPrivilegeApprovalsOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListPrivilegeAutoApprovalsOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -7447,15 +7648,15 @@ func (s *Server) handleListPrivilegeApprovalsRequest(args [0]string, argsEscaped
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListPrivilegeApprovalsOperation,
-			ID:   "list-privilege-approvals",
+			Name: ListPrivilegeAutoApprovalsOperation,
+			ID:   "list-privilege-auto-approvals",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListPrivilegeApprovalsOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, ListPrivilegeAutoApprovalsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -7497,7 +7698,7 @@ func (s *Server) handleListPrivilegeApprovalsRequest(args [0]string, argsEscaped
 			return
 		}
 	}
-	params, err := decodeListPrivilegeApprovalsParams(args, argsEscaped, r)
+	params, err := decodeListPrivilegeAutoApprovalsParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -7510,13 +7711,13 @@ func (s *Server) handleListPrivilegeApprovalsRequest(args [0]string, argsEscaped
 
 	var rawBody []byte
 
-	var response *PrivilegeApprovalList
+	var response *PrivilegeAutoApprovalList
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListPrivilegeApprovalsOperation,
-			OperationSummary: "List the caller's privilege approval settings",
-			OperationID:      "list-privilege-approvals",
+			OperationName:    ListPrivilegeAutoApprovalsOperation,
+			OperationSummary: "List the caller's automatic approvals",
+			OperationID:      "list-privilege-auto-approvals",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -7534,8 +7735,8 @@ func (s *Server) handleListPrivilegeApprovalsRequest(args [0]string, argsEscaped
 
 		type (
 			Request  = struct{}
-			Params   = ListPrivilegeApprovalsParams
-			Response = *PrivilegeApprovalList
+			Params   = ListPrivilegeAutoApprovalsParams
+			Response = *PrivilegeAutoApprovalList
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -7544,14 +7745,14 @@ func (s *Server) handleListPrivilegeApprovalsRequest(args [0]string, argsEscaped
 		](
 			m,
 			mreq,
-			unpackListPrivilegeApprovalsParams,
+			unpackListPrivilegeAutoApprovalsParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListPrivilegeApprovals(ctx, params)
+				response, err = s.h.ListPrivilegeAutoApprovals(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListPrivilegeApprovals(ctx, params)
+		response, err = s.h.ListPrivilegeAutoApprovals(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -7570,7 +7771,7 @@ func (s *Server) handleListPrivilegeApprovalsRequest(args [0]string, argsEscaped
 		return
 	}
 
-	if err := encodeListPrivilegeApprovalsResponse(response, w, span); err != nil {
+	if err := encodeListPrivilegeAutoApprovalsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -9768,27 +9969,27 @@ func (s *Server) handleUpdateMachineRequest(args [1]string, argsEscaped bool, w 
 	}
 }
 
-// handleUpdatePrivilegeApprovalRequest handles update-privilege-approval operation.
+// handleUpdatePrivilegeAutoApprovalRequest handles update-privilege-auto-approval operation.
 //
-// Sets whether the caller's elevations on the machine are approved without asking: `never` asks every
-// time, `until` approves without asking until `auto_approve_until`, `forever` always does. It applies
-// to the caller's own account only, and only while they may become root on the machine. Fails with
-// `INVALID_ARGUMENT` when `auto_approve_until` is missing or past for `until`, or present otherwise.
+// Approves the caller's privilege requests on the machine at once, until `expires_at`, or until
+// removed when `expires_at` is null, replacing any earlier automatic approval. It applies to the
+// caller's own account only, which is created if the caller has none yet, and only while they may
+// become root on the machine. Fails with `INVALID_ARGUMENT` when `expires_at` has passed.
 //
-// PUT /api/v1/machines/{machineId}/privilege-approval
-func (s *Server) handleUpdatePrivilegeApprovalRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// PUT /api/v1/machines/{machineId}/privilege-auto-approval
+func (s *Server) handleUpdatePrivilegeAutoApprovalRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-privilege-approval"),
+		otelogen.OperationID("update-privilege-auto-approval"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.HTTPRouteKey.String("/api/v1/machines/{machineId}/privilege-approval"),
+		semconv.HTTPRouteKey.String("/api/v1/machines/{machineId}/privilege-auto-approval"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdatePrivilegeApprovalOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdatePrivilegeAutoApprovalOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -9843,15 +10044,15 @@ func (s *Server) handleUpdatePrivilegeApprovalRequest(args [1]string, argsEscape
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: UpdatePrivilegeApprovalOperation,
-			ID:   "update-privilege-approval",
+			Name: UpdatePrivilegeAutoApprovalOperation,
+			ID:   "update-privilege-auto-approval",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, UpdatePrivilegeApprovalOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, UpdatePrivilegeAutoApprovalOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -9893,7 +10094,7 @@ func (s *Server) handleUpdatePrivilegeApprovalRequest(args [1]string, argsEscape
 			return
 		}
 	}
-	params, err := decodeUpdatePrivilegeApprovalParams(args, argsEscaped, r)
+	params, err := decodeUpdatePrivilegeAutoApprovalParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -9905,7 +10106,7 @@ func (s *Server) handleUpdatePrivilegeApprovalRequest(args [1]string, argsEscape
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeUpdatePrivilegeApprovalRequest(r)
+	request, rawBody, close, err := s.decodeUpdatePrivilegeAutoApprovalRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -9921,13 +10122,13 @@ func (s *Server) handleUpdatePrivilegeApprovalRequest(args [1]string, argsEscape
 		}
 	}()
 
-	var response *PrivilegeApproval
+	var response *PrivilegeAutoApprovalResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    UpdatePrivilegeApprovalOperation,
-			OperationSummary: "Set the caller's privilege approval setting for a machine",
-			OperationID:      "update-privilege-approval",
+			OperationName:    UpdatePrivilegeAutoApprovalOperation,
+			OperationSummary: "Approve the caller's privilege requests on a machine without asking",
+			OperationID:      "update-privilege-auto-approval",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -9940,9 +10141,9 @@ func (s *Server) handleUpdatePrivilegeApprovalRequest(args [1]string, argsEscape
 		}
 
 		type (
-			Request  = *PrivilegeApproval
-			Params   = UpdatePrivilegeApprovalParams
-			Response = *PrivilegeApproval
+			Request  = *UpdatePrivilegeAutoApprovalRequest
+			Params   = UpdatePrivilegeAutoApprovalParams
+			Response = *PrivilegeAutoApprovalResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -9951,14 +10152,14 @@ func (s *Server) handleUpdatePrivilegeApprovalRequest(args [1]string, argsEscape
 		](
 			m,
 			mreq,
-			unpackUpdatePrivilegeApprovalParams,
+			unpackUpdatePrivilegeAutoApprovalParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.UpdatePrivilegeApproval(ctx, request, params)
+				response, err = s.h.UpdatePrivilegeAutoApproval(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.UpdatePrivilegeApproval(ctx, request, params)
+		response, err = s.h.UpdatePrivilegeAutoApproval(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -9977,7 +10178,7 @@ func (s *Server) handleUpdatePrivilegeApprovalRequest(args [1]string, argsEscape
 		return
 	}
 
-	if err := encodeUpdatePrivilegeApprovalResponse(response, w, span); err != nil {
+	if err := encodeUpdatePrivilegeAutoApprovalResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)

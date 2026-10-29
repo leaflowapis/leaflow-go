@@ -184,6 +184,12 @@ func encodeDeletePeerConnectionResponse(response *DeletePeerConnectionNoContent,
 	return nil
 }
 
+func encodeDeletePrivilegeAutoApprovalResponse(response *DeletePrivilegeAutoApprovalNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
+}
+
 func encodeDenyEnrollmentResponse(response *EnrollmentResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -288,7 +294,7 @@ func encodeGetParticipantResponse(response *ParticipantResource, w http.Response
 	return nil
 }
 
-func encodeGetPrivilegeApprovalResponse(response *PrivilegeApproval, w http.ResponseWriter, span trace.Span) error {
+func encodeGetPrivilegeAutoApprovalResponse(response *PrivilegeAutoApprovalResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -418,7 +424,7 @@ func encodeListMachinesResponse(response *MachineList, w http.ResponseWriter, sp
 	return nil
 }
 
-func encodeListPrivilegeApprovalsResponse(response *PrivilegeApprovalList, w http.ResponseWriter, span trace.Span) error {
+func encodeListPrivilegeAutoApprovalsResponse(response *PrivilegeAutoApprovalList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -561,7 +567,7 @@ func encodeUpdateMachineResponse(response *MachineResource, w http.ResponseWrite
 	return nil
 }
 
-func encodeUpdatePrivilegeApprovalResponse(response *PrivilegeApproval, w http.ResponseWriter, span trace.Span) error {
+func encodeUpdatePrivilegeAutoApprovalResponse(response *PrivilegeAutoApprovalResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

@@ -1768,43 +1768,7 @@ func (s *PeerConnection) Validate() error {
 	return nil
 }
 
-func (s *PrivilegeApproval) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.AutoApprove.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "auto_approve",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s PrivilegeApprovalAutoApprove) Validate() error {
-	switch s {
-	case "never":
-		return nil
-	case "until":
-		return nil
-	case "forever":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s *PrivilegeApprovalList) Validate() error {
+func (s *PrivilegeAutoApprovalList) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
@@ -1813,23 +1777,6 @@ func (s *PrivilegeApprovalList) Validate() error {
 	if err := func() error {
 		if s.Items == nil {
 			return errors.New("nil is invalid value")
-		}
-		var failures []validate.FieldError
-		for i, elem := range s.Items {
-			if err := func() error {
-				if err := elem.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				failures = append(failures, validate.FieldError{
-					Name:  fmt.Sprintf("[%d]", i),
-					Error: err,
-				})
-			}
-		}
-		if len(failures) > 0 {
-			return &validate.Error{Fields: failures}
 		}
 		return nil
 	}(); err != nil {
@@ -1907,34 +1854,11 @@ func (s *PrivilegeApprovalList) Validate() error {
 	return nil
 }
 
-func (s *PrivilegeApprovalResource) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.AutoApprove.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "auto_approve",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s PrivilegeApprovalResourceAutoApprove) Validate() error {
+func (s PrivilegeDecider) Validate() error {
 	switch s {
-	case "until":
+	case "user":
 		return nil
-	case "forever":
+	case "auto_approval":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -2051,6 +1975,36 @@ func (s *PrivilegeRequestResource) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
+		if value, ok := s.SessionID.Get(); ok {
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     40,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(value)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "session_id",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := s.State.Validate(); err != nil {
 			return err
 		}
@@ -2058,6 +2012,24 @@ func (s *PrivilegeRequestResource) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "state",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.DecidedBy.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "decided_by",
 			Error: err,
 		})
 	}

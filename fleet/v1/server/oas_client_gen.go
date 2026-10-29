@@ -270,6 +270,13 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}
 	DeletePeerConnection(ctx context.Context, params DeletePeerConnectionParams) error
+	// DeletePrivilegeAutoApproval invokes delete-privilege-auto-approval operation.
+	//
+	// Removes it: the caller is asked about every later privilege request on the machine. Removing one
+	// that does not exist succeeds.
+	//
+	// DELETE /api/v1/machines/{machineId}/privilege-auto-approval
+	DeletePrivilegeAutoApproval(ctx context.Context, params DeletePrivilegeAutoApprovalParams) error
 	// DenyEnrollment invokes deny-enrollment operation.
 	//
 	// Refuses the request. The decision is final for the machine's key: the Agent stops polling and
@@ -331,13 +338,14 @@ type Invoker interface {
 	//
 	// GET /api/v1/sessions/{sessionId}/participants/{participantId}
 	GetParticipant(ctx context.Context, params GetParticipantParams) (*ParticipantResource, error)
-	// GetPrivilegeApproval invokes get-privilege-approval operation.
+	// GetPrivilegeAutoApproval invokes get-privilege-auto-approval operation.
 	//
-	// Returns whether the caller's elevations on the machine are approved without asking. A caller who
-	// never set it gets `never`.
+	// Returns the caller's automatic approval of their privilege requests on the machine. Fails with
+	// `PRIVILEGE_AUTO_APPROVAL_NOT_FOUND` while the caller is asked every time, including after its
+	// `expires_at` has passed.
 	//
-	// GET /api/v1/machines/{machineId}/privilege-approval
-	GetPrivilegeApproval(ctx context.Context, params GetPrivilegeApprovalParams) (*PrivilegeApproval, error)
+	// GET /api/v1/machines/{machineId}/privilege-auto-approval
+	GetPrivilegeAutoApproval(ctx context.Context, params GetPrivilegeAutoApprovalParams) (*PrivilegeAutoApprovalResource, error)
 	// GetPrivilegeRequest invokes get-privilege-request operation.
 	//
 	// Returns one of the caller's privilege requests.
@@ -405,14 +413,13 @@ type Invoker interface {
 	//
 	// GET /api/v1/machines
 	ListMachines(ctx context.Context, params ListMachinesParams) (*MachineList, error)
-	// ListPrivilegeApprovals invokes list-privilege-approvals operation.
+	// ListPrivilegeAutoApprovals invokes list-privilege-auto-approvals operation.
 	//
-	// Returns the machines of the current project on which the caller has set privilege requests to be
-	// approved without asking, with the setting of each, the most recently set first. A machine whose
-	// setting is `never`, or whose `until` has passed, is not listed.
+	// Returns the caller's automatic approvals on the machines of the current project that are in effect,
+	// the most recently set first.
 	//
-	// GET /api/v1/privilege-approvals
-	ListPrivilegeApprovals(ctx context.Context, params ListPrivilegeApprovalsParams) (*PrivilegeApprovalList, error)
+	// GET /api/v1/privilege-auto-approvals
+	ListPrivilegeAutoApprovals(ctx context.Context, params ListPrivilegeAutoApprovalsParams) (*PrivilegeAutoApprovalList, error)
 	// ListPrivilegeRequests invokes list-privilege-requests operation.
 	//
 	// Returns the caller's privilege requests on the project's machines, newest first. Requests are kept
@@ -536,15 +543,15 @@ type Invoker interface {
 	//
 	// PATCH /api/v1/machines/{machineId}
 	UpdateMachine(ctx context.Context, request *UpdateMachineRequest, params UpdateMachineParams) (*MachineResource, error)
-	// UpdatePrivilegeApproval invokes update-privilege-approval operation.
+	// UpdatePrivilegeAutoApproval invokes update-privilege-auto-approval operation.
 	//
-	// Sets whether the caller's elevations on the machine are approved without asking: `never` asks every
-	// time, `until` approves without asking until `auto_approve_until`, `forever` always does. It applies
-	// to the caller's own account only, and only while they may become root on the machine. Fails with
-	// `INVALID_ARGUMENT` when `auto_approve_until` is missing or past for `until`, or present otherwise.
+	// Approves the caller's privilege requests on the machine at once, until `expires_at`, or until
+	// removed when `expires_at` is null, replacing any earlier automatic approval. It applies to the
+	// caller's own account only, which is created if the caller has none yet, and only while they may
+	// become root on the machine. Fails with `INVALID_ARGUMENT` when `expires_at` has passed.
 	//
-	// PUT /api/v1/machines/{machineId}/privilege-approval
-	UpdatePrivilegeApproval(ctx context.Context, request *PrivilegeApproval, params UpdatePrivilegeApprovalParams) (*PrivilegeApproval, error)
+	// PUT /api/v1/machines/{machineId}/privilege-auto-approval
+	UpdatePrivilegeAutoApproval(ctx context.Context, request *UpdatePrivilegeAutoApprovalRequest, params UpdatePrivilegeAutoApprovalParams) (*PrivilegeAutoApprovalResource, error)
 }
 
 // Client implements OAS client.
@@ -3159,6 +3166,139 @@ func (c *Client) sendDeletePeerConnection(ctx context.Context, params DeletePeer
 	return result, nil
 }
 
+// DeletePrivilegeAutoApproval invokes delete-privilege-auto-approval operation.
+//
+// Removes it: the caller is asked about every later privilege request on the machine. Removing one
+// that does not exist succeeds.
+//
+// DELETE /api/v1/machines/{machineId}/privilege-auto-approval
+func (c *Client) DeletePrivilegeAutoApproval(ctx context.Context, params DeletePrivilegeAutoApprovalParams) error {
+	_, err := c.sendDeletePrivilegeAutoApproval(ctx, params)
+	return err
+}
+
+func (c *Client) sendDeletePrivilegeAutoApproval(ctx context.Context, params DeletePrivilegeAutoApprovalParams) (res *DeletePrivilegeAutoApprovalNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-privilege-auto-approval"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/privilege-auto-approval"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeletePrivilegeAutoApprovalOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/machines/"
+	{
+		// Encode "machineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "machineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/privilege-auto-approval"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, DeletePrivilegeAutoApprovalOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeletePrivilegeAutoApprovalResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // DenyEnrollment invokes deny-enrollment operation.
 //
 // Refuses the request. The decision is final for the machine's key: the Agent stops polling and
@@ -4241,22 +4381,23 @@ func (c *Client) sendGetParticipant(ctx context.Context, params GetParticipantPa
 	return result, nil
 }
 
-// GetPrivilegeApproval invokes get-privilege-approval operation.
+// GetPrivilegeAutoApproval invokes get-privilege-auto-approval operation.
 //
-// Returns whether the caller's elevations on the machine are approved without asking. A caller who
-// never set it gets `never`.
+// Returns the caller's automatic approval of their privilege requests on the machine. Fails with
+// `PRIVILEGE_AUTO_APPROVAL_NOT_FOUND` while the caller is asked every time, including after its
+// `expires_at` has passed.
 //
-// GET /api/v1/machines/{machineId}/privilege-approval
-func (c *Client) GetPrivilegeApproval(ctx context.Context, params GetPrivilegeApprovalParams) (*PrivilegeApproval, error) {
-	res, err := c.sendGetPrivilegeApproval(ctx, params)
+// GET /api/v1/machines/{machineId}/privilege-auto-approval
+func (c *Client) GetPrivilegeAutoApproval(ctx context.Context, params GetPrivilegeAutoApprovalParams) (*PrivilegeAutoApprovalResource, error) {
+	res, err := c.sendGetPrivilegeAutoApproval(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetPrivilegeApproval(ctx context.Context, params GetPrivilegeApprovalParams) (res *PrivilegeApproval, err error) {
+func (c *Client) sendGetPrivilegeAutoApproval(ctx context.Context, params GetPrivilegeAutoApprovalParams) (res *PrivilegeAutoApprovalResource, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-privilege-approval"),
+		otelogen.OperationID("get-privilege-auto-approval"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/privilege-approval"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/privilege-auto-approval"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -4272,7 +4413,7 @@ func (c *Client) sendGetPrivilegeApproval(ctx context.Context, params GetPrivile
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetPrivilegeApprovalOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, GetPrivilegeAutoApprovalOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -4309,7 +4450,7 @@ func (c *Client) sendGetPrivilegeApproval(ctx context.Context, params GetPrivile
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/privilege-approval"
+	pathParts[2] = "/privilege-auto-approval"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -4323,7 +4464,7 @@ func (c *Client) sendGetPrivilegeApproval(ctx context.Context, params GetPrivile
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetPrivilegeApprovalOperation, r); {
+			switch err := c.securityBearerAuth(ctx, GetPrivilegeAutoApprovalOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -4366,7 +4507,7 @@ func (c *Client) sendGetPrivilegeApproval(ctx context.Context, params GetPrivile
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeGetPrivilegeApprovalResponse(resp)
+	result, err := decodeGetPrivilegeAutoApprovalResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5793,23 +5934,22 @@ func (c *Client) sendListMachines(ctx context.Context, params ListMachinesParams
 	return result, nil
 }
 
-// ListPrivilegeApprovals invokes list-privilege-approvals operation.
+// ListPrivilegeAutoApprovals invokes list-privilege-auto-approvals operation.
 //
-// Returns the machines of the current project on which the caller has set privilege requests to be
-// approved without asking, with the setting of each, the most recently set first. A machine whose
-// setting is `never`, or whose `until` has passed, is not listed.
+// Returns the caller's automatic approvals on the machines of the current project that are in effect,
+// the most recently set first.
 //
-// GET /api/v1/privilege-approvals
-func (c *Client) ListPrivilegeApprovals(ctx context.Context, params ListPrivilegeApprovalsParams) (*PrivilegeApprovalList, error) {
-	res, err := c.sendListPrivilegeApprovals(ctx, params)
+// GET /api/v1/privilege-auto-approvals
+func (c *Client) ListPrivilegeAutoApprovals(ctx context.Context, params ListPrivilegeAutoApprovalsParams) (*PrivilegeAutoApprovalList, error) {
+	res, err := c.sendListPrivilegeAutoApprovals(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListPrivilegeApprovals(ctx context.Context, params ListPrivilegeApprovalsParams) (res *PrivilegeApprovalList, err error) {
+func (c *Client) sendListPrivilegeAutoApprovals(ctx context.Context, params ListPrivilegeAutoApprovalsParams) (res *PrivilegeAutoApprovalList, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-privilege-approvals"),
+		otelogen.OperationID("list-privilege-auto-approvals"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/privilege-approvals"),
+		semconv.URLTemplateKey.String("/api/v1/privilege-auto-approvals"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5825,7 +5965,7 @@ func (c *Client) sendListPrivilegeApprovals(ctx context.Context, params ListPriv
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListPrivilegeApprovalsOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListPrivilegeAutoApprovalsOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -5843,7 +5983,7 @@ func (c *Client) sendListPrivilegeApprovals(ctx context.Context, params ListPriv
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/api/v1/privilege-approvals"
+	pathParts[0] = "/api/v1/privilege-auto-approvals"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -5895,7 +6035,7 @@ func (c *Client) sendListPrivilegeApprovals(ctx context.Context, params ListPriv
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListPrivilegeApprovalsOperation, r); {
+			switch err := c.securityBearerAuth(ctx, ListPrivilegeAutoApprovalsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -5938,7 +6078,7 @@ func (c *Client) sendListPrivilegeApprovals(ctx context.Context, params ListPriv
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeListPrivilegeApprovalsResponse(resp)
+	result, err := decodeListPrivilegeAutoApprovalsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -7559,33 +7699,24 @@ func (c *Client) sendUpdateMachine(ctx context.Context, request *UpdateMachineRe
 	return result, nil
 }
 
-// UpdatePrivilegeApproval invokes update-privilege-approval operation.
+// UpdatePrivilegeAutoApproval invokes update-privilege-auto-approval operation.
 //
-// Sets whether the caller's elevations on the machine are approved without asking: `never` asks every
-// time, `until` approves without asking until `auto_approve_until`, `forever` always does. It applies
-// to the caller's own account only, and only while they may become root on the machine. Fails with
-// `INVALID_ARGUMENT` when `auto_approve_until` is missing or past for `until`, or present otherwise.
+// Approves the caller's privilege requests on the machine at once, until `expires_at`, or until
+// removed when `expires_at` is null, replacing any earlier automatic approval. It applies to the
+// caller's own account only, which is created if the caller has none yet, and only while they may
+// become root on the machine. Fails with `INVALID_ARGUMENT` when `expires_at` has passed.
 //
-// PUT /api/v1/machines/{machineId}/privilege-approval
-func (c *Client) UpdatePrivilegeApproval(ctx context.Context, request *PrivilegeApproval, params UpdatePrivilegeApprovalParams) (*PrivilegeApproval, error) {
-	res, err := c.sendUpdatePrivilegeApproval(ctx, request, params)
+// PUT /api/v1/machines/{machineId}/privilege-auto-approval
+func (c *Client) UpdatePrivilegeAutoApproval(ctx context.Context, request *UpdatePrivilegeAutoApprovalRequest, params UpdatePrivilegeAutoApprovalParams) (*PrivilegeAutoApprovalResource, error) {
+	res, err := c.sendUpdatePrivilegeAutoApproval(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendUpdatePrivilegeApproval(ctx context.Context, request *PrivilegeApproval, params UpdatePrivilegeApprovalParams) (res *PrivilegeApproval, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
+func (c *Client) sendUpdatePrivilegeAutoApproval(ctx context.Context, request *UpdatePrivilegeAutoApprovalRequest, params UpdatePrivilegeAutoApprovalParams) (res *PrivilegeAutoApprovalResource, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-privilege-approval"),
+		otelogen.OperationID("update-privilege-auto-approval"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/privilege-approval"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/privilege-auto-approval"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -7601,7 +7732,7 @@ func (c *Client) sendUpdatePrivilegeApproval(ctx context.Context, request *Privi
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, UpdatePrivilegeApprovalOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdatePrivilegeAutoApprovalOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -7638,7 +7769,7 @@ func (c *Client) sendUpdatePrivilegeApproval(ctx context.Context, request *Privi
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/privilege-approval"
+	pathParts[2] = "/privilege-auto-approval"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -7646,7 +7777,7 @@ func (c *Client) sendUpdatePrivilegeApproval(ctx context.Context, request *Privi
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeUpdatePrivilegeApprovalRequest(request, r); err != nil {
+	if err := encodeUpdatePrivilegeAutoApprovalRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -7655,7 +7786,7 @@ func (c *Client) sendUpdatePrivilegeApproval(ctx context.Context, request *Privi
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, UpdatePrivilegeApprovalOperation, r); {
+			switch err := c.securityBearerAuth(ctx, UpdatePrivilegeAutoApprovalOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -7698,7 +7829,7 @@ func (c *Client) sendUpdatePrivilegeApproval(ctx context.Context, request *Privi
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeUpdatePrivilegeApprovalResponse(resp)
+	result, err := decodeUpdatePrivilegeAutoApprovalResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

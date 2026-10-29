@@ -61,6 +61,7 @@ var operationRolesBearerAuth = map[string][]string{
 	DeleteMachineRegistrationOperation:      []string{},
 	DeleteParticipantOperation:              []string{},
 	DeletePeerConnectionOperation:           []string{},
+	DeletePrivilegeAutoApprovalOperation:    []string{},
 	DenyEnrollmentOperation:                 []string{},
 	DenyPrivilegeRequestOperation:           []string{},
 	FindEnrollmentByPairingCodeOperation:    []string{},
@@ -69,7 +70,7 @@ var operationRolesBearerAuth = map[string][]string{
 	GetMachineOperation:                     []string{},
 	GetMachineRegistrationOperation:         []string{},
 	GetParticipantOperation:                 []string{},
-	GetPrivilegeApprovalOperation:           []string{},
+	GetPrivilegeAutoApprovalOperation:       []string{},
 	GetPrivilegeRequestOperation:            []string{},
 	GetSessionOperation:                     []string{},
 	GetSessionRtcConfigurationOperation:     []string{},
@@ -79,7 +80,7 @@ var operationRolesBearerAuth = map[string][]string{
 	ListMachineEventsOperation:              []string{},
 	ListMachineRegistrationsOperation:       []string{},
 	ListMachinesOperation:                   []string{},
-	ListPrivilegeApprovalsOperation:         []string{},
+	ListPrivilegeAutoApprovalsOperation:     []string{},
 	ListPrivilegeRequestsOperation:          []string{},
 	ListSessionParticipantsOperation:        []string{},
 	ListSessionsOperation:                   []string{},
@@ -90,7 +91,7 @@ var operationRolesBearerAuth = map[string][]string{
 	UpdateAccountOperation:                  []string{},
 	UpdateGroupOperation:                    []string{},
 	UpdateMachineOperation:                  []string{},
-	UpdatePrivilegeApprovalOperation:        []string{},
+	UpdatePrivilegeAutoApprovalOperation:    []string{},
 }
 
 // GetRolesForBearerAuth returns the required roles for the given operation.

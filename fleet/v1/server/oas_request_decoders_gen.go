@@ -1191,8 +1191,8 @@ func (s *Server) decodeUpdateMachineRequest(r *http.Request) (
 	}
 }
 
-func (s *Server) decodeUpdatePrivilegeApprovalRequest(r *http.Request) (
-	req *PrivilegeApproval,
+func (s *Server) decodeUpdatePrivilegeAutoApprovalRequest(r *http.Request) (
+	req *UpdatePrivilegeAutoApprovalRequest,
 	rawBody []byte,
 	close func() error,
 	rerr error,
@@ -1239,7 +1239,7 @@ func (s *Server) decodeUpdatePrivilegeApprovalRequest(r *http.Request) (
 		rawBody = append(rawBody, buf...)
 		d := jx.DecodeBytes(buf)
 
-		var request PrivilegeApproval
+		var request UpdatePrivilegeAutoApprovalRequest
 		if err := func() error {
 			if err := request.Decode(d); err != nil {
 				return err
@@ -1255,14 +1255,6 @@ func (s *Server) decodeUpdatePrivilegeApprovalRequest(r *http.Request) (
 				Err:         err,
 			}
 			return req, rawBody, close, err
-		}
-		if err := func() error {
-			if err := request.Validate(); err != nil {
-				return err
-			}
-			return nil
-		}(); err != nil {
-			return req, rawBody, close, errors.Wrap(err, "validate")
 		}
 		return &request, rawBody, close, nil
 	default:

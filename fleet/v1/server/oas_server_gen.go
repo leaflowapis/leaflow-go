@@ -249,6 +249,13 @@ type Handler interface {
 	//
 	// DELETE /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}
 	DeletePeerConnection(ctx context.Context, params DeletePeerConnectionParams) error
+	// DeletePrivilegeAutoApproval implements delete-privilege-auto-approval operation.
+	//
+	// Removes it: the caller is asked about every later privilege request on the machine. Removing one
+	// that does not exist succeeds.
+	//
+	// DELETE /api/v1/machines/{machineId}/privilege-auto-approval
+	DeletePrivilegeAutoApproval(ctx context.Context, params DeletePrivilegeAutoApprovalParams) error
 	// DenyEnrollment implements deny-enrollment operation.
 	//
 	// Refuses the request. The decision is final for the machine's key: the Agent stops polling and
@@ -310,13 +317,14 @@ type Handler interface {
 	//
 	// GET /api/v1/sessions/{sessionId}/participants/{participantId}
 	GetParticipant(ctx context.Context, params GetParticipantParams) (*ParticipantResource, error)
-	// GetPrivilegeApproval implements get-privilege-approval operation.
+	// GetPrivilegeAutoApproval implements get-privilege-auto-approval operation.
 	//
-	// Returns whether the caller's elevations on the machine are approved without asking. A caller who
-	// never set it gets `never`.
+	// Returns the caller's automatic approval of their privilege requests on the machine. Fails with
+	// `PRIVILEGE_AUTO_APPROVAL_NOT_FOUND` while the caller is asked every time, including after its
+	// `expires_at` has passed.
 	//
-	// GET /api/v1/machines/{machineId}/privilege-approval
-	GetPrivilegeApproval(ctx context.Context, params GetPrivilegeApprovalParams) (*PrivilegeApproval, error)
+	// GET /api/v1/machines/{machineId}/privilege-auto-approval
+	GetPrivilegeAutoApproval(ctx context.Context, params GetPrivilegeAutoApprovalParams) (*PrivilegeAutoApprovalResource, error)
 	// GetPrivilegeRequest implements get-privilege-request operation.
 	//
 	// Returns one of the caller's privilege requests.
@@ -384,14 +392,13 @@ type Handler interface {
 	//
 	// GET /api/v1/machines
 	ListMachines(ctx context.Context, params ListMachinesParams) (*MachineList, error)
-	// ListPrivilegeApprovals implements list-privilege-approvals operation.
+	// ListPrivilegeAutoApprovals implements list-privilege-auto-approvals operation.
 	//
-	// Returns the machines of the current project on which the caller has set privilege requests to be
-	// approved without asking, with the setting of each, the most recently set first. A machine whose
-	// setting is `never`, or whose `until` has passed, is not listed.
+	// Returns the caller's automatic approvals on the machines of the current project that are in effect,
+	// the most recently set first.
 	//
-	// GET /api/v1/privilege-approvals
-	ListPrivilegeApprovals(ctx context.Context, params ListPrivilegeApprovalsParams) (*PrivilegeApprovalList, error)
+	// GET /api/v1/privilege-auto-approvals
+	ListPrivilegeAutoApprovals(ctx context.Context, params ListPrivilegeAutoApprovalsParams) (*PrivilegeAutoApprovalList, error)
 	// ListPrivilegeRequests implements list-privilege-requests operation.
 	//
 	// Returns the caller's privilege requests on the project's machines, newest first. Requests are kept
@@ -515,15 +522,15 @@ type Handler interface {
 	//
 	// PATCH /api/v1/machines/{machineId}
 	UpdateMachine(ctx context.Context, req *UpdateMachineRequest, params UpdateMachineParams) (*MachineResource, error)
-	// UpdatePrivilegeApproval implements update-privilege-approval operation.
+	// UpdatePrivilegeAutoApproval implements update-privilege-auto-approval operation.
 	//
-	// Sets whether the caller's elevations on the machine are approved without asking: `never` asks every
-	// time, `until` approves without asking until `auto_approve_until`, `forever` always does. It applies
-	// to the caller's own account only, and only while they may become root on the machine. Fails with
-	// `INVALID_ARGUMENT` when `auto_approve_until` is missing or past for `until`, or present otherwise.
+	// Approves the caller's privilege requests on the machine at once, until `expires_at`, or until
+	// removed when `expires_at` is null, replacing any earlier automatic approval. It applies to the
+	// caller's own account only, which is created if the caller has none yet, and only while they may
+	// become root on the machine. Fails with `INVALID_ARGUMENT` when `expires_at` has passed.
 	//
-	// PUT /api/v1/machines/{machineId}/privilege-approval
-	UpdatePrivilegeApproval(ctx context.Context, req *PrivilegeApproval, params UpdatePrivilegeApprovalParams) (*PrivilegeApproval, error)
+	// PUT /api/v1/machines/{machineId}/privilege-auto-approval
+	UpdatePrivilegeAutoApproval(ctx context.Context, req *UpdatePrivilegeAutoApprovalRequest, params UpdatePrivilegeAutoApprovalParams) (*PrivilegeAutoApprovalResource, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.
