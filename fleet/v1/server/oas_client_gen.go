@@ -145,7 +145,7 @@ type Invoker interface {
 	//  - `SESSION_CLOSED` when the session has ended;
 	//  - `SESSION_ACCESS_DENIED` when the caller may not view the session;
 	//  - `SESSION_UNAVAILABLE` when the session's process is not connected, such as while it restarts; try
-	//    again after `Retry-After`;
+	//    again after the error's `retry_delay`;
 	//  - `VIEWER_LIMIT_REACHED` when the session has as many viewers as it admits;
 	//  - `VIEWER_REFUSED` when the session refused the viewer.
 	//
@@ -1620,7 +1620,7 @@ func (c *Client) sendCreateSignalingTicket(ctx context.Context, params CreateSig
 //   - `SESSION_CLOSED` when the session has ended;
 //   - `SESSION_ACCESS_DENIED` when the caller may not view the session;
 //   - `SESSION_UNAVAILABLE` when the session's process is not connected, such as while it restarts; try
-//     again after `Retry-After`;
+//     again after the error's `retry_delay`;
 //   - `VIEWER_LIMIT_REACHED` when the session has as many viewers as it admits;
 //   - `VIEWER_REFUSED` when the session refused the viewer.
 //

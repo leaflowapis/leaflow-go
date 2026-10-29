@@ -1891,7 +1891,8 @@ func (x *Close) GetRetryDelay() *durationpb.Duration {
 // The request of AttachViewer.
 type AttachViewerRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The viewer's authorization, the same one its Welcome carried.
+	// The viewer's authorization, the same one the Fleet API returned for the
+	// viewer connection.
 	Authorization *SignedAuthorization `protobuf:"bytes,1,opt,name=authorization,proto3" json:"authorization,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
