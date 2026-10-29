@@ -12457,7 +12457,7 @@ const (
 	InstanceReleaseResourceReleaseResource       ReleaseResourceType = "instance"
 	VolumeReleaseResourceReleaseResource         ReleaseResourceType = "volume"
 	ElasticIPReleaseResourceReleaseResource      ReleaseResourceType = "elastic_ip"
-	VolumeSnapshotReleaseResourceReleaseResource ReleaseResourceType = "snapshot"
+	VolumeSnapshotReleaseResourceReleaseResource ReleaseResourceType = "volume_snapshot"
 	VolumeBackupReleaseResourceReleaseResource   ReleaseResourceType = "volume_backup"
 	PrivateImageReleaseResourceReleaseResource   ReleaseResourceType = "private_image"
 )

@@ -21942,7 +21942,7 @@ func (s ReleaseResource) encodeFields(e *jx.Encoder) {
 		}
 	case VolumeSnapshotReleaseResourceReleaseResource:
 		e.FieldStart("type")
-		e.Str("snapshot")
+		e.Str("volume_snapshot")
 		{
 			s := s.VolumeSnapshotReleaseResource
 			{
@@ -22017,7 +22017,7 @@ func (s *ReleaseResource) Decode(d *jx.Decoder) error {
 				case "elastic_ip":
 					s.Type = ElasticIPReleaseResourceReleaseResource
 					found = true
-				case "snapshot":
+				case "volume_snapshot":
 					s.Type = VolumeSnapshotReleaseResourceReleaseResource
 					found = true
 				case "volume_backup":
