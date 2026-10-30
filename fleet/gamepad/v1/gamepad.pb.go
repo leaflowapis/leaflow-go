@@ -88,7 +88,7 @@ const (
 	GamepadCloseReason_GAMEPAD_CLOSE_REASON_DEVICE_UNAVAILABLE GamepadCloseReason = 3
 	// The participant broke the rules above.
 	GamepadCloseReason_GAMEPAD_CLOSE_REASON_PROTOCOL_ERROR GamepadCloseReason = 4
-	// A limit of GamepadLimits was exceeded.
+	// The participant has as many gamepads as GamepadLimits allows.
 	GamepadCloseReason_GAMEPAD_CLOSE_REASON_RESOURCE_EXHAUSTED GamepadCloseReason = 5
 )
 
@@ -608,11 +608,12 @@ func (x *GamepadButton) GetValue() float32 {
 	return 0
 }
 
-// A state was written to the device and reported (SYN_REPORT), not merely
+// States were written to the device and reported (SYN_REPORT), not merely
 // received.
 type GamepadApplied struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// GamepadState.sequence.
+	// The newest state written (GamepadState.sequence). It covers every earlier
+	// state, those merged into it included.
 	Sequence uint64 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
 	// Why it could not be written. Unset on success.
 	Error         *status.Status `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`

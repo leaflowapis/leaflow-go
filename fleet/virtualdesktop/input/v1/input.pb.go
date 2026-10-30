@@ -1355,11 +1355,10 @@ func (x *CompositionKey) GetLockKeyState() *LockKeyState {
 }
 
 // The session dropped a KeyEvent, PointerButton or PointerWheel. Its
-// google.rpc.ErrorInfo reason is one of:
-//
-//	CLIPBOARD_INPUT_DEPENDENCY_FAILED  the clipboard content it named was not
-//	                                   in place in time;
-//	INPUT_QUEUE_FULL                   too much input waited to be applied.
+// google.rpc.ErrorInfo reason is CLIPBOARD_INPUT_DEPENDENCY_FAILED: the
+// clipboard content it named was not in place in time. Input is never dropped
+// for its amount: while the session is behind, it reads no more input of the
+// channel, and the channel's credit holds the participant back.
 type InputError struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// input_seq of the dropped input.

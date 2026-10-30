@@ -399,7 +399,7 @@ type Feature struct {
 	// Whether it can be used now.
 	State FeatureState `protobuf:"varint,2,opt,name=state,proto3,enum=leaflow.fleet.machine.v1.FeatureState" json:"state,omitempty"`
 	// UNAVAILABLE only: why, plain text for people, at most 1024 bytes, such
-	// as "Xvfb is not installed".
+	// as "Xwayland is not installed".
 	Reason string `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
 	// What the feature can do on this machine, as the dotted names its package
 	// defines. Names a receiver does not know are ignored.

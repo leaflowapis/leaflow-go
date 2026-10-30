@@ -709,21 +709,15 @@ func (x *CameraLimits) GetMaxQueueTime() *durationpb.Duration {
 }
 
 // Limits of the gamepads one participant provides. 0: the session's limit.
+// They bound what devices exist; how fast states come is never limited.
 type GamepadLimits struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The most gamepads, at most 8.
+	// The most gamepads, at most 16.
 	MaxDevices uint32 `protobuf:"varint,1,opt,name=max_devices,json=maxDevices,proto3" json:"max_devices,omitempty"`
 	// The most axes of one gamepad, at most 32.
 	MaxAxes uint32 `protobuf:"varint,2,opt,name=max_axes,json=maxAxes,proto3" json:"max_axes,omitempty"`
 	// The most buttons of one gamepad, at most 64.
-	MaxButtons uint32 `protobuf:"varint,3,opt,name=max_buttons,json=maxButtons,proto3" json:"max_buttons,omitempty"`
-	// The most changed states per second of one gamepad, at most 250.
-	MaxUpdatesPerSecond uint32 `protobuf:"varint,4,opt,name=max_updates_per_second,json=maxUpdatesPerSecond,proto3" json:"max_updates_per_second,omitempty"`
-	// The most bytes of states queued, in flight included, at most 64 KiB.
-	MaxQueueSizeBytes uint32 `protobuf:"varint,5,opt,name=max_queue_size_bytes,json=maxQueueSizeBytes,proto3" json:"max_queue_size_bytes,omitempty"`
-	// The oldest a queued state may get, at most 200 milliseconds; older
-	// states are dropped, never their button changes replayed late.
-	MaxQueueTime  *durationpb.Duration `protobuf:"bytes,6,opt,name=max_queue_time,json=maxQueueTime,proto3" json:"max_queue_time,omitempty"`
+	MaxButtons    uint32 `protobuf:"varint,3,opt,name=max_buttons,json=maxButtons,proto3" json:"max_buttons,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -779,27 +773,6 @@ func (x *GamepadLimits) GetMaxButtons() uint32 {
 	return 0
 }
 
-func (x *GamepadLimits) GetMaxUpdatesPerSecond() uint32 {
-	if x != nil {
-		return x.MaxUpdatesPerSecond
-	}
-	return 0
-}
-
-func (x *GamepadLimits) GetMaxQueueSizeBytes() uint32 {
-	if x != nil {
-		return x.MaxQueueSizeBytes
-	}
-	return 0
-}
-
-func (x *GamepadLimits) GetMaxQueueTime() *durationpb.Duration {
-	if x != nil {
-		return x.MaxQueueTime
-	}
-	return nil
-}
-
 var File_leaflow_fleet_device_v1_device_proto protoreflect.FileDescriptor
 
 const file_leaflow_fleet_device_v1_device_proto_rawDesc = "" +
@@ -837,16 +810,13 @@ const file_leaflow_fleet_device_v1_device_proto_rawDesc = "" +
 	"\x0emax_frame_rate\x18\x03 \x01(\rR\fmaxFrameRate\x12/\n" +
 	"\x14max_frame_size_bytes\x18\x04 \x01(\rR\x11maxFrameSizeBytes\x12*\n" +
 	"\x11max_queued_frames\x18\x05 \x01(\rR\x0fmaxQueuedFrames\x12?\n" +
-	"\x0emax_queue_time\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\fmaxQueueTime\"\x93\x02\n" +
+	"\x0emax_queue_time\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\fmaxQueueTime\"l\n" +
 	"\rGamepadLimits\x12\x1f\n" +
 	"\vmax_devices\x18\x01 \x01(\rR\n" +
 	"maxDevices\x12\x19\n" +
 	"\bmax_axes\x18\x02 \x01(\rR\amaxAxes\x12\x1f\n" +
 	"\vmax_buttons\x18\x03 \x01(\rR\n" +
-	"maxButtons\x123\n" +
-	"\x16max_updates_per_second\x18\x04 \x01(\rR\x13maxUpdatesPerSecond\x12/\n" +
-	"\x14max_queue_size_bytes\x18\x05 \x01(\rR\x11maxQueueSizeBytes\x12?\n" +
-	"\x0emax_queue_time\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\fmaxQueueTime*\xa7\x01\n" +
+	"maxButtons*\xa7\x01\n" +
 	"\n" +
 	"DeviceType\x12\x1b\n" +
 	"\x17DEVICE_TYPE_UNSPECIFIED\x10\x00\x12\x1a\n" +
@@ -909,12 +879,11 @@ var file_leaflow_fleet_device_v1_device_proto_depIdxs = []int32{
 	9,  // 8: leaflow.fleet.device.v1.DevicePolicy.camera_limits:type_name -> leaflow.fleet.device.v1.CameraLimits
 	10, // 9: leaflow.fleet.device.v1.DevicePolicy.gamepad_limits:type_name -> leaflow.fleet.device.v1.GamepadLimits
 	11, // 10: leaflow.fleet.device.v1.CameraLimits.max_queue_time:type_name -> google.protobuf.Duration
-	11, // 11: leaflow.fleet.device.v1.GamepadLimits.max_queue_time:type_name -> google.protobuf.Duration
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_leaflow_fleet_device_v1_device_proto_init() }

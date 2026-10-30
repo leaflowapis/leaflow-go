@@ -1445,11 +1445,11 @@ func (x *PrintDocumentEnd) GetSha256() []byte {
 // nothing else, such as files or devices.
 type PrintingPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The largest document, at most 128 MiB. 0: no documents.
+	// The largest document. 0: no documents.
 	MaxDocumentSizeBytes uint64 `protobuf:"varint,1,opt,name=max_document_size_bytes,json=maxDocumentSizeBytes,proto3" json:"max_document_size_bytes,omitempty"`
-	// The most jobs received or submitted at a time, at most 4. 0: no jobs.
+	// The most jobs received or submitted at a time. 0: no jobs.
 	MaxJobs uint32 `protobuf:"varint,2,opt,name=max_jobs,json=maxJobs,proto3" json:"max_jobs,omitempty"`
-	// The most printers shared, at most 16. 0: none.
+	// The most printers shared. 0: none.
 	MaxPrinters   uint32 `protobuf:"varint,3,opt,name=max_printers,json=maxPrinters,proto3" json:"max_printers,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

@@ -1413,7 +1413,8 @@ type FileTransferPolicy struct {
 	DownloadAllowed bool `protobuf:"varint,2,opt,name=download_allowed,json=downloadAllowed,proto3" json:"download_allowed,omitempty"`
 	// The participant may use FileSystemService and choose where uploads go.
 	FileSystemAllowed bool `protobuf:"varint,3,opt,name=file_system_allowed,json=fileSystemAllowed,proto3" json:"file_system_allowed,omitempty"`
-	// The most entries, directories included, of one offer. 0: 1024.
+	// The most entries, directories included, of one offer. 0: as many as one
+	// offer holds.
 	MaxEntries    uint32 `protobuf:"varint,4,opt,name=max_entries,json=maxEntries,proto3" json:"max_entries,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

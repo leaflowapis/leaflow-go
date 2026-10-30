@@ -265,7 +265,8 @@ type SshAgentPolicy struct {
 	// Decides between participants offering an agent: the higher is selected, and
 	// on a tie the selected one stays.
 	ProviderPriority uint32 `protobuf:"varint,1,opt,name=provider_priority,json=providerPriority,proto3" json:"provider_priority,omitempty"`
-	// The most connections at once, at most 32. 0: the session's limit.
+	// The most connections at once. 0: as many as the provider takes
+	// (ProviderHello.max_connections).
 	MaxConnections uint32 `protobuf:"varint,2,opt,name=max_connections,json=maxConnections,proto3" json:"max_connections,omitempty"`
 	// The largest agent message, at most 256 KiB. 0: the session's limit.
 	MaxMessageSizeBytes uint32 `protobuf:"varint,3,opt,name=max_message_size_bytes,json=maxMessageSizeBytes,proto3" json:"max_message_size_bytes,omitempty"`

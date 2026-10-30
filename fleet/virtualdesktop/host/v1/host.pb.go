@@ -30,8 +30,6 @@ type DesktopOptions struct {
 	// The first size of the canvas, normally the participant's. Unset: the
 	// Agent's default.
 	Size *v1.Size `protobuf:"bytes,2,opt,name=size,proto3" json:"size,omitempty"`
-	// The largest size the canvas may grow to. Unset: the Agent's default.
-	MaxSize *v1.Size `protobuf:"bytes,3,opt,name=max_size,json=maxSize,proto3" json:"max_size,omitempty"`
 	// SESSION_MODE_DESKTOP only: the desktop environment to start, one the
 	// feature's details name after "desktop.". Empty: the Agent's default.
 	SessionDesktop string `protobuf:"bytes,4,opt,name=session_desktop,json=sessionDesktop,proto3" json:"session_desktop,omitempty"`
@@ -79,13 +77,6 @@ func (x *DesktopOptions) GetMode() v1.SessionMode {
 func (x *DesktopOptions) GetSize() *v1.Size {
 	if x != nil {
 		return x.Size
-	}
-	return nil
-}
-
-func (x *DesktopOptions) GetMaxSize() *v1.Size {
-	if x != nil {
-		return x.MaxSize
 	}
 	return nil
 }
@@ -156,11 +147,10 @@ var File_leaflow_fleet_virtualdesktop_host_v1_host_proto protoreflect.FileDescri
 
 const file_leaflow_fleet_virtualdesktop_host_v1_host_proto_rawDesc = "" +
 	"\n" +
-	"/leaflow/fleet/virtualdesktop/host/v1/host.proto\x12$leaflow.fleet.virtualdesktop.host.v1\x1a5leaflow/fleet/virtualdesktop/display/v1/display.proto\"\x90\x02\n" +
+	"/leaflow/fleet/virtualdesktop/host/v1/host.proto\x12$leaflow.fleet.virtualdesktop.host.v1\x1a5leaflow/fleet/virtualdesktop/display/v1/display.proto\"\xc6\x01\n" +
 	"\x0eDesktopOptions\x12H\n" +
 	"\x04mode\x18\x01 \x01(\x0e24.leaflow.fleet.virtualdesktop.display.v1.SessionModeR\x04mode\x12A\n" +
-	"\x04size\x18\x02 \x01(\v2-.leaflow.fleet.virtualdesktop.display.v1.SizeR\x04size\x12H\n" +
-	"\bmax_size\x18\x03 \x01(\v2-.leaflow.fleet.virtualdesktop.display.v1.SizeR\amaxSize\x12'\n" +
+	"\x04size\x18\x02 \x01(\v2-.leaflow.fleet.virtualdesktop.display.v1.SizeR\x04size\x12'\n" +
 	"\x0fsession_desktop\x18\x04 \x01(\tR\x0esessionDesktop\"r\n" +
 	"\fDesktopState\x12\x18\n" +
 	"\adisplay\x18\x01 \x01(\tR\adisplay\x12H\n" +
@@ -188,13 +178,12 @@ var file_leaflow_fleet_virtualdesktop_host_v1_host_proto_goTypes = []any{
 var file_leaflow_fleet_virtualdesktop_host_v1_host_proto_depIdxs = []int32{
 	2, // 0: leaflow.fleet.virtualdesktop.host.v1.DesktopOptions.mode:type_name -> leaflow.fleet.virtualdesktop.display.v1.SessionMode
 	3, // 1: leaflow.fleet.virtualdesktop.host.v1.DesktopOptions.size:type_name -> leaflow.fleet.virtualdesktop.display.v1.Size
-	3, // 2: leaflow.fleet.virtualdesktop.host.v1.DesktopOptions.max_size:type_name -> leaflow.fleet.virtualdesktop.display.v1.Size
-	2, // 3: leaflow.fleet.virtualdesktop.host.v1.DesktopState.mode:type_name -> leaflow.fleet.virtualdesktop.display.v1.SessionMode
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	2, // 2: leaflow.fleet.virtualdesktop.host.v1.DesktopState.mode:type_name -> leaflow.fleet.virtualdesktop.display.v1.SessionMode
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_leaflow_fleet_virtualdesktop_host_v1_host_proto_init() }

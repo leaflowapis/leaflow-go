@@ -1119,9 +1119,9 @@ type PortForwardPolicy struct {
 	RemoteListeners *EndpointPolicy `protobuf:"bytes,5,opt,name=remote_listeners,json=remoteListeners,proto3" json:"remote_listeners,omitempty"`
 	// Where the participant may connect for REMOTE_TO_LOCAL.
 	LocalTargets *EndpointPolicy `protobuf:"bytes,6,opt,name=local_targets,json=localTargets,proto3" json:"local_targets,omitempty"`
-	// The most forwards at once, at most 32. 0: 8.
+	// The most forwards at once. 0: no limit.
 	MaxForwards uint32 `protobuf:"varint,7,opt,name=max_forwards,json=maxForwards,proto3" json:"max_forwards,omitempty"`
-	// The most connections and associations at once, at most 256. 0: 32.
+	// The most connections and associations at once. 0: no limit.
 	MaxConnections uint32 `protobuf:"varint,8,opt,name=max_connections,json=maxConnections,proto3" json:"max_connections,omitempty"`
 	// The longest wait for one connection to a target, at most 60 seconds.
 	// Unset: 15 seconds.

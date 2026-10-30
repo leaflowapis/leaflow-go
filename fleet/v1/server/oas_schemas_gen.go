@@ -1585,7 +1585,7 @@ type MachineFeature struct {
 	// The protocol package that defines the feature, such as `leaflow.fleet.command.v1`.
 	Name  string       `json:"name"`
 	State FeatureState `json:"state"`
-	// Why it cannot be used, such as `Xvfb is not installed`; empty while available.
+	// Why it cannot be used, such as `Xwayland is not installed`; empty while available.
 	Reason string `json:"reason"`
 	// What it can do on this machine, as the dotted names its package defines, such as `audio.pipewire`.
 	Details []string `json:"details"`
