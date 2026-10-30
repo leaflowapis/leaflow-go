@@ -983,7 +983,13 @@ type DirectoryEntry struct {
 	// When its content last changed.
 	ModifiedAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=modified_at,json=modifiedAt,proto3" json:"modified_at,omitempty"`
 	// The POSIX permission bits. Informational only.
-	Mode          uint32 `protobuf:"varint,5,opt,name=mode,proto3" json:"mode,omitempty"`
+	Mode uint32 `protobuf:"varint,5,opt,name=mode,proto3" json:"mode,omitempty"`
+	// Its media type (Shared MIME-info Database), as GIO's
+	// standard::content-type gives it: that of the target for a symbolic link,
+	// "inode/symlink" for one whose target is missing, "inode/directory" and the
+	// other inode types by kind, "application/x-zerosize" for an empty file,
+	// otherwise by name and, where the name leaves it open, by content.
+	MimeType      string `protobuf:"bytes,6,opt,name=mime_type,json=mimeType,proto3" json:"mime_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1051,6 +1057,13 @@ func (x *DirectoryEntry) GetMode() uint32 {
 		return x.Mode
 	}
 	return 0
+}
+
+func (x *DirectoryEntry) GetMimeType() string {
+	if x != nil {
+		return x.MimeType
+	}
+	return ""
 }
 
 // The request of CreateDirectory.
@@ -1311,6 +1324,181 @@ func (*RemoveFileResponse) Descriptor() ([]byte, []int) {
 	return file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDescGZIP(), []int{18}
 }
 
+// The request of CopyFile.
+type CopyFileRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The file, symbolic link or directory.
+	SourcePath string `protobuf:"bytes,1,opt,name=source_path,json=sourcePath,proto3" json:"source_path,omitempty"`
+	// The path of the copy. Its parent must exist.
+	DestinationPath string `protobuf:"bytes,2,opt,name=destination_path,json=destinationPath,proto3" json:"destination_path,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CopyFileRequest) Reset() {
+	*x = CopyFileRequest{}
+	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CopyFileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CopyFileRequest) ProtoMessage() {}
+
+func (x *CopyFileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CopyFileRequest.ProtoReflect.Descriptor instead.
+func (*CopyFileRequest) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *CopyFileRequest) GetSourcePath() string {
+	if x != nil {
+		return x.SourcePath
+	}
+	return ""
+}
+
+func (x *CopyFileRequest) GetDestinationPath() string {
+	if x != nil {
+		return x.DestinationPath
+	}
+	return ""
+}
+
+// The response of CopyFile.
+type CopyFileResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CopyFileResponse) Reset() {
+	*x = CopyFileResponse{}
+	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CopyFileResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CopyFileResponse) ProtoMessage() {}
+
+func (x *CopyFileResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CopyFileResponse.ProtoReflect.Descriptor instead.
+func (*CopyFileResponse) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDescGZIP(), []int{20}
+}
+
+// The request of TrashFile.
+type TrashFileRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The file or directory.
+	Path          string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TrashFileRequest) Reset() {
+	*x = TrashFileRequest{}
+	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TrashFileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TrashFileRequest) ProtoMessage() {}
+
+func (x *TrashFileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TrashFileRequest.ProtoReflect.Descriptor instead.
+func (*TrashFileRequest) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *TrashFileRequest) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+// The response of TrashFile.
+type TrashFileResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TrashFileResponse) Reset() {
+	*x = TrashFileResponse{}
+	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TrashFileResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TrashFileResponse) ProtoMessage() {}
+
+func (x *TrashFileResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TrashFileResponse.ProtoReflect.Descriptor instead.
+func (*TrashFileResponse) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDescGZIP(), []int{22}
+}
+
 // The request of CreateFileOffer.
 type CreateFileOfferRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1322,7 +1510,7 @@ type CreateFileOfferRequest struct {
 
 func (x *CreateFileOfferRequest) Reset() {
 	*x = CreateFileOfferRequest{}
-	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[19]
+	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1334,7 +1522,7 @@ func (x *CreateFileOfferRequest) String() string {
 func (*CreateFileOfferRequest) ProtoMessage() {}
 
 func (x *CreateFileOfferRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[19]
+	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1347,7 +1535,7 @@ func (x *CreateFileOfferRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateFileOfferRequest.ProtoReflect.Descriptor instead.
 func (*CreateFileOfferRequest) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDescGZIP(), []int{19}
+	return file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *CreateFileOfferRequest) GetPaths() []string {
@@ -1368,7 +1556,7 @@ type CreateFileOfferResponse struct {
 
 func (x *CreateFileOfferResponse) Reset() {
 	*x = CreateFileOfferResponse{}
-	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[20]
+	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1380,7 +1568,7 @@ func (x *CreateFileOfferResponse) String() string {
 func (*CreateFileOfferResponse) ProtoMessage() {}
 
 func (x *CreateFileOfferResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[20]
+	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1393,7 +1581,7 @@ func (x *CreateFileOfferResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateFileOfferResponse.ProtoReflect.Descriptor instead.
 func (*CreateFileOfferResponse) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDescGZIP(), []int{20}
+	return file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *CreateFileOfferResponse) GetOffer() *FileTransferOffer {
@@ -1422,7 +1610,7 @@ type FileTransferPolicy struct {
 
 func (x *FileTransferPolicy) Reset() {
 	*x = FileTransferPolicy{}
-	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[21]
+	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1434,7 +1622,7 @@ func (x *FileTransferPolicy) String() string {
 func (*FileTransferPolicy) ProtoMessage() {}
 
 func (x *FileTransferPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[21]
+	mi := &file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1447,7 +1635,7 @@ func (x *FileTransferPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileTransferPolicy.ProtoReflect.Descriptor instead.
 func (*FileTransferPolicy) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDescGZIP(), []int{21}
+	return file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *FileTransferPolicy) GetUploadAllowed() bool {
@@ -1545,7 +1733,7 @@ const file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDesc = "" +
 	"\x15ListDirectoryResponse\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12G\n" +
 	"\aentries\x18\x02 \x03(\v2-.leaflow.fleet.filetransfer.v1.DirectoryEntryR\aentries\x12&\n" +
-	"\x0fnext_page_token\x18\x03 \x01(\tR\rnextPageToken\"\xd1\x01\n" +
+	"\x0fnext_page_token\x18\x03 \x01(\tR\rnextPageToken\"\xee\x01\n" +
 	"\x0eDirectoryEntry\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12;\n" +
 	"\x04type\x18\x02 \x01(\x0e2'.leaflow.fleet.filetransfer.v1.FileTypeR\x04type\x12\x1d\n" +
@@ -1553,7 +1741,8 @@ const file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDesc = "" +
 	"size_bytes\x18\x03 \x01(\x04R\tsizeBytes\x12;\n" +
 	"\vmodified_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"modifiedAt\x12\x12\n" +
-	"\x04mode\x18\x05 \x01(\rR\x04mode\",\n" +
+	"\x04mode\x18\x05 \x01(\rR\x04mode\x12\x1b\n" +
+	"\tmime_type\x18\x06 \x01(\tR\bmimeType\",\n" +
 	"\x16CreateDirectoryRequest\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\"\x19\n" +
 	"\x17CreateDirectoryResponse\"_\n" +
@@ -1564,7 +1753,15 @@ const file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDesc = "" +
 	"\x12RenameFileResponse\"'\n" +
 	"\x11RemoveFileRequest\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\"\x14\n" +
-	"\x12RemoveFileResponse\".\n" +
+	"\x12RemoveFileResponse\"]\n" +
+	"\x0fCopyFileRequest\x12\x1f\n" +
+	"\vsource_path\x18\x01 \x01(\tR\n" +
+	"sourcePath\x12)\n" +
+	"\x10destination_path\x18\x02 \x01(\tR\x0fdestinationPath\"\x12\n" +
+	"\x10CopyFileResponse\"&\n" +
+	"\x10TrashFileRequest\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\"\x13\n" +
+	"\x11TrashFileResponse\".\n" +
 	"\x16CreateFileOfferRequest\x12\x14\n" +
 	"\x05paths\x18\x01 \x03(\tR\x05paths\"a\n" +
 	"\x17CreateFileOfferResponse\x12F\n" +
@@ -1579,14 +1776,16 @@ const file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDesc = "" +
 	"\x15FILE_TYPE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11FILE_TYPE_REGULAR\x10\x01\x12\x17\n" +
 	"\x13FILE_TYPE_DIRECTORY\x10\x02\x12\x1b\n" +
-	"\x17FILE_TYPE_SYMBOLIC_LINK\x10\x032\x80\x05\n" +
+	"\x17FILE_TYPE_SYMBOLIC_LINK\x10\x032\xdd\x06\n" +
 	"\x11FileSystemService\x12\x7f\n" +
 	"\rListDirectory\x123.leaflow.fleet.filetransfer.v1.ListDirectoryRequest\x1a4.leaflow.fleet.filetransfer.v1.ListDirectoryResponse\"\x03\x90\x02\x01\x12\x80\x01\n" +
 	"\x0fCreateDirectory\x125.leaflow.fleet.filetransfer.v1.CreateDirectoryRequest\x1a6.leaflow.fleet.filetransfer.v1.CreateDirectoryResponse\x12q\n" +
 	"\n" +
 	"RenameFile\x120.leaflow.fleet.filetransfer.v1.RenameFileRequest\x1a1.leaflow.fleet.filetransfer.v1.RenameFileResponse\x12q\n" +
 	"\n" +
-	"RemoveFile\x120.leaflow.fleet.filetransfer.v1.RemoveFileRequest\x1a1.leaflow.fleet.filetransfer.v1.RemoveFileResponse\x12\x80\x01\n" +
+	"RemoveFile\x120.leaflow.fleet.filetransfer.v1.RemoveFileRequest\x1a1.leaflow.fleet.filetransfer.v1.RemoveFileResponse\x12k\n" +
+	"\bCopyFile\x12..leaflow.fleet.filetransfer.v1.CopyFileRequest\x1a/.leaflow.fleet.filetransfer.v1.CopyFileResponse\x12n\n" +
+	"\tTrashFile\x12/.leaflow.fleet.filetransfer.v1.TrashFileRequest\x1a0.leaflow.fleet.filetransfer.v1.TrashFileResponse\x12\x80\x01\n" +
 	"\x0fCreateFileOffer\x125.leaflow.fleet.filetransfer.v1.CreateFileOfferRequest\x1a6.leaflow.fleet.filetransfer.v1.CreateFileOfferResponseBHZFgithub.com/leaflowapis/leaflow-go/fleet/filetransfer/v1;filetransferv1b\x06proto3"
 
 var (
@@ -1602,7 +1801,7 @@ func file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDescGZIP() []byte 
 }
 
 var file_leaflow_fleet_filetransfer_v1_filetransfer_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_leaflow_fleet_filetransfer_v1_filetransfer_proto_goTypes = []any{
 	(FileType)(0),                   // 0: leaflow.fleet.filetransfer.v1.FileType
 	(*FileTransferMessage)(nil),     // 1: leaflow.fleet.filetransfer.v1.FileTransferMessage
@@ -1624,11 +1823,15 @@ var file_leaflow_fleet_filetransfer_v1_filetransfer_proto_goTypes = []any{
 	(*RenameFileResponse)(nil),      // 17: leaflow.fleet.filetransfer.v1.RenameFileResponse
 	(*RemoveFileRequest)(nil),       // 18: leaflow.fleet.filetransfer.v1.RemoveFileRequest
 	(*RemoveFileResponse)(nil),      // 19: leaflow.fleet.filetransfer.v1.RemoveFileResponse
-	(*CreateFileOfferRequest)(nil),  // 20: leaflow.fleet.filetransfer.v1.CreateFileOfferRequest
-	(*CreateFileOfferResponse)(nil), // 21: leaflow.fleet.filetransfer.v1.CreateFileOfferResponse
-	(*FileTransferPolicy)(nil),      // 22: leaflow.fleet.filetransfer.v1.FileTransferPolicy
-	(*status.Status)(nil),           // 23: google.rpc.Status
-	(*timestamppb.Timestamp)(nil),   // 24: google.protobuf.Timestamp
+	(*CopyFileRequest)(nil),         // 20: leaflow.fleet.filetransfer.v1.CopyFileRequest
+	(*CopyFileResponse)(nil),        // 21: leaflow.fleet.filetransfer.v1.CopyFileResponse
+	(*TrashFileRequest)(nil),        // 22: leaflow.fleet.filetransfer.v1.TrashFileRequest
+	(*TrashFileResponse)(nil),       // 23: leaflow.fleet.filetransfer.v1.TrashFileResponse
+	(*CreateFileOfferRequest)(nil),  // 24: leaflow.fleet.filetransfer.v1.CreateFileOfferRequest
+	(*CreateFileOfferResponse)(nil), // 25: leaflow.fleet.filetransfer.v1.CreateFileOfferResponse
+	(*FileTransferPolicy)(nil),      // 26: leaflow.fleet.filetransfer.v1.FileTransferPolicy
+	(*status.Status)(nil),           // 27: google.rpc.Status
+	(*timestamppb.Timestamp)(nil),   // 28: google.protobuf.Timestamp
 }
 var file_leaflow_fleet_filetransfer_v1_filetransfer_proto_depIdxs = []int32{
 	2,  // 0: leaflow.fleet.filetransfer.v1.FileTransferMessage.offer:type_name -> leaflow.fleet.filetransfer.v1.FileTransferOffer
@@ -1638,26 +1841,30 @@ var file_leaflow_fleet_filetransfer_v1_filetransfer_proto_depIdxs = []int32{
 	7,  // 4: leaflow.fleet.filetransfer.v1.FileTransferMessage.result:type_name -> leaflow.fleet.filetransfer.v1.FileTransferResult
 	3,  // 5: leaflow.fleet.filetransfer.v1.FileTransferOffer.entries:type_name -> leaflow.fleet.filetransfer.v1.FileEntry
 	0,  // 6: leaflow.fleet.filetransfer.v1.FileEntry.type:type_name -> leaflow.fleet.filetransfer.v1.FileType
-	23, // 7: leaflow.fleet.filetransfer.v1.FileTransferResponse.error:type_name -> google.rpc.Status
-	23, // 8: leaflow.fleet.filetransfer.v1.FileTransferResult.error:type_name -> google.rpc.Status
+	27, // 7: leaflow.fleet.filetransfer.v1.FileTransferResponse.error:type_name -> google.rpc.Status
+	27, // 8: leaflow.fleet.filetransfer.v1.FileTransferResult.error:type_name -> google.rpc.Status
 	10, // 9: leaflow.fleet.filetransfer.v1.FileContent.end:type_name -> leaflow.fleet.filetransfer.v1.FileContentEnd
-	23, // 10: leaflow.fleet.filetransfer.v1.FileContentEnd.error:type_name -> google.rpc.Status
+	27, // 10: leaflow.fleet.filetransfer.v1.FileContentEnd.error:type_name -> google.rpc.Status
 	13, // 11: leaflow.fleet.filetransfer.v1.ListDirectoryResponse.entries:type_name -> leaflow.fleet.filetransfer.v1.DirectoryEntry
 	0,  // 12: leaflow.fleet.filetransfer.v1.DirectoryEntry.type:type_name -> leaflow.fleet.filetransfer.v1.FileType
-	24, // 13: leaflow.fleet.filetransfer.v1.DirectoryEntry.modified_at:type_name -> google.protobuf.Timestamp
+	28, // 13: leaflow.fleet.filetransfer.v1.DirectoryEntry.modified_at:type_name -> google.protobuf.Timestamp
 	2,  // 14: leaflow.fleet.filetransfer.v1.CreateFileOfferResponse.offer:type_name -> leaflow.fleet.filetransfer.v1.FileTransferOffer
 	11, // 15: leaflow.fleet.filetransfer.v1.FileSystemService.ListDirectory:input_type -> leaflow.fleet.filetransfer.v1.ListDirectoryRequest
 	14, // 16: leaflow.fleet.filetransfer.v1.FileSystemService.CreateDirectory:input_type -> leaflow.fleet.filetransfer.v1.CreateDirectoryRequest
 	16, // 17: leaflow.fleet.filetransfer.v1.FileSystemService.RenameFile:input_type -> leaflow.fleet.filetransfer.v1.RenameFileRequest
 	18, // 18: leaflow.fleet.filetransfer.v1.FileSystemService.RemoveFile:input_type -> leaflow.fleet.filetransfer.v1.RemoveFileRequest
-	20, // 19: leaflow.fleet.filetransfer.v1.FileSystemService.CreateFileOffer:input_type -> leaflow.fleet.filetransfer.v1.CreateFileOfferRequest
-	12, // 20: leaflow.fleet.filetransfer.v1.FileSystemService.ListDirectory:output_type -> leaflow.fleet.filetransfer.v1.ListDirectoryResponse
-	15, // 21: leaflow.fleet.filetransfer.v1.FileSystemService.CreateDirectory:output_type -> leaflow.fleet.filetransfer.v1.CreateDirectoryResponse
-	17, // 22: leaflow.fleet.filetransfer.v1.FileSystemService.RenameFile:output_type -> leaflow.fleet.filetransfer.v1.RenameFileResponse
-	19, // 23: leaflow.fleet.filetransfer.v1.FileSystemService.RemoveFile:output_type -> leaflow.fleet.filetransfer.v1.RemoveFileResponse
-	21, // 24: leaflow.fleet.filetransfer.v1.FileSystemService.CreateFileOffer:output_type -> leaflow.fleet.filetransfer.v1.CreateFileOfferResponse
-	20, // [20:25] is the sub-list for method output_type
-	15, // [15:20] is the sub-list for method input_type
+	20, // 19: leaflow.fleet.filetransfer.v1.FileSystemService.CopyFile:input_type -> leaflow.fleet.filetransfer.v1.CopyFileRequest
+	22, // 20: leaflow.fleet.filetransfer.v1.FileSystemService.TrashFile:input_type -> leaflow.fleet.filetransfer.v1.TrashFileRequest
+	24, // 21: leaflow.fleet.filetransfer.v1.FileSystemService.CreateFileOffer:input_type -> leaflow.fleet.filetransfer.v1.CreateFileOfferRequest
+	12, // 22: leaflow.fleet.filetransfer.v1.FileSystemService.ListDirectory:output_type -> leaflow.fleet.filetransfer.v1.ListDirectoryResponse
+	15, // 23: leaflow.fleet.filetransfer.v1.FileSystemService.CreateDirectory:output_type -> leaflow.fleet.filetransfer.v1.CreateDirectoryResponse
+	17, // 24: leaflow.fleet.filetransfer.v1.FileSystemService.RenameFile:output_type -> leaflow.fleet.filetransfer.v1.RenameFileResponse
+	19, // 25: leaflow.fleet.filetransfer.v1.FileSystemService.RemoveFile:output_type -> leaflow.fleet.filetransfer.v1.RemoveFileResponse
+	21, // 26: leaflow.fleet.filetransfer.v1.FileSystemService.CopyFile:output_type -> leaflow.fleet.filetransfer.v1.CopyFileResponse
+	23, // 27: leaflow.fleet.filetransfer.v1.FileSystemService.TrashFile:output_type -> leaflow.fleet.filetransfer.v1.TrashFileResponse
+	25, // 28: leaflow.fleet.filetransfer.v1.FileSystemService.CreateFileOffer:output_type -> leaflow.fleet.filetransfer.v1.CreateFileOfferResponse
+	22, // [22:29] is the sub-list for method output_type
+	15, // [15:22] is the sub-list for method input_type
 	15, // [15:15] is the sub-list for extension type_name
 	15, // [15:15] is the sub-list for extension extendee
 	0,  // [0:15] is the sub-list for field type_name
@@ -1685,7 +1892,7 @@ func file_leaflow_fleet_filetransfer_v1_filetransfer_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDesc), len(file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   22,
+			NumMessages:   26,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
