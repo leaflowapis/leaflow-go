@@ -122,8 +122,9 @@ type Invoker interface {
 	//
 	// Admits one participant with the given public key to the session: signs its authorization, has the
 	// session accept it, and starts its first PeerConnection with the offer. The answer carries the
-	// participant, its authorization and the PeerConnection with the session's answer. The participant
-	// lasts while it is renewed.
+	// participant, its authorization and the PeerConnection with the session's answer and the ICE
+	// candidates the session has passed so far; read its later candidates with `get-peer-connection`. The
+	// participant lasts while it is renewed.
 	//
 	// Joining again with the public key of one of the caller's participants of the session that has not
 	// ended, with the same `client_name`, `read_only` and `permissions`, returns that participant with a
@@ -158,9 +159,9 @@ type Invoker interface {
 	// CreatePeerConnection invokes create-peer-connection operation.
 	//
 	// Starts another PeerConnection of the participant with the offer, such as after a path failed, and
-	// returns the session's answer, its ICE candidates and the signed PeerAuthorization. Move the
-	// participant's connection to it with `prepare-participant-migration` and
-	// `commit-participant-migration`.
+	// returns the session's answer, the ICE candidates it has passed so far and the signed
+	// PeerAuthorization; read its later candidates with `get-peer-connection`. Move the participant's
+	// connection to it with `prepare-participant-migration` and `commit-participant-migration`.
 	//
 	// Only the participant's user may start one.
 	//
@@ -377,6 +378,29 @@ type Invoker interface {
 	//
 	// GET /api/v1/sessions/{sessionId}/participants/{participantId}
 	GetParticipant(ctx context.Context, params GetParticipantParams) (*ParticipantResource, error)
+	// GetPeerConnection invokes get-peer-connection operation.
+	//
+	// Returns the PeerConnection with the ICE candidates the session has passed so far. The session passes
+	// its candidates as it gathers them (RFC 8838), so most arrive after the PeerConnection started: read
+	// it until `candidates_complete`, and add the candidates that are new since the last read to the
+	// PeerConnection. A client keeps those that arrive before it has set the answer as the remote
+	// description, and adds them once it has.
+	//
+	// With `known_candidates`, the request waits until the session has passed more candidates than that or
+	// reported the end of its candidates, for at most 20 seconds, and then returns the PeerConnection as
+	// it is.
+	//
+	// A PeerConnection can be read for 5 minutes after it started. Only the participant's user may read
+	// it.
+	//
+	// Fails with:
+	//
+	//  - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+	//  - `PEER_CONNECTION_NOT_FOUND` when the participant has no such PeerConnection, it was abandoned,
+	//    the session gave it up, or it started more than 5 minutes ago.
+	//
+	// GET /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}
+	GetPeerConnection(ctx context.Context, params GetPeerConnectionParams) (*PeerConnection, error)
 	// GetPrivilegeAutoApproval invokes get-privilege-auto-approval operation.
 	//
 	// Returns the caller's automatic approval of their privilege requests on the machine. Fails with
@@ -1915,8 +1939,9 @@ func (c *Client) sendCreateMachineRegistration(ctx context.Context, request *Cre
 //
 // Admits one participant with the given public key to the session: signs its authorization, has the
 // session accept it, and starts its first PeerConnection with the offer. The answer carries the
-// participant, its authorization and the PeerConnection with the session's answer. The participant
-// lasts while it is renewed.
+// participant, its authorization and the PeerConnection with the session's answer and the ICE
+// candidates the session has passed so far; read its later candidates with `get-peer-connection`. The
+// participant lasts while it is renewed.
 //
 // Joining again with the public key of one of the caller's participants of the session that has not
 // ended, with the same `client_name`, `read_only` and `permissions`, returns that participant with a
@@ -2089,9 +2114,9 @@ func (c *Client) sendCreateParticipant(ctx context.Context, request *CreateParti
 // CreatePeerConnection invokes create-peer-connection operation.
 //
 // Starts another PeerConnection of the participant with the offer, such as after a path failed, and
-// returns the session's answer, its ICE candidates and the signed PeerAuthorization. Move the
-// participant's connection to it with `prepare-participant-migration` and
-// `commit-participant-migration`.
+// returns the session's answer, the ICE candidates it has passed so far and the signed
+// PeerAuthorization; read its later candidates with `get-peer-connection`. Move the participant's
+// connection to it with `prepare-participant-migration` and `commit-participant-migration`.
 //
 // Only the participant's user may start one.
 //
@@ -5036,6 +5061,213 @@ func (c *Client) sendGetParticipant(ctx context.Context, params GetParticipantPa
 
 	stage = "DecodeResponse"
 	result, err := decodeGetParticipantResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetPeerConnection invokes get-peer-connection operation.
+//
+// Returns the PeerConnection with the ICE candidates the session has passed so far. The session passes
+// its candidates as it gathers them (RFC 8838), so most arrive after the PeerConnection started: read
+// it until `candidates_complete`, and add the candidates that are new since the last read to the
+// PeerConnection. A client keeps those that arrive before it has set the answer as the remote
+// description, and adds them once it has.
+//
+// With `known_candidates`, the request waits until the session has passed more candidates than that or
+// reported the end of its candidates, for at most 20 seconds, and then returns the PeerConnection as
+// it is.
+//
+// A PeerConnection can be read for 5 minutes after it started. Only the participant's user may read
+// it.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `PEER_CONNECTION_NOT_FOUND` when the participant has no such PeerConnection, it was abandoned,
+//     the session gave it up, or it started more than 5 minutes ago.
+//
+// GET /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}
+func (c *Client) GetPeerConnection(ctx context.Context, params GetPeerConnectionParams) (*PeerConnection, error) {
+	res, err := c.sendGetPeerConnection(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetPeerConnection(ctx context.Context, params GetPeerConnectionParams) (res *PeerConnection, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-peer-connection"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetPeerConnectionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [6]string
+	pathParts[0] = "/api/v1/sessions/"
+	{
+		// Encode "sessionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "sessionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.SessionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/participants/"
+	{
+		// Encode "participantId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "participantId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.ParticipantId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = "/peer-connections/"
+	{
+		// Encode "peerConnectionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "peerConnectionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.PeerConnectionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[5] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "known_candidates" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "known_candidates",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.KnownCandidates.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetPeerConnectionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetPeerConnectionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

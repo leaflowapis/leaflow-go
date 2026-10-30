@@ -130,8 +130,9 @@ func (UnimplementedHandler) CreateMachineRegistration(ctx context.Context, req *
 //
 // Admits one participant with the given public key to the session: signs its authorization, has the
 // session accept it, and starts its first PeerConnection with the offer. The answer carries the
-// participant, its authorization and the PeerConnection with the session's answer. The participant
-// lasts while it is renewed.
+// participant, its authorization and the PeerConnection with the session's answer and the ICE
+// candidates the session has passed so far; read its later candidates with `get-peer-connection`. The
+// participant lasts while it is renewed.
 //
 // Joining again with the public key of one of the caller's participants of the session that has not
 // ended, with the same `client_name`, `read_only` and `permissions`, returns that participant with a
@@ -169,9 +170,9 @@ func (UnimplementedHandler) CreateParticipant(ctx context.Context, req *CreatePa
 // CreatePeerConnection implements create-peer-connection operation.
 //
 // Starts another PeerConnection of the participant with the offer, such as after a path failed, and
-// returns the session's answer, its ICE candidates and the signed PeerAuthorization. Move the
-// participant's connection to it with `prepare-participant-migration` and
-// `commit-participant-migration`.
+// returns the session's answer, the ICE candidates it has passed so far and the signed
+// PeerAuthorization; read its later candidates with `get-peer-connection`. Move the participant's
+// connection to it with `prepare-participant-migration` and `commit-participant-migration`.
 //
 // Only the participant's user may start one.
 //
@@ -445,6 +446,32 @@ func (UnimplementedHandler) GetMcpConfiguration(ctx context.Context, params GetM
 //
 // GET /api/v1/sessions/{sessionId}/participants/{participantId}
 func (UnimplementedHandler) GetParticipant(ctx context.Context, params GetParticipantParams) (r *ParticipantResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetPeerConnection implements get-peer-connection operation.
+//
+// Returns the PeerConnection with the ICE candidates the session has passed so far. The session passes
+// its candidates as it gathers them (RFC 8838), so most arrive after the PeerConnection started: read
+// it until `candidates_complete`, and add the candidates that are new since the last read to the
+// PeerConnection. A client keeps those that arrive before it has set the answer as the remote
+// description, and adds them once it has.
+//
+// With `known_candidates`, the request waits until the session has passed more candidates than that or
+// reported the end of its candidates, for at most 20 seconds, and then returns the PeerConnection as
+// it is.
+//
+// A PeerConnection can be read for 5 minutes after it started. Only the participant's user may read
+// it.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `PEER_CONNECTION_NOT_FOUND` when the participant has no such PeerConnection, it was abandoned,
+//     the session gave it up, or it started more than 5 minutes ago.
+//
+// GET /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}
+func (UnimplementedHandler) GetPeerConnection(ctx context.Context, params GetPeerConnectionParams) (r *PeerConnection, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

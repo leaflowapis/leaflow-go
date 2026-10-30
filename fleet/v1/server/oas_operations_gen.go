@@ -35,6 +35,7 @@ const (
 	GetMachineRegistrationOperation         OperationName = "GetMachineRegistration"
 	GetMcpConfigurationOperation            OperationName = "GetMcpConfiguration"
 	GetParticipantOperation                 OperationName = "GetParticipant"
+	GetPeerConnectionOperation              OperationName = "GetPeerConnection"
 	GetPrivilegeAutoApprovalOperation       OperationName = "GetPrivilegeAutoApproval"
 	GetPrivilegeRequestOperation            OperationName = "GetPrivilegeRequest"
 	GetSessionOperation                     OperationName = "GetSession"

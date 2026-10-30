@@ -122,6 +122,7 @@ var (
 	}
 	rn30AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
+		"GET":    "Authorization",
 	}
 	rn31AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
@@ -1352,9 +1353,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 													args[1],
 													args[2],
 												}, elemIsEscaped, w, r)
+											case "GET":
+												s.handleGetPeerConnectionRequest([3]string{
+													args[0],
+													args[1],
+													args[2],
+												}, elemIsEscaped, w, r)
 											default:
 												s.notAllowed(w, r, notAllowedParams{
-													allowedMethods: "DELETE",
+													allowedMethods: "DELETE,GET",
 													allowedHeaders: rn30AllowedHeaders,
 													acceptPost:     "",
 													acceptPatch:    "",
@@ -2884,6 +2891,15 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												r.name = DeletePeerConnectionOperation
 												r.summary = "Abandon a PeerConnection"
 												r.operationID = "delete-peer-connection"
+												r.operationGroup = ""
+												r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}"
+												r.args = args
+												r.count = 3
+												return r, true
+											case "GET":
+												r.name = GetPeerConnectionOperation
+												r.summary = "Get a PeerConnection"
+												r.operationID = "get-peer-connection"
 												r.operationGroup = ""
 												r.pathPattern = "/api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}"
 												r.args = args

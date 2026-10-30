@@ -2766,6 +2766,295 @@ func decodeGetParticipantParams(args [2]string, argsEscaped bool, r *http.Reques
 	return params, nil
 }
 
+// GetPeerConnectionParams is parameters of get-peer-connection operation.
+type GetPeerConnectionParams struct {
+	SessionId        string
+	ParticipantId    int64
+	PeerConnectionId uuid.UUID
+	// The number of the session's candidates the caller already has. The request waits until there are
+	// more or the session reported the end of its candidates, for at most 20 seconds. Without it, the
+	// request returns at once.
+	KnownCandidates OptInt32 `json:",omitempty,omitzero"`
+}
+
+func unpackGetPeerConnectionParams(packed middleware.Parameters) (params GetPeerConnectionParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "sessionId",
+			In:   "path",
+		}
+		params.SessionId = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "participantId",
+			In:   "path",
+		}
+		params.ParticipantId = packed[key].(int64)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "peerConnectionId",
+			In:   "path",
+		}
+		params.PeerConnectionId = packed[key].(uuid.UUID)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "known_candidates",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.KnownCandidates = v.(OptInt32)
+		}
+	}
+	return params
+}
+
+func decodeGetPeerConnectionParams(args [3]string, argsEscaped bool, r *http.Request) (params GetPeerConnectionParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode path: sessionId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "sessionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.SessionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     1,
+					MinLengthSet:  true,
+					MaxLength:     40,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^[a-z0-9-]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.SessionId)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "sessionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: participantId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "participantId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToInt64(val)
+				if err != nil {
+					return err
+				}
+
+				params.ParticipantId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.Int{
+					MinSet:        true,
+					Min:           1,
+					MaxSet:        false,
+					Max:           0,
+					MinExclusive:  false,
+					MaxExclusive:  false,
+					MultipleOfSet: false,
+					MultipleOf:    0,
+					Pattern:       nil,
+				}).Validate(int64(params.ParticipantId)); err != nil {
+					return errors.Wrap(err, "int")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "participantId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: peerConnectionId.
+	if err := func() error {
+		param := args[2]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[2])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "peerConnectionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.PeerConnectionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "peerConnectionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: known_candidates.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "known_candidates",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotKnownCandidatesVal int32
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt32(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotKnownCandidatesVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.KnownCandidates.SetTo(paramsDotKnownCandidatesVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.KnownCandidates.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           0,
+							MaxSet:        true,
+							Max:           64,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "known_candidates",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetPrivilegeAutoApprovalParams is parameters of get-privilege-auto-approval operation.
 type GetPrivilegeAutoApprovalParams struct {
 	MachineId uuid.UUID

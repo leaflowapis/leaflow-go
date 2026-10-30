@@ -3765,6 +3765,52 @@ func (o OptErrorStatusMetadata) Or(d ErrorStatusMetadata) ErrorStatusMetadata {
 	return d
 }
 
+// NewOptInt32 returns new OptInt32 with value set to v.
+func NewOptInt32(v int32) OptInt32 {
+	return OptInt32{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInt32 is optional int32.
+type OptInt32 struct {
+	Value int32
+	Set   bool
+}
+
+// IsSet returns true if OptInt32 was set.
+func (o OptInt32) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInt32) Reset() {
+	var v int32
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInt32) SetTo(v int32) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInt32) Get() (v int32, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInt32) Or(d int32) int32 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptInt64 returns new OptInt64 with value set to v.
 func NewOptInt64(v int64) OptInt64 {
 	return OptInt64{
@@ -4359,12 +4405,11 @@ type PeerConnection struct {
 	ID uuid.UUID `json:"id"`
 	// The session's SDP answer (RFC 8866); it holds ICE credentials, so never log it.
 	Answer string `json:"answer"`
-	// The session's ICE candidates that arrived until it reported the end of its candidates, or 500
-	// milliseconds after one candidate of each type its ICE servers yield had arrived (server reflexive
-	// when the RTC configuration has STUN servers and the policy is not `relay`, relayed when it has TURN
-	// servers), and at most until 10 seconds after its answer. Candidates the session gathers later are
-	// not passed on.
+	// The session's ICE candidates passed so far, at most 64, in the order the session sent them. Later
+	// reads return the same ones first.
 	Candidates []IceCandidate `json:"candidates"`
+	// The session reported that it has gathered all its candidates; no more follow.
+	CandidatesComplete bool `json:"candidates_complete"`
 	// The signed `PeerAuthorization` of the PeerConnection, the same one the session holds.
 	Authorization SignedMessage `json:"authorization"`
 }
@@ -4382,6 +4427,11 @@ func (s *PeerConnection) GetAnswer() string {
 // GetCandidates returns the value of Candidates.
 func (s *PeerConnection) GetCandidates() []IceCandidate {
 	return s.Candidates
+}
+
+// GetCandidatesComplete returns the value of CandidatesComplete.
+func (s *PeerConnection) GetCandidatesComplete() bool {
+	return s.CandidatesComplete
 }
 
 // GetAuthorization returns the value of Authorization.
@@ -4402,6 +4452,11 @@ func (s *PeerConnection) SetAnswer(val string) {
 // SetCandidates sets the value of Candidates.
 func (s *PeerConnection) SetCandidates(val []IceCandidate) {
 	s.Candidates = val
+}
+
+// SetCandidatesComplete sets the value of CandidatesComplete.
+func (s *PeerConnection) SetCandidatesComplete(val bool) {
+	s.CandidatesComplete = val
 }
 
 // SetAuthorization sets the value of Authorization.

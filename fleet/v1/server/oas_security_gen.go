@@ -73,6 +73,7 @@ var operationRolesBearerAuth = map[string][]string{
 	GetMachineRegistrationOperation:         []string{},
 	GetMcpConfigurationOperation:            []string{},
 	GetParticipantOperation:                 []string{},
+	GetPeerConnectionOperation:              []string{},
 	GetPrivilegeAutoApprovalOperation:       []string{},
 	GetPrivilegeRequestOperation:            []string{},
 	GetSessionOperation:                     []string{},

@@ -1291,7 +1291,16 @@ type Welcome struct {
 	// This connection follows one of the same process (ClientHello.instance_id);
 	// for a session process, also within resume_grace, so that the session kept
 	// its participants.
-	Resumed       bool `protobuf:"varint,6,opt,name=resumed,proto3" json:"resumed,omitempty"`
+	Resumed bool `protobuf:"varint,6,opt,name=resumed,proto3" json:"resumed,omitempty"`
+	// The STUN servers (RFC 7064 stun: URLs) from which a session process learns
+	// its server-reflexive addresses ahead of its PeerConnections. A session
+	// process shares one UDP socket per address family among its PeerConnections,
+	// asks these servers for the socket's mapping when it starts and again at
+	// most every 20 seconds, which also keeps the mapping alive, and gives each
+	// PeerConnection the known address as its srflx candidate at once instead of
+	// asking the servers again. Session processes only; empty when
+	// PeerConnections relay only.
+	StunUrls      []string `protobuf:"bytes,7,rep,name=stun_urls,json=stunUrls,proto3" json:"stun_urls,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1366,6 +1375,13 @@ func (x *Welcome) GetResumed() bool {
 		return x.Resumed
 	}
 	return false
+}
+
+func (x *Welcome) GetStunUrls() []string {
+	if x != nil {
+		return x.StunUrls
+	}
+	return nil
 }
 
 // The keys the service signs with, all of them. Replaces the previous set.
@@ -2288,7 +2304,7 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"\x12session_public_key\x18\x03 \x01(\fR\x10sessionPublicKey\x127\n" +
 	"\tissued_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\bissuedAt\x129\n" +
 	"\n" +
-	"expires_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"\x8e\x02\n" +
+	"expires_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"\xab\x02\n" +
 	"\aWelcome\x12#\n" +
 	"\rconnection_id\x18\x01 \x01(\x04R\fconnectionId\x12\x1d\n" +
 	"\n" +
@@ -2297,7 +2313,8 @@ const file_leaflow_fleet_control_v1_control_proto_rawDesc = "" +
 	"session_id\x18\x03 \x01(\tR\tsessionId\x12H\n" +
 	"\fsigning_keys\x18\x04 \x01(\v2%.leaflow.fleet.control.v1.SigningKeysR\vsigningKeys\x12<\n" +
 	"\fresume_grace\x18\x05 \x01(\v2\x19.google.protobuf.DurationR\vresumeGrace\x12\x18\n" +
-	"\aresumed\x18\x06 \x01(\bR\aresumed\"F\n" +
+	"\aresumed\x18\x06 \x01(\bR\aresumed\x12\x1b\n" +
+	"\tstun_urls\x18\a \x03(\tR\bstunUrls\"F\n" +
 	"\vSigningKeys\x127\n" +
 	"\x04keys\x18\x01 \x03(\v2#.leaflow.fleet.control.v1.PublicKeyR\x04keys\"E\n" +
 	"\tPublicKey\x12\x15\n" +

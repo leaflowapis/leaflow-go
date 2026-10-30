@@ -1750,8 +1750,9 @@ func (s *Server) handleCreateMachineRegistrationRequest(args [0]string, argsEsca
 //
 // Admits one participant with the given public key to the session: signs its authorization, has the
 // session accept it, and starts its first PeerConnection with the offer. The answer carries the
-// participant, its authorization and the PeerConnection with the session's answer. The participant
-// lasts while it is renewed.
+// participant, its authorization and the PeerConnection with the session's answer and the ICE
+// candidates the session has passed so far; read its later candidates with `get-peer-connection`. The
+// participant lasts while it is renewed.
 //
 // Joining again with the public key of one of the caller's participants of the session that has not
 // ended, with the same `client_name`, `read_only` and `permissions`, returns that participant with a
@@ -1995,9 +1996,9 @@ func (s *Server) handleCreateParticipantRequest(args [1]string, argsEscaped bool
 // handleCreatePeerConnectionRequest handles create-peer-connection operation.
 //
 // Starts another PeerConnection of the participant with the offer, such as after a path failed, and
-// returns the session's answer, its ICE candidates and the signed PeerAuthorization. Move the
-// participant's connection to it with `prepare-participant-migration` and
-// `commit-participant-migration`.
+// returns the session's answer, the ICE candidates it has passed so far and the signed
+// PeerAuthorization; read its later candidates with `get-peer-connection`. Move the participant's
+// connection to it with `prepare-participant-migration` and `commit-participant-migration`.
 //
 // Only the participant's user may start one.
 //
@@ -6171,6 +6172,235 @@ func (s *Server) handleGetParticipantRequest(args [2]string, argsEscaped bool, w
 	}
 
 	if err := encodeGetParticipantResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleGetPeerConnectionRequest handles get-peer-connection operation.
+//
+// Returns the PeerConnection with the ICE candidates the session has passed so far. The session passes
+// its candidates as it gathers them (RFC 8838), so most arrive after the PeerConnection started: read
+// it until `candidates_complete`, and add the candidates that are new since the last read to the
+// PeerConnection. A client keeps those that arrive before it has set the answer as the remote
+// description, and adds them once it has.
+//
+// With `known_candidates`, the request waits until the session has passed more candidates than that or
+// reported the end of its candidates, for at most 20 seconds, and then returns the PeerConnection as
+// it is.
+//
+// A PeerConnection can be read for 5 minutes after it started. Only the participant's user may read
+// it.
+//
+// Fails with:
+//
+//   - `PARTICIPANT_NOT_FOUND` when the participant has ended;
+//   - `PEER_CONNECTION_NOT_FOUND` when the participant has no such PeerConnection, it was abandoned,
+//     the session gave it up, or it started more than 5 minutes ago.
+//
+// GET /api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}
+func (s *Server) handleGetPeerConnectionRequest(args [3]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-peer-connection"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/participants/{participantId}/peer-connections/{peerConnectionId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetPeerConnectionOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetPeerConnectionOperation,
+			ID:   "get-peer-connection",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, GetPeerConnectionOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetPeerConnectionParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *PeerConnection
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetPeerConnectionOperation,
+			OperationSummary: "Get a PeerConnection",
+			OperationID:      "get-peer-connection",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "sessionId",
+					In:   "path",
+				}: params.SessionId,
+				{
+					Name: "participantId",
+					In:   "path",
+				}: params.ParticipantId,
+				{
+					Name: "peerConnectionId",
+					In:   "path",
+				}: params.PeerConnectionId,
+				{
+					Name: "known_candidates",
+					In:   "query",
+				}: params.KnownCandidates,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetPeerConnectionParams
+			Response = *PeerConnection
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetPeerConnectionParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetPeerConnection(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetPeerConnection(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetPeerConnectionResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
