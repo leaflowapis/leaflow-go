@@ -32,6 +32,7 @@ type ClientMessage struct {
 	//	*ClientMessage_Attach
 	//	*ClientMessage_Input
 	//	*ClientMessage_Resize
+	//	*ClientMessage_Answer
 	Message       isClientMessage_Message `protobuf_oneof:"message"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -101,6 +102,15 @@ func (x *ClientMessage) GetResize() *TerminalSize {
 	return nil
 }
 
+func (x *ClientMessage) GetAnswer() *TerminalAnswer {
+	if x != nil {
+		if x, ok := x.Message.(*ClientMessage_Answer); ok {
+			return x.Answer
+		}
+	}
+	return nil
+}
+
 type isClientMessage_Message interface {
 	isClientMessage_Message()
 }
@@ -121,11 +131,19 @@ type ClientMessage_Resize struct {
 	Resize *TerminalSize `protobuf:"bytes,3,opt,name=resize,proto3,oneof"`
 }
 
+type ClientMessage_Answer struct {
+	// Answers of the participant's terminal to terminal queries, written to
+	// the terminal only when the participant is the answerer.
+	Answer *TerminalAnswer `protobuf:"bytes,4,opt,name=answer,proto3,oneof"`
+}
+
 func (*ClientMessage_Attach) isClientMessage_Message() {}
 
 func (*ClientMessage_Input) isClientMessage_Message() {}
 
 func (*ClientMessage_Resize) isClientMessage_Message() {}
+
+func (*ClientMessage_Answer) isClientMessage_Message() {}
 
 // A message from the session on the terminal channel.
 type ServerMessage struct {
@@ -272,9 +290,12 @@ func (*ServerMessage_Error) isServerMessage_Message() {}
 type TerminalAttach struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The output offset the participant has applied up to. 0: nothing yet.
-	Offset        uint64 `protobuf:"varint,1,opt,name=offset,proto3" json:"offset,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Offset uint64 `protobuf:"varint,1,opt,name=offset,proto3" json:"offset,omitempty"`
+	// The participant's terminal answers terminal queries in the output, and
+	// the participant sends those answers as TerminalAnswer.
+	AnswersQueries bool `protobuf:"varint,2,opt,name=answers_queries,json=answersQueries,proto3" json:"answers_queries,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *TerminalAttach) Reset() {
@@ -314,6 +335,13 @@ func (x *TerminalAttach) GetOffset() uint64 {
 	return 0
 }
 
+func (x *TerminalAttach) GetAnswersQueries() bool {
+	if x != nil {
+		return x.AnswersQueries
+	}
+	return false
+}
+
 // Where the output that follows starts.
 type TerminalAttached struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -325,7 +353,11 @@ type TerminalAttached struct {
 	// program redraw by changing the size and back (SIGWINCH).
 	Reset_ bool `protobuf:"varint,2,opt,name=reset,proto3" json:"reset,omitempty"`
 	// The size the terminal has now.
-	Size          *TerminalSize `protobuf:"bytes,3,opt,name=size,proto3" json:"size,omitempty"`
+	Size *TerminalSize `protobuf:"bytes,3,opt,name=size,proto3" json:"size,omitempty"`
+	// The end of the output when the participant attached: the output from
+	// offset up to here is replayed, what follows is new. Equal to offset when
+	// nothing is replayed.
+	ReplayEnd     uint64 `protobuf:"varint,4,opt,name=replay_end,json=replayEnd,proto3" json:"replay_end,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -381,6 +413,13 @@ func (x *TerminalAttached) GetSize() *TerminalSize {
 	return nil
 }
 
+func (x *TerminalAttached) GetReplayEnd() uint64 {
+	if x != nil {
+		return x.ReplayEnd
+	}
+	return 0
+}
+
 // Input for the terminal.
 type TerminalInput struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -427,6 +466,52 @@ func (x *TerminalInput) GetData() []byte {
 	return nil
 }
 
+// Answers of the participant's terminal to terminal queries in the output.
+type TerminalAnswer struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The bytes, at most 64 KiB.
+	Data          []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TerminalAnswer) Reset() {
+	*x = TerminalAnswer{}
+	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TerminalAnswer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TerminalAnswer) ProtoMessage() {}
+
+func (x *TerminalAnswer) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TerminalAnswer.ProtoReflect.Descriptor instead.
+func (*TerminalAnswer) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_terminal_v1_terminal_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *TerminalAnswer) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
 // Output of the terminal.
 type TerminalOutput struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -438,7 +523,7 @@ type TerminalOutput struct {
 
 func (x *TerminalOutput) Reset() {
 	*x = TerminalOutput{}
-	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[5]
+	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -450,7 +535,7 @@ func (x *TerminalOutput) String() string {
 func (*TerminalOutput) ProtoMessage() {}
 
 func (x *TerminalOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[5]
+	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -463,7 +548,7 @@ func (x *TerminalOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalOutput.ProtoReflect.Descriptor instead.
 func (*TerminalOutput) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_terminal_v1_terminal_proto_rawDescGZIP(), []int{5}
+	return file_leaflow_fleet_terminal_v1_terminal_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *TerminalOutput) GetData() []byte {
@@ -490,7 +575,7 @@ type TerminalSize struct {
 
 func (x *TerminalSize) Reset() {
 	*x = TerminalSize{}
-	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[6]
+	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -502,7 +587,7 @@ func (x *TerminalSize) String() string {
 func (*TerminalSize) ProtoMessage() {}
 
 func (x *TerminalSize) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[6]
+	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -515,7 +600,7 @@ func (x *TerminalSize) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalSize.ProtoReflect.Descriptor instead.
 func (*TerminalSize) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_terminal_v1_terminal_proto_rawDescGZIP(), []int{6}
+	return file_leaflow_fleet_terminal_v1_terminal_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *TerminalSize) GetColumns() uint32 {
@@ -565,7 +650,7 @@ type TerminalExit struct {
 
 func (x *TerminalExit) Reset() {
 	*x = TerminalExit{}
-	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[7]
+	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -577,7 +662,7 @@ func (x *TerminalExit) String() string {
 func (*TerminalExit) ProtoMessage() {}
 
 func (x *TerminalExit) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[7]
+	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -590,7 +675,7 @@ func (x *TerminalExit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalExit.ProtoReflect.Descriptor instead.
 func (*TerminalExit) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_terminal_v1_terminal_proto_rawDescGZIP(), []int{7}
+	return file_leaflow_fleet_terminal_v1_terminal_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *TerminalExit) GetStatus() isTerminalExit_Status {
@@ -654,7 +739,7 @@ type TerminalPolicy struct {
 
 func (x *TerminalPolicy) Reset() {
 	*x = TerminalPolicy{}
-	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[8]
+	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -666,7 +751,7 @@ func (x *TerminalPolicy) String() string {
 func (*TerminalPolicy) ProtoMessage() {}
 
 func (x *TerminalPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[8]
+	mi := &file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -679,18 +764,19 @@ func (x *TerminalPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalPolicy.ProtoReflect.Descriptor instead.
 func (*TerminalPolicy) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_terminal_v1_terminal_proto_rawDescGZIP(), []int{8}
+	return file_leaflow_fleet_terminal_v1_terminal_proto_rawDescGZIP(), []int{9}
 }
 
 var File_leaflow_fleet_terminal_v1_terminal_proto protoreflect.FileDescriptor
 
 const file_leaflow_fleet_terminal_v1_terminal_proto_rawDesc = "" +
 	"\n" +
-	"(leaflow/fleet/terminal/v1/terminal.proto\x12\x19leaflow.fleet.terminal.v1\x1a\x17google/rpc/status.proto\"\xe4\x01\n" +
+	"(leaflow/fleet/terminal/v1/terminal.proto\x12\x19leaflow.fleet.terminal.v1\x1a\x17google/rpc/status.proto\"\xa9\x02\n" +
 	"\rClientMessage\x12C\n" +
 	"\x06attach\x18\x01 \x01(\v2).leaflow.fleet.terminal.v1.TerminalAttachH\x00R\x06attach\x12@\n" +
 	"\x05input\x18\x02 \x01(\v2(.leaflow.fleet.terminal.v1.TerminalInputH\x00R\x05input\x12A\n" +
-	"\x06resize\x18\x03 \x01(\v2'.leaflow.fleet.terminal.v1.TerminalSizeH\x00R\x06resizeB\t\n" +
+	"\x06resize\x18\x03 \x01(\v2'.leaflow.fleet.terminal.v1.TerminalSizeH\x00R\x06resize\x12C\n" +
+	"\x06answer\x18\x04 \x01(\v2).leaflow.fleet.terminal.v1.TerminalAnswerH\x00R\x06answerB\t\n" +
 	"\amessage\"\xd8\x02\n" +
 	"\rServerMessage\x12I\n" +
 	"\battached\x18\x01 \x01(\v2+.leaflow.fleet.terminal.v1.TerminalAttachedH\x00R\battached\x12C\n" +
@@ -698,14 +784,19 @@ const file_leaflow_fleet_terminal_v1_terminal_proto_rawDesc = "" +
 	"\x06resize\x18\x03 \x01(\v2'.leaflow.fleet.terminal.v1.TerminalSizeH\x00R\x06resize\x12=\n" +
 	"\x04exit\x18\x04 \x01(\v2'.leaflow.fleet.terminal.v1.TerminalExitH\x00R\x04exit\x12*\n" +
 	"\x05error\x18\x05 \x01(\v2\x12.google.rpc.StatusH\x00R\x05errorB\t\n" +
-	"\amessage\"(\n" +
+	"\amessage\"Q\n" +
 	"\x0eTerminalAttach\x12\x16\n" +
-	"\x06offset\x18\x01 \x01(\x04R\x06offset\"}\n" +
+	"\x06offset\x18\x01 \x01(\x04R\x06offset\x12'\n" +
+	"\x0fanswers_queries\x18\x02 \x01(\bR\x0eanswersQueries\"\x9c\x01\n" +
 	"\x10TerminalAttached\x12\x16\n" +
 	"\x06offset\x18\x01 \x01(\x04R\x06offset\x12\x14\n" +
 	"\x05reset\x18\x02 \x01(\bR\x05reset\x12;\n" +
-	"\x04size\x18\x03 \x01(\v2'.leaflow.fleet.terminal.v1.TerminalSizeR\x04size\"#\n" +
+	"\x04size\x18\x03 \x01(\v2'.leaflow.fleet.terminal.v1.TerminalSizeR\x04size\x12\x1d\n" +
+	"\n" +
+	"replay_end\x18\x04 \x01(\x04R\treplayEnd\"#\n" +
 	"\rTerminalInput\x12\x12\n" +
+	"\x04data\x18\x01 \x01(\fR\x04data\"$\n" +
+	"\x0eTerminalAnswer\x12\x12\n" +
 	"\x04data\x18\x01 \x01(\fR\x04data\"$\n" +
 	"\x0eTerminalOutput\x12\x12\n" +
 	"\x04data\x18\x01 \x01(\fR\x04data\"t\n" +
@@ -735,34 +826,36 @@ func file_leaflow_fleet_terminal_v1_terminal_proto_rawDescGZIP() []byte {
 	return file_leaflow_fleet_terminal_v1_terminal_proto_rawDescData
 }
 
-var file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_leaflow_fleet_terminal_v1_terminal_proto_goTypes = []any{
 	(*ClientMessage)(nil),    // 0: leaflow.fleet.terminal.v1.ClientMessage
 	(*ServerMessage)(nil),    // 1: leaflow.fleet.terminal.v1.ServerMessage
 	(*TerminalAttach)(nil),   // 2: leaflow.fleet.terminal.v1.TerminalAttach
 	(*TerminalAttached)(nil), // 3: leaflow.fleet.terminal.v1.TerminalAttached
 	(*TerminalInput)(nil),    // 4: leaflow.fleet.terminal.v1.TerminalInput
-	(*TerminalOutput)(nil),   // 5: leaflow.fleet.terminal.v1.TerminalOutput
-	(*TerminalSize)(nil),     // 6: leaflow.fleet.terminal.v1.TerminalSize
-	(*TerminalExit)(nil),     // 7: leaflow.fleet.terminal.v1.TerminalExit
-	(*TerminalPolicy)(nil),   // 8: leaflow.fleet.terminal.v1.TerminalPolicy
-	(*status.Status)(nil),    // 9: google.rpc.Status
+	(*TerminalAnswer)(nil),   // 5: leaflow.fleet.terminal.v1.TerminalAnswer
+	(*TerminalOutput)(nil),   // 6: leaflow.fleet.terminal.v1.TerminalOutput
+	(*TerminalSize)(nil),     // 7: leaflow.fleet.terminal.v1.TerminalSize
+	(*TerminalExit)(nil),     // 8: leaflow.fleet.terminal.v1.TerminalExit
+	(*TerminalPolicy)(nil),   // 9: leaflow.fleet.terminal.v1.TerminalPolicy
+	(*status.Status)(nil),    // 10: google.rpc.Status
 }
 var file_leaflow_fleet_terminal_v1_terminal_proto_depIdxs = []int32{
-	2, // 0: leaflow.fleet.terminal.v1.ClientMessage.attach:type_name -> leaflow.fleet.terminal.v1.TerminalAttach
-	4, // 1: leaflow.fleet.terminal.v1.ClientMessage.input:type_name -> leaflow.fleet.terminal.v1.TerminalInput
-	6, // 2: leaflow.fleet.terminal.v1.ClientMessage.resize:type_name -> leaflow.fleet.terminal.v1.TerminalSize
-	3, // 3: leaflow.fleet.terminal.v1.ServerMessage.attached:type_name -> leaflow.fleet.terminal.v1.TerminalAttached
-	5, // 4: leaflow.fleet.terminal.v1.ServerMessage.output:type_name -> leaflow.fleet.terminal.v1.TerminalOutput
-	6, // 5: leaflow.fleet.terminal.v1.ServerMessage.resize:type_name -> leaflow.fleet.terminal.v1.TerminalSize
-	7, // 6: leaflow.fleet.terminal.v1.ServerMessage.exit:type_name -> leaflow.fleet.terminal.v1.TerminalExit
-	9, // 7: leaflow.fleet.terminal.v1.ServerMessage.error:type_name -> google.rpc.Status
-	6, // 8: leaflow.fleet.terminal.v1.TerminalAttached.size:type_name -> leaflow.fleet.terminal.v1.TerminalSize
-	9, // [9:9] is the sub-list for method output_type
-	9, // [9:9] is the sub-list for method input_type
-	9, // [9:9] is the sub-list for extension type_name
-	9, // [9:9] is the sub-list for extension extendee
-	0, // [0:9] is the sub-list for field type_name
+	2,  // 0: leaflow.fleet.terminal.v1.ClientMessage.attach:type_name -> leaflow.fleet.terminal.v1.TerminalAttach
+	4,  // 1: leaflow.fleet.terminal.v1.ClientMessage.input:type_name -> leaflow.fleet.terminal.v1.TerminalInput
+	7,  // 2: leaflow.fleet.terminal.v1.ClientMessage.resize:type_name -> leaflow.fleet.terminal.v1.TerminalSize
+	5,  // 3: leaflow.fleet.terminal.v1.ClientMessage.answer:type_name -> leaflow.fleet.terminal.v1.TerminalAnswer
+	3,  // 4: leaflow.fleet.terminal.v1.ServerMessage.attached:type_name -> leaflow.fleet.terminal.v1.TerminalAttached
+	6,  // 5: leaflow.fleet.terminal.v1.ServerMessage.output:type_name -> leaflow.fleet.terminal.v1.TerminalOutput
+	7,  // 6: leaflow.fleet.terminal.v1.ServerMessage.resize:type_name -> leaflow.fleet.terminal.v1.TerminalSize
+	8,  // 7: leaflow.fleet.terminal.v1.ServerMessage.exit:type_name -> leaflow.fleet.terminal.v1.TerminalExit
+	10, // 8: leaflow.fleet.terminal.v1.ServerMessage.error:type_name -> google.rpc.Status
+	7,  // 9: leaflow.fleet.terminal.v1.TerminalAttached.size:type_name -> leaflow.fleet.terminal.v1.TerminalSize
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_leaflow_fleet_terminal_v1_terminal_proto_init() }
@@ -774,6 +867,7 @@ func file_leaflow_fleet_terminal_v1_terminal_proto_init() {
 		(*ClientMessage_Attach)(nil),
 		(*ClientMessage_Input)(nil),
 		(*ClientMessage_Resize)(nil),
+		(*ClientMessage_Answer)(nil),
 	}
 	file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[1].OneofWrappers = []any{
 		(*ServerMessage_Attached)(nil),
@@ -782,7 +876,7 @@ func file_leaflow_fleet_terminal_v1_terminal_proto_init() {
 		(*ServerMessage_Exit)(nil),
 		(*ServerMessage_Error)(nil),
 	}
-	file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[7].OneofWrappers = []any{
+	file_leaflow_fleet_terminal_v1_terminal_proto_msgTypes[8].OneofWrappers = []any{
 		(*TerminalExit_ExitCode)(nil),
 		(*TerminalExit_SignalName)(nil),
 	}
@@ -792,7 +886,7 @@ func file_leaflow_fleet_terminal_v1_terminal_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_leaflow_fleet_terminal_v1_terminal_proto_rawDesc), len(file_leaflow_fleet_terminal_v1_terminal_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

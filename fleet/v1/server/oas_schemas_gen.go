@@ -4359,8 +4359,11 @@ type PeerConnection struct {
 	ID uuid.UUID `json:"id"`
 	// The session's SDP answer (RFC 8866); it holds ICE credentials, so never log it.
 	Answer string `json:"answer"`
-	// The session's ICE candidates gathered until it reported the end of its candidates, or until 10
-	// seconds after its answer.
+	// The session's ICE candidates that arrived until it reported the end of its candidates, or 500
+	// milliseconds after one candidate of each type its ICE servers yield had arrived (server reflexive
+	// when the RTC configuration has STUN servers and the policy is not `relay`, relayed when it has TURN
+	// servers), and at most until 10 seconds after its answer. Candidates the session gathers later are
+	// not passed on.
 	Candidates []IceCandidate `json:"candidates"`
 	// The signed `PeerAuthorization` of the PeerConnection, the same one the session holds.
 	Authorization SignedMessage `json:"authorization"`
