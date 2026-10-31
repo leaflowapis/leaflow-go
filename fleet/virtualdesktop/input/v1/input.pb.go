@@ -24,6 +24,186 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// What an editor is for (IBus InputPurpose, GTK GtkInputPurpose).
+type InputPurpose int32
+
+const (
+	InputPurpose_INPUT_PURPOSE_UNSPECIFIED InputPurpose = 0
+	// Any text.
+	InputPurpose_INPUT_PURPOSE_FREE_FORM InputPurpose = 1
+	// Letters only.
+	InputPurpose_INPUT_PURPOSE_ALPHA InputPurpose = 2
+	// Digits only.
+	InputPurpose_INPUT_PURPOSE_DIGITS InputPurpose = 3
+	// A number.
+	InputPurpose_INPUT_PURPOSE_NUMBER InputPurpose = 4
+	// A phone number.
+	InputPurpose_INPUT_PURPOSE_PHONE InputPurpose = 5
+	// A URL.
+	InputPurpose_INPUT_PURPOSE_URL InputPurpose = 6
+	// An email address.
+	InputPurpose_INPUT_PURPOSE_EMAIL InputPurpose = 7
+	// The name of a person.
+	InputPurpose_INPUT_PURPOSE_NAME InputPurpose = 8
+	// A password: any text, hidden.
+	InputPurpose_INPUT_PURPOSE_PASSWORD InputPurpose = 9
+	// A PIN: digits, hidden.
+	InputPurpose_INPUT_PURPOSE_PIN InputPurpose = 10
+	// A terminal: any text and control keys.
+	InputPurpose_INPUT_PURPOSE_TERMINAL InputPurpose = 11
+)
+
+// Enum value maps for InputPurpose.
+var (
+	InputPurpose_name = map[int32]string{
+		0:  "INPUT_PURPOSE_UNSPECIFIED",
+		1:  "INPUT_PURPOSE_FREE_FORM",
+		2:  "INPUT_PURPOSE_ALPHA",
+		3:  "INPUT_PURPOSE_DIGITS",
+		4:  "INPUT_PURPOSE_NUMBER",
+		5:  "INPUT_PURPOSE_PHONE",
+		6:  "INPUT_PURPOSE_URL",
+		7:  "INPUT_PURPOSE_EMAIL",
+		8:  "INPUT_PURPOSE_NAME",
+		9:  "INPUT_PURPOSE_PASSWORD",
+		10: "INPUT_PURPOSE_PIN",
+		11: "INPUT_PURPOSE_TERMINAL",
+	}
+	InputPurpose_value = map[string]int32{
+		"INPUT_PURPOSE_UNSPECIFIED": 0,
+		"INPUT_PURPOSE_FREE_FORM":   1,
+		"INPUT_PURPOSE_ALPHA":       2,
+		"INPUT_PURPOSE_DIGITS":      3,
+		"INPUT_PURPOSE_NUMBER":      4,
+		"INPUT_PURPOSE_PHONE":       5,
+		"INPUT_PURPOSE_URL":         6,
+		"INPUT_PURPOSE_EMAIL":       7,
+		"INPUT_PURPOSE_NAME":        8,
+		"INPUT_PURPOSE_PASSWORD":    9,
+		"INPUT_PURPOSE_PIN":         10,
+		"INPUT_PURPOSE_TERMINAL":    11,
+	}
+)
+
+func (x InputPurpose) Enum() *InputPurpose {
+	p := new(InputPurpose)
+	*p = x
+	return p
+}
+
+func (x InputPurpose) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (InputPurpose) Descriptor() protoreflect.EnumDescriptor {
+	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes[0].Descriptor()
+}
+
+func (InputPurpose) Type() protoreflect.EnumType {
+	return &file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes[0]
+}
+
+func (x InputPurpose) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use InputPurpose.Descriptor instead.
+func (InputPurpose) EnumDescriptor() ([]byte, []int) {
+	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_rawDescGZIP(), []int{0}
+}
+
+// How an editor wants its text (IBus InputHints, GTK GtkInputHints).
+type InputHint int32
+
+const (
+	InputHint_INPUT_HINT_UNSPECIFIED InputHint = 0
+	// Check for typos.
+	InputHint_INPUT_HINT_SPELLCHECK InputHint = 1
+	// Do not check for typos.
+	InputHint_INPUT_HINT_NO_SPELLCHECK InputHint = 2
+	// Offer word completion.
+	InputHint_INPUT_HINT_WORD_COMPLETION InputHint = 3
+	// Lowercase text.
+	InputHint_INPUT_HINT_LOWERCASE InputHint = 4
+	// Uppercase every character.
+	InputHint_INPUT_HINT_UPPERCASE_CHARS InputHint = 5
+	// Capitalize every word.
+	InputHint_INPUT_HINT_UPPERCASE_WORDS InputHint = 6
+	// Capitalize every sentence.
+	InputHint_INPUT_HINT_UPPERCASE_SENTENCES InputHint = 7
+	// Show no on-screen keyboard.
+	InputHint_INPUT_HINT_INHIBIT_OSK InputHint = 8
+	// The text runs vertically.
+	InputHint_INPUT_HINT_VERTICAL_WRITING InputHint = 9
+	// Offer emoji.
+	InputHint_INPUT_HINT_EMOJI InputHint = 10
+	// Offer no emoji.
+	InputHint_INPUT_HINT_NO_EMOJI InputHint = 11
+	// Keep no typing history of it.
+	InputHint_INPUT_HINT_PRIVATE InputHint = 12
+)
+
+// Enum value maps for InputHint.
+var (
+	InputHint_name = map[int32]string{
+		0:  "INPUT_HINT_UNSPECIFIED",
+		1:  "INPUT_HINT_SPELLCHECK",
+		2:  "INPUT_HINT_NO_SPELLCHECK",
+		3:  "INPUT_HINT_WORD_COMPLETION",
+		4:  "INPUT_HINT_LOWERCASE",
+		5:  "INPUT_HINT_UPPERCASE_CHARS",
+		6:  "INPUT_HINT_UPPERCASE_WORDS",
+		7:  "INPUT_HINT_UPPERCASE_SENTENCES",
+		8:  "INPUT_HINT_INHIBIT_OSK",
+		9:  "INPUT_HINT_VERTICAL_WRITING",
+		10: "INPUT_HINT_EMOJI",
+		11: "INPUT_HINT_NO_EMOJI",
+		12: "INPUT_HINT_PRIVATE",
+	}
+	InputHint_value = map[string]int32{
+		"INPUT_HINT_UNSPECIFIED":         0,
+		"INPUT_HINT_SPELLCHECK":          1,
+		"INPUT_HINT_NO_SPELLCHECK":       2,
+		"INPUT_HINT_WORD_COMPLETION":     3,
+		"INPUT_HINT_LOWERCASE":           4,
+		"INPUT_HINT_UPPERCASE_CHARS":     5,
+		"INPUT_HINT_UPPERCASE_WORDS":     6,
+		"INPUT_HINT_UPPERCASE_SENTENCES": 7,
+		"INPUT_HINT_INHIBIT_OSK":         8,
+		"INPUT_HINT_VERTICAL_WRITING":    9,
+		"INPUT_HINT_EMOJI":               10,
+		"INPUT_HINT_NO_EMOJI":            11,
+		"INPUT_HINT_PRIVATE":             12,
+	}
+)
+
+func (x InputHint) Enum() *InputHint {
+	p := new(InputHint)
+	*p = x
+	return p
+}
+
+func (x InputHint) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (InputHint) Descriptor() protoreflect.EnumDescriptor {
+	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes[1].Descriptor()
+}
+
+func (InputHint) Type() protoreflect.EnumType {
+	return &file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes[1]
+}
+
+func (x InputHint) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use InputHint.Descriptor instead.
+func (InputHint) EnumDescriptor() ([]byte, []int) {
+	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_rawDescGZIP(), []int{1}
+}
+
 // Where a caret rectangle came from.
 type CursorSource int32
 
@@ -66,11 +246,11 @@ func (x CursorSource) String() string {
 }
 
 func (CursorSource) Descriptor() protoreflect.EnumDescriptor {
-	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes[0].Descriptor()
+	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes[2].Descriptor()
 }
 
 func (CursorSource) Type() protoreflect.EnumType {
-	return &file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes[0]
+	return &file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes[2]
 }
 
 func (x CursorSource) Number() protoreflect.EnumNumber {
@@ -79,7 +259,7 @@ func (x CursorSource) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use CursorSource.Descriptor instead.
 func (CursorSource) EnumDescriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_rawDescGZIP(), []int{0}
+	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_rawDescGZIP(), []int{2}
 }
 
 // What an insertion is (W3C Input Events inputType).
@@ -87,12 +267,13 @@ type InputType int32
 
 const (
 	InputType_INPUT_TYPE_UNSPECIFIED InputType = 0
-	// Ordinary text ("insertText"), such as from a virtual keyboard. It goes to
-	// the editor focused once the input before it has been applied.
+	// Ordinary text ("insertText"), such as from a virtual keyboard. It goes
+	// where the keys go once the input before it has been applied.
 	InputType_INPUT_TYPE_INSERT_TEXT InputType = 1
-	// The result of a composition ("insertFromComposition"). It goes only to
-	// the editor the composition began in, and is cancelled when that editor
-	// lost focus since.
+	// The result of a composition ("insertFromComposition"). With an
+	// input_context_id it goes only to the editor the composition began in, and
+	// is cancelled when that editor lost focus since; without one, as
+	// INSERT_TEXT.
 	InputType_INPUT_TYPE_INSERT_FROM_COMPOSITION InputType = 2
 )
 
@@ -121,11 +302,11 @@ func (x InputType) String() string {
 }
 
 func (InputType) Descriptor() protoreflect.EnumDescriptor {
-	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes[1].Descriptor()
+	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes[3].Descriptor()
 }
 
 func (InputType) Type() protoreflect.EnumType {
-	return &file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes[1]
+	return &file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes[3]
 }
 
 func (x InputType) Number() protoreflect.EnumNumber {
@@ -134,25 +315,32 @@ func (x InputType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use InputType.Descriptor instead.
 func (InputType) EnumDescriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_rawDescGZIP(), []int{1}
+	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_rawDescGZIP(), []int{3}
 }
 
-// A step of a composition.
+// A step of a composition. A composition ends with its COMMIT or CANCEL, or
+// when its editor loses the focus (a TextInputState with another
+// focus_serial); a step that did not reach the editor never ends it.
 type CompositionPhase int32
 
 const (
 	CompositionPhase_COMPOSITION_PHASE_UNSPECIFIED CompositionPhase = 0
-	// A composition begins ("compositionstart").
+	// A composition begins ("compositionstart"), in the editor the
+	// TextInputState names. It shows nothing yet.
 	CompositionPhase_COMPOSITION_PHASE_BEGIN CompositionPhase = 1
-	// The preedit text changed ("compositionupdate").
+	// The preedit text changed ("compositionupdate"). The session shows the
+	// latest UPDATE and may skip earlier ones the editor has not caught up
+	// with.
 	CompositionPhase_COMPOSITION_PHASE_UPDATE CompositionPhase = 2
 	// A real key the input method consumed while composing. The session hands
-	// it to the editor's native input context and waits until that context
-	// consumed it.
+	// it to the editor's native input context, which consumes it, so that the
+	// application sees the key but never as text. Its press or release never
+	// ends the composition.
 	CompositionPhase_COMPOSITION_PHASE_KEY CompositionPhase = 3
-	// The composition ended with text ("compositionend").
+	// The composition ended with text ("compositionend"): the text is inserted
+	// and the preedit goes.
 	CompositionPhase_COMPOSITION_PHASE_COMMIT CompositionPhase = 4
-	// The composition was abandoned.
+	// The composition was abandoned: the preedit goes.
 	CompositionPhase_COMPOSITION_PHASE_CANCEL CompositionPhase = 5
 )
 
@@ -187,11 +375,11 @@ func (x CompositionPhase) String() string {
 }
 
 func (CompositionPhase) Descriptor() protoreflect.EnumDescriptor {
-	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes[2].Descriptor()
+	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes[4].Descriptor()
 }
 
 func (CompositionPhase) Type() protoreflect.EnumType {
-	return &file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes[2]
+	return &file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes[4]
 }
 
 func (x CompositionPhase) Number() protoreflect.EnumNumber {
@@ -200,7 +388,7 @@ func (x CompositionPhase) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use CompositionPhase.Descriptor instead.
 func (CompositionPhase) EnumDescriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_rawDescGZIP(), []int{2}
+	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_rawDescGZIP(), []int{4}
 }
 
 // A message from the participant on the input channel.
@@ -926,11 +1114,14 @@ func (x *PointerWheel) GetDeltaY() int32 {
 // caret or the editor changes.
 type TextInputState struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The window of the focused editor. 0 when no window has focus.
+	// The window that has the keyboard focus. 0 when no window has it.
 	WindowId uint64 `protobuf:"varint,1,opt,name=window_id,json=windowId,proto3" json:"window_id,omitempty"`
-	// An editable control or a terminal has focus and accepts text, whether
-	// or not its caret is known. The participant keeps a local text field focused
-	// while it is set, so that its own input method can start.
+	// The window takes typed text: an editor, a terminal, or any window that
+	// reads keys, whether or not the session knows its editor or caret. Unset
+	// while no window has the keyboard focus or an application grabbed the
+	// keyboard, as an open menu does. The participant keeps its own input
+	// method on while it is set, with a local text field focused where it needs
+	// one.
 	Enabled bool `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	// The caret, relative to the window, for placing the input method's
 	// candidate window. Unset when the application does not report it
@@ -943,7 +1134,8 @@ type TextInputState struct {
 	CursorSource CursorSource `protobuf:"varint,5,opt,name=cursor_source,json=cursorSource,proto3,enum=leaflow.fleet.virtualdesktop.input.v1.CursorSource" json:"cursor_source,omitempty"`
 	// Identifies the focused editor within the session, opaque. Different
 	// editors of one window differ; moving the caret or resizing does not change
-	// it. Empty when nothing editable has focus or it cannot be verified.
+	// it. Empty when the session cannot tell which editor has the focus; text
+	// then goes where the keys go, as typed keys where nothing else takes it.
 	InputContextId string `protobuf:"bytes,6,opt,name=input_context_id,json=inputContextId,proto3" json:"input_context_id,omitempty"`
 	// Grows whenever editing focus moves, is lost or comes back; not when the
 	// caret moves. Compositions and composed text are bound to it.
@@ -953,12 +1145,23 @@ type TextInputState struct {
 	// anchor its candidate window there when cursor_rectangle is unset; it never
 	// treats it as the caret.
 	ControlRectangle *v1.Rectangle `protobuf:"bytes,8,opt,name=control_rectangle,json=controlRectangle,proto3" json:"control_rectangle,omitempty"`
-	// The editor's native input context takes Composition messages: preedit
-	// text and the real keys consumed while composing. Otherwise the participant
-	// sends only InsertText.
+	// The editor shows preedit text itself: its native input context takes
+	// Composition messages, the preedit and the real keys consumed while
+	// composing, and the participant does not draw its input method's preedit.
+	// Otherwise the participant draws the preedit itself, at cursor_rectangle,
+	// else control_rectangle, else where the person last pressed in the window,
+	// and sends only InsertText.
 	CompositionSupported bool `protobuf:"varint,9,opt,name=composition_supported,json=compositionSupported,proto3" json:"composition_supported,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// What the editor is for, as its application declared it to its input
+	// method (IBus ContentType, GTK input-purpose). A participant switches its
+	// input method off for PASSWORD and PIN, as a native one does. UNSPECIFIED
+	// when it declared nothing.
+	Purpose InputPurpose `protobuf:"varint,10,opt,name=purpose,proto3,enum=leaflow.fleet.virtualdesktop.input.v1.InputPurpose" json:"purpose,omitempty"`
+	// How the editor wants its text, as its application declared it (IBus
+	// ContentType, GTK input-hints).
+	Hints         []InputHint `protobuf:"varint,11,rep,packed,name=hints,proto3,enum=leaflow.fleet.virtualdesktop.input.v1.InputHint" json:"hints,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TextInputState) Reset() {
@@ -1054,6 +1257,20 @@ func (x *TextInputState) GetCompositionSupported() bool {
 	return false
 }
 
+func (x *TextInputState) GetPurpose() InputPurpose {
+	if x != nil {
+		return x.Purpose
+	}
+	return InputPurpose_INPUT_PURPOSE_UNSPECIFIED
+}
+
+func (x *TextInputState) GetHints() []InputHint {
+	if x != nil {
+		return x.Hints
+	}
+	return nil
+}
+
 // Text to insert (W3C Input Events inputType).
 type InsertText struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1061,13 +1278,13 @@ type InsertText struct {
 	InputSeq uint64 `protobuf:"varint,1,opt,name=input_seq,json=inputSeq,proto3" json:"input_seq,omitempty"`
 	// The text, UTF-8. Not empty.
 	Text string `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
-	// The window of the editor, from TextInputState. A window that is gone or
-	// no longer focused cancels the insertion; it is never activated for it.
+	// The window, from TextInputState. A window that is gone or no longer
+	// focused cancels the insertion; it is never activated for it.
 	WindowId uint64 `protobuf:"varint,3,opt,name=window_id,json=windowId,proto3" json:"window_id,omitempty"`
-	// TextInputState.input_context_id of the editor.
+	// TextInputState.input_context_id of the editor. Empty when it named none.
 	InputContextId string `protobuf:"bytes,4,opt,name=input_context_id,json=inputContextId,proto3" json:"input_context_id,omitempty"`
 	// TextInputState.focus_serial when the composition began. Checked for
-	// INSERT_FROM_COMPOSITION only.
+	// INSERT_FROM_COMPOSITION with an input_context_id only.
 	FocusSerial uint64 `protobuf:"varint,5,opt,name=focus_serial,json=focusSerial,proto3" json:"focus_serial,omitempty"`
 	// What the insertion is.
 	InputType     InputType `protobuf:"varint,6,opt,name=input_type,json=inputType,proto3,enum=leaflow.fleet.virtualdesktop.input.v1.InputType" json:"input_type,omitempty"`
@@ -1163,12 +1380,13 @@ type Composition struct {
 	// Window.resize_counter when the composition began.
 	ResizeCounter uint64 `protobuf:"varint,5,opt,name=resize_counter,json=resizeCounter,proto3" json:"resize_counter,omitempty"`
 	// Chosen by the participant at BEGIN, unique on the connection; the later
-	// phases repeat it.
+	// phases repeat it. A KEY release may name any composition, or none.
 	CompositionId uint64 `protobuf:"varint,6,opt,name=composition_id,json=compositionId,proto3" json:"composition_id,omitempty"`
 	// The step.
 	Phase CompositionPhase `protobuf:"varint,7,opt,name=phase,proto3,enum=leaflow.fleet.virtualdesktop.input.v1.CompositionPhase" json:"phase,omitempty"`
-	// UPDATE and COMMIT: the preedit or committed text, UTF-8, at most 64 KiB.
-	// May be empty to end an empty composition. Empty for the other phases.
+	// UPDATE: the whole preedit text now. COMMIT: the whole result. UTF-8, at
+	// most 64 KiB. May be empty: an empty UPDATE hides the preedit, an empty
+	// COMMIT ends the composition without text. Empty for the other phases.
 	Text string `protobuf:"bytes,8,opt,name=text,proto3" json:"text,omitempty"`
 	// UPDATE and COMMIT: the start of the preedit selection, in UTF-16 code
 	// units as EditContext counts them, on a code point boundary. 0 for the
@@ -1289,7 +1507,11 @@ func (x *Composition) GetKey() *CompositionKey {
 	return nil
 }
 
-// A real key consumed while composing. Never made up from text.
+// A real key consumed while composing. Never made up from text. The session
+// knows a key by the participant and its code, as a keyboard does: a release
+// lets go the key of that code the participant holds, whatever composition it
+// names, and a press of a key already held changes nothing. The key that ends
+// a composition is released after it; its release is still sent.
 type CompositionKey struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// A press or a release.
@@ -1429,8 +1651,9 @@ func (x *InputError) GetError() *status.Status {
 //	TEXT_INPUT_NOT_DELIVERED      the text could not be handed over;
 //	TEXT_INPUT_UNCONFIRMED        the application did not confirm the text
 //	                              (see paused);
-//	NATIVE_COMPOSITION_CANCELLED  the native input context ended the
-//	                              composition.
+//	NATIVE_COMPOSITION_CANCELLED  the composition ended without its COMMIT,
+//	                              as when another participant typed into
+//	                              its editor.
 type TextInputError struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// input_seq of the dropped input.
@@ -2703,7 +2926,7 @@ const file_leaflow_fleet_virtualdesktop_input_v1_input_proto_rawDesc = "" +
 	"\x01x\x18\x03 \x01(\x11R\x01x\x12\f\n" +
 	"\x01y\x18\x04 \x01(\x11R\x01y\x12\x17\n" +
 	"\adelta_x\x18\x05 \x01(\x11R\x06deltaX\x12\x17\n" +
-	"\adelta_y\x18\x06 \x01(\x11R\x06deltaY\"\x8a\x04\n" +
+	"\adelta_y\x18\x06 \x01(\x11R\x06deltaY\"\xa1\x05\n" +
 	"\x0eTextInputState\x12\x1b\n" +
 	"\twindow_id\x18\x01 \x01(\x04R\bwindowId\x12\x18\n" +
 	"\aenabled\x18\x02 \x01(\bR\aenabled\x12]\n" +
@@ -2713,7 +2936,10 @@ const file_leaflow_fleet_virtualdesktop_input_v1_input_proto_rawDesc = "" +
 	"\x10input_context_id\x18\x06 \x01(\tR\x0einputContextId\x12!\n" +
 	"\ffocus_serial\x18\a \x01(\x04R\vfocusSerial\x12_\n" +
 	"\x11control_rectangle\x18\b \x01(\v22.leaflow.fleet.virtualdesktop.display.v1.RectangleR\x10controlRectangle\x123\n" +
-	"\x15composition_supported\x18\t \x01(\bR\x14compositionSupported\"\xf8\x01\n" +
+	"\x15composition_supported\x18\t \x01(\bR\x14compositionSupported\x12M\n" +
+	"\apurpose\x18\n" +
+	" \x01(\x0e23.leaflow.fleet.virtualdesktop.input.v1.InputPurposeR\apurpose\x12F\n" +
+	"\x05hints\x18\v \x03(\x0e20.leaflow.fleet.virtualdesktop.input.v1.InputHintR\x05hints\"\xf8\x01\n" +
 	"\n" +
 	"InsertText\x12\x1b\n" +
 	"\tinput_seq\x18\x01 \x01(\x04R\binputSeq\x12\x12\n" +
@@ -2816,7 +3042,36 @@ const file_leaflow_fleet_virtualdesktop_input_v1_input_proto_rawDesc = "" +
 	"\x1aGetPointerPositionResponse\x12\f\n" +
 	"\x01x\x18\x01 \x01(\x11R\x01x\x12\f\n" +
 	"\x01y\x18\x02 \x01(\x11R\x01y\x12\x1b\n" +
-	"\twindow_id\x18\x03 \x01(\x04R\bwindowId*\x92\x01\n" +
+	"\twindow_id\x18\x03 \x01(\x04R\bwindowId*\xc7\x02\n" +
+	"\fInputPurpose\x12\x1d\n" +
+	"\x19INPUT_PURPOSE_UNSPECIFIED\x10\x00\x12\x1b\n" +
+	"\x17INPUT_PURPOSE_FREE_FORM\x10\x01\x12\x17\n" +
+	"\x13INPUT_PURPOSE_ALPHA\x10\x02\x12\x18\n" +
+	"\x14INPUT_PURPOSE_DIGITS\x10\x03\x12\x18\n" +
+	"\x14INPUT_PURPOSE_NUMBER\x10\x04\x12\x17\n" +
+	"\x13INPUT_PURPOSE_PHONE\x10\x05\x12\x15\n" +
+	"\x11INPUT_PURPOSE_URL\x10\x06\x12\x17\n" +
+	"\x13INPUT_PURPOSE_EMAIL\x10\a\x12\x16\n" +
+	"\x12INPUT_PURPOSE_NAME\x10\b\x12\x1a\n" +
+	"\x16INPUT_PURPOSE_PASSWORD\x10\t\x12\x15\n" +
+	"\x11INPUT_PURPOSE_PIN\x10\n" +
+	"\x12\x1a\n" +
+	"\x16INPUT_PURPOSE_TERMINAL\x10\v*\x82\x03\n" +
+	"\tInputHint\x12\x1a\n" +
+	"\x16INPUT_HINT_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15INPUT_HINT_SPELLCHECK\x10\x01\x12\x1c\n" +
+	"\x18INPUT_HINT_NO_SPELLCHECK\x10\x02\x12\x1e\n" +
+	"\x1aINPUT_HINT_WORD_COMPLETION\x10\x03\x12\x18\n" +
+	"\x14INPUT_HINT_LOWERCASE\x10\x04\x12\x1e\n" +
+	"\x1aINPUT_HINT_UPPERCASE_CHARS\x10\x05\x12\x1e\n" +
+	"\x1aINPUT_HINT_UPPERCASE_WORDS\x10\x06\x12\"\n" +
+	"\x1eINPUT_HINT_UPPERCASE_SENTENCES\x10\a\x12\x1a\n" +
+	"\x16INPUT_HINT_INHIBIT_OSK\x10\b\x12\x1f\n" +
+	"\x1bINPUT_HINT_VERTICAL_WRITING\x10\t\x12\x14\n" +
+	"\x10INPUT_HINT_EMOJI\x10\n" +
+	"\x12\x17\n" +
+	"\x13INPUT_HINT_NO_EMOJI\x10\v\x12\x16\n" +
+	"\x12INPUT_HINT_PRIVATE\x10\f*\x92\x01\n" +
 	"\fCursorSource\x12\x1d\n" +
 	"\x19CURSOR_SOURCE_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bCURSOR_SOURCE_INPUT_CONTEXT\x10\x01\x12\x1c\n" +
@@ -2856,98 +3111,102 @@ func file_leaflow_fleet_virtualdesktop_input_v1_input_proto_rawDescGZIP() []byte
 	return file_leaflow_fleet_virtualdesktop_input_v1_input_proto_rawDescData
 }
 
-var file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_leaflow_fleet_virtualdesktop_input_v1_input_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_leaflow_fleet_virtualdesktop_input_v1_input_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
 var file_leaflow_fleet_virtualdesktop_input_v1_input_proto_goTypes = []any{
-	(CursorSource)(0),                     // 0: leaflow.fleet.virtualdesktop.input.v1.CursorSource
-	(InputType)(0),                        // 1: leaflow.fleet.virtualdesktop.input.v1.InputType
-	(CompositionPhase)(0),                 // 2: leaflow.fleet.virtualdesktop.input.v1.CompositionPhase
-	(*ClientMessage)(nil),                 // 3: leaflow.fleet.virtualdesktop.input.v1.ClientMessage
-	(*ServerMessage)(nil),                 // 4: leaflow.fleet.virtualdesktop.input.v1.ServerMessage
-	(*KeyEvent)(nil),                      // 5: leaflow.fleet.virtualdesktop.input.v1.KeyEvent
-	(*LockKeyState)(nil),                  // 6: leaflow.fleet.virtualdesktop.input.v1.LockKeyState
-	(*PointerMotion)(nil),                 // 7: leaflow.fleet.virtualdesktop.input.v1.PointerMotion
-	(*PointerButton)(nil),                 // 8: leaflow.fleet.virtualdesktop.input.v1.PointerButton
-	(*PointerWheel)(nil),                  // 9: leaflow.fleet.virtualdesktop.input.v1.PointerWheel
-	(*TextInputState)(nil),                // 10: leaflow.fleet.virtualdesktop.input.v1.TextInputState
-	(*InsertText)(nil),                    // 11: leaflow.fleet.virtualdesktop.input.v1.InsertText
-	(*Composition)(nil),                   // 12: leaflow.fleet.virtualdesktop.input.v1.Composition
-	(*CompositionKey)(nil),                // 13: leaflow.fleet.virtualdesktop.input.v1.CompositionKey
-	(*InputError)(nil),                    // 14: leaflow.fleet.virtualdesktop.input.v1.InputError
-	(*TextInputError)(nil),                // 15: leaflow.fleet.virtualdesktop.input.v1.TextInputError
-	(*Point)(nil),                         // 16: leaflow.fleet.virtualdesktop.input.v1.Point
-	(*ClickRequest)(nil),                  // 17: leaflow.fleet.virtualdesktop.input.v1.ClickRequest
-	(*ClickResponse)(nil),                 // 18: leaflow.fleet.virtualdesktop.input.v1.ClickResponse
-	(*MovePointerRequest)(nil),            // 19: leaflow.fleet.virtualdesktop.input.v1.MovePointerRequest
-	(*MovePointerResponse)(nil),           // 20: leaflow.fleet.virtualdesktop.input.v1.MovePointerResponse
-	(*ScrollRequest)(nil),                 // 21: leaflow.fleet.virtualdesktop.input.v1.ScrollRequest
-	(*ScrollResponse)(nil),                // 22: leaflow.fleet.virtualdesktop.input.v1.ScrollResponse
-	(*DragRequest)(nil),                   // 23: leaflow.fleet.virtualdesktop.input.v1.DragRequest
-	(*DragResponse)(nil),                  // 24: leaflow.fleet.virtualdesktop.input.v1.DragResponse
-	(*PressKeysRequest)(nil),              // 25: leaflow.fleet.virtualdesktop.input.v1.PressKeysRequest
-	(*PressKeysResponse)(nil),             // 26: leaflow.fleet.virtualdesktop.input.v1.PressKeysResponse
-	(*TypeTextRequest)(nil),               // 27: leaflow.fleet.virtualdesktop.input.v1.TypeTextRequest
-	(*TypeTextResponse)(nil),              // 28: leaflow.fleet.virtualdesktop.input.v1.TypeTextResponse
-	(*DispatchPointerButtonRequest)(nil),  // 29: leaflow.fleet.virtualdesktop.input.v1.DispatchPointerButtonRequest
-	(*DispatchPointerButtonResponse)(nil), // 30: leaflow.fleet.virtualdesktop.input.v1.DispatchPointerButtonResponse
-	(*DispatchKeyRequest)(nil),            // 31: leaflow.fleet.virtualdesktop.input.v1.DispatchKeyRequest
-	(*DispatchKeyResponse)(nil),           // 32: leaflow.fleet.virtualdesktop.input.v1.DispatchKeyResponse
-	(*GetPointerPositionRequest)(nil),     // 33: leaflow.fleet.virtualdesktop.input.v1.GetPointerPositionRequest
-	(*GetPointerPositionResponse)(nil),    // 34: leaflow.fleet.virtualdesktop.input.v1.GetPointerPositionResponse
-	(*v1.Rectangle)(nil),                  // 35: leaflow.fleet.virtualdesktop.display.v1.Rectangle
-	(*status.Status)(nil),                 // 36: google.rpc.Status
-	(*durationpb.Duration)(nil),           // 37: google.protobuf.Duration
+	(InputPurpose)(0),                     // 0: leaflow.fleet.virtualdesktop.input.v1.InputPurpose
+	(InputHint)(0),                        // 1: leaflow.fleet.virtualdesktop.input.v1.InputHint
+	(CursorSource)(0),                     // 2: leaflow.fleet.virtualdesktop.input.v1.CursorSource
+	(InputType)(0),                        // 3: leaflow.fleet.virtualdesktop.input.v1.InputType
+	(CompositionPhase)(0),                 // 4: leaflow.fleet.virtualdesktop.input.v1.CompositionPhase
+	(*ClientMessage)(nil),                 // 5: leaflow.fleet.virtualdesktop.input.v1.ClientMessage
+	(*ServerMessage)(nil),                 // 6: leaflow.fleet.virtualdesktop.input.v1.ServerMessage
+	(*KeyEvent)(nil),                      // 7: leaflow.fleet.virtualdesktop.input.v1.KeyEvent
+	(*LockKeyState)(nil),                  // 8: leaflow.fleet.virtualdesktop.input.v1.LockKeyState
+	(*PointerMotion)(nil),                 // 9: leaflow.fleet.virtualdesktop.input.v1.PointerMotion
+	(*PointerButton)(nil),                 // 10: leaflow.fleet.virtualdesktop.input.v1.PointerButton
+	(*PointerWheel)(nil),                  // 11: leaflow.fleet.virtualdesktop.input.v1.PointerWheel
+	(*TextInputState)(nil),                // 12: leaflow.fleet.virtualdesktop.input.v1.TextInputState
+	(*InsertText)(nil),                    // 13: leaflow.fleet.virtualdesktop.input.v1.InsertText
+	(*Composition)(nil),                   // 14: leaflow.fleet.virtualdesktop.input.v1.Composition
+	(*CompositionKey)(nil),                // 15: leaflow.fleet.virtualdesktop.input.v1.CompositionKey
+	(*InputError)(nil),                    // 16: leaflow.fleet.virtualdesktop.input.v1.InputError
+	(*TextInputError)(nil),                // 17: leaflow.fleet.virtualdesktop.input.v1.TextInputError
+	(*Point)(nil),                         // 18: leaflow.fleet.virtualdesktop.input.v1.Point
+	(*ClickRequest)(nil),                  // 19: leaflow.fleet.virtualdesktop.input.v1.ClickRequest
+	(*ClickResponse)(nil),                 // 20: leaflow.fleet.virtualdesktop.input.v1.ClickResponse
+	(*MovePointerRequest)(nil),            // 21: leaflow.fleet.virtualdesktop.input.v1.MovePointerRequest
+	(*MovePointerResponse)(nil),           // 22: leaflow.fleet.virtualdesktop.input.v1.MovePointerResponse
+	(*ScrollRequest)(nil),                 // 23: leaflow.fleet.virtualdesktop.input.v1.ScrollRequest
+	(*ScrollResponse)(nil),                // 24: leaflow.fleet.virtualdesktop.input.v1.ScrollResponse
+	(*DragRequest)(nil),                   // 25: leaflow.fleet.virtualdesktop.input.v1.DragRequest
+	(*DragResponse)(nil),                  // 26: leaflow.fleet.virtualdesktop.input.v1.DragResponse
+	(*PressKeysRequest)(nil),              // 27: leaflow.fleet.virtualdesktop.input.v1.PressKeysRequest
+	(*PressKeysResponse)(nil),             // 28: leaflow.fleet.virtualdesktop.input.v1.PressKeysResponse
+	(*TypeTextRequest)(nil),               // 29: leaflow.fleet.virtualdesktop.input.v1.TypeTextRequest
+	(*TypeTextResponse)(nil),              // 30: leaflow.fleet.virtualdesktop.input.v1.TypeTextResponse
+	(*DispatchPointerButtonRequest)(nil),  // 31: leaflow.fleet.virtualdesktop.input.v1.DispatchPointerButtonRequest
+	(*DispatchPointerButtonResponse)(nil), // 32: leaflow.fleet.virtualdesktop.input.v1.DispatchPointerButtonResponse
+	(*DispatchKeyRequest)(nil),            // 33: leaflow.fleet.virtualdesktop.input.v1.DispatchKeyRequest
+	(*DispatchKeyResponse)(nil),           // 34: leaflow.fleet.virtualdesktop.input.v1.DispatchKeyResponse
+	(*GetPointerPositionRequest)(nil),     // 35: leaflow.fleet.virtualdesktop.input.v1.GetPointerPositionRequest
+	(*GetPointerPositionResponse)(nil),    // 36: leaflow.fleet.virtualdesktop.input.v1.GetPointerPositionResponse
+	(*v1.Rectangle)(nil),                  // 37: leaflow.fleet.virtualdesktop.display.v1.Rectangle
+	(*status.Status)(nil),                 // 38: google.rpc.Status
+	(*durationpb.Duration)(nil),           // 39: google.protobuf.Duration
 }
 var file_leaflow_fleet_virtualdesktop_input_v1_input_proto_depIdxs = []int32{
-	5,  // 0: leaflow.fleet.virtualdesktop.input.v1.ClientMessage.key_event:type_name -> leaflow.fleet.virtualdesktop.input.v1.KeyEvent
-	7,  // 1: leaflow.fleet.virtualdesktop.input.v1.ClientMessage.pointer_motion:type_name -> leaflow.fleet.virtualdesktop.input.v1.PointerMotion
-	8,  // 2: leaflow.fleet.virtualdesktop.input.v1.ClientMessage.pointer_button:type_name -> leaflow.fleet.virtualdesktop.input.v1.PointerButton
-	9,  // 3: leaflow.fleet.virtualdesktop.input.v1.ClientMessage.pointer_wheel:type_name -> leaflow.fleet.virtualdesktop.input.v1.PointerWheel
-	11, // 4: leaflow.fleet.virtualdesktop.input.v1.ClientMessage.insert_text:type_name -> leaflow.fleet.virtualdesktop.input.v1.InsertText
-	12, // 5: leaflow.fleet.virtualdesktop.input.v1.ClientMessage.composition:type_name -> leaflow.fleet.virtualdesktop.input.v1.Composition
-	10, // 6: leaflow.fleet.virtualdesktop.input.v1.ServerMessage.text_input_state:type_name -> leaflow.fleet.virtualdesktop.input.v1.TextInputState
-	14, // 7: leaflow.fleet.virtualdesktop.input.v1.ServerMessage.input_error:type_name -> leaflow.fleet.virtualdesktop.input.v1.InputError
-	15, // 8: leaflow.fleet.virtualdesktop.input.v1.ServerMessage.text_input_error:type_name -> leaflow.fleet.virtualdesktop.input.v1.TextInputError
-	6,  // 9: leaflow.fleet.virtualdesktop.input.v1.KeyEvent.lock_key_state:type_name -> leaflow.fleet.virtualdesktop.input.v1.LockKeyState
-	35, // 10: leaflow.fleet.virtualdesktop.input.v1.TextInputState.cursor_rectangle:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
-	0,  // 11: leaflow.fleet.virtualdesktop.input.v1.TextInputState.cursor_source:type_name -> leaflow.fleet.virtualdesktop.input.v1.CursorSource
-	35, // 12: leaflow.fleet.virtualdesktop.input.v1.TextInputState.control_rectangle:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
-	1,  // 13: leaflow.fleet.virtualdesktop.input.v1.InsertText.input_type:type_name -> leaflow.fleet.virtualdesktop.input.v1.InputType
-	2,  // 14: leaflow.fleet.virtualdesktop.input.v1.Composition.phase:type_name -> leaflow.fleet.virtualdesktop.input.v1.CompositionPhase
-	13, // 15: leaflow.fleet.virtualdesktop.input.v1.Composition.key:type_name -> leaflow.fleet.virtualdesktop.input.v1.CompositionKey
-	6,  // 16: leaflow.fleet.virtualdesktop.input.v1.CompositionKey.lock_key_state:type_name -> leaflow.fleet.virtualdesktop.input.v1.LockKeyState
-	36, // 17: leaflow.fleet.virtualdesktop.input.v1.InputError.error:type_name -> google.rpc.Status
-	36, // 18: leaflow.fleet.virtualdesktop.input.v1.TextInputError.error:type_name -> google.rpc.Status
-	16, // 19: leaflow.fleet.virtualdesktop.input.v1.ClickRequest.point:type_name -> leaflow.fleet.virtualdesktop.input.v1.Point
-	16, // 20: leaflow.fleet.virtualdesktop.input.v1.MovePointerRequest.point:type_name -> leaflow.fleet.virtualdesktop.input.v1.Point
-	16, // 21: leaflow.fleet.virtualdesktop.input.v1.ScrollRequest.point:type_name -> leaflow.fleet.virtualdesktop.input.v1.Point
-	16, // 22: leaflow.fleet.virtualdesktop.input.v1.DragRequest.start:type_name -> leaflow.fleet.virtualdesktop.input.v1.Point
-	16, // 23: leaflow.fleet.virtualdesktop.input.v1.DragRequest.end:type_name -> leaflow.fleet.virtualdesktop.input.v1.Point
-	37, // 24: leaflow.fleet.virtualdesktop.input.v1.DragRequest.duration:type_name -> google.protobuf.Duration
-	16, // 25: leaflow.fleet.virtualdesktop.input.v1.DispatchPointerButtonRequest.point:type_name -> leaflow.fleet.virtualdesktop.input.v1.Point
-	17, // 26: leaflow.fleet.virtualdesktop.input.v1.InputService.Click:input_type -> leaflow.fleet.virtualdesktop.input.v1.ClickRequest
-	19, // 27: leaflow.fleet.virtualdesktop.input.v1.InputService.MovePointer:input_type -> leaflow.fleet.virtualdesktop.input.v1.MovePointerRequest
-	21, // 28: leaflow.fleet.virtualdesktop.input.v1.InputService.Scroll:input_type -> leaflow.fleet.virtualdesktop.input.v1.ScrollRequest
-	23, // 29: leaflow.fleet.virtualdesktop.input.v1.InputService.Drag:input_type -> leaflow.fleet.virtualdesktop.input.v1.DragRequest
-	25, // 30: leaflow.fleet.virtualdesktop.input.v1.InputService.PressKeys:input_type -> leaflow.fleet.virtualdesktop.input.v1.PressKeysRequest
-	27, // 31: leaflow.fleet.virtualdesktop.input.v1.InputService.TypeText:input_type -> leaflow.fleet.virtualdesktop.input.v1.TypeTextRequest
-	29, // 32: leaflow.fleet.virtualdesktop.input.v1.InputService.DispatchPointerButton:input_type -> leaflow.fleet.virtualdesktop.input.v1.DispatchPointerButtonRequest
-	31, // 33: leaflow.fleet.virtualdesktop.input.v1.InputService.DispatchKey:input_type -> leaflow.fleet.virtualdesktop.input.v1.DispatchKeyRequest
-	33, // 34: leaflow.fleet.virtualdesktop.input.v1.InputService.GetPointerPosition:input_type -> leaflow.fleet.virtualdesktop.input.v1.GetPointerPositionRequest
-	18, // 35: leaflow.fleet.virtualdesktop.input.v1.InputService.Click:output_type -> leaflow.fleet.virtualdesktop.input.v1.ClickResponse
-	20, // 36: leaflow.fleet.virtualdesktop.input.v1.InputService.MovePointer:output_type -> leaflow.fleet.virtualdesktop.input.v1.MovePointerResponse
-	22, // 37: leaflow.fleet.virtualdesktop.input.v1.InputService.Scroll:output_type -> leaflow.fleet.virtualdesktop.input.v1.ScrollResponse
-	24, // 38: leaflow.fleet.virtualdesktop.input.v1.InputService.Drag:output_type -> leaflow.fleet.virtualdesktop.input.v1.DragResponse
-	26, // 39: leaflow.fleet.virtualdesktop.input.v1.InputService.PressKeys:output_type -> leaflow.fleet.virtualdesktop.input.v1.PressKeysResponse
-	28, // 40: leaflow.fleet.virtualdesktop.input.v1.InputService.TypeText:output_type -> leaflow.fleet.virtualdesktop.input.v1.TypeTextResponse
-	30, // 41: leaflow.fleet.virtualdesktop.input.v1.InputService.DispatchPointerButton:output_type -> leaflow.fleet.virtualdesktop.input.v1.DispatchPointerButtonResponse
-	32, // 42: leaflow.fleet.virtualdesktop.input.v1.InputService.DispatchKey:output_type -> leaflow.fleet.virtualdesktop.input.v1.DispatchKeyResponse
-	34, // 43: leaflow.fleet.virtualdesktop.input.v1.InputService.GetPointerPosition:output_type -> leaflow.fleet.virtualdesktop.input.v1.GetPointerPositionResponse
-	35, // [35:44] is the sub-list for method output_type
-	26, // [26:35] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	7,  // 0: leaflow.fleet.virtualdesktop.input.v1.ClientMessage.key_event:type_name -> leaflow.fleet.virtualdesktop.input.v1.KeyEvent
+	9,  // 1: leaflow.fleet.virtualdesktop.input.v1.ClientMessage.pointer_motion:type_name -> leaflow.fleet.virtualdesktop.input.v1.PointerMotion
+	10, // 2: leaflow.fleet.virtualdesktop.input.v1.ClientMessage.pointer_button:type_name -> leaflow.fleet.virtualdesktop.input.v1.PointerButton
+	11, // 3: leaflow.fleet.virtualdesktop.input.v1.ClientMessage.pointer_wheel:type_name -> leaflow.fleet.virtualdesktop.input.v1.PointerWheel
+	13, // 4: leaflow.fleet.virtualdesktop.input.v1.ClientMessage.insert_text:type_name -> leaflow.fleet.virtualdesktop.input.v1.InsertText
+	14, // 5: leaflow.fleet.virtualdesktop.input.v1.ClientMessage.composition:type_name -> leaflow.fleet.virtualdesktop.input.v1.Composition
+	12, // 6: leaflow.fleet.virtualdesktop.input.v1.ServerMessage.text_input_state:type_name -> leaflow.fleet.virtualdesktop.input.v1.TextInputState
+	16, // 7: leaflow.fleet.virtualdesktop.input.v1.ServerMessage.input_error:type_name -> leaflow.fleet.virtualdesktop.input.v1.InputError
+	17, // 8: leaflow.fleet.virtualdesktop.input.v1.ServerMessage.text_input_error:type_name -> leaflow.fleet.virtualdesktop.input.v1.TextInputError
+	8,  // 9: leaflow.fleet.virtualdesktop.input.v1.KeyEvent.lock_key_state:type_name -> leaflow.fleet.virtualdesktop.input.v1.LockKeyState
+	37, // 10: leaflow.fleet.virtualdesktop.input.v1.TextInputState.cursor_rectangle:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
+	2,  // 11: leaflow.fleet.virtualdesktop.input.v1.TextInputState.cursor_source:type_name -> leaflow.fleet.virtualdesktop.input.v1.CursorSource
+	37, // 12: leaflow.fleet.virtualdesktop.input.v1.TextInputState.control_rectangle:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
+	0,  // 13: leaflow.fleet.virtualdesktop.input.v1.TextInputState.purpose:type_name -> leaflow.fleet.virtualdesktop.input.v1.InputPurpose
+	1,  // 14: leaflow.fleet.virtualdesktop.input.v1.TextInputState.hints:type_name -> leaflow.fleet.virtualdesktop.input.v1.InputHint
+	3,  // 15: leaflow.fleet.virtualdesktop.input.v1.InsertText.input_type:type_name -> leaflow.fleet.virtualdesktop.input.v1.InputType
+	4,  // 16: leaflow.fleet.virtualdesktop.input.v1.Composition.phase:type_name -> leaflow.fleet.virtualdesktop.input.v1.CompositionPhase
+	15, // 17: leaflow.fleet.virtualdesktop.input.v1.Composition.key:type_name -> leaflow.fleet.virtualdesktop.input.v1.CompositionKey
+	8,  // 18: leaflow.fleet.virtualdesktop.input.v1.CompositionKey.lock_key_state:type_name -> leaflow.fleet.virtualdesktop.input.v1.LockKeyState
+	38, // 19: leaflow.fleet.virtualdesktop.input.v1.InputError.error:type_name -> google.rpc.Status
+	38, // 20: leaflow.fleet.virtualdesktop.input.v1.TextInputError.error:type_name -> google.rpc.Status
+	18, // 21: leaflow.fleet.virtualdesktop.input.v1.ClickRequest.point:type_name -> leaflow.fleet.virtualdesktop.input.v1.Point
+	18, // 22: leaflow.fleet.virtualdesktop.input.v1.MovePointerRequest.point:type_name -> leaflow.fleet.virtualdesktop.input.v1.Point
+	18, // 23: leaflow.fleet.virtualdesktop.input.v1.ScrollRequest.point:type_name -> leaflow.fleet.virtualdesktop.input.v1.Point
+	18, // 24: leaflow.fleet.virtualdesktop.input.v1.DragRequest.start:type_name -> leaflow.fleet.virtualdesktop.input.v1.Point
+	18, // 25: leaflow.fleet.virtualdesktop.input.v1.DragRequest.end:type_name -> leaflow.fleet.virtualdesktop.input.v1.Point
+	39, // 26: leaflow.fleet.virtualdesktop.input.v1.DragRequest.duration:type_name -> google.protobuf.Duration
+	18, // 27: leaflow.fleet.virtualdesktop.input.v1.DispatchPointerButtonRequest.point:type_name -> leaflow.fleet.virtualdesktop.input.v1.Point
+	19, // 28: leaflow.fleet.virtualdesktop.input.v1.InputService.Click:input_type -> leaflow.fleet.virtualdesktop.input.v1.ClickRequest
+	21, // 29: leaflow.fleet.virtualdesktop.input.v1.InputService.MovePointer:input_type -> leaflow.fleet.virtualdesktop.input.v1.MovePointerRequest
+	23, // 30: leaflow.fleet.virtualdesktop.input.v1.InputService.Scroll:input_type -> leaflow.fleet.virtualdesktop.input.v1.ScrollRequest
+	25, // 31: leaflow.fleet.virtualdesktop.input.v1.InputService.Drag:input_type -> leaflow.fleet.virtualdesktop.input.v1.DragRequest
+	27, // 32: leaflow.fleet.virtualdesktop.input.v1.InputService.PressKeys:input_type -> leaflow.fleet.virtualdesktop.input.v1.PressKeysRequest
+	29, // 33: leaflow.fleet.virtualdesktop.input.v1.InputService.TypeText:input_type -> leaflow.fleet.virtualdesktop.input.v1.TypeTextRequest
+	31, // 34: leaflow.fleet.virtualdesktop.input.v1.InputService.DispatchPointerButton:input_type -> leaflow.fleet.virtualdesktop.input.v1.DispatchPointerButtonRequest
+	33, // 35: leaflow.fleet.virtualdesktop.input.v1.InputService.DispatchKey:input_type -> leaflow.fleet.virtualdesktop.input.v1.DispatchKeyRequest
+	35, // 36: leaflow.fleet.virtualdesktop.input.v1.InputService.GetPointerPosition:input_type -> leaflow.fleet.virtualdesktop.input.v1.GetPointerPositionRequest
+	20, // 37: leaflow.fleet.virtualdesktop.input.v1.InputService.Click:output_type -> leaflow.fleet.virtualdesktop.input.v1.ClickResponse
+	22, // 38: leaflow.fleet.virtualdesktop.input.v1.InputService.MovePointer:output_type -> leaflow.fleet.virtualdesktop.input.v1.MovePointerResponse
+	24, // 39: leaflow.fleet.virtualdesktop.input.v1.InputService.Scroll:output_type -> leaflow.fleet.virtualdesktop.input.v1.ScrollResponse
+	26, // 40: leaflow.fleet.virtualdesktop.input.v1.InputService.Drag:output_type -> leaflow.fleet.virtualdesktop.input.v1.DragResponse
+	28, // 41: leaflow.fleet.virtualdesktop.input.v1.InputService.PressKeys:output_type -> leaflow.fleet.virtualdesktop.input.v1.PressKeysResponse
+	30, // 42: leaflow.fleet.virtualdesktop.input.v1.InputService.TypeText:output_type -> leaflow.fleet.virtualdesktop.input.v1.TypeTextResponse
+	32, // 43: leaflow.fleet.virtualdesktop.input.v1.InputService.DispatchPointerButton:output_type -> leaflow.fleet.virtualdesktop.input.v1.DispatchPointerButtonResponse
+	34, // 44: leaflow.fleet.virtualdesktop.input.v1.InputService.DispatchKey:output_type -> leaflow.fleet.virtualdesktop.input.v1.DispatchKeyResponse
+	36, // 45: leaflow.fleet.virtualdesktop.input.v1.InputService.GetPointerPosition:output_type -> leaflow.fleet.virtualdesktop.input.v1.GetPointerPositionResponse
+	37, // [37:46] is the sub-list for method output_type
+	28, // [28:37] is the sub-list for method input_type
+	28, // [28:28] is the sub-list for extension type_name
+	28, // [28:28] is the sub-list for extension extendee
+	0,  // [0:28] is the sub-list for field type_name
 }
 
 func init() { file_leaflow_fleet_virtualdesktop_input_v1_input_proto_init() }
@@ -2975,7 +3234,7 @@ func file_leaflow_fleet_virtualdesktop_input_v1_input_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_leaflow_fleet_virtualdesktop_input_v1_input_proto_rawDesc), len(file_leaflow_fleet_virtualdesktop_input_v1_input_proto_rawDesc)),
-			NumEnums:      3,
+			NumEnums:      5,
 			NumMessages:   32,
 			NumExtensions: 0,
 			NumServices:   1,

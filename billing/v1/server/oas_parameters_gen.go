@@ -3,6 +3,7 @@
 package billingv1server
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -3841,6 +3842,9 @@ type ListBillingAccountsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
+	// Only accounts in these statuses. Omit for all statuses. Comma-separated, for example
+	// `status=suspended,closed`.
+	Status []BillingAccountStatus `json:",omitempty"`
 }
 
 func unpackListBillingAccountsParams(packed middleware.Parameters) (params ListBillingAccountsParams) {
@@ -3860,6 +3864,15 @@ func unpackListBillingAccountsParams(packed middleware.Parameters) (params ListB
 		}
 		if v, ok := packed[key]; ok {
 			params.PageSize = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "status",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Status = v.([]BillingAccountStatus)
 		}
 	}
 	return params
@@ -4005,6 +4018,86 @@ func decodeListBillingAccountsParams(args [0]string, argsEscaped bool, r *http.R
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "page_size",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: status.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal BillingAccountStatus
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = BillingAccountStatus(c)
+						return nil
+					}(); err != nil {
+						return err
+					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    3,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "status",
 			In:   "query",
 			Err:  err,
 		}

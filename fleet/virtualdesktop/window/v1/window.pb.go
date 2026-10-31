@@ -313,6 +313,156 @@ func (WindowAction) EnumDescriptor() ([]byte, []int) {
 	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDescGZIP(), []int{2}
 }
 
+// How a window takes the keyboard focus (ICCCM §4.1.7).
+type FocusModel int32
+
+const (
+	FocusModel_FOCUS_MODEL_UNSPECIFIED FocusModel = 0
+	// It never takes the focus, such as an on-screen keyboard or a floating
+	// palette: showing or clicking it leaves the focus where it is.
+	FocusModel_FOCUS_MODEL_NO_INPUT FocusModel = 1
+	// It takes the focus when activated.
+	FocusModel_FOCUS_MODEL_PASSIVE FocusModel = 2
+	// It takes the focus when activated, and may move it among its own
+	// windows.
+	FocusModel_FOCUS_MODEL_LOCALLY_ACTIVE FocusModel = 3
+	// It is told when activated and decides itself whether to take the focus,
+	// as some Java windows do.
+	FocusModel_FOCUS_MODEL_GLOBALLY_ACTIVE FocusModel = 4
+)
+
+// Enum value maps for FocusModel.
+var (
+	FocusModel_name = map[int32]string{
+		0: "FOCUS_MODEL_UNSPECIFIED",
+		1: "FOCUS_MODEL_NO_INPUT",
+		2: "FOCUS_MODEL_PASSIVE",
+		3: "FOCUS_MODEL_LOCALLY_ACTIVE",
+		4: "FOCUS_MODEL_GLOBALLY_ACTIVE",
+	}
+	FocusModel_value = map[string]int32{
+		"FOCUS_MODEL_UNSPECIFIED":     0,
+		"FOCUS_MODEL_NO_INPUT":        1,
+		"FOCUS_MODEL_PASSIVE":         2,
+		"FOCUS_MODEL_LOCALLY_ACTIVE":  3,
+		"FOCUS_MODEL_GLOBALLY_ACTIVE": 4,
+	}
+)
+
+func (x FocusModel) Enum() *FocusModel {
+	p := new(FocusModel)
+	*p = x
+	return p
+}
+
+func (x FocusModel) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (FocusModel) Descriptor() protoreflect.EnumDescriptor {
+	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[3].Descriptor()
+}
+
+func (FocusModel) Type() protoreflect.EnumType {
+	return &file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[3]
+}
+
+func (x FocusModel) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use FocusModel.Descriptor instead.
+func (FocusModel) EnumDescriptor() ([]byte, []int) {
+	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDescGZIP(), []int{3}
+}
+
+// How a participant that draws a frame around a window it shows where the
+// application asked (ICCCM win_gravity) places that frame: the named point of
+// the frame goes where the same point of the requested client area, geometry,
+// is. The client area then moves inside the frame, except for STATIC.
+type WindowGravity int32
+
+const (
+	WindowGravity_WINDOW_GRAVITY_UNSPECIFIED WindowGravity = 0
+	// The top-left corner.
+	WindowGravity_WINDOW_GRAVITY_NORTH_WEST WindowGravity = 1
+	// The middle of the top edge.
+	WindowGravity_WINDOW_GRAVITY_NORTH WindowGravity = 2
+	// The top-right corner.
+	WindowGravity_WINDOW_GRAVITY_NORTH_EAST WindowGravity = 3
+	// The middle of the left edge.
+	WindowGravity_WINDOW_GRAVITY_WEST WindowGravity = 4
+	// The centre.
+	WindowGravity_WINDOW_GRAVITY_CENTER WindowGravity = 5
+	// The middle of the right edge.
+	WindowGravity_WINDOW_GRAVITY_EAST WindowGravity = 6
+	// The bottom-left corner.
+	WindowGravity_WINDOW_GRAVITY_SOUTH_WEST WindowGravity = 7
+	// The middle of the bottom edge.
+	WindowGravity_WINDOW_GRAVITY_SOUTH WindowGravity = 8
+	// The bottom-right corner.
+	WindowGravity_WINDOW_GRAVITY_SOUTH_EAST WindowGravity = 9
+	// The client area stays where geometry is, and the frame goes around it.
+	WindowGravity_WINDOW_GRAVITY_STATIC WindowGravity = 10
+)
+
+// Enum value maps for WindowGravity.
+var (
+	WindowGravity_name = map[int32]string{
+		0:  "WINDOW_GRAVITY_UNSPECIFIED",
+		1:  "WINDOW_GRAVITY_NORTH_WEST",
+		2:  "WINDOW_GRAVITY_NORTH",
+		3:  "WINDOW_GRAVITY_NORTH_EAST",
+		4:  "WINDOW_GRAVITY_WEST",
+		5:  "WINDOW_GRAVITY_CENTER",
+		6:  "WINDOW_GRAVITY_EAST",
+		7:  "WINDOW_GRAVITY_SOUTH_WEST",
+		8:  "WINDOW_GRAVITY_SOUTH",
+		9:  "WINDOW_GRAVITY_SOUTH_EAST",
+		10: "WINDOW_GRAVITY_STATIC",
+	}
+	WindowGravity_value = map[string]int32{
+		"WINDOW_GRAVITY_UNSPECIFIED": 0,
+		"WINDOW_GRAVITY_NORTH_WEST":  1,
+		"WINDOW_GRAVITY_NORTH":       2,
+		"WINDOW_GRAVITY_NORTH_EAST":  3,
+		"WINDOW_GRAVITY_WEST":        4,
+		"WINDOW_GRAVITY_CENTER":      5,
+		"WINDOW_GRAVITY_EAST":        6,
+		"WINDOW_GRAVITY_SOUTH_WEST":  7,
+		"WINDOW_GRAVITY_SOUTH":       8,
+		"WINDOW_GRAVITY_SOUTH_EAST":  9,
+		"WINDOW_GRAVITY_STATIC":      10,
+	}
+)
+
+func (x WindowGravity) Enum() *WindowGravity {
+	p := new(WindowGravity)
+	*p = x
+	return p
+}
+
+func (x WindowGravity) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (WindowGravity) Descriptor() protoreflect.EnumDescriptor {
+	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[4].Descriptor()
+}
+
+func (WindowGravity) Type() protoreflect.EnumType {
+	return &file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[4]
+}
+
+func (x WindowGravity) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use WindowGravity.Descriptor instead.
+func (WindowGravity) EnumDescriptor() ([]byte, []int) {
+	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDescGZIP(), []int{4}
+}
+
 // A restacking mode (X11 ConfigureWindow stack-mode).
 type StackMode int32
 
@@ -361,11 +511,11 @@ func (x StackMode) String() string {
 }
 
 func (StackMode) Descriptor() protoreflect.EnumDescriptor {
-	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[3].Descriptor()
+	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[5].Descriptor()
 }
 
 func (StackMode) Type() protoreflect.EnumType {
-	return &file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[3]
+	return &file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[5]
 }
 
 func (x StackMode) Number() protoreflect.EnumNumber {
@@ -374,7 +524,7 @@ func (x StackMode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use StackMode.Descriptor instead.
 func (StackMode) EnumDescriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDescGZIP(), []int{3}
+	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDescGZIP(), []int{5}
 }
 
 // How WindowStateChange applies its states (EWMH _NET_WM_STATE_REMOVE, _ADD
@@ -418,11 +568,11 @@ func (x WindowStateOperation) String() string {
 }
 
 func (WindowStateOperation) Descriptor() protoreflect.EnumDescriptor {
-	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[4].Descriptor()
+	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[6].Descriptor()
 }
 
 func (WindowStateOperation) Type() protoreflect.EnumType {
-	return &file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[4]
+	return &file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[6]
 }
 
 func (x WindowStateOperation) Number() protoreflect.EnumNumber {
@@ -431,7 +581,7 @@ func (x WindowStateOperation) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use WindowStateOperation.Descriptor instead.
 func (WindowStateOperation) EnumDescriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDescGZIP(), []int{4}
+	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDescGZIP(), []int{6}
 }
 
 // How much of a window is visible (X11 VisibilityNotify state).
@@ -474,11 +624,11 @@ func (x VisibilityState) String() string {
 }
 
 func (VisibilityState) Descriptor() protoreflect.EnumDescriptor {
-	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[5].Descriptor()
+	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[7].Descriptor()
 }
 
 func (VisibilityState) Type() protoreflect.EnumType {
-	return &file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[5]
+	return &file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[7]
 }
 
 func (x VisibilityState) Number() protoreflect.EnumNumber {
@@ -487,7 +637,7 @@ func (x VisibilityState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use VisibilityState.Descriptor instead.
 func (VisibilityState) EnumDescriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDescGZIP(), []int{5}
+	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDescGZIP(), []int{7}
 }
 
 // What an interactive move or resize changes (EWMH _NET_WM_MOVERESIZE
@@ -567,11 +717,11 @@ func (x MoveResizeDirection) String() string {
 }
 
 func (MoveResizeDirection) Descriptor() protoreflect.EnumDescriptor {
-	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[6].Descriptor()
+	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[8].Descriptor()
 }
 
 func (MoveResizeDirection) Type() protoreflect.EnumType {
-	return &file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[6]
+	return &file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes[8]
 }
 
 func (x MoveResizeDirection) Number() protoreflect.EnumNumber {
@@ -580,7 +730,7 @@ func (x MoveResizeDirection) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MoveResizeDirection.Descriptor instead.
 func (MoveResizeDirection) EnumDescriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDescGZIP(), []int{6}
+	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDescGZIP(), []int{8}
 }
 
 // A message from the participant.
@@ -1086,9 +1236,39 @@ type Window struct {
 	HasAlpha bool `protobuf:"varint,19,opt,name=has_alpha,json=hasAlpha,proto3" json:"has_alpha,omitempty"`
 	// Its icon (EWMH _NET_WM_ICON, else the icon of its desktop entry). Unset:
 	// none.
-	Icon          *v1.Icon `protobuf:"bytes,20,opt,name=icon,proto3" json:"icon,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Icon *v1.Icon `protobuf:"bytes,20,opt,name=icon,proto3" json:"icon,omitempty"`
+	// The application chose where the window goes (ICCCM WM_NORMAL_HINTS
+	// USPosition or PPosition), as a floating toolbar over the selected text
+	// does. A participant that places windows itself (see "Native windows")
+	// then puts it at requested_position, as a window manager does, with
+	// gravity. Otherwise it places the window: a dialog centred over the
+	// window it is transient for, any other window where its desktop puts new
+	// windows.
+	PositionRequested bool `protobuf:"varint,21,opt,name=position_requested,json=positionRequested,proto3" json:"position_requested,omitempty"`
+	// How a frame goes around the requested position, as the application
+	// declared it (ICCCM WM_NORMAL_HINTS win_gravity). UNSPECIFIED: NORTH_WEST.
+	Gravity WindowGravity `protobuf:"varint,22,opt,name=gravity,proto3,enum=leaflow.fleet.virtualdesktop.window.v1.WindowGravity" json:"gravity,omitempty"`
+	// How the window takes the keyboard focus (ICCCM WM_HINTS input and
+	// WM_TAKE_FOCUS). UNSPECIFIED: PASSIVE.
+	FocusModel FocusModel `protobuf:"varint,23,opt,name=focus_model,json=focusModel,proto3,enum=leaflow.fleet.virtualdesktop.window.v1.FocusModel" json:"focus_model,omitempty"`
+	// Showing the window gives it the keyboard focus. False when its
+	// application shows it without taking the focus (EWMH _NET_WM_USER_TIME 0),
+	// as a toolbar that appears beside a selection does, or when its
+	// focus_model is NO_INPUT. Unset: true.
+	FocusOnMap *bool `protobuf:"varint,24,opt,name=focus_on_map,json=focusOnMap,proto3,oneof" json:"focus_on_map,omitempty"`
+	// The window does not take WM_DELETE_WINDOW (ICCCM): WindowClose ends its
+	// application's connection to the display, and with it every window of the
+	// application. A participant may warn first.
+	CloseKills bool `protobuf:"varint,25,opt,name=close_kills,json=closeKills,proto3" json:"close_kills,omitempty"`
+	// The top-left corner of the client area the application asked for when it
+	// created the window, in canvas coordinates, before the session placed it.
+	// The session places a window it is shown (inside its work area, centred
+	// over the parent) and geometry is where it went; this is the request
+	// itself, as Xpra's requested-position. Unset when the application made
+	// none.
+	RequestedPosition *v1.Point `protobuf:"bytes,26,opt,name=requested_position,json=requestedPosition,proto3" json:"requested_position,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *Window) Reset() {
@@ -1257,6 +1437,48 @@ func (x *Window) GetHasAlpha() bool {
 func (x *Window) GetIcon() *v1.Icon {
 	if x != nil {
 		return x.Icon
+	}
+	return nil
+}
+
+func (x *Window) GetPositionRequested() bool {
+	if x != nil {
+		return x.PositionRequested
+	}
+	return false
+}
+
+func (x *Window) GetGravity() WindowGravity {
+	if x != nil {
+		return x.Gravity
+	}
+	return WindowGravity_WINDOW_GRAVITY_UNSPECIFIED
+}
+
+func (x *Window) GetFocusModel() FocusModel {
+	if x != nil {
+		return x.FocusModel
+	}
+	return FocusModel_FOCUS_MODEL_UNSPECIFIED
+}
+
+func (x *Window) GetFocusOnMap() bool {
+	if x != nil && x.FocusOnMap != nil {
+		return *x.FocusOnMap
+	}
+	return false
+}
+
+func (x *Window) GetCloseKills() bool {
+	if x != nil {
+		return x.CloseKills
+	}
+	return false
+}
+
+func (x *Window) GetRequestedPosition() *v1.Point {
+	if x != nil {
+		return x.RequestedPosition
 	}
 	return nil
 }
@@ -2685,7 +2907,8 @@ const file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDesc = "" +
 	"\fsnapshot_end\x18\t \x01(\v23.leaflow.fleet.virtualdesktop.window.v1.SnapshotEndH\x00R\vsnapshotEndB\t\n" +
 	"\amessage\"4\n" +
 	"\vClientHello\x12%\n" +
-	"\x0enative_windows\x18\x01 \x01(\bR\rnativeWindows\"\xf2\a\n" +
+	"\x0enative_windows\x18\x01 \x01(\bR\rnativeWindows\"\xff\n" +
+	"\n" +
 	"\x06Window\x12\x1b\n" +
 	"\twindow_id\x18\x01 \x01(\x04R\bwindowId\x12N\n" +
 	"\bgeometry\x18\x02 \x01(\v22.leaflow.fleet.virtualdesktop.display.v1.RectangleR\bgeometry\x12%\n" +
@@ -2710,10 +2933,20 @@ const file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDesc = "" +
 	"\x03pid\x18\x11 \x01(\rR\x03pid\x12%\n" +
 	"\vdecorations\x18\x12 \x01(\bH\x02R\vdecorations\x88\x01\x01\x12\x1b\n" +
 	"\thas_alpha\x18\x13 \x01(\bR\bhasAlpha\x12A\n" +
-	"\x04icon\x18\x14 \x01(\v2-.leaflow.fleet.virtualdesktop.display.v1.IconR\x04iconB\x10\n" +
+	"\x04icon\x18\x14 \x01(\v2-.leaflow.fleet.virtualdesktop.display.v1.IconR\x04icon\x12-\n" +
+	"\x12position_requested\x18\x15 \x01(\bR\x11positionRequested\x12O\n" +
+	"\agravity\x18\x16 \x01(\x0e25.leaflow.fleet.virtualdesktop.window.v1.WindowGravityR\agravity\x12S\n" +
+	"\vfocus_model\x18\x17 \x01(\x0e22.leaflow.fleet.virtualdesktop.window.v1.FocusModelR\n" +
+	"focusModel\x12%\n" +
+	"\ffocus_on_map\x18\x18 \x01(\bH\x03R\n" +
+	"focusOnMap\x88\x01\x01\x12\x1f\n" +
+	"\vclose_kills\x18\x19 \x01(\bR\n" +
+	"closeKills\x12]\n" +
+	"\x12requested_position\x18\x1a \x01(\v2..leaflow.fleet.virtualdesktop.display.v1.PointR\x11requestedPositionB\x10\n" +
 	"\x0e_transient_forB\x0f\n" +
 	"\r_window_groupB\x0e\n" +
-	"\f_decorations\"\xff\x01\n" +
+	"\f_decorationsB\x0f\n" +
+	"\r_focus_on_map\"\xff\x01\n" +
 	"\tSizeHints\x12\x1b\n" +
 	"\tmin_width\x18\x01 \x01(\rR\bminWidth\x12\x1d\n" +
 	"\n" +
@@ -2850,6 +3083,26 @@ const file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDesc = "" +
 	"\x12\x17\n" +
 	"\x13WINDOW_ACTION_ABOVE\x10\v\x12\x17\n" +
 	"\x13WINDOW_ACTION_BELOW\x10\f*\x9d\x01\n" +
+	"\n" +
+	"FocusModel\x12\x1b\n" +
+	"\x17FOCUS_MODEL_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14FOCUS_MODEL_NO_INPUT\x10\x01\x12\x17\n" +
+	"\x13FOCUS_MODEL_PASSIVE\x10\x02\x12\x1e\n" +
+	"\x1aFOCUS_MODEL_LOCALLY_ACTIVE\x10\x03\x12\x1f\n" +
+	"\x1bFOCUS_MODEL_GLOBALLY_ACTIVE\x10\x04*\xc7\x02\n" +
+	"\rWindowGravity\x12\x1e\n" +
+	"\x1aWINDOW_GRAVITY_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19WINDOW_GRAVITY_NORTH_WEST\x10\x01\x12\x18\n" +
+	"\x14WINDOW_GRAVITY_NORTH\x10\x02\x12\x1d\n" +
+	"\x19WINDOW_GRAVITY_NORTH_EAST\x10\x03\x12\x17\n" +
+	"\x13WINDOW_GRAVITY_WEST\x10\x04\x12\x19\n" +
+	"\x15WINDOW_GRAVITY_CENTER\x10\x05\x12\x17\n" +
+	"\x13WINDOW_GRAVITY_EAST\x10\x06\x12\x1d\n" +
+	"\x19WINDOW_GRAVITY_SOUTH_WEST\x10\a\x12\x18\n" +
+	"\x14WINDOW_GRAVITY_SOUTH\x10\b\x12\x1d\n" +
+	"\x19WINDOW_GRAVITY_SOUTH_EAST\x10\t\x12\x19\n" +
+	"\x15WINDOW_GRAVITY_STATIC\x10\n" +
+	"*\x9d\x01\n" +
 	"\tStackMode\x12\x1a\n" +
 	"\x16STACK_MODE_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10STACK_MODE_ABOVE\x10\x01\x12\x14\n" +
@@ -2901,98 +3154,104 @@ func file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDescGZIP() []by
 	return file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDescData
 }
 
-var file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
+var file_leaflow_fleet_virtualdesktop_window_v1_window_proto_enumTypes = make([]protoimpl.EnumInfo, 9)
 var file_leaflow_fleet_virtualdesktop_window_v1_window_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_leaflow_fleet_virtualdesktop_window_v1_window_proto_goTypes = []any{
 	(WindowType)(0),                   // 0: leaflow.fleet.virtualdesktop.window.v1.WindowType
 	(WindowState)(0),                  // 1: leaflow.fleet.virtualdesktop.window.v1.WindowState
 	(WindowAction)(0),                 // 2: leaflow.fleet.virtualdesktop.window.v1.WindowAction
-	(StackMode)(0),                    // 3: leaflow.fleet.virtualdesktop.window.v1.StackMode
-	(WindowStateOperation)(0),         // 4: leaflow.fleet.virtualdesktop.window.v1.WindowStateOperation
-	(VisibilityState)(0),              // 5: leaflow.fleet.virtualdesktop.window.v1.VisibilityState
-	(MoveResizeDirection)(0),          // 6: leaflow.fleet.virtualdesktop.window.v1.MoveResizeDirection
-	(*ClientMessage)(nil),             // 7: leaflow.fleet.virtualdesktop.window.v1.ClientMessage
-	(*ServerMessage)(nil),             // 8: leaflow.fleet.virtualdesktop.window.v1.ServerMessage
-	(*ClientHello)(nil),               // 9: leaflow.fleet.virtualdesktop.window.v1.ClientHello
-	(*Window)(nil),                    // 10: leaflow.fleet.virtualdesktop.window.v1.Window
-	(*SizeHints)(nil),                 // 11: leaflow.fleet.virtualdesktop.window.v1.SizeHints
-	(*WindowDestroy)(nil),             // 12: leaflow.fleet.virtualdesktop.window.v1.WindowDestroy
-	(*WindowStacking)(nil),            // 13: leaflow.fleet.virtualdesktop.window.v1.WindowStacking
-	(*WindowActivate)(nil),            // 14: leaflow.fleet.virtualdesktop.window.v1.WindowActivate
-	(*WindowRestack)(nil),             // 15: leaflow.fleet.virtualdesktop.window.v1.WindowRestack
-	(*WindowConfigure)(nil),           // 16: leaflow.fleet.virtualdesktop.window.v1.WindowConfigure
-	(*WindowClose)(nil),               // 17: leaflow.fleet.virtualdesktop.window.v1.WindowClose
-	(*WindowMinimize)(nil),            // 18: leaflow.fleet.virtualdesktop.window.v1.WindowMinimize
-	(*WindowStateChange)(nil),         // 19: leaflow.fleet.virtualdesktop.window.v1.WindowStateChange
-	(*WindowVisibility)(nil),          // 20: leaflow.fleet.virtualdesktop.window.v1.WindowVisibility
-	(*WindowInitiateMoveResize)(nil),  // 21: leaflow.fleet.virtualdesktop.window.v1.WindowInitiateMoveResize
-	(*WindowGrab)(nil),                // 22: leaflow.fleet.virtualdesktop.window.v1.WindowGrab
-	(*WindowUngrab)(nil),              // 23: leaflow.fleet.virtualdesktop.window.v1.WindowUngrab
-	(*SnapshotEnd)(nil),               // 24: leaflow.fleet.virtualdesktop.window.v1.SnapshotEnd
-	(*ActivateWindowRequest)(nil),     // 25: leaflow.fleet.virtualdesktop.window.v1.ActivateWindowRequest
-	(*ActivateWindowResponse)(nil),    // 26: leaflow.fleet.virtualdesktop.window.v1.ActivateWindowResponse
-	(*CloseWindowRequest)(nil),        // 27: leaflow.fleet.virtualdesktop.window.v1.CloseWindowRequest
-	(*CloseWindowResponse)(nil),       // 28: leaflow.fleet.virtualdesktop.window.v1.CloseWindowResponse
-	(*MinimizeWindowRequest)(nil),     // 29: leaflow.fleet.virtualdesktop.window.v1.MinimizeWindowRequest
-	(*MinimizeWindowResponse)(nil),    // 30: leaflow.fleet.virtualdesktop.window.v1.MinimizeWindowResponse
-	(*SetWindowGeometryRequest)(nil),  // 31: leaflow.fleet.virtualdesktop.window.v1.SetWindowGeometryRequest
-	(*SetWindowGeometryResponse)(nil), // 32: leaflow.fleet.virtualdesktop.window.v1.SetWindowGeometryResponse
-	(*ChangeWindowStateRequest)(nil),  // 33: leaflow.fleet.virtualdesktop.window.v1.ChangeWindowStateRequest
-	(*ChangeWindowStateResponse)(nil), // 34: leaflow.fleet.virtualdesktop.window.v1.ChangeWindowStateResponse
-	(*v1.Rectangle)(nil),              // 35: leaflow.fleet.virtualdesktop.display.v1.Rectangle
-	(*v1.Icon)(nil),                   // 36: leaflow.fleet.virtualdesktop.display.v1.Icon
+	(FocusModel)(0),                   // 3: leaflow.fleet.virtualdesktop.window.v1.FocusModel
+	(WindowGravity)(0),                // 4: leaflow.fleet.virtualdesktop.window.v1.WindowGravity
+	(StackMode)(0),                    // 5: leaflow.fleet.virtualdesktop.window.v1.StackMode
+	(WindowStateOperation)(0),         // 6: leaflow.fleet.virtualdesktop.window.v1.WindowStateOperation
+	(VisibilityState)(0),              // 7: leaflow.fleet.virtualdesktop.window.v1.VisibilityState
+	(MoveResizeDirection)(0),          // 8: leaflow.fleet.virtualdesktop.window.v1.MoveResizeDirection
+	(*ClientMessage)(nil),             // 9: leaflow.fleet.virtualdesktop.window.v1.ClientMessage
+	(*ServerMessage)(nil),             // 10: leaflow.fleet.virtualdesktop.window.v1.ServerMessage
+	(*ClientHello)(nil),               // 11: leaflow.fleet.virtualdesktop.window.v1.ClientHello
+	(*Window)(nil),                    // 12: leaflow.fleet.virtualdesktop.window.v1.Window
+	(*SizeHints)(nil),                 // 13: leaflow.fleet.virtualdesktop.window.v1.SizeHints
+	(*WindowDestroy)(nil),             // 14: leaflow.fleet.virtualdesktop.window.v1.WindowDestroy
+	(*WindowStacking)(nil),            // 15: leaflow.fleet.virtualdesktop.window.v1.WindowStacking
+	(*WindowActivate)(nil),            // 16: leaflow.fleet.virtualdesktop.window.v1.WindowActivate
+	(*WindowRestack)(nil),             // 17: leaflow.fleet.virtualdesktop.window.v1.WindowRestack
+	(*WindowConfigure)(nil),           // 18: leaflow.fleet.virtualdesktop.window.v1.WindowConfigure
+	(*WindowClose)(nil),               // 19: leaflow.fleet.virtualdesktop.window.v1.WindowClose
+	(*WindowMinimize)(nil),            // 20: leaflow.fleet.virtualdesktop.window.v1.WindowMinimize
+	(*WindowStateChange)(nil),         // 21: leaflow.fleet.virtualdesktop.window.v1.WindowStateChange
+	(*WindowVisibility)(nil),          // 22: leaflow.fleet.virtualdesktop.window.v1.WindowVisibility
+	(*WindowInitiateMoveResize)(nil),  // 23: leaflow.fleet.virtualdesktop.window.v1.WindowInitiateMoveResize
+	(*WindowGrab)(nil),                // 24: leaflow.fleet.virtualdesktop.window.v1.WindowGrab
+	(*WindowUngrab)(nil),              // 25: leaflow.fleet.virtualdesktop.window.v1.WindowUngrab
+	(*SnapshotEnd)(nil),               // 26: leaflow.fleet.virtualdesktop.window.v1.SnapshotEnd
+	(*ActivateWindowRequest)(nil),     // 27: leaflow.fleet.virtualdesktop.window.v1.ActivateWindowRequest
+	(*ActivateWindowResponse)(nil),    // 28: leaflow.fleet.virtualdesktop.window.v1.ActivateWindowResponse
+	(*CloseWindowRequest)(nil),        // 29: leaflow.fleet.virtualdesktop.window.v1.CloseWindowRequest
+	(*CloseWindowResponse)(nil),       // 30: leaflow.fleet.virtualdesktop.window.v1.CloseWindowResponse
+	(*MinimizeWindowRequest)(nil),     // 31: leaflow.fleet.virtualdesktop.window.v1.MinimizeWindowRequest
+	(*MinimizeWindowResponse)(nil),    // 32: leaflow.fleet.virtualdesktop.window.v1.MinimizeWindowResponse
+	(*SetWindowGeometryRequest)(nil),  // 33: leaflow.fleet.virtualdesktop.window.v1.SetWindowGeometryRequest
+	(*SetWindowGeometryResponse)(nil), // 34: leaflow.fleet.virtualdesktop.window.v1.SetWindowGeometryResponse
+	(*ChangeWindowStateRequest)(nil),  // 35: leaflow.fleet.virtualdesktop.window.v1.ChangeWindowStateRequest
+	(*ChangeWindowStateResponse)(nil), // 36: leaflow.fleet.virtualdesktop.window.v1.ChangeWindowStateResponse
+	(*v1.Rectangle)(nil),              // 37: leaflow.fleet.virtualdesktop.display.v1.Rectangle
+	(*v1.Icon)(nil),                   // 38: leaflow.fleet.virtualdesktop.display.v1.Icon
+	(*v1.Point)(nil),                  // 39: leaflow.fleet.virtualdesktop.display.v1.Point
 }
 var file_leaflow_fleet_virtualdesktop_window_v1_window_proto_depIdxs = []int32{
-	9,  // 0: leaflow.fleet.virtualdesktop.window.v1.ClientMessage.client_hello:type_name -> leaflow.fleet.virtualdesktop.window.v1.ClientHello
-	13, // 1: leaflow.fleet.virtualdesktop.window.v1.ClientMessage.stacking:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowStacking
-	14, // 2: leaflow.fleet.virtualdesktop.window.v1.ClientMessage.activate:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowActivate
-	16, // 3: leaflow.fleet.virtualdesktop.window.v1.ClientMessage.configure:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowConfigure
-	17, // 4: leaflow.fleet.virtualdesktop.window.v1.ClientMessage.close:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowClose
-	18, // 5: leaflow.fleet.virtualdesktop.window.v1.ClientMessage.minimize:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowMinimize
-	19, // 6: leaflow.fleet.virtualdesktop.window.v1.ClientMessage.state_change:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowStateChange
-	20, // 7: leaflow.fleet.virtualdesktop.window.v1.ClientMessage.visibility:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowVisibility
-	10, // 8: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.window:type_name -> leaflow.fleet.virtualdesktop.window.v1.Window
-	12, // 9: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.destroy:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowDestroy
-	13, // 10: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.stacking:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowStacking
-	14, // 11: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.activate:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowActivate
-	15, // 12: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.restack:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowRestack
-	21, // 13: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.initiate_move_resize:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowInitiateMoveResize
-	22, // 14: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.grab:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowGrab
-	23, // 15: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.ungrab:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowUngrab
-	24, // 16: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.snapshot_end:type_name -> leaflow.fleet.virtualdesktop.window.v1.SnapshotEnd
-	35, // 17: leaflow.fleet.virtualdesktop.window.v1.Window.geometry:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
+	11, // 0: leaflow.fleet.virtualdesktop.window.v1.ClientMessage.client_hello:type_name -> leaflow.fleet.virtualdesktop.window.v1.ClientHello
+	15, // 1: leaflow.fleet.virtualdesktop.window.v1.ClientMessage.stacking:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowStacking
+	16, // 2: leaflow.fleet.virtualdesktop.window.v1.ClientMessage.activate:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowActivate
+	18, // 3: leaflow.fleet.virtualdesktop.window.v1.ClientMessage.configure:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowConfigure
+	19, // 4: leaflow.fleet.virtualdesktop.window.v1.ClientMessage.close:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowClose
+	20, // 5: leaflow.fleet.virtualdesktop.window.v1.ClientMessage.minimize:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowMinimize
+	21, // 6: leaflow.fleet.virtualdesktop.window.v1.ClientMessage.state_change:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowStateChange
+	22, // 7: leaflow.fleet.virtualdesktop.window.v1.ClientMessage.visibility:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowVisibility
+	12, // 8: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.window:type_name -> leaflow.fleet.virtualdesktop.window.v1.Window
+	14, // 9: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.destroy:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowDestroy
+	15, // 10: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.stacking:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowStacking
+	16, // 11: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.activate:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowActivate
+	17, // 12: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.restack:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowRestack
+	23, // 13: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.initiate_move_resize:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowInitiateMoveResize
+	24, // 14: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.grab:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowGrab
+	25, // 15: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.ungrab:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowUngrab
+	26, // 16: leaflow.fleet.virtualdesktop.window.v1.ServerMessage.snapshot_end:type_name -> leaflow.fleet.virtualdesktop.window.v1.SnapshotEnd
+	37, // 17: leaflow.fleet.virtualdesktop.window.v1.Window.geometry:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
 	0,  // 18: leaflow.fleet.virtualdesktop.window.v1.Window.window_types:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowType
 	1,  // 19: leaflow.fleet.virtualdesktop.window.v1.Window.states:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowState
 	2,  // 20: leaflow.fleet.virtualdesktop.window.v1.Window.allowed_actions:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowAction
-	11, // 21: leaflow.fleet.virtualdesktop.window.v1.Window.size_hints:type_name -> leaflow.fleet.virtualdesktop.window.v1.SizeHints
-	36, // 22: leaflow.fleet.virtualdesktop.window.v1.Window.icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
-	3,  // 23: leaflow.fleet.virtualdesktop.window.v1.WindowRestack.stack_mode:type_name -> leaflow.fleet.virtualdesktop.window.v1.StackMode
-	35, // 24: leaflow.fleet.virtualdesktop.window.v1.WindowConfigure.geometry:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
-	4,  // 25: leaflow.fleet.virtualdesktop.window.v1.WindowStateChange.operation:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowStateOperation
-	1,  // 26: leaflow.fleet.virtualdesktop.window.v1.WindowStateChange.states:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowState
-	5,  // 27: leaflow.fleet.virtualdesktop.window.v1.WindowVisibility.visibility:type_name -> leaflow.fleet.virtualdesktop.window.v1.VisibilityState
-	6,  // 28: leaflow.fleet.virtualdesktop.window.v1.WindowInitiateMoveResize.direction:type_name -> leaflow.fleet.virtualdesktop.window.v1.MoveResizeDirection
-	35, // 29: leaflow.fleet.virtualdesktop.window.v1.SetWindowGeometryRequest.geometry:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
-	35, // 30: leaflow.fleet.virtualdesktop.window.v1.SetWindowGeometryResponse.geometry:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
-	4,  // 31: leaflow.fleet.virtualdesktop.window.v1.ChangeWindowStateRequest.operation:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowStateOperation
-	1,  // 32: leaflow.fleet.virtualdesktop.window.v1.ChangeWindowStateRequest.states:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowState
-	1,  // 33: leaflow.fleet.virtualdesktop.window.v1.ChangeWindowStateResponse.states:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowState
-	35, // 34: leaflow.fleet.virtualdesktop.window.v1.ChangeWindowStateResponse.geometry:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
-	25, // 35: leaflow.fleet.virtualdesktop.window.v1.WindowService.ActivateWindow:input_type -> leaflow.fleet.virtualdesktop.window.v1.ActivateWindowRequest
-	27, // 36: leaflow.fleet.virtualdesktop.window.v1.WindowService.CloseWindow:input_type -> leaflow.fleet.virtualdesktop.window.v1.CloseWindowRequest
-	29, // 37: leaflow.fleet.virtualdesktop.window.v1.WindowService.MinimizeWindow:input_type -> leaflow.fleet.virtualdesktop.window.v1.MinimizeWindowRequest
-	31, // 38: leaflow.fleet.virtualdesktop.window.v1.WindowService.SetWindowGeometry:input_type -> leaflow.fleet.virtualdesktop.window.v1.SetWindowGeometryRequest
-	33, // 39: leaflow.fleet.virtualdesktop.window.v1.WindowService.ChangeWindowState:input_type -> leaflow.fleet.virtualdesktop.window.v1.ChangeWindowStateRequest
-	26, // 40: leaflow.fleet.virtualdesktop.window.v1.WindowService.ActivateWindow:output_type -> leaflow.fleet.virtualdesktop.window.v1.ActivateWindowResponse
-	28, // 41: leaflow.fleet.virtualdesktop.window.v1.WindowService.CloseWindow:output_type -> leaflow.fleet.virtualdesktop.window.v1.CloseWindowResponse
-	30, // 42: leaflow.fleet.virtualdesktop.window.v1.WindowService.MinimizeWindow:output_type -> leaflow.fleet.virtualdesktop.window.v1.MinimizeWindowResponse
-	32, // 43: leaflow.fleet.virtualdesktop.window.v1.WindowService.SetWindowGeometry:output_type -> leaflow.fleet.virtualdesktop.window.v1.SetWindowGeometryResponse
-	34, // 44: leaflow.fleet.virtualdesktop.window.v1.WindowService.ChangeWindowState:output_type -> leaflow.fleet.virtualdesktop.window.v1.ChangeWindowStateResponse
-	40, // [40:45] is the sub-list for method output_type
-	35, // [35:40] is the sub-list for method input_type
-	35, // [35:35] is the sub-list for extension type_name
-	35, // [35:35] is the sub-list for extension extendee
-	0,  // [0:35] is the sub-list for field type_name
+	13, // 21: leaflow.fleet.virtualdesktop.window.v1.Window.size_hints:type_name -> leaflow.fleet.virtualdesktop.window.v1.SizeHints
+	38, // 22: leaflow.fleet.virtualdesktop.window.v1.Window.icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
+	4,  // 23: leaflow.fleet.virtualdesktop.window.v1.Window.gravity:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowGravity
+	3,  // 24: leaflow.fleet.virtualdesktop.window.v1.Window.focus_model:type_name -> leaflow.fleet.virtualdesktop.window.v1.FocusModel
+	39, // 25: leaflow.fleet.virtualdesktop.window.v1.Window.requested_position:type_name -> leaflow.fleet.virtualdesktop.display.v1.Point
+	5,  // 26: leaflow.fleet.virtualdesktop.window.v1.WindowRestack.stack_mode:type_name -> leaflow.fleet.virtualdesktop.window.v1.StackMode
+	37, // 27: leaflow.fleet.virtualdesktop.window.v1.WindowConfigure.geometry:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
+	6,  // 28: leaflow.fleet.virtualdesktop.window.v1.WindowStateChange.operation:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowStateOperation
+	1,  // 29: leaflow.fleet.virtualdesktop.window.v1.WindowStateChange.states:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowState
+	7,  // 30: leaflow.fleet.virtualdesktop.window.v1.WindowVisibility.visibility:type_name -> leaflow.fleet.virtualdesktop.window.v1.VisibilityState
+	8,  // 31: leaflow.fleet.virtualdesktop.window.v1.WindowInitiateMoveResize.direction:type_name -> leaflow.fleet.virtualdesktop.window.v1.MoveResizeDirection
+	37, // 32: leaflow.fleet.virtualdesktop.window.v1.SetWindowGeometryRequest.geometry:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
+	37, // 33: leaflow.fleet.virtualdesktop.window.v1.SetWindowGeometryResponse.geometry:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
+	6,  // 34: leaflow.fleet.virtualdesktop.window.v1.ChangeWindowStateRequest.operation:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowStateOperation
+	1,  // 35: leaflow.fleet.virtualdesktop.window.v1.ChangeWindowStateRequest.states:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowState
+	1,  // 36: leaflow.fleet.virtualdesktop.window.v1.ChangeWindowStateResponse.states:type_name -> leaflow.fleet.virtualdesktop.window.v1.WindowState
+	37, // 37: leaflow.fleet.virtualdesktop.window.v1.ChangeWindowStateResponse.geometry:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
+	27, // 38: leaflow.fleet.virtualdesktop.window.v1.WindowService.ActivateWindow:input_type -> leaflow.fleet.virtualdesktop.window.v1.ActivateWindowRequest
+	29, // 39: leaflow.fleet.virtualdesktop.window.v1.WindowService.CloseWindow:input_type -> leaflow.fleet.virtualdesktop.window.v1.CloseWindowRequest
+	31, // 40: leaflow.fleet.virtualdesktop.window.v1.WindowService.MinimizeWindow:input_type -> leaflow.fleet.virtualdesktop.window.v1.MinimizeWindowRequest
+	33, // 41: leaflow.fleet.virtualdesktop.window.v1.WindowService.SetWindowGeometry:input_type -> leaflow.fleet.virtualdesktop.window.v1.SetWindowGeometryRequest
+	35, // 42: leaflow.fleet.virtualdesktop.window.v1.WindowService.ChangeWindowState:input_type -> leaflow.fleet.virtualdesktop.window.v1.ChangeWindowStateRequest
+	28, // 43: leaflow.fleet.virtualdesktop.window.v1.WindowService.ActivateWindow:output_type -> leaflow.fleet.virtualdesktop.window.v1.ActivateWindowResponse
+	30, // 44: leaflow.fleet.virtualdesktop.window.v1.WindowService.CloseWindow:output_type -> leaflow.fleet.virtualdesktop.window.v1.CloseWindowResponse
+	32, // 45: leaflow.fleet.virtualdesktop.window.v1.WindowService.MinimizeWindow:output_type -> leaflow.fleet.virtualdesktop.window.v1.MinimizeWindowResponse
+	34, // 46: leaflow.fleet.virtualdesktop.window.v1.WindowService.SetWindowGeometry:output_type -> leaflow.fleet.virtualdesktop.window.v1.SetWindowGeometryResponse
+	36, // 47: leaflow.fleet.virtualdesktop.window.v1.WindowService.ChangeWindowState:output_type -> leaflow.fleet.virtualdesktop.window.v1.ChangeWindowStateResponse
+	43, // [43:48] is the sub-list for method output_type
+	38, // [38:43] is the sub-list for method input_type
+	38, // [38:38] is the sub-list for extension type_name
+	38, // [38:38] is the sub-list for extension extendee
+	0,  // [0:38] is the sub-list for field type_name
 }
 
 func init() { file_leaflow_fleet_virtualdesktop_window_v1_window_proto_init() }
@@ -3028,7 +3287,7 @@ func file_leaflow_fleet_virtualdesktop_window_v1_window_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDesc), len(file_leaflow_fleet_virtualdesktop_window_v1_window_proto_rawDesc)),
-			NumEnums:      7,
+			NumEnums:      9,
 			NumMessages:   28,
 			NumExtensions: 0,
 			NumServices:   1,
