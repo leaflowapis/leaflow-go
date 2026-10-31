@@ -406,7 +406,8 @@ type Handler interface {
 	ListAllowances(ctx context.Context, params ListAllowancesParams) (*AllowanceList, error)
 	// ListBillingAccounts implements list-billing-accounts operation.
 	//
-	// Billing accounts owned by the authenticated user.
+	// Billing accounts owned by the authenticated user. Filter by status with `status`; omit it to list
+	// every status.
 	//
 	// GET /api/v1/billing-accounts
 	ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (*BillingAccountList, error)

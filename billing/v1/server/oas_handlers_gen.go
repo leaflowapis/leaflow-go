@@ -7967,7 +7967,8 @@ func (s *Server) handleListAllowancesRequest(args [0]string, argsEscaped bool, w
 
 // handleListBillingAccountsRequest handles list-billing-accounts operation.
 //
-// Billing accounts owned by the authenticated user.
+// Billing accounts owned by the authenticated user. Filter by status with `status`; omit it to list
+// every status.
 //
 // GET /api/v1/billing-accounts
 func (s *Server) handleListBillingAccountsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8118,6 +8119,10 @@ func (s *Server) handleListBillingAccountsRequest(args [0]string, argsEscaped bo
 					Name: "page_size",
 					In:   "query",
 				}: params.PageSize,
+				{
+					Name: "status",
+					In:   "query",
+				}: params.Status,
 			},
 			Raw: r,
 		}

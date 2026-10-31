@@ -528,7 +528,8 @@ func (UnimplementedHandler) ListAllowances(ctx context.Context, params ListAllow
 
 // ListBillingAccounts implements list-billing-accounts operation.
 //
-// Billing accounts owned by the authenticated user.
+// Billing accounts owned by the authenticated user. Filter by status with `status`; omit it to list
+// every status.
 //
 // GET /api/v1/billing-accounts
 func (UnimplementedHandler) ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (r *BillingAccountList, _ error) {

@@ -576,6 +576,62 @@ func (x *Size) GetHeight() uint32 {
 	return 0
 }
 
+// A point in pixels (X11 x, y). The field that holds it states the coordinate
+// space.
+type Point struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The horizontal coordinate. Negative when it lies left of the origin.
+	X int32 `protobuf:"zigzag32,1,opt,name=x,proto3" json:"x,omitempty"`
+	// The vertical coordinate. Negative when it lies above the origin.
+	Y             int32 `protobuf:"zigzag32,2,opt,name=y,proto3" json:"y,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Point) Reset() {
+	*x = Point{}
+	mi := &file_leaflow_fleet_virtualdesktop_display_v1_display_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Point) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Point) ProtoMessage() {}
+
+func (x *Point) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_virtualdesktop_display_v1_display_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Point.ProtoReflect.Descriptor instead.
+func (*Point) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_virtualdesktop_display_v1_display_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *Point) GetX() int32 {
+	if x != nil {
+		return x.X
+	}
+	return 0
+}
+
+func (x *Point) GetY() int32 {
+	if x != nil {
+		return x.Y
+	}
+	return 0
+}
+
 // An axis-aligned rectangle in pixels (X11 RECTANGLE). The field that holds it
 // states the coordinate space.
 type Rectangle struct {
@@ -594,7 +650,7 @@ type Rectangle struct {
 
 func (x *Rectangle) Reset() {
 	*x = Rectangle{}
-	mi := &file_leaflow_fleet_virtualdesktop_display_v1_display_proto_msgTypes[7]
+	mi := &file_leaflow_fleet_virtualdesktop_display_v1_display_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -606,7 +662,7 @@ func (x *Rectangle) String() string {
 func (*Rectangle) ProtoMessage() {}
 
 func (x *Rectangle) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_virtualdesktop_display_v1_display_proto_msgTypes[7]
+	mi := &file_leaflow_fleet_virtualdesktop_display_v1_display_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -619,7 +675,7 @@ func (x *Rectangle) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Rectangle.ProtoReflect.Descriptor instead.
 func (*Rectangle) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_display_v1_display_proto_rawDescGZIP(), []int{7}
+	return file_leaflow_fleet_virtualdesktop_display_v1_display_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Rectangle) GetX() int32 {
@@ -677,7 +733,7 @@ type Image struct {
 
 func (x *Image) Reset() {
 	*x = Image{}
-	mi := &file_leaflow_fleet_virtualdesktop_display_v1_display_proto_msgTypes[8]
+	mi := &file_leaflow_fleet_virtualdesktop_display_v1_display_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -689,7 +745,7 @@ func (x *Image) String() string {
 func (*Image) ProtoMessage() {}
 
 func (x *Image) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_virtualdesktop_display_v1_display_proto_msgTypes[8]
+	mi := &file_leaflow_fleet_virtualdesktop_display_v1_display_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -702,7 +758,7 @@ func (x *Image) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Image.ProtoReflect.Descriptor instead.
 func (*Image) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_display_v1_display_proto_rawDescGZIP(), []int{8}
+	return file_leaflow_fleet_virtualdesktop_display_v1_display_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *Image) GetMimeType() string {
@@ -748,7 +804,7 @@ type Icon struct {
 
 func (x *Icon) Reset() {
 	*x = Icon{}
-	mi := &file_leaflow_fleet_virtualdesktop_display_v1_display_proto_msgTypes[9]
+	mi := &file_leaflow_fleet_virtualdesktop_display_v1_display_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -760,7 +816,7 @@ func (x *Icon) String() string {
 func (*Icon) ProtoMessage() {}
 
 func (x *Icon) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_virtualdesktop_display_v1_display_proto_msgTypes[9]
+	mi := &file_leaflow_fleet_virtualdesktop_display_v1_display_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -773,7 +829,7 @@ func (x *Icon) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Icon.ProtoReflect.Descriptor instead.
 func (*Icon) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_display_v1_display_proto_rawDescGZIP(), []int{9}
+	return file_leaflow_fleet_virtualdesktop_display_v1_display_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Icon) GetImages() []*Image {
@@ -823,7 +879,10 @@ const file_leaflow_fleet_virtualdesktop_display_v1_display_proto_rawDesc = "" +
 	"\vSnapshotEnd\"4\n" +
 	"\x04Size\x12\x14\n" +
 	"\x05width\x18\x01 \x01(\rR\x05width\x12\x16\n" +
-	"\x06height\x18\x02 \x01(\rR\x06height\"U\n" +
+	"\x06height\x18\x02 \x01(\rR\x06height\"#\n" +
+	"\x05Point\x12\f\n" +
+	"\x01x\x18\x01 \x01(\x11R\x01x\x12\f\n" +
+	"\x01y\x18\x02 \x01(\x11R\x01y\"U\n" +
 	"\tRectangle\x12\f\n" +
 	"\x01x\x18\x01 \x01(\x11R\x01x\x12\f\n" +
 	"\x01y\x18\x02 \x01(\x11R\x01y\x12\x14\n" +
@@ -855,7 +914,7 @@ func file_leaflow_fleet_virtualdesktop_display_v1_display_proto_rawDescGZIP() []
 }
 
 var file_leaflow_fleet_virtualdesktop_display_v1_display_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_leaflow_fleet_virtualdesktop_display_v1_display_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_leaflow_fleet_virtualdesktop_display_v1_display_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_leaflow_fleet_virtualdesktop_display_v1_display_proto_goTypes = []any{
 	(SessionMode)(0),         // 0: leaflow.fleet.virtualdesktop.display.v1.SessionMode
 	(*ClientMessage)(nil),    // 1: leaflow.fleet.virtualdesktop.display.v1.ClientMessage
@@ -865,9 +924,10 @@ var file_leaflow_fleet_virtualdesktop_display_v1_display_proto_goTypes = []any{
 	(*FrameExtents)(nil),     // 5: leaflow.fleet.virtualdesktop.display.v1.FrameExtents
 	(*SnapshotEnd)(nil),      // 6: leaflow.fleet.virtualdesktop.display.v1.SnapshotEnd
 	(*Size)(nil),             // 7: leaflow.fleet.virtualdesktop.display.v1.Size
-	(*Rectangle)(nil),        // 8: leaflow.fleet.virtualdesktop.display.v1.Rectangle
-	(*Image)(nil),            // 9: leaflow.fleet.virtualdesktop.display.v1.Image
-	(*Icon)(nil),             // 10: leaflow.fleet.virtualdesktop.display.v1.Icon
+	(*Point)(nil),            // 8: leaflow.fleet.virtualdesktop.display.v1.Point
+	(*Rectangle)(nil),        // 9: leaflow.fleet.virtualdesktop.display.v1.Rectangle
+	(*Image)(nil),            // 10: leaflow.fleet.virtualdesktop.display.v1.Image
+	(*Icon)(nil),             // 11: leaflow.fleet.virtualdesktop.display.v1.Icon
 }
 var file_leaflow_fleet_virtualdesktop_display_v1_display_proto_depIdxs = []int32{
 	4,  // 0: leaflow.fleet.virtualdesktop.display.v1.ClientMessage.configure:type_name -> leaflow.fleet.virtualdesktop.display.v1.DisplayConfigure
@@ -876,12 +936,12 @@ var file_leaflow_fleet_virtualdesktop_display_v1_display_proto_depIdxs = []int32
 	0,  // 3: leaflow.fleet.virtualdesktop.display.v1.Display.session_mode:type_name -> leaflow.fleet.virtualdesktop.display.v1.SessionMode
 	7,  // 4: leaflow.fleet.virtualdesktop.display.v1.Display.size:type_name -> leaflow.fleet.virtualdesktop.display.v1.Size
 	7,  // 5: leaflow.fleet.virtualdesktop.display.v1.Display.max_size:type_name -> leaflow.fleet.virtualdesktop.display.v1.Size
-	8,  // 6: leaflow.fleet.virtualdesktop.display.v1.Display.work_area:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
+	9,  // 6: leaflow.fleet.virtualdesktop.display.v1.Display.work_area:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
 	7,  // 7: leaflow.fleet.virtualdesktop.display.v1.DisplayConfigure.size:type_name -> leaflow.fleet.virtualdesktop.display.v1.Size
-	8,  // 8: leaflow.fleet.virtualdesktop.display.v1.DisplayConfigure.work_area:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
+	9,  // 8: leaflow.fleet.virtualdesktop.display.v1.DisplayConfigure.work_area:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
 	5,  // 9: leaflow.fleet.virtualdesktop.display.v1.DisplayConfigure.frame_extents:type_name -> leaflow.fleet.virtualdesktop.display.v1.FrameExtents
 	7,  // 10: leaflow.fleet.virtualdesktop.display.v1.Image.size:type_name -> leaflow.fleet.virtualdesktop.display.v1.Size
-	9,  // 11: leaflow.fleet.virtualdesktop.display.v1.Icon.images:type_name -> leaflow.fleet.virtualdesktop.display.v1.Image
+	10, // 11: leaflow.fleet.virtualdesktop.display.v1.Icon.images:type_name -> leaflow.fleet.virtualdesktop.display.v1.Image
 	12, // [12:12] is the sub-list for method output_type
 	12, // [12:12] is the sub-list for method input_type
 	12, // [12:12] is the sub-list for extension type_name
@@ -908,7 +968,7 @@ func file_leaflow_fleet_virtualdesktop_display_v1_display_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_leaflow_fleet_virtualdesktop_display_v1_display_proto_rawDesc), len(file_leaflow_fleet_virtualdesktop_display_v1_display_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   10,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

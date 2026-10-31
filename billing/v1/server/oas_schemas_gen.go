@@ -1376,6 +1376,8 @@ func (s *BillingAccountList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
+// Whether the account is usable, suspended, or closed.
+// Ref: #/components/schemas/BillingAccountStatus
 type BillingAccountStatus string
 
 const (

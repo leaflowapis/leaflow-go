@@ -427,7 +427,8 @@ type Invoker interface {
 	ListAllowances(ctx context.Context, params ListAllowancesParams) (*AllowanceList, error)
 	// ListBillingAccounts invokes list-billing-accounts operation.
 	//
-	// Billing accounts owned by the authenticated user.
+	// Billing accounts owned by the authenticated user. Filter by status with `status`; omit it to list
+	// every status.
 	//
 	// GET /api/v1/billing-accounts
 	ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (*BillingAccountList, error)
@@ -6563,7 +6564,8 @@ func (c *Client) sendListAllowances(ctx context.Context, params ListAllowancesPa
 
 // ListBillingAccounts invokes list-billing-accounts operation.
 //
-// Billing accounts owned by the authenticated user.
+// Billing accounts owned by the authenticated user. Filter by status with `status`; omit it to list
+// every status.
 //
 // GET /api/v1/billing-accounts
 func (c *Client) ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (*BillingAccountList, error) {
@@ -6642,6 +6644,32 @@ func (c *Client) sendListBillingAccounts(ctx context.Context, params ListBilling
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.PageSize.Get(); ok {
 				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "status" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if params.Status != nil {
+				return e.EncodeArray(func(e uri.Encoder) error {
+					for i, item := range params.Status {
+						if err := func() error {
+							return e.EncodeValue(conv.StringToString(string(item)))
+						}(); err != nil {
+							return errors.Wrapf(err, "[%d]", i)
+						}
+					}
+					return nil
+				})
 			}
 			return nil
 		}); err != nil {
