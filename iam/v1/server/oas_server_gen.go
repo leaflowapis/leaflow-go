@@ -110,7 +110,7 @@ type Handler interface {
 	// GetProjectMembership implements get-project-membership operation.
 	//
 	// Facts rather than a conclusion. There is no `allowed` field here, because each service holds the
-	// catalogue mapping its operations to permissions and decides on its own.
+	// permissions its operations need and decides on its own.
 	//
 	// GET /api/v1/membership
 	GetProjectMembership(ctx context.Context) (*MembershipResource, error)
@@ -140,6 +140,13 @@ type Handler interface {
 	//
 	// GET /api/v1/applications
 	ListApplications(ctx context.Context, params ListApplicationsParams) (*LengthAwarePageApplicationResource, error)
+	// ListInvitations implements list-invitations operation.
+	//
+	// Visible to any member, on the same rule as the member list. Who has been invited is part of who is
+	// in the project.
+	//
+	// GET /api/v1/invitations
+	ListInvitations(ctx context.Context, params ListInvitationsParams) (*LengthAwarePageInvitationResource, error)
 	// ListMembers implements list-members operation.
 	//
 	// List the members of a project.
@@ -148,13 +155,14 @@ type Handler interface {
 	ListMembers(ctx context.Context, params ListMembersParams) (*LengthAwarePageMemberResource, error)
 	// ListPermissions implements list-permissions operation.
 	//
-	// Each service registers its own catalogue with IAM at start-up, so this is the platform-wide list
-	// rather than the permissions of IAM alone. IAM does not decide anything with it — each service
-	// decides using the caller's grant together with its own catalogue, and this list only serves to
-	// render the choices. A service that has never started does not appear here.
+	// Each service registers the permissions it enforces with IAM at start-up, so this is the
+	// platform-wide list rather than the permissions of IAM alone. IAM does not decide anything with it
+	// — each service decides using the caller's grant together with the permissions compiled into its
+	// own binary, and this list only serves to render the choices. A service that has never started does
+	// not appear here.
 	//
 	// GET /api/v1/permissions
-	ListPermissions(ctx context.Context) (*CatalogListResponseBody, error)
+	ListPermissions(ctx context.Context) (*PermissionListResponseBody, error)
 	// ListPolicies implements list-policies operation.
 	//
 	// Visible to any member, on the same rule as the member list. What has been granted to whom is part of
@@ -162,13 +170,6 @@ type Handler interface {
 	//
 	// GET /api/v1/policies
 	ListPolicies(ctx context.Context, params ListPoliciesParams) (*PolicyListResponseBody, error)
-	// ListProjectInvitations implements list-project-invitations operation.
-	//
-	// Visible to any member, on the same rule as the member list. Who has been invited is part of who is
-	// in the project.
-	//
-	// GET /api/v1/invitations
-	ListProjectInvitations(ctx context.Context, params ListProjectInvitationsParams) (*LengthAwarePageInvitationResource, error)
 	// ListQuotas implements list-quotas operation.
 	//
 	// How much of something this project may have in each service, such as instances or VPCs, with the

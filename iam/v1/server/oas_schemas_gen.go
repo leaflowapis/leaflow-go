@@ -406,59 +406,6 @@ func (s *BearerAuth) SetRoles(val []string) {
 	s.Roles = val
 }
 
-// Ref: #/components/schemas/CatalogListResponseBody
-type CatalogListResponseBody struct {
-	Items []CatalogResource `json:"items"`
-}
-
-// GetItems returns the value of Items.
-func (s *CatalogListResponseBody) GetItems() []CatalogResource {
-	return s.Items
-}
-
-// SetItems sets the value of Items.
-func (s *CatalogListResponseBody) SetItems(val []CatalogResource) {
-	s.Items = val
-}
-
-// Ref: #/components/schemas/CatalogResource
-type CatalogResource struct {
-	Permissions []PermissionResource `json:"permissions"`
-	// The resource types this service declares. A scoped rule can only land on one of them.
-	ResourceTypes []ResourceTypeResource `json:"resource_types"`
-	Service       string                 `json:"service"`
-}
-
-// GetPermissions returns the value of Permissions.
-func (s *CatalogResource) GetPermissions() []PermissionResource {
-	return s.Permissions
-}
-
-// GetResourceTypes returns the value of ResourceTypes.
-func (s *CatalogResource) GetResourceTypes() []ResourceTypeResource {
-	return s.ResourceTypes
-}
-
-// GetService returns the value of Service.
-func (s *CatalogResource) GetService() string {
-	return s.Service
-}
-
-// SetPermissions sets the value of Permissions.
-func (s *CatalogResource) SetPermissions(val []PermissionResource) {
-	s.Permissions = val
-}
-
-// SetResourceTypes sets the value of ResourceTypes.
-func (s *CatalogResource) SetResourceTypes(val []ResourceTypeResource) {
-	s.ResourceTypes = val
-}
-
-// SetService sets the value of Service.
-func (s *CatalogResource) SetService(val string) {
-	s.Service = val
-}
-
 // Ref: #/components/schemas/CreateApplicationRequestBody
 type CreateApplicationRequestBody struct {
 	Name         string                           `json:"name"`
@@ -1950,6 +1897,21 @@ func (s *OwnershipTransferResponseBody) SetTo(val MemberResource) {
 	s.To = val
 }
 
+// Ref: #/components/schemas/PermissionListResponseBody
+type PermissionListResponseBody struct {
+	Items []PermissionResource `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *PermissionListResponseBody) GetItems() []PermissionResource {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *PermissionListResponseBody) SetItems(val []PermissionResource) {
+	s.Items = val
+}
+
 // Ref: #/components/schemas/PermissionResource
 type PermissionResource struct {
 	// The code of the permission, such as compute:instance.delete. There is no display name here — what
@@ -2656,23 +2618,6 @@ func (s *ResourceRefResource) SetID(val string) {
 // SetType sets the value of Type.
 func (s *ResourceRefResource) SetType(val string) {
 	s.Type = val
-}
-
-// Ref: #/components/schemas/ResourceTypeResource
-type ResourceTypeResource struct {
-	// The code of the resource type, such as dns:zone. There is no display name here either; what it reads
-	// as is decided by the layer rendering it.
-	Name string `json:"name"`
-}
-
-// GetName returns the value of Name.
-func (s *ResourceTypeResource) GetName() string {
-	return s.Name
-}
-
-// SetName sets the value of Name.
-func (s *ResourceTypeResource) SetName(val string) {
-	s.Name = val
 }
 
 // RevokeInvitationNoContent is response for RevokeInvitation operation.

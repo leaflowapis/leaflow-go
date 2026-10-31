@@ -131,7 +131,7 @@ type Invoker interface {
 	// GetProjectMembership invokes get-project-membership operation.
 	//
 	// Facts rather than a conclusion. There is no `allowed` field here, because each service holds the
-	// catalogue mapping its operations to permissions and decides on its own.
+	// permissions its operations need and decides on its own.
 	//
 	// GET /api/v1/membership
 	GetProjectMembership(ctx context.Context) (*MembershipResource, error)
@@ -161,6 +161,13 @@ type Invoker interface {
 	//
 	// GET /api/v1/applications
 	ListApplications(ctx context.Context, params ListApplicationsParams) (*LengthAwarePageApplicationResource, error)
+	// ListInvitations invokes list-invitations operation.
+	//
+	// Visible to any member, on the same rule as the member list. Who has been invited is part of who is
+	// in the project.
+	//
+	// GET /api/v1/invitations
+	ListInvitations(ctx context.Context, params ListInvitationsParams) (*LengthAwarePageInvitationResource, error)
 	// ListMembers invokes list-members operation.
 	//
 	// List the members of a project.
@@ -169,13 +176,14 @@ type Invoker interface {
 	ListMembers(ctx context.Context, params ListMembersParams) (*LengthAwarePageMemberResource, error)
 	// ListPermissions invokes list-permissions operation.
 	//
-	// Each service registers its own catalogue with IAM at start-up, so this is the platform-wide list
-	// rather than the permissions of IAM alone. IAM does not decide anything with it — each service
-	// decides using the caller's grant together with its own catalogue, and this list only serves to
-	// render the choices. A service that has never started does not appear here.
+	// Each service registers the permissions it enforces with IAM at start-up, so this is the
+	// platform-wide list rather than the permissions of IAM alone. IAM does not decide anything with it
+	// — each service decides using the caller's grant together with the permissions compiled into its
+	// own binary, and this list only serves to render the choices. A service that has never started does
+	// not appear here.
 	//
 	// GET /api/v1/permissions
-	ListPermissions(ctx context.Context) (*CatalogListResponseBody, error)
+	ListPermissions(ctx context.Context) (*PermissionListResponseBody, error)
 	// ListPolicies invokes list-policies operation.
 	//
 	// Visible to any member, on the same rule as the member list. What has been granted to whom is part of
@@ -183,13 +191,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/policies
 	ListPolicies(ctx context.Context, params ListPoliciesParams) (*PolicyListResponseBody, error)
-	// ListProjectInvitations invokes list-project-invitations operation.
-	//
-	// Visible to any member, on the same rule as the member list. Who has been invited is part of who is
-	// in the project.
-	//
-	// GET /api/v1/invitations
-	ListProjectInvitations(ctx context.Context, params ListProjectInvitationsParams) (*LengthAwarePageInvitationResource, error)
 	// ListQuotas invokes list-quotas operation.
 	//
 	// How much of something this project may have in each service, such as instances or VPCs, with the
@@ -1895,7 +1896,7 @@ func (c *Client) sendGetProject(ctx context.Context) (res *ProjectAccessResource
 // GetProjectMembership invokes get-project-membership operation.
 //
 // Facts rather than a conclusion. There is no `allowed` field here, because each service holds the
-// catalogue mapping its operations to permissions and decides on its own.
+// permissions its operations need and decides on its own.
 //
 // GET /api/v1/membership
 func (c *Client) GetProjectMembership(ctx context.Context) (*MembershipResource, error) {
@@ -2563,6 +2564,158 @@ func (c *Client) sendListApplications(ctx context.Context, params ListApplicatio
 	return result, nil
 }
 
+// ListInvitations invokes list-invitations operation.
+//
+// Visible to any member, on the same rule as the member list. Who has been invited is part of who is
+// in the project.
+//
+// GET /api/v1/invitations
+func (c *Client) ListInvitations(ctx context.Context, params ListInvitationsParams) (*LengthAwarePageInvitationResource, error) {
+	res, err := c.sendListInvitations(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListInvitations(ctx context.Context, params ListInvitationsParams) (res *LengthAwarePageInvitationResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-invitations"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/invitations"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListInvitationsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/invitations"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "limit" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Limit.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "offset" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "offset",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Offset.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListInvitationsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListInvitationsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListMembers invokes list-members operation.
 //
 // List the members of a project.
@@ -2733,18 +2886,19 @@ func (c *Client) sendListMembers(ctx context.Context, params ListMembersParams) 
 
 // ListPermissions invokes list-permissions operation.
 //
-// Each service registers its own catalogue with IAM at start-up, so this is the platform-wide list
-// rather than the permissions of IAM alone. IAM does not decide anything with it — each service
-// decides using the caller's grant together with its own catalogue, and this list only serves to
-// render the choices. A service that has never started does not appear here.
+// Each service registers the permissions it enforces with IAM at start-up, so this is the
+// platform-wide list rather than the permissions of IAM alone. IAM does not decide anything with it
+// — each service decides using the caller's grant together with the permissions compiled into its
+// own binary, and this list only serves to render the choices. A service that has never started does
+// not appear here.
 //
 // GET /api/v1/permissions
-func (c *Client) ListPermissions(ctx context.Context) (*CatalogListResponseBody, error) {
+func (c *Client) ListPermissions(ctx context.Context) (*PermissionListResponseBody, error) {
 	res, err := c.sendListPermissions(ctx)
 	return res, err
 }
 
-func (c *Client) sendListPermissions(ctx context.Context) (res *CatalogListResponseBody, err error) {
+func (c *Client) sendListPermissions(ctx context.Context) (res *PermissionListResponseBody, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-permissions"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -2942,158 +3096,6 @@ func (c *Client) sendListPolicies(ctx context.Context, params ListPoliciesParams
 
 	stage = "DecodeResponse"
 	result, err := decodeListPoliciesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListProjectInvitations invokes list-project-invitations operation.
-//
-// Visible to any member, on the same rule as the member list. Who has been invited is part of who is
-// in the project.
-//
-// GET /api/v1/invitations
-func (c *Client) ListProjectInvitations(ctx context.Context, params ListProjectInvitationsParams) (*LengthAwarePageInvitationResource, error) {
-	res, err := c.sendListProjectInvitations(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListProjectInvitations(ctx context.Context, params ListProjectInvitationsParams) (res *LengthAwarePageInvitationResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-project-invitations"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/invitations"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectInvitationsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/invitations"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "limit" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "limit",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Limit.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "offset" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "offset",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Offset.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListProjectInvitationsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListProjectInvitationsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

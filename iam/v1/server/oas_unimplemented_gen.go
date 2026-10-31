@@ -151,7 +151,7 @@ func (UnimplementedHandler) GetProject(ctx context.Context) (r *ProjectAccessRes
 // GetProjectMembership implements get-project-membership operation.
 //
 // Facts rather than a conclusion. There is no `allowed` field here, because each service holds the
-// catalogue mapping its operations to permissions and decides on its own.
+// permissions its operations need and decides on its own.
 //
 // GET /api/v1/membership
 func (UnimplementedHandler) GetProjectMembership(ctx context.Context) (r *MembershipResource, _ error) {
@@ -196,6 +196,16 @@ func (UnimplementedHandler) ListApplications(ctx context.Context, params ListApp
 	return r, ht.ErrNotImplemented
 }
 
+// ListInvitations implements list-invitations operation.
+//
+// Visible to any member, on the same rule as the member list. Who has been invited is part of who is
+// in the project.
+//
+// GET /api/v1/invitations
+func (UnimplementedHandler) ListInvitations(ctx context.Context, params ListInvitationsParams) (r *LengthAwarePageInvitationResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListMembers implements list-members operation.
 //
 // List the members of a project.
@@ -207,13 +217,14 @@ func (UnimplementedHandler) ListMembers(ctx context.Context, params ListMembersP
 
 // ListPermissions implements list-permissions operation.
 //
-// Each service registers its own catalogue with IAM at start-up, so this is the platform-wide list
-// rather than the permissions of IAM alone. IAM does not decide anything with it — each service
-// decides using the caller's grant together with its own catalogue, and this list only serves to
-// render the choices. A service that has never started does not appear here.
+// Each service registers the permissions it enforces with IAM at start-up, so this is the
+// platform-wide list rather than the permissions of IAM alone. IAM does not decide anything with it
+// — each service decides using the caller's grant together with the permissions compiled into its
+// own binary, and this list only serves to render the choices. A service that has never started does
+// not appear here.
 //
 // GET /api/v1/permissions
-func (UnimplementedHandler) ListPermissions(ctx context.Context) (r *CatalogListResponseBody, _ error) {
+func (UnimplementedHandler) ListPermissions(ctx context.Context) (r *PermissionListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -224,16 +235,6 @@ func (UnimplementedHandler) ListPermissions(ctx context.Context) (r *CatalogList
 //
 // GET /api/v1/policies
 func (UnimplementedHandler) ListPolicies(ctx context.Context, params ListPoliciesParams) (r *PolicyListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListProjectInvitations implements list-project-invitations operation.
-//
-// Visible to any member, on the same rule as the member list. Who has been invited is part of who is
-// in the project.
-//
-// GET /api/v1/invitations
-func (UnimplementedHandler) ListProjectInvitations(ctx context.Context, params ListProjectInvitationsParams) (r *LengthAwarePageInvitationResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

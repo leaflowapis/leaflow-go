@@ -219,6 +219,19 @@ func encodeListApplicationsResponse(response *LengthAwarePageApplicationResource
 	return nil
 }
 
+func encodeListInvitationsResponse(response *LengthAwarePageInvitationResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeListMembersResponse(response *LengthAwarePageMemberResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -232,7 +245,7 @@ func encodeListMembersResponse(response *LengthAwarePageMemberResource, w http.R
 	return nil
 }
 
-func encodeListPermissionsResponse(response *CatalogListResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeListPermissionsResponse(response *PermissionListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -246,19 +259,6 @@ func encodeListPermissionsResponse(response *CatalogListResponseBody, w http.Res
 }
 
 func encodeListPoliciesResponse(response *PolicyListResponseBody, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeListProjectInvitationsResponse(response *LengthAwarePageInvitationResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

@@ -253,7 +253,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				if len(elem) == 0 {
 					switch r.Method {
 					case "GET":
-						s.handleListProjectInvitationsRequest([0]string{}, elemIsEscaped, w, r)
+						s.handleListInvitationsRequest([0]string{}, elemIsEscaped, w, r)
 					case "POST":
 						s.handleIssueInvitationRequest([0]string{}, elemIsEscaped, w, r)
 					default:
@@ -1071,9 +1071,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 				if len(elem) == 0 {
 					switch method {
 					case "GET":
-						r.name = ListProjectInvitationsOperation
+						r.name = ListInvitationsOperation
 						r.summary = "List the invitations this project is still waiting on"
-						r.operationID = "list-project-invitations"
+						r.operationID = "list-invitations"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/invitations"
 						r.args = args
