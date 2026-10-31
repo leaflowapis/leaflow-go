@@ -8,15 +8,6 @@ import (
 
 // Handler handles operations described by OpenAPI v3 specification.
 type Handler interface {
-	// AttachPolicy implements attach-policy operation.
-	//
-	// This creates an additional policy, which either carries a resource scope or has `deny` as its
-	// effect. An `allow` covering every resource is a base policy, of which each member holds exactly one,
-	// and it is changed with set-member-roles and set-member-permissions. `roles` cannot contain `OWNER`
-	// or `ADMIN`. Requires `iam:members.manage`.
-	//
-	// POST /api/v1/policies
-	AttachPolicy(ctx context.Context, req *AttachPolicyRequestBody) (*PolicyResource, error)
 	// BatchGetMembers implements batch-get-members operation.
 	//
 	// Resolves a set of account ids to the people behind them, scoped to the current project and including
@@ -45,6 +36,19 @@ type Handler interface {
 	//
 	// POST /api/v1/applications
 	CreateApplication(ctx context.Context, req *CreateApplicationRequestBody) (*CreateApplicationResponseBody, error)
+	// CreateMemberPermission implements create-member-permission operation.
+	//
+	// Creates one permission row. The same row twice answers 409; changing a grant means revoking the row
+	// and creating another, so that each row records when it was granted.
+	//
+	// `OWNER` and `ADMIN` cannot be granted here, being facts on the membership. A permission that carries
+	// no resource dimension cannot be scoped: IAM refuses the row at grant time rather than storing a
+	// scope that would never hold.
+	//
+	// Requires `iam:members.manage`.
+	//
+	// POST /api/v1/members/{userId}/permissions
+	CreateMemberPermission(ctx context.Context, req *CreateMemberPermissionRequestBody, params CreateMemberPermissionParams) (*MemberPermissionResource, error)
 	// CreateRole implements create-role operation.
 	//
 	// Create a role.
@@ -68,6 +72,12 @@ type Handler interface {
 	//
 	// DELETE /api/v1/applications/{applicationId}
 	DeleteApplication(ctx context.Context, params DeleteApplicationParams) (*ApplicationResource, error)
+	// DeleteMemberPermission implements delete-member-permission operation.
+	//
+	// Removes that one row. Requires `iam:members.manage`.
+	//
+	// DELETE /api/v1/members/{userId}/permissions/{permissionId}
+	DeleteMemberPermission(ctx context.Context, params DeleteMemberPermissionParams) error
 	// DeleteProject implements delete-project operation.
 	//
 	// Only the owner can do this, and it cannot be undone. The project enters DELETING and each service
@@ -82,25 +92,12 @@ type Handler interface {
 	//
 	// DELETE /api/v1/roles/{code}
 	DeleteRole(ctx context.Context, params DeleteRoleParams) error
-	// DetachPolicy implements detach-policy operation.
-	//
-	// A base policy cannot be detached; it is where a member's roles sit. Use remove-member to take
-	// someone out of the project. Requires `iam:members.manage`.
-	//
-	// DELETE /api/v1/policies/{policyId}
-	DetachPolicy(ctx context.Context, params DetachPolicyParams) error
 	// GetApplication implements get-application operation.
 	//
 	// An application that has been deleted is still returned, with `status` `ARCHIVED`.
 	//
 	// GET /api/v1/applications/{applicationId}
 	GetApplication(ctx context.Context, params GetApplicationParams) (*ApplicationResource, error)
-	// GetPolicy implements get-policy operation.
-	//
-	// Visible to any member, on the same rule as list-policies; no further permission is required.
-	//
-	// GET /api/v1/policies/{policyId}
-	GetPolicy(ctx context.Context, params GetPolicyParams) (*PolicyResource, error)
 	// GetProject implements get-project operation.
 	//
 	// Visible to any member; no further permission is required.
@@ -147,6 +144,16 @@ type Handler interface {
 	//
 	// GET /api/v1/invitations
 	ListInvitations(ctx context.Context, params ListInvitationsParams) (*LengthAwarePageInvitationResource, error)
+	// ListMemberPermissions implements list-member-permissions operation.
+	//
+	// Every row states one permission this person holds apart from their roles: project-wide when
+	// `resource_type` and `resource_id` are null, otherwise only on that resource. What a role grants is
+	// not listed here; the member's grant carries the roles and their compiled rules.
+	//
+	// Visible to any member, on the same rule as the member list.
+	//
+	// GET /api/v1/members/{userId}/permissions
+	ListMemberPermissions(ctx context.Context, params ListMemberPermissionsParams) (*MemberPermissionListResponseBody, error)
 	// ListMembers implements list-members operation.
 	//
 	// List the members of a project.
@@ -163,13 +170,6 @@ type Handler interface {
 	//
 	// GET /api/v1/permissions
 	ListPermissions(ctx context.Context) (*PermissionListResponseBody, error)
-	// ListPolicies implements list-policies operation.
-	//
-	// Visible to any member, on the same rule as the member list. What has been granted to whom is part of
-	// who is in the project.
-	//
-	// GET /api/v1/policies
-	ListPolicies(ctx context.Context, params ListPoliciesParams) (*PolicyListResponseBody, error)
 	// ListQuotas implements list-quotas operation.
 	//
 	// How much of something this project may have in each service, such as instances or VPCs, with the
@@ -226,14 +226,6 @@ type Handler interface {
 	//
 	// POST /api/v1/applications/{applicationId}:rotateSecret
 	RotateApplicationSecret(ctx context.Context, params RotateApplicationSecretParams) (*RotateApplicationSecretResponseBody, error)
-	// SetMemberPermissions implements set-member-permissions operation.
-	//
-	// Replaces, in full, the permissions attached directly to the base policy. A direct permission grants
-	// one person something without creating a role only they hold, and it does not follow later changes to
-	// any role. Requires `iam:members.manage`.
-	//
-	// PUT /api/v1/members/{userId}/permissions
-	SetMemberPermissions(ctx context.Context, req *SetMemberPermissionsRequestBody, params SetMemberPermissionsParams) (*PolicyResource, error)
 	// SetMemberRoles implements set-member-roles operation.
 	//
 	// The list is replaced in full rather than added to or removed from. The `OWNER` role of the owner is
@@ -274,15 +266,6 @@ type Handler interface {
 	//
 	// PATCH /api/v1/applications/{applicationId}
 	UpdateApplication(ctx context.Context, req *UpdateApplicationRequestBody, params UpdateApplicationParams) (*ApplicationResource, error)
-	// UpdatePolicy implements update-policy operation.
-	//
-	// Replaced in full rather than field by field — `resources`, `roles` and `permissions` are each
-	// overwritten, and an omitted one becomes empty. The kind of a policy cannot change — a base policy
-	// (an `allow` covering every resource) cannot take a resource scope, and a scoped policy cannot have
-	// its scope cleared. Delete and recreate to change the kind. Requires `iam:members.manage`.
-	//
-	// PUT /api/v1/policies/{policyId}
-	UpdatePolicy(ctx context.Context, req *UpdatePolicyRequestBody, params UpdatePolicyParams) (*PolicyResource, error)
 	// UpdateProject implements update-project operation.
 	//
 	// The slug is not affected; it is set through `PUT /api/v1/project/slug`.

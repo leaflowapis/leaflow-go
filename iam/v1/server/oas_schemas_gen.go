@@ -230,124 +230,6 @@ func (s *ApplicationResourceType) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/AttachPolicyRequestBody
-type AttachPolicyRequestBody struct {
-	// Why it was granted, written for a reader.
-	Description OptString                     `json:"description"`
-	Effect      AttachPolicyRequestBodyEffect `json:"effect"`
-	// Permission names attached directly, which avoids creating a role only one person holds.
-	Permissions OptNilStringArray `json:"permissions"`
-	// The policy holds only on these resources. Leaving it empty makes sense only together with `deny`,
-	// since an `allow` covering every resource is the base policy, which already exists.
-	Resources OptNilResourceRefResourceArray `json:"resources"`
-	// Each must be a role already defined in this project. `OWNER` and `ADMIN` are not accepted, being
-	// rules rather than sets of permissions.
-	Roles OptNilStringArray `json:"roles"`
-	// Must already be a member of this project.
-	UserID string `json:"user_id"`
-}
-
-// GetDescription returns the value of Description.
-func (s *AttachPolicyRequestBody) GetDescription() OptString {
-	return s.Description
-}
-
-// GetEffect returns the value of Effect.
-func (s *AttachPolicyRequestBody) GetEffect() AttachPolicyRequestBodyEffect {
-	return s.Effect
-}
-
-// GetPermissions returns the value of Permissions.
-func (s *AttachPolicyRequestBody) GetPermissions() OptNilStringArray {
-	return s.Permissions
-}
-
-// GetResources returns the value of Resources.
-func (s *AttachPolicyRequestBody) GetResources() OptNilResourceRefResourceArray {
-	return s.Resources
-}
-
-// GetRoles returns the value of Roles.
-func (s *AttachPolicyRequestBody) GetRoles() OptNilStringArray {
-	return s.Roles
-}
-
-// GetUserID returns the value of UserID.
-func (s *AttachPolicyRequestBody) GetUserID() string {
-	return s.UserID
-}
-
-// SetDescription sets the value of Description.
-func (s *AttachPolicyRequestBody) SetDescription(val OptString) {
-	s.Description = val
-}
-
-// SetEffect sets the value of Effect.
-func (s *AttachPolicyRequestBody) SetEffect(val AttachPolicyRequestBodyEffect) {
-	s.Effect = val
-}
-
-// SetPermissions sets the value of Permissions.
-func (s *AttachPolicyRequestBody) SetPermissions(val OptNilStringArray) {
-	s.Permissions = val
-}
-
-// SetResources sets the value of Resources.
-func (s *AttachPolicyRequestBody) SetResources(val OptNilResourceRefResourceArray) {
-	s.Resources = val
-}
-
-// SetRoles sets the value of Roles.
-func (s *AttachPolicyRequestBody) SetRoles(val OptNilStringArray) {
-	s.Roles = val
-}
-
-// SetUserID sets the value of UserID.
-func (s *AttachPolicyRequestBody) SetUserID(val string) {
-	s.UserID = val
-}
-
-type AttachPolicyRequestBodyEffect string
-
-const (
-	AttachPolicyRequestBodyEffectAllow AttachPolicyRequestBodyEffect = "allow"
-	AttachPolicyRequestBodyEffectDeny  AttachPolicyRequestBodyEffect = "deny"
-)
-
-// AllValues returns all AttachPolicyRequestBodyEffect values.
-func (AttachPolicyRequestBodyEffect) AllValues() []AttachPolicyRequestBodyEffect {
-	return []AttachPolicyRequestBodyEffect{
-		AttachPolicyRequestBodyEffectAllow,
-		AttachPolicyRequestBodyEffectDeny,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s AttachPolicyRequestBodyEffect) MarshalText() ([]byte, error) {
-	switch s {
-	case AttachPolicyRequestBodyEffectAllow:
-		return []byte(s), nil
-	case AttachPolicyRequestBodyEffectDeny:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *AttachPolicyRequestBodyEffect) UnmarshalText(data []byte) error {
-	switch AttachPolicyRequestBodyEffect(data) {
-	case AttachPolicyRequestBodyEffectAllow:
-		*s = AttachPolicyRequestBodyEffectAllow
-		return nil
-	case AttachPolicyRequestBodyEffectDeny:
-		*s = AttachPolicyRequestBodyEffectDeny
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/BatchGetMembersRequestBody
 type BatchGetMembersRequestBody struct {
 	// The account ids to resolve. Blank entries are ignored.
@@ -524,6 +406,99 @@ func (s *CreateApplicationResponseBody) SetSecret(val NilString) {
 	s.Secret = val
 }
 
+// Ref: #/components/schemas/CreateMemberPermissionRequestBody
+type CreateMemberPermissionRequestBody struct {
+	// The code of the permission to grant.
+	Permission string                                  `json:"permission"`
+	Effect     CreateMemberPermissionRequestBodyEffect `json:"effect"`
+	// The kind of resource to hold on; give it together with `resource_id`. Both null grant the permission
+	// project-wide.
+	ResourceType NilString `json:"resource_type"`
+	// The resource identifier to hold on, which may carry a glob. Give it together with `resource_type`.
+	ResourceID NilString `json:"resource_id"`
+}
+
+// GetPermission returns the value of Permission.
+func (s *CreateMemberPermissionRequestBody) GetPermission() string {
+	return s.Permission
+}
+
+// GetEffect returns the value of Effect.
+func (s *CreateMemberPermissionRequestBody) GetEffect() CreateMemberPermissionRequestBodyEffect {
+	return s.Effect
+}
+
+// GetResourceType returns the value of ResourceType.
+func (s *CreateMemberPermissionRequestBody) GetResourceType() NilString {
+	return s.ResourceType
+}
+
+// GetResourceID returns the value of ResourceID.
+func (s *CreateMemberPermissionRequestBody) GetResourceID() NilString {
+	return s.ResourceID
+}
+
+// SetPermission sets the value of Permission.
+func (s *CreateMemberPermissionRequestBody) SetPermission(val string) {
+	s.Permission = val
+}
+
+// SetEffect sets the value of Effect.
+func (s *CreateMemberPermissionRequestBody) SetEffect(val CreateMemberPermissionRequestBodyEffect) {
+	s.Effect = val
+}
+
+// SetResourceType sets the value of ResourceType.
+func (s *CreateMemberPermissionRequestBody) SetResourceType(val NilString) {
+	s.ResourceType = val
+}
+
+// SetResourceID sets the value of ResourceID.
+func (s *CreateMemberPermissionRequestBody) SetResourceID(val NilString) {
+	s.ResourceID = val
+}
+
+type CreateMemberPermissionRequestBodyEffect string
+
+const (
+	CreateMemberPermissionRequestBodyEffectAllow CreateMemberPermissionRequestBodyEffect = "allow"
+	CreateMemberPermissionRequestBodyEffectDeny  CreateMemberPermissionRequestBodyEffect = "deny"
+)
+
+// AllValues returns all CreateMemberPermissionRequestBodyEffect values.
+func (CreateMemberPermissionRequestBodyEffect) AllValues() []CreateMemberPermissionRequestBodyEffect {
+	return []CreateMemberPermissionRequestBodyEffect{
+		CreateMemberPermissionRequestBodyEffectAllow,
+		CreateMemberPermissionRequestBodyEffectDeny,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CreateMemberPermissionRequestBodyEffect) MarshalText() ([]byte, error) {
+	switch s {
+	case CreateMemberPermissionRequestBodyEffectAllow:
+		return []byte(s), nil
+	case CreateMemberPermissionRequestBodyEffectDeny:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CreateMemberPermissionRequestBodyEffect) UnmarshalText(data []byte) error {
+	switch CreateMemberPermissionRequestBodyEffect(data) {
+	case CreateMemberPermissionRequestBodyEffectAllow:
+		*s = CreateMemberPermissionRequestBodyEffectAllow
+		return nil
+	case CreateMemberPermissionRequestBodyEffectDeny:
+		*s = CreateMemberPermissionRequestBodyEffectDeny
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/CreateRoleRequestBody
 type CreateRoleRequestBody struct {
 	// Begins with a lower-case letter and may contain digits and underscores. It cannot be changed once
@@ -616,11 +591,11 @@ func (s *CreateSSHKeyRequestBody) SetPurposes(val OptNilStringArray) {
 	s.Purposes = val
 }
 
+// DeleteMemberPermissionNoContent is response for DeleteMemberPermission operation.
+type DeleteMemberPermissionNoContent struct{}
+
 // DeleteRoleNoContent is response for DeleteRole operation.
 type DeleteRoleNoContent struct{}
-
-// DetachPolicyNoContent is response for DetachPolicy operation.
-type DetachPolicyNoContent struct{}
 
 // A failed request. The envelope follows the Google REST error format: `code` is the HTTP status,
 // `status` is its canonical name, and `reason` is the stable machine-readable code that identifies the
@@ -820,8 +795,8 @@ type GrantResource struct {
 	Owner bool `json:"owner"`
 	// The role codes held, for display only.
 	Roles []string `json:"roles"`
-	// The rules compiled from every policy that applies. Do not walk them to reach a decision. They are
-	// here to render what a user may do; each request is decided by the service handling it.
+	// The rules compiled from the roles and grants that apply. Do not walk them to reach a decision. They
+	// are here to render what a user may do; each request is decided by the service handling it.
 	Rules []RuleResource `json:"rules"`
 }
 
@@ -1249,6 +1224,149 @@ func (s *ListSSHKeysStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/MemberPermissionListResponseBody
+type MemberPermissionListResponseBody struct {
+	Items []MemberPermissionResource `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *MemberPermissionListResponseBody) GetItems() []MemberPermissionResource {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *MemberPermissionListResponseBody) SetItems(val []MemberPermissionResource) {
+	s.Items = val
+}
+
+// Ref: #/components/schemas/MemberPermissionResource
+type MemberPermissionResource struct {
+	// The id of this grant, used to revoke it.
+	ID uuid.UUID `json:"id"`
+	// The code of the permission, such as compute:instance.delete.
+	Permission string                         `json:"permission"`
+	Effect     MemberPermissionResourceEffect `json:"effect"`
+	// The kind of resource this grant holds on, such as fleet:machine. Null with `resource_id` means it
+	// holds project-wide.
+	ResourceType NilString `json:"resource_type"`
+	// The resource identifier, which may carry a glob. Null with `resource_type` means the grant holds
+	// project-wide.
+	ResourceID NilString `json:"resource_id"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+// GetID returns the value of ID.
+func (s *MemberPermissionResource) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetPermission returns the value of Permission.
+func (s *MemberPermissionResource) GetPermission() string {
+	return s.Permission
+}
+
+// GetEffect returns the value of Effect.
+func (s *MemberPermissionResource) GetEffect() MemberPermissionResourceEffect {
+	return s.Effect
+}
+
+// GetResourceType returns the value of ResourceType.
+func (s *MemberPermissionResource) GetResourceType() NilString {
+	return s.ResourceType
+}
+
+// GetResourceID returns the value of ResourceID.
+func (s *MemberPermissionResource) GetResourceID() NilString {
+	return s.ResourceID
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *MemberPermissionResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *MemberPermissionResource) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetID sets the value of ID.
+func (s *MemberPermissionResource) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetPermission sets the value of Permission.
+func (s *MemberPermissionResource) SetPermission(val string) {
+	s.Permission = val
+}
+
+// SetEffect sets the value of Effect.
+func (s *MemberPermissionResource) SetEffect(val MemberPermissionResourceEffect) {
+	s.Effect = val
+}
+
+// SetResourceType sets the value of ResourceType.
+func (s *MemberPermissionResource) SetResourceType(val NilString) {
+	s.ResourceType = val
+}
+
+// SetResourceID sets the value of ResourceID.
+func (s *MemberPermissionResource) SetResourceID(val NilString) {
+	s.ResourceID = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *MemberPermissionResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *MemberPermissionResource) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+type MemberPermissionResourceEffect string
+
+const (
+	MemberPermissionResourceEffectAllow MemberPermissionResourceEffect = "allow"
+	MemberPermissionResourceEffectDeny  MemberPermissionResourceEffect = "deny"
+)
+
+// AllValues returns all MemberPermissionResourceEffect values.
+func (MemberPermissionResourceEffect) AllValues() []MemberPermissionResourceEffect {
+	return []MemberPermissionResourceEffect{
+		MemberPermissionResourceEffectAllow,
+		MemberPermissionResourceEffectDeny,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s MemberPermissionResourceEffect) MarshalText() ([]byte, error) {
+	switch s {
+	case MemberPermissionResourceEffectAllow:
+		return []byte(s), nil
+	case MemberPermissionResourceEffectDeny:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *MemberPermissionResourceEffect) UnmarshalText(data []byte) error {
+	switch MemberPermissionResourceEffect(data) {
+	case MemberPermissionResourceEffectAllow:
+		*s = MemberPermissionResourceEffectAllow
+		return nil
+	case MemberPermissionResourceEffectDeny:
+		*s = MemberPermissionResourceEffectDeny
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/MemberResource
 type MemberResource struct {
 	// MD5 hash of the lowercased, trimmed email address, for use with Gravatar-compatible avatar services.
@@ -1260,7 +1378,9 @@ type MemberResource struct {
 	FirstName  string        `json:"first_name"`
 	Grant      GrantResource `json:"grant"`
 	LastName   string        `json:"last_name"`
-	UserID     string        `json:"user_id"`
+	// The permissions granted to this person directly, apart from their roles.
+	Permissions []MemberPermissionResource `json:"permissions"`
+	UserID      string                     `json:"user_id"`
 }
 
 // GetAvatarHash returns the value of AvatarHash.
@@ -1296,6 +1416,11 @@ func (s *MemberResource) GetGrant() GrantResource {
 // GetLastName returns the value of LastName.
 func (s *MemberResource) GetLastName() string {
 	return s.LastName
+}
+
+// GetPermissions returns the value of Permissions.
+func (s *MemberResource) GetPermissions() []MemberPermissionResource {
+	return s.Permissions
 }
 
 // GetUserID returns the value of UserID.
@@ -1336,6 +1461,11 @@ func (s *MemberResource) SetGrant(val GrantResource) {
 // SetLastName sets the value of LastName.
 func (s *MemberResource) SetLastName(val string) {
 	s.LastName = val
+}
+
+// SetPermissions sets the value of Permissions.
+func (s *MemberResource) SetPermissions(val []MemberPermissionResource) {
+	s.Permissions = val
 }
 
 // SetUserID sets the value of UserID.
@@ -1687,74 +1817,6 @@ func (o OptListSSHKeysStatus) Or(d ListSSHKeysStatus) ListSSHKeysStatus {
 	return d
 }
 
-// NewOptNilResourceRefResourceArray returns new OptNilResourceRefResourceArray with value set to v.
-func NewOptNilResourceRefResourceArray(v []ResourceRefResource) OptNilResourceRefResourceArray {
-	return OptNilResourceRefResourceArray{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptNilResourceRefResourceArray is optional nullable []ResourceRefResource.
-type OptNilResourceRefResourceArray struct {
-	Value []ResourceRefResource
-	Set   bool
-	Null  bool
-}
-
-// IsSet returns true if OptNilResourceRefResourceArray was set.
-func (o OptNilResourceRefResourceArray) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptNilResourceRefResourceArray) Reset() {
-	var v []ResourceRefResource
-	o.Value = v
-	o.Set = false
-	o.Null = false
-}
-
-// SetTo sets value to v.
-func (o *OptNilResourceRefResourceArray) SetTo(v []ResourceRefResource) {
-	o.Set = true
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o OptNilResourceRefResourceArray) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *OptNilResourceRefResourceArray) SetToNull() {
-	o.Set = true
-	o.Null = true
-	var v []ResourceRefResource
-	o.Value = v
-}
-
-// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
-func (o OptNilResourceRefResourceArray) IsEmpty() bool {
-	return !o.Set && !o.Null
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptNilResourceRefResourceArray) Get() (v []ResourceRefResource, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptNilResourceRefResourceArray) Or(d []ResourceRefResource) []ResourceRefResource {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptNilStringArray returns new OptNilStringArray with value set to v.
 func NewOptNilStringArray(v []string) OptNilStringArray {
 	return OptNilStringArray{
@@ -1956,183 +2018,6 @@ func (s *PermissionResource) SetOwnerOnly(val bool) {
 // SetResourceType sets the value of ResourceType.
 func (s *PermissionResource) SetResourceType(val string) {
 	s.ResourceType = val
-}
-
-// Ref: #/components/schemas/PolicyListResponseBody
-type PolicyListResponseBody struct {
-	Items []PolicyResource `json:"items"`
-}
-
-// GetItems returns the value of Items.
-func (s *PolicyListResponseBody) GetItems() []PolicyResource {
-	return s.Items
-}
-
-// SetItems sets the value of Items.
-func (s *PolicyListResponseBody) SetItems(val []PolicyResource) {
-	s.Items = val
-}
-
-// Ref: #/components/schemas/PolicyResource
-type PolicyResource struct {
-	// The base policy is the one whose effect is `allow` and which covers every resource. Each member
-	// holds exactly one, and it carries their ordinary roles. Change it with PUT /members/{userId}/roles
-	// and PUT /members/{userId}/permissions.
-	Base      bool      `json:"base"`
-	CreatedAt time.Time `json:"created_at"`
-	// Why it was granted, written for a reader.
-	Description string               `json:"description"`
-	Effect      PolicyResourceEffect `json:"effect"`
-	ID          uuid.UUID            `json:"id"`
-	// Permission names attached directly to this person, without passing through a role.
-	Permissions []string `json:"permissions"`
-	// Empty means the whole project.
-	Resources []ResourceRefResource `json:"resources"`
-	// The role codes this policy carries.
-	Roles     []string  `json:"roles"`
-	UpdatedAt time.Time `json:"updated_at"`
-	UserID    string    `json:"user_id"`
-}
-
-// GetBase returns the value of Base.
-func (s *PolicyResource) GetBase() bool {
-	return s.Base
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *PolicyResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetDescription returns the value of Description.
-func (s *PolicyResource) GetDescription() string {
-	return s.Description
-}
-
-// GetEffect returns the value of Effect.
-func (s *PolicyResource) GetEffect() PolicyResourceEffect {
-	return s.Effect
-}
-
-// GetID returns the value of ID.
-func (s *PolicyResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetPermissions returns the value of Permissions.
-func (s *PolicyResource) GetPermissions() []string {
-	return s.Permissions
-}
-
-// GetResources returns the value of Resources.
-func (s *PolicyResource) GetResources() []ResourceRefResource {
-	return s.Resources
-}
-
-// GetRoles returns the value of Roles.
-func (s *PolicyResource) GetRoles() []string {
-	return s.Roles
-}
-
-// GetUpdatedAt returns the value of UpdatedAt.
-func (s *PolicyResource) GetUpdatedAt() time.Time {
-	return s.UpdatedAt
-}
-
-// GetUserID returns the value of UserID.
-func (s *PolicyResource) GetUserID() string {
-	return s.UserID
-}
-
-// SetBase sets the value of Base.
-func (s *PolicyResource) SetBase(val bool) {
-	s.Base = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *PolicyResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetDescription sets the value of Description.
-func (s *PolicyResource) SetDescription(val string) {
-	s.Description = val
-}
-
-// SetEffect sets the value of Effect.
-func (s *PolicyResource) SetEffect(val PolicyResourceEffect) {
-	s.Effect = val
-}
-
-// SetID sets the value of ID.
-func (s *PolicyResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetPermissions sets the value of Permissions.
-func (s *PolicyResource) SetPermissions(val []string) {
-	s.Permissions = val
-}
-
-// SetResources sets the value of Resources.
-func (s *PolicyResource) SetResources(val []ResourceRefResource) {
-	s.Resources = val
-}
-
-// SetRoles sets the value of Roles.
-func (s *PolicyResource) SetRoles(val []string) {
-	s.Roles = val
-}
-
-// SetUpdatedAt sets the value of UpdatedAt.
-func (s *PolicyResource) SetUpdatedAt(val time.Time) {
-	s.UpdatedAt = val
-}
-
-// SetUserID sets the value of UserID.
-func (s *PolicyResource) SetUserID(val string) {
-	s.UserID = val
-}
-
-type PolicyResourceEffect string
-
-const (
-	PolicyResourceEffectAllow PolicyResourceEffect = "allow"
-	PolicyResourceEffectDeny  PolicyResourceEffect = "deny"
-)
-
-// AllValues returns all PolicyResourceEffect values.
-func (PolicyResourceEffect) AllValues() []PolicyResourceEffect {
-	return []PolicyResourceEffect{
-		PolicyResourceEffectAllow,
-		PolicyResourceEffectDeny,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PolicyResourceEffect) MarshalText() ([]byte, error) {
-	switch s {
-	case PolicyResourceEffectAllow:
-		return []byte(s), nil
-	case PolicyResourceEffectDeny:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PolicyResourceEffect) UnmarshalText(data []byte) error {
-	switch PolicyResourceEffect(data) {
-	case PolicyResourceEffectAllow:
-		*s = PolicyResourceEffectAllow
-		return nil
-	case PolicyResourceEffectDeny:
-		*s = PolicyResourceEffectDeny
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Ref: #/components/schemas/ProjectAccessResource
@@ -2974,23 +2859,6 @@ func (s *SSHKeyResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/SetMemberPermissionsRequestBody
-type SetMemberPermissionsRequestBody struct {
-	// Every permission name to be attached directly to this person, replaced in full. The permissions a
-	// role grants are neither listed here nor touched by this write.
-	Permissions []string `json:"permissions"`
-}
-
-// GetPermissions returns the value of Permissions.
-func (s *SetMemberPermissionsRequestBody) GetPermissions() []string {
-	return s.Permissions
-}
-
-// SetPermissions sets the value of Permissions.
-func (s *SetMemberPermissionsRequestBody) SetPermissions(val []string) {
-	s.Permissions = val
-}
-
 // Ref: #/components/schemas/SetMemberRolesRequestBody
 type SetMemberRolesRequestBody struct {
 	// Every role code this person is to hold. `OWNER` cannot appear here.
@@ -3076,123 +2944,6 @@ func (s *UpdateApplicationRequestBody) SetRedirectUris(val []string) {
 // SetScopes sets the value of Scopes.
 func (s *UpdateApplicationRequestBody) SetScopes(val []string) {
 	s.Scopes = val
-}
-
-// Ref: #/components/schemas/UpdatePolicyRequestBody
-type UpdatePolicyRequestBody struct {
-	// Why it was granted, written for a reader. It is replaced together with the change, so that what
-	// remains does not explain an earlier version.
-	Description OptString `json:"description"`
-	// Must match the current effect of the policy. The effect itself cannot be changed; delete the policy
-	// and create another instead. It is still required in the request because the write replaces the
-	// policy in full, and omitting it would let a caller believe an effect had been changed while the
-	// field was ignored. A mismatch answers PROJECT_POLICY_EFFECT_IMMUTABLE.
-	Effect UpdatePolicyRequestBodyEffect `json:"effect"`
-	// Permission names attached directly, replaced in full. Anything not listed is withdrawn rather than
-	// kept.
-	Permissions OptNilStringArray `json:"permissions"`
-	// The resource scope of this policy, replaced in full. What the scope contains can change; whether the
-	// policy has one cannot. A base policy cannot take a scope, and a scoped policy cannot have its scope
-	// cleared.
-	Resources OptNilResourceRefResourceArray `json:"resources"`
-	// Each must be a role already defined in this project, replaced in full. As when attaching, `OWNER`
-	// and `ADMIN` are not accepted.
-	Roles OptNilStringArray `json:"roles"`
-}
-
-// GetDescription returns the value of Description.
-func (s *UpdatePolicyRequestBody) GetDescription() OptString {
-	return s.Description
-}
-
-// GetEffect returns the value of Effect.
-func (s *UpdatePolicyRequestBody) GetEffect() UpdatePolicyRequestBodyEffect {
-	return s.Effect
-}
-
-// GetPermissions returns the value of Permissions.
-func (s *UpdatePolicyRequestBody) GetPermissions() OptNilStringArray {
-	return s.Permissions
-}
-
-// GetResources returns the value of Resources.
-func (s *UpdatePolicyRequestBody) GetResources() OptNilResourceRefResourceArray {
-	return s.Resources
-}
-
-// GetRoles returns the value of Roles.
-func (s *UpdatePolicyRequestBody) GetRoles() OptNilStringArray {
-	return s.Roles
-}
-
-// SetDescription sets the value of Description.
-func (s *UpdatePolicyRequestBody) SetDescription(val OptString) {
-	s.Description = val
-}
-
-// SetEffect sets the value of Effect.
-func (s *UpdatePolicyRequestBody) SetEffect(val UpdatePolicyRequestBodyEffect) {
-	s.Effect = val
-}
-
-// SetPermissions sets the value of Permissions.
-func (s *UpdatePolicyRequestBody) SetPermissions(val OptNilStringArray) {
-	s.Permissions = val
-}
-
-// SetResources sets the value of Resources.
-func (s *UpdatePolicyRequestBody) SetResources(val OptNilResourceRefResourceArray) {
-	s.Resources = val
-}
-
-// SetRoles sets the value of Roles.
-func (s *UpdatePolicyRequestBody) SetRoles(val OptNilStringArray) {
-	s.Roles = val
-}
-
-// Must match the current effect of the policy. The effect itself cannot be changed; delete the policy
-// and create another instead. It is still required in the request because the write replaces the
-// policy in full, and omitting it would let a caller believe an effect had been changed while the
-// field was ignored. A mismatch answers PROJECT_POLICY_EFFECT_IMMUTABLE.
-type UpdatePolicyRequestBodyEffect string
-
-const (
-	UpdatePolicyRequestBodyEffectAllow UpdatePolicyRequestBodyEffect = "allow"
-	UpdatePolicyRequestBodyEffectDeny  UpdatePolicyRequestBodyEffect = "deny"
-)
-
-// AllValues returns all UpdatePolicyRequestBodyEffect values.
-func (UpdatePolicyRequestBodyEffect) AllValues() []UpdatePolicyRequestBodyEffect {
-	return []UpdatePolicyRequestBodyEffect{
-		UpdatePolicyRequestBodyEffectAllow,
-		UpdatePolicyRequestBodyEffectDeny,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s UpdatePolicyRequestBodyEffect) MarshalText() ([]byte, error) {
-	switch s {
-	case UpdatePolicyRequestBodyEffectAllow:
-		return []byte(s), nil
-	case UpdatePolicyRequestBodyEffectDeny:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *UpdatePolicyRequestBodyEffect) UnmarshalText(data []byte) error {
-	switch UpdatePolicyRequestBodyEffect(data) {
-	case UpdatePolicyRequestBodyEffectAllow:
-		*s = UpdatePolicyRequestBodyEffectAllow
-		return nil
-	case UpdatePolicyRequestBodyEffectDeny:
-		*s = UpdatePolicyRequestBodyEffectDeny
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Ref: #/components/schemas/UpdateProjectRequestBody

@@ -29,15 +29,6 @@ func trimTrailingSlashes(u *url.URL) {
 
 // Invoker invokes operations described by OpenAPI v3 specification.
 type Invoker interface {
-	// AttachPolicy invokes attach-policy operation.
-	//
-	// This creates an additional policy, which either carries a resource scope or has `deny` as its
-	// effect. An `allow` covering every resource is a base policy, of which each member holds exactly one,
-	// and it is changed with set-member-roles and set-member-permissions. `roles` cannot contain `OWNER`
-	// or `ADMIN`. Requires `iam:members.manage`.
-	//
-	// POST /api/v1/policies
-	AttachPolicy(ctx context.Context, request *AttachPolicyRequestBody) (*PolicyResource, error)
 	// BatchGetMembers invokes batch-get-members operation.
 	//
 	// Resolves a set of account ids to the people behind them, scoped to the current project and including
@@ -66,6 +57,19 @@ type Invoker interface {
 	//
 	// POST /api/v1/applications
 	CreateApplication(ctx context.Context, request *CreateApplicationRequestBody) (*CreateApplicationResponseBody, error)
+	// CreateMemberPermission invokes create-member-permission operation.
+	//
+	// Creates one permission row. The same row twice answers 409; changing a grant means revoking the row
+	// and creating another, so that each row records when it was granted.
+	//
+	// `OWNER` and `ADMIN` cannot be granted here, being facts on the membership. A permission that carries
+	// no resource dimension cannot be scoped: IAM refuses the row at grant time rather than storing a
+	// scope that would never hold.
+	//
+	// Requires `iam:members.manage`.
+	//
+	// POST /api/v1/members/{userId}/permissions
+	CreateMemberPermission(ctx context.Context, request *CreateMemberPermissionRequestBody, params CreateMemberPermissionParams) (*MemberPermissionResource, error)
 	// CreateRole invokes create-role operation.
 	//
 	// Create a role.
@@ -89,6 +93,12 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/applications/{applicationId}
 	DeleteApplication(ctx context.Context, params DeleteApplicationParams) (*ApplicationResource, error)
+	// DeleteMemberPermission invokes delete-member-permission operation.
+	//
+	// Removes that one row. Requires `iam:members.manage`.
+	//
+	// DELETE /api/v1/members/{userId}/permissions/{permissionId}
+	DeleteMemberPermission(ctx context.Context, params DeleteMemberPermissionParams) error
 	// DeleteProject invokes delete-project operation.
 	//
 	// Only the owner can do this, and it cannot be undone. The project enters DELETING and each service
@@ -103,25 +113,12 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/roles/{code}
 	DeleteRole(ctx context.Context, params DeleteRoleParams) error
-	// DetachPolicy invokes detach-policy operation.
-	//
-	// A base policy cannot be detached; it is where a member's roles sit. Use remove-member to take
-	// someone out of the project. Requires `iam:members.manage`.
-	//
-	// DELETE /api/v1/policies/{policyId}
-	DetachPolicy(ctx context.Context, params DetachPolicyParams) error
 	// GetApplication invokes get-application operation.
 	//
 	// An application that has been deleted is still returned, with `status` `ARCHIVED`.
 	//
 	// GET /api/v1/applications/{applicationId}
 	GetApplication(ctx context.Context, params GetApplicationParams) (*ApplicationResource, error)
-	// GetPolicy invokes get-policy operation.
-	//
-	// Visible to any member, on the same rule as list-policies; no further permission is required.
-	//
-	// GET /api/v1/policies/{policyId}
-	GetPolicy(ctx context.Context, params GetPolicyParams) (*PolicyResource, error)
 	// GetProject invokes get-project operation.
 	//
 	// Visible to any member; no further permission is required.
@@ -168,6 +165,16 @@ type Invoker interface {
 	//
 	// GET /api/v1/invitations
 	ListInvitations(ctx context.Context, params ListInvitationsParams) (*LengthAwarePageInvitationResource, error)
+	// ListMemberPermissions invokes list-member-permissions operation.
+	//
+	// Every row states one permission this person holds apart from their roles: project-wide when
+	// `resource_type` and `resource_id` are null, otherwise only on that resource. What a role grants is
+	// not listed here; the member's grant carries the roles and their compiled rules.
+	//
+	// Visible to any member, on the same rule as the member list.
+	//
+	// GET /api/v1/members/{userId}/permissions
+	ListMemberPermissions(ctx context.Context, params ListMemberPermissionsParams) (*MemberPermissionListResponseBody, error)
 	// ListMembers invokes list-members operation.
 	//
 	// List the members of a project.
@@ -184,13 +191,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/permissions
 	ListPermissions(ctx context.Context) (*PermissionListResponseBody, error)
-	// ListPolicies invokes list-policies operation.
-	//
-	// Visible to any member, on the same rule as the member list. What has been granted to whom is part of
-	// who is in the project.
-	//
-	// GET /api/v1/policies
-	ListPolicies(ctx context.Context, params ListPoliciesParams) (*PolicyListResponseBody, error)
 	// ListQuotas invokes list-quotas operation.
 	//
 	// How much of something this project may have in each service, such as instances or VPCs, with the
@@ -247,14 +247,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/applications/{applicationId}:rotateSecret
 	RotateApplicationSecret(ctx context.Context, params RotateApplicationSecretParams) (*RotateApplicationSecretResponseBody, error)
-	// SetMemberPermissions invokes set-member-permissions operation.
-	//
-	// Replaces, in full, the permissions attached directly to the base policy. A direct permission grants
-	// one person something without creating a role only they hold, and it does not follow later changes to
-	// any role. Requires `iam:members.manage`.
-	//
-	// PUT /api/v1/members/{userId}/permissions
-	SetMemberPermissions(ctx context.Context, request *SetMemberPermissionsRequestBody, params SetMemberPermissionsParams) (*PolicyResource, error)
 	// SetMemberRoles invokes set-member-roles operation.
 	//
 	// The list is replaced in full rather than added to or removed from. The `OWNER` role of the owner is
@@ -295,15 +287,6 @@ type Invoker interface {
 	//
 	// PATCH /api/v1/applications/{applicationId}
 	UpdateApplication(ctx context.Context, request *UpdateApplicationRequestBody, params UpdateApplicationParams) (*ApplicationResource, error)
-	// UpdatePolicy invokes update-policy operation.
-	//
-	// Replaced in full rather than field by field — `resources`, `roles` and `permissions` are each
-	// overwritten, and an omitted one becomes empty. The kind of a policy cannot change — a base policy
-	// (an `allow` covering every resource) cannot take a resource scope, and a scoped policy cannot have
-	// its scope cleared. Delete and recreate to change the kind. Requires `iam:members.manage`.
-	//
-	// PUT /api/v1/policies/{policyId}
-	UpdatePolicy(ctx context.Context, request *UpdatePolicyRequestBody, params UpdatePolicyParams) (*PolicyResource, error)
 	// UpdateProject invokes update-project operation.
 	//
 	// The slug is not affected; it is set through `PUT /api/v1/project/slug`.
@@ -358,134 +341,6 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 		return c.serverURL
 	}
 	return u
-}
-
-// AttachPolicy invokes attach-policy operation.
-//
-// This creates an additional policy, which either carries a resource scope or has `deny` as its
-// effect. An `allow` covering every resource is a base policy, of which each member holds exactly one,
-// and it is changed with set-member-roles and set-member-permissions. `roles` cannot contain `OWNER`
-// or `ADMIN`. Requires `iam:members.manage`.
-//
-// POST /api/v1/policies
-func (c *Client) AttachPolicy(ctx context.Context, request *AttachPolicyRequestBody) (*PolicyResource, error) {
-	res, err := c.sendAttachPolicy(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendAttachPolicy(ctx context.Context, request *AttachPolicyRequestBody) (res *PolicyResource, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("attach-policy"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/policies"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, AttachPolicyOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/policies"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeAttachPolicyRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, AttachPolicyOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeAttachPolicyResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
 }
 
 // BatchGetMembers invokes batch-get-members operation.
@@ -747,6 +602,157 @@ func (c *Client) sendCreateApplication(ctx context.Context, request *CreateAppli
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateApplicationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateMemberPermission invokes create-member-permission operation.
+//
+// Creates one permission row. The same row twice answers 409; changing a grant means revoking the row
+// and creating another, so that each row records when it was granted.
+//
+// `OWNER` and `ADMIN` cannot be granted here, being facts on the membership. A permission that carries
+// no resource dimension cannot be scoped: IAM refuses the row at grant time rather than storing a
+// scope that would never hold.
+//
+// Requires `iam:members.manage`.
+//
+// POST /api/v1/members/{userId}/permissions
+func (c *Client) CreateMemberPermission(ctx context.Context, request *CreateMemberPermissionRequestBody, params CreateMemberPermissionParams) (*MemberPermissionResource, error) {
+	res, err := c.sendCreateMemberPermission(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCreateMemberPermission(ctx context.Context, request *CreateMemberPermissionRequestBody, params CreateMemberPermissionParams) (res *MemberPermissionResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-member-permission"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/members/{userId}/permissions"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateMemberPermissionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/members/"
+	{
+		// Encode "userId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "userId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.UserId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/permissions"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateMemberPermissionRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreateMemberPermissionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateMemberPermissionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1140,6 +1146,156 @@ func (c *Client) sendDeleteApplication(ctx context.Context, params DeleteApplica
 	return result, nil
 }
 
+// DeleteMemberPermission invokes delete-member-permission operation.
+//
+// Removes that one row. Requires `iam:members.manage`.
+//
+// DELETE /api/v1/members/{userId}/permissions/{permissionId}
+func (c *Client) DeleteMemberPermission(ctx context.Context, params DeleteMemberPermissionParams) error {
+	_, err := c.sendDeleteMemberPermission(ctx, params)
+	return err
+}
+
+func (c *Client) sendDeleteMemberPermission(ctx context.Context, params DeleteMemberPermissionParams) (res *DeleteMemberPermissionNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-member-permission"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/members/{userId}/permissions/{permissionId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteMemberPermissionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/members/"
+	{
+		// Encode "userId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "userId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.UserId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/permissions/"
+	{
+		// Encode "permissionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "permissionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.PermissionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, DeleteMemberPermissionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteMemberPermissionResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // DeleteProject invokes delete-project operation.
 //
 // Only the owner can do this, and it cannot be undone. The project enters DELETING and each service
@@ -1386,138 +1542,6 @@ func (c *Client) sendDeleteRole(ctx context.Context, params DeleteRoleParams) (r
 	return result, nil
 }
 
-// DetachPolicy invokes detach-policy operation.
-//
-// A base policy cannot be detached; it is where a member's roles sit. Use remove-member to take
-// someone out of the project. Requires `iam:members.manage`.
-//
-// DELETE /api/v1/policies/{policyId}
-func (c *Client) DetachPolicy(ctx context.Context, params DetachPolicyParams) error {
-	_, err := c.sendDetachPolicy(ctx, params)
-	return err
-}
-
-func (c *Client) sendDetachPolicy(ctx context.Context, params DetachPolicyParams) (res *DetachPolicyNoContent, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("detach-policy"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/policies/{policyId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DetachPolicyOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/policies/"
-	{
-		// Encode "policyId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "policyId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.PolicyId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DetachPolicyOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeDetachPolicyResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // GetApplication invokes get-application operation.
 //
 // An application that has been deleted is still returned, with `status` `ARCHIVED`.
@@ -1642,137 +1666,6 @@ func (c *Client) sendGetApplication(ctx context.Context, params GetApplicationPa
 
 	stage = "DecodeResponse"
 	result, err := decodeGetApplicationResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetPolicy invokes get-policy operation.
-//
-// Visible to any member, on the same rule as list-policies; no further permission is required.
-//
-// GET /api/v1/policies/{policyId}
-func (c *Client) GetPolicy(ctx context.Context, params GetPolicyParams) (*PolicyResource, error) {
-	res, err := c.sendGetPolicy(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetPolicy(ctx context.Context, params GetPolicyParams) (res *PolicyResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-policy"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/policies/{policyId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetPolicyOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/policies/"
-	{
-		// Encode "policyId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "policyId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.PolicyId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetPolicyOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetPolicyResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2716,6 +2609,142 @@ func (c *Client) sendListInvitations(ctx context.Context, params ListInvitations
 	return result, nil
 }
 
+// ListMemberPermissions invokes list-member-permissions operation.
+//
+// Every row states one permission this person holds apart from their roles: project-wide when
+// `resource_type` and `resource_id` are null, otherwise only on that resource. What a role grants is
+// not listed here; the member's grant carries the roles and their compiled rules.
+//
+// Visible to any member, on the same rule as the member list.
+//
+// GET /api/v1/members/{userId}/permissions
+func (c *Client) ListMemberPermissions(ctx context.Context, params ListMemberPermissionsParams) (*MemberPermissionListResponseBody, error) {
+	res, err := c.sendListMemberPermissions(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListMemberPermissions(ctx context.Context, params ListMemberPermissionsParams) (res *MemberPermissionListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-member-permissions"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/members/{userId}/permissions"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListMemberPermissionsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/members/"
+	{
+		// Encode "userId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "userId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.UserId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/permissions"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListMemberPermissionsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListMemberPermissionsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListMembers invokes list-members operation.
 //
 // List the members of a project.
@@ -2961,141 +2990,6 @@ func (c *Client) sendListPermissions(ctx context.Context) (res *PermissionListRe
 
 	stage = "DecodeResponse"
 	result, err := decodeListPermissionsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListPolicies invokes list-policies operation.
-//
-// Visible to any member, on the same rule as the member list. What has been granted to whom is part of
-// who is in the project.
-//
-// GET /api/v1/policies
-func (c *Client) ListPolicies(ctx context.Context, params ListPoliciesParams) (*PolicyListResponseBody, error) {
-	res, err := c.sendListPolicies(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListPolicies(ctx context.Context, params ListPoliciesParams) (res *PolicyListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-policies"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/policies"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListPoliciesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/policies"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "userId" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "userId",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.UserId.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListPoliciesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListPoliciesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4190,143 +4084,6 @@ func (c *Client) sendRotateApplicationSecret(ctx context.Context, params RotateA
 	return result, nil
 }
 
-// SetMemberPermissions invokes set-member-permissions operation.
-//
-// Replaces, in full, the permissions attached directly to the base policy. A direct permission grants
-// one person something without creating a role only they hold, and it does not follow later changes to
-// any role. Requires `iam:members.manage`.
-//
-// PUT /api/v1/members/{userId}/permissions
-func (c *Client) SetMemberPermissions(ctx context.Context, request *SetMemberPermissionsRequestBody, params SetMemberPermissionsParams) (*PolicyResource, error) {
-	res, err := c.sendSetMemberPermissions(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendSetMemberPermissions(ctx context.Context, request *SetMemberPermissionsRequestBody, params SetMemberPermissionsParams) (res *PolicyResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("set-member-permissions"),
-		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.URLTemplateKey.String("/api/v1/members/{userId}/permissions"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, SetMemberPermissionsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/members/"
-	{
-		// Encode "userId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "userId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.UserId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/permissions"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PUT", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeSetMemberPermissionsRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, SetMemberPermissionsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeSetMemberPermissionsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // SetMemberRoles invokes set-member-roles operation.
 //
 // The list is replaced in full rather than added to or removed from. The `OWNER` role of the owner is
@@ -4864,152 +4621,6 @@ func (c *Client) sendUpdateApplication(ctx context.Context, request *UpdateAppli
 
 	stage = "DecodeResponse"
 	result, err := decodeUpdateApplicationResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// UpdatePolicy invokes update-policy operation.
-//
-// Replaced in full rather than field by field — `resources`, `roles` and `permissions` are each
-// overwritten, and an omitted one becomes empty. The kind of a policy cannot change — a base policy
-// (an `allow` covering every resource) cannot take a resource scope, and a scoped policy cannot have
-// its scope cleared. Delete and recreate to change the kind. Requires `iam:members.manage`.
-//
-// PUT /api/v1/policies/{policyId}
-func (c *Client) UpdatePolicy(ctx context.Context, request *UpdatePolicyRequestBody, params UpdatePolicyParams) (*PolicyResource, error) {
-	res, err := c.sendUpdatePolicy(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendUpdatePolicy(ctx context.Context, request *UpdatePolicyRequestBody, params UpdatePolicyParams) (res *PolicyResource, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-policy"),
-		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.URLTemplateKey.String("/api/v1/policies/{policyId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, UpdatePolicyOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/policies/"
-	{
-		// Encode "policyId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "policyId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.PolicyId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PUT", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeUpdatePolicyRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, UpdatePolicyOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeUpdatePolicyResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

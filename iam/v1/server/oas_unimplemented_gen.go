@@ -13,18 +13,6 @@ type UnimplementedHandler struct{}
 
 var _ Handler = UnimplementedHandler{}
 
-// AttachPolicy implements attach-policy operation.
-//
-// This creates an additional policy, which either carries a resource scope or has `deny` as its
-// effect. An `allow` covering every resource is a base policy, of which each member holds exactly one,
-// and it is changed with set-member-roles and set-member-permissions. `roles` cannot contain `OWNER`
-// or `ADMIN`. Requires `iam:members.manage`.
-//
-// POST /api/v1/policies
-func (UnimplementedHandler) AttachPolicy(ctx context.Context, req *AttachPolicyRequestBody) (r *PolicyResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // BatchGetMembers implements batch-get-members operation.
 //
 // Resolves a set of account ids to the people behind them, scoped to the current project and including
@@ -56,6 +44,22 @@ func (UnimplementedHandler) BatchGetMembers(ctx context.Context, req *BatchGetMe
 //
 // POST /api/v1/applications
 func (UnimplementedHandler) CreateApplication(ctx context.Context, req *CreateApplicationRequestBody) (r *CreateApplicationResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateMemberPermission implements create-member-permission operation.
+//
+// Creates one permission row. The same row twice answers 409; changing a grant means revoking the row
+// and creating another, so that each row records when it was granted.
+//
+// `OWNER` and `ADMIN` cannot be granted here, being facts on the membership. A permission that carries
+// no resource dimension cannot be scoped: IAM refuses the row at grant time rather than storing a
+// scope that would never hold.
+//
+// Requires `iam:members.manage`.
+//
+// POST /api/v1/members/{userId}/permissions
+func (UnimplementedHandler) CreateMemberPermission(ctx context.Context, req *CreateMemberPermissionRequestBody, params CreateMemberPermissionParams) (r *MemberPermissionResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -91,6 +95,15 @@ func (UnimplementedHandler) DeleteApplication(ctx context.Context, params Delete
 	return r, ht.ErrNotImplemented
 }
 
+// DeleteMemberPermission implements delete-member-permission operation.
+//
+// Removes that one row. Requires `iam:members.manage`.
+//
+// DELETE /api/v1/members/{userId}/permissions/{permissionId}
+func (UnimplementedHandler) DeleteMemberPermission(ctx context.Context, params DeleteMemberPermissionParams) error {
+	return ht.ErrNotImplemented
+}
+
 // DeleteProject implements delete-project operation.
 //
 // Only the owner can do this, and it cannot be undone. The project enters DELETING and each service
@@ -111,31 +124,12 @@ func (UnimplementedHandler) DeleteRole(ctx context.Context, params DeleteRolePar
 	return ht.ErrNotImplemented
 }
 
-// DetachPolicy implements detach-policy operation.
-//
-// A base policy cannot be detached; it is where a member's roles sit. Use remove-member to take
-// someone out of the project. Requires `iam:members.manage`.
-//
-// DELETE /api/v1/policies/{policyId}
-func (UnimplementedHandler) DetachPolicy(ctx context.Context, params DetachPolicyParams) error {
-	return ht.ErrNotImplemented
-}
-
 // GetApplication implements get-application operation.
 //
 // An application that has been deleted is still returned, with `status` `ARCHIVED`.
 //
 // GET /api/v1/applications/{applicationId}
 func (UnimplementedHandler) GetApplication(ctx context.Context, params GetApplicationParams) (r *ApplicationResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetPolicy implements get-policy operation.
-//
-// Visible to any member, on the same rule as list-policies; no further permission is required.
-//
-// GET /api/v1/policies/{policyId}
-func (UnimplementedHandler) GetPolicy(ctx context.Context, params GetPolicyParams) (r *PolicyResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -206,6 +200,19 @@ func (UnimplementedHandler) ListInvitations(ctx context.Context, params ListInvi
 	return r, ht.ErrNotImplemented
 }
 
+// ListMemberPermissions implements list-member-permissions operation.
+//
+// Every row states one permission this person holds apart from their roles: project-wide when
+// `resource_type` and `resource_id` are null, otherwise only on that resource. What a role grants is
+// not listed here; the member's grant carries the roles and their compiled rules.
+//
+// Visible to any member, on the same rule as the member list.
+//
+// GET /api/v1/members/{userId}/permissions
+func (UnimplementedHandler) ListMemberPermissions(ctx context.Context, params ListMemberPermissionsParams) (r *MemberPermissionListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListMembers implements list-members operation.
 //
 // List the members of a project.
@@ -225,16 +232,6 @@ func (UnimplementedHandler) ListMembers(ctx context.Context, params ListMembersP
 //
 // GET /api/v1/permissions
 func (UnimplementedHandler) ListPermissions(ctx context.Context) (r *PermissionListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListPolicies implements list-policies operation.
-//
-// Visible to any member, on the same rule as the member list. What has been granted to whom is part of
-// who is in the project.
-//
-// GET /api/v1/policies
-func (UnimplementedHandler) ListPolicies(ctx context.Context, params ListPoliciesParams) (r *PolicyListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -318,17 +315,6 @@ func (UnimplementedHandler) RotateApplicationSecret(ctx context.Context, params 
 	return r, ht.ErrNotImplemented
 }
 
-// SetMemberPermissions implements set-member-permissions operation.
-//
-// Replaces, in full, the permissions attached directly to the base policy. A direct permission grants
-// one person something without creating a role only they hold, and it does not follow later changes to
-// any role. Requires `iam:members.manage`.
-//
-// PUT /api/v1/members/{userId}/permissions
-func (UnimplementedHandler) SetMemberPermissions(ctx context.Context, req *SetMemberPermissionsRequestBody, params SetMemberPermissionsParams) (r *PolicyResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // SetMemberRoles implements set-member-roles operation.
 //
 // The list is replaced in full rather than added to or removed from. The `OWNER` role of the owner is
@@ -378,18 +364,6 @@ func (UnimplementedHandler) TransferProjectOwnership(ctx context.Context, req *T
 //
 // PATCH /api/v1/applications/{applicationId}
 func (UnimplementedHandler) UpdateApplication(ctx context.Context, req *UpdateApplicationRequestBody, params UpdateApplicationParams) (r *ApplicationResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// UpdatePolicy implements update-policy operation.
-//
-// Replaced in full rather than field by field — `resources`, `roles` and `permissions` are each
-// overwritten, and an omitted one becomes empty. The kind of a policy cannot change — a base policy
-// (an `allow` covering every resource) cannot take a resource scope, and a scoped policy cannot have
-// its scope cleared. Delete and recreate to change the kind. Requires `iam:members.manage`.
-//
-// PUT /api/v1/policies/{policyId}
-func (UnimplementedHandler) UpdatePolicy(ctx context.Context, req *UpdatePolicyRequestBody, params UpdatePolicyParams) (r *PolicyResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
