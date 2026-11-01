@@ -5074,6 +5074,74 @@ func (o OptNilVideoCapabilities) Or(d VideoCapabilities) VideoCapabilities {
 	return d
 }
 
+// NewOptNilVideoDurationRange returns new OptNilVideoDurationRange with value set to v.
+func NewOptNilVideoDurationRange(v VideoDurationRange) OptNilVideoDurationRange {
+	return OptNilVideoDurationRange{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilVideoDurationRange is optional nullable VideoDurationRange.
+type OptNilVideoDurationRange struct {
+	Value VideoDurationRange
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilVideoDurationRange was set.
+func (o OptNilVideoDurationRange) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilVideoDurationRange) Reset() {
+	var v VideoDurationRange
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilVideoDurationRange) SetTo(v VideoDurationRange) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilVideoDurationRange) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilVideoDurationRange) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v VideoDurationRange
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilVideoDurationRange) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilVideoDurationRange) Get() (v VideoDurationRange, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilVideoDurationRange) Or(d VideoDurationRange) VideoDurationRange {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptResponseCreateReasoning returns new OptResponseCreateReasoning with value set to v.
 func NewOptResponseCreateReasoning(v ResponseCreateReasoning) OptResponseCreateReasoning {
 	return OptResponseCreateReasoning{
@@ -6533,6 +6601,8 @@ func (*UsageTimelineResponseBody) getUsageTimelineRes() {}
 // it. Create returns a task, and the task is polled separately.
 // Ref: #/components/schemas/VideoCapabilities
 type VideoCapabilities struct {
+	// Continuous duration capability. Mutually exclusive with nonempty seconds.
+	DurationRange OptNilVideoDurationRange `json:"duration_range"`
 	// Durations the upstream accepts, in seconds. Null means unknown.
 	Seconds []int `json:"seconds"`
 	// Output sizes the upstream accepts, such as 1280x720. Null means unknown.
@@ -6545,6 +6615,11 @@ type VideoCapabilities struct {
 	SupportsRemix NilBool `json:"supports_remix"`
 	// Whether the upstream accepts reusable characters. Null means unknown.
 	SupportsCharacters NilBool `json:"supports_characters"`
+}
+
+// GetDurationRange returns the value of DurationRange.
+func (s *VideoCapabilities) GetDurationRange() OptNilVideoDurationRange {
+	return s.DurationRange
 }
 
 // GetSeconds returns the value of Seconds.
@@ -6577,6 +6652,11 @@ func (s *VideoCapabilities) GetSupportsCharacters() NilBool {
 	return s.SupportsCharacters
 }
 
+// SetDurationRange sets the value of DurationRange.
+func (s *VideoCapabilities) SetDurationRange(val OptNilVideoDurationRange) {
+	s.DurationRange = val
+}
+
 // SetSeconds sets the value of Seconds.
 func (s *VideoCapabilities) SetSeconds(val []int) {
 	s.Seconds = val
@@ -6605,4 +6685,42 @@ func (s *VideoCapabilities) SetSupportsRemix(val NilBool) {
 // SetSupportsCharacters sets the value of SupportsCharacters.
 func (s *VideoCapabilities) SetSupportsCharacters(val NilBool) {
 	s.SupportsCharacters = val
+}
+
+// Accepted durations are min + n * step seconds, up to max. Independent of per-second pricing.
+// Ref: #/components/schemas/VideoDurationRange
+type VideoDurationRange struct {
+	Min  int `json:"min"`
+	Max  int `json:"max"`
+	Step int `json:"step"`
+}
+
+// GetMin returns the value of Min.
+func (s *VideoDurationRange) GetMin() int {
+	return s.Min
+}
+
+// GetMax returns the value of Max.
+func (s *VideoDurationRange) GetMax() int {
+	return s.Max
+}
+
+// GetStep returns the value of Step.
+func (s *VideoDurationRange) GetStep() int {
+	return s.Step
+}
+
+// SetMin sets the value of Min.
+func (s *VideoDurationRange) SetMin(val int) {
+	s.Min = val
+}
+
+// SetMax sets the value of Max.
+func (s *VideoDurationRange) SetMax(val int) {
+	s.Max = val
+}
+
+// SetStep sets the value of Step.
+func (s *VideoDurationRange) SetStep(val int) {
+	s.Step = val
 }

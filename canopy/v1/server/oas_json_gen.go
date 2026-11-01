@@ -7537,6 +7537,55 @@ func (s *OptNilVideoCapabilities) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes VideoDurationRange as json.
+func (o OptNilVideoDurationRange) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes VideoDurationRange from json.
+func (o *OptNilVideoDurationRange) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptNilVideoDurationRange to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v VideoDurationRange
+		o.Value = v
+		o.Set = true
+		o.Null = true
+		return nil
+	}
+	o.Set = true
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptNilVideoDurationRange) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptNilVideoDurationRange) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes ResponseCreateReasoning as json.
 func (o OptResponseCreateReasoning) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -10209,6 +10258,12 @@ func (s *VideoCapabilities) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *VideoCapabilities) encodeFields(e *jx.Encoder) {
 	{
+		if s.DurationRange.Set {
+			e.FieldStart("duration_range")
+			s.DurationRange.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("seconds")
 		if s.Seconds == nil {
 			e.Null()
@@ -10258,13 +10313,14 @@ func (s *VideoCapabilities) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfVideoCapabilities = [6]string{
-	0: "seconds",
-	1: "sizes",
-	2: "resolutions",
-	3: "supports_input_reference",
-	4: "supports_remix",
-	5: "supports_characters",
+var jsonFieldsNameOfVideoCapabilities = [7]string{
+	0: "duration_range",
+	1: "seconds",
+	2: "sizes",
+	3: "resolutions",
+	4: "supports_input_reference",
+	5: "supports_remix",
+	6: "supports_characters",
 }
 
 // Decode decodes VideoCapabilities from json.
@@ -10276,8 +10332,18 @@ func (s *VideoCapabilities) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "duration_range":
+			if err := func() error {
+				s.DurationRange.Reset()
+				if err := s.DurationRange.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"duration_range\"")
+			}
 		case "seconds":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				switch tt := d.Next(); tt {
 				case jx.Null:
@@ -10304,7 +10370,7 @@ func (s *VideoCapabilities) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"seconds\"")
 			}
 		case "sizes":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				switch tt := d.Next(); tt {
 				case jx.Null:
@@ -10331,7 +10397,7 @@ func (s *VideoCapabilities) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"sizes\"")
 			}
 		case "resolutions":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				switch tt := d.Next(); tt {
 				case jx.Null:
@@ -10358,7 +10424,7 @@ func (s *VideoCapabilities) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"resolutions\"")
 			}
 		case "supports_input_reference":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				if err := s.SupportsInputReference.Decode(d); err != nil {
 					return err
@@ -10368,7 +10434,7 @@ func (s *VideoCapabilities) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"supports_input_reference\"")
 			}
 		case "supports_remix":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.SupportsRemix.Decode(d); err != nil {
 					return err
@@ -10378,7 +10444,7 @@ func (s *VideoCapabilities) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"supports_remix\"")
 			}
 		case "supports_characters":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.SupportsCharacters.Decode(d); err != nil {
 					return err
@@ -10397,7 +10463,7 @@ func (s *VideoCapabilities) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00111111,
+		0b01111110,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -10439,6 +10505,136 @@ func (s *VideoCapabilities) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *VideoCapabilities) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *VideoDurationRange) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *VideoDurationRange) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("min")
+		e.Int(s.Min)
+	}
+	{
+		e.FieldStart("max")
+		e.Int(s.Max)
+	}
+	{
+		e.FieldStart("step")
+		e.Int(s.Step)
+	}
+}
+
+var jsonFieldsNameOfVideoDurationRange = [3]string{
+	0: "min",
+	1: "max",
+	2: "step",
+}
+
+// Decode decodes VideoDurationRange from json.
+func (s *VideoDurationRange) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode VideoDurationRange to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "min":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Int()
+				s.Min = int(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"min\"")
+			}
+		case "max":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int()
+				s.Max = int(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"max\"")
+			}
+		case "step":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Int()
+				s.Step = int(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"step\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode VideoDurationRange")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfVideoDurationRange) {
+					name = jsonFieldsNameOfVideoDurationRange[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *VideoDurationRange) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *VideoDurationRange) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
