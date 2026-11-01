@@ -10067,7 +10067,11 @@ type ListPricesByPlanParams struct {
 	// with no body.
 	IfNoneMatch OptString `json:",omitempty,omitzero"`
 	Currency    OptString `json:",omitempty,omitzero"`
-	PlanId      uuid.UUID
+	// Narrows to one price type.
+	Type OptPriceType `json:",omitempty,omitzero"`
+	// Narrows to one usage type.
+	UsageType OptUsageType `json:",omitempty,omitzero"`
+	PlanId    uuid.UUID
 }
 
 func unpackListPricesByPlanParams(packed middleware.Parameters) (params ListPricesByPlanParams) {
@@ -10105,6 +10109,24 @@ func unpackListPricesByPlanParams(packed middleware.Parameters) (params ListPric
 		}
 		if v, ok := packed[key]; ok {
 			params.Currency = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "type",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Type = v.(OptPriceType)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "usage_type",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.UsageType = v.(OptUsageType)
 		}
 	}
 	{
@@ -10338,6 +10360,118 @@ func decodeListPricesByPlanParams(args [1]string, argsEscaped bool, r *http.Requ
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "currency",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: type.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "type",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotTypeVal PriceType
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotTypeVal = PriceType(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Type.SetTo(paramsDotTypeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Type.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "type",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: usage_type.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "usage_type",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotUsageTypeVal UsageType
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotUsageTypeVal = UsageType(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.UsageType.SetTo(paramsDotUsageTypeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.UsageType.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "usage_type",
 			In:   "query",
 			Err:  err,
 		}
