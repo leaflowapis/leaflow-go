@@ -12224,6 +12224,14 @@ func (s *Server) handleListPricesByPlanRequest(args [1]string, argsEscaped bool,
 					In:   "query",
 				}: params.Currency,
 				{
+					Name: "type",
+					In:   "query",
+				}: params.Type,
+				{
+					Name: "usage_type",
+					In:   "query",
+				}: params.UsageType,
+				{
 					Name: "planId",
 					In:   "path",
 				}: params.PlanId,
