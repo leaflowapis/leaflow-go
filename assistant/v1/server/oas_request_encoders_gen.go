@@ -223,6 +223,20 @@ func encodeRotateChannelSecretRequest(
 	return nil
 }
 
+func encodeSearchAttachmentsRequest(
+	req *SearchAttachmentsRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeSearchTasksRequest(
 	req *SearchTasksRequestBody,
 	r *http.Request,
@@ -295,6 +309,20 @@ func encodeSubmitToolResultRequest(
 
 func encodeSubmitWeixinVerifyCodeRequest(
 	req *VerifyCodeRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateAttachmentRequest(
+	req *UpdateAttachmentRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

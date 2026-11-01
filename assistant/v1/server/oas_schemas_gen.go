@@ -98,6 +98,241 @@ func (s *ApprovalMode) UnmarshalText(data []byte) error {
 	}
 }
 
+// Counts over everything the criteria match, ignoring `ids` and the cursor.
+// Ref: #/components/schemas/AttachmentCountsResource
+type AttachmentCountsResource struct {
+	Total      int64 `json:"total"`
+	TotalBytes int64 `json:"totalBytes"`
+}
+
+// GetTotal returns the value of Total.
+func (s *AttachmentCountsResource) GetTotal() int64 {
+	return s.Total
+}
+
+// GetTotalBytes returns the value of TotalBytes.
+func (s *AttachmentCountsResource) GetTotalBytes() int64 {
+	return s.TotalBytes
+}
+
+// SetTotal sets the value of Total.
+func (s *AttachmentCountsResource) SetTotal(val int64) {
+	s.Total = val
+}
+
+// SetTotalBytes sets the value of TotalBytes.
+func (s *AttachmentCountsResource) SetTotalBytes(val int64) {
+	s.TotalBytes = val
+}
+
+// Ref: #/components/schemas/AttachmentFileResource
+type AttachmentFileResource struct {
+	ByteSize  int64     `json:"byteSize"`
+	CreatedAt time.Time `json:"createdAt"`
+	// When this draft is cleared if no message ever references it. Null once a message uses it — a file
+	// that belongs to a conversation is kept as long as the conversation is.
+	DraftExpiresAt NilDateTime `json:"draftExpiresAt"`
+	Filename       string      `json:"filename"`
+	// Null unless type is image.
+	Height NilInt64 `json:"height"`
+	ID     string   `json:"id"`
+	// Detected at intake, not the Content-Type the client sent.
+	Mime string `json:"mime"`
+	// How the assistant will see this file.
+	Type      AttachmentFileResourceType `json:"type"`
+	UpdatedAt time.Time                  `json:"updatedAt"`
+	// Null unless type is image.
+	Width NilInt64 `json:"width"`
+}
+
+// GetByteSize returns the value of ByteSize.
+func (s *AttachmentFileResource) GetByteSize() int64 {
+	return s.ByteSize
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *AttachmentFileResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetDraftExpiresAt returns the value of DraftExpiresAt.
+func (s *AttachmentFileResource) GetDraftExpiresAt() NilDateTime {
+	return s.DraftExpiresAt
+}
+
+// GetFilename returns the value of Filename.
+func (s *AttachmentFileResource) GetFilename() string {
+	return s.Filename
+}
+
+// GetHeight returns the value of Height.
+func (s *AttachmentFileResource) GetHeight() NilInt64 {
+	return s.Height
+}
+
+// GetID returns the value of ID.
+func (s *AttachmentFileResource) GetID() string {
+	return s.ID
+}
+
+// GetMime returns the value of Mime.
+func (s *AttachmentFileResource) GetMime() string {
+	return s.Mime
+}
+
+// GetType returns the value of Type.
+func (s *AttachmentFileResource) GetType() AttachmentFileResourceType {
+	return s.Type
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *AttachmentFileResource) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// GetWidth returns the value of Width.
+func (s *AttachmentFileResource) GetWidth() NilInt64 {
+	return s.Width
+}
+
+// SetByteSize sets the value of ByteSize.
+func (s *AttachmentFileResource) SetByteSize(val int64) {
+	s.ByteSize = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *AttachmentFileResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetDraftExpiresAt sets the value of DraftExpiresAt.
+func (s *AttachmentFileResource) SetDraftExpiresAt(val NilDateTime) {
+	s.DraftExpiresAt = val
+}
+
+// SetFilename sets the value of Filename.
+func (s *AttachmentFileResource) SetFilename(val string) {
+	s.Filename = val
+}
+
+// SetHeight sets the value of Height.
+func (s *AttachmentFileResource) SetHeight(val NilInt64) {
+	s.Height = val
+}
+
+// SetID sets the value of ID.
+func (s *AttachmentFileResource) SetID(val string) {
+	s.ID = val
+}
+
+// SetMime sets the value of Mime.
+func (s *AttachmentFileResource) SetMime(val string) {
+	s.Mime = val
+}
+
+// SetType sets the value of Type.
+func (s *AttachmentFileResource) SetType(val AttachmentFileResourceType) {
+	s.Type = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *AttachmentFileResource) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+// SetWidth sets the value of Width.
+func (s *AttachmentFileResource) SetWidth(val NilInt64) {
+	s.Width = val
+}
+
+// How the assistant will see this file.
+type AttachmentFileResourceType string
+
+const (
+	AttachmentFileResourceTypeImage  AttachmentFileResourceType = "image"
+	AttachmentFileResourceTypeText   AttachmentFileResourceType = "text"
+	AttachmentFileResourceTypeBinary AttachmentFileResourceType = "binary"
+)
+
+// AllValues returns all AttachmentFileResourceType values.
+func (AttachmentFileResourceType) AllValues() []AttachmentFileResourceType {
+	return []AttachmentFileResourceType{
+		AttachmentFileResourceTypeImage,
+		AttachmentFileResourceTypeText,
+		AttachmentFileResourceTypeBinary,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AttachmentFileResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case AttachmentFileResourceTypeImage:
+		return []byte(s), nil
+	case AttachmentFileResourceTypeText:
+		return []byte(s), nil
+	case AttachmentFileResourceTypeBinary:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AttachmentFileResourceType) UnmarshalText(data []byte) error {
+	switch AttachmentFileResourceType(data) {
+	case AttachmentFileResourceTypeImage:
+		*s = AttachmentFileResourceTypeImage
+		return nil
+	case AttachmentFileResourceTypeText:
+		*s = AttachmentFileResourceTypeText
+		return nil
+	case AttachmentFileResourceTypeBinary:
+		*s = AttachmentFileResourceTypeBinary
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/AttachmentListResponseBody
+type AttachmentListResponseBody struct {
+	Attachments []AttachmentFileResource `json:"attachments"`
+	// Null on the last page.
+	NextCursor NilString `json:"nextCursor"`
+	// Null unless `include` asked for it.
+	Counts NilAttachmentCountsResource `json:"counts"`
+}
+
+// GetAttachments returns the value of Attachments.
+func (s *AttachmentListResponseBody) GetAttachments() []AttachmentFileResource {
+	return s.Attachments
+}
+
+// GetNextCursor returns the value of NextCursor.
+func (s *AttachmentListResponseBody) GetNextCursor() NilString {
+	return s.NextCursor
+}
+
+// GetCounts returns the value of Counts.
+func (s *AttachmentListResponseBody) GetCounts() NilAttachmentCountsResource {
+	return s.Counts
+}
+
+// SetAttachments sets the value of Attachments.
+func (s *AttachmentListResponseBody) SetAttachments(val []AttachmentFileResource) {
+	s.Attachments = val
+}
+
+// SetNextCursor sets the value of NextCursor.
+func (s *AttachmentListResponseBody) SetNextCursor(val NilString) {
+	s.NextCursor = val
+}
+
+// SetCounts sets the value of Counts.
+func (s *AttachmentListResponseBody) SetCounts(val NilAttachmentCountsResource) {
+	s.Counts = val
+}
+
 // Ref: #/components/schemas/AttachmentResource
 type AttachmentResource struct {
 	ID string `json:"id"`
@@ -1994,6 +2229,9 @@ func (s *DefaultModelResourceSource) UnmarshalText(data []byte) error {
 	}
 }
 
+// DeleteAttachmentNoContent is response for DeleteAttachment operation.
+type DeleteAttachmentNoContent struct{}
+
 // DeleteBindingNoContent is response for DeleteBinding operation.
 type DeleteBindingNoContent struct{}
 
@@ -3130,6 +3368,51 @@ func (s *MoveFolderRequestBody) SetBeforeFolderId(val NilString) {
 // SetExpectedVersion sets the value of ExpectedVersion.
 func (s *MoveFolderRequestBody) SetExpectedVersion(val int64) {
 	s.ExpectedVersion = val
+}
+
+// NewNilAttachmentCountsResource returns new NilAttachmentCountsResource with value set to v.
+func NewNilAttachmentCountsResource(v AttachmentCountsResource) NilAttachmentCountsResource {
+	return NilAttachmentCountsResource{
+		Value: v,
+	}
+}
+
+// NilAttachmentCountsResource is nullable AttachmentCountsResource.
+type NilAttachmentCountsResource struct {
+	Value AttachmentCountsResource
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilAttachmentCountsResource) SetTo(v AttachmentCountsResource) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilAttachmentCountsResource) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilAttachmentCountsResource) SetToNull() {
+	o.Null = true
+	var v AttachmentCountsResource
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilAttachmentCountsResource) Get() (v AttachmentCountsResource, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilAttachmentCountsResource) Or(d AttachmentCountsResource) AttachmentCountsResource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
 }
 
 // NewNilDateTime returns new NilDateTime with value set to v.
@@ -5038,6 +5321,52 @@ func (o OptRotateSecretRequestBody) Or(d RotateSecretRequestBody) RotateSecretRe
 	return d
 }
 
+// NewOptSearchAttachmentsRequestBodyType returns new OptSearchAttachmentsRequestBodyType with value set to v.
+func NewOptSearchAttachmentsRequestBodyType(v SearchAttachmentsRequestBodyType) OptSearchAttachmentsRequestBodyType {
+	return OptSearchAttachmentsRequestBodyType{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSearchAttachmentsRequestBodyType is optional SearchAttachmentsRequestBodyType.
+type OptSearchAttachmentsRequestBodyType struct {
+	Value SearchAttachmentsRequestBodyType
+	Set   bool
+}
+
+// IsSet returns true if OptSearchAttachmentsRequestBodyType was set.
+func (o OptSearchAttachmentsRequestBodyType) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSearchAttachmentsRequestBodyType) Reset() {
+	var v SearchAttachmentsRequestBodyType
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSearchAttachmentsRequestBodyType) SetTo(v SearchAttachmentsRequestBodyType) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSearchAttachmentsRequestBodyType) Get() (v SearchAttachmentsRequestBodyType, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSearchAttachmentsRequestBodyType) Or(d SearchAttachmentsRequestBodyType) SearchAttachmentsRequestBodyType {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptSearchTasksRequestBodyActionType returns new OptSearchTasksRequestBodyActionType with value set to v.
 func NewOptSearchTasksRequestBodyActionType(v SearchTasksRequestBodyActionType) OptSearchTasksRequestBodyActionType {
 	return OptSearchTasksRequestBodyActionType{
@@ -6478,6 +6807,175 @@ func (s *RotateSecretRequestBody) GetWebhookSecret() OptString {
 // SetWebhookSecret sets the value of WebhookSecret.
 func (s *RotateSecretRequestBody) SetWebhookSecret(val OptString) {
 	s.WebhookSecret = val
+}
+
+// Ref: #/components/schemas/SearchAttachmentsRequestBody
+type SearchAttachmentsRequestBody struct {
+	// Read these attachments. Cannot be combined with cursor.
+	Ids []string `json:"ids"`
+	// Matches filenames, case-insensitively.
+	Q OptString `json:"q"`
+	// How the assistant sees the file.
+	Type OptSearchAttachmentsRequestBodyType `json:"type"`
+	// True for uploads no message references, false for the rest.
+	Draft  OptBool   `json:"draft"`
+	Cursor OptString `json:"cursor"`
+	Limit  OptInt    `json:"limit"`
+	// Optional parts of the response. `counts` adds `counts`.
+	Include []SearchAttachmentsRequestBodyIncludeItem `json:"include"`
+}
+
+// GetIds returns the value of Ids.
+func (s *SearchAttachmentsRequestBody) GetIds() []string {
+	return s.Ids
+}
+
+// GetQ returns the value of Q.
+func (s *SearchAttachmentsRequestBody) GetQ() OptString {
+	return s.Q
+}
+
+// GetType returns the value of Type.
+func (s *SearchAttachmentsRequestBody) GetType() OptSearchAttachmentsRequestBodyType {
+	return s.Type
+}
+
+// GetDraft returns the value of Draft.
+func (s *SearchAttachmentsRequestBody) GetDraft() OptBool {
+	return s.Draft
+}
+
+// GetCursor returns the value of Cursor.
+func (s *SearchAttachmentsRequestBody) GetCursor() OptString {
+	return s.Cursor
+}
+
+// GetLimit returns the value of Limit.
+func (s *SearchAttachmentsRequestBody) GetLimit() OptInt {
+	return s.Limit
+}
+
+// GetInclude returns the value of Include.
+func (s *SearchAttachmentsRequestBody) GetInclude() []SearchAttachmentsRequestBodyIncludeItem {
+	return s.Include
+}
+
+// SetIds sets the value of Ids.
+func (s *SearchAttachmentsRequestBody) SetIds(val []string) {
+	s.Ids = val
+}
+
+// SetQ sets the value of Q.
+func (s *SearchAttachmentsRequestBody) SetQ(val OptString) {
+	s.Q = val
+}
+
+// SetType sets the value of Type.
+func (s *SearchAttachmentsRequestBody) SetType(val OptSearchAttachmentsRequestBodyType) {
+	s.Type = val
+}
+
+// SetDraft sets the value of Draft.
+func (s *SearchAttachmentsRequestBody) SetDraft(val OptBool) {
+	s.Draft = val
+}
+
+// SetCursor sets the value of Cursor.
+func (s *SearchAttachmentsRequestBody) SetCursor(val OptString) {
+	s.Cursor = val
+}
+
+// SetLimit sets the value of Limit.
+func (s *SearchAttachmentsRequestBody) SetLimit(val OptInt) {
+	s.Limit = val
+}
+
+// SetInclude sets the value of Include.
+func (s *SearchAttachmentsRequestBody) SetInclude(val []SearchAttachmentsRequestBodyIncludeItem) {
+	s.Include = val
+}
+
+type SearchAttachmentsRequestBodyIncludeItem string
+
+const (
+	SearchAttachmentsRequestBodyIncludeItemCounts SearchAttachmentsRequestBodyIncludeItem = "counts"
+)
+
+// AllValues returns all SearchAttachmentsRequestBodyIncludeItem values.
+func (SearchAttachmentsRequestBodyIncludeItem) AllValues() []SearchAttachmentsRequestBodyIncludeItem {
+	return []SearchAttachmentsRequestBodyIncludeItem{
+		SearchAttachmentsRequestBodyIncludeItemCounts,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SearchAttachmentsRequestBodyIncludeItem) MarshalText() ([]byte, error) {
+	switch s {
+	case SearchAttachmentsRequestBodyIncludeItemCounts:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SearchAttachmentsRequestBodyIncludeItem) UnmarshalText(data []byte) error {
+	switch SearchAttachmentsRequestBodyIncludeItem(data) {
+	case SearchAttachmentsRequestBodyIncludeItemCounts:
+		*s = SearchAttachmentsRequestBodyIncludeItemCounts
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// How the assistant sees the file.
+type SearchAttachmentsRequestBodyType string
+
+const (
+	SearchAttachmentsRequestBodyTypeImage  SearchAttachmentsRequestBodyType = "image"
+	SearchAttachmentsRequestBodyTypeText   SearchAttachmentsRequestBodyType = "text"
+	SearchAttachmentsRequestBodyTypeBinary SearchAttachmentsRequestBodyType = "binary"
+)
+
+// AllValues returns all SearchAttachmentsRequestBodyType values.
+func (SearchAttachmentsRequestBodyType) AllValues() []SearchAttachmentsRequestBodyType {
+	return []SearchAttachmentsRequestBodyType{
+		SearchAttachmentsRequestBodyTypeImage,
+		SearchAttachmentsRequestBodyTypeText,
+		SearchAttachmentsRequestBodyTypeBinary,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SearchAttachmentsRequestBodyType) MarshalText() ([]byte, error) {
+	switch s {
+	case SearchAttachmentsRequestBodyTypeImage:
+		return []byte(s), nil
+	case SearchAttachmentsRequestBodyTypeText:
+		return []byte(s), nil
+	case SearchAttachmentsRequestBodyTypeBinary:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SearchAttachmentsRequestBodyType) UnmarshalText(data []byte) error {
+	switch SearchAttachmentsRequestBodyType(data) {
+	case SearchAttachmentsRequestBodyTypeImage:
+		*s = SearchAttachmentsRequestBodyTypeImage
+		return nil
+	case SearchAttachmentsRequestBodyTypeText:
+		*s = SearchAttachmentsRequestBodyTypeText
+		return nil
+	case SearchAttachmentsRequestBodyTypeBinary:
+		*s = SearchAttachmentsRequestBodyTypeBinary
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/SearchTasksRequestBody
@@ -10384,6 +10882,21 @@ func (s *TurnType) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Ref: #/components/schemas/UpdateAttachmentRequestBody
+type UpdateAttachmentRequestBody struct {
+	Filename string `json:"filename"`
+}
+
+// GetFilename returns the value of Filename.
+func (s *UpdateAttachmentRequestBody) GetFilename() string {
+	return s.Filename
+}
+
+// SetFilename sets the value of Filename.
+func (s *UpdateAttachmentRequestBody) SetFilename(val string) {
+	s.Filename = val
 }
 
 // Ref: #/components/schemas/UpdateChannelRequestBody

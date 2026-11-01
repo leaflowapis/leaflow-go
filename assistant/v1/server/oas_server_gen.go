@@ -138,6 +138,14 @@ type Handler interface {
 	//
 	// POST /api/v1/threads/{thread}/approvals
 	DecideToolCalls(ctx context.Context, req *DecideToolCallsRequestBody, params DecideToolCallsParams) error
+	// DeleteAttachment implements delete-attachment operation.
+	//
+	// Hides the file from the library. Conversations that already use it keep it: the attachment stays
+	// readable by id and keeps rendering in their history. Its bytes are released when the project is
+	// deleted. A draft is cleared for good when its expiry passes. Idempotent.
+	//
+	// DELETE /api/v1/attachments/{attachment}
+	DeleteAttachment(ctx context.Context, params DeleteAttachmentParams) error
 	// DeleteBinding implements delete-binding operation.
 	//
 	// Remove a binding.
@@ -197,17 +205,27 @@ type Handler interface {
 	DeleteUpload(ctx context.Context, params DeleteUploadParams) error
 	// DownloadAttachment implements download-attachment operation.
 	//
-	// Returns the original bytes for an attachment id. The response carries long-lived cache headers
-	// because the content never changes. Returns 404 when the attachment does not exist or does not belong
-	// to the current user.
+	// Returns the original bytes for an attachment id, including one removed from the library. The
+	// response carries long-lived cache headers because the content never changes. Returns 404 when the
+	// attachment does not exist or does not belong to the current user.
 	//
 	// Only an attachment whose `type` is `image` comes back with its own image type and is usable as the
 	// address of an `<img>`. Everything else is served as `application/octet-stream` with
 	// `Content-Disposition: attachment`, deliberately: an uploaded file is arbitrary bytes under a name
 	// its uploader chose, and serving it back inline would run it on this origin.
 	//
-	// GET /api/v1/attachments/{attachment}
+	// GET /api/v1/attachments/{attachment}:download
 	DownloadAttachment(ctx context.Context, params DownloadAttachmentParams) (*DownloadAttachmentOKHeaders, error)
+	// GetAttachment implements get-attachment operation.
+	//
+	// Metadata for one attachment. The bytes are at /api/v1/attachments/{attachment}:download.
+	//
+	// Returns 404 when the attachment does not exist, does not belong to the current user, or was removed
+	// from the library. Removed files stay readable through their conversations but are no longer
+	// described here.
+	//
+	// GET /api/v1/attachments/{attachment}
+	GetAttachment(ctx context.Context, params GetAttachmentParams) (*AttachmentFileResource, error)
 	// GetBinding implements get-binding operation.
 	//
 	// Get a binding.
@@ -503,6 +521,19 @@ type Handler interface {
 	//
 	// POST /api/v1/tasks/{task}:run
 	RunTask(ctx context.Context, params RunTaskParams) (*TaskRunResource, error)
+	// SearchAttachments implements search-attachments operation.
+	//
+	// The caller's files in this project, most recently uploaded first. These are the files uploaded while
+	// composing messages, plus uploads that no message has referenced yet.
+	//
+	// A file with no message referencing it is a draft: `draftExpiresAt` says when it is cleared. Sending
+	// a message with the id makes it permanent and that field becomes null.
+	//
+	// Files removed from the library are not listed, but conversations that already use them keep them and
+	// download-by-id still works.
+	//
+	// QUERY /api/v1/attachments
+	SearchAttachments(ctx context.Context, req *SearchAttachmentsRequestBody) (*AttachmentListResponseBody, error)
 	// SearchTasks implements search-tasks operation.
 	//
 	// The caller's tasks in this project, most recently created first.
@@ -559,6 +590,13 @@ type Handler interface {
 	//
 	// POST /api/v1/weixin-logins/{login}:verifyCode
 	SubmitWeixinVerifyCode(ctx context.Context, req *VerifyCodeRequestBody, params SubmitWeixinVerifyCodeParams) (*LoginResource, error)
+	// UpdateAttachment implements update-attachment operation.
+	//
+	// Changes the name shown in the library and given to the assistant. The bytes and the attachment id do
+	// not change; conversations that already use it see the new name from their next request on.
+	//
+	// PATCH /api/v1/attachments/{attachment}
+	UpdateAttachment(ctx context.Context, req *UpdateAttachmentRequestBody, params UpdateAttachmentParams) (*AttachmentFileResource, error)
 	// UpdateChannel implements update-channel operation.
 	//
 	// Only the fields present are changed. senderPolicy and allowFrom go together, and senderPolicy

@@ -11,6 +11,14 @@ func (s *ClientActionRequest) setDefaults() {
 }
 
 // setDefaults set default value of fields.
+func (s *SearchAttachmentsRequestBody) setDefaults() {
+	{
+		val := int(50)
+		s.Limit.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
 func (s *SearchTasksRequestBody) setDefaults() {
 	{
 		val := int(50)

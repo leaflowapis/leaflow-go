@@ -857,6 +857,71 @@ func decodeDecideToolCallsParams(args [1]string, argsEscaped bool, r *http.Reque
 	return params, nil
 }
 
+// DeleteAttachmentParams is parameters of delete-attachment operation.
+type DeleteAttachmentParams struct {
+	Attachment string
+}
+
+func unpackDeleteAttachmentParams(packed middleware.Parameters) (params DeleteAttachmentParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "attachment",
+			In:   "path",
+		}
+		params.Attachment = packed[key].(string)
+	}
+	return params
+}
+
+func decodeDeleteAttachmentParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteAttachmentParams, _ error) {
+	// Decode path: attachment.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "attachment",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Attachment = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "attachment",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // DeleteBindingParams is parameters of delete-binding operation.
 type DeleteBindingParams struct {
 	Binding uuid.UUID
@@ -1457,6 +1522,71 @@ func unpackDownloadAttachmentParams(packed middleware.Parameters) (params Downlo
 }
 
 func decodeDownloadAttachmentParams(args [1]string, argsEscaped bool, r *http.Request) (params DownloadAttachmentParams, _ error) {
+	// Decode path: attachment.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "attachment",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Attachment = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "attachment",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetAttachmentParams is parameters of get-attachment operation.
+type GetAttachmentParams struct {
+	Attachment string
+}
+
+func unpackGetAttachmentParams(packed middleware.Parameters) (params GetAttachmentParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "attachment",
+			In:   "path",
+		}
+		params.Attachment = packed[key].(string)
+	}
+	return params
+}
+
+func decodeGetAttachmentParams(args [1]string, argsEscaped bool, r *http.Request) (params GetAttachmentParams, _ error) {
 	// Decode path: attachment.
 	if err := func() error {
 		param := args[0]
@@ -5997,6 +6127,71 @@ func decodeSubmitWeixinVerifyCodeParams(args [1]string, argsEscaped bool, r *htt
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "login",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UpdateAttachmentParams is parameters of update-attachment operation.
+type UpdateAttachmentParams struct {
+	Attachment string
+}
+
+func unpackUpdateAttachmentParams(packed middleware.Parameters) (params UpdateAttachmentParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "attachment",
+			In:   "path",
+		}
+		params.Attachment = packed[key].(string)
+	}
+	return params
+}
+
+func decodeUpdateAttachmentParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateAttachmentParams, _ error) {
+	// Decode path: attachment.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "attachment",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Attachment = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "attachment",
 			In:   "path",
 			Err:  err,
 		}

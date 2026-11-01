@@ -159,6 +159,14 @@ type Invoker interface {
 	//
 	// POST /api/v1/threads/{thread}/approvals
 	DecideToolCalls(ctx context.Context, request *DecideToolCallsRequestBody, params DecideToolCallsParams) error
+	// DeleteAttachment invokes delete-attachment operation.
+	//
+	// Hides the file from the library. Conversations that already use it keep it: the attachment stays
+	// readable by id and keeps rendering in their history. Its bytes are released when the project is
+	// deleted. A draft is cleared for good when its expiry passes. Idempotent.
+	//
+	// DELETE /api/v1/attachments/{attachment}
+	DeleteAttachment(ctx context.Context, params DeleteAttachmentParams) error
 	// DeleteBinding invokes delete-binding operation.
 	//
 	// Remove a binding.
@@ -218,17 +226,27 @@ type Invoker interface {
 	DeleteUpload(ctx context.Context, params DeleteUploadParams) error
 	// DownloadAttachment invokes download-attachment operation.
 	//
-	// Returns the original bytes for an attachment id. The response carries long-lived cache headers
-	// because the content never changes. Returns 404 when the attachment does not exist or does not belong
-	// to the current user.
+	// Returns the original bytes for an attachment id, including one removed from the library. The
+	// response carries long-lived cache headers because the content never changes. Returns 404 when the
+	// attachment does not exist or does not belong to the current user.
 	//
 	// Only an attachment whose `type` is `image` comes back with its own image type and is usable as the
 	// address of an `<img>`. Everything else is served as `application/octet-stream` with
 	// `Content-Disposition: attachment`, deliberately: an uploaded file is arbitrary bytes under a name
 	// its uploader chose, and serving it back inline would run it on this origin.
 	//
-	// GET /api/v1/attachments/{attachment}
+	// GET /api/v1/attachments/{attachment}:download
 	DownloadAttachment(ctx context.Context, params DownloadAttachmentParams) (*DownloadAttachmentOKHeaders, error)
+	// GetAttachment invokes get-attachment operation.
+	//
+	// Metadata for one attachment. The bytes are at /api/v1/attachments/{attachment}:download.
+	//
+	// Returns 404 when the attachment does not exist, does not belong to the current user, or was removed
+	// from the library. Removed files stay readable through their conversations but are no longer
+	// described here.
+	//
+	// GET /api/v1/attachments/{attachment}
+	GetAttachment(ctx context.Context, params GetAttachmentParams) (*AttachmentFileResource, error)
 	// GetBinding invokes get-binding operation.
 	//
 	// Get a binding.
@@ -524,6 +542,19 @@ type Invoker interface {
 	//
 	// POST /api/v1/tasks/{task}:run
 	RunTask(ctx context.Context, params RunTaskParams) (*TaskRunResource, error)
+	// SearchAttachments invokes search-attachments operation.
+	//
+	// The caller's files in this project, most recently uploaded first. These are the files uploaded while
+	// composing messages, plus uploads that no message has referenced yet.
+	//
+	// A file with no message referencing it is a draft: `draftExpiresAt` says when it is cleared. Sending
+	// a message with the id makes it permanent and that field becomes null.
+	//
+	// Files removed from the library are not listed, but conversations that already use them keep them and
+	// download-by-id still works.
+	//
+	// QUERY /api/v1/attachments
+	SearchAttachments(ctx context.Context, request *SearchAttachmentsRequestBody) (*AttachmentListResponseBody, error)
 	// SearchTasks invokes search-tasks operation.
 	//
 	// The caller's tasks in this project, most recently created first.
@@ -580,6 +611,13 @@ type Invoker interface {
 	//
 	// POST /api/v1/weixin-logins/{login}:verifyCode
 	SubmitWeixinVerifyCode(ctx context.Context, request *VerifyCodeRequestBody, params SubmitWeixinVerifyCodeParams) (*LoginResource, error)
+	// UpdateAttachment invokes update-attachment operation.
+	//
+	// Changes the name shown in the library and given to the assistant. The bytes and the attachment id do
+	// not change; conversations that already use it see the new name from their next request on.
+	//
+	// PATCH /api/v1/attachments/{attachment}
+	UpdateAttachment(ctx context.Context, request *UpdateAttachmentRequestBody, params UpdateAttachmentParams) (*AttachmentFileResource, error)
 	// UpdateChannel invokes update-channel operation.
 	//
 	// Only the fields present are changed. senderPolicy and allowFrom go together, and senderPolicy
@@ -2621,6 +2659,139 @@ func (c *Client) sendDecideToolCalls(ctx context.Context, request *DecideToolCal
 	return result, nil
 }
 
+// DeleteAttachment invokes delete-attachment operation.
+//
+// Hides the file from the library. Conversations that already use it keep it: the attachment stays
+// readable by id and keeps rendering in their history. Its bytes are released when the project is
+// deleted. A draft is cleared for good when its expiry passes. Idempotent.
+//
+// DELETE /api/v1/attachments/{attachment}
+func (c *Client) DeleteAttachment(ctx context.Context, params DeleteAttachmentParams) error {
+	_, err := c.sendDeleteAttachment(ctx, params)
+	return err
+}
+
+func (c *Client) sendDeleteAttachment(ctx context.Context, params DeleteAttachmentParams) (res *DeleteAttachmentNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-attachment"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/attachments/{attachment}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteAttachmentOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/attachments/"
+	{
+		// Encode "attachment" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "attachment",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Attachment))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, DeleteAttachmentOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteAttachmentResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // DeleteBinding invokes delete-binding operation.
 //
 // Remove a binding.
@@ -3680,16 +3851,16 @@ func (c *Client) sendDeleteUpload(ctx context.Context, params DeleteUploadParams
 
 // DownloadAttachment invokes download-attachment operation.
 //
-// Returns the original bytes for an attachment id. The response carries long-lived cache headers
-// because the content never changes. Returns 404 when the attachment does not exist or does not belong
-// to the current user.
+// Returns the original bytes for an attachment id, including one removed from the library. The
+// response carries long-lived cache headers because the content never changes. Returns 404 when the
+// attachment does not exist or does not belong to the current user.
 //
 // Only an attachment whose `type` is `image` comes back with its own image type and is usable as the
 // address of an `<img>`. Everything else is served as `application/octet-stream` with
 // `Content-Disposition: attachment`, deliberately: an uploaded file is arbitrary bytes under a name
 // its uploader chose, and serving it back inline would run it on this origin.
 //
-// GET /api/v1/attachments/{attachment}
+// GET /api/v1/attachments/{attachment}:download
 func (c *Client) DownloadAttachment(ctx context.Context, params DownloadAttachmentParams) (*DownloadAttachmentOKHeaders, error) {
 	res, err := c.sendDownloadAttachment(ctx, params)
 	return res, err
@@ -3699,7 +3870,7 @@ func (c *Client) sendDownloadAttachment(ctx context.Context, params DownloadAtta
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("download-attachment"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/attachments/{attachment}"),
+		semconv.URLTemplateKey.String("/api/v1/attachments/{attachment}:download"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3732,7 +3903,7 @@ func (c *Client) sendDownloadAttachment(ctx context.Context, params DownloadAtta
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
+	var pathParts [3]string
 	pathParts[0] = "/api/v1/attachments/"
 	{
 		// Encode "attachment" parameter.
@@ -3752,6 +3923,7 @@ func (c *Client) sendDownloadAttachment(ctx context.Context, params DownloadAtta
 		}
 		pathParts[1] = encoded
 	}
+	pathParts[2] = ":download"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -3809,6 +3981,141 @@ func (c *Client) sendDownloadAttachment(ctx context.Context, params DownloadAtta
 
 	stage = "DecodeResponse"
 	result, err := decodeDownloadAttachmentResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetAttachment invokes get-attachment operation.
+//
+// Metadata for one attachment. The bytes are at /api/v1/attachments/{attachment}:download.
+//
+// Returns 404 when the attachment does not exist, does not belong to the current user, or was removed
+// from the library. Removed files stay readable through their conversations but are no longer
+// described here.
+//
+// GET /api/v1/attachments/{attachment}
+func (c *Client) GetAttachment(ctx context.Context, params GetAttachmentParams) (*AttachmentFileResource, error) {
+	res, err := c.sendGetAttachment(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetAttachment(ctx context.Context, params GetAttachmentParams) (res *AttachmentFileResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-attachment"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/attachments/{attachment}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetAttachmentOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/attachments/"
+	{
+		// Encode "attachment" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "attachment",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Attachment))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetAttachmentOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetAttachmentResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -9139,6 +9446,138 @@ func (c *Client) sendRunTask(ctx context.Context, params RunTaskParams) (res *Ta
 	return result, nil
 }
 
+// SearchAttachments invokes search-attachments operation.
+//
+// The caller's files in this project, most recently uploaded first. These are the files uploaded while
+// composing messages, plus uploads that no message has referenced yet.
+//
+// A file with no message referencing it is a draft: `draftExpiresAt` says when it is cleared. Sending
+// a message with the id makes it permanent and that field becomes null.
+//
+// Files removed from the library are not listed, but conversations that already use them keep them and
+// download-by-id still works.
+//
+// QUERY /api/v1/attachments
+func (c *Client) SearchAttachments(ctx context.Context, request *SearchAttachmentsRequestBody) (*AttachmentListResponseBody, error) {
+	res, err := c.sendSearchAttachments(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendSearchAttachments(ctx context.Context, request *SearchAttachmentsRequestBody) (res *AttachmentListResponseBody, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("search-attachments"),
+		semconv.HTTPRequestMethodKey.String("QUERY"),
+		semconv.URLTemplateKey.String("/api/v1/attachments"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SearchAttachmentsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/attachments"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "QUERY", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSearchAttachmentsRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, SearchAttachmentsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSearchAttachmentsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // SearchTasks invokes search-tasks operation.
 //
 // The caller's tasks in this project, most recently created first.
@@ -9987,6 +10426,150 @@ func (c *Client) sendSubmitWeixinVerifyCode(ctx context.Context, request *Verify
 
 	stage = "DecodeResponse"
 	result, err := decodeSubmitWeixinVerifyCodeResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateAttachment invokes update-attachment operation.
+//
+// Changes the name shown in the library and given to the assistant. The bytes and the attachment id do
+// not change; conversations that already use it see the new name from their next request on.
+//
+// PATCH /api/v1/attachments/{attachment}
+func (c *Client) UpdateAttachment(ctx context.Context, request *UpdateAttachmentRequestBody, params UpdateAttachmentParams) (*AttachmentFileResource, error) {
+	res, err := c.sendUpdateAttachment(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateAttachment(ctx context.Context, request *UpdateAttachmentRequestBody, params UpdateAttachmentParams) (res *AttachmentFileResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-attachment"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/attachments/{attachment}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateAttachmentOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/attachments/"
+	{
+		// Encode "attachment" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "attachment",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Attachment))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateAttachmentRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, UpdateAttachmentOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateAttachmentResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

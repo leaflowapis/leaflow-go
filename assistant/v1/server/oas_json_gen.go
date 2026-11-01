@@ -206,6 +206,539 @@ func (s *ApprovalMode) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *AttachmentCountsResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *AttachmentCountsResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("total")
+		e.Int64(s.Total)
+	}
+	{
+		e.FieldStart("totalBytes")
+		e.Int64(s.TotalBytes)
+	}
+}
+
+var jsonFieldsNameOfAttachmentCountsResource = [2]string{
+	0: "total",
+	1: "totalBytes",
+}
+
+// Decode decodes AttachmentCountsResource from json.
+func (s *AttachmentCountsResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode AttachmentCountsResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "total":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Int64()
+				s.Total = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"total\"")
+			}
+		case "totalBytes":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int64()
+				s.TotalBytes = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"totalBytes\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode AttachmentCountsResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfAttachmentCountsResource) {
+					name = jsonFieldsNameOfAttachmentCountsResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *AttachmentCountsResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *AttachmentCountsResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *AttachmentFileResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *AttachmentFileResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("byteSize")
+		e.Int64(s.ByteSize)
+	}
+	{
+		e.FieldStart("createdAt")
+		json.EncodeDateTime(e, s.CreatedAt)
+	}
+	{
+		e.FieldStart("draftExpiresAt")
+		s.DraftExpiresAt.Encode(e, json.EncodeDateTime)
+	}
+	{
+		e.FieldStart("filename")
+		e.Str(s.Filename)
+	}
+	{
+		e.FieldStart("height")
+		s.Height.Encode(e)
+	}
+	{
+		e.FieldStart("id")
+		e.Str(s.ID)
+	}
+	{
+		e.FieldStart("mime")
+		e.Str(s.Mime)
+	}
+	{
+		e.FieldStart("type")
+		s.Type.Encode(e)
+	}
+	{
+		e.FieldStart("updatedAt")
+		json.EncodeDateTime(e, s.UpdatedAt)
+	}
+	{
+		e.FieldStart("width")
+		s.Width.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfAttachmentFileResource = [10]string{
+	0: "byteSize",
+	1: "createdAt",
+	2: "draftExpiresAt",
+	3: "filename",
+	4: "height",
+	5: "id",
+	6: "mime",
+	7: "type",
+	8: "updatedAt",
+	9: "width",
+}
+
+// Decode decodes AttachmentFileResource from json.
+func (s *AttachmentFileResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode AttachmentFileResource to nil")
+	}
+	var requiredBitSet [2]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "byteSize":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Int64()
+				s.ByteSize = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"byteSize\"")
+			}
+		case "createdAt":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.CreatedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"createdAt\"")
+			}
+		case "draftExpiresAt":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.DraftExpiresAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"draftExpiresAt\"")
+			}
+		case "filename":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Str()
+				s.Filename = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"filename\"")
+			}
+		case "height":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.Height.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"height\"")
+			}
+		case "id":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Str()
+				s.ID = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"id\"")
+			}
+		case "mime":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := d.Str()
+				s.Mime = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"mime\"")
+			}
+		case "type":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				if err := s.Type.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"type\"")
+			}
+		case "updatedAt":
+			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.UpdatedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"updatedAt\"")
+			}
+		case "width":
+			requiredBitSet[1] |= 1 << 1
+			if err := func() error {
+				if err := s.Width.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"width\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode AttachmentFileResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [2]uint8{
+		0b11111111,
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfAttachmentFileResource) {
+					name = jsonFieldsNameOfAttachmentFileResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *AttachmentFileResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *AttachmentFileResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes AttachmentFileResourceType as json.
+func (s AttachmentFileResourceType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes AttachmentFileResourceType from json.
+func (s *AttachmentFileResourceType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode AttachmentFileResourceType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch AttachmentFileResourceType(v) {
+	case AttachmentFileResourceTypeImage:
+		*s = AttachmentFileResourceTypeImage
+	case AttachmentFileResourceTypeText:
+		*s = AttachmentFileResourceTypeText
+	case AttachmentFileResourceTypeBinary:
+		*s = AttachmentFileResourceTypeBinary
+	default:
+		*s = AttachmentFileResourceType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s AttachmentFileResourceType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *AttachmentFileResourceType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *AttachmentListResponseBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *AttachmentListResponseBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("attachments")
+		e.ArrStart()
+		for _, elem := range s.Attachments {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("nextCursor")
+		s.NextCursor.Encode(e)
+	}
+	{
+		e.FieldStart("counts")
+		s.Counts.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfAttachmentListResponseBody = [3]string{
+	0: "attachments",
+	1: "nextCursor",
+	2: "counts",
+}
+
+// Decode decodes AttachmentListResponseBody from json.
+func (s *AttachmentListResponseBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode AttachmentListResponseBody to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "attachments":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				s.Attachments = make([]AttachmentFileResource, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem AttachmentFileResource
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Attachments = append(s.Attachments, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"attachments\"")
+			}
+		case "nextCursor":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.NextCursor.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"nextCursor\"")
+			}
+		case "counts":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.Counts.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"counts\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode AttachmentListResponseBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfAttachmentListResponseBody) {
+					name = jsonFieldsNameOfAttachmentListResponseBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *AttachmentListResponseBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *AttachmentListResponseBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *AttachmentResource) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -6858,6 +7391,50 @@ func (s *MoveFolderRequestBody) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes AttachmentCountsResource as json.
+func (o NilAttachmentCountsResource) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes AttachmentCountsResource from json.
+func (o *NilAttachmentCountsResource) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilAttachmentCountsResource to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v AttachmentCountsResource
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilAttachmentCountsResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilAttachmentCountsResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes time.Time as json.
 func (o NilDateTime) Encode(e *jx.Encoder, format func(*jx.Encoder, time.Time)) {
 	if o.Null {
@@ -8463,6 +9040,39 @@ func (s OptRotateSecretRequestBody) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptRotateSecretRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes SearchAttachmentsRequestBodyType as json.
+func (o OptSearchAttachmentsRequestBodyType) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes SearchAttachmentsRequestBodyType from json.
+func (o *OptSearchAttachmentsRequestBodyType) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptSearchAttachmentsRequestBodyType to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptSearchAttachmentsRequestBodyType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptSearchAttachmentsRequestBodyType) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -10834,6 +11444,276 @@ func (s *RotateSecretRequestBody) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *RotateSecretRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *SearchAttachmentsRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *SearchAttachmentsRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		if s.Ids != nil {
+			e.FieldStart("ids")
+			e.ArrStart()
+			for _, elem := range s.Ids {
+				e.Str(elem)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
+		if s.Q.Set {
+			e.FieldStart("q")
+			s.Q.Encode(e)
+		}
+	}
+	{
+		if s.Type.Set {
+			e.FieldStart("type")
+			s.Type.Encode(e)
+		}
+	}
+	{
+		if s.Draft.Set {
+			e.FieldStart("draft")
+			s.Draft.Encode(e)
+		}
+	}
+	{
+		if s.Cursor.Set {
+			e.FieldStart("cursor")
+			s.Cursor.Encode(e)
+		}
+	}
+	{
+		if s.Limit.Set {
+			e.FieldStart("limit")
+			s.Limit.Encode(e)
+		}
+	}
+	{
+		if s.Include != nil {
+			e.FieldStart("include")
+			e.ArrStart()
+			for _, elem := range s.Include {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
+}
+
+var jsonFieldsNameOfSearchAttachmentsRequestBody = [7]string{
+	0: "ids",
+	1: "q",
+	2: "type",
+	3: "draft",
+	4: "cursor",
+	5: "limit",
+	6: "include",
+}
+
+// Decode decodes SearchAttachmentsRequestBody from json.
+func (s *SearchAttachmentsRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SearchAttachmentsRequestBody to nil")
+	}
+	s.setDefaults()
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "ids":
+			if err := func() error {
+				s.Ids = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.Ids = append(s.Ids, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"ids\"")
+			}
+		case "q":
+			if err := func() error {
+				s.Q.Reset()
+				if err := s.Q.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"q\"")
+			}
+		case "type":
+			if err := func() error {
+				s.Type.Reset()
+				if err := s.Type.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"type\"")
+			}
+		case "draft":
+			if err := func() error {
+				s.Draft.Reset()
+				if err := s.Draft.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"draft\"")
+			}
+		case "cursor":
+			if err := func() error {
+				s.Cursor.Reset()
+				if err := s.Cursor.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"cursor\"")
+			}
+		case "limit":
+			if err := func() error {
+				s.Limit.Reset()
+				if err := s.Limit.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"limit\"")
+			}
+		case "include":
+			if err := func() error {
+				s.Include = make([]SearchAttachmentsRequestBodyIncludeItem, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem SearchAttachmentsRequestBodyIncludeItem
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Include = append(s.Include, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"include\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode SearchAttachmentsRequestBody")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *SearchAttachmentsRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SearchAttachmentsRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes SearchAttachmentsRequestBodyIncludeItem as json.
+func (s SearchAttachmentsRequestBodyIncludeItem) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes SearchAttachmentsRequestBodyIncludeItem from json.
+func (s *SearchAttachmentsRequestBodyIncludeItem) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SearchAttachmentsRequestBodyIncludeItem to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch SearchAttachmentsRequestBodyIncludeItem(v) {
+	case SearchAttachmentsRequestBodyIncludeItemCounts:
+		*s = SearchAttachmentsRequestBodyIncludeItemCounts
+	default:
+		*s = SearchAttachmentsRequestBodyIncludeItem(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s SearchAttachmentsRequestBodyIncludeItem) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SearchAttachmentsRequestBodyIncludeItem) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes SearchAttachmentsRequestBodyType as json.
+func (s SearchAttachmentsRequestBodyType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes SearchAttachmentsRequestBodyType from json.
+func (s *SearchAttachmentsRequestBodyType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SearchAttachmentsRequestBodyType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch SearchAttachmentsRequestBodyType(v) {
+	case SearchAttachmentsRequestBodyTypeImage:
+		*s = SearchAttachmentsRequestBodyTypeImage
+	case SearchAttachmentsRequestBodyTypeText:
+		*s = SearchAttachmentsRequestBodyTypeText
+	case SearchAttachmentsRequestBodyTypeBinary:
+		*s = SearchAttachmentsRequestBodyTypeBinary
+	default:
+		*s = SearchAttachmentsRequestBodyType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s SearchAttachmentsRequestBodyType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SearchAttachmentsRequestBodyType) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -18032,6 +18912,102 @@ func (s TurnType) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *TurnType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *UpdateAttachmentRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *UpdateAttachmentRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("filename")
+		e.Str(s.Filename)
+	}
+}
+
+var jsonFieldsNameOfUpdateAttachmentRequestBody = [1]string{
+	0: "filename",
+}
+
+// Decode decodes UpdateAttachmentRequestBody from json.
+func (s *UpdateAttachmentRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode UpdateAttachmentRequestBody to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "filename":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.Filename = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"filename\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode UpdateAttachmentRequestBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfUpdateAttachmentRequestBody) {
+					name = jsonFieldsNameOfUpdateAttachmentRequestBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *UpdateAttachmentRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *UpdateAttachmentRequestBody) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

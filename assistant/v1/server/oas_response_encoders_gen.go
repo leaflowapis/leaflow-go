@@ -176,6 +176,12 @@ func encodeDecideToolCallsResponse(response *DecideToolCallsNoContent, w http.Re
 	return nil
 }
 
+func encodeDeleteAttachmentResponse(response *DeleteAttachmentNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
+}
+
 func encodeDeleteBindingResponse(response *DeleteBindingNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
@@ -279,6 +285,19 @@ func encodeDownloadAttachmentResponse(response *DownloadAttachmentOKHeaders, w h
 		defer closer.Close()
 	}
 	if _, err := io.Copy(writer, response.Response); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetAttachmentResponse(response *AttachmentFileResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
 		return errors.Wrap(err, "write")
 	}
 
@@ -745,6 +764,19 @@ func encodeRunTaskResponse(response *TaskRunResource, w http.ResponseWriter, spa
 	return nil
 }
 
+func encodeSearchAttachmentsResponse(response *AttachmentListResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeSearchTasksResponse(response *TaskListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -804,6 +836,19 @@ func encodeSubmitToolResultResponse(response *SubmitToolResultNoContent, w http.
 }
 
 func encodeSubmitWeixinVerifyCodeResponse(response *LoginResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeUpdateAttachmentResponse(response *AttachmentFileResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
