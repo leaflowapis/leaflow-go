@@ -2939,13 +2939,18 @@ type DragPolicy struct {
 	UploadAllowed bool `protobuf:"varint,1,opt,name=upload_allowed,json=uploadAllowed,proto3" json:"upload_allowed,omitempty"`
 	// The participant may drag out of the session.
 	DownloadAllowed bool `protobuf:"varint,2,opt,name=download_allowed,json=downloadAllowed,proto3" json:"download_allowed,omitempty"`
-	// The formats that may be dragged, exactly. Empty: none; files travel only
-	// as offers.
+	// The formats that may be dragged, exactly, unless all_mime_types_allowed
+	// is true. Empty with all_mime_types_allowed false: none. Files travel only
+	// as offers and still need the matching direction of FileTransferPolicy.
 	AllowedMimeTypes []string `protobuf:"bytes,3,rep,name=allowed_mime_types,json=allowedMimeTypes,proto3" json:"allowed_mime_types,omitempty"`
 	// The longest a drag may last, at most 5 minutes. Unset or 0: no drags.
-	MaxDuration   *durationpb.Duration `protobuf:"bytes,4,opt,name=max_duration,json=maxDuration,proto3" json:"max_duration,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	MaxDuration *durationpb.Duration `protobuf:"bytes,4,opt,name=max_duration,json=maxDuration,proto3" json:"max_duration,omitempty"`
+	// The participant may drag any format the source offers, including private
+	// application formats. Does not grant a direction or permission to files;
+	// upload_allowed, download_allowed and FileTransferPolicy still apply.
+	AllMimeTypesAllowed bool `protobuf:"varint,5,opt,name=all_mime_types_allowed,json=allMimeTypesAllowed,proto3" json:"all_mime_types_allowed,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *DragPolicy) Reset() {
@@ -3004,6 +3009,13 @@ func (x *DragPolicy) GetMaxDuration() *durationpb.Duration {
 		return x.MaxDuration
 	}
 	return nil
+}
+
+func (x *DragPolicy) GetAllMimeTypesAllowed() bool {
+	if x != nil {
+		return x.AllMimeTypesAllowed
+	}
+	return false
 }
 
 var File_leaflow_fleet_virtualdesktop_datatransfer_v1_datatransfer_proto protoreflect.FileDescriptor
@@ -3192,13 +3204,14 @@ const file_leaflow_fleet_virtualdesktop_datatransfer_v1_datatransfer_proto_rawDe
 	"\brevision\x18\x03 \x01(\x04R\brevision\"Y\n" +
 	"\x0fClipboardPolicy\x12!\n" +
 	"\fread_allowed\x18\x01 \x01(\bR\vreadAllowed\x12#\n" +
-	"\rwrite_allowed\x18\x02 \x01(\bR\fwriteAllowed\"\xca\x01\n" +
+	"\rwrite_allowed\x18\x02 \x01(\bR\fwriteAllowed\"\xff\x01\n" +
 	"\n" +
 	"DragPolicy\x12%\n" +
 	"\x0eupload_allowed\x18\x01 \x01(\bR\ruploadAllowed\x12)\n" +
 	"\x10download_allowed\x18\x02 \x01(\bR\x0fdownloadAllowed\x12,\n" +
 	"\x12allowed_mime_types\x18\x03 \x03(\tR\x10allowedMimeTypes\x12<\n" +
-	"\fmax_duration\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\vmaxDuration*V\n" +
+	"\fmax_duration\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\vmaxDuration\x123\n" +
+	"\x16all_mime_types_allowed\x18\x05 \x01(\bR\x13allMimeTypesAllowed*V\n" +
 	"\tSelection\x12\x19\n" +
 	"\x15SELECTION_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13SELECTION_CLIPBOARD\x10\x01\x12\x15\n" +
