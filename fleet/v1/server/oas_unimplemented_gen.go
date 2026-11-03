@@ -49,8 +49,30 @@ func (UnimplementedHandler) ApprovePrivilegeRequest(ctx context.Context, params 
 // JSON-RPC error, such as for a tool it does not offer or arguments it does not accept, with the
 // error's `metadata.code` and `metadata.message`.
 //
+// Deprecated: schema marks this operation as deprecated.
+//
 // POST /api/v1/machines/{machineId}/mcp-servers/{serverName}/tools/{toolName}:call
 func (UnimplementedHandler) CallMcpTool(ctx context.Context, req *CallMcpToolRequest, params CallMcpToolParams) (r *CallMcpToolResponse, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CallTool implements callTool operation.
+//
+// Uses the same current permissions, directory account and graphical session as listTools. Listing is
+// not a precondition: callers may use a previously discovered ToolRef, and this operation never sends
+// a discovery request or refreshes schemas before executing it. A removed tool or MCP server returns
+// TOOL_NOT_FOUND, as does a direct builtin computer.* call while virtual desktop capability is
+// unavailable. Actual permission errors remain permission errors; a missing target window is not a
+// missing tool. Use listTools only when discovery or refresh is needed, and do not cache or reuse
+// execution results. Source is explicit: MCP names never select or impersonate builtin tools. The
+// arguments object is at most 256 KiB. The complete result is at most 8 MiB in the protobuf transport,
+// with each encoded image at most 4 MiB; images are converted to base64 once at this JSON boundary,
+// without recompression or persistence. Cancellation is propagated. A timeout, disconnect or failed
+// response does not prove that side effects did not happen; do not automatically replay. operation_id
+// only correlates live activity, not idempotency.
+//
+// POST /api/v1/machines/{machineId}/tools:call
+func (UnimplementedHandler) CallTool(ctx context.Context, req *CallToolRequest, params CallToolParams) (r *CallToolResponse, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -213,11 +235,18 @@ func (UnimplementedHandler) CreatePeerConnectionCandidates(ctx context.Context, 
 // CreateSession implements create-session operation.
 //
 // Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
-// With `desktop` the session has a desktop. Without, it is a terminal session: its one terminal runs
-// the caller's login shell from the start, every participant attaches to that terminal, and the
-// session ends when the shell exits; a caller who wants another terminal opens another session. Either
-// kind also offers programs, files, ports, sound, devices, printers and privilege approvals. The
-// account is created if the caller has none yet. Requires `fleet:machines.login` on the machine.
+// With `desktop` the session has a desktop. Without, Fleet first prepares or reuses the account's
+// separate ready lightweight graphical session, then creates a terminal session with its own SID and
+// lifetime; closing that terminal does not close the account context. Its one terminal runs the
+// caller's login shell from the start, every participant attaches to that terminal, and the session
+// ends when the shell exits; a caller who wants another terminal opens another session. Either kind
+// also offers programs, files, ports, sound, devices, printers and privilege approvals. The account is
+// created if the caller has none yet. Requires `fleet:machines.login` on the machine. All newly
+// created graphical account sessions, including desktop-first FullDesktop and Seamless sessions, keep
+// running when no viewer has joined or the last viewer disconnects. Configured maximum lifetime,
+// resource limits and explicit close/terminate still apply. This create API has no client-selected
+// idle policy; existing running policies are not silently rewritten when tools, commands or terminals
+// reuse the account context.
 //
 // On a machine an account has at most one session with a desktop and at most 8 sessions in all.
 // Sessions without a desktop run side by side, such as one for a program and one for a person; several
@@ -226,7 +255,9 @@ func (UnimplementedHandler) CreatePeerConnectionCandidates(ctx context.Context, 
 // Fails with:
 //
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer sessions, or with `desktop`, desktops;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer sessions or the graphical backend;
+//   - `SESSION_UNAVAILABLE` or `SESSION_CLOSED` when its shared account context is not ready or
+//     closing;
 //   - `USER_HAS_DESKTOP_SESSION` with `desktop` when the account already has a session with a desktop
 //     on the machine, which `metadata.sessionId` names; connect to it instead;
 //   - `SESSION_LIMIT_REACHED` when the account already has 8 open sessions on the machine; close one
@@ -599,6 +630,8 @@ func (UnimplementedHandler) ListMachines(ctx context.Context, params ListMachine
 //   - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
 //   - `MACHINE_TIMEOUT` when the machine did not answer in time.
 //
+// Deprecated: schema marks this operation as deprecated.
+//
 // GET /api/v1/machines/{machineId}/mcp-tools
 func (UnimplementedHandler) ListMcpTools(ctx context.Context, params ListMcpToolsParams) (r *McpToolList, _ error) {
 	return r, ht.ErrNotImplemented
@@ -640,6 +673,36 @@ func (UnimplementedHandler) ListSessionParticipants(ctx context.Context, params 
 //
 // GET /api/v1/sessions
 func (UnimplementedHandler) ListSessions(ctx context.Context, params ListSessionsParams) (r *SessionList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListTools implements listTools operation.
+//
+// Queries Agent's builtin tools and the caller's configured MCP servers live. No directory, result or
+// image is cached. Requires fleet:machines.login; builtin capabilities retain their native policies
+// and read-only restrictions. Ensures or reuses the caller's single open graphical session, without
+// launching a desktop environment. The client instance is a UUID generated once per running client,
+// not an authorization credential. Each request checks current IAM permissions and signs a short-lived
+// control-only authorization. Tool arguments, results and images traverse Fleet with hop-by-hop TLS
+// and are visible to Fleet. Existing desktop streaming remains end-to-end encrypted. TOOL_LIST_CHANGED
+// means restart listing from the first page, never replay a CallTool. At most 100 tools per page.
+//
+// GET /api/v1/machines/{machineId}/tools
+func (UnimplementedHandler) ListTools(ctx context.Context, params ListToolsParams) (r *ToolList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// PollToolActivities implements pollToolActivities operation.
+//
+// Checks current session viewing permission for each request and again before returning events.
+// Subscribes only while this request is pending, returning on the first batch or after at most 20 idle
+// seconds. At most 64 events, no offline queue, event database, cursor history or replay guarantee.
+// Missing events never mean repeat an action. Coordinates are window-client-local (window_id=0 means
+// canvas), not CSS or image pixels. The frontend applies its own zoom and DPI. Compare sequence only
+// within the same instance_id.
+//
+// GET /api/v1/sessions/{sessionId}/tool-activities
+func (UnimplementedHandler) PollToolActivities(ctx context.Context, params PollToolActivitiesParams) (r *ToolActivityList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -721,20 +784,24 @@ func (UnimplementedHandler) ReplaceMcpConfiguration(ctx context.Context, req *Re
 // it exited or was killed, with its exit status and what it wrote. Pipes, redirection and `&&` work;
 // there is no terminal and no standard input. The machine admits the account through PAM as for a
 // login. The account is created if the caller has none yet. A command that fails is still a successful
-// request: its exit status is its result.
+// request: its exit status is its result. Before starting it, Fleet prepares or reuses the account's
+// ready lightweight graphical session, without starting a full desktop environment. The command has
+// its own job scope; its timeout or exit must not close the account's graphical context.
 //
 // Inside the command, `sudo` works without a prompt while the caller has `fleet:machines.admin` on the
 // machine, and refuses otherwise.
 //
-// The request is held until the command ends, at most `timeout_seconds` and a few seconds more.
-// Neither the command nor its output is hidden from the platform: do not put secrets into either.
+// After graphical context preparation, the request is held until the command ends, at most
+// `timeout_seconds` and a few seconds more. Neither the command nor its output is hidden from the
+// platform: do not put secrets into either.
 //
 // Requires `fleet:machines.login` on the machine.
 //
 // Fails with:
 //
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.command.v1`;
+//   - `FEATURE_UNAVAILABLE` when the command, session or graphical backend is unavailable;
+//   - `SESSION_UNAVAILABLE` or `SESSION_CLOSED` when the account context is not ready or closing;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;
 //   - `COMMAND_START_FAILED` when the shell could not start; nothing ran;
@@ -751,12 +818,14 @@ func (UnimplementedHandler) RunMachineCommand(ctx context.Context, req *RunComma
 //
 // Sends one JSON-RPC request of MCP to one of the caller's servers on the machine, such as
 // `tools/call`, `resources/read` or `prompts/get`, and returns the server's response. The machine
-// starts or connects to the server if it is not running, and handles its initialization itself; a
-// request still running when `timeout_seconds` passes is cancelled at the server. Requests the server
-// makes of the client are answered as by a client that offers no sampling, elicitation or roots, and
-// its notifications, such as of progress, are dropped. A response with a JSON-RPC error is a
-// successful request. Neither the request nor the response is hidden from the platform. Requires
-// `fleet:machines.login` on the machine.
+// starts or connects to the server if it is not running, and handles its initialization itself. Before
+// any such request, Fleet prepares or reuses the caller's ready lightweight account graphical session,
+// including for resources and prompts; no full desktop environment is needed. A request still running
+// when `timeout_seconds` passes is cancelled at the server. Requests the server makes of the client
+// are answered as by a client that offers no sampling, elicitation or roots, and its notifications,
+// such as of progress, are dropped. A response with a JSON-RPC error is a successful request. Neither
+// the request nor the response is hidden from the platform. Requires `fleet:machines.login` on the
+// machine.
 //
 // Fails with:
 //
@@ -767,7 +836,8 @@ func (UnimplementedHandler) RunMachineCommand(ctx context.Context, req *RunComma
 //     of initialization;
 //   - `RESULT_TOO_LARGE` when the response is larger than 8 MiB;
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `FEATURE_UNAVAILABLE` when the MCP, session or graphical backend is unavailable;
+//   - `SESSION_UNAVAILABLE` or `SESSION_CLOSED` when the account context is not ready or closing;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;
 //   - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;

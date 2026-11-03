@@ -529,7 +529,11 @@ type Participant struct {
 	ReadOnly bool `protobuf:"varint,4,opt,name=read_only,json=readOnly,proto3" json:"read_only,omitempty"`
 	// The name the client gave itself, such as "console" or "assistant".
 	// Neither unique nor verified: it lets people tell participants apart.
-	ClientName    string `protobuf:"bytes,5,opt,name=client_name,json=clientName,proto3" json:"client_name,omitempty"`
+	ClientName string `protobuf:"bytes,5,opt,name=client_name,json=clientName,proto3" json:"client_name,omitempty"`
+	// 通过 Fleet 转发工具调用的真实控制调用者，没有 WebRTC Connection/ClientHello，
+	// 不发送帧、不提供 viewport、不成为 driver。仍有可见身份、权限和输入 lease；
+	// 不能当作已在 Fleet 原生参与者数据库登记的连接。
+	ControlOnly   bool `protobuf:"varint,6,opt,name=control_only,json=controlOnly,proto3" json:"control_only,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -597,6 +601,13 @@ func (x *Participant) GetClientName() string {
 		return x.ClientName
 	}
 	return ""
+}
+
+func (x *Participant) GetControlOnly() bool {
+	if x != nil {
+		return x.ControlOnly
+	}
+	return false
 }
 
 // Every participant attached to the session, this one included. Sent in the
@@ -870,14 +881,15 @@ const file_leaflow_fleet_session_v1_session_proto_rawDesc = "" +
 	"\vServerHello\x12#\n" +
 	"\rchannel_types\x18\x01 \x03(\tR\fchannelTypes\x12\x1b\n" +
 	"\tread_only\x18\x02 \x01(\bR\breadOnly\x12%\n" +
-	"\x0eparticipant_id\x18\x03 \x01(\x04R\rparticipantId\"\x97\x01\n" +
+	"\x0eparticipant_id\x18\x03 \x01(\x04R\rparticipantId\"\xba\x01\n" +
 	"\vParticipant\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12!\n" +
 	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x12\x1b\n" +
 	"\tread_only\x18\x04 \x01(\bR\breadOnly\x12\x1f\n" +
 	"\vclient_name\x18\x05 \x01(\tR\n" +
-	"clientName\"\x90\x01\n" +
+	"clientName\x12!\n" +
+	"\fcontrol_only\x18\x06 \x01(\bR\vcontrolOnly\"\x90\x01\n" +
 	"\x0fParticipantList\x12I\n" +
 	"\fparticipants\x18\x01 \x03(\v2%.leaflow.fleet.session.v1.ParticipantR\fparticipants\x122\n" +
 	"\x15driver_participant_id\x18\x02 \x01(\x04R\x13driverParticipantId\"\r\n" +

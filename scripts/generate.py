@@ -30,19 +30,26 @@ def generate_services(source):
             module.write_text("module github.com/leaflowapis/leaflow-go/" + str(relative.parent) + "\n\ngo 1.27.3\n\nrequire github.com/ogen-go/ogen v1.24.0\n")
 
 
+def proto_files():
+    return sorted(path for path in ROOT.glob("*/**/*.pb.go")
+                  if path.relative_to(ROOT).parts[0] != "leaflowapis")
+
+
 def generate_protos(source):
     # 契约仓库只有一部分是 proto（带 buf.yaml 的那个 buf 模块）。没有它就没有可生成的东西。
     if not (source / "buf.yaml").exists():
         return
     # 先删旧产物再生成：契约里删掉的 proto 不会被 buf 覆盖，留下的 .pb.go 照样能编译，而它描述的
     # 消息已经不在契约里了。拉下来的契约副本不在本仓库的产物范围内，跳过。
-    for stale in ROOT.glob("*/**/*.pb.go"):
-        if stale.relative_to(ROOT).parts[0] != "leaflowapis":
-            stale.unlink()
+    for stale in proto_files():
+        stale.unlink()
     subprocess.run(
         ["go", "run", BUF, "generate", str(source), "--template", str(ROOT / "buf.gen.yaml")],
         cwd=ROOT, env={**os.environ, "GOWORK": "off", "GOTOOLCHAIN": "local"}, check=True,
     )
+    # protoc-gen-go 保留的部分缩进注释还需要固定 Go 工具链的 gofmt 规范化。
+    for path in proto_files():
+        subprocess.run(["gofmt", "-w", str(path)], cwd=ROOT, check=True)
     print("proto messages", flush=True)
 
 

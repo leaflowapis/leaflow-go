@@ -1771,6 +1771,10 @@ type Point struct {
 	// window's size changed since, the call fails with FAILED_PRECONDITION and
 	// reason WINDOW_RESIZED, before anything happens. 0: not checked.
 	ResizeCounter uint64 `protobuf:"varint,4,opt,name=resize_counter,json=resizeCounter,proto3" json:"resize_counter,omitempty"`
+	// 调用者观察到的 Window.shape_counter。非零且已改变时，在任何输入执行前返回
+	// FAILED_PRECONDITION，reason WINDOW_SHAPE_CHANGED；0 不做此代际检查。无论是否
+	// 提供代际，输入命中都必须遵守当前的有效 Input/Bounding 区域，不能只看外接框。
+	ShapeCounter  uint64 `protobuf:"varint,5,opt,name=shape_counter,json=shapeCounter,proto3" json:"shape_counter,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1829,6 +1833,13 @@ func (x *Point) GetY() int32 {
 func (x *Point) GetResizeCounter() uint64 {
 	if x != nil {
 		return x.ResizeCounter
+	}
+	return 0
+}
+
+func (x *Point) GetShapeCounter() uint64 {
+	if x != nil {
+		return x.ShapeCounter
 	}
 	return 0
 }
@@ -2978,12 +2989,13 @@ const file_leaflow_fleet_virtualdesktop_input_v1_input_proto_rawDesc = "" +
 	"\ffocus_serial\x18\x04 \x01(\x04R\vfocusSerial\x12%\n" +
 	"\x0ecomposition_id\x18\x05 \x01(\x04R\rcompositionId\x12\x16\n" +
 	"\x06paused\x18\x06 \x01(\bR\x06paused\x12(\n" +
-	"\x05error\x18\a \x01(\v2\x12.google.rpc.StatusR\x05error\"g\n" +
+	"\x05error\x18\a \x01(\v2\x12.google.rpc.StatusR\x05error\"\x8c\x01\n" +
 	"\x05Point\x12\x1b\n" +
 	"\twindow_id\x18\x01 \x01(\x04R\bwindowId\x12\f\n" +
 	"\x01x\x18\x02 \x01(\x11R\x01x\x12\f\n" +
 	"\x01y\x18\x03 \x01(\x11R\x01y\x12%\n" +
-	"\x0eresize_counter\x18\x04 \x01(\x04R\rresizeCounter\"\x9e\x01\n" +
+	"\x0eresize_counter\x18\x04 \x01(\x04R\rresizeCounter\x12#\n" +
+	"\rshape_counter\x18\x05 \x01(\x04R\fshapeCounter\"\x9e\x01\n" +
 	"\fClickRequest\x12B\n" +
 	"\x05point\x18\x01 \x01(\v2,.leaflow.fleet.virtualdesktop.input.v1.PointR\x05point\x12\x16\n" +
 	"\x06button\x18\x02 \x01(\rR\x06button\x12\x14\n" +
