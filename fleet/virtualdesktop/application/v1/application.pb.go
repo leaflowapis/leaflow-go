@@ -1078,11 +1078,200 @@ func (x *ListApplicationsResponse) GetRevision() uint64 {
 	return 0
 }
 
-// The request of LaunchApplication.
+// The request of Open. The session resolves one object; callers do not need
+// to choose an executable-versus-document mode. Permission and lease checks
+// are the same as for launching or opening through ApplicationService.
+type OpenRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// One absolute local path, absolute URI, or installed desktop file ID.
+	// Paths are canonicalized; NUL, relative paths and parent-directory path
+	// components are invalid. Local paths are limited to 4096 UTF-8 bytes,
+	// desktop IDs to 1024 and the complete target to 8192.
+	// Executable programs, including AppImages and native binaries, are run
+	// directly; ordinary documents and folders open in their default handler.
+	// File classification uses the filesystem and MIME information, not an
+	// application-name or filename-extension allowlist. An executable bit on
+	// an otherwise ordinary document does not turn its content into code.
+	// Empty: OPEN_TARGET_REQUIRED. Invalid: OPEN_TARGET_INVALID. Missing local
+	// objects: FILE_NOT_FOUND. Unknown desktop IDs: APPLICATION_NOT_FOUND.
+	// Error details identify field=target and the concrete issue.
+	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
+	// Program arguments after argv[0], passed unchanged without shell expansion,
+	// interpolation or joining. At most 256 arguments, each at most 8192 UTF-8
+	// bytes, and at most 65536 bytes together; NUL is invalid. A malformed vector
+	// fails with OPEN_ARGUMENTS_INVALID and identifies its index or size limit.
+	// Arguments on a document, directory, URI handler or desktop entry fail with
+	// OPEN_OPTIONS_NOT_APPLICABLE; they are never silently ignored.
+	Arguments []string `protobuf:"bytes,2,rep,name=arguments,proto3" json:"arguments,omitempty"`
+	// An action of a desktop entry. Not valid for other target kinds.
+	ActionId string `protobuf:"bytes,3,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
+	// Files or URLs supplied to a desktop entry's Exec field codes. Not valid
+	// for other target kinds; document open uses target instead.
+	Uris []string `protobuf:"bytes,4,rep,name=uris,proto3" json:"uris,omitempty"`
+	// The same trust decision as OpenUri. Unspecified never approves an
+	// untrusted desktop launcher on behalf of the person.
+	LauncherConfirmation LauncherConfirmation `protobuf:"varint,5,opt,name=launcher_confirmation,json=launcherConfirmation,proto3,enum=leaflow.fleet.virtualdesktop.application.v1.LauncherConfirmation" json:"launcher_confirmation,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *OpenRequest) Reset() {
+	*x = OpenRequest{}
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OpenRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OpenRequest) ProtoMessage() {}
+
+func (x *OpenRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OpenRequest.ProtoReflect.Descriptor instead.
+func (*OpenRequest) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *OpenRequest) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
+}
+
+func (x *OpenRequest) GetArguments() []string {
+	if x != nil {
+		return x.Arguments
+	}
+	return nil
+}
+
+func (x *OpenRequest) GetActionId() string {
+	if x != nil {
+		return x.ActionId
+	}
+	return ""
+}
+
+func (x *OpenRequest) GetUris() []string {
+	if x != nil {
+		return x.Uris
+	}
+	return nil
+}
+
+func (x *OpenRequest) GetLauncherConfirmation() LauncherConfirmation {
+	if x != nil {
+		return x.LauncherConfirmation
+	}
+	return LauncherConfirmation_LAUNCHER_CONFIRMATION_UNSPECIFIED
+}
+
+// Open was accepted. The started application belongs to the session, not this
+// call: cancelling, timing out or disconnecting never terminates it. Session
+// lifetime and explicit termination still apply. Waiting for a matched window
+// is bounded (at most 30 seconds for StartupNotify, otherwise 5 seconds).
+// No matched window is a successful result, not a reason to repeat Open: an
+// application may still be starting, have no window, or reuse another process.
+// A registered alternative handler may be tried only when the previous handler
+// was definitely not started. Missing associations fail with
+// URI_HANDLER_NOT_FOUND and report the detected MIME and bounded candidate
+// desktop IDs when known. A spawn failure or nonzero startup exit fails with
+// APPLICATION_START_FAILED, with stage, started, pid and exit status when
+// known. Started or uncertain failures must not be automatically replayed.
+type OpenResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The startup notification ID, when one was used.
+	StartupId string `protobuf:"bytes,1,opt,name=startup_id,json=startupId,proto3" json:"startup_id,omitempty"`
+	// The matched window; unset when none was observed or required.
+	WindowId *uint64 `protobuf:"varint,2,opt,name=window_id,json=windowId,proto3,oneof" json:"window_id,omitempty"`
+	// The session revision at which the request was accepted or wait ended.
+	Revision uint64 `protobuf:"varint,3,opt,name=revision,proto3" json:"revision,omitempty"`
+	// The initial process actually spawned. Unset for activation of an existing
+	// handler without an observable spawn; never guessed from an unrelated
+	// window. This is not necessarily the eventual window-owning process.
+	Pid           *uint32 `protobuf:"varint,4,opt,name=pid,proto3,oneof" json:"pid,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OpenResponse) Reset() {
+	*x = OpenResponse{}
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OpenResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OpenResponse) ProtoMessage() {}
+
+func (x *OpenResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OpenResponse.ProtoReflect.Descriptor instead.
+func (*OpenResponse) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *OpenResponse) GetStartupId() string {
+	if x != nil {
+		return x.StartupId
+	}
+	return ""
+}
+
+func (x *OpenResponse) GetWindowId() uint64 {
+	if x != nil && x.WindowId != nil {
+		return *x.WindowId
+	}
+	return 0
+}
+
+func (x *OpenResponse) GetRevision() uint64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+func (x *OpenResponse) GetPid() uint32 {
+	if x != nil && x.Pid != nil {
+		return *x.Pid
+	}
+	return 0
+}
+
+// The request of LaunchApplication, for a menu entry or its action.
+// Open accepts general paths and URIs.
 type LaunchApplicationRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The application. An unknown one, or one whose TryExec fails, fails with
-	// NOT_FOUND.
+	// The application. An unknown entry, or one whose TryExec fails, fails with
+	// NOT_FOUND and reason APPLICATION_NOT_FOUND.
 	DesktopFileId string `protobuf:"bytes,1,opt,name=desktop_file_id,json=desktopFileId,proto3" json:"desktop_file_id,omitempty"`
 	// An ApplicationAction.action_id to run instead of the application. Empty:
 	// the application.
@@ -1097,7 +1286,7 @@ type LaunchApplicationRequest struct {
 
 func (x *LaunchApplicationRequest) Reset() {
 	*x = LaunchApplicationRequest{}
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[12]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1109,7 +1298,7 @@ func (x *LaunchApplicationRequest) String() string {
 func (*LaunchApplicationRequest) ProtoMessage() {}
 
 func (x *LaunchApplicationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[12]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1122,7 +1311,7 @@ func (x *LaunchApplicationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LaunchApplicationRequest.ProtoReflect.Descriptor instead.
 func (*LaunchApplicationRequest) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{12}
+	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *LaunchApplicationRequest) GetDesktopFileId() string {
@@ -1146,10 +1335,16 @@ func (x *LaunchApplicationRequest) GetUris() []string {
 	return nil
 }
 
-// The response of LaunchApplication. When the program exits with a failure
-// before showing a window the call fails with ABORTED; when no window appears
-// within 30 seconds (StartupNotify) or 5 seconds (otherwise) it fails with
-// DEADLINE_EXCEEDED, though the program may still be running.
+// The response of LaunchApplication. A spawned application belongs to the
+// session, not to this RPC: cancelling, timing out or disconnecting this call
+// never terminates the application. Session lifetime and explicit termination
+// still apply. A spawn failure, or a nonzero exit before a window appears,
+// fails with reason APPLICATION_START_FAILED; metadata distinguishes whether
+// a process was already started and its pid when known. Do not blindly retry.
+// When no window appears within the bounded startup wait (at most 30 seconds
+// for StartupNotify, otherwise 5 seconds), the call succeeds with no window_id;
+// this is not a failed launch and must not trigger another launch. The program
+// may still be starting, forward to an existing instance, or have no window.
 type LaunchApplicationResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The startup notification ID given to the program (DESKTOP_STARTUP_ID).
@@ -1158,14 +1353,19 @@ type LaunchApplicationResponse struct {
 	// the program handed the request to an instance already running.
 	WindowId *uint64 `protobuf:"varint,2,opt,name=window_id,json=windowId,proto3,oneof" json:"window_id,omitempty"`
 	// The session revision at which the startup sequence ended.
-	Revision      uint64 `protobuf:"varint,3,opt,name=revision,proto3" json:"revision,omitempty"`
+	Revision uint64 `protobuf:"varint,3,opt,name=revision,proto3" json:"revision,omitempty"`
+	// The initial process spawned for this launch. It may exit after forwarding
+	// to another process; it is not necessarily the process owning window_id.
+	// Unset when activation happened without an observable spawned process,
+	// such as D-Bus activation.
+	Pid           *uint32 `protobuf:"varint,4,opt,name=pid,proto3,oneof" json:"pid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LaunchApplicationResponse) Reset() {
 	*x = LaunchApplicationResponse{}
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[13]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1177,7 +1377,7 @@ func (x *LaunchApplicationResponse) String() string {
 func (*LaunchApplicationResponse) ProtoMessage() {}
 
 func (x *LaunchApplicationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[13]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1190,7 +1390,7 @@ func (x *LaunchApplicationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LaunchApplicationResponse.ProtoReflect.Descriptor instead.
 func (*LaunchApplicationResponse) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{13}
+	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *LaunchApplicationResponse) GetStartupId() string {
@@ -1214,6 +1414,13 @@ func (x *LaunchApplicationResponse) GetRevision() uint64 {
 	return 0
 }
 
+func (x *LaunchApplicationResponse) GetPid() uint32 {
+	if x != nil && x.Pid != nil {
+		return *x.Pid
+	}
+	return 0
+}
+
 // The request of OpenUri.
 type OpenUriRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1232,7 +1439,7 @@ type OpenUriRequest struct {
 
 func (x *OpenUriRequest) Reset() {
 	*x = OpenUriRequest{}
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[14]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1244,7 +1451,7 @@ func (x *OpenUriRequest) String() string {
 func (*OpenUriRequest) ProtoMessage() {}
 
 func (x *OpenUriRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[14]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1257,7 +1464,7 @@ func (x *OpenUriRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OpenUriRequest.ProtoReflect.Descriptor instead.
 func (*OpenUriRequest) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{14}
+	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *OpenUriRequest) GetUri() string {
@@ -1284,14 +1491,17 @@ type OpenUriResponse struct {
 	// The first window of the launch. Unset when none.
 	WindowId *uint64 `protobuf:"varint,2,opt,name=window_id,json=windowId,proto3,oneof" json:"window_id,omitempty"`
 	// The session revision at which the startup sequence ended.
-	Revision      uint64 `protobuf:"varint,3,opt,name=revision,proto3" json:"revision,omitempty"`
+	Revision uint64 `protobuf:"varint,3,opt,name=revision,proto3" json:"revision,omitempty"`
+	// The initial spawned process, when one was observable. Unset for a
+	// successful request handled by an existing application over D-Bus.
+	Pid           *uint32 `protobuf:"varint,4,opt,name=pid,proto3,oneof" json:"pid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OpenUriResponse) Reset() {
 	*x = OpenUriResponse{}
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[15]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1303,7 +1513,7 @@ func (x *OpenUriResponse) String() string {
 func (*OpenUriResponse) ProtoMessage() {}
 
 func (x *OpenUriResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[15]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1316,7 +1526,7 @@ func (x *OpenUriResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OpenUriResponse.ProtoReflect.Descriptor instead.
 func (*OpenUriResponse) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{15}
+	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *OpenUriResponse) GetStartupId() string {
@@ -1340,6 +1550,13 @@ func (x *OpenUriResponse) GetRevision() uint64 {
 	return 0
 }
 
+func (x *OpenUriResponse) GetPid() uint32 {
+	if x != nil && x.Pid != nil {
+		return *x.Pid
+	}
+	return 0
+}
+
 // A process of the session.
 type Process struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1359,7 +1576,7 @@ type Process struct {
 
 func (x *Process) Reset() {
 	*x = Process{}
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[16]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1371,7 +1588,7 @@ func (x *Process) String() string {
 func (*Process) ProtoMessage() {}
 
 func (x *Process) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[16]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1384,7 +1601,7 @@ func (x *Process) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Process.ProtoReflect.Descriptor instead.
 func (*Process) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{16}
+	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *Process) GetPid() uint32 {
@@ -1438,7 +1655,7 @@ type ListProcessesRequest struct {
 
 func (x *ListProcessesRequest) Reset() {
 	*x = ListProcessesRequest{}
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[17]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1450,7 +1667,7 @@ func (x *ListProcessesRequest) String() string {
 func (*ListProcessesRequest) ProtoMessage() {}
 
 func (x *ListProcessesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[17]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1463,7 +1680,7 @@ func (x *ListProcessesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProcessesRequest.ProtoReflect.Descriptor instead.
 func (*ListProcessesRequest) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{17}
+	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ListProcessesRequest) GetPageSize() uint32 {
@@ -1500,7 +1717,7 @@ type ListProcessesResponse struct {
 
 func (x *ListProcessesResponse) Reset() {
 	*x = ListProcessesResponse{}
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[18]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1512,7 +1729,7 @@ func (x *ListProcessesResponse) String() string {
 func (*ListProcessesResponse) ProtoMessage() {}
 
 func (x *ListProcessesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[18]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1525,7 +1742,7 @@ func (x *ListProcessesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProcessesResponse.ProtoReflect.Descriptor instead.
 func (*ListProcessesResponse) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{18}
+	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *ListProcessesResponse) GetProcesses() []*Process {
@@ -1556,7 +1773,7 @@ type TerminateProcessRequest struct {
 
 func (x *TerminateProcessRequest) Reset() {
 	*x = TerminateProcessRequest{}
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[19]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1568,7 +1785,7 @@ func (x *TerminateProcessRequest) String() string {
 func (*TerminateProcessRequest) ProtoMessage() {}
 
 func (x *TerminateProcessRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[19]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1581,7 +1798,7 @@ func (x *TerminateProcessRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminateProcessRequest.ProtoReflect.Descriptor instead.
 func (*TerminateProcessRequest) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{19}
+	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *TerminateProcessRequest) GetPid() uint32 {
@@ -1610,7 +1827,7 @@ type TerminateProcessResponse struct {
 
 func (x *TerminateProcessResponse) Reset() {
 	*x = TerminateProcessResponse{}
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[20]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1622,7 +1839,7 @@ func (x *TerminateProcessResponse) String() string {
 func (*TerminateProcessResponse) ProtoMessage() {}
 
 func (x *TerminateProcessResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[20]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1635,7 +1852,7 @@ func (x *TerminateProcessResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminateProcessResponse.ProtoReflect.Descriptor instead.
 func (*TerminateProcessResponse) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{20}
+	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *TerminateProcessResponse) GetRevision() uint64 {
@@ -1655,7 +1872,7 @@ type ApplicationPolicy struct {
 
 func (x *ApplicationPolicy) Reset() {
 	*x = ApplicationPolicy{}
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[21]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1667,7 +1884,7 @@ func (x *ApplicationPolicy) String() string {
 func (*ApplicationPolicy) ProtoMessage() {}
 
 func (x *ApplicationPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[21]
+	mi := &file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1680,7 +1897,7 @@ func (x *ApplicationPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplicationPolicy.ProtoReflect.Descriptor instead.
 func (*ApplicationPolicy) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{21}
+	return file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescGZIP(), []int{23}
 }
 
 var File_leaflow_fleet_virtualdesktop_application_v1_application_proto protoreflect.FileDescriptor
@@ -1750,28 +1967,47 @@ const file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDesc
 	"\x18ListApplicationsResponse\x12\\\n" +
 	"\fapplications\x18\x01 \x03(\v28.leaflow.fleet.virtualdesktop.application.v1.ApplicationR\fapplications\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\x12\x1a\n" +
-	"\brevision\x18\x03 \x01(\x04R\brevision\"s\n" +
+	"\brevision\x18\x03 \x01(\x04R\brevision\"\xec\x01\n" +
+	"\vOpenRequest\x12\x16\n" +
+	"\x06target\x18\x01 \x01(\tR\x06target\x12\x1c\n" +
+	"\targuments\x18\x02 \x03(\tR\targuments\x12\x1b\n" +
+	"\taction_id\x18\x03 \x01(\tR\bactionId\x12\x12\n" +
+	"\x04uris\x18\x04 \x03(\tR\x04uris\x12v\n" +
+	"\x15launcher_confirmation\x18\x05 \x01(\x0e2A.leaflow.fleet.virtualdesktop.application.v1.LauncherConfirmationR\x14launcherConfirmation\"\x98\x01\n" +
+	"\fOpenResponse\x12\x1d\n" +
+	"\n" +
+	"startup_id\x18\x01 \x01(\tR\tstartupId\x12 \n" +
+	"\twindow_id\x18\x02 \x01(\x04H\x00R\bwindowId\x88\x01\x01\x12\x1a\n" +
+	"\brevision\x18\x03 \x01(\x04R\brevision\x12\x15\n" +
+	"\x03pid\x18\x04 \x01(\rH\x01R\x03pid\x88\x01\x01B\f\n" +
+	"\n" +
+	"_window_idB\x06\n" +
+	"\x04_pid\"s\n" +
 	"\x18LaunchApplicationRequest\x12&\n" +
 	"\x0fdesktop_file_id\x18\x01 \x01(\tR\rdesktopFileId\x12\x1b\n" +
 	"\taction_id\x18\x02 \x01(\tR\bactionId\x12\x12\n" +
-	"\x04uris\x18\x03 \x03(\tR\x04uris\"\x86\x01\n" +
+	"\x04uris\x18\x03 \x03(\tR\x04uris\"\xa5\x01\n" +
 	"\x19LaunchApplicationResponse\x12\x1d\n" +
 	"\n" +
 	"startup_id\x18\x01 \x01(\tR\tstartupId\x12 \n" +
 	"\twindow_id\x18\x02 \x01(\x04H\x00R\bwindowId\x88\x01\x01\x12\x1a\n" +
-	"\brevision\x18\x03 \x01(\x04R\brevisionB\f\n" +
+	"\brevision\x18\x03 \x01(\x04R\brevision\x12\x15\n" +
+	"\x03pid\x18\x04 \x01(\rH\x01R\x03pid\x88\x01\x01B\f\n" +
 	"\n" +
-	"_window_id\"\x9a\x01\n" +
+	"_window_idB\x06\n" +
+	"\x04_pid\"\x9a\x01\n" +
 	"\x0eOpenUriRequest\x12\x10\n" +
 	"\x03uri\x18\x01 \x01(\tR\x03uri\x12v\n" +
-	"\x15launcher_confirmation\x18\x02 \x01(\x0e2A.leaflow.fleet.virtualdesktop.application.v1.LauncherConfirmationR\x14launcherConfirmation\"|\n" +
+	"\x15launcher_confirmation\x18\x02 \x01(\x0e2A.leaflow.fleet.virtualdesktop.application.v1.LauncherConfirmationR\x14launcherConfirmation\"\x9b\x01\n" +
 	"\x0fOpenUriResponse\x12\x1d\n" +
 	"\n" +
 	"startup_id\x18\x01 \x01(\tR\tstartupId\x12 \n" +
 	"\twindow_id\x18\x02 \x01(\x04H\x00R\bwindowId\x88\x01\x01\x12\x1a\n" +
-	"\brevision\x18\x03 \x01(\x04R\brevisionB\f\n" +
+	"\brevision\x18\x03 \x01(\x04R\brevision\x12\x15\n" +
+	"\x03pid\x18\x04 \x01(\rH\x01R\x03pid\x88\x01\x01B\f\n" +
 	"\n" +
-	"_window_id\"\xb1\x01\n" +
+	"_window_idB\x06\n" +
+	"\x04_pid\"\xb1\x01\n" +
 	"\aProcess\x12\x10\n" +
 	"\x03pid\x18\x01 \x01(\rR\x03pid\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12&\n" +
@@ -1806,9 +2042,10 @@ const file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDesc
 	"!LAUNCHER_CONFIRMATION_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aLAUNCHER_CONFIRMATION_NONE\x10\x01\x12'\n" +
 	"#LAUNCHER_CONFIRMATION_LAUNCH_ANYWAY\x10\x02\x12&\n" +
-	"\"LAUNCHER_CONFIRMATION_MARK_TRUSTED\x10\x032\xa7\x06\n" +
+	"\"LAUNCHER_CONFIRMATION_MARK_TRUSTED\x10\x032\xa4\a\n" +
 	"\x12ApplicationService\x12\xa4\x01\n" +
-	"\x10ListApplications\x12D.leaflow.fleet.virtualdesktop.application.v1.ListApplicationsRequest\x1aE.leaflow.fleet.virtualdesktop.application.v1.ListApplicationsResponse\"\x03\x90\x02\x01\x12\xa2\x01\n" +
+	"\x10ListApplications\x12D.leaflow.fleet.virtualdesktop.application.v1.ListApplicationsRequest\x1aE.leaflow.fleet.virtualdesktop.application.v1.ListApplicationsResponse\"\x03\x90\x02\x01\x12{\n" +
+	"\x04Open\x128.leaflow.fleet.virtualdesktop.application.v1.OpenRequest\x1a9.leaflow.fleet.virtualdesktop.application.v1.OpenResponse\x12\xa2\x01\n" +
 	"\x11LaunchApplication\x12E.leaflow.fleet.virtualdesktop.application.v1.LaunchApplicationRequest\x1aF.leaflow.fleet.virtualdesktop.application.v1.LaunchApplicationResponse\x12\x84\x01\n" +
 	"\aOpenUri\x12;.leaflow.fleet.virtualdesktop.application.v1.OpenUriRequest\x1a<.leaflow.fleet.virtualdesktop.application.v1.OpenUriResponse\x12\x9b\x01\n" +
 	"\rListProcesses\x12A.leaflow.fleet.virtualdesktop.application.v1.ListProcessesRequest\x1aB.leaflow.fleet.virtualdesktop.application.v1.ListProcessesResponse\"\x03\x90\x02\x01\x12\x9f\x01\n" +
@@ -1827,7 +2064,7 @@ func file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDescG
 }
 
 var file_leaflow_fleet_virtualdesktop_application_v1_application_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_leaflow_fleet_virtualdesktop_application_v1_application_proto_goTypes = []any{
 	(DesktopIconType)(0),              // 0: leaflow.fleet.virtualdesktop.application.v1.DesktopIconType
 	(LauncherConfirmation)(0),         // 1: leaflow.fleet.virtualdesktop.application.v1.LauncherConfirmation
@@ -1843,18 +2080,20 @@ var file_leaflow_fleet_virtualdesktop_application_v1_application_proto_goTypes =
 	(*SnapshotEnd)(nil),               // 11: leaflow.fleet.virtualdesktop.application.v1.SnapshotEnd
 	(*ListApplicationsRequest)(nil),   // 12: leaflow.fleet.virtualdesktop.application.v1.ListApplicationsRequest
 	(*ListApplicationsResponse)(nil),  // 13: leaflow.fleet.virtualdesktop.application.v1.ListApplicationsResponse
-	(*LaunchApplicationRequest)(nil),  // 14: leaflow.fleet.virtualdesktop.application.v1.LaunchApplicationRequest
-	(*LaunchApplicationResponse)(nil), // 15: leaflow.fleet.virtualdesktop.application.v1.LaunchApplicationResponse
-	(*OpenUriRequest)(nil),            // 16: leaflow.fleet.virtualdesktop.application.v1.OpenUriRequest
-	(*OpenUriResponse)(nil),           // 17: leaflow.fleet.virtualdesktop.application.v1.OpenUriResponse
-	(*Process)(nil),                   // 18: leaflow.fleet.virtualdesktop.application.v1.Process
-	(*ListProcessesRequest)(nil),      // 19: leaflow.fleet.virtualdesktop.application.v1.ListProcessesRequest
-	(*ListProcessesResponse)(nil),     // 20: leaflow.fleet.virtualdesktop.application.v1.ListProcessesResponse
-	(*TerminateProcessRequest)(nil),   // 21: leaflow.fleet.virtualdesktop.application.v1.TerminateProcessRequest
-	(*TerminateProcessResponse)(nil),  // 22: leaflow.fleet.virtualdesktop.application.v1.TerminateProcessResponse
-	(*ApplicationPolicy)(nil),         // 23: leaflow.fleet.virtualdesktop.application.v1.ApplicationPolicy
-	(*v1.Icon)(nil),                   // 24: leaflow.fleet.virtualdesktop.display.v1.Icon
-	(*timestamppb.Timestamp)(nil),     // 25: google.protobuf.Timestamp
+	(*OpenRequest)(nil),               // 14: leaflow.fleet.virtualdesktop.application.v1.OpenRequest
+	(*OpenResponse)(nil),              // 15: leaflow.fleet.virtualdesktop.application.v1.OpenResponse
+	(*LaunchApplicationRequest)(nil),  // 16: leaflow.fleet.virtualdesktop.application.v1.LaunchApplicationRequest
+	(*LaunchApplicationResponse)(nil), // 17: leaflow.fleet.virtualdesktop.application.v1.LaunchApplicationResponse
+	(*OpenUriRequest)(nil),            // 18: leaflow.fleet.virtualdesktop.application.v1.OpenUriRequest
+	(*OpenUriResponse)(nil),           // 19: leaflow.fleet.virtualdesktop.application.v1.OpenUriResponse
+	(*Process)(nil),                   // 20: leaflow.fleet.virtualdesktop.application.v1.Process
+	(*ListProcessesRequest)(nil),      // 21: leaflow.fleet.virtualdesktop.application.v1.ListProcessesRequest
+	(*ListProcessesResponse)(nil),     // 22: leaflow.fleet.virtualdesktop.application.v1.ListProcessesResponse
+	(*TerminateProcessRequest)(nil),   // 23: leaflow.fleet.virtualdesktop.application.v1.TerminateProcessRequest
+	(*TerminateProcessResponse)(nil),  // 24: leaflow.fleet.virtualdesktop.application.v1.TerminateProcessResponse
+	(*ApplicationPolicy)(nil),         // 25: leaflow.fleet.virtualdesktop.application.v1.ApplicationPolicy
+	(*v1.Icon)(nil),                   // 26: leaflow.fleet.virtualdesktop.display.v1.Icon
+	(*timestamppb.Timestamp)(nil),     // 27: google.protobuf.Timestamp
 }
 var file_leaflow_fleet_virtualdesktop_application_v1_application_proto_depIdxs = []int32{
 	3,  // 0: leaflow.fleet.virtualdesktop.application.v1.ServerMessage.application_menu:type_name -> leaflow.fleet.virtualdesktop.application.v1.ApplicationMenu
@@ -1862,34 +2101,37 @@ var file_leaflow_fleet_virtualdesktop_application_v1_application_proto_depIdxs =
 	10, // 2: leaflow.fleet.virtualdesktop.application.v1.ServerMessage.desktop_icon_removed:type_name -> leaflow.fleet.virtualdesktop.application.v1.DesktopIconRemoved
 	11, // 3: leaflow.fleet.virtualdesktop.application.v1.ServerMessage.snapshot_end:type_name -> leaflow.fleet.virtualdesktop.application.v1.SnapshotEnd
 	4,  // 4: leaflow.fleet.virtualdesktop.application.v1.ApplicationMenu.root:type_name -> leaflow.fleet.virtualdesktop.application.v1.Menu
-	24, // 5: leaflow.fleet.virtualdesktop.application.v1.Menu.icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
+	26, // 5: leaflow.fleet.virtualdesktop.application.v1.Menu.icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
 	5,  // 6: leaflow.fleet.virtualdesktop.application.v1.Menu.elements:type_name -> leaflow.fleet.virtualdesktop.application.v1.MenuElement
 	4,  // 7: leaflow.fleet.virtualdesktop.application.v1.MenuElement.menu:type_name -> leaflow.fleet.virtualdesktop.application.v1.Menu
 	6,  // 8: leaflow.fleet.virtualdesktop.application.v1.MenuElement.separator:type_name -> leaflow.fleet.virtualdesktop.application.v1.Separator
-	24, // 9: leaflow.fleet.virtualdesktop.application.v1.Application.icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
+	26, // 9: leaflow.fleet.virtualdesktop.application.v1.Application.icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
 	8,  // 10: leaflow.fleet.virtualdesktop.application.v1.Application.actions:type_name -> leaflow.fleet.virtualdesktop.application.v1.ApplicationAction
-	24, // 11: leaflow.fleet.virtualdesktop.application.v1.ApplicationAction.icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
+	26, // 11: leaflow.fleet.virtualdesktop.application.v1.ApplicationAction.icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
 	0,  // 12: leaflow.fleet.virtualdesktop.application.v1.DesktopIcon.type:type_name -> leaflow.fleet.virtualdesktop.application.v1.DesktopIconType
-	24, // 13: leaflow.fleet.virtualdesktop.application.v1.DesktopIcon.icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
+	26, // 13: leaflow.fleet.virtualdesktop.application.v1.DesktopIcon.icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
 	7,  // 14: leaflow.fleet.virtualdesktop.application.v1.ListApplicationsResponse.applications:type_name -> leaflow.fleet.virtualdesktop.application.v1.Application
-	1,  // 15: leaflow.fleet.virtualdesktop.application.v1.OpenUriRequest.launcher_confirmation:type_name -> leaflow.fleet.virtualdesktop.application.v1.LauncherConfirmation
-	25, // 16: leaflow.fleet.virtualdesktop.application.v1.Process.started_at:type_name -> google.protobuf.Timestamp
-	18, // 17: leaflow.fleet.virtualdesktop.application.v1.ListProcessesResponse.processes:type_name -> leaflow.fleet.virtualdesktop.application.v1.Process
-	12, // 18: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.ListApplications:input_type -> leaflow.fleet.virtualdesktop.application.v1.ListApplicationsRequest
-	14, // 19: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.LaunchApplication:input_type -> leaflow.fleet.virtualdesktop.application.v1.LaunchApplicationRequest
-	16, // 20: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.OpenUri:input_type -> leaflow.fleet.virtualdesktop.application.v1.OpenUriRequest
-	19, // 21: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.ListProcesses:input_type -> leaflow.fleet.virtualdesktop.application.v1.ListProcessesRequest
-	21, // 22: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.TerminateProcess:input_type -> leaflow.fleet.virtualdesktop.application.v1.TerminateProcessRequest
-	13, // 23: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.ListApplications:output_type -> leaflow.fleet.virtualdesktop.application.v1.ListApplicationsResponse
-	15, // 24: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.LaunchApplication:output_type -> leaflow.fleet.virtualdesktop.application.v1.LaunchApplicationResponse
-	17, // 25: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.OpenUri:output_type -> leaflow.fleet.virtualdesktop.application.v1.OpenUriResponse
-	20, // 26: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.ListProcesses:output_type -> leaflow.fleet.virtualdesktop.application.v1.ListProcessesResponse
-	22, // 27: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.TerminateProcess:output_type -> leaflow.fleet.virtualdesktop.application.v1.TerminateProcessResponse
-	23, // [23:28] is the sub-list for method output_type
-	18, // [18:23] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	1,  // 15: leaflow.fleet.virtualdesktop.application.v1.OpenRequest.launcher_confirmation:type_name -> leaflow.fleet.virtualdesktop.application.v1.LauncherConfirmation
+	1,  // 16: leaflow.fleet.virtualdesktop.application.v1.OpenUriRequest.launcher_confirmation:type_name -> leaflow.fleet.virtualdesktop.application.v1.LauncherConfirmation
+	27, // 17: leaflow.fleet.virtualdesktop.application.v1.Process.started_at:type_name -> google.protobuf.Timestamp
+	20, // 18: leaflow.fleet.virtualdesktop.application.v1.ListProcessesResponse.processes:type_name -> leaflow.fleet.virtualdesktop.application.v1.Process
+	12, // 19: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.ListApplications:input_type -> leaflow.fleet.virtualdesktop.application.v1.ListApplicationsRequest
+	14, // 20: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.Open:input_type -> leaflow.fleet.virtualdesktop.application.v1.OpenRequest
+	16, // 21: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.LaunchApplication:input_type -> leaflow.fleet.virtualdesktop.application.v1.LaunchApplicationRequest
+	18, // 22: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.OpenUri:input_type -> leaflow.fleet.virtualdesktop.application.v1.OpenUriRequest
+	21, // 23: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.ListProcesses:input_type -> leaflow.fleet.virtualdesktop.application.v1.ListProcessesRequest
+	23, // 24: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.TerminateProcess:input_type -> leaflow.fleet.virtualdesktop.application.v1.TerminateProcessRequest
+	13, // 25: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.ListApplications:output_type -> leaflow.fleet.virtualdesktop.application.v1.ListApplicationsResponse
+	15, // 26: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.Open:output_type -> leaflow.fleet.virtualdesktop.application.v1.OpenResponse
+	17, // 27: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.LaunchApplication:output_type -> leaflow.fleet.virtualdesktop.application.v1.LaunchApplicationResponse
+	19, // 28: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.OpenUri:output_type -> leaflow.fleet.virtualdesktop.application.v1.OpenUriResponse
+	22, // 29: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.ListProcesses:output_type -> leaflow.fleet.virtualdesktop.application.v1.ListProcessesResponse
+	24, // 30: leaflow.fleet.virtualdesktop.application.v1.ApplicationService.TerminateProcess:output_type -> leaflow.fleet.virtualdesktop.application.v1.TerminateProcessResponse
+	25, // [25:31] is the sub-list for method output_type
+	19, // [19:25] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_leaflow_fleet_virtualdesktop_application_v1_application_proto_init() }
@@ -1911,13 +2153,14 @@ func file_leaflow_fleet_virtualdesktop_application_v1_application_proto_init() {
 	file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[7].OneofWrappers = []any{}
 	file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[13].OneofWrappers = []any{}
 	file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[15].OneofWrappers = []any{}
+	file_leaflow_fleet_virtualdesktop_application_v1_application_proto_msgTypes[17].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDesc), len(file_leaflow_fleet_virtualdesktop_application_v1_application_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   22,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
