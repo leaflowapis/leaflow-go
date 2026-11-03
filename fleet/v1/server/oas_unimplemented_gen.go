@@ -235,18 +235,20 @@ func (UnimplementedHandler) CreatePeerConnectionCandidates(ctx context.Context, 
 // CreateSession implements create-session operation.
 //
 // Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
-// With `desktop` the session has a desktop. Without, Fleet first prepares or reuses the account's
-// separate ready lightweight graphical session, then creates a terminal session with its own SID and
-// lifetime; closing that terminal does not close the account context. Its one terminal runs the
-// caller's login shell from the start, every participant attaches to that terminal, and the session
-// ends when the shell exits; a caller who wants another terminal opens another session. Either kind
-// also offers programs, files, ports, sound, devices, printers and privilege approvals. The account is
-// created if the caller has none yet. Requires `fleet:machines.login` on the machine. All newly
-// created graphical account sessions, including desktop-first FullDesktop and Seamless sessions, keep
-// running when no viewer has joined or the last viewer disconnects. Configured maximum lifetime,
-// resource limits and explicit close/terminate still apply. This create API has no client-selected
-// idle policy; existing running policies are not silently rewritten when tools, commands or terminals
-// reuse the account context.
+// With `desktop` the session requires graphical capability and has a desktop. Without `desktop`, Fleet
+// creates a terminal session with its own SID and lifetime. If graphical capability is available,
+// Fleet first prepares or reuses the account's separate ready lightweight graphical session; otherwise
+// the terminal runs without creating a graphical context or injecting X environment variables. Closing
+// a terminal does not close an existing account graphical context. Its one terminal runs the caller's
+// login shell from the start, every participant attaches to that terminal, and the session ends when
+// the shell exits; a caller who wants another terminal opens another session. Either kind also offers
+// programs, files, ports, sound, devices, printers and privilege approvals. The account is created if
+// the caller has none yet. Requires `fleet:machines.login` on the machine. All newly created graphical
+// account sessions, including desktop-first FullDesktop and Seamless sessions, keep running when no
+// viewer has joined or the last viewer disconnects. Configured maximum lifetime, resource limits and
+// explicit close/terminate still apply. This create API has no client-selected idle policy; existing
+// running policies are not silently rewritten when tools, commands or terminals reuse the account
+// context.
 //
 // On a machine an account has at most one session with a desktop and at most 8 sessions in all.
 // Sessions without a desktop run side by side, such as one for a program and one for a person; several
@@ -255,7 +257,8 @@ func (UnimplementedHandler) CreatePeerConnectionCandidates(ctx context.Context, 
 // Fails with:
 //
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer sessions or the graphical backend;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer the requested session capability; a
+//     terminal-only request does not require a graphical backend;
 //   - `SESSION_UNAVAILABLE` or `SESSION_CLOSED` when its shared account context is not ready or
 //     closing;
 //   - `USER_HAS_DESKTOP_SESSION` with `desktop` when the account already has a session with a desktop
@@ -760,14 +763,16 @@ func (UnimplementedHandler) ReplaceMcpConfiguration(ctx context.Context, req *Re
 // it exited or was killed, with its exit status and what it wrote. Pipes, redirection and `&&` work;
 // there is no terminal and no standard input. The machine admits the account through PAM as for a
 // login. The account is created if the caller has none yet. A command that fails is still a successful
-// request: its exit status is its result. Before starting it, Fleet prepares or reuses the account's
-// ready lightweight graphical session, without starting a full desktop environment. The command has
-// its own job scope; its timeout or exit must not close the account's graphical context.
+// request: its exit status is its result. When the machine reports graphical capability available,
+// Fleet first prepares or reuses the account's ready lightweight graphical session, without starting a
+// full desktop environment. Otherwise the command runs without creating a graphical session or
+// injecting X environment variables. The command has its own job scope; its timeout or exit must not
+// close an existing account graphical context.
 //
 // Inside the command, `sudo` works without a prompt while the caller has `fleet:machines.admin` on the
 // machine, and refuses otherwise.
 //
-// After graphical context preparation, the request is held until the command ends, at most
+// After any required context preparation, the request is held until the command ends, at most
 // `timeout_seconds` and a few seconds more. Neither the command nor its output is hidden from the
 // platform: do not put secrets into either.
 //
@@ -776,7 +781,8 @@ func (UnimplementedHandler) ReplaceMcpConfiguration(ctx context.Context, req *Re
 // Fails with:
 //
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the command, session or graphical backend is unavailable;
+//   - `FEATURE_UNAVAILABLE` when a required capability is unavailable; an absent graphical backend
+//     alone does not block a command;
 //   - `SESSION_UNAVAILABLE` or `SESSION_CLOSED` when the account context is not ready or closing;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;
