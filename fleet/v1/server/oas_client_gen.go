@@ -66,17 +66,17 @@ type Invoker interface {
 	// CallTool invokes callTool operation.
 	//
 	// Uses the same current permissions, directory account and graphical session as list-tools. Listing is
-	// not a precondition: callers may use a previously discovered ToolRef, and this operation never sends
-	// a discovery request or refreshes schemas before executing it. A removed tool or MCP server returns
-	// TOOL_NOT_FOUND, as does a direct builtin computer.* call while virtual desktop capability is
+	// not a precondition: callers may use a previously discovered tool name, and this operation never
+	// sends a discovery request or refreshes schemas before executing it. A removed tool or MCP server
+	// returns TOOL_NOT_FOUND, as does a direct builtin computer.* call while virtual desktop capability is
 	// unavailable. Actual permission errors remain permission errors; a missing target window is not a
 	// missing tool. Use list-tools only when discovery or refresh is needed, and do not cache or reuse
-	// execution results. Source is explicit: MCP names never select or impersonate builtin tools. The
-	// arguments object is at most 256 KiB. The complete result is at most 8 MiB in the protobuf transport,
-	// with each encoded image at most 4 MiB; images are converted to base64 once at this JSON boundary,
-	// without recompression or persistence. Cancellation is propagated. A timeout, disconnect or failed
-	// response does not prove that side effects did not happen; do not automatically replay. operation_id
-	// only correlates live activity, not idempotency.
+	// execution results. The name selects exactly one tool: builtin tools are computer.*, MCP tools are
+	// `<server>__<tool>`. The arguments object is at most 256 KiB. The complete result is at most 8 MiB in
+	// the protobuf transport, with each encoded image at most 4 MiB; images are converted to base64 once
+	// at this JSON boundary, without recompression or persistence. Cancellation is propagated. A timeout,
+	// disconnect or failed response does not prove that side effects did not happen; do not automatically
+	// replay. operation_id only correlates live activity, not idempotency.
 	//
 	// POST /api/v1/machines/{machineId}/tools:call
 	CallTool(ctx context.Context, request *CallToolRequest, params CallToolParams) (*CallToolResponse, error)
@@ -534,10 +534,12 @@ type Invoker interface {
 	// ListTools invokes list-tools operation.
 	//
 	// Queries Agent's builtin tools and the caller's configured MCP servers live. No directory, result or
-	// image is cached. Requires fleet:machines.login; builtin capabilities retain their native policies
-	// and read-only restrictions. Ensures or reuses the caller's single open graphical session, without
-	// launching a desktop environment. The client instance is a UUID generated once per running client,
-	// not an authorization credential. Each request checks current IAM permissions and signs a short-lived
+	// image is cached. Each tool has one callable name: builtin tools are named computer.*, MCP tools are
+	// named `<server>__<tool>`; source only filters the list and is not part of a tool's identity.
+	// Requires fleet:machines.login; builtin capabilities retain their native policies and read-only
+	// restrictions. Ensures or reuses the caller's single open graphical session, without launching a
+	// desktop environment. The client instance is a UUID generated once per running client, not an
+	// authorization credential. Each request checks current IAM permissions and signs a short-lived
 	// control-only authorization. Tool arguments, results and images traverse Fleet with hop-by-hop TLS
 	// and are visible to Fleet. Existing desktop streaming remains end-to-end encrypted. TOOL_LIST_CHANGED
 	// means restart listing from the first page, never replay a CallTool. At most 100 tools per page.
@@ -1271,17 +1273,17 @@ func (c *Client) sendCallMcpTool(ctx context.Context, request *CallMcpToolReques
 // CallTool invokes callTool operation.
 //
 // Uses the same current permissions, directory account and graphical session as list-tools. Listing is
-// not a precondition: callers may use a previously discovered ToolRef, and this operation never sends
-// a discovery request or refreshes schemas before executing it. A removed tool or MCP server returns
-// TOOL_NOT_FOUND, as does a direct builtin computer.* call while virtual desktop capability is
+// not a precondition: callers may use a previously discovered tool name, and this operation never
+// sends a discovery request or refreshes schemas before executing it. A removed tool or MCP server
+// returns TOOL_NOT_FOUND, as does a direct builtin computer.* call while virtual desktop capability is
 // unavailable. Actual permission errors remain permission errors; a missing target window is not a
 // missing tool. Use list-tools only when discovery or refresh is needed, and do not cache or reuse
-// execution results. Source is explicit: MCP names never select or impersonate builtin tools. The
-// arguments object is at most 256 KiB. The complete result is at most 8 MiB in the protobuf transport,
-// with each encoded image at most 4 MiB; images are converted to base64 once at this JSON boundary,
-// without recompression or persistence. Cancellation is propagated. A timeout, disconnect or failed
-// response does not prove that side effects did not happen; do not automatically replay. operation_id
-// only correlates live activity, not idempotency.
+// execution results. The name selects exactly one tool: builtin tools are computer.*, MCP tools are
+// `<server>__<tool>`. The arguments object is at most 256 KiB. The complete result is at most 8 MiB in
+// the protobuf transport, with each encoded image at most 4 MiB; images are converted to base64 once
+// at this JSON boundary, without recompression or persistence. Cancellation is propagated. A timeout,
+// disconnect or failed response does not prove that side effects did not happen; do not automatically
+// replay. operation_id only correlates live activity, not idempotency.
 //
 // POST /api/v1/machines/{machineId}/tools:call
 func (c *Client) CallTool(ctx context.Context, request *CallToolRequest, params CallToolParams) (*CallToolResponse, error) {
@@ -7708,10 +7710,12 @@ func (c *Client) sendListSessions(ctx context.Context, params ListSessionsParams
 // ListTools invokes list-tools operation.
 //
 // Queries Agent's builtin tools and the caller's configured MCP servers live. No directory, result or
-// image is cached. Requires fleet:machines.login; builtin capabilities retain their native policies
-// and read-only restrictions. Ensures or reuses the caller's single open graphical session, without
-// launching a desktop environment. The client instance is a UUID generated once per running client,
-// not an authorization credential. Each request checks current IAM permissions and signs a short-lived
+// image is cached. Each tool has one callable name: builtin tools are named computer.*, MCP tools are
+// named `<server>__<tool>`; source only filters the list and is not part of a tool's identity.
+// Requires fleet:machines.login; builtin capabilities retain their native policies and read-only
+// restrictions. Ensures or reuses the caller's single open graphical session, without launching a
+// desktop environment. The client instance is a UUID generated once per running client, not an
+// authorization credential. Each request checks current IAM permissions and signs a short-lived
 // control-only authorization. Tool arguments, results and images traverse Fleet with hop-by-hop TLS
 // and are visible to Fleet. Existing desktop streaming remains end-to-end encrypted. TOOL_LIST_CHANGED
 // means restart listing from the first page, never replay a CallTool. At most 100 tools per page.

@@ -850,7 +850,7 @@ func (s *CallToolRequest) encodeFields(e *jx.Encoder) {
 	}
 	{
 		e.FieldStart("tool")
-		s.Tool.Encode(e)
+		e.Str(s.Tool)
 	}
 	{
 		e.FieldStart("arguments")
@@ -903,7 +903,9 @@ func (s *CallToolRequest) Decode(d *jx.Decoder) error {
 		case "tool":
 			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
-				if err := s.Tool.Decode(d); err != nil {
+				v, err := d.Str()
+				s.Tool = string(v)
+				if err != nil {
 					return err
 				}
 				return nil
@@ -12139,12 +12141,12 @@ func (s *ToolDescriptor) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *ToolDescriptor) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("tool")
-		s.Tool.Encode(e)
-	}
-	{
 		e.FieldStart("name")
 		e.Str(s.Name)
+	}
+	{
+		e.FieldStart("source")
+		s.Source.Encode(e)
 	}
 	{
 		e.FieldStart("title")
@@ -12173,8 +12175,8 @@ func (s *ToolDescriptor) encodeFields(e *jx.Encoder) {
 }
 
 var jsonFieldsNameOfToolDescriptor = [7]string{
-	0: "tool",
-	1: "name",
+	0: "name",
+	1: "source",
 	2: "title",
 	3: "description",
 	4: "input_schema",
@@ -12191,18 +12193,8 @@ func (s *ToolDescriptor) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "tool":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				if err := s.Tool.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"tool\"")
-			}
 		case "name":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -12212,6 +12204,16 @@ func (s *ToolDescriptor) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "source":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.Source.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"source\"")
 			}
 		case "title":
 			requiredBitSet[0] |= 1 << 2
@@ -12493,6 +12495,46 @@ func (s ToolDescriptorOutputSchema) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *ToolDescriptorOutputSchema) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes ToolDescriptorSource as json.
+func (s ToolDescriptorSource) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes ToolDescriptorSource from json.
+func (s *ToolDescriptorSource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ToolDescriptorSource to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch ToolDescriptorSource(v) {
+	case ToolDescriptorSourceBuiltin:
+		*s = ToolDescriptorSourceBuiltin
+	case ToolDescriptorSourceMcp:
+		*s = ToolDescriptorSourceMcp
+	default:
+		*s = ToolDescriptorSource(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s ToolDescriptorSource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ToolDescriptorSource) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -13107,174 +13149,6 @@ func (s ToolListUnavailableSourcesItemSource) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *ToolListUnavailableSourcesItemSource) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode implements json.Marshaler.
-func (s *ToolRef) Encode(e *jx.Encoder) {
-	e.ObjStart()
-	s.encodeFields(e)
-	e.ObjEnd()
-}
-
-// encodeFields encodes fields.
-func (s *ToolRef) encodeFields(e *jx.Encoder) {
-	{
-		e.FieldStart("source")
-		s.Source.Encode(e)
-	}
-	{
-		e.FieldStart("name")
-		e.Str(s.Name)
-	}
-	{
-		if s.Server.Set {
-			e.FieldStart("server")
-			s.Server.Encode(e)
-		}
-	}
-}
-
-var jsonFieldsNameOfToolRef = [3]string{
-	0: "source",
-	1: "name",
-	2: "server",
-}
-
-// Decode decodes ToolRef from json.
-func (s *ToolRef) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode ToolRef to nil")
-	}
-	var requiredBitSet [1]uint8
-
-	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
-		switch string(k) {
-		case "source":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				if err := s.Source.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"source\"")
-			}
-		case "name":
-			requiredBitSet[0] |= 1 << 1
-			if err := func() error {
-				v, err := d.Str()
-				s.Name = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"name\"")
-			}
-		case "server":
-			if err := func() error {
-				s.Server.Reset()
-				if err := s.Server.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"server\"")
-			}
-		default:
-			return errors.Errorf("unexpected field %q", k)
-		}
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "decode ToolRef")
-	}
-	// Validate required fields.
-	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b00000011,
-	} {
-		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
-			// Mask only required fields and check equality to mask using XOR.
-			//
-			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
-			// Bits of fields which would be set are actually bits of missed fields.
-			missed := bits.OnesCount8(result)
-			for bitN := 0; bitN < missed; bitN++ {
-				bitIdx := bits.TrailingZeros8(result)
-				fieldIdx := i*8 + bitIdx
-				var name string
-				if fieldIdx < len(jsonFieldsNameOfToolRef) {
-					name = jsonFieldsNameOfToolRef[fieldIdx]
-				} else {
-					name = strconv.Itoa(fieldIdx)
-				}
-				failures = append(failures, validate.FieldError{
-					Name:  name,
-					Error: validate.ErrFieldRequired,
-				})
-				// Reset bit.
-				result &^= 1 << bitIdx
-			}
-		}
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s *ToolRef) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *ToolRef) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes ToolRefSource as json.
-func (s ToolRefSource) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes ToolRefSource from json.
-func (s *ToolRefSource) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode ToolRefSource to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch ToolRefSource(v) {
-	case ToolRefSourceBuiltin:
-		*s = ToolRefSourceBuiltin
-	case ToolRefSourceMcp:
-		*s = ToolRefSourceMcp
-	default:
-		*s = ToolRefSource(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s ToolRefSource) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *ToolRefSource) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

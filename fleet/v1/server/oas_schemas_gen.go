@@ -305,7 +305,9 @@ func (s *CallMcpToolResponseResult) init() CallMcpToolResponseResult {
 // Ref: #/components/schemas/CallToolRequest
 type CallToolRequest struct {
 	ClientInstanceID uuid.UUID `json:"client_instance_id"`
-	Tool             ToolRef   `json:"tool"`
+	// The name from list-tools. Builtin tools are computer.*; MCP tools are `<server>__<tool>`. The name
+	// selects the tool; source is not part of the call.
+	Tool string `json:"tool"`
 	// A JSON object, at most 256 KiB when encoded.
 	Arguments      CallToolRequestArguments `json:"arguments"`
 	ReadOnly       OptBool                  `json:"read_only"`
@@ -318,7 +320,7 @@ func (s *CallToolRequest) GetClientInstanceID() uuid.UUID {
 }
 
 // GetTool returns the value of Tool.
-func (s *CallToolRequest) GetTool() ToolRef {
+func (s *CallToolRequest) GetTool() string {
 	return s.Tool
 }
 
@@ -343,7 +345,7 @@ func (s *CallToolRequest) SetClientInstanceID(val uuid.UUID) {
 }
 
 // SetTool sets the value of Tool.
-func (s *CallToolRequest) SetTool(val ToolRef) {
+func (s *CallToolRequest) SetTool(val string) {
 	s.Tool = val
 }
 
@@ -6279,8 +6281,11 @@ func (s *ToolContentMetadata) init() ToolContentMetadata {
 
 // Ref: #/components/schemas/ToolDescriptor
 type ToolDescriptor struct {
-	Tool         ToolRef                       `json:"tool"`
-	Name         string                        `json:"name"`
+	// The name to call it by. Builtin tools are named computer.*; MCP tools are named `<server>__<tool>`,
+	// so a name selects exactly one tool.
+	Name string `json:"name"`
+	// Whether the tool is builtin or comes from an MCP server. For filtering only.
+	Source       ToolDescriptorSource          `json:"source"`
 	Title        string                        `json:"title"`
 	Description  string                        `json:"description"`
 	InputSchema  ToolDescriptorInputSchema     `json:"input_schema"`
@@ -6289,14 +6294,14 @@ type ToolDescriptor struct {
 	Metadata OptToolDescriptorMetadata `json:"metadata"`
 }
 
-// GetTool returns the value of Tool.
-func (s *ToolDescriptor) GetTool() ToolRef {
-	return s.Tool
-}
-
 // GetName returns the value of Name.
 func (s *ToolDescriptor) GetName() string {
 	return s.Name
+}
+
+// GetSource returns the value of Source.
+func (s *ToolDescriptor) GetSource() ToolDescriptorSource {
+	return s.Source
 }
 
 // GetTitle returns the value of Title.
@@ -6324,14 +6329,14 @@ func (s *ToolDescriptor) GetMetadata() OptToolDescriptorMetadata {
 	return s.Metadata
 }
 
-// SetTool sets the value of Tool.
-func (s *ToolDescriptor) SetTool(val ToolRef) {
-	s.Tool = val
-}
-
 // SetName sets the value of Name.
 func (s *ToolDescriptor) SetName(val string) {
 	s.Name = val
+}
+
+// SetSource sets the value of Source.
+func (s *ToolDescriptor) SetSource(val ToolDescriptorSource) {
+	s.Source = val
 }
 
 // SetTitle sets the value of Title.
@@ -6391,6 +6396,48 @@ func (s *ToolDescriptorOutputSchema) init() ToolDescriptorOutputSchema {
 		*s = m
 	}
 	return m
+}
+
+// Whether the tool is builtin or comes from an MCP server. For filtering only.
+type ToolDescriptorSource string
+
+const (
+	ToolDescriptorSourceBuiltin ToolDescriptorSource = "builtin"
+	ToolDescriptorSourceMcp     ToolDescriptorSource = "mcp"
+)
+
+// AllValues returns all ToolDescriptorSource values.
+func (ToolDescriptorSource) AllValues() []ToolDescriptorSource {
+	return []ToolDescriptorSource{
+		ToolDescriptorSourceBuiltin,
+		ToolDescriptorSourceMcp,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ToolDescriptorSource) MarshalText() ([]byte, error) {
+	switch s {
+	case ToolDescriptorSourceBuiltin:
+		return []byte(s), nil
+	case ToolDescriptorSourceMcp:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ToolDescriptorSource) UnmarshalText(data []byte) error {
+	switch ToolDescriptorSource(data) {
+	case ToolDescriptorSourceBuiltin:
+		*s = ToolDescriptorSourceBuiltin
+		return nil
+	case ToolDescriptorSourceMcp:
+		*s = ToolDescriptorSourceMcp
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/ToolImage
@@ -6650,85 +6697,6 @@ func (s *ToolListUnavailableSourcesItemSource) UnmarshalText(data []byte) error 
 		return nil
 	case ToolListUnavailableSourcesItemSourceMcp:
 		*s = ToolListUnavailableSourcesItemSourceMcp
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/ToolRef
-type ToolRef struct {
-	Source ToolRefSource `json:"source"`
-	Name   string        `json:"name"`
-	// Required only for mcp; forbidden for builtin.
-	Server OptString `json:"server"`
-}
-
-// GetSource returns the value of Source.
-func (s *ToolRef) GetSource() ToolRefSource {
-	return s.Source
-}
-
-// GetName returns the value of Name.
-func (s *ToolRef) GetName() string {
-	return s.Name
-}
-
-// GetServer returns the value of Server.
-func (s *ToolRef) GetServer() OptString {
-	return s.Server
-}
-
-// SetSource sets the value of Source.
-func (s *ToolRef) SetSource(val ToolRefSource) {
-	s.Source = val
-}
-
-// SetName sets the value of Name.
-func (s *ToolRef) SetName(val string) {
-	s.Name = val
-}
-
-// SetServer sets the value of Server.
-func (s *ToolRef) SetServer(val OptString) {
-	s.Server = val
-}
-
-type ToolRefSource string
-
-const (
-	ToolRefSourceBuiltin ToolRefSource = "builtin"
-	ToolRefSourceMcp     ToolRefSource = "mcp"
-)
-
-// AllValues returns all ToolRefSource values.
-func (ToolRefSource) AllValues() []ToolRefSource {
-	return []ToolRefSource{
-		ToolRefSourceBuiltin,
-		ToolRefSourceMcp,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ToolRefSource) MarshalText() ([]byte, error) {
-	switch s {
-	case ToolRefSourceBuiltin:
-		return []byte(s), nil
-	case ToolRefSourceMcp:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ToolRefSource) UnmarshalText(data []byte) error {
-	switch ToolRefSource(data) {
-	case ToolRefSourceBuiltin:
-		*s = ToolRefSourceBuiltin
-		return nil
-	case ToolRefSourceMcp:
-		*s = ToolRefSourceMcp
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)

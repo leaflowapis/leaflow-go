@@ -5763,14 +5763,20 @@ func decodeListSessionsParams(args [0]string, argsEscaped bool, r *http.Request)
 
 // ListToolsParams is parameters of list-tools operation.
 type ListToolsParams struct {
-	MachineId        uuid.UUID
+	MachineId uuid.UUID
+	// A UUID generated once per running client and reused for its lifetime. It separates concurrent
+	// callers of the same user and is not an authorization credential.
 	ClientInstanceID uuid.UUID
-	Source           OptListToolsSource `json:",omitempty,omitzero"`
-	McpServer        OptString          `json:",omitempty,omitzero"`
-	Query            OptString          `json:",omitempty,omitzero"`
-	ReadOnly         OptBool            `json:",omitempty,omitzero"`
-	PageSize         OptInt64           `json:",omitempty,omitzero"`
-	PageToken        OptString          `json:",omitempty,omitzero"`
+	// Return only tools of this source. A filter, not part of a tool's identity.
+	Source OptListToolsSource `json:",omitempty,omitzero"`
+	// Return only this MCP server's tools.
+	McpServer OptString `json:",omitempty,omitzero"`
+	// Words that each must occur in a tool's name, title or description, ignoring case.
+	Query OptString `json:",omitempty,omitzero"`
+	// Sign the control authorization as read-only, so mutating tools are refused.
+	ReadOnly  OptBool   `json:",omitempty,omitzero"`
+	PageSize  OptInt64  `json:",omitempty,omitzero"`
+	PageToken OptString `json:",omitempty,omitzero"`
 }
 
 func unpackListToolsParams(packed middleware.Parameters) (params ListToolsParams) {
