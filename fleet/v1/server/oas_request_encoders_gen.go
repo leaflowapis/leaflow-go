@@ -38,6 +38,20 @@ func encodeCallMcpToolRequest(
 	return nil
 }
 
+func encodeCallToolRequest(
+	req *CallToolRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCommitParticipantMigrationRequest(
 	req *MigrationStep,
 	r *http.Request,

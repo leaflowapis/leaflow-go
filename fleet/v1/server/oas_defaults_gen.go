@@ -11,6 +11,18 @@ func (s *CallMcpToolRequest) setDefaults() {
 }
 
 // setDefaults set default value of fields.
+func (s *CallToolRequest) setDefaults() {
+	{
+		val := bool(false)
+		s.ReadOnly.SetTo(val)
+	}
+	{
+		val := int64(60)
+		s.TimeoutSeconds.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
 func (s *CreateMachineRegistrationRequest) setDefaults() {
 	{
 		val := int64(3600)

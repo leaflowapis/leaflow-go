@@ -466,6 +466,8 @@ func (s *Server) handleApprovePrivilegeRequestRequest(args [1]string, argsEscape
 // JSON-RPC error, such as for a tool it does not offer or arguments it does not accept, with the
 // error's `metadata.code` and `metadata.message`.
 //
+// Deprecated: schema marks this operation as deprecated.
+//
 // POST /api/v1/machines/{machineId}/mcp-servers/{serverName}/tools/{toolName}:call
 func (s *Server) handleCallMcpToolRequest(args [3]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -677,6 +679,232 @@ func (s *Server) handleCallMcpToolRequest(args [3]string, argsEscaped bool, w ht
 	}
 
 	if err := encodeCallMcpToolResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCallToolRequest handles callTool operation.
+//
+// Uses the same current permissions, directory account and graphical session as listTools. Listing is
+// not a precondition: callers may use a previously discovered ToolRef, and this operation never sends
+// a discovery request or refreshes schemas before executing it. A removed tool or MCP server returns
+// TOOL_NOT_FOUND, as does a direct builtin computer.* call while virtual desktop capability is
+// unavailable. Actual permission errors remain permission errors; a missing target window is not a
+// missing tool. Use listTools only when discovery or refresh is needed, and do not cache or reuse
+// execution results. Source is explicit: MCP names never select or impersonate builtin tools. The
+// arguments object is at most 256 KiB. The complete result is at most 8 MiB in the protobuf transport,
+// with each encoded image at most 4 MiB; images are converted to base64 once at this JSON boundary,
+// without recompression or persistence. Cancellation is propagated. A timeout, disconnect or failed
+// response does not prove that side effects did not happen; do not automatically replay. operation_id
+// only correlates live activity, not idempotency.
+//
+// POST /api/v1/machines/{machineId}/tools:call
+func (s *Server) handleCallToolRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("callTool"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/machines/{machineId}/tools:call"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CallToolOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CallToolOperation,
+			ID:   "callTool",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, CallToolOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCallToolParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCallToolRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *CallToolResponse
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CallToolOperation,
+			OperationSummary: "Call a live builtin or external MCP tool",
+			OperationID:      "callTool",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "machineId",
+					In:   "path",
+				}: params.MachineId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *CallToolRequest
+			Params   = CallToolParams
+			Response = *CallToolResponse
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCallToolParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CallTool(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CallTool(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCallToolResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -2463,11 +2691,18 @@ func (s *Server) handleCreatePeerConnectionCandidatesRequest(args [3]string, arg
 // handleCreateSessionRequest handles create-session operation.
 //
 // Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
-// With `desktop` the session has a desktop. Without, it is a terminal session: its one terminal runs
-// the caller's login shell from the start, every participant attaches to that terminal, and the
-// session ends when the shell exits; a caller who wants another terminal opens another session. Either
-// kind also offers programs, files, ports, sound, devices, printers and privilege approvals. The
-// account is created if the caller has none yet. Requires `fleet:machines.login` on the machine.
+// With `desktop` the session has a desktop. Without, Fleet first prepares or reuses the account's
+// separate ready lightweight graphical session, then creates a terminal session with its own SID and
+// lifetime; closing that terminal does not close the account context. Its one terminal runs the
+// caller's login shell from the start, every participant attaches to that terminal, and the session
+// ends when the shell exits; a caller who wants another terminal opens another session. Either kind
+// also offers programs, files, ports, sound, devices, printers and privilege approvals. The account is
+// created if the caller has none yet. Requires `fleet:machines.login` on the machine. All newly
+// created graphical account sessions, including desktop-first FullDesktop and Seamless sessions, keep
+// running when no viewer has joined or the last viewer disconnects. Configured maximum lifetime,
+// resource limits and explicit close/terminate still apply. This create API has no client-selected
+// idle policy; existing running policies are not silently rewritten when tools, commands or terminals
+// reuse the account context.
 //
 // On a machine an account has at most one session with a desktop and at most 8 sessions in all.
 // Sessions without a desktop run side by side, such as one for a program and one for a person; several
@@ -2476,7 +2711,9 @@ func (s *Server) handleCreatePeerConnectionCandidatesRequest(args [3]string, arg
 // Fails with:
 //
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer sessions, or with `desktop`, desktops;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer sessions or the graphical backend;
+//   - `SESSION_UNAVAILABLE` or `SESSION_CLOSED` when its shared account context is not ready or
+//     closing;
 //   - `USER_HAS_DESKTOP_SESSION` with `desktop` when the account already has a session with a desktop
 //     on the machine, which `metadata.sessionId` names; connect to it instead;
 //   - `SESSION_LIMIT_REACHED` when the account already has 8 open sessions on the machine; close one
@@ -8491,6 +8728,8 @@ func (s *Server) handleListMachinesRequest(args [0]string, argsEscaped bool, w h
 //   - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
 //   - `MACHINE_TIMEOUT` when the machine did not answer in time.
 //
+// Deprecated: schema marks this operation as deprecated.
+//
 // GET /api/v1/machines/{machineId}/mcp-tools
 func (s *Server) handleListMcpToolsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
@@ -9538,6 +9777,446 @@ func (s *Server) handleListSessionsRequest(args [0]string, argsEscaped bool, w h
 	}
 }
 
+// handleListToolsRequest handles listTools operation.
+//
+// Queries Agent's builtin tools and the caller's configured MCP servers live. No directory, result or
+// image is cached. Requires fleet:machines.login; builtin capabilities retain their native policies
+// and read-only restrictions. Ensures or reuses the caller's single open graphical session, without
+// launching a desktop environment. The client instance is a UUID generated once per running client,
+// not an authorization credential. Each request checks current IAM permissions and signs a short-lived
+// control-only authorization. Tool arguments, results and images traverse Fleet with hop-by-hop TLS
+// and are visible to Fleet. Existing desktop streaming remains end-to-end encrypted. TOOL_LIST_CHANGED
+// means restart listing from the first page, never replay a CallTool. At most 100 tools per page.
+//
+// GET /api/v1/machines/{machineId}/tools
+func (s *Server) handleListToolsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("listTools"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/machines/{machineId}/tools"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListToolsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListToolsOperation,
+			ID:   "listTools",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, ListToolsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListToolsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *ToolList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListToolsOperation,
+			OperationSummary: "List live tools available to the caller on a machine",
+			OperationID:      "listTools",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "machineId",
+					In:   "path",
+				}: params.MachineId,
+				{
+					Name: "client_instance_id",
+					In:   "query",
+				}: params.ClientInstanceID,
+				{
+					Name: "source",
+					In:   "query",
+				}: params.Source,
+				{
+					Name: "mcp_server",
+					In:   "query",
+				}: params.McpServer,
+				{
+					Name: "query",
+					In:   "query",
+				}: params.Query,
+				{
+					Name: "read_only",
+					In:   "query",
+				}: params.ReadOnly,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "page_token",
+					In:   "query",
+				}: params.PageToken,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListToolsParams
+			Response = *ToolList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListToolsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListTools(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListTools(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListToolsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handlePollToolActivitiesRequest handles pollToolActivities operation.
+//
+// Checks current session viewing permission for each request and again before returning events.
+// Subscribes only while this request is pending, returning on the first batch or after at most 20 idle
+// seconds. At most 64 events, no offline queue, event database, cursor history or replay guarantee.
+// Missing events never mean repeat an action. Coordinates are window-client-local (window_id=0 means
+// canvas), not CSS or image pixels. The frontend applies its own zoom and DPI. Compare sequence only
+// within the same instance_id.
+//
+// GET /api/v1/sessions/{sessionId}/tool-activities
+func (s *Server) handlePollToolActivitiesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("pollToolActivities"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/tool-activities"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), PollToolActivitiesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: PollToolActivitiesOperation,
+			ID:   "pollToolActivities",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, PollToolActivitiesOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodePollToolActivitiesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *ToolActivityList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    PollToolActivitiesOperation,
+			OperationSummary: "Receive live tool activity for an authorized session",
+			OperationID:      "pollToolActivities",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "sessionId",
+					In:   "path",
+				}: params.SessionId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = PollToolActivitiesParams
+			Response = *ToolActivityList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackPollToolActivitiesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.PollToolActivities(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.PollToolActivities(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodePollToolActivitiesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handlePrepareParticipantMigrationRequest handles prepare-participant-migration operation.
 //
 // Passes the participant's checkpoint for the next epoch to the session and returns the session's
@@ -10242,20 +10921,24 @@ func (s *Server) handleReplaceMcpConfigurationRequest(args [1]string, argsEscape
 // it exited or was killed, with its exit status and what it wrote. Pipes, redirection and `&&` work;
 // there is no terminal and no standard input. The machine admits the account through PAM as for a
 // login. The account is created if the caller has none yet. A command that fails is still a successful
-// request: its exit status is its result.
+// request: its exit status is its result. Before starting it, Fleet prepares or reuses the account's
+// ready lightweight graphical session, without starting a full desktop environment. The command has
+// its own job scope; its timeout or exit must not close the account's graphical context.
 //
 // Inside the command, `sudo` works without a prompt while the caller has `fleet:machines.admin` on the
 // machine, and refuses otherwise.
 //
-// The request is held until the command ends, at most `timeout_seconds` and a few seconds more.
-// Neither the command nor its output is hidden from the platform: do not put secrets into either.
+// After graphical context preparation, the request is held until the command ends, at most
+// `timeout_seconds` and a few seconds more. Neither the command nor its output is hidden from the
+// platform: do not put secrets into either.
 //
 // Requires `fleet:machines.login` on the machine.
 //
 // Fails with:
 //
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.command.v1`;
+//   - `FEATURE_UNAVAILABLE` when the command, session or graphical backend is unavailable;
+//   - `SESSION_UNAVAILABLE` or `SESSION_CLOSED` when the account context is not ready or closing;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;
 //   - `COMMAND_START_FAILED` when the shell could not start; nothing ran;
@@ -10478,12 +11161,14 @@ func (s *Server) handleRunMachineCommandRequest(args [1]string, argsEscaped bool
 //
 // Sends one JSON-RPC request of MCP to one of the caller's servers on the machine, such as
 // `tools/call`, `resources/read` or `prompts/get`, and returns the server's response. The machine
-// starts or connects to the server if it is not running, and handles its initialization itself; a
-// request still running when `timeout_seconds` passes is cancelled at the server. Requests the server
-// makes of the client are answered as by a client that offers no sampling, elicitation or roots, and
-// its notifications, such as of progress, are dropped. A response with a JSON-RPC error is a
-// successful request. Neither the request nor the response is hidden from the platform. Requires
-// `fleet:machines.login` on the machine.
+// starts or connects to the server if it is not running, and handles its initialization itself. Before
+// any such request, Fleet prepares or reuses the caller's ready lightweight account graphical session,
+// including for resources and prompts; no full desktop environment is needed. A request still running
+// when `timeout_seconds` passes is cancelled at the server. Requests the server makes of the client
+// are answered as by a client that offers no sampling, elicitation or roots, and its notifications,
+// such as of progress, are dropped. A response with a JSON-RPC error is a successful request. Neither
+// the request nor the response is hidden from the platform. Requires `fleet:machines.login` on the
+// machine.
 //
 // Fails with:
 //
@@ -10494,7 +11179,8 @@ func (s *Server) handleRunMachineCommandRequest(args [1]string, argsEscaped bool
 //     of initialization;
 //   - `RESULT_TOO_LARGE` when the response is larger than 8 MiB;
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `FEATURE_UNAVAILABLE` when the MCP, session or graphical backend is unavailable;
+//   - `SESSION_UNAVAILABLE` or `SESSION_CLOSED` when the account context is not ready or closing;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;
 //   - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;

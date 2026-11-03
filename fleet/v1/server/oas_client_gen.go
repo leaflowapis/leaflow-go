@@ -59,8 +59,27 @@ type Invoker interface {
 	// JSON-RPC error, such as for a tool it does not offer or arguments it does not accept, with the
 	// error's `metadata.code` and `metadata.message`.
 	//
+	// Deprecated: schema marks this operation as deprecated.
+	//
 	// POST /api/v1/machines/{machineId}/mcp-servers/{serverName}/tools/{toolName}:call
 	CallMcpTool(ctx context.Context, request *CallMcpToolRequest, params CallMcpToolParams) (*CallMcpToolResponse, error)
+	// CallTool invokes callTool operation.
+	//
+	// Uses the same current permissions, directory account and graphical session as listTools. Listing is
+	// not a precondition: callers may use a previously discovered ToolRef, and this operation never sends
+	// a discovery request or refreshes schemas before executing it. A removed tool or MCP server returns
+	// TOOL_NOT_FOUND, as does a direct builtin computer.* call while virtual desktop capability is
+	// unavailable. Actual permission errors remain permission errors; a missing target window is not a
+	// missing tool. Use listTools only when discovery or refresh is needed, and do not cache or reuse
+	// execution results. Source is explicit: MCP names never select or impersonate builtin tools. The
+	// arguments object is at most 256 KiB. The complete result is at most 8 MiB in the protobuf transport,
+	// with each encoded image at most 4 MiB; images are converted to base64 once at this JSON boundary,
+	// without recompression or persistence. Cancellation is propagated. A timeout, disconnect or failed
+	// response does not prove that side effects did not happen; do not automatically replay. operation_id
+	// only correlates live activity, not idempotency.
+	//
+	// POST /api/v1/machines/{machineId}/tools:call
+	CallTool(ctx context.Context, request *CallToolRequest, params CallToolParams) (*CallToolResponse, error)
 	// CloseSession invokes close-session operation.
 	//
 	// Ends the session in order: its applications are asked to exit and get a grace period before the
@@ -196,11 +215,18 @@ type Invoker interface {
 	// CreateSession invokes create-session operation.
 	//
 	// Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
-	// With `desktop` the session has a desktop. Without, it is a terminal session: its one terminal runs
-	// the caller's login shell from the start, every participant attaches to that terminal, and the
-	// session ends when the shell exits; a caller who wants another terminal opens another session. Either
-	// kind also offers programs, files, ports, sound, devices, printers and privilege approvals. The
-	// account is created if the caller has none yet. Requires `fleet:machines.login` on the machine.
+	// With `desktop` the session has a desktop. Without, Fleet first prepares or reuses the account's
+	// separate ready lightweight graphical session, then creates a terminal session with its own SID and
+	// lifetime; closing that terminal does not close the account context. Its one terminal runs the
+	// caller's login shell from the start, every participant attaches to that terminal, and the session
+	// ends when the shell exits; a caller who wants another terminal opens another session. Either kind
+	// also offers programs, files, ports, sound, devices, printers and privilege approvals. The account is
+	// created if the caller has none yet. Requires `fleet:machines.login` on the machine. All newly
+	// created graphical account sessions, including desktop-first FullDesktop and Seamless sessions, keep
+	// running when no viewer has joined or the last viewer disconnects. Configured maximum lifetime,
+	// resource limits and explicit close/terminate still apply. This create API has no client-selected
+	// idle policy; existing running policies are not silently rewritten when tools, commands or terminals
+	// reuse the account context.
 	//
 	// On a machine an account has at most one session with a desktop and at most 8 sessions in all.
 	// Sessions without a desktop run side by side, such as one for a program and one for a person; several
@@ -209,7 +235,9 @@ type Invoker interface {
 	// Fails with:
 	//
 	//  - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-	//  - `FEATURE_UNAVAILABLE` when the machine does not offer sessions, or with `desktop`, desktops;
+	//  - `FEATURE_UNAVAILABLE` when the machine does not offer sessions or the graphical backend;
+	//  - `SESSION_UNAVAILABLE` or `SESSION_CLOSED` when its shared account context is not ready or
+	//    closing;
 	//  - `USER_HAS_DESKTOP_SESSION` with `desktop` when the account already has a session with a desktop
 	//    on the machine, which `metadata.sessionId` names; connect to it instead;
 	//  - `SESSION_LIMIT_REACHED` when the account already has 8 open sessions on the machine; close one
@@ -495,6 +523,8 @@ type Invoker interface {
 	//  - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
 	//  - `MACHINE_TIMEOUT` when the machine did not answer in time.
 	//
+	// Deprecated: schema marks this operation as deprecated.
+	//
 	// GET /api/v1/machines/{machineId}/mcp-tools
 	ListMcpTools(ctx context.Context, params ListMcpToolsParams) (*McpToolList, error)
 	// ListPrivilegeAutoApprovals invokes list-privilege-auto-approvals operation.
@@ -524,6 +554,30 @@ type Invoker interface {
 	//
 	// GET /api/v1/sessions
 	ListSessions(ctx context.Context, params ListSessionsParams) (*SessionList, error)
+	// ListTools invokes listTools operation.
+	//
+	// Queries Agent's builtin tools and the caller's configured MCP servers live. No directory, result or
+	// image is cached. Requires fleet:machines.login; builtin capabilities retain their native policies
+	// and read-only restrictions. Ensures or reuses the caller's single open graphical session, without
+	// launching a desktop environment. The client instance is a UUID generated once per running client,
+	// not an authorization credential. Each request checks current IAM permissions and signs a short-lived
+	// control-only authorization. Tool arguments, results and images traverse Fleet with hop-by-hop TLS
+	// and are visible to Fleet. Existing desktop streaming remains end-to-end encrypted. TOOL_LIST_CHANGED
+	// means restart listing from the first page, never replay a CallTool. At most 100 tools per page.
+	//
+	// GET /api/v1/machines/{machineId}/tools
+	ListTools(ctx context.Context, params ListToolsParams) (*ToolList, error)
+	// PollToolActivities invokes pollToolActivities operation.
+	//
+	// Checks current session viewing permission for each request and again before returning events.
+	// Subscribes only while this request is pending, returning on the first batch or after at most 20 idle
+	// seconds. At most 64 events, no offline queue, event database, cursor history or replay guarantee.
+	// Missing events never mean repeat an action. Coordinates are window-client-local (window_id=0 means
+	// canvas), not CSS or image pixels. The frontend applies its own zoom and DPI. Compare sequence only
+	// within the same instance_id.
+	//
+	// GET /api/v1/sessions/{sessionId}/tool-activities
+	PollToolActivities(ctx context.Context, params PollToolActivitiesParams) (*ToolActivityList, error)
 	// PrepareParticipantMigration invokes prepare-participant-migration operation.
 	//
 	// Passes the participant's checkpoint for the next epoch to the session and returns the session's
@@ -593,20 +647,24 @@ type Invoker interface {
 	// it exited or was killed, with its exit status and what it wrote. Pipes, redirection and `&&` work;
 	// there is no terminal and no standard input. The machine admits the account through PAM as for a
 	// login. The account is created if the caller has none yet. A command that fails is still a successful
-	// request: its exit status is its result.
+	// request: its exit status is its result. Before starting it, Fleet prepares or reuses the account's
+	// ready lightweight graphical session, without starting a full desktop environment. The command has
+	// its own job scope; its timeout or exit must not close the account's graphical context.
 	//
 	// Inside the command, `sudo` works without a prompt while the caller has `fleet:machines.admin` on the
 	// machine, and refuses otherwise.
 	//
-	// The request is held until the command ends, at most `timeout_seconds` and a few seconds more.
-	// Neither the command nor its output is hidden from the platform: do not put secrets into either.
+	// After graphical context preparation, the request is held until the command ends, at most
+	// `timeout_seconds` and a few seconds more. Neither the command nor its output is hidden from the
+	// platform: do not put secrets into either.
 	//
 	// Requires `fleet:machines.login` on the machine.
 	//
 	// Fails with:
 	//
 	//  - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-	//  - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.command.v1`;
+	//  - `FEATURE_UNAVAILABLE` when the command, session or graphical backend is unavailable;
+	//  - `SESSION_UNAVAILABLE` or `SESSION_CLOSED` when the account context is not ready or closing;
 	//  - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 	//    machine refuses the account, as for opening a session;
 	//  - `COMMAND_START_FAILED` when the shell could not start; nothing ran;
@@ -620,12 +678,14 @@ type Invoker interface {
 	//
 	// Sends one JSON-RPC request of MCP to one of the caller's servers on the machine, such as
 	// `tools/call`, `resources/read` or `prompts/get`, and returns the server's response. The machine
-	// starts or connects to the server if it is not running, and handles its initialization itself; a
-	// request still running when `timeout_seconds` passes is cancelled at the server. Requests the server
-	// makes of the client are answered as by a client that offers no sampling, elicitation or roots, and
-	// its notifications, such as of progress, are dropped. A response with a JSON-RPC error is a
-	// successful request. Neither the request nor the response is hidden from the platform. Requires
-	// `fleet:machines.login` on the machine.
+	// starts or connects to the server if it is not running, and handles its initialization itself. Before
+	// any such request, Fleet prepares or reuses the caller's ready lightweight account graphical session,
+	// including for resources and prompts; no full desktop environment is needed. A request still running
+	// when `timeout_seconds` passes is cancelled at the server. Requests the server makes of the client
+	// are answered as by a client that offers no sampling, elicitation or roots, and its notifications,
+	// such as of progress, are dropped. A response with a JSON-RPC error is a successful request. Neither
+	// the request nor the response is hidden from the platform. Requires `fleet:machines.login` on the
+	// machine.
 	//
 	// Fails with:
 	//
@@ -636,7 +696,8 @@ type Invoker interface {
 	//    of initialization;
 	//  - `RESULT_TOO_LARGE` when the response is larger than 8 MiB;
 	//  - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-	//  - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+	//  - `FEATURE_UNAVAILABLE` when the MCP, session or graphical backend is unavailable;
+	//  - `SESSION_UNAVAILABLE` or `SESSION_CLOSED` when the account context is not ready or closing;
 	//  - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 	//    machine refuses the account, as for opening a session;
 	//  - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
@@ -1050,6 +1111,8 @@ func (c *Client) sendApprovePrivilegeRequest(ctx context.Context, params Approve
 // JSON-RPC error, such as for a tool it does not offer or arguments it does not accept, with the
 // error's `metadata.code` and `metadata.message`.
 //
+// Deprecated: schema marks this operation as deprecated.
+//
 // POST /api/v1/machines/{machineId}/mcp-servers/{serverName}/tools/{toolName}:call
 func (c *Client) CallMcpTool(ctx context.Context, request *CallMcpToolRequest, params CallMcpToolParams) (*CallMcpToolResponse, error) {
 	res, err := c.sendCallMcpTool(ctx, request, params)
@@ -1221,6 +1284,161 @@ func (c *Client) sendCallMcpTool(ctx context.Context, request *CallMcpToolReques
 
 	stage = "DecodeResponse"
 	result, err := decodeCallMcpToolResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CallTool invokes callTool operation.
+//
+// Uses the same current permissions, directory account and graphical session as listTools. Listing is
+// not a precondition: callers may use a previously discovered ToolRef, and this operation never sends
+// a discovery request or refreshes schemas before executing it. A removed tool or MCP server returns
+// TOOL_NOT_FOUND, as does a direct builtin computer.* call while virtual desktop capability is
+// unavailable. Actual permission errors remain permission errors; a missing target window is not a
+// missing tool. Use listTools only when discovery or refresh is needed, and do not cache or reuse
+// execution results. Source is explicit: MCP names never select or impersonate builtin tools. The
+// arguments object is at most 256 KiB. The complete result is at most 8 MiB in the protobuf transport,
+// with each encoded image at most 4 MiB; images are converted to base64 once at this JSON boundary,
+// without recompression or persistence. Cancellation is propagated. A timeout, disconnect or failed
+// response does not prove that side effects did not happen; do not automatically replay. operation_id
+// only correlates live activity, not idempotency.
+//
+// POST /api/v1/machines/{machineId}/tools:call
+func (c *Client) CallTool(ctx context.Context, request *CallToolRequest, params CallToolParams) (*CallToolResponse, error) {
+	res, err := c.sendCallTool(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCallTool(ctx context.Context, request *CallToolRequest, params CallToolParams) (res *CallToolResponse, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("callTool"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/tools:call"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CallToolOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/machines/"
+	{
+		// Encode "machineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "machineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/tools:call"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCallToolRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CallToolOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCallToolResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2484,11 +2702,18 @@ func (c *Client) sendCreatePeerConnectionCandidates(ctx context.Context, request
 // CreateSession invokes create-session operation.
 //
 // Opens a session for the caller on a machine, as the caller's account, and returns once it is ready.
-// With `desktop` the session has a desktop. Without, it is a terminal session: its one terminal runs
-// the caller's login shell from the start, every participant attaches to that terminal, and the
-// session ends when the shell exits; a caller who wants another terminal opens another session. Either
-// kind also offers programs, files, ports, sound, devices, printers and privilege approvals. The
-// account is created if the caller has none yet. Requires `fleet:machines.login` on the machine.
+// With `desktop` the session has a desktop. Without, Fleet first prepares or reuses the account's
+// separate ready lightweight graphical session, then creates a terminal session with its own SID and
+// lifetime; closing that terminal does not close the account context. Its one terminal runs the
+// caller's login shell from the start, every participant attaches to that terminal, and the session
+// ends when the shell exits; a caller who wants another terminal opens another session. Either kind
+// also offers programs, files, ports, sound, devices, printers and privilege approvals. The account is
+// created if the caller has none yet. Requires `fleet:machines.login` on the machine. All newly
+// created graphical account sessions, including desktop-first FullDesktop and Seamless sessions, keep
+// running when no viewer has joined or the last viewer disconnects. Configured maximum lifetime,
+// resource limits and explicit close/terminate still apply. This create API has no client-selected
+// idle policy; existing running policies are not silently rewritten when tools, commands or terminals
+// reuse the account context.
 //
 // On a machine an account has at most one session with a desktop and at most 8 sessions in all.
 // Sessions without a desktop run side by side, such as one for a program and one for a person; several
@@ -2497,7 +2722,9 @@ func (c *Client) sendCreatePeerConnectionCandidates(ctx context.Context, request
 // Fails with:
 //
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer sessions, or with `desktop`, desktops;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer sessions or the graphical backend;
+//   - `SESSION_UNAVAILABLE` or `SESSION_CLOSED` when its shared account context is not ready or
+//     closing;
 //   - `USER_HAS_DESKTOP_SESSION` with `desktop` when the account already has a session with a desktop
 //     on the machine, which `metadata.sessionId` names; connect to it instead;
 //   - `SESSION_LIMIT_REACHED` when the account already has 8 open sessions on the machine; close one
@@ -6847,6 +7074,8 @@ func (c *Client) sendListMachines(ctx context.Context, params ListMachinesParams
 //   - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
 //   - `MACHINE_TIMEOUT` when the machine did not answer in time.
 //
+// Deprecated: schema marks this operation as deprecated.
+//
 // GET /api/v1/machines/{machineId}/mcp-tools
 func (c *Client) ListMcpTools(ctx context.Context, params ListMcpToolsParams) (*McpToolList, error) {
 	res, err := c.sendListMcpTools(ctx, params)
@@ -7720,6 +7949,402 @@ func (c *Client) sendListSessions(ctx context.Context, params ListSessionsParams
 	return result, nil
 }
 
+// ListTools invokes listTools operation.
+//
+// Queries Agent's builtin tools and the caller's configured MCP servers live. No directory, result or
+// image is cached. Requires fleet:machines.login; builtin capabilities retain their native policies
+// and read-only restrictions. Ensures or reuses the caller's single open graphical session, without
+// launching a desktop environment. The client instance is a UUID generated once per running client,
+// not an authorization credential. Each request checks current IAM permissions and signs a short-lived
+// control-only authorization. Tool arguments, results and images traverse Fleet with hop-by-hop TLS
+// and are visible to Fleet. Existing desktop streaming remains end-to-end encrypted. TOOL_LIST_CHANGED
+// means restart listing from the first page, never replay a CallTool. At most 100 tools per page.
+//
+// GET /api/v1/machines/{machineId}/tools
+func (c *Client) ListTools(ctx context.Context, params ListToolsParams) (*ToolList, error) {
+	res, err := c.sendListTools(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListTools(ctx context.Context, params ListToolsParams) (res *ToolList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("listTools"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/tools"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListToolsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/machines/"
+	{
+		// Encode "machineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "machineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/tools"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "client_instance_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "client_instance_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.UUIDToString(params.ClientInstanceID))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "source" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "source",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Source.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "mcp_server" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "mcp_server",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.McpServer.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "query" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "query",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Query.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "read_only" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "read_only",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ReadOnly.Get(); ok {
+				return e.EncodeValue(conv.BoolToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_token" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_token",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageToken.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListToolsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListToolsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// PollToolActivities invokes pollToolActivities operation.
+//
+// Checks current session viewing permission for each request and again before returning events.
+// Subscribes only while this request is pending, returning on the first batch or after at most 20 idle
+// seconds. At most 64 events, no offline queue, event database, cursor history or replay guarantee.
+// Missing events never mean repeat an action. Coordinates are window-client-local (window_id=0 means
+// canvas), not CSS or image pixels. The frontend applies its own zoom and DPI. Compare sequence only
+// within the same instance_id.
+//
+// GET /api/v1/sessions/{sessionId}/tool-activities
+func (c *Client) PollToolActivities(ctx context.Context, params PollToolActivitiesParams) (*ToolActivityList, error) {
+	res, err := c.sendPollToolActivities(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendPollToolActivities(ctx context.Context, params PollToolActivitiesParams) (res *ToolActivityList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("pollToolActivities"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/tool-activities"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, PollToolActivitiesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/sessions/"
+	{
+		// Encode "sessionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "sessionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.SessionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/tool-activities"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, PollToolActivitiesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodePollToolActivitiesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // PrepareParticipantMigration invokes prepare-participant-migration operation.
 //
 // Passes the participant's checkpoint for the next epoch to the session and returns the session's
@@ -8241,20 +8866,24 @@ func (c *Client) sendReplaceMcpConfiguration(ctx context.Context, request *Repla
 // it exited or was killed, with its exit status and what it wrote. Pipes, redirection and `&&` work;
 // there is no terminal and no standard input. The machine admits the account through PAM as for a
 // login. The account is created if the caller has none yet. A command that fails is still a successful
-// request: its exit status is its result.
+// request: its exit status is its result. Before starting it, Fleet prepares or reuses the account's
+// ready lightweight graphical session, without starting a full desktop environment. The command has
+// its own job scope; its timeout or exit must not close the account's graphical context.
 //
 // Inside the command, `sudo` works without a prompt while the caller has `fleet:machines.admin` on the
 // machine, and refuses otherwise.
 //
-// The request is held until the command ends, at most `timeout_seconds` and a few seconds more.
-// Neither the command nor its output is hidden from the platform: do not put secrets into either.
+// After graphical context preparation, the request is held until the command ends, at most
+// `timeout_seconds` and a few seconds more. Neither the command nor its output is hidden from the
+// platform: do not put secrets into either.
 //
 // Requires `fleet:machines.login` on the machine.
 //
 // Fails with:
 //
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.command.v1`;
+//   - `FEATURE_UNAVAILABLE` when the command, session or graphical backend is unavailable;
+//   - `SESSION_UNAVAILABLE` or `SESSION_CLOSED` when the account context is not ready or closing;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;
 //   - `COMMAND_START_FAILED` when the shell could not start; nothing ran;
@@ -8406,12 +9035,14 @@ func (c *Client) sendRunMachineCommand(ctx context.Context, request *RunCommandR
 //
 // Sends one JSON-RPC request of MCP to one of the caller's servers on the machine, such as
 // `tools/call`, `resources/read` or `prompts/get`, and returns the server's response. The machine
-// starts or connects to the server if it is not running, and handles its initialization itself; a
-// request still running when `timeout_seconds` passes is cancelled at the server. Requests the server
-// makes of the client are answered as by a client that offers no sampling, elicitation or roots, and
-// its notifications, such as of progress, are dropped. A response with a JSON-RPC error is a
-// successful request. Neither the request nor the response is hidden from the platform. Requires
-// `fleet:machines.login` on the machine.
+// starts or connects to the server if it is not running, and handles its initialization itself. Before
+// any such request, Fleet prepares or reuses the caller's ready lightweight account graphical session,
+// including for resources and prompts; no full desktop environment is needed. A request still running
+// when `timeout_seconds` passes is cancelled at the server. Requests the server makes of the client
+// are answered as by a client that offers no sampling, elicitation or roots, and its notifications,
+// such as of progress, are dropped. A response with a JSON-RPC error is a successful request. Neither
+// the request nor the response is hidden from the platform. Requires `fleet:machines.login` on the
+// machine.
 //
 // Fails with:
 //
@@ -8422,7 +9053,8 @@ func (c *Client) sendRunMachineCommand(ctx context.Context, request *RunCommandR
 //     of initialization;
 //   - `RESULT_TOO_LARGE` when the response is larger than 8 MiB;
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `FEATURE_UNAVAILABLE` when the MCP, session or graphical backend is unavailable;
+//   - `SESSION_UNAVAILABLE` or `SESSION_CLOSED` when the account context is not ready or closing;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;
 //   - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;

@@ -302,6 +302,172 @@ func (s *CallMcpToolResponseResult) init() CallMcpToolResponseResult {
 	return m
 }
 
+// Ref: #/components/schemas/CallToolRequest
+type CallToolRequest struct {
+	ClientInstanceID uuid.UUID `json:"client_instance_id"`
+	Tool             ToolRef   `json:"tool"`
+	// A JSON object, at most 256 KiB when encoded.
+	Arguments      CallToolRequestArguments `json:"arguments"`
+	ReadOnly       OptBool                  `json:"read_only"`
+	TimeoutSeconds OptInt64                 `json:"timeout_seconds"`
+}
+
+// GetClientInstanceID returns the value of ClientInstanceID.
+func (s *CallToolRequest) GetClientInstanceID() uuid.UUID {
+	return s.ClientInstanceID
+}
+
+// GetTool returns the value of Tool.
+func (s *CallToolRequest) GetTool() ToolRef {
+	return s.Tool
+}
+
+// GetArguments returns the value of Arguments.
+func (s *CallToolRequest) GetArguments() CallToolRequestArguments {
+	return s.Arguments
+}
+
+// GetReadOnly returns the value of ReadOnly.
+func (s *CallToolRequest) GetReadOnly() OptBool {
+	return s.ReadOnly
+}
+
+// GetTimeoutSeconds returns the value of TimeoutSeconds.
+func (s *CallToolRequest) GetTimeoutSeconds() OptInt64 {
+	return s.TimeoutSeconds
+}
+
+// SetClientInstanceID sets the value of ClientInstanceID.
+func (s *CallToolRequest) SetClientInstanceID(val uuid.UUID) {
+	s.ClientInstanceID = val
+}
+
+// SetTool sets the value of Tool.
+func (s *CallToolRequest) SetTool(val ToolRef) {
+	s.Tool = val
+}
+
+// SetArguments sets the value of Arguments.
+func (s *CallToolRequest) SetArguments(val CallToolRequestArguments) {
+	s.Arguments = val
+}
+
+// SetReadOnly sets the value of ReadOnly.
+func (s *CallToolRequest) SetReadOnly(val OptBool) {
+	s.ReadOnly = val
+}
+
+// SetTimeoutSeconds sets the value of TimeoutSeconds.
+func (s *CallToolRequest) SetTimeoutSeconds(val OptInt64) {
+	s.TimeoutSeconds = val
+}
+
+// A JSON object, at most 256 KiB when encoded.
+type CallToolRequestArguments map[string]jx.Raw
+
+func (s *CallToolRequestArguments) init() CallToolRequestArguments {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/CallToolResponse
+type CallToolResponse struct {
+	SessionID         string                               `json:"session_id"`
+	OperationID       string                               `json:"operation_id"`
+	Content           []ToolContent                        `json:"content"`
+	StructuredContent OptCallToolResponseStructuredContent `json:"structured_content"`
+	// Untrusted result extensions such as MCP _meta, without duplicated content or images.
+	Metadata OptCallToolResponseMetadata `json:"metadata"`
+	IsError  bool                        `json:"is_error"`
+}
+
+// GetSessionID returns the value of SessionID.
+func (s *CallToolResponse) GetSessionID() string {
+	return s.SessionID
+}
+
+// GetOperationID returns the value of OperationID.
+func (s *CallToolResponse) GetOperationID() string {
+	return s.OperationID
+}
+
+// GetContent returns the value of Content.
+func (s *CallToolResponse) GetContent() []ToolContent {
+	return s.Content
+}
+
+// GetStructuredContent returns the value of StructuredContent.
+func (s *CallToolResponse) GetStructuredContent() OptCallToolResponseStructuredContent {
+	return s.StructuredContent
+}
+
+// GetMetadata returns the value of Metadata.
+func (s *CallToolResponse) GetMetadata() OptCallToolResponseMetadata {
+	return s.Metadata
+}
+
+// GetIsError returns the value of IsError.
+func (s *CallToolResponse) GetIsError() bool {
+	return s.IsError
+}
+
+// SetSessionID sets the value of SessionID.
+func (s *CallToolResponse) SetSessionID(val string) {
+	s.SessionID = val
+}
+
+// SetOperationID sets the value of OperationID.
+func (s *CallToolResponse) SetOperationID(val string) {
+	s.OperationID = val
+}
+
+// SetContent sets the value of Content.
+func (s *CallToolResponse) SetContent(val []ToolContent) {
+	s.Content = val
+}
+
+// SetStructuredContent sets the value of StructuredContent.
+func (s *CallToolResponse) SetStructuredContent(val OptCallToolResponseStructuredContent) {
+	s.StructuredContent = val
+}
+
+// SetMetadata sets the value of Metadata.
+func (s *CallToolResponse) SetMetadata(val OptCallToolResponseMetadata) {
+	s.Metadata = val
+}
+
+// SetIsError sets the value of IsError.
+func (s *CallToolResponse) SetIsError(val bool) {
+	s.IsError = val
+}
+
+// Untrusted result extensions such as MCP _meta, without duplicated content or images.
+type CallToolResponseMetadata map[string]jx.Raw
+
+func (s *CallToolResponseMetadata) init() CallToolResponseMetadata {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+type CallToolResponseStructuredContent map[string]jx.Raw
+
+func (s *CallToolResponseStructuredContent) init() CallToolResponseStructuredContent {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
 // Ref: #/components/schemas/CreateGroupMemberRequest
 type CreateGroupMemberRequest struct {
 	AccountID uuid.UUID `json:"account_id"`
@@ -1409,6 +1575,54 @@ func (s *IceServer) SetUsername(val OptString) {
 // SetCredential sets the value of Credential.
 func (s *IceServer) SetCredential(val OptString) {
 	s.Credential = val
+}
+
+type ListToolsSource string
+
+const (
+	ListToolsSourceAll     ListToolsSource = "all"
+	ListToolsSourceBuiltin ListToolsSource = "builtin"
+	ListToolsSourceMcp     ListToolsSource = "mcp"
+)
+
+// AllValues returns all ListToolsSource values.
+func (ListToolsSource) AllValues() []ListToolsSource {
+	return []ListToolsSource{
+		ListToolsSourceAll,
+		ListToolsSourceBuiltin,
+		ListToolsSourceMcp,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ListToolsSource) MarshalText() ([]byte, error) {
+	switch s {
+	case ListToolsSourceAll:
+		return []byte(s), nil
+	case ListToolsSourceBuiltin:
+		return []byte(s), nil
+	case ListToolsSourceMcp:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ListToolsSource) UnmarshalText(data []byte) error {
+	switch ListToolsSource(data) {
+	case ListToolsSourceAll:
+		*s = ListToolsSourceAll
+		return nil
+	case ListToolsSourceBuiltin:
+		*s = ListToolsSourceBuiltin
+		return nil
+	case ListToolsSourceMcp:
+		*s = ListToolsSourceMcp
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/MachineEventList
@@ -3535,6 +3749,98 @@ func (o OptCallMcpToolRequestArguments) Or(d CallMcpToolRequestArguments) CallMc
 	return d
 }
 
+// NewOptCallToolResponseMetadata returns new OptCallToolResponseMetadata with value set to v.
+func NewOptCallToolResponseMetadata(v CallToolResponseMetadata) OptCallToolResponseMetadata {
+	return OptCallToolResponseMetadata{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCallToolResponseMetadata is optional CallToolResponseMetadata.
+type OptCallToolResponseMetadata struct {
+	Value CallToolResponseMetadata
+	Set   bool
+}
+
+// IsSet returns true if OptCallToolResponseMetadata was set.
+func (o OptCallToolResponseMetadata) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCallToolResponseMetadata) Reset() {
+	var v CallToolResponseMetadata
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCallToolResponseMetadata) SetTo(v CallToolResponseMetadata) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCallToolResponseMetadata) Get() (v CallToolResponseMetadata, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCallToolResponseMetadata) Or(d CallToolResponseMetadata) CallToolResponseMetadata {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptCallToolResponseStructuredContent returns new OptCallToolResponseStructuredContent with value set to v.
+func NewOptCallToolResponseStructuredContent(v CallToolResponseStructuredContent) OptCallToolResponseStructuredContent {
+	return OptCallToolResponseStructuredContent{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCallToolResponseStructuredContent is optional CallToolResponseStructuredContent.
+type OptCallToolResponseStructuredContent struct {
+	Value CallToolResponseStructuredContent
+	Set   bool
+}
+
+// IsSet returns true if OptCallToolResponseStructuredContent was set.
+func (o OptCallToolResponseStructuredContent) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCallToolResponseStructuredContent) Reset() {
+	var v CallToolResponseStructuredContent
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCallToolResponseStructuredContent) SetTo(v CallToolResponseStructuredContent) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCallToolResponseStructuredContent) Get() (v CallToolResponseStructuredContent, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCallToolResponseStructuredContent) Or(d CallToolResponseStructuredContent) CallToolResponseStructuredContent {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptDenyPrivilegeRequestRequest returns new OptDenyPrivilegeRequestRequest with value set to v.
 func NewOptDenyPrivilegeRequestRequest(v DenyPrivilegeRequestRequest) OptDenyPrivilegeRequestRequest {
 	return OptDenyPrivilegeRequestRequest{
@@ -3857,6 +4163,52 @@ func (o OptInt64) Or(d int64) int64 {
 	return d
 }
 
+// NewOptListToolsSource returns new OptListToolsSource with value set to v.
+func NewOptListToolsSource(v ListToolsSource) OptListToolsSource {
+	return OptListToolsSource{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptListToolsSource is optional ListToolsSource.
+type OptListToolsSource struct {
+	Value ListToolsSource
+	Set   bool
+}
+
+// IsSet returns true if OptListToolsSource was set.
+func (o OptListToolsSource) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptListToolsSource) Reset() {
+	var v ListToolsSource
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptListToolsSource) SetTo(v ListToolsSource) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptListToolsSource) Get() (v ListToolsSource, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptListToolsSource) Or(d ListToolsSource) ListToolsSource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptMachineEventType returns new OptMachineEventType with value set to v.
 func NewOptMachineEventType(v MachineEventType) OptMachineEventType {
 	return OptMachineEventType{
@@ -4149,6 +4501,282 @@ func (o OptString) Get() (v string, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptToolContentJSON returns new OptToolContentJSON with value set to v.
+func NewOptToolContentJSON(v ToolContentJSON) OptToolContentJSON {
+	return OptToolContentJSON{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptToolContentJSON is optional ToolContentJSON.
+type OptToolContentJSON struct {
+	Value ToolContentJSON
+	Set   bool
+}
+
+// IsSet returns true if OptToolContentJSON was set.
+func (o OptToolContentJSON) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptToolContentJSON) Reset() {
+	var v ToolContentJSON
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptToolContentJSON) SetTo(v ToolContentJSON) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptToolContentJSON) Get() (v ToolContentJSON, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptToolContentJSON) Or(d ToolContentJSON) ToolContentJSON {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptToolContentMetadata returns new OptToolContentMetadata with value set to v.
+func NewOptToolContentMetadata(v ToolContentMetadata) OptToolContentMetadata {
+	return OptToolContentMetadata{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptToolContentMetadata is optional ToolContentMetadata.
+type OptToolContentMetadata struct {
+	Value ToolContentMetadata
+	Set   bool
+}
+
+// IsSet returns true if OptToolContentMetadata was set.
+func (o OptToolContentMetadata) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptToolContentMetadata) Reset() {
+	var v ToolContentMetadata
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptToolContentMetadata) SetTo(v ToolContentMetadata) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptToolContentMetadata) Get() (v ToolContentMetadata, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptToolContentMetadata) Or(d ToolContentMetadata) ToolContentMetadata {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptToolDescriptorMetadata returns new OptToolDescriptorMetadata with value set to v.
+func NewOptToolDescriptorMetadata(v ToolDescriptorMetadata) OptToolDescriptorMetadata {
+	return OptToolDescriptorMetadata{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptToolDescriptorMetadata is optional ToolDescriptorMetadata.
+type OptToolDescriptorMetadata struct {
+	Value ToolDescriptorMetadata
+	Set   bool
+}
+
+// IsSet returns true if OptToolDescriptorMetadata was set.
+func (o OptToolDescriptorMetadata) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptToolDescriptorMetadata) Reset() {
+	var v ToolDescriptorMetadata
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptToolDescriptorMetadata) SetTo(v ToolDescriptorMetadata) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptToolDescriptorMetadata) Get() (v ToolDescriptorMetadata, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptToolDescriptorMetadata) Or(d ToolDescriptorMetadata) ToolDescriptorMetadata {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptToolDescriptorOutputSchema returns new OptToolDescriptorOutputSchema with value set to v.
+func NewOptToolDescriptorOutputSchema(v ToolDescriptorOutputSchema) OptToolDescriptorOutputSchema {
+	return OptToolDescriptorOutputSchema{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptToolDescriptorOutputSchema is optional ToolDescriptorOutputSchema.
+type OptToolDescriptorOutputSchema struct {
+	Value ToolDescriptorOutputSchema
+	Set   bool
+}
+
+// IsSet returns true if OptToolDescriptorOutputSchema was set.
+func (o OptToolDescriptorOutputSchema) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptToolDescriptorOutputSchema) Reset() {
+	var v ToolDescriptorOutputSchema
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptToolDescriptorOutputSchema) SetTo(v ToolDescriptorOutputSchema) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptToolDescriptorOutputSchema) Get() (v ToolDescriptorOutputSchema, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptToolDescriptorOutputSchema) Or(d ToolDescriptorOutputSchema) ToolDescriptorOutputSchema {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptToolImage returns new OptToolImage with value set to v.
+func NewOptToolImage(v ToolImage) OptToolImage {
+	return OptToolImage{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptToolImage is optional ToolImage.
+type OptToolImage struct {
+	Value ToolImage
+	Set   bool
+}
+
+// IsSet returns true if OptToolImage was set.
+func (o OptToolImage) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptToolImage) Reset() {
+	var v ToolImage
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptToolImage) SetTo(v ToolImage) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptToolImage) Get() (v ToolImage, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptToolImage) Or(d ToolImage) ToolImage {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptToolImageScreenshot returns new OptToolImageScreenshot with value set to v.
+func NewOptToolImageScreenshot(v ToolImageScreenshot) OptToolImageScreenshot {
+	return OptToolImageScreenshot{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptToolImageScreenshot is optional ToolImageScreenshot.
+type OptToolImageScreenshot struct {
+	Value ToolImageScreenshot
+	Set   bool
+}
+
+// IsSet returns true if OptToolImageScreenshot was set.
+func (o OptToolImageScreenshot) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptToolImageScreenshot) Reset() {
+	var v ToolImageScreenshot
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptToolImageScreenshot) SetTo(v ToolImageScreenshot) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptToolImageScreenshot) Get() (v ToolImageScreenshot, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptToolImageScreenshot) Or(d ToolImageScreenshot) ToolImageScreenshot {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -5818,6 +6446,569 @@ func (s *SigningKey) SetKeyID(val string) {
 // SetPublicKey sets the value of PublicKey.
 func (s *SigningKey) SetPublicKey(val PublicKey) {
 	s.PublicKey = val
+}
+
+// Ref: #/components/schemas/ToolActivityList
+type ToolActivityList struct {
+	Items []ToolActivityListItemsItem `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *ToolActivityList) GetItems() []ToolActivityListItemsItem {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *ToolActivityList) SetItems(val []ToolActivityListItemsItem) {
+	s.Items = val
+}
+
+// ToolActivity in protobuf JSON with original field names. Includes session_id, participant_id,
+// operation_id, instance_id, sequence, observed_at, phase, action and optional target (window_id,
+// position x/y, resize_counter, shape_counter). All uint64 values are decimal strings. No input text,
+// key values, arguments or image data.
+type ToolActivityListItemsItem map[string]jx.Raw
+
+func (s *ToolActivityListItemsItem) init() ToolActivityListItemsItem {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// Exactly one of text, image or json is present.
+// Ref: #/components/schemas/ToolContent
+type ToolContent struct {
+	// Untrusted content extensions such as MCP annotations or _meta, without duplicated body or image data.
+	Metadata OptToolContentMetadata `json:"metadata"`
+	Text     OptString              `json:"text"`
+	Image    OptToolImage           `json:"image"`
+	// An unrecognized external content block, preserved as data.
+	JSON OptToolContentJSON `json:"json"`
+}
+
+// GetMetadata returns the value of Metadata.
+func (s *ToolContent) GetMetadata() OptToolContentMetadata {
+	return s.Metadata
+}
+
+// GetText returns the value of Text.
+func (s *ToolContent) GetText() OptString {
+	return s.Text
+}
+
+// GetImage returns the value of Image.
+func (s *ToolContent) GetImage() OptToolImage {
+	return s.Image
+}
+
+// GetJSON returns the value of JSON.
+func (s *ToolContent) GetJSON() OptToolContentJSON {
+	return s.JSON
+}
+
+// SetMetadata sets the value of Metadata.
+func (s *ToolContent) SetMetadata(val OptToolContentMetadata) {
+	s.Metadata = val
+}
+
+// SetText sets the value of Text.
+func (s *ToolContent) SetText(val OptString) {
+	s.Text = val
+}
+
+// SetImage sets the value of Image.
+func (s *ToolContent) SetImage(val OptToolImage) {
+	s.Image = val
+}
+
+// SetJSON sets the value of JSON.
+func (s *ToolContent) SetJSON(val OptToolContentJSON) {
+	s.JSON = val
+}
+
+// An unrecognized external content block, preserved as data.
+type ToolContentJSON map[string]jx.Raw
+
+func (s *ToolContentJSON) init() ToolContentJSON {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// Untrusted content extensions such as MCP annotations or _meta, without duplicated body or image data.
+type ToolContentMetadata map[string]jx.Raw
+
+func (s *ToolContentMetadata) init() ToolContentMetadata {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/ToolDescriptor
+type ToolDescriptor struct {
+	Tool         ToolRef                       `json:"tool"`
+	Name         string                        `json:"name"`
+	Title        string                        `json:"title"`
+	Description  string                        `json:"description"`
+	InputSchema  ToolDescriptorInputSchema     `json:"input_schema"`
+	OutputSchema OptToolDescriptorOutputSchema `json:"output_schema"`
+	// Untrusted display metadata; never grants authorization.
+	Metadata OptToolDescriptorMetadata `json:"metadata"`
+}
+
+// GetTool returns the value of Tool.
+func (s *ToolDescriptor) GetTool() ToolRef {
+	return s.Tool
+}
+
+// GetName returns the value of Name.
+func (s *ToolDescriptor) GetName() string {
+	return s.Name
+}
+
+// GetTitle returns the value of Title.
+func (s *ToolDescriptor) GetTitle() string {
+	return s.Title
+}
+
+// GetDescription returns the value of Description.
+func (s *ToolDescriptor) GetDescription() string {
+	return s.Description
+}
+
+// GetInputSchema returns the value of InputSchema.
+func (s *ToolDescriptor) GetInputSchema() ToolDescriptorInputSchema {
+	return s.InputSchema
+}
+
+// GetOutputSchema returns the value of OutputSchema.
+func (s *ToolDescriptor) GetOutputSchema() OptToolDescriptorOutputSchema {
+	return s.OutputSchema
+}
+
+// GetMetadata returns the value of Metadata.
+func (s *ToolDescriptor) GetMetadata() OptToolDescriptorMetadata {
+	return s.Metadata
+}
+
+// SetTool sets the value of Tool.
+func (s *ToolDescriptor) SetTool(val ToolRef) {
+	s.Tool = val
+}
+
+// SetName sets the value of Name.
+func (s *ToolDescriptor) SetName(val string) {
+	s.Name = val
+}
+
+// SetTitle sets the value of Title.
+func (s *ToolDescriptor) SetTitle(val string) {
+	s.Title = val
+}
+
+// SetDescription sets the value of Description.
+func (s *ToolDescriptor) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetInputSchema sets the value of InputSchema.
+func (s *ToolDescriptor) SetInputSchema(val ToolDescriptorInputSchema) {
+	s.InputSchema = val
+}
+
+// SetOutputSchema sets the value of OutputSchema.
+func (s *ToolDescriptor) SetOutputSchema(val OptToolDescriptorOutputSchema) {
+	s.OutputSchema = val
+}
+
+// SetMetadata sets the value of Metadata.
+func (s *ToolDescriptor) SetMetadata(val OptToolDescriptorMetadata) {
+	s.Metadata = val
+}
+
+type ToolDescriptorInputSchema map[string]jx.Raw
+
+func (s *ToolDescriptorInputSchema) init() ToolDescriptorInputSchema {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// Untrusted display metadata; never grants authorization.
+type ToolDescriptorMetadata map[string]jx.Raw
+
+func (s *ToolDescriptorMetadata) init() ToolDescriptorMetadata {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+type ToolDescriptorOutputSchema map[string]jx.Raw
+
+func (s *ToolDescriptorOutputSchema) init() ToolDescriptorOutputSchema {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/ToolImage
+type ToolImage struct {
+	// Base64 of Agent's original encoded image bytes, never a URL.
+	Data     string            `json:"data"`
+	MimeType ToolImageMimeType `json:"mime_type"`
+	Width    int64             `json:"width"`
+	Height   int64             `json:"height"`
+	// ScreenshotContext in protobuf JSON with original field names: reference, window_id, area, windows
+	// (including resize_counter and shape_counter), captured_at, revision, quiet. uint64 values are
+	// decimal strings to preserve precision. Images do not change this original geometry. The opaque
+	// reference binds coordinate actions to this capture.
+	Screenshot OptToolImageScreenshot `json:"screenshot"`
+}
+
+// GetData returns the value of Data.
+func (s *ToolImage) GetData() string {
+	return s.Data
+}
+
+// GetMimeType returns the value of MimeType.
+func (s *ToolImage) GetMimeType() ToolImageMimeType {
+	return s.MimeType
+}
+
+// GetWidth returns the value of Width.
+func (s *ToolImage) GetWidth() int64 {
+	return s.Width
+}
+
+// GetHeight returns the value of Height.
+func (s *ToolImage) GetHeight() int64 {
+	return s.Height
+}
+
+// GetScreenshot returns the value of Screenshot.
+func (s *ToolImage) GetScreenshot() OptToolImageScreenshot {
+	return s.Screenshot
+}
+
+// SetData sets the value of Data.
+func (s *ToolImage) SetData(val string) {
+	s.Data = val
+}
+
+// SetMimeType sets the value of MimeType.
+func (s *ToolImage) SetMimeType(val ToolImageMimeType) {
+	s.MimeType = val
+}
+
+// SetWidth sets the value of Width.
+func (s *ToolImage) SetWidth(val int64) {
+	s.Width = val
+}
+
+// SetHeight sets the value of Height.
+func (s *ToolImage) SetHeight(val int64) {
+	s.Height = val
+}
+
+// SetScreenshot sets the value of Screenshot.
+func (s *ToolImage) SetScreenshot(val OptToolImageScreenshot) {
+	s.Screenshot = val
+}
+
+type ToolImageMimeType string
+
+const (
+	ToolImageMimeTypeImagePNG  ToolImageMimeType = "image/png"
+	ToolImageMimeTypeImageJpeg ToolImageMimeType = "image/jpeg"
+	ToolImageMimeTypeImageWEBP ToolImageMimeType = "image/webp"
+)
+
+// AllValues returns all ToolImageMimeType values.
+func (ToolImageMimeType) AllValues() []ToolImageMimeType {
+	return []ToolImageMimeType{
+		ToolImageMimeTypeImagePNG,
+		ToolImageMimeTypeImageJpeg,
+		ToolImageMimeTypeImageWEBP,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ToolImageMimeType) MarshalText() ([]byte, error) {
+	switch s {
+	case ToolImageMimeTypeImagePNG:
+		return []byte(s), nil
+	case ToolImageMimeTypeImageJpeg:
+		return []byte(s), nil
+	case ToolImageMimeTypeImageWEBP:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ToolImageMimeType) UnmarshalText(data []byte) error {
+	switch ToolImageMimeType(data) {
+	case ToolImageMimeTypeImagePNG:
+		*s = ToolImageMimeTypeImagePNG
+		return nil
+	case ToolImageMimeTypeImageJpeg:
+		*s = ToolImageMimeTypeImageJpeg
+		return nil
+	case ToolImageMimeTypeImageWEBP:
+		*s = ToolImageMimeTypeImageWEBP
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// ScreenshotContext in protobuf JSON with original field names: reference, window_id, area, windows
+// (including resize_counter and shape_counter), captured_at, revision, quiet. uint64 values are
+// decimal strings to preserve precision. Images do not change this original geometry. The opaque
+// reference binds coordinate actions to this capture.
+type ToolImageScreenshot map[string]jx.Raw
+
+func (s *ToolImageScreenshot) init() ToolImageScreenshot {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/ToolList
+type ToolList struct {
+	SessionID          string                           `json:"session_id"`
+	Items              []ToolDescriptor                 `json:"items"`
+	NextPageToken      string                           `json:"next_page_token"`
+	UnavailableSources []ToolListUnavailableSourcesItem `json:"unavailable_sources"`
+}
+
+// GetSessionID returns the value of SessionID.
+func (s *ToolList) GetSessionID() string {
+	return s.SessionID
+}
+
+// GetItems returns the value of Items.
+func (s *ToolList) GetItems() []ToolDescriptor {
+	return s.Items
+}
+
+// GetNextPageToken returns the value of NextPageToken.
+func (s *ToolList) GetNextPageToken() string {
+	return s.NextPageToken
+}
+
+// GetUnavailableSources returns the value of UnavailableSources.
+func (s *ToolList) GetUnavailableSources() []ToolListUnavailableSourcesItem {
+	return s.UnavailableSources
+}
+
+// SetSessionID sets the value of SessionID.
+func (s *ToolList) SetSessionID(val string) {
+	s.SessionID = val
+}
+
+// SetItems sets the value of Items.
+func (s *ToolList) SetItems(val []ToolDescriptor) {
+	s.Items = val
+}
+
+// SetNextPageToken sets the value of NextPageToken.
+func (s *ToolList) SetNextPageToken(val string) {
+	s.NextPageToken = val
+}
+
+// SetUnavailableSources sets the value of UnavailableSources.
+func (s *ToolList) SetUnavailableSources(val []ToolListUnavailableSourcesItem) {
+	s.UnavailableSources = val
+}
+
+type ToolListUnavailableSourcesItem struct {
+	Source    ToolListUnavailableSourcesItemSource `json:"source"`
+	McpServer string                               `json:"mcp_server"`
+	Code      int64                                `json:"code"`
+	Reason    string                               `json:"reason"`
+}
+
+// GetSource returns the value of Source.
+func (s *ToolListUnavailableSourcesItem) GetSource() ToolListUnavailableSourcesItemSource {
+	return s.Source
+}
+
+// GetMcpServer returns the value of McpServer.
+func (s *ToolListUnavailableSourcesItem) GetMcpServer() string {
+	return s.McpServer
+}
+
+// GetCode returns the value of Code.
+func (s *ToolListUnavailableSourcesItem) GetCode() int64 {
+	return s.Code
+}
+
+// GetReason returns the value of Reason.
+func (s *ToolListUnavailableSourcesItem) GetReason() string {
+	return s.Reason
+}
+
+// SetSource sets the value of Source.
+func (s *ToolListUnavailableSourcesItem) SetSource(val ToolListUnavailableSourcesItemSource) {
+	s.Source = val
+}
+
+// SetMcpServer sets the value of McpServer.
+func (s *ToolListUnavailableSourcesItem) SetMcpServer(val string) {
+	s.McpServer = val
+}
+
+// SetCode sets the value of Code.
+func (s *ToolListUnavailableSourcesItem) SetCode(val int64) {
+	s.Code = val
+}
+
+// SetReason sets the value of Reason.
+func (s *ToolListUnavailableSourcesItem) SetReason(val string) {
+	s.Reason = val
+}
+
+type ToolListUnavailableSourcesItemSource string
+
+const (
+	ToolListUnavailableSourcesItemSourceBuiltin ToolListUnavailableSourcesItemSource = "builtin"
+	ToolListUnavailableSourcesItemSourceMcp     ToolListUnavailableSourcesItemSource = "mcp"
+)
+
+// AllValues returns all ToolListUnavailableSourcesItemSource values.
+func (ToolListUnavailableSourcesItemSource) AllValues() []ToolListUnavailableSourcesItemSource {
+	return []ToolListUnavailableSourcesItemSource{
+		ToolListUnavailableSourcesItemSourceBuiltin,
+		ToolListUnavailableSourcesItemSourceMcp,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ToolListUnavailableSourcesItemSource) MarshalText() ([]byte, error) {
+	switch s {
+	case ToolListUnavailableSourcesItemSourceBuiltin:
+		return []byte(s), nil
+	case ToolListUnavailableSourcesItemSourceMcp:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ToolListUnavailableSourcesItemSource) UnmarshalText(data []byte) error {
+	switch ToolListUnavailableSourcesItemSource(data) {
+	case ToolListUnavailableSourcesItemSourceBuiltin:
+		*s = ToolListUnavailableSourcesItemSourceBuiltin
+		return nil
+	case ToolListUnavailableSourcesItemSourceMcp:
+		*s = ToolListUnavailableSourcesItemSourceMcp
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/ToolRef
+type ToolRef struct {
+	Source ToolRefSource `json:"source"`
+	Name   string        `json:"name"`
+	// Required only for mcp; forbidden for builtin.
+	Server OptString `json:"server"`
+}
+
+// GetSource returns the value of Source.
+func (s *ToolRef) GetSource() ToolRefSource {
+	return s.Source
+}
+
+// GetName returns the value of Name.
+func (s *ToolRef) GetName() string {
+	return s.Name
+}
+
+// GetServer returns the value of Server.
+func (s *ToolRef) GetServer() OptString {
+	return s.Server
+}
+
+// SetSource sets the value of Source.
+func (s *ToolRef) SetSource(val ToolRefSource) {
+	s.Source = val
+}
+
+// SetName sets the value of Name.
+func (s *ToolRef) SetName(val string) {
+	s.Name = val
+}
+
+// SetServer sets the value of Server.
+func (s *ToolRef) SetServer(val OptString) {
+	s.Server = val
+}
+
+type ToolRefSource string
+
+const (
+	ToolRefSourceBuiltin ToolRefSource = "builtin"
+	ToolRefSourceMcp     ToolRefSource = "mcp"
+)
+
+// AllValues returns all ToolRefSource values.
+func (ToolRefSource) AllValues() []ToolRefSource {
+	return []ToolRefSource{
+		ToolRefSourceBuiltin,
+		ToolRefSourceMcp,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ToolRefSource) MarshalText() ([]byte, error) {
+	switch s {
+	case ToolRefSourceBuiltin:
+		return []byte(s), nil
+	case ToolRefSourceMcp:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ToolRefSource) UnmarshalText(data []byte) error {
+	switch ToolRefSource(data) {
+	case ToolRefSourceBuiltin:
+		*s = ToolRefSourceBuiltin
+		return nil
+	case ToolRefSourceMcp:
+		*s = ToolRefSourceMcp
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/UpdateAccountRequest

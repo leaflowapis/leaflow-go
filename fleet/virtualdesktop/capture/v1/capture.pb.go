@@ -101,6 +101,9 @@ type CaptureScreenshotRequest struct {
 	MaxHeight uint32 `protobuf:"varint,5,opt,name=max_height,json=maxHeight,proto3" json:"max_height,omitempty"`
 	// The image format: "image/png" (W3C PNG), "image/jpeg" (ISO/IEC 10918-1)
 	// or "image/webp" (RFC 9649). Empty: the session chooses.
+	// PNG/WebP 保留单窗口及弹层合成的透明度，包括 Shape 区域外的透明像素；
+	// 画布没有窗口的区域仍为不透明黑色。JPEG 仅适用于实际不透明的合成结果；
+	// 否则返回 INVALID_ARGUMENT / IMAGE_FORMAT_LOSES_TRANSPARENCY，不静默丢失 alpha。
 	MimeType string `protobuf:"bytes,6,opt,name=mime_type,json=mimeType,proto3" json:"mime_type,omitempty"`
 	// The quality of a lossy format, 1 to 100. 0: the session's default.
 	Quality uint32 `protobuf:"varint,7,opt,name=quality,proto3" json:"quality,omitempty"`
@@ -337,8 +340,14 @@ type CapturedWindow struct {
 	Geometry *v1.Rectangle `protobuf:"bytes,2,opt,name=geometry,proto3" json:"geometry,omitempty"`
 	// Its Window.resize_counter when captured.
 	ResizeCounter uint64 `protobuf:"varint,3,opt,name=resize_counter,json=resizeCounter,proto3" json:"resize_counter,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// 捕获时的 Window.shape_counter，供依赖截图的动作拒绝过期区域状态。
+	ShapeCounter uint64 `protobuf:"varint,4,opt,name=shape_counter,json=shapeCounter,proto3" json:"shape_counter,omitempty"`
+	// 捕获时的窗口局部 X Shape 区域，presence 含义与 Window 相同；geometry 则仍在
+	// 整张截图的原始坐标空间。不能把相对窗口的区域直接当作画布或缩放后图像坐标。
+	BoundingRegion *v1.Region `protobuf:"bytes,5,opt,name=bounding_region,json=boundingRegion,proto3" json:"bounding_region,omitempty"`
+	InputRegion    *v1.Region `protobuf:"bytes,6,opt,name=input_region,json=inputRegion,proto3" json:"input_region,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *CapturedWindow) Reset() {
@@ -392,6 +401,27 @@ func (x *CapturedWindow) GetResizeCounter() uint64 {
 	return 0
 }
 
+func (x *CapturedWindow) GetShapeCounter() uint64 {
+	if x != nil {
+		return x.ShapeCounter
+	}
+	return 0
+}
+
+func (x *CapturedWindow) GetBoundingRegion() *v1.Region {
+	if x != nil {
+		return x.BoundingRegion
+	}
+	return nil
+}
+
+func (x *CapturedWindow) GetInputRegion() *v1.Region {
+	if x != nil {
+		return x.InputRegion
+	}
+	return nil
+}
+
 var File_leaflow_fleet_virtualdesktop_capture_v1_capture_proto protoreflect.FileDescriptor
 
 const file_leaflow_fleet_virtualdesktop_capture_v1_capture_proto_rawDesc = "" +
@@ -419,11 +449,14 @@ const file_leaflow_fleet_virtualdesktop_capture_v1_capture_proto_rawDesc = "" +
 	"\vcaptured_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"capturedAt\x12\x14\n" +
 	"\x05quiet\x18\b \x01(\bR\x05quiet\x12\x1a\n" +
-	"\brevision\x18\t \x01(\x04R\brevision\"\xa4\x01\n" +
+	"\brevision\x18\t \x01(\x04R\brevision\"\xf7\x02\n" +
 	"\x0eCapturedWindow\x12\x1b\n" +
 	"\twindow_id\x18\x01 \x01(\x04R\bwindowId\x12N\n" +
 	"\bgeometry\x18\x02 \x01(\v22.leaflow.fleet.virtualdesktop.display.v1.RectangleR\bgeometry\x12%\n" +
-	"\x0eresize_counter\x18\x03 \x01(\x04R\rresizeCounter*c\n" +
+	"\x0eresize_counter\x18\x03 \x01(\x04R\rresizeCounter\x12#\n" +
+	"\rshape_counter\x18\x04 \x01(\x04R\fshapeCounter\x12X\n" +
+	"\x0fbounding_region\x18\x05 \x01(\v2/.leaflow.fleet.virtualdesktop.display.v1.RegionR\x0eboundingRegion\x12R\n" +
+	"\finput_region\x18\x06 \x01(\v2/.leaflow.fleet.virtualdesktop.display.v1.RegionR\vinputRegion*c\n" +
 	"\vCaptureMode\x12\x1c\n" +
 	"\x18CAPTURE_MODE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18CAPTURE_MODE_WITH_POPUPS\x10\x01\x12\x18\n" +
@@ -454,6 +487,7 @@ var file_leaflow_fleet_virtualdesktop_capture_v1_capture_proto_goTypes = []any{
 	(*durationpb.Duration)(nil),       // 5: google.protobuf.Duration
 	(*v1.Size)(nil),                   // 6: leaflow.fleet.virtualdesktop.display.v1.Size
 	(*timestamppb.Timestamp)(nil),     // 7: google.protobuf.Timestamp
+	(*v1.Region)(nil),                 // 8: leaflow.fleet.virtualdesktop.display.v1.Region
 }
 var file_leaflow_fleet_virtualdesktop_capture_v1_capture_proto_depIdxs = []int32{
 	0,  // 0: leaflow.fleet.virtualdesktop.capture.v1.CaptureScreenshotRequest.mode:type_name -> leaflow.fleet.virtualdesktop.capture.v1.CaptureMode
@@ -465,13 +499,15 @@ var file_leaflow_fleet_virtualdesktop_capture_v1_capture_proto_depIdxs = []int32
 	3,  // 6: leaflow.fleet.virtualdesktop.capture.v1.CaptureScreenshotResponse.windows:type_name -> leaflow.fleet.virtualdesktop.capture.v1.CapturedWindow
 	7,  // 7: leaflow.fleet.virtualdesktop.capture.v1.CaptureScreenshotResponse.captured_at:type_name -> google.protobuf.Timestamp
 	4,  // 8: leaflow.fleet.virtualdesktop.capture.v1.CapturedWindow.geometry:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
-	1,  // 9: leaflow.fleet.virtualdesktop.capture.v1.CaptureService.CaptureScreenshot:input_type -> leaflow.fleet.virtualdesktop.capture.v1.CaptureScreenshotRequest
-	2,  // 10: leaflow.fleet.virtualdesktop.capture.v1.CaptureService.CaptureScreenshot:output_type -> leaflow.fleet.virtualdesktop.capture.v1.CaptureScreenshotResponse
-	10, // [10:11] is the sub-list for method output_type
-	9,  // [9:10] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	8,  // 9: leaflow.fleet.virtualdesktop.capture.v1.CapturedWindow.bounding_region:type_name -> leaflow.fleet.virtualdesktop.display.v1.Region
+	8,  // 10: leaflow.fleet.virtualdesktop.capture.v1.CapturedWindow.input_region:type_name -> leaflow.fleet.virtualdesktop.display.v1.Region
+	1,  // 11: leaflow.fleet.virtualdesktop.capture.v1.CaptureService.CaptureScreenshot:input_type -> leaflow.fleet.virtualdesktop.capture.v1.CaptureScreenshotRequest
+	2,  // 12: leaflow.fleet.virtualdesktop.capture.v1.CaptureService.CaptureScreenshot:output_type -> leaflow.fleet.virtualdesktop.capture.v1.CaptureScreenshotResponse
+	12, // [12:13] is the sub-list for method output_type
+	11, // [11:12] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_leaflow_fleet_virtualdesktop_capture_v1_capture_proto_init() }
