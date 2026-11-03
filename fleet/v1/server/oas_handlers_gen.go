@@ -689,12 +689,12 @@ func (s *Server) handleCallMcpToolRequest(args [3]string, argsEscaped bool, w ht
 
 // handleCallToolRequest handles callTool operation.
 //
-// Uses the same current permissions, directory account and graphical session as listTools. Listing is
+// Uses the same current permissions, directory account and graphical session as list-tools. Listing is
 // not a precondition: callers may use a previously discovered ToolRef, and this operation never sends
 // a discovery request or refreshes schemas before executing it. A removed tool or MCP server returns
 // TOOL_NOT_FOUND, as does a direct builtin computer.* call while virtual desktop capability is
 // unavailable. Actual permission errors remain permission errors; a missing target window is not a
-// missing tool. Use listTools only when discovery or refresh is needed, and do not cache or reuse
+// missing tool. Use list-tools only when discovery or refresh is needed, and do not cache or reuse
 // execution results. Source is explicit: MCP names never select or impersonate builtin tools. The
 // arguments object is at most 256 KiB. The complete result is at most 8 MiB in the protobuf transport,
 // with each encoded image at most 4 MiB; images are converted to base64 once at this JSON boundary,
@@ -8709,239 +8709,6 @@ func (s *Server) handleListMachinesRequest(args [0]string, argsEscaped bool, w h
 	}
 }
 
-// handleListMcpToolsRequest handles list-mcp-tools operation.
-//
-// Lists the tools of the caller's servers on the machine, or of one of them, that match `query`: every
-// word of it, ignoring case, in the tool's name, title or description. They are ordered by server,
-// then by tool name. Servers that are not running are started to learn their tools; one that cannot be
-// is named in `unavailable_servers`, and the others are listed anyway. Slow servers do not hold the
-// request up: those still starting are named with `timeout` and go on starting, so that a later
-// request lists their tools. Requires `fleet:machines.login` on the machine.
-//
-// Fails with:
-//
-//   - `MCP_SERVER_NOT_FOUND` when `server` is not configured;
-//   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
-//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
-//     machine refuses the account, as for opening a session;
-//   - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
-//   - `MACHINE_TIMEOUT` when the machine did not answer in time.
-//
-// Deprecated: schema marks this operation as deprecated.
-//
-// GET /api/v1/machines/{machineId}/mcp-tools
-func (s *Server) handleListMcpToolsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-mcp-tools"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/machines/{machineId}/mcp-tools"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListMcpToolsOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListMcpToolsOperation,
-			ID:   "list-mcp-tools",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListMcpToolsOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListMcpToolsParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *McpToolList
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListMcpToolsOperation,
-			OperationSummary: "List the caller's MCP tools on a machine",
-			OperationID:      "list-mcp-tools",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "machineId",
-					In:   "path",
-				}: params.MachineId,
-				{
-					Name: "server",
-					In:   "query",
-				}: params.Server,
-				{
-					Name: "query",
-					In:   "query",
-				}: params.Query,
-				{
-					Name: "page_size",
-					In:   "query",
-				}: params.PageSize,
-				{
-					Name: "page_token",
-					In:   "query",
-				}: params.PageToken,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListMcpToolsParams
-			Response = *McpToolList
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListMcpToolsParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListMcpTools(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListMcpTools(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListMcpToolsResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleListPrivilegeAutoApprovalsRequest handles list-privilege-auto-approvals operation.
 //
 // Returns the caller's automatic approvals on the machines of the current project that are in effect,
@@ -9777,7 +9544,7 @@ func (s *Server) handleListSessionsRequest(args [0]string, argsEscaped bool, w h
 	}
 }
 
-// handleListToolsRequest handles listTools operation.
+// handleListToolsRequest handles list-tools operation.
 //
 // Queries Agent's builtin tools and the caller's configured MCP servers live. No directory, result or
 // image is cached. Requires fleet:machines.login; builtin capabilities retain their native policies
@@ -9793,7 +9560,7 @@ func (s *Server) handleListToolsRequest(args [1]string, argsEscaped bool, w http
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("listTools"),
+		otelogen.OperationID("list-tools"),
 		semconv.HTTPRequestMethodKey.String("GET"),
 		semconv.HTTPRouteKey.String("/api/v1/machines/{machineId}/tools"),
 	}
@@ -9857,7 +9624,7 @@ func (s *Server) handleListToolsRequest(args [1]string, argsEscaped bool, w http
 		err          error
 		opErrContext = ogenerrors.OperationContext{
 			Name: ListToolsOperation,
-			ID:   "listTools",
+			ID:   "list-tools",
 		}
 	)
 	{
@@ -9925,7 +9692,7 @@ func (s *Server) handleListToolsRequest(args [1]string, argsEscaped bool, w http
 			Context:          ctx,
 			OperationName:    ListToolsOperation,
 			OperationSummary: "List live tools available to the caller on a machine",
-			OperationID:      "listTools",
+			OperationID:      "list-tools",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{

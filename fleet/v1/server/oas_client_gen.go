@@ -65,12 +65,12 @@ type Invoker interface {
 	CallMcpTool(ctx context.Context, request *CallMcpToolRequest, params CallMcpToolParams) (*CallMcpToolResponse, error)
 	// CallTool invokes callTool operation.
 	//
-	// Uses the same current permissions, directory account and graphical session as listTools. Listing is
+	// Uses the same current permissions, directory account and graphical session as list-tools. Listing is
 	// not a precondition: callers may use a previously discovered ToolRef, and this operation never sends
 	// a discovery request or refreshes schemas before executing it. A removed tool or MCP server returns
 	// TOOL_NOT_FOUND, as does a direct builtin computer.* call while virtual desktop capability is
 	// unavailable. Actual permission errors remain permission errors; a missing target window is not a
-	// missing tool. Use listTools only when discovery or refresh is needed, and do not cache or reuse
+	// missing tool. Use list-tools only when discovery or refresh is needed, and do not cache or reuse
 	// execution results. Source is explicit: MCP names never select or impersonate builtin tools. The
 	// arguments object is at most 256 KiB. The complete result is at most 8 MiB in the protobuf transport,
 	// with each encoded image at most 4 MiB; images are converted to base64 once at this JSON boundary,
@@ -504,29 +504,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/machines
 	ListMachines(ctx context.Context, params ListMachinesParams) (*MachineList, error)
-	// ListMcpTools invokes list-mcp-tools operation.
-	//
-	// Lists the tools of the caller's servers on the machine, or of one of them, that match `query`: every
-	// word of it, ignoring case, in the tool's name, title or description. They are ordered by server,
-	// then by tool name. Servers that are not running are started to learn their tools; one that cannot be
-	// is named in `unavailable_servers`, and the others are listed anyway. Slow servers do not hold the
-	// request up: those still starting are named with `timeout` and go on starting, so that a later
-	// request lists their tools. Requires `fleet:machines.login` on the machine.
-	//
-	// Fails with:
-	//
-	//  - `MCP_SERVER_NOT_FOUND` when `server` is not configured;
-	//  - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-	//  - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
-	//  - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
-	//    machine refuses the account, as for opening a session;
-	//  - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
-	//  - `MACHINE_TIMEOUT` when the machine did not answer in time.
-	//
-	// Deprecated: schema marks this operation as deprecated.
-	//
-	// GET /api/v1/machines/{machineId}/mcp-tools
-	ListMcpTools(ctx context.Context, params ListMcpToolsParams) (*McpToolList, error)
 	// ListPrivilegeAutoApprovals invokes list-privilege-auto-approvals operation.
 	//
 	// Returns the caller's automatic approvals on the machines of the current project that are in effect,
@@ -554,7 +531,7 @@ type Invoker interface {
 	//
 	// GET /api/v1/sessions
 	ListSessions(ctx context.Context, params ListSessionsParams) (*SessionList, error)
-	// ListTools invokes listTools operation.
+	// ListTools invokes list-tools operation.
 	//
 	// Queries Agent's builtin tools and the caller's configured MCP servers live. No directory, result or
 	// image is cached. Requires fleet:machines.login; builtin capabilities retain their native policies
@@ -1293,12 +1270,12 @@ func (c *Client) sendCallMcpTool(ctx context.Context, request *CallMcpToolReques
 
 // CallTool invokes callTool operation.
 //
-// Uses the same current permissions, directory account and graphical session as listTools. Listing is
+// Uses the same current permissions, directory account and graphical session as list-tools. Listing is
 // not a precondition: callers may use a previously discovered ToolRef, and this operation never sends
 // a discovery request or refreshes schemas before executing it. A removed tool or MCP server returns
 // TOOL_NOT_FOUND, as does a direct builtin computer.* call while virtual desktop capability is
 // unavailable. Actual permission errors remain permission errors; a missing target window is not a
-// missing tool. Use listTools only when discovery or refresh is needed, and do not cache or reuse
+// missing tool. Use list-tools only when discovery or refresh is needed, and do not cache or reuse
 // execution results. Source is explicit: MCP names never select or impersonate builtin tools. The
 // arguments object is at most 256 KiB. The complete result is at most 8 MiB in the protobuf transport,
 // with each encoded image at most 4 MiB; images are converted to base64 once at this JSON boundary,
@@ -7055,227 +7032,6 @@ func (c *Client) sendListMachines(ctx context.Context, params ListMachinesParams
 	return result, nil
 }
 
-// ListMcpTools invokes list-mcp-tools operation.
-//
-// Lists the tools of the caller's servers on the machine, or of one of them, that match `query`: every
-// word of it, ignoring case, in the tool's name, title or description. They are ordered by server,
-// then by tool name. Servers that are not running are started to learn their tools; one that cannot be
-// is named in `unavailable_servers`, and the others are listed anyway. Slow servers do not hold the
-// request up: those still starting are named with `timeout` and go on starting, so that a later
-// request lists their tools. Requires `fleet:machines.login` on the machine.
-//
-// Fails with:
-//
-//   - `MCP_SERVER_NOT_FOUND` when `server` is not configured;
-//   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
-//   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
-//     machine refuses the account, as for opening a session;
-//   - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
-//   - `MACHINE_TIMEOUT` when the machine did not answer in time.
-//
-// Deprecated: schema marks this operation as deprecated.
-//
-// GET /api/v1/machines/{machineId}/mcp-tools
-func (c *Client) ListMcpTools(ctx context.Context, params ListMcpToolsParams) (*McpToolList, error) {
-	res, err := c.sendListMcpTools(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListMcpTools(ctx context.Context, params ListMcpToolsParams) (res *McpToolList, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-mcp-tools"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/mcp-tools"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListMcpToolsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/machines/"
-	{
-		// Encode "machineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "machineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.MachineId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/mcp-tools"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "server" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "server",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Server.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "query" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "query",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Query.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_token" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_token",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageToken.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListMcpToolsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListMcpToolsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // ListPrivilegeAutoApprovals invokes list-privilege-auto-approvals operation.
 //
 // Returns the caller's automatic approvals on the machines of the current project that are in effect,
@@ -7949,7 +7705,7 @@ func (c *Client) sendListSessions(ctx context.Context, params ListSessionsParams
 	return result, nil
 }
 
-// ListTools invokes listTools operation.
+// ListTools invokes list-tools operation.
 //
 // Queries Agent's builtin tools and the caller's configured MCP servers live. No directory, result or
 // image is cached. Requires fleet:machines.login; builtin capabilities retain their native policies
@@ -7968,7 +7724,7 @@ func (c *Client) ListTools(ctx context.Context, params ListToolsParams) (*ToolLi
 
 func (c *Client) sendListTools(ctx context.Context, params ListToolsParams) (res *ToolList, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("listTools"),
+		otelogen.OperationID("list-tools"),
 		semconv.HTTPRequestMethodKey.String("GET"),
 		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/tools"),
 	}

@@ -44,12 +44,12 @@ type Handler interface {
 	CallMcpTool(ctx context.Context, req *CallMcpToolRequest, params CallMcpToolParams) (*CallMcpToolResponse, error)
 	// CallTool implements callTool operation.
 	//
-	// Uses the same current permissions, directory account and graphical session as listTools. Listing is
+	// Uses the same current permissions, directory account and graphical session as list-tools. Listing is
 	// not a precondition: callers may use a previously discovered ToolRef, and this operation never sends
 	// a discovery request or refreshes schemas before executing it. A removed tool or MCP server returns
 	// TOOL_NOT_FOUND, as does a direct builtin computer.* call while virtual desktop capability is
 	// unavailable. Actual permission errors remain permission errors; a missing target window is not a
-	// missing tool. Use listTools only when discovery or refresh is needed, and do not cache or reuse
+	// missing tool. Use list-tools only when discovery or refresh is needed, and do not cache or reuse
 	// execution results. Source is explicit: MCP names never select or impersonate builtin tools. The
 	// arguments object is at most 256 KiB. The complete result is at most 8 MiB in the protobuf transport,
 	// with each encoded image at most 4 MiB; images are converted to base64 once at this JSON boundary,
@@ -483,29 +483,6 @@ type Handler interface {
 	//
 	// GET /api/v1/machines
 	ListMachines(ctx context.Context, params ListMachinesParams) (*MachineList, error)
-	// ListMcpTools implements list-mcp-tools operation.
-	//
-	// Lists the tools of the caller's servers on the machine, or of one of them, that match `query`: every
-	// word of it, ignoring case, in the tool's name, title or description. They are ordered by server,
-	// then by tool name. Servers that are not running are started to learn their tools; one that cannot be
-	// is named in `unavailable_servers`, and the others are listed anyway. Slow servers do not hold the
-	// request up: those still starting are named with `timeout` and go on starting, so that a later
-	// request lists their tools. Requires `fleet:machines.login` on the machine.
-	//
-	// Fails with:
-	//
-	//  - `MCP_SERVER_NOT_FOUND` when `server` is not configured;
-	//  - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-	//  - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
-	//  - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
-	//    machine refuses the account, as for opening a session;
-	//  - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
-	//  - `MACHINE_TIMEOUT` when the machine did not answer in time.
-	//
-	// Deprecated: schema marks this operation as deprecated.
-	//
-	// GET /api/v1/machines/{machineId}/mcp-tools
-	ListMcpTools(ctx context.Context, params ListMcpToolsParams) (*McpToolList, error)
 	// ListPrivilegeAutoApprovals implements list-privilege-auto-approvals operation.
 	//
 	// Returns the caller's automatic approvals on the machines of the current project that are in effect,
@@ -533,7 +510,7 @@ type Handler interface {
 	//
 	// GET /api/v1/sessions
 	ListSessions(ctx context.Context, params ListSessionsParams) (*SessionList, error)
-	// ListTools implements listTools operation.
+	// ListTools implements list-tools operation.
 	//
 	// Queries Agent's builtin tools and the caller's configured MCP servers live. No directory, result or
 	// image is cached. Requires fleet:machines.login; builtin capabilities retain their native policies

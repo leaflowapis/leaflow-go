@@ -47,7 +47,6 @@ const (
 	ListMachineEventsOperation              OperationName = "ListMachineEvents"
 	ListMachineRegistrationsOperation       OperationName = "ListMachineRegistrations"
 	ListMachinesOperation                   OperationName = "ListMachines"
-	ListMcpToolsOperation                   OperationName = "ListMcpTools"
 	ListPrivilegeAutoApprovalsOperation     OperationName = "ListPrivilegeAutoApprovals"
 	ListPrivilegeRequestsOperation          OperationName = "ListPrivilegeRequests"
 	ListSessionParticipantsOperation        OperationName = "ListSessionParticipants"
