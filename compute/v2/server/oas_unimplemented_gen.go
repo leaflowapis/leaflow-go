@@ -1343,6 +1343,10 @@ func (UnimplementedHandler) RejectVirtualPrivateCloudPeering(ctx context.Context
 // suspension that begins in rescue mode takes the instance out of rescue before stopping it, and
 // starting it again once the suspension ends boots its own system.
 //
+// The rescue environment does not accept passwords. The remote console signs in as `login_username`
+// automatically, and SSH accepts `login_username` with the public keys the instance was created or
+// last rebuilt with.
+//
 // A rescue the compute service could not boot leaves the instance as it was, or in `error`; request it
 // again or reboot the instance.
 //
@@ -1351,7 +1355,7 @@ func (UnimplementedHandler) RejectVirtualPrivateCloudPeering(ctx context.Context
 // is refused with `RESCUE_IMAGE_NOT_CONFIGURED` (409).
 //
 // POST /api/v2/instances/{instanceId}:rescue
-func (UnimplementedHandler) RescueInstance(ctx context.Context, req *RescueInstanceRequestBody, params RescueInstanceParams) (r RescueInstanceRes, _ error) {
+func (UnimplementedHandler) RescueInstance(ctx context.Context, params RescueInstanceParams) (r RescueInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
