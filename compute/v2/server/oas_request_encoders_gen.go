@@ -304,20 +304,6 @@ func encodeRebuildInstanceRequest(
 	return nil
 }
 
-func encodeRescueInstanceRequest(
-	req *RescueInstanceRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
 func encodeResetInstancePasswordRequest(
 	req PasswordChoice,
 	r *http.Request,

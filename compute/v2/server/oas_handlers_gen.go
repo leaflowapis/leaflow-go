@@ -20557,6 +20557,10 @@ func (s *Server) handleRejectVirtualPrivateCloudPeeringRequest(args [1]string, a
 // suspension that begins in rescue mode takes the instance out of rescue before stopping it, and
 // starting it again once the suspension ends boots its own system.
 //
+// The rescue environment does not accept passwords. The remote console signs in as `login_username`
+// automatically, and SSH accepts `login_username` with the public keys the instance was created or
+// last rebuilt with.
+//
 // A rescue the compute service could not boot leaves the instance as it was, or in `error`; request it
 // again or reboot the instance.
 //
@@ -20694,21 +20698,6 @@ func (s *Server) handleRescueInstanceRequest(args [1]string, argsEscaped bool, w
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeRescueInstanceRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
 
 	var response RescueInstanceRes
 	if m := s.cfg.Middleware; m != nil {
@@ -20717,7 +20706,7 @@ func (s *Server) handleRescueInstanceRequest(args [1]string, argsEscaped bool, w
 			OperationName:    RescueInstanceOperation,
 			OperationSummary: "Put an instance into rescue mode",
 			OperationID:      "rescue-instance",
-			Body:             request,
+			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
@@ -20729,7 +20718,7 @@ func (s *Server) handleRescueInstanceRequest(args [1]string, argsEscaped bool, w
 		}
 
 		type (
-			Request  = *RescueInstanceRequestBody
+			Request  = struct{}
 			Params   = RescueInstanceParams
 			Response = RescueInstanceRes
 		)
@@ -20742,12 +20731,12 @@ func (s *Server) handleRescueInstanceRequest(args [1]string, argsEscaped bool, w
 			mreq,
 			unpackRescueInstanceParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.RescueInstance(ctx, request, params)
+				response, err = s.h.RescueInstance(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.RescueInstance(ctx, request, params)
+		response, err = s.h.RescueInstance(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {

@@ -1065,6 +1065,10 @@ type Invoker interface {
 	// suspension that begins in rescue mode takes the instance out of rescue before stopping it, and
 	// starting it again once the suspension ends boots its own system.
 	//
+	// The rescue environment does not accept passwords. The remote console signs in as `login_username`
+	// automatically, and SSH accepts `login_username` with the public keys the instance was created or
+	// last rebuilt with.
+	//
 	// A rescue the compute service could not boot leaves the instance as it was, or in `error`; request it
 	// again or reboot the instance.
 	//
@@ -1073,7 +1077,7 @@ type Invoker interface {
 	// is refused with `RESCUE_IMAGE_NOT_CONFIGURED` (409).
 	//
 	// POST /api/v2/instances/{instanceId}:rescue
-	RescueInstance(ctx context.Context, request *RescueInstanceRequestBody, params RescueInstanceParams) (RescueInstanceRes, error)
+	RescueInstance(ctx context.Context, params RescueInstanceParams) (RescueInstanceRes, error)
 	// ResetInstancePassword invokes reset-instance-password operation.
 	//
 	// Sets the password of the login account (`login_username`) without a reboot; root is never given one.
@@ -16524,6 +16528,10 @@ func (c *Client) sendRejectVirtualPrivateCloudPeering(ctx context.Context, param
 // suspension that begins in rescue mode takes the instance out of rescue before stopping it, and
 // starting it again once the suspension ends boots its own system.
 //
+// The rescue environment does not accept passwords. The remote console signs in as `login_username`
+// automatically, and SSH accepts `login_username` with the public keys the instance was created or
+// last rebuilt with.
+//
 // A rescue the compute service could not boot leaves the instance as it was, or in `error`; request it
 // again or reboot the instance.
 //
@@ -16532,21 +16540,12 @@ func (c *Client) sendRejectVirtualPrivateCloudPeering(ctx context.Context, param
 // is refused with `RESCUE_IMAGE_NOT_CONFIGURED` (409).
 //
 // POST /api/v2/instances/{instanceId}:rescue
-func (c *Client) RescueInstance(ctx context.Context, request *RescueInstanceRequestBody, params RescueInstanceParams) (RescueInstanceRes, error) {
-	res, err := c.sendRescueInstance(ctx, request, params)
+func (c *Client) RescueInstance(ctx context.Context, params RescueInstanceParams) (RescueInstanceRes, error) {
+	res, err := c.sendRescueInstance(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendRescueInstance(ctx context.Context, request *RescueInstanceRequestBody, params RescueInstanceParams) (res RescueInstanceRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
+func (c *Client) sendRescueInstance(ctx context.Context, params RescueInstanceParams) (res RescueInstanceRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rescue-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -16613,9 +16612,6 @@ func (c *Client) sendRescueInstance(ctx context.Context, request *RescueInstance
 	r, err := ht.NewRequest(ctx, "POST", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRescueInstanceRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
 	}
 
 	{

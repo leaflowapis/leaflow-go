@@ -1032,8 +1032,18 @@ type CreateInstanceRequestBody struct {
 	// whitespace or control characters.
 	Labels OptCreateInstanceRequestBodyLabels `json:"labels"`
 	// A free-text note about each instance. Do not put credentials here.
-	Description OptString          `json:"description"`
-	Checkout    OptCheckoutOptions `json:"checkout"`
+	Description OptString `json:"description"`
+	// Whether each instance joins Leaflow Fleet. An instance that joins enrolls automatically on its first
+	// boot, without a pairing code, and project members can then access it through Fleet using their own
+	// accounts. If omitted, the value from the launch template is used; if the template does not specify
+	// one, each instance joins when its image supports Fleet (`supports_fleet`).
+	//
+	// Setting the value to `true` for an image that does not support Fleet, or when booting from an
+	// existing volume, is rejected with 422 `INSTANCE_FLEET_UNSUPPORTED` before an order is placed. If
+	// Fleet is unavailable when an instance is created, the instance is still created and its
+	// `fleet_machine_id` is null.
+	JoinFleet OptBool            `json:"join_fleet"`
+	Checkout  OptCheckoutOptions `json:"checkout"`
 }
 
 // GetLaunchTemplate returns the value of LaunchTemplate.
@@ -1089,6 +1099,11 @@ func (s *CreateInstanceRequestBody) GetLabels() OptCreateInstanceRequestBodyLabe
 // GetDescription returns the value of Description.
 func (s *CreateInstanceRequestBody) GetDescription() OptString {
 	return s.Description
+}
+
+// GetJoinFleet returns the value of JoinFleet.
+func (s *CreateInstanceRequestBody) GetJoinFleet() OptBool {
+	return s.JoinFleet
 }
 
 // GetCheckout returns the value of Checkout.
@@ -1149,6 +1164,11 @@ func (s *CreateInstanceRequestBody) SetLabels(val OptCreateInstanceRequestBodyLa
 // SetDescription sets the value of Description.
 func (s *CreateInstanceRequestBody) SetDescription(val OptString) {
 	s.Description = val
+}
+
+// SetJoinFleet sets the value of JoinFleet.
+func (s *CreateInstanceRequestBody) SetJoinFleet(val OptBool) {
+	s.JoinFleet = val
 }
 
 // SetCheckout sets the value of Checkout.
@@ -3838,6 +3858,18 @@ type Instance struct {
 	LaunchTemplateVersionNumber NilInt64 `json:"launch_template_version_number"`
 	// The most recent operation started on the instance; null when none has been recorded.
 	LatestOperation NilLatestOperation `json:"latest_operation"`
+	// Whether the instance is configured to join Leaflow Fleet. The value is set at creation and retained
+	// across rebuilds unless a rebuild specifies a new value.
+	JoinFleet bool `json:"join_fleet"`
+	// Whether the operating system with which the instance was created or last rebuilt supports Leaflow
+	// Fleet. The value reflects that specific image build; other builds of the same operating system may
+	// differ.
+	SupportsFleet bool `json:"supports_fleet"`
+	// The identifier of the Leaflow Fleet machine reserved for this instance. The instance enrolls as this
+	// machine on its first boot after creation or a rebuild, and its enrollment status is available from
+	// Fleet. Null if the instance is not configured to join Fleet, if its operating system does not
+	// support Fleet, or if Fleet was unavailable when the instance was created or last rebuilt.
+	FleetMachineID NilUUID `json:"fleet_machine_id"`
 }
 
 // GetAvailabilityZoneID returns the value of AvailabilityZoneID.
@@ -3995,6 +4027,21 @@ func (s *Instance) GetLatestOperation() NilLatestOperation {
 	return s.LatestOperation
 }
 
+// GetJoinFleet returns the value of JoinFleet.
+func (s *Instance) GetJoinFleet() bool {
+	return s.JoinFleet
+}
+
+// GetSupportsFleet returns the value of SupportsFleet.
+func (s *Instance) GetSupportsFleet() bool {
+	return s.SupportsFleet
+}
+
+// GetFleetMachineID returns the value of FleetMachineID.
+func (s *Instance) GetFleetMachineID() NilUUID {
+	return s.FleetMachineID
+}
+
 // SetAvailabilityZoneID sets the value of AvailabilityZoneID.
 func (s *Instance) SetAvailabilityZoneID(val AvailabilityZoneID) {
 	s.AvailabilityZoneID = val
@@ -4148,6 +4195,21 @@ func (s *Instance) SetLaunchTemplateVersionNumber(val NilInt64) {
 // SetLatestOperation sets the value of LatestOperation.
 func (s *Instance) SetLatestOperation(val NilLatestOperation) {
 	s.LatestOperation = val
+}
+
+// SetJoinFleet sets the value of JoinFleet.
+func (s *Instance) SetJoinFleet(val bool) {
+	s.JoinFleet = val
+}
+
+// SetSupportsFleet sets the value of SupportsFleet.
+func (s *Instance) SetSupportsFleet(val bool) {
+	s.SupportsFleet = val
+}
+
+// SetFleetMachineID sets the value of FleetMachineID.
+func (s *Instance) SetFleetMachineID(val NilUUID) {
+	s.FleetMachineID = val
 }
 
 func (*Instance) rebootInstanceRes()   {}
@@ -5901,7 +5963,9 @@ type LaunchTemplateVersion struct {
 	Labels NilLaunchTemplateVersionLabels `json:"labels"`
 	// Null when the version describes no note.
 	Description NilString `json:"description"`
-	CreatedAt   time.Time `json:"created_at"`
+	// Null if the version does not specify a value, in which case the image determines it.
+	JoinFleet NilBool   `json:"join_fleet"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // GetLaunchTemplateID returns the value of LaunchTemplateID.
@@ -5952,6 +6016,11 @@ func (s *LaunchTemplateVersion) GetLabels() NilLaunchTemplateVersionLabels {
 // GetDescription returns the value of Description.
 func (s *LaunchTemplateVersion) GetDescription() NilString {
 	return s.Description
+}
+
+// GetJoinFleet returns the value of JoinFleet.
+func (s *LaunchTemplateVersion) GetJoinFleet() NilBool {
+	return s.JoinFleet
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -6007,6 +6076,11 @@ func (s *LaunchTemplateVersion) SetLabels(val NilLaunchTemplateVersionLabels) {
 // SetDescription sets the value of Description.
 func (s *LaunchTemplateVersion) SetDescription(val NilString) {
 	s.Description = val
+}
+
+// SetJoinFleet sets the value of JoinFleet.
+func (s *LaunchTemplateVersion) SetJoinFleet(val NilBool) {
+	s.JoinFleet = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -7207,6 +7281,9 @@ type NewLaunchTemplateVersion struct {
 	// A key may not contain a colon, whitespace or control characters.
 	Labels      OptNewLaunchTemplateVersionLabels `json:"labels"`
 	Description OptString                         `json:"description"`
+	// Whether instances created from this version join Leaflow Fleet, as described for `join_fleet` on
+	// instance creation. If omitted, instances join when their image supports Fleet.
+	JoinFleet OptBool `json:"join_fleet"`
 }
 
 // GetVersionDescription returns the value of VersionDescription.
@@ -7249,6 +7326,11 @@ func (s *NewLaunchTemplateVersion) GetDescription() OptString {
 	return s.Description
 }
 
+// GetJoinFleet returns the value of JoinFleet.
+func (s *NewLaunchTemplateVersion) GetJoinFleet() OptBool {
+	return s.JoinFleet
+}
+
 // SetVersionDescription sets the value of VersionDescription.
 func (s *NewLaunchTemplateVersion) SetVersionDescription(val OptString) {
 	s.VersionDescription = val
@@ -7287,6 +7369,11 @@ func (s *NewLaunchTemplateVersion) SetLabels(val OptNewLaunchTemplateVersionLabe
 // SetDescription sets the value of Description.
 func (s *NewLaunchTemplateVersion) SetDescription(val OptString) {
 	s.Description = val
+}
+
+// SetJoinFleet sets the value of JoinFleet.
+func (s *NewLaunchTemplateVersion) SetJoinFleet(val OptBool) {
+	s.JoinFleet = val
 }
 
 // A key may not contain a colon, whitespace or control characters.
@@ -7414,6 +7501,51 @@ func (o NilBillingCancellation) Get() (v BillingCancellation, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilBillingCancellation) Or(d BillingCancellation) BillingCancellation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilBool returns new NilBool with value set to v.
+func NewNilBool(v bool) NilBool {
+	return NilBool{
+		Value: v,
+	}
+}
+
+// NilBool is nullable bool.
+type NilBool struct {
+	Value bool
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilBool) SetTo(v bool) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilBool) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilBool) SetToNull() {
+	o.Null = true
+	var v bool
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilBool) Get() (v bool, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilBool) Or(d bool) bool {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -11339,6 +11471,9 @@ type PrivateImageResource struct {
 	MinMemoryMib int64 `json:"min_memory_mib"`
 	// False means a new password can only be set by rebuilding an instance created from this image.
 	SupportsPasswordReset bool `json:"supports_password_reset"`
+	// Whether instances created from this image can join Leaflow Fleet (`join_fleet`). The value is true
+	// when the operating system captured from the source instance supports Fleet.
+	SupportsFleet bool `json:"supports_fleet"`
 	// Only available images can install instances. A capture is pending until it finishes, then becomes
 	// available. Failed means no usable image was produced; failure describes the outcome. Error means the
 	// image service broke the image or no longer holds it, and nothing can be installed from it. A value
@@ -11429,6 +11564,11 @@ func (s *PrivateImageResource) GetMinMemoryMib() int64 {
 // GetSupportsPasswordReset returns the value of SupportsPasswordReset.
 func (s *PrivateImageResource) GetSupportsPasswordReset() bool {
 	return s.SupportsPasswordReset
+}
+
+// GetSupportsFleet returns the value of SupportsFleet.
+func (s *PrivateImageResource) GetSupportsFleet() bool {
+	return s.SupportsFleet
 }
 
 // GetStatus returns the value of Status.
@@ -11544,6 +11684,11 @@ func (s *PrivateImageResource) SetMinMemoryMib(val int64) {
 // SetSupportsPasswordReset sets the value of SupportsPasswordReset.
 func (s *PrivateImageResource) SetSupportsPasswordReset(val bool) {
 	s.SupportsPasswordReset = val
+}
+
+// SetSupportsFleet sets the value of SupportsFleet.
+func (s *PrivateImageResource) SetSupportsFleet(val bool) {
+	s.SupportsFleet = val
 }
 
 // SetStatus sets the value of Status.
@@ -11895,6 +12040,9 @@ type PublicImageResource struct {
 	MinMemoryMib int64 `json:"min_memory_mib"`
 	// False means a new password can only be set by rebuilding an instance created from this image.
 	SupportsPasswordReset bool `json:"supports_password_reset"`
+	// Whether instances created from this image can join Leaflow Fleet (`join_fleet`). The value applies
+	// to this specific image build; other builds of the same operating system may differ.
+	SupportsFleet bool `json:"supports_fleet"`
 	// `on_sale` images can install new instances. `off_sale` means the platform withdrew the image: it
 	// stops new purchases only, and instances already running it keep running and can still be rebuilt
 	// onto it.
@@ -11950,6 +12098,11 @@ func (s *PublicImageResource) GetMinMemoryMib() int64 {
 // GetSupportsPasswordReset returns the value of SupportsPasswordReset.
 func (s *PublicImageResource) GetSupportsPasswordReset() bool {
 	return s.SupportsPasswordReset
+}
+
+// GetSupportsFleet returns the value of SupportsFleet.
+func (s *PublicImageResource) GetSupportsFleet() bool {
+	return s.SupportsFleet
 }
 
 // GetSaleStatus returns the value of SaleStatus.
@@ -12010,6 +12163,11 @@ func (s *PublicImageResource) SetMinMemoryMib(val int64) {
 // SetSupportsPasswordReset sets the value of SupportsPasswordReset.
 func (s *PublicImageResource) SetSupportsPasswordReset(val bool) {
 	s.SupportsPasswordReset = val
+}
+
+// SetSupportsFleet sets the value of SupportsFleet.
+func (s *PublicImageResource) SetSupportsFleet(val bool) {
+	s.SupportsFleet = val
 }
 
 // SetSaleStatus sets the value of SaleStatus.
@@ -12267,6 +12425,11 @@ type RebuildInstanceRequestBody struct {
 	// The login account's password on the reinstalled system. Omitted, only SSH keys log in, those the
 	// project shares and those of the caller's account.
 	Password OptPasswordChoice `json:"password"`
+	// Whether the rebuilt instance joins Leaflow Fleet. If omitted, the instance's current value is
+	// retained. Because a rebuild replaces the operating system, the instance enrolls as a new Fleet
+	// machine and the previous machine is removed from Fleet. Setting the value to `true` for an image
+	// that does not support Fleet is rejected with 422 `INSTANCE_FLEET_UNSUPPORTED`.
+	JoinFleet OptBool `json:"join_fleet"`
 }
 
 // GetImageID returns the value of ImageID.
@@ -12279,6 +12442,11 @@ func (s *RebuildInstanceRequestBody) GetPassword() OptPasswordChoice {
 	return s.Password
 }
 
+// GetJoinFleet returns the value of JoinFleet.
+func (s *RebuildInstanceRequestBody) GetJoinFleet() OptBool {
+	return s.JoinFleet
+}
+
 // SetImageID sets the value of ImageID.
 func (s *RebuildInstanceRequestBody) SetImageID(val ImageID) {
 	s.ImageID = val
@@ -12287,6 +12455,11 @@ func (s *RebuildInstanceRequestBody) SetImageID(val ImageID) {
 // SetPassword sets the value of Password.
 func (s *RebuildInstanceRequestBody) SetPassword(val OptPasswordChoice) {
 	s.Password = val
+}
+
+// SetJoinFleet sets the value of JoinFleet.
+func (s *RebuildInstanceRequestBody) SetJoinFleet(val OptBool) {
+	s.JoinFleet = val
 }
 
 // Ref: #/components/schemas/RebuildInstanceResponseBody
@@ -12644,22 +12817,6 @@ func (s *ReleaseSetItem) SetSubscriptionID(val uuid.UUID) {
 // SetResource sets the value of Resource.
 func (s *ReleaseSetItem) SetResource(val ReleaseResource) {
 	s.Resource = val
-}
-
-// Ref: #/components/schemas/RescueInstanceRequestBody
-type RescueInstanceRequestBody struct {
-	// Password for the rescue environment. Generate and retain a strong password before calling.
-	Password string `json:"password"`
-}
-
-// GetPassword returns the value of Password.
-func (s *RescueInstanceRequestBody) GetPassword() string {
-	return s.Password
-}
-
-// SetPassword sets the value of Password.
-func (s *RescueInstanceRequestBody) SetPassword(val string) {
-	s.Password = val
 }
 
 // Ref: #/components/schemas/RescueInstanceResponseBody

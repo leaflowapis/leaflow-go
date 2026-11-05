@@ -2355,6 +2355,12 @@ func (s *CreateInstanceRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.JoinFleet.Set {
+			e.FieldStart("join_fleet")
+			s.JoinFleet.Encode(e)
+		}
+	}
+	{
 		if s.Checkout.Set {
 			e.FieldStart("checkout")
 			s.Checkout.Encode(e)
@@ -2362,7 +2368,7 @@ func (s *CreateInstanceRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateInstanceRequestBody = [12]string{
+var jsonFieldsNameOfCreateInstanceRequestBody = [13]string{
 	0:  "launch_template",
 	1:  "name",
 	2:  "count",
@@ -2374,7 +2380,8 @@ var jsonFieldsNameOfCreateInstanceRequestBody = [12]string{
 	8:  "password",
 	9:  "labels",
 	10: "description",
-	11: "checkout",
+	11: "join_fleet",
+	12: "checkout",
 }
 
 // Decode decodes CreateInstanceRequestBody from json.
@@ -2505,6 +2512,16 @@ func (s *CreateInstanceRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"description\"")
+			}
+		case "join_fleet":
+			if err := func() error {
+				s.JoinFleet.Reset()
+				if err := s.JoinFleet.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"join_fleet\"")
 			}
 		case "checkout":
 			if err := func() error {
@@ -9002,9 +9019,21 @@ func (s *Instance) encodeFields(e *jx.Encoder) {
 		e.FieldStart("latest_operation")
 		s.LatestOperation.Encode(e)
 	}
+	{
+		e.FieldStart("join_fleet")
+		e.Bool(s.JoinFleet)
+	}
+	{
+		e.FieldStart("supports_fleet")
+		e.Bool(s.SupportsFleet)
+	}
+	{
+		e.FieldStart("fleet_machine_id")
+		s.FleetMachineID.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfInstance = [31]string{
+var jsonFieldsNameOfInstance = [34]string{
 	0:  "availability_zone_id",
 	1:  "created_at",
 	2:  "hostname",
@@ -9036,6 +9065,9 @@ var jsonFieldsNameOfInstance = [31]string{
 	28: "launch_template_id",
 	29: "launch_template_version_number",
 	30: "latest_operation",
+	31: "join_fleet",
+	32: "supports_fleet",
+	33: "fleet_machine_id",
 }
 
 // Decode decodes Instance from json.
@@ -9043,7 +9075,7 @@ func (s *Instance) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode Instance to nil")
 	}
-	var requiredBitSet [4]uint8
+	var requiredBitSet [5]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -9402,6 +9434,40 @@ func (s *Instance) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"latest_operation\"")
 			}
+		case "join_fleet":
+			requiredBitSet[3] |= 1 << 7
+			if err := func() error {
+				v, err := d.Bool()
+				s.JoinFleet = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"join_fleet\"")
+			}
+		case "supports_fleet":
+			requiredBitSet[4] |= 1 << 0
+			if err := func() error {
+				v, err := d.Bool()
+				s.SupportsFleet = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"supports_fleet\"")
+			}
+		case "fleet_machine_id":
+			requiredBitSet[4] |= 1 << 1
+			if err := func() error {
+				if err := s.FleetMachineID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"fleet_machine_id\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -9411,11 +9477,12 @@ func (s *Instance) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [4]uint8{
+	for i, mask := range [5]uint8{
 		0b11111111,
 		0b11111111,
 		0b11111111,
-		0b01111111,
+		0b11111111,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -12861,12 +12928,16 @@ func (s *LaunchTemplateVersion) encodeFields(e *jx.Encoder) {
 		s.Description.Encode(e)
 	}
 	{
+		e.FieldStart("join_fleet")
+		s.JoinFleet.Encode(e)
+	}
+	{
 		e.FieldStart("created_at")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
 }
 
-var jsonFieldsNameOfLaunchTemplateVersion = [11]string{
+var jsonFieldsNameOfLaunchTemplateVersion = [12]string{
 	0:  "launch_template_id",
 	1:  "version_number",
 	2:  "version_description",
@@ -12877,7 +12948,8 @@ var jsonFieldsNameOfLaunchTemplateVersion = [11]string{
 	7:  "elastic_ip",
 	8:  "labels",
 	9:  "description",
-	10: "created_at",
+	10: "join_fleet",
+	11: "created_at",
 }
 
 // Decode decodes LaunchTemplateVersion from json.
@@ -13001,8 +13073,18 @@ func (s *LaunchTemplateVersion) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"description\"")
 			}
-		case "created_at":
+		case "join_fleet":
 			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				if err := s.JoinFleet.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"join_fleet\"")
+			}
+		case "created_at":
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -13024,7 +13106,7 @@ func (s *LaunchTemplateVersion) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -15428,9 +15510,15 @@ func (s *NewLaunchTemplateVersion) encodeFields(e *jx.Encoder) {
 			s.Description.Encode(e)
 		}
 	}
+	{
+		if s.JoinFleet.Set {
+			e.FieldStart("join_fleet")
+			s.JoinFleet.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfNewLaunchTemplateVersion = [8]string{
+var jsonFieldsNameOfNewLaunchTemplateVersion = [9]string{
 	0: "version_description",
 	1: "instance_type_id",
 	2: "boot_volume",
@@ -15439,6 +15527,7 @@ var jsonFieldsNameOfNewLaunchTemplateVersion = [8]string{
 	5: "elastic_ip",
 	6: "labels",
 	7: "description",
+	8: "join_fleet",
 }
 
 // Decode decodes NewLaunchTemplateVersion from json.
@@ -15535,6 +15624,16 @@ func (s *NewLaunchTemplateVersion) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"description\"")
+			}
+		case "join_fleet":
+			if err := func() error {
+				s.JoinFleet.Reset()
+				if err := s.JoinFleet.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"join_fleet\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -15841,6 +15940,52 @@ func (s NilBillingCancellation) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NilBillingCancellation) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes bool as json.
+func (o NilBool) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	e.Bool(bool(o.Value))
+}
+
+// Decode decodes bool from json.
+func (o *NilBool) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilBool to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v bool
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	v, err := d.Bool()
+	if err != nil {
+		return err
+	}
+	o.Value = bool(v)
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilBool) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilBool) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -19916,6 +20061,10 @@ func (s *PrivateImageResource) encodeFields(e *jx.Encoder) {
 		e.Bool(s.SupportsPasswordReset)
 	}
 	{
+		e.FieldStart("supports_fleet")
+		e.Bool(s.SupportsFleet)
+	}
+	{
 		e.FieldStart("status")
 		s.Status.Encode(e)
 	}
@@ -19973,7 +20122,7 @@ func (s *PrivateImageResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPrivateImageResource = [23]string{
+var jsonFieldsNameOfPrivateImageResource = [24]string{
 	0:  "id",
 	1:  "region_id",
 	2:  "name",
@@ -19984,19 +20133,20 @@ var jsonFieldsNameOfPrivateImageResource = [23]string{
 	7:  "min_volume_size_gib",
 	8:  "min_memory_mib",
 	9:  "supports_password_reset",
-	10: "status",
-	11: "failure",
-	12: "size_bytes",
-	13: "billing_position",
-	14: "source_instance_id",
-	15: "created_at",
-	16: "failure_reason",
-	17: "checkout_session_id",
-	18: "order_id",
-	19: "order_item_id",
-	20: "subscription_id",
-	21: "release_set",
-	22: "latest_operation",
+	10: "supports_fleet",
+	11: "status",
+	12: "failure",
+	13: "size_bytes",
+	14: "billing_position",
+	15: "source_instance_id",
+	16: "created_at",
+	17: "failure_reason",
+	18: "checkout_session_id",
+	19: "order_id",
+	20: "order_item_id",
+	21: "subscription_id",
+	22: "release_set",
+	23: "latest_operation",
 }
 
 // Decode decodes PrivateImageResource from json.
@@ -20124,8 +20274,20 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"supports_password_reset\"")
 			}
-		case "status":
+		case "supports_fleet":
 			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				v, err := d.Bool()
+				s.SupportsFleet = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"supports_fleet\"")
+			}
+		case "status":
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -20135,7 +20297,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "failure":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				if err := s.Failure.Decode(d); err != nil {
 					return err
@@ -20145,7 +20307,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"failure\"")
 			}
 		case "size_bytes":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				v, err := d.Int64()
 				s.SizeBytes = int64(v)
@@ -20157,7 +20319,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"size_bytes\"")
 			}
 		case "billing_position":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				if err := s.BillingPosition.Decode(d); err != nil {
 					return err
@@ -20167,7 +20329,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"billing_position\"")
 			}
 		case "source_instance_id":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				if err := s.SourceInstanceID.Decode(d); err != nil {
 					return err
@@ -20177,7 +20339,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"source_instance_id\"")
 			}
 		case "created_at":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -20189,7 +20351,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "failure_reason":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				if err := s.FailureReason.Decode(d); err != nil {
 					return err
@@ -20199,7 +20361,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"failure_reason\"")
 			}
 		case "checkout_session_id":
-			requiredBitSet[2] |= 1 << 1
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				if err := s.CheckoutSessionID.Decode(d); err != nil {
 					return err
@@ -20209,7 +20371,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"checkout_session_id\"")
 			}
 		case "order_id":
-			requiredBitSet[2] |= 1 << 2
+			requiredBitSet[2] |= 1 << 3
 			if err := func() error {
 				if err := s.OrderID.Decode(d); err != nil {
 					return err
@@ -20219,7 +20381,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"order_id\"")
 			}
 		case "order_item_id":
-			requiredBitSet[2] |= 1 << 3
+			requiredBitSet[2] |= 1 << 4
 			if err := func() error {
 				if err := s.OrderItemID.Decode(d); err != nil {
 					return err
@@ -20229,7 +20391,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"order_item_id\"")
 			}
 		case "subscription_id":
-			requiredBitSet[2] |= 1 << 4
+			requiredBitSet[2] |= 1 << 5
 			if err := func() error {
 				if err := s.SubscriptionID.Decode(d); err != nil {
 					return err
@@ -20239,7 +20401,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"subscription_id\"")
 			}
 		case "release_set":
-			requiredBitSet[2] |= 1 << 5
+			requiredBitSet[2] |= 1 << 6
 			if err := func() error {
 				s.ReleaseSet = make([]ReleaseSetItem, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -20257,7 +20419,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"release_set\"")
 			}
 		case "latest_operation":
-			requiredBitSet[2] |= 1 << 6
+			requiredBitSet[2] |= 1 << 7
 			if err := func() error {
 				if err := s.LatestOperation.Decode(d); err != nil {
 					return err
@@ -20278,7 +20440,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
-		0b01111111,
+		0b11111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -20872,6 +21034,10 @@ func (s *PublicImageResource) encodeFields(e *jx.Encoder) {
 		e.Bool(s.SupportsPasswordReset)
 	}
 	{
+		e.FieldStart("supports_fleet")
+		e.Bool(s.SupportsFleet)
+	}
+	{
 		e.FieldStart("sale_status")
 		s.SaleStatus.Encode(e)
 	}
@@ -20881,7 +21047,7 @@ func (s *PublicImageResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPublicImageResource = [12]string{
+var jsonFieldsNameOfPublicImageResource = [13]string{
 	0:  "id",
 	1:  "region_id",
 	2:  "name",
@@ -20892,8 +21058,9 @@ var jsonFieldsNameOfPublicImageResource = [12]string{
 	7:  "min_volume_size_gib",
 	8:  "min_memory_mib",
 	9:  "supports_password_reset",
-	10: "sale_status",
-	11: "created_at",
+	10: "supports_fleet",
+	11: "sale_status",
+	12: "created_at",
 }
 
 // Decode decodes PublicImageResource from json.
@@ -21021,8 +21188,20 @@ func (s *PublicImageResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"supports_password_reset\"")
 			}
-		case "sale_status":
+		case "supports_fleet":
 			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				v, err := d.Bool()
+				s.SupportsFleet = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"supports_fleet\"")
+			}
+		case "sale_status":
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.SaleStatus.Decode(d); err != nil {
 					return err
@@ -21032,7 +21211,7 @@ func (s *PublicImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"sale_status\"")
 			}
 		case "created_at":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -21054,7 +21233,7 @@ func (s *PublicImageResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00001111,
+		0b00011111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -21326,11 +21505,18 @@ func (s *RebuildInstanceRequestBody) encodeFields(e *jx.Encoder) {
 			s.Password.Encode(e)
 		}
 	}
+	{
+		if s.JoinFleet.Set {
+			e.FieldStart("join_fleet")
+			s.JoinFleet.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfRebuildInstanceRequestBody = [2]string{
+var jsonFieldsNameOfRebuildInstanceRequestBody = [3]string{
 	0: "image_id",
 	1: "password",
+	2: "join_fleet",
 }
 
 // Decode decodes RebuildInstanceRequestBody from json.
@@ -21361,6 +21547,16 @@ func (s *RebuildInstanceRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"password\"")
+			}
+		case "join_fleet":
+			if err := func() error {
+				s.JoinFleet.Reset()
+				if err := s.JoinFleet.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"join_fleet\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -22190,102 +22386,6 @@ func (s *ReleaseSetItem) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *ReleaseSetItem) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode implements json.Marshaler.
-func (s *RescueInstanceRequestBody) Encode(e *jx.Encoder) {
-	e.ObjStart()
-	s.encodeFields(e)
-	e.ObjEnd()
-}
-
-// encodeFields encodes fields.
-func (s *RescueInstanceRequestBody) encodeFields(e *jx.Encoder) {
-	{
-		e.FieldStart("password")
-		e.Str(s.Password)
-	}
-}
-
-var jsonFieldsNameOfRescueInstanceRequestBody = [1]string{
-	0: "password",
-}
-
-// Decode decodes RescueInstanceRequestBody from json.
-func (s *RescueInstanceRequestBody) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode RescueInstanceRequestBody to nil")
-	}
-	var requiredBitSet [1]uint8
-
-	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
-		switch string(k) {
-		case "password":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				v, err := d.Str()
-				s.Password = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"password\"")
-			}
-		default:
-			return errors.Errorf("unexpected field %q", k)
-		}
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "decode RescueInstanceRequestBody")
-	}
-	// Validate required fields.
-	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b00000001,
-	} {
-		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
-			// Mask only required fields and check equality to mask using XOR.
-			//
-			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
-			// Bits of fields which would be set are actually bits of missed fields.
-			missed := bits.OnesCount8(result)
-			for bitN := 0; bitN < missed; bitN++ {
-				bitIdx := bits.TrailingZeros8(result)
-				fieldIdx := i*8 + bitIdx
-				var name string
-				if fieldIdx < len(jsonFieldsNameOfRescueInstanceRequestBody) {
-					name = jsonFieldsNameOfRescueInstanceRequestBody[fieldIdx]
-				} else {
-					name = strconv.Itoa(fieldIdx)
-				}
-				failures = append(failures, validate.FieldError{
-					Name:  name,
-					Error: validate.ErrFieldRequired,
-				})
-				// Reset bit.
-				result &^= 1 << bitIdx
-			}
-		}
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s *RescueInstanceRequestBody) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *RescueInstanceRequestBody) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
