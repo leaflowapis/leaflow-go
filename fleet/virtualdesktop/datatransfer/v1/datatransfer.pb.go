@@ -133,6 +133,42 @@ func (DragAction) EnumDescriptor() ([]byte, []int) {
 	return file_leaflow_fleet_virtualdesktop_datatransfer_v1_datatransfer_proto_rawDescGZIP(), []int{1}
 }
 
+// Windows 原生表示不能仅按格式名合并：同一格式的 aspect、index 和介质各自独立。
+// 无法用标准媒体类型完整表达的可序列化表示使用下列媒体类型（参数均为 ASCII）：
+// application/x-leaflow-windows-format;name=<utf16hex>;aspect=<u32>;index=<i32>;medium=<kind>
+// name 为格式名每个 UTF-16 单元的四位十六进制串，不含终止 NUL；接收端以名称重新
+// 注册格式，不得跨机复用来源的注册号。非注册格式改用 id=<1..49151>，不得同时带 name。
+// aspect、index、medium 必须显式存在，不得丢失、重复或以未知参数降级为其它格式。
+// medium=bytes 为 HGLOBAL/IStream 的可序列化字节，medium=storage 为完整 Compound File
+// Binary 表示，medium=emf 为 TYMED_ENHMF 的完整增强型图元文件记录，不得降为位图。
+// 普通 CF_ENHMETAFILE 的内容表示使用 image/emf；其它 aspect/index 保留显式选择器。
+// medium=file 为 TYMED_FILE 承载的某种格式的完整正文，不是 lpszFileName 或文件引用。
+// 仅在读取该表示时打开来源本机介质，按块取得正文；空正文有效，读取失败不改用其它格式。
+// 接收端按需创建独立的本机临时介质文件，文件名仅交给本机 OLE 目标，绝不跨机发送。
+// 已交出的介质由自己的 STGMEDIUM/pUnkForRelease 持有，不随原声明或读取期结束提前删除；
+// 最后一个介质引用释放时删除自己创建的临时文件。来源介质仍按原 STGMEDIUM 的规则释放。
+// medium=metafile-picture 为 TYMED_MFPICT：先依次编码 mm、xExt、yExt 三个 i32 小端数，
+// 随后是完整 WMF 记录；不得发送 METAFILEPICT 的本机结构、对齐填充或 hMF 句柄。
+// medium=gdi 为 TYMED_GDI：先编码对象种类 u32 小端数，7 为位图，5 为调色板。
+// 位图随后为 40 字节 BITMAPINFOHEADER、BI_BITFIELDS 所需的三个颜色掩码、声明的
+// RGBQUAD 颜色表及 DWORD 对齐的完整像素行；仅使用 BI_RGB 或 BI_BITFIELDS，保留
+// 有效色深和像素，biSizeImage 精确等于像素长度，不含 BMP 文件头或本机指针。
+// 调色板随后为 LOGPALETTE：version=0x300、条目数两个 u16 小端数，再依次编码每个
+// PALETTEENTRY 的 red、green、blue、flags 四字节，接收端创建新的本机 GDI 对象。
+// FORMATETC 的非空 ptd 另以可选 device=<bytehex> 参数声明整个 DVTARGETDEVICE；
+// 每字节两个十六进制字符，包含 tdSize 指定的完整描述、DEVMODE 和驱动私有尾部。
+// 省略 device 表示空 ptd；长度和内部偏移必须有效，不得把畸形或重复参数降级为普通
+// 注册格式。设备描述也是表示身份，枚举、读取、缓存和重建不得合并不同 device。
+// 各次原生枚举交出独立、可由 COM 分配器释放的副本；不得预读正文来取得该声明。
+// 设备描述仅供保留和匹配，不得据此加载来源驱动或创建来源设备，也不进入日志。
+// 本机介质与以完整媒体类型名提供的原始 HGLOBAL/IStream 字节表示可同时存在；
+// 两者声明同一跨机格式时优先读取原始序列化字节，不得先经过本机 GDI 编组而改变
+// 像素、色表、掩码或其它记录。两种本机表示共用同一媒体类型、读取期和数据通道。
+// 接收端从记录重建介质，绝不把原生句柄、指针、COM 接口或源文件路径当正文。
+// CF_HDROP(id=15)、FileContents、FileGroupDescriptor、PIDL、FileName 等文件/路径格式及
+// 拖放控制格式仍归 filetransfer 或拖放适配，不得用此媒体类型绕过文件引用和权限。
+// 原生声明和取得流引用不能预读正文；各表示继续独立按需读取、校验和取消。
+//
 // Data of one format.
 type DataTransferItem struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1259,8 +1295,10 @@ type DragStart struct {
 	DragId string `protobuf:"bytes,1,opt,name=drag_id,json=dragId,proto3" json:"drag_id,omitempty"`
 	// The session window the drag came from. 0 for a drag of the participant.
 	SourceWindowId uint64 `protobuf:"varint,2,opt,name=source_window_id,json=sourceWindowId,proto3" json:"source_window_id,omitempty"`
-	// The formats the source provides, most faithful first, at most 32 unique
-	// ones of at most 255 bytes each.
+	// The formats the source provides, most faithful first. Names are non-empty,
+	// distinct media types without control characters. Do not truncate the list
+	// or its names; the channel's message framing applies to the declaration,
+	// while format data is read on demand over the data channel.
 	MimeTypes []string `protobuf:"bytes,3,rep,name=mime_types,json=mimeTypes,proto3" json:"mime_types,omitempty"`
 	// The actions the source allows, most preferred first.
 	Actions []DragAction `protobuf:"varint,4,rep,packed,name=actions,proto3,enum=leaflow.fleet.virtualdesktop.datatransfer.v1.DragAction" json:"actions,omitempty"`
@@ -2943,7 +2981,8 @@ type DragPolicy struct {
 	// is true. Empty with all_mime_types_allowed false: none. Files travel only
 	// as offers and still need the matching direction of FileTransferPolicy.
 	AllowedMimeTypes []string `protobuf:"bytes,3,rep,name=allowed_mime_types,json=allowedMimeTypes,proto3" json:"allowed_mime_types,omitempty"`
-	// The longest a drag may last, at most 5 minutes. Unset or 0: no drags.
+	// DragDrop 之前物理手势的最长时间，至多 5 分钟；未设置或 0 表示不能拖拽。
+	// 已受理的原生确认、格式读取及文件交付不受旧手势时限约束，不代表放宽当前权限。
 	MaxDuration *durationpb.Duration `protobuf:"bytes,4,opt,name=max_duration,json=maxDuration,proto3" json:"max_duration,omitempty"`
 	// The participant may drag any format the source offers, including private
 	// application formats. Does not grant a direction or permission to files;

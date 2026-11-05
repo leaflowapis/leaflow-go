@@ -51,6 +51,20 @@ type Invoker interface {
 	//
 	// POST /account/v1/me/invitations:accept
 	AcceptInvitationByToken(ctx context.Context, request *AcceptInvitationByTokenRequestBody) (*AcceptedInvitationResponseBody, error)
+	// AuthorizeApplication invokes authorize-application operation.
+	//
+	// Permits the application to exchange the access tokens of this account for scoped tokens of the
+	// project. Within the project, the application then holds exactly the permissions of this account and
+	// none beyond them.
+	//
+	// The caller must be a member of the project. Repeating the request returns the existing
+	// authorization. Authorizing a disabled application fails with 412 `APPLICATION_DISABLED`.
+	//
+	// An access token issued to an application is rejected, so that an application cannot authorize
+	// itself.
+	//
+	// POST /account/v1/me/authorized-applications
+	AuthorizeApplication(ctx context.Context, request *AuthorizeApplicationRequestBody) (*AuthorizedApplicationResource, error)
 	// CancelAccountDeletion invokes cancel-account-deletion operation.
 	//
 	// Returns the account to use. Cancelling when no deletion is open returns `state` `none`. Fails with
@@ -99,6 +113,13 @@ type Invoker interface {
 	// A project that is suspended, banned or being deleted still issues tokens; those states restrict
 	// writes, and the project remains readable.
 	//
+	// An access token issued to an application is exchanged only for a project for which the user has
+	// authorized that application. Otherwise, the exchange fails with 403
+	// `APPLICATION_AUTHORIZATION_REQUIRED`, whose `meta` contains the `client_id` and the `project_id`;
+	// the application should then direct the user to the authorization page. For a disabled application
+	// the exchange fails with 412 `APPLICATION_DISABLED`, and for a deleted application with 404
+	// `APPLICATION_NOT_FOUND`, even if its access token has not yet expired.
+	//
 	// POST /account/v1/projects/{projectId}/scoped-tokens
 	CreateScopedToken(ctx context.Context, params CreateScopedTokenParams) (*ScopedTokenResponseBody, error)
 	// GetAccount invokes get-account operation.
@@ -123,6 +144,20 @@ type Invoker interface {
 	//
 	// GET /account/v1/me/deletion
 	GetAccountDeletion(ctx context.Context) (*AccountDeletionResource, error)
+	// GetApplication invokes get-application operation.
+	//
+	// Returns the application requesting authorization, so that the authorization page can identify the
+	// requester. Any authenticated account may read it, since the `client_id` is part of every
+	// authorization request.
+	//
+	// A deleted application is reported as not found. A disabled application is returned with `status`
+	// `DISABLED` and cannot be authorized.
+	//
+	// The authorization page returns the user only to a `redirect_uri` that exactly matches one of
+	// `redirect_uris`; if none matches, the user is not redirected.
+	//
+	// GET /account/v1/applications/{clientId}
+	GetApplication(ctx context.Context, params GetApplicationParams) (*ApplicationResource, error)
 	// GetIdentityVerification invokes get-identity-verification operation.
 	//
 	// The status is `UNVERIFIED` rather than 404 when nothing has been submitted. The legal name and the
@@ -198,6 +233,17 @@ type Invoker interface {
 	//
 	// GET /account/v1/agreements
 	ListAgreements(ctx context.Context) (*AgreementListResponseBody, error)
+	// ListAuthorizedApplications invokes list-authorized-applications operation.
+	//
+	// Returns one item for each application and project, most recent first. An authorization is omitted
+	// once it has been revoked, once the membership under which it was granted has ended, or once the
+	// application has been deleted.
+	//
+	// When called with an access token issued to an application, only the authorizations of that
+	// application are returned.
+	//
+	// GET /account/v1/me/authorized-applications
+	ListAuthorizedApplications(ctx context.Context, params ListAuthorizedApplicationsParams) (*LengthAwarePageAuthorizedApplicationResource, error)
 	// ListConsents invokes list-consents operation.
 	//
 	// Every record, most recent first, including versions that are no longer current.
@@ -293,6 +339,17 @@ type Invoker interface {
 	//
 	// DELETE /account/v1/me
 	RequestAccountDeletion(ctx context.Context, params RequestAccountDeletionParams) (*AccountDeletionResource, error)
+	// RevokeAuthorizedApplication invokes revoke-authorized-application operation.
+	//
+	// After revocation, the application can no longer exchange tokens for the project. A scoped token
+	// already issued to it remains valid until it expires. Repeating the request returns the same
+	// authorization.
+	//
+	// When called with an access token issued to an application, only the authorizations of that
+	// application can be revoked; this allows an application to disconnect itself.
+	//
+	// DELETE /account/v1/me/authorized-applications/{authorizationId}
+	RevokeAuthorizedApplication(ctx context.Context, params RevokeAuthorizedApplicationParams) (*AuthorizedApplicationResource, error)
 	// RevokeSSHKey invokes revoke-ssh-key operation.
 	//
 	// The row remains and its status becomes `REVOKED`, so it stays answerable afterwards which key was
@@ -753,6 +810,139 @@ func (c *Client) sendAcceptInvitationByToken(ctx context.Context, request *Accep
 	return result, nil
 }
 
+// AuthorizeApplication invokes authorize-application operation.
+//
+// Permits the application to exchange the access tokens of this account for scoped tokens of the
+// project. Within the project, the application then holds exactly the permissions of this account and
+// none beyond them.
+//
+// The caller must be a member of the project. Repeating the request returns the existing
+// authorization. Authorizing a disabled application fails with 412 `APPLICATION_DISABLED`.
+//
+// An access token issued to an application is rejected, so that an application cannot authorize
+// itself.
+//
+// POST /account/v1/me/authorized-applications
+func (c *Client) AuthorizeApplication(ctx context.Context, request *AuthorizeApplicationRequestBody) (*AuthorizedApplicationResource, error) {
+	res, err := c.sendAuthorizeApplication(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendAuthorizeApplication(ctx context.Context, request *AuthorizeApplicationRequestBody) (res *AuthorizedApplicationResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("authorize-application"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/me/authorized-applications"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, AuthorizeApplicationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/me/authorized-applications"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeAuthorizeApplicationRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, AuthorizeApplicationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeAuthorizeApplicationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // CancelAccountDeletion invokes cancel-account-deletion operation.
 //
 // Returns the account to use. Cancelling when no deletion is open returns `state` `none`. Fails with
@@ -1146,6 +1336,13 @@ func (c *Client) sendCreateSSHKey(ctx context.Context, request *CreateSSHKeyRequ
 // A project that is suspended, banned or being deleted still issues tokens; those states restrict
 // writes, and the project remains readable.
 //
+// An access token issued to an application is exchanged only for a project for which the user has
+// authorized that application. Otherwise, the exchange fails with 403
+// `APPLICATION_AUTHORIZATION_REQUIRED`, whose `meta` contains the `client_id` and the `project_id`;
+// the application should then direct the user to the authorization page. For a disabled application
+// the exchange fails with 412 `APPLICATION_DISABLED`, and for a deleted application with 404
+// `APPLICATION_NOT_FOUND`, even if its access token has not yet expired.
+//
 // POST /account/v1/projects/{projectId}/scoped-tokens
 func (c *Client) CreateScopedToken(ctx context.Context, params CreateScopedTokenParams) (*ScopedTokenResponseBody, error) {
 	res, err := c.sendCreateScopedToken(ctx, params)
@@ -1503,6 +1700,145 @@ func (c *Client) sendGetAccountDeletion(ctx context.Context) (res *AccountDeleti
 
 	stage = "DecodeResponse"
 	result, err := decodeGetAccountDeletionResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetApplication invokes get-application operation.
+//
+// Returns the application requesting authorization, so that the authorization page can identify the
+// requester. Any authenticated account may read it, since the `client_id` is part of every
+// authorization request.
+//
+// A deleted application is reported as not found. A disabled application is returned with `status`
+// `DISABLED` and cannot be authorized.
+//
+// The authorization page returns the user only to a `redirect_uri` that exactly matches one of
+// `redirect_uris`; if none matches, the user is not redirected.
+//
+// GET /account/v1/applications/{clientId}
+func (c *Client) GetApplication(ctx context.Context, params GetApplicationParams) (*ApplicationResource, error) {
+	res, err := c.sendGetApplication(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetApplication(ctx context.Context, params GetApplicationParams) (res *ApplicationResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-application"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/applications/{clientId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetApplicationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/account/v1/applications/"
+	{
+		// Encode "clientId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "clientId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.ClientId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetApplicationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetApplicationResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2334,6 +2670,162 @@ func (c *Client) sendListAgreements(ctx context.Context) (res *AgreementListResp
 
 	stage = "DecodeResponse"
 	result, err := decodeListAgreementsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListAuthorizedApplications invokes list-authorized-applications operation.
+//
+// Returns one item for each application and project, most recent first. An authorization is omitted
+// once it has been revoked, once the membership under which it was granted has ended, or once the
+// application has been deleted.
+//
+// When called with an access token issued to an application, only the authorizations of that
+// application are returned.
+//
+// GET /account/v1/me/authorized-applications
+func (c *Client) ListAuthorizedApplications(ctx context.Context, params ListAuthorizedApplicationsParams) (*LengthAwarePageAuthorizedApplicationResource, error) {
+	res, err := c.sendListAuthorizedApplications(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListAuthorizedApplications(ctx context.Context, params ListAuthorizedApplicationsParams) (res *LengthAwarePageAuthorizedApplicationResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-authorized-applications"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/me/authorized-applications"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListAuthorizedApplicationsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/me/authorized-applications"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "limit" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Limit.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "offset" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "offset",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Offset.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListAuthorizedApplicationsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListAuthorizedApplicationsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3569,6 +4061,142 @@ func (c *Client) sendRequestAccountDeletion(ctx context.Context, params RequestA
 
 	stage = "DecodeResponse"
 	result, err := decodeRequestAccountDeletionResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// RevokeAuthorizedApplication invokes revoke-authorized-application operation.
+//
+// After revocation, the application can no longer exchange tokens for the project. A scoped token
+// already issued to it remains valid until it expires. Repeating the request returns the same
+// authorization.
+//
+// When called with an access token issued to an application, only the authorizations of that
+// application can be revoked; this allows an application to disconnect itself.
+//
+// DELETE /account/v1/me/authorized-applications/{authorizationId}
+func (c *Client) RevokeAuthorizedApplication(ctx context.Context, params RevokeAuthorizedApplicationParams) (*AuthorizedApplicationResource, error) {
+	res, err := c.sendRevokeAuthorizedApplication(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendRevokeAuthorizedApplication(ctx context.Context, params RevokeAuthorizedApplicationParams) (res *AuthorizedApplicationResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("revoke-authorized-application"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/account/v1/me/authorized-applications/{authorizationId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RevokeAuthorizedApplicationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/account/v1/me/authorized-applications/"
+	{
+		// Encode "authorizationId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "authorizationId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.AuthorizationId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, RevokeAuthorizedApplicationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRevokeAuthorizedApplicationResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

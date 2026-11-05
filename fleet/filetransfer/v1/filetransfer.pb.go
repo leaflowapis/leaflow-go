@@ -217,22 +217,23 @@ func (*FileTransferMessage_Cancel) isFileTransferMessage_Message() {}
 
 func (*FileTransferMessage_Result) isFileTransferMessage_Message() {}
 
-// Files the sender offers. At most FileTransferPolicy.max_entries entries and
-// 512 KiB.
+// 文件声明，不携带清单正文。清单通过 FileContentRequest.manifest 按需读取，
+// 剪贴板、拖拽、文件管理和直接传输都引用同一份连接内声明。
 type FileTransferOffer struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Chosen by the sender, unique on the connection.
 	TransferId string `protobuf:"bytes,1,opt,name=transfer_id,json=transferId,proto3" json:"transfer_id,omitempty"`
-	// The files and directories. A directory comes before its contents.
-	Entries []*FileEntry `protobuf:"bytes,2,rep,name=entries,proto3" json:"entries,omitempty"`
 	// The sum of the regular files' sizes.
 	TotalSizeBytes uint64 `protobuf:"varint,3,opt,name=total_size_bytes,json=totalSizeBytes,proto3" json:"total_size_bytes,omitempty"`
 	// From the participant only: the directory of the session user to store the
 	// files in, which needs FileTransferPolicy.file_system_allowed. Empty: the
 	// user's private transfer directory. Existing files are never overwritten.
 	DestinationDirectory string `protobuf:"bytes,4,opt,name=destination_directory,json=destinationDirectory,proto3" json:"destination_directory,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// 清单的准确条目数，包含目录，必须大于 0。只受 FileTransferPolicy.max_entries
+	// 约束；不能按一条控制消息可以容纳多少条目再缩减。
+	EntryCount    uint64 `protobuf:"varint,5,opt,name=entry_count,json=entryCount,proto3" json:"entry_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *FileTransferOffer) Reset() {
@@ -272,13 +273,6 @@ func (x *FileTransferOffer) GetTransferId() string {
 	return ""
 }
 
-func (x *FileTransferOffer) GetEntries() []*FileEntry {
-	if x != nil {
-		return x.Entries
-	}
-	return nil
-}
-
 func (x *FileTransferOffer) GetTotalSizeBytes() uint64 {
 	if x != nil {
 		return x.TotalSizeBytes
@@ -291,6 +285,13 @@ func (x *FileTransferOffer) GetDestinationDirectory() string {
 		return x.DestinationDirectory
 	}
 	return ""
+}
+
+func (x *FileTransferOffer) GetEntryCount() uint64 {
+	if x != nil {
+		return x.EntryCount
+	}
+	return 0
 }
 
 // One file or directory of an offer.
@@ -395,7 +396,11 @@ type FileTransferRequest struct {
 	FileIds []string `protobuf:"bytes,3,rep,name=file_ids,json=fileIds,proto3" json:"file_ids,omitempty"`
 	// The files go to the receiver's clipboard once stored. Needs the matching
 	// direction of the participant's ClipboardPolicy as well.
-	Clipboard     bool `protobuf:"varint,4,opt,name=clipboard,proto3" json:"clipboard,omitempty"`
+	Clipboard bool `protobuf:"varint,4,opt,name=clipboard,proto3" json:"clipboard,omitempty"`
+	// 本请求的分片序号，从 0 连续增加。
+	PartIndex uint64 `protobuf:"varint,5,opt,name=part_index,json=partIndex,proto3" json:"part_index,omitempty"`
+	// 本请求的最后一片。完整选择到齐后才能确认和读取正文。
+	LastPart      bool `protobuf:"varint,6,opt,name=last_part,json=lastPart,proto3" json:"last_part,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -458,6 +463,20 @@ func (x *FileTransferRequest) GetClipboard() bool {
 	return false
 }
 
+func (x *FileTransferRequest) GetPartIndex() uint64 {
+	if x != nil {
+		return x.PartIndex
+	}
+	return 0
+}
+
+func (x *FileTransferRequest) GetLastPart() bool {
+	if x != nil {
+		return x.LastPart
+	}
+	return false
+}
+
 // The sender confirms the files chosen.
 type FileTransferResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -467,8 +486,12 @@ type FileTransferResponse struct {
 	TransferId string `protobuf:"bytes,2,opt,name=transfer_id,json=transferId,proto3" json:"transfer_id,omitempty"`
 	// The files the receiver may fetch.
 	FileIds []string `protobuf:"bytes,3,rep,name=file_ids,json=fileIds,proto3" json:"file_ids,omitempty"`
-	// Why the sender refused. Unset on success.
-	Error         *status.Status `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	// 拒绝原因，仅最后一片可携带。成功时不设置；失败时此前分片不授权读取。
+	Error *status.Status `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	// 本响应的分片序号，从 0 连续增加。
+	PartIndex uint64 `protobuf:"varint,5,opt,name=part_index,json=partIndex,proto3" json:"part_index,omitempty"`
+	// 本响应的最后一片，收到后才生效。
+	LastPart      bool `protobuf:"varint,6,opt,name=last_part,json=lastPart,proto3" json:"last_part,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -531,6 +554,20 @@ func (x *FileTransferResponse) GetError() *status.Status {
 	return nil
 }
 
+func (x *FileTransferResponse) GetPartIndex() uint64 {
+	if x != nil {
+		return x.PartIndex
+	}
+	return 0
+}
+
+func (x *FileTransferResponse) GetLastPart() bool {
+	if x != nil {
+		return x.LastPart
+	}
+	return false
+}
+
 // Stops a transfer. Either end; open content channels of it close with
 // CANCELLED.
 type FileTransferCancel struct {
@@ -578,18 +615,27 @@ func (x *FileTransferCancel) GetTransferId() string {
 	return ""
 }
 
-// What the receiver stored of an offer. Sent once, when it has fetched
-// everything it chose, or on failure.
+// 接收方交付的文件。选择的条目均已保存或明确跳过，或发生失败时发送一个逻辑结果，
+// 可由多个分片组成。只有最后一片到齐后才能发布终态并释放整项传输的来源。
+// 无错误时，已保存与已跳过条目的并集必须等于已确认的选择；两者不能重复或相交。
+// 跳过不表示传输或校验成功，也不属于失败。
 type FileTransferResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The transfer.
 	TransferId string `protobuf:"bytes,1,opt,name=transfer_id,json=transferId,proto3" json:"transfer_id,omitempty"`
 	// The files verified and stored.
 	FileIds []string `protobuf:"bytes,2,rep,name=file_ids,json=fileIds,proto3" json:"file_ids,omitempty"`
-	// Why the rest failed. Unset when nothing failed.
-	Error         *status.Status `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// 未完成条目的失败原因，仅最后一片可携带。正常结束（包括跳过）时不设置。
+	Error *status.Status `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
+	// 本结果的分片序号，从 0 连续增加。
+	PartIndex uint64 `protobuf:"varint,4,opt,name=part_index,json=partIndex,proto3" json:"part_index,omitempty"`
+	// 本结果的最后一片，收到后才生效。
+	LastPart bool `protobuf:"varint,5,opt,name=last_part,json=lastPart,proto3" json:"last_part,omitempty"`
+	// 接收端明确跳过的条目。只可包含已确认选择的 id；不计为已传输、已校验或已保存。
+	// 可在任意结果分片中携带，必须与 file_ids 一起等末片到齐后再结算。
+	SkippedFileIds []string `protobuf:"bytes,6,rep,name=skipped_file_ids,json=skippedFileIds,proto3" json:"skipped_file_ids,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *FileTransferResult) Reset() {
@@ -643,14 +689,39 @@ func (x *FileTransferResult) GetError() *status.Status {
 	return nil
 }
 
-// Asks for the content of one regular file the sender confirmed. The only
-// message the opener of a content channel sends.
+func (x *FileTransferResult) GetPartIndex() uint64 {
+	if x != nil {
+		return x.PartIndex
+	}
+	return 0
+}
+
+func (x *FileTransferResult) GetLastPart() bool {
+	if x != nil {
+		return x.LastPart
+	}
+	return false
+}
+
+func (x *FileTransferResult) GetSkippedFileIds() []string {
+	if x != nil {
+		return x.SkippedFileIds
+	}
+	return nil
+}
+
+// 请求声明的清单或已确认的一个普通文件。这是 content 通道发起方发送的唯一消息。
 type FileContentRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The transfer.
 	TransferId string `protobuf:"bytes,1,opt,name=transfer_id,json=transferId,proto3" json:"transfer_id,omitempty"`
-	// The file.
-	FileId        string `protobuf:"bytes,2,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
+	// 必须选择一项，不能以空文件 id 代指清单。
+	//
+	// Types that are valid to be assigned to Content:
+	//
+	//	*FileContentRequest_FileId
+	//	*FileContentRequest_Manifest
+	Content       isFileContentRequest_Content `protobuf_oneof:"content"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -692,14 +763,55 @@ func (x *FileContentRequest) GetTransferId() string {
 	return ""
 }
 
+func (x *FileContentRequest) GetContent() isFileContentRequest_Content {
+	if x != nil {
+		return x.Content
+	}
+	return nil
+}
+
 func (x *FileContentRequest) GetFileId() string {
 	if x != nil {
-		return x.FileId
+		if x, ok := x.Content.(*FileContentRequest_FileId); ok {
+			return x.FileId
+		}
 	}
 	return ""
 }
 
-// Part of a file's content, from the source.
+func (x *FileContentRequest) GetManifest() bool {
+	if x != nil {
+		if x, ok := x.Content.(*FileContentRequest_Manifest); ok {
+			return x.Manifest
+		}
+	}
+	return false
+}
+
+type isFileContentRequest_Content interface {
+	isFileContentRequest_Content()
+}
+
+type FileContentRequest_FileId struct {
+	// 已确认的普通文件的 id。
+	FileId string `protobuf:"bytes,2,opt,name=file_id,json=fileId,proto3,oneof"`
+}
+
+type FileContentRequest_Manifest struct {
+	// 必须为 true。清单是逐条 FileEntry 的 protobuf 长度前缀编码：每条先发送
+	// protobuf varint 长度，再发送该 FileEntry 的编码字节；目录先于其内容。
+	// FileContent.data 可在任意字节处拆分，包括长度前缀和单个条目内部。
+	// 接收方递增校验条目 id、父目录、名称和类型，最后核对 entry_count、
+	// total_size_bytes 和 FileContentEnd.sha256。摘要覆盖全部长度前缀和条目字节。
+	// 清单读取成功仅确认元数据，不选择文件、不发送 FileTransferResult。
+	Manifest bool `protobuf:"varint,3,opt,name=manifest,proto3,oneof"`
+}
+
+func (*FileContentRequest_FileId) isFileContentRequest_Content() {}
+
+func (*FileContentRequest_Manifest) isFileContentRequest_Content() {}
+
+// 来源发送的文件正文或清单字节。
 type FileContent struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The part.
@@ -786,8 +898,8 @@ func (*FileContent_Data) isFileContent_Part() {}
 
 func (*FileContent_End) isFileContent_Part() {}
 
-// The end of a file. The receiver checks the size and the digest before
-// storing it.
+// 文件正文或清单的结束。接收方校验摘要，并核对文件长度或清单条目及总大小，
+// 校验通过后才交付。
 type FileContentEnd struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// SHA-256 of the whole content, 32 bytes. Empty with error.
@@ -1601,8 +1713,8 @@ type FileTransferPolicy struct {
 	DownloadAllowed bool `protobuf:"varint,2,opt,name=download_allowed,json=downloadAllowed,proto3" json:"download_allowed,omitempty"`
 	// The participant may use FileSystemService and choose where uploads go.
 	FileSystemAllowed bool `protobuf:"varint,3,opt,name=file_system_allowed,json=fileSystemAllowed,proto3" json:"file_system_allowed,omitempty"`
-	// The most entries, directories included, of one offer. 0: as many as one
-	// offer holds.
+	// 一份声明最多可含的条目数，包含目录。0 表示不限制；不能再按控制消息大小设置
+	// 额外的条目数上限。清单通过受通道额度约束的 content 流读取。
 	MaxEntries    uint32 `protobuf:"varint,4,opt,name=max_entries,json=maxEntries,proto3" json:"max_entries,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1677,13 +1789,14 @@ const file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDesc = "" +
 	"\bresponse\x18\x03 \x01(\v23.leaflow.fleet.filetransfer.v1.FileTransferResponseH\x00R\bresponse\x12K\n" +
 	"\x06cancel\x18\x04 \x01(\v21.leaflow.fleet.filetransfer.v1.FileTransferCancelH\x00R\x06cancel\x12K\n" +
 	"\x06result\x18\x05 \x01(\v21.leaflow.fleet.filetransfer.v1.FileTransferResultH\x00R\x06resultB\t\n" +
-	"\amessage\"\xd7\x01\n" +
+	"\amessage\"\xc3\x01\n" +
 	"\x11FileTransferOffer\x12\x1f\n" +
 	"\vtransfer_id\x18\x01 \x01(\tR\n" +
-	"transferId\x12B\n" +
-	"\aentries\x18\x02 \x03(\v2(.leaflow.fleet.filetransfer.v1.FileEntryR\aentries\x12(\n" +
+	"transferId\x12(\n" +
 	"\x10total_size_bytes\x18\x03 \x01(\x04R\x0etotalSizeBytes\x123\n" +
-	"\x15destination_directory\x18\x04 \x01(\tR\x14destinationDirectory\"\xce\x01\n" +
+	"\x15destination_directory\x18\x04 \x01(\tR\x14destinationDirectory\x12\x1f\n" +
+	"\ventry_count\x18\x05 \x01(\x04R\n" +
+	"entryCountJ\x04\b\x02\x10\x03R\aentries\"\xce\x01\n" +
 	"\tFileEntry\x12\x17\n" +
 	"\afile_id\x18\x01 \x01(\tR\x06fileId\x12\x1b\n" +
 	"\tparent_id\x18\x02 \x01(\tR\bparentId\x12\x12\n" +
@@ -1691,33 +1804,45 @@ const file_leaflow_fleet_filetransfer_v1_filetransfer_proto_rawDesc = "" +
 	"\x04type\x18\x04 \x01(\x0e2'.leaflow.fleet.filetransfer.v1.FileTypeR\x04type\x12\x1d\n" +
 	"\n" +
 	"size_bytes\x18\x05 \x01(\x04R\tsizeBytes\x12\x1b\n" +
-	"\tmime_type\x18\x06 \x01(\tR\bmimeType\"\x8e\x01\n" +
+	"\tmime_type\x18\x06 \x01(\tR\bmimeType\"\xca\x01\n" +
 	"\x13FileTransferRequest\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\x04R\trequestId\x12\x1f\n" +
 	"\vtransfer_id\x18\x02 \x01(\tR\n" +
 	"transferId\x12\x19\n" +
 	"\bfile_ids\x18\x03 \x03(\tR\afileIds\x12\x1c\n" +
-	"\tclipboard\x18\x04 \x01(\bR\tclipboard\"\x9b\x01\n" +
+	"\tclipboard\x18\x04 \x01(\bR\tclipboard\x12\x1d\n" +
+	"\n" +
+	"part_index\x18\x05 \x01(\x04R\tpartIndex\x12\x1b\n" +
+	"\tlast_part\x18\x06 \x01(\bR\blastPart\"\xd7\x01\n" +
 	"\x14FileTransferResponse\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\x04R\trequestId\x12\x1f\n" +
 	"\vtransfer_id\x18\x02 \x01(\tR\n" +
 	"transferId\x12\x19\n" +
 	"\bfile_ids\x18\x03 \x03(\tR\afileIds\x12(\n" +
-	"\x05error\x18\x04 \x01(\v2\x12.google.rpc.StatusR\x05error\"5\n" +
+	"\x05error\x18\x04 \x01(\v2\x12.google.rpc.StatusR\x05error\x12\x1d\n" +
+	"\n" +
+	"part_index\x18\x05 \x01(\x04R\tpartIndex\x12\x1b\n" +
+	"\tlast_part\x18\x06 \x01(\bR\blastPart\"5\n" +
 	"\x12FileTransferCancel\x12\x1f\n" +
 	"\vtransfer_id\x18\x01 \x01(\tR\n" +
-	"transferId\"z\n" +
+	"transferId\"\xe0\x01\n" +
 	"\x12FileTransferResult\x12\x1f\n" +
 	"\vtransfer_id\x18\x01 \x01(\tR\n" +
 	"transferId\x12\x19\n" +
 	"\bfile_ids\x18\x02 \x03(\tR\afileIds\x12(\n" +
-	"\x05error\x18\x03 \x01(\v2\x12.google.rpc.StatusR\x05error\"N\n" +
+	"\x05error\x18\x03 \x01(\v2\x12.google.rpc.StatusR\x05error\x12\x1d\n" +
+	"\n" +
+	"part_index\x18\x04 \x01(\x04R\tpartIndex\x12\x1b\n" +
+	"\tlast_part\x18\x05 \x01(\bR\blastPart\x12(\n" +
+	"\x10skipped_file_ids\x18\x06 \x03(\tR\x0eskippedFileIds\"y\n" +
 	"\x12FileContentRequest\x12\x1f\n" +
 	"\vtransfer_id\x18\x01 \x01(\tR\n" +
-	"transferId\x12\x17\n" +
-	"\afile_id\x18\x02 \x01(\tR\x06fileId\"n\n" +
+	"transferId\x12\x19\n" +
+	"\afile_id\x18\x02 \x01(\tH\x00R\x06fileId\x12\x1c\n" +
+	"\bmanifest\x18\x03 \x01(\bH\x00R\bmanifestB\t\n" +
+	"\acontent\"n\n" +
 	"\vFileContent\x12\x14\n" +
 	"\x04data\x18\x01 \x01(\fH\x00R\x04data\x12A\n" +
 	"\x03end\x18\x02 \x01(\v2-.leaflow.fleet.filetransfer.v1.FileContentEndH\x00R\x03endB\x06\n" +
@@ -1839,35 +1964,34 @@ var file_leaflow_fleet_filetransfer_v1_filetransfer_proto_depIdxs = []int32{
 	5,  // 2: leaflow.fleet.filetransfer.v1.FileTransferMessage.response:type_name -> leaflow.fleet.filetransfer.v1.FileTransferResponse
 	6,  // 3: leaflow.fleet.filetransfer.v1.FileTransferMessage.cancel:type_name -> leaflow.fleet.filetransfer.v1.FileTransferCancel
 	7,  // 4: leaflow.fleet.filetransfer.v1.FileTransferMessage.result:type_name -> leaflow.fleet.filetransfer.v1.FileTransferResult
-	3,  // 5: leaflow.fleet.filetransfer.v1.FileTransferOffer.entries:type_name -> leaflow.fleet.filetransfer.v1.FileEntry
-	0,  // 6: leaflow.fleet.filetransfer.v1.FileEntry.type:type_name -> leaflow.fleet.filetransfer.v1.FileType
-	27, // 7: leaflow.fleet.filetransfer.v1.FileTransferResponse.error:type_name -> google.rpc.Status
-	27, // 8: leaflow.fleet.filetransfer.v1.FileTransferResult.error:type_name -> google.rpc.Status
-	10, // 9: leaflow.fleet.filetransfer.v1.FileContent.end:type_name -> leaflow.fleet.filetransfer.v1.FileContentEnd
-	27, // 10: leaflow.fleet.filetransfer.v1.FileContentEnd.error:type_name -> google.rpc.Status
-	13, // 11: leaflow.fleet.filetransfer.v1.ListDirectoryResponse.entries:type_name -> leaflow.fleet.filetransfer.v1.DirectoryEntry
-	0,  // 12: leaflow.fleet.filetransfer.v1.DirectoryEntry.type:type_name -> leaflow.fleet.filetransfer.v1.FileType
-	28, // 13: leaflow.fleet.filetransfer.v1.DirectoryEntry.modified_at:type_name -> google.protobuf.Timestamp
-	2,  // 14: leaflow.fleet.filetransfer.v1.CreateFileOfferResponse.offer:type_name -> leaflow.fleet.filetransfer.v1.FileTransferOffer
-	11, // 15: leaflow.fleet.filetransfer.v1.FileSystemService.ListDirectory:input_type -> leaflow.fleet.filetransfer.v1.ListDirectoryRequest
-	14, // 16: leaflow.fleet.filetransfer.v1.FileSystemService.CreateDirectory:input_type -> leaflow.fleet.filetransfer.v1.CreateDirectoryRequest
-	16, // 17: leaflow.fleet.filetransfer.v1.FileSystemService.RenameFile:input_type -> leaflow.fleet.filetransfer.v1.RenameFileRequest
-	18, // 18: leaflow.fleet.filetransfer.v1.FileSystemService.RemoveFile:input_type -> leaflow.fleet.filetransfer.v1.RemoveFileRequest
-	20, // 19: leaflow.fleet.filetransfer.v1.FileSystemService.CopyFile:input_type -> leaflow.fleet.filetransfer.v1.CopyFileRequest
-	22, // 20: leaflow.fleet.filetransfer.v1.FileSystemService.TrashFile:input_type -> leaflow.fleet.filetransfer.v1.TrashFileRequest
-	24, // 21: leaflow.fleet.filetransfer.v1.FileSystemService.CreateFileOffer:input_type -> leaflow.fleet.filetransfer.v1.CreateFileOfferRequest
-	12, // 22: leaflow.fleet.filetransfer.v1.FileSystemService.ListDirectory:output_type -> leaflow.fleet.filetransfer.v1.ListDirectoryResponse
-	15, // 23: leaflow.fleet.filetransfer.v1.FileSystemService.CreateDirectory:output_type -> leaflow.fleet.filetransfer.v1.CreateDirectoryResponse
-	17, // 24: leaflow.fleet.filetransfer.v1.FileSystemService.RenameFile:output_type -> leaflow.fleet.filetransfer.v1.RenameFileResponse
-	19, // 25: leaflow.fleet.filetransfer.v1.FileSystemService.RemoveFile:output_type -> leaflow.fleet.filetransfer.v1.RemoveFileResponse
-	21, // 26: leaflow.fleet.filetransfer.v1.FileSystemService.CopyFile:output_type -> leaflow.fleet.filetransfer.v1.CopyFileResponse
-	23, // 27: leaflow.fleet.filetransfer.v1.FileSystemService.TrashFile:output_type -> leaflow.fleet.filetransfer.v1.TrashFileResponse
-	25, // 28: leaflow.fleet.filetransfer.v1.FileSystemService.CreateFileOffer:output_type -> leaflow.fleet.filetransfer.v1.CreateFileOfferResponse
-	22, // [22:29] is the sub-list for method output_type
-	15, // [15:22] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	0,  // 5: leaflow.fleet.filetransfer.v1.FileEntry.type:type_name -> leaflow.fleet.filetransfer.v1.FileType
+	27, // 6: leaflow.fleet.filetransfer.v1.FileTransferResponse.error:type_name -> google.rpc.Status
+	27, // 7: leaflow.fleet.filetransfer.v1.FileTransferResult.error:type_name -> google.rpc.Status
+	10, // 8: leaflow.fleet.filetransfer.v1.FileContent.end:type_name -> leaflow.fleet.filetransfer.v1.FileContentEnd
+	27, // 9: leaflow.fleet.filetransfer.v1.FileContentEnd.error:type_name -> google.rpc.Status
+	13, // 10: leaflow.fleet.filetransfer.v1.ListDirectoryResponse.entries:type_name -> leaflow.fleet.filetransfer.v1.DirectoryEntry
+	0,  // 11: leaflow.fleet.filetransfer.v1.DirectoryEntry.type:type_name -> leaflow.fleet.filetransfer.v1.FileType
+	28, // 12: leaflow.fleet.filetransfer.v1.DirectoryEntry.modified_at:type_name -> google.protobuf.Timestamp
+	2,  // 13: leaflow.fleet.filetransfer.v1.CreateFileOfferResponse.offer:type_name -> leaflow.fleet.filetransfer.v1.FileTransferOffer
+	11, // 14: leaflow.fleet.filetransfer.v1.FileSystemService.ListDirectory:input_type -> leaflow.fleet.filetransfer.v1.ListDirectoryRequest
+	14, // 15: leaflow.fleet.filetransfer.v1.FileSystemService.CreateDirectory:input_type -> leaflow.fleet.filetransfer.v1.CreateDirectoryRequest
+	16, // 16: leaflow.fleet.filetransfer.v1.FileSystemService.RenameFile:input_type -> leaflow.fleet.filetransfer.v1.RenameFileRequest
+	18, // 17: leaflow.fleet.filetransfer.v1.FileSystemService.RemoveFile:input_type -> leaflow.fleet.filetransfer.v1.RemoveFileRequest
+	20, // 18: leaflow.fleet.filetransfer.v1.FileSystemService.CopyFile:input_type -> leaflow.fleet.filetransfer.v1.CopyFileRequest
+	22, // 19: leaflow.fleet.filetransfer.v1.FileSystemService.TrashFile:input_type -> leaflow.fleet.filetransfer.v1.TrashFileRequest
+	24, // 20: leaflow.fleet.filetransfer.v1.FileSystemService.CreateFileOffer:input_type -> leaflow.fleet.filetransfer.v1.CreateFileOfferRequest
+	12, // 21: leaflow.fleet.filetransfer.v1.FileSystemService.ListDirectory:output_type -> leaflow.fleet.filetransfer.v1.ListDirectoryResponse
+	15, // 22: leaflow.fleet.filetransfer.v1.FileSystemService.CreateDirectory:output_type -> leaflow.fleet.filetransfer.v1.CreateDirectoryResponse
+	17, // 23: leaflow.fleet.filetransfer.v1.FileSystemService.RenameFile:output_type -> leaflow.fleet.filetransfer.v1.RenameFileResponse
+	19, // 24: leaflow.fleet.filetransfer.v1.FileSystemService.RemoveFile:output_type -> leaflow.fleet.filetransfer.v1.RemoveFileResponse
+	21, // 25: leaflow.fleet.filetransfer.v1.FileSystemService.CopyFile:output_type -> leaflow.fleet.filetransfer.v1.CopyFileResponse
+	23, // 26: leaflow.fleet.filetransfer.v1.FileSystemService.TrashFile:output_type -> leaflow.fleet.filetransfer.v1.TrashFileResponse
+	25, // 27: leaflow.fleet.filetransfer.v1.FileSystemService.CreateFileOffer:output_type -> leaflow.fleet.filetransfer.v1.CreateFileOfferResponse
+	21, // [21:28] is the sub-list for method output_type
+	14, // [14:21] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_leaflow_fleet_filetransfer_v1_filetransfer_proto_init() }
@@ -1881,6 +2005,10 @@ func file_leaflow_fleet_filetransfer_v1_filetransfer_proto_init() {
 		(*FileTransferMessage_Response)(nil),
 		(*FileTransferMessage_Cancel)(nil),
 		(*FileTransferMessage_Result)(nil),
+	}
+	file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[7].OneofWrappers = []any{
+		(*FileContentRequest_FileId)(nil),
+		(*FileContentRequest_Manifest)(nil),
 	}
 	file_leaflow_fleet_filetransfer_v1_filetransfer_proto_msgTypes[8].OneofWrappers = []any{
 		(*FileContent_Data)(nil),

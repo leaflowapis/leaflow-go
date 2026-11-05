@@ -294,7 +294,8 @@ type CreateApplicationRequestBody struct {
 	Type         CreateApplicationRequestBodyType `json:"type"`
 	RedirectUris []string                         `json:"redirect_uris"`
 	// The scopes the application may request. Omitted means the defaults, `profile` and `email`; a scope
-	// not in the platform's list is refused.
+	// not in the platform's list is refused. `profile` and `email` are granted at every sign-in, and any
+	// other scope only when the authorization request names it explicitly.
 	Scopes []string `json:"scopes"`
 }
 

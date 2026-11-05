@@ -528,6 +528,233 @@ func (s *AgreementResourceType) UnmarshalText(data []byte) error {
 	}
 }
 
+// An application, as presented to an account that is asked to authorize it.
+// Ref: #/components/schemas/ApplicationResource
+type ApplicationResource struct {
+	ClientID string `json:"client_id"`
+	Name     string `json:"name"`
+	// The URIs to which the user may be returned; a `redirect_uri` must match one of them exactly.
+	RedirectUris []string `json:"redirect_uris"`
+	// `ARCHIVED` appears only within an authorization, after the application has been deleted.
+	Status ApplicationResourceStatus `json:"status"`
+}
+
+// GetClientID returns the value of ClientID.
+func (s *ApplicationResource) GetClientID() string {
+	return s.ClientID
+}
+
+// GetName returns the value of Name.
+func (s *ApplicationResource) GetName() string {
+	return s.Name
+}
+
+// GetRedirectUris returns the value of RedirectUris.
+func (s *ApplicationResource) GetRedirectUris() []string {
+	return s.RedirectUris
+}
+
+// GetStatus returns the value of Status.
+func (s *ApplicationResource) GetStatus() ApplicationResourceStatus {
+	return s.Status
+}
+
+// SetClientID sets the value of ClientID.
+func (s *ApplicationResource) SetClientID(val string) {
+	s.ClientID = val
+}
+
+// SetName sets the value of Name.
+func (s *ApplicationResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetRedirectUris sets the value of RedirectUris.
+func (s *ApplicationResource) SetRedirectUris(val []string) {
+	s.RedirectUris = val
+}
+
+// SetStatus sets the value of Status.
+func (s *ApplicationResource) SetStatus(val ApplicationResourceStatus) {
+	s.Status = val
+}
+
+// `ARCHIVED` appears only within an authorization, after the application has been deleted.
+type ApplicationResourceStatus string
+
+const (
+	ApplicationResourceStatusACTIVE   ApplicationResourceStatus = "ACTIVE"
+	ApplicationResourceStatusDISABLED ApplicationResourceStatus = "DISABLED"
+	ApplicationResourceStatusARCHIVED ApplicationResourceStatus = "ARCHIVED"
+)
+
+// AllValues returns all ApplicationResourceStatus values.
+func (ApplicationResourceStatus) AllValues() []ApplicationResourceStatus {
+	return []ApplicationResourceStatus{
+		ApplicationResourceStatusACTIVE,
+		ApplicationResourceStatusDISABLED,
+		ApplicationResourceStatusARCHIVED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ApplicationResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ApplicationResourceStatusACTIVE:
+		return []byte(s), nil
+	case ApplicationResourceStatusDISABLED:
+		return []byte(s), nil
+	case ApplicationResourceStatusARCHIVED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ApplicationResourceStatus) UnmarshalText(data []byte) error {
+	switch ApplicationResourceStatus(data) {
+	case ApplicationResourceStatusACTIVE:
+		*s = ApplicationResourceStatusACTIVE
+		return nil
+	case ApplicationResourceStatusDISABLED:
+		*s = ApplicationResourceStatusDISABLED
+		return nil
+	case ApplicationResourceStatusARCHIVED:
+		*s = ApplicationResourceStatusARCHIVED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/AuthorizeApplicationRequestBody
+type AuthorizeApplicationRequestBody struct {
+	ClientID  string    `json:"client_id"`
+	ProjectID uuid.UUID `json:"project_id"`
+}
+
+// GetClientID returns the value of ClientID.
+func (s *AuthorizeApplicationRequestBody) GetClientID() string {
+	return s.ClientID
+}
+
+// GetProjectID returns the value of ProjectID.
+func (s *AuthorizeApplicationRequestBody) GetProjectID() uuid.UUID {
+	return s.ProjectID
+}
+
+// SetClientID sets the value of ClientID.
+func (s *AuthorizeApplicationRequestBody) SetClientID(val string) {
+	s.ClientID = val
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *AuthorizeApplicationRequestBody) SetProjectID(val uuid.UUID) {
+	s.ProjectID = val
+}
+
+// An application that the account has authorized to act in one of its projects.
+// Ref: #/components/schemas/AuthorizedApplicationResource
+type AuthorizedApplicationResource struct {
+	ID          uuid.UUID                           `json:"id"`
+	Application ApplicationResource                 `json:"application"`
+	Project     ProjectResource                     `json:"project"`
+	Status      AuthorizedApplicationResourceStatus `json:"status"`
+	CreatedAt   time.Time                           `json:"created_at"`
+}
+
+// GetID returns the value of ID.
+func (s *AuthorizedApplicationResource) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetApplication returns the value of Application.
+func (s *AuthorizedApplicationResource) GetApplication() ApplicationResource {
+	return s.Application
+}
+
+// GetProject returns the value of Project.
+func (s *AuthorizedApplicationResource) GetProject() ProjectResource {
+	return s.Project
+}
+
+// GetStatus returns the value of Status.
+func (s *AuthorizedApplicationResource) GetStatus() AuthorizedApplicationResourceStatus {
+	return s.Status
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *AuthorizedApplicationResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetID sets the value of ID.
+func (s *AuthorizedApplicationResource) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetApplication sets the value of Application.
+func (s *AuthorizedApplicationResource) SetApplication(val ApplicationResource) {
+	s.Application = val
+}
+
+// SetProject sets the value of Project.
+func (s *AuthorizedApplicationResource) SetProject(val ProjectResource) {
+	s.Project = val
+}
+
+// SetStatus sets the value of Status.
+func (s *AuthorizedApplicationResource) SetStatus(val AuthorizedApplicationResourceStatus) {
+	s.Status = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *AuthorizedApplicationResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+type AuthorizedApplicationResourceStatus string
+
+const (
+	AuthorizedApplicationResourceStatusACTIVE  AuthorizedApplicationResourceStatus = "ACTIVE"
+	AuthorizedApplicationResourceStatusREVOKED AuthorizedApplicationResourceStatus = "REVOKED"
+)
+
+// AllValues returns all AuthorizedApplicationResourceStatus values.
+func (AuthorizedApplicationResourceStatus) AllValues() []AuthorizedApplicationResourceStatus {
+	return []AuthorizedApplicationResourceStatus{
+		AuthorizedApplicationResourceStatusACTIVE,
+		AuthorizedApplicationResourceStatusREVOKED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AuthorizedApplicationResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case AuthorizedApplicationResourceStatusACTIVE:
+		return []byte(s), nil
+	case AuthorizedApplicationResourceStatusREVOKED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AuthorizedApplicationResourceStatus) UnmarshalText(data []byte) error {
+	switch AuthorizedApplicationResourceStatus(data) {
+	case AuthorizedApplicationResourceStatusACTIVE:
+		*s = AuthorizedApplicationResourceStatusACTIVE
+		return nil
+	case AuthorizedApplicationResourceStatusREVOKED:
+		*s = AuthorizedApplicationResourceStatusREVOKED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 type BearerAuth struct {
 	Token string
 	Roles []string
@@ -1442,6 +1669,58 @@ func (s *LanguageOption) SetCode(val Locale) {
 // SetName sets the value of Name.
 func (s *LanguageOption) SetName(val string) {
 	s.Name = val
+}
+
+// Ref: #/components/schemas/LengthAwarePageAuthorizedApplicationResource
+type LengthAwarePageAuthorizedApplicationResource struct {
+	// The items in this page.
+	Items []AuthorizedApplicationResource `json:"items"`
+	// Maximum number of items in this page, echoing the request.
+	Limit int64 `json:"limit"`
+	// Number of items skipped, echoing the request.
+	Offset int64 `json:"offset"`
+	// Total number of matches, not only this page.
+	Total int64 `json:"total"`
+}
+
+// GetItems returns the value of Items.
+func (s *LengthAwarePageAuthorizedApplicationResource) GetItems() []AuthorizedApplicationResource {
+	return s.Items
+}
+
+// GetLimit returns the value of Limit.
+func (s *LengthAwarePageAuthorizedApplicationResource) GetLimit() int64 {
+	return s.Limit
+}
+
+// GetOffset returns the value of Offset.
+func (s *LengthAwarePageAuthorizedApplicationResource) GetOffset() int64 {
+	return s.Offset
+}
+
+// GetTotal returns the value of Total.
+func (s *LengthAwarePageAuthorizedApplicationResource) GetTotal() int64 {
+	return s.Total
+}
+
+// SetItems sets the value of Items.
+func (s *LengthAwarePageAuthorizedApplicationResource) SetItems(val []AuthorizedApplicationResource) {
+	s.Items = val
+}
+
+// SetLimit sets the value of Limit.
+func (s *LengthAwarePageAuthorizedApplicationResource) SetLimit(val int64) {
+	s.Limit = val
+}
+
+// SetOffset sets the value of Offset.
+func (s *LengthAwarePageAuthorizedApplicationResource) SetOffset(val int64) {
+	s.Offset = val
+}
+
+// SetTotal sets the value of Total.
+func (s *LengthAwarePageAuthorizedApplicationResource) SetTotal(val int64) {
+	s.Total = val
 }
 
 // Ref: #/components/schemas/LengthAwarePageInvitationResource
