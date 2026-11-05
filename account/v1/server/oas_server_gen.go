@@ -30,6 +30,20 @@ type Handler interface {
 	//
 	// POST /account/v1/me/invitations:accept
 	AcceptInvitationByToken(ctx context.Context, req *AcceptInvitationByTokenRequestBody) (*AcceptedInvitationResponseBody, error)
+	// AuthorizeApplication implements authorize-application operation.
+	//
+	// Permits the application to exchange the access tokens of this account for scoped tokens of the
+	// project. Within the project, the application then holds exactly the permissions of this account and
+	// none beyond them.
+	//
+	// The caller must be a member of the project. Repeating the request returns the existing
+	// authorization. Authorizing a disabled application fails with 412 `APPLICATION_DISABLED`.
+	//
+	// An access token issued to an application is rejected, so that an application cannot authorize
+	// itself.
+	//
+	// POST /account/v1/me/authorized-applications
+	AuthorizeApplication(ctx context.Context, req *AuthorizeApplicationRequestBody) (*AuthorizedApplicationResource, error)
 	// CancelAccountDeletion implements cancel-account-deletion operation.
 	//
 	// Returns the account to use. Cancelling when no deletion is open returns `state` `none`. Fails with
@@ -78,6 +92,13 @@ type Handler interface {
 	// A project that is suspended, banned or being deleted still issues tokens; those states restrict
 	// writes, and the project remains readable.
 	//
+	// An access token issued to an application is exchanged only for a project for which the user has
+	// authorized that application. Otherwise, the exchange fails with 403
+	// `APPLICATION_AUTHORIZATION_REQUIRED`, whose `meta` contains the `client_id` and the `project_id`;
+	// the application should then direct the user to the authorization page. For a disabled application
+	// the exchange fails with 412 `APPLICATION_DISABLED`, and for a deleted application with 404
+	// `APPLICATION_NOT_FOUND`, even if its access token has not yet expired.
+	//
 	// POST /account/v1/projects/{projectId}/scoped-tokens
 	CreateScopedToken(ctx context.Context, params CreateScopedTokenParams) (*ScopedTokenResponseBody, error)
 	// GetAccount implements get-account operation.
@@ -102,6 +123,20 @@ type Handler interface {
 	//
 	// GET /account/v1/me/deletion
 	GetAccountDeletion(ctx context.Context) (*AccountDeletionResource, error)
+	// GetApplication implements get-application operation.
+	//
+	// Returns the application requesting authorization, so that the authorization page can identify the
+	// requester. Any authenticated account may read it, since the `client_id` is part of every
+	// authorization request.
+	//
+	// A deleted application is reported as not found. A disabled application is returned with `status`
+	// `DISABLED` and cannot be authorized.
+	//
+	// The authorization page returns the user only to a `redirect_uri` that exactly matches one of
+	// `redirect_uris`; if none matches, the user is not redirected.
+	//
+	// GET /account/v1/applications/{clientId}
+	GetApplication(ctx context.Context, params GetApplicationParams) (*ApplicationResource, error)
 	// GetIdentityVerification implements get-identity-verification operation.
 	//
 	// The status is `UNVERIFIED` rather than 404 when nothing has been submitted. The legal name and the
@@ -177,6 +212,17 @@ type Handler interface {
 	//
 	// GET /account/v1/agreements
 	ListAgreements(ctx context.Context) (*AgreementListResponseBody, error)
+	// ListAuthorizedApplications implements list-authorized-applications operation.
+	//
+	// Returns one item for each application and project, most recent first. An authorization is omitted
+	// once it has been revoked, once the membership under which it was granted has ended, or once the
+	// application has been deleted.
+	//
+	// When called with an access token issued to an application, only the authorizations of that
+	// application are returned.
+	//
+	// GET /account/v1/me/authorized-applications
+	ListAuthorizedApplications(ctx context.Context, params ListAuthorizedApplicationsParams) (*LengthAwarePageAuthorizedApplicationResource, error)
 	// ListConsents implements list-consents operation.
 	//
 	// Every record, most recent first, including versions that are no longer current.
@@ -272,6 +318,17 @@ type Handler interface {
 	//
 	// DELETE /account/v1/me
 	RequestAccountDeletion(ctx context.Context, params RequestAccountDeletionParams) (*AccountDeletionResource, error)
+	// RevokeAuthorizedApplication implements revoke-authorized-application operation.
+	//
+	// After revocation, the application can no longer exchange tokens for the project. A scoped token
+	// already issued to it remains valid until it expires. Repeating the request returns the same
+	// authorization.
+	//
+	// When called with an access token issued to an application, only the authorizations of that
+	// application can be revoked; this allows an application to disconnect itself.
+	//
+	// DELETE /account/v1/me/authorized-applications/{authorizationId}
+	RevokeAuthorizedApplication(ctx context.Context, params RevokeAuthorizedApplicationParams) (*AuthorizedApplicationResource, error)
 	// RevokeSSHKey implements revoke-ssh-key operation.
 	//
 	// The row remains and its status becomes `REVOKED`, so it stays answerable afterwards which key was

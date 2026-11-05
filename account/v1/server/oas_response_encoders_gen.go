@@ -51,6 +51,19 @@ func encodeAcceptInvitationByTokenResponse(response *AcceptedInvitationResponseB
 	return nil
 }
 
+func encodeAuthorizeApplicationResponse(response *AuthorizedApplicationResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeCancelAccountDeletionResponse(response *AccountDeletionResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -117,6 +130,19 @@ func encodeGetAccountResponse(response *AccountResource, w http.ResponseWriter, 
 }
 
 func encodeGetAccountDeletionResponse(response *AccountDeletionResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetApplicationResponse(response *ApplicationResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -208,6 +234,19 @@ func encodeGetSettingsResponse(response *SettingsResource, w http.ResponseWriter
 }
 
 func encodeListAgreementsResponse(response *AgreementListResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListAuthorizedApplicationsResponse(response *LengthAwarePageAuthorizedApplicationResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -327,6 +366,19 @@ func encodeRenameSSHKeyResponse(response *SSHKeyResource, w http.ResponseWriter,
 func encodeRequestAccountDeletionResponse(response *AccountDeletionResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(202)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeRevokeAuthorizedApplicationResponse(response *AuthorizedApplicationResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
 
 	e := new(jx.Encoder)
 	response.Encode(e)

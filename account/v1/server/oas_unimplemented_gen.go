@@ -44,6 +44,23 @@ func (UnimplementedHandler) AcceptInvitationByToken(ctx context.Context, req *Ac
 	return r, ht.ErrNotImplemented
 }
 
+// AuthorizeApplication implements authorize-application operation.
+//
+// Permits the application to exchange the access tokens of this account for scoped tokens of the
+// project. Within the project, the application then holds exactly the permissions of this account and
+// none beyond them.
+//
+// The caller must be a member of the project. Repeating the request returns the existing
+// authorization. Authorizing a disabled application fails with 412 `APPLICATION_DISABLED`.
+//
+// An access token issued to an application is rejected, so that an application cannot authorize
+// itself.
+//
+// POST /account/v1/me/authorized-applications
+func (UnimplementedHandler) AuthorizeApplication(ctx context.Context, req *AuthorizeApplicationRequestBody) (r *AuthorizedApplicationResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CancelAccountDeletion implements cancel-account-deletion operation.
 //
 // Returns the account to use. Cancelling when no deletion is open returns `state` `none`. Fails with
@@ -101,6 +118,13 @@ func (UnimplementedHandler) CreateSSHKey(ctx context.Context, req *CreateSSHKeyR
 // A project that is suspended, banned or being deleted still issues tokens; those states restrict
 // writes, and the project remains readable.
 //
+// An access token issued to an application is exchanged only for a project for which the user has
+// authorized that application. Otherwise, the exchange fails with 403
+// `APPLICATION_AUTHORIZATION_REQUIRED`, whose `meta` contains the `client_id` and the `project_id`;
+// the application should then direct the user to the authorization page. For a disabled application
+// the exchange fails with 412 `APPLICATION_DISABLED`, and for a deleted application with 404
+// `APPLICATION_NOT_FOUND`, even if its access token has not yet expired.
+//
 // POST /account/v1/projects/{projectId}/scoped-tokens
 func (UnimplementedHandler) CreateScopedToken(ctx context.Context, params CreateScopedTokenParams) (r *ScopedTokenResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
@@ -131,6 +155,23 @@ func (UnimplementedHandler) GetAccount(ctx context.Context) (r *AccountResource,
 //
 // GET /account/v1/me/deletion
 func (UnimplementedHandler) GetAccountDeletion(ctx context.Context) (r *AccountDeletionResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetApplication implements get-application operation.
+//
+// Returns the application requesting authorization, so that the authorization page can identify the
+// requester. Any authenticated account may read it, since the `client_id` is part of every
+// authorization request.
+//
+// A deleted application is reported as not found. A disabled application is returned with `status`
+// `DISABLED` and cannot be authorized.
+//
+// The authorization page returns the user only to a `redirect_uri` that exactly matches one of
+// `redirect_uris`; if none matches, the user is not redirected.
+//
+// GET /account/v1/applications/{clientId}
+func (UnimplementedHandler) GetApplication(ctx context.Context, params GetApplicationParams) (r *ApplicationResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -227,6 +268,20 @@ func (UnimplementedHandler) GetSettings(ctx context.Context) (r *SettingsResourc
 //
 // GET /account/v1/agreements
 func (UnimplementedHandler) ListAgreements(ctx context.Context) (r *AgreementListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListAuthorizedApplications implements list-authorized-applications operation.
+//
+// Returns one item for each application and project, most recent first. An authorization is omitted
+// once it has been revoked, once the membership under which it was granted has ended, or once the
+// application has been deleted.
+//
+// When called with an access token issued to an application, only the authorizations of that
+// application are returned.
+//
+// GET /account/v1/me/authorized-applications
+func (UnimplementedHandler) ListAuthorizedApplications(ctx context.Context, params ListAuthorizedApplicationsParams) (r *LengthAwarePageAuthorizedApplicationResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -349,6 +404,20 @@ func (UnimplementedHandler) RenameSSHKey(ctx context.Context, req *RenameSSHKeyR
 //
 // DELETE /account/v1/me
 func (UnimplementedHandler) RequestAccountDeletion(ctx context.Context, params RequestAccountDeletionParams) (r *AccountDeletionResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RevokeAuthorizedApplication implements revoke-authorized-application operation.
+//
+// After revocation, the application can no longer exchange tokens for the project. A scoped token
+// already issued to it remains valid until it expires. Repeating the request returns the same
+// authorization.
+//
+// When called with an access token issued to an application, only the authorizations of that
+// application can be revoked; this allows an application to disconnect itself.
+//
+// DELETE /account/v1/me/authorized-applications/{authorizationId}
+func (UnimplementedHandler) RevokeAuthorizedApplication(ctx context.Context, params RevokeAuthorizedApplicationParams) (r *AuthorizedApplicationResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
