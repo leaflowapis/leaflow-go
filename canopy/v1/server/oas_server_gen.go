@@ -63,6 +63,16 @@ type Handler interface {
 	//
 	// POST /api/v1/service
 	CreateService(ctx context.Context, req *CreateServiceRequestBody) (CreateServiceRes, error)
+	// CreateVideo implements create-video operation.
+	//
+	// Create an asynchronous video task in the verified project. Model and upstream support determine the
+	// accepted duration, resolution and references. Poll the returned task id. `reference_media` is a
+	// Canopy extension for ordered, typed image, video and audio URLs. Existing `input_reference` remains
+	// a first frame. The runtime also accepts OpenAI multipart uploads; send reference_media as a JSON
+	// text field. No remote reference is downloaded or retained by Canopy during request preparation.
+	//
+	// POST /v1/videos
+	CreateVideo(ctx context.Context, req *VideoCreateRequest) (CreateVideoRes, error)
 	// DeleteResponse implements delete-response operation.
 	//
 	// Delete a stored response.
@@ -153,6 +163,18 @@ type Handler interface {
 	//
 	// GET /api/v1/usage/timeline
 	GetUsageTimeline(ctx context.Context, params GetUsageTimelineParams) (GetUsageTimelineRes, error)
+	// GetVideo implements get-video operation.
+	//
+	// Read an existing task owned by the verified project; does not create another video.
+	//
+	// GET /v1/videos/{video}
+	GetVideo(ctx context.Context, params GetVideoParams) (GetVideoRes, error)
+	// GetVideoContent implements get-video-content operation.
+	//
+	// Stream a completed video owned by the verified project. Supports HTTP Range.
+	//
+	// GET /v1/videos/{video}/content
+	GetVideoContent(ctx context.Context, params GetVideoContentParams) (GetVideoContentRes, error)
 	// ListAPIKeys implements list-api-keys operation.
 	//
 	// List API keys.
