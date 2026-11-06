@@ -595,6 +595,7 @@ func (s *ActiveResourceList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
+// Ref: #/components/schemas/ActiveResourceStatus
 type ActiveResourceStatus string
 
 const (
@@ -920,6 +921,7 @@ func (s *AllowanceList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
+// Ref: #/components/schemas/AllowanceStatus
 type AllowanceStatus string
 
 const (
@@ -4115,6 +4117,7 @@ func (s *CreditGrantList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
+// Ref: #/components/schemas/CreditGrantStatus
 type CreditGrantStatus string
 
 const (
@@ -4530,6 +4533,7 @@ func (s *CreditNoteReason) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/CreditNoteStatus
 type CreditNoteStatus string
 
 const (
@@ -4662,15 +4666,13 @@ type DeleteSubscriptionNoContent struct{}
 // usage it covers.
 // Ref: #/components/schemas/Discount
 type Discount struct {
-	MinAmount        OptString `json:"min_amount"`
-	BillingAccountID OptInt64  `json:"billing_account_id"`
-	CouponID         uuid.UUID `json:"coupon_id"`
-	PromotionCodeID  OptUUID   `json:"promotion_code_id"`
-	// `scheduled` before valid_from, `active` within the validity, `expired` after valid_until, or
-	// `voided` once withdrawn.
-	Status   DiscountStatus `json:"status"`
-	VoidedAt OptDateTime    `json:"voided_at"`
-	Type     DiscountType   `json:"type"`
+	MinAmount        OptString      `json:"min_amount"`
+	BillingAccountID OptInt64       `json:"billing_account_id"`
+	CouponID         uuid.UUID      `json:"coupon_id"`
+	PromotionCodeID  OptUUID        `json:"promotion_code_id"`
+	Status           DiscountStatus `json:"status"`
+	VoidedAt         OptDateTime    `json:"voided_at"`
+	Type             DiscountType   `json:"type"`
 	// Whether the discount continues on renewals: `once` applies only to the purchase or renewal using the
 	// coupon, `recurring` for `frequency_duration` periods including the first, `forever` on every
 	// renewal.
@@ -4963,6 +4965,7 @@ func (s *DiscountList) SetPagination(val OffsetPagination) {
 
 // `scheduled` before valid_from, `active` within the validity, `expired` after valid_until, or
 // `voided` once withdrawn.
+// Ref: #/components/schemas/DiscountStatus
 type DiscountStatus string
 
 const (
@@ -6753,35 +6756,47 @@ func (s *InvoiceSummary) SetDueAt(val OptDateTime) {
 	s.DueAt = val
 }
 
-type ListActiveResourcesStatus string
+type ListCancellationsStatusItem string
 
 const (
-	ListActiveResourcesStatusActive    ListActiveResourcesStatus = "active"
-	ListActiveResourcesStatusSuspended ListActiveResourcesStatus = "suspended"
-	ListActiveResourcesStatusClosing   ListActiveResourcesStatus = "closing"
-	ListActiveResourcesStatusClosed    ListActiveResourcesStatus = "closed"
+	ListCancellationsStatusItemOpen      ListCancellationsStatusItem = "open"
+	ListCancellationsStatusItemRequested ListCancellationsStatusItem = "requested"
+	ListCancellationsStatusItemScheduled ListCancellationsStatusItem = "scheduled"
+	ListCancellationsStatusItemReleasing ListCancellationsStatusItem = "releasing"
+	ListCancellationsStatusItemCompleted ListCancellationsStatusItem = "completed"
+	ListCancellationsStatusItemCanceled  ListCancellationsStatusItem = "canceled"
+	ListCancellationsStatusItemFailed    ListCancellationsStatusItem = "failed"
 )
 
-// AllValues returns all ListActiveResourcesStatus values.
-func (ListActiveResourcesStatus) AllValues() []ListActiveResourcesStatus {
-	return []ListActiveResourcesStatus{
-		ListActiveResourcesStatusActive,
-		ListActiveResourcesStatusSuspended,
-		ListActiveResourcesStatusClosing,
-		ListActiveResourcesStatusClosed,
+// AllValues returns all ListCancellationsStatusItem values.
+func (ListCancellationsStatusItem) AllValues() []ListCancellationsStatusItem {
+	return []ListCancellationsStatusItem{
+		ListCancellationsStatusItemOpen,
+		ListCancellationsStatusItemRequested,
+		ListCancellationsStatusItemScheduled,
+		ListCancellationsStatusItemReleasing,
+		ListCancellationsStatusItemCompleted,
+		ListCancellationsStatusItemCanceled,
+		ListCancellationsStatusItemFailed,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s ListActiveResourcesStatus) MarshalText() ([]byte, error) {
+func (s ListCancellationsStatusItem) MarshalText() ([]byte, error) {
 	switch s {
-	case ListActiveResourcesStatusActive:
+	case ListCancellationsStatusItemOpen:
 		return []byte(s), nil
-	case ListActiveResourcesStatusSuspended:
+	case ListCancellationsStatusItemRequested:
 		return []byte(s), nil
-	case ListActiveResourcesStatusClosing:
+	case ListCancellationsStatusItemScheduled:
 		return []byte(s), nil
-	case ListActiveResourcesStatusClosed:
+	case ListCancellationsStatusItemReleasing:
+		return []byte(s), nil
+	case ListCancellationsStatusItemCompleted:
+		return []byte(s), nil
+	case ListCancellationsStatusItemCanceled:
+		return []byte(s), nil
+	case ListCancellationsStatusItemFailed:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -6789,54 +6804,55 @@ func (s ListActiveResourcesStatus) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ListActiveResourcesStatus) UnmarshalText(data []byte) error {
-	switch ListActiveResourcesStatus(data) {
-	case ListActiveResourcesStatusActive:
-		*s = ListActiveResourcesStatusActive
+func (s *ListCancellationsStatusItem) UnmarshalText(data []byte) error {
+	switch ListCancellationsStatusItem(data) {
+	case ListCancellationsStatusItemOpen:
+		*s = ListCancellationsStatusItemOpen
 		return nil
-	case ListActiveResourcesStatusSuspended:
-		*s = ListActiveResourcesStatusSuspended
+	case ListCancellationsStatusItemRequested:
+		*s = ListCancellationsStatusItemRequested
 		return nil
-	case ListActiveResourcesStatusClosing:
-		*s = ListActiveResourcesStatusClosing
+	case ListCancellationsStatusItemScheduled:
+		*s = ListCancellationsStatusItemScheduled
 		return nil
-	case ListActiveResourcesStatusClosed:
-		*s = ListActiveResourcesStatusClosed
+	case ListCancellationsStatusItemReleasing:
+		*s = ListCancellationsStatusItemReleasing
+		return nil
+	case ListCancellationsStatusItemCompleted:
+		*s = ListCancellationsStatusItemCompleted
+		return nil
+	case ListCancellationsStatusItemCanceled:
+		*s = ListCancellationsStatusItemCanceled
+		return nil
+	case ListCancellationsStatusItemFailed:
+		*s = ListCancellationsStatusItemFailed
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-type ListAllowancesStatus string
+type ListPaymentMethodsStatusItem string
 
 const (
-	ListAllowancesStatusActive   ListAllowancesStatus = "active"
-	ListAllowancesStatusDepleted ListAllowancesStatus = "depleted"
-	ListAllowancesStatusExpired  ListAllowancesStatus = "expired"
-	ListAllowancesStatusVoided   ListAllowancesStatus = "voided"
+	ListPaymentMethodsStatusItemActive  ListPaymentMethodsStatusItem = "active"
+	ListPaymentMethodsStatusItemExpired ListPaymentMethodsStatusItem = "expired"
 )
 
-// AllValues returns all ListAllowancesStatus values.
-func (ListAllowancesStatus) AllValues() []ListAllowancesStatus {
-	return []ListAllowancesStatus{
-		ListAllowancesStatusActive,
-		ListAllowancesStatusDepleted,
-		ListAllowancesStatusExpired,
-		ListAllowancesStatusVoided,
+// AllValues returns all ListPaymentMethodsStatusItem values.
+func (ListPaymentMethodsStatusItem) AllValues() []ListPaymentMethodsStatusItem {
+	return []ListPaymentMethodsStatusItem{
+		ListPaymentMethodsStatusItemActive,
+		ListPaymentMethodsStatusItemExpired,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s ListAllowancesStatus) MarshalText() ([]byte, error) {
+func (s ListPaymentMethodsStatusItem) MarshalText() ([]byte, error) {
 	switch s {
-	case ListAllowancesStatusActive:
+	case ListPaymentMethodsStatusItemActive:
 		return []byte(s), nil
-	case ListAllowancesStatusDepleted:
-		return []byte(s), nil
-	case ListAllowancesStatusExpired:
-		return []byte(s), nil
-	case ListAllowancesStatusVoided:
+	case ListPaymentMethodsStatusItemExpired:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -6844,150 +6860,13 @@ func (s ListAllowancesStatus) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ListAllowancesStatus) UnmarshalText(data []byte) error {
-	switch ListAllowancesStatus(data) {
-	case ListAllowancesStatusActive:
-		*s = ListAllowancesStatusActive
+func (s *ListPaymentMethodsStatusItem) UnmarshalText(data []byte) error {
+	switch ListPaymentMethodsStatusItem(data) {
+	case ListPaymentMethodsStatusItemActive:
+		*s = ListPaymentMethodsStatusItemActive
 		return nil
-	case ListAllowancesStatusDepleted:
-		*s = ListAllowancesStatusDepleted
-		return nil
-	case ListAllowancesStatusExpired:
-		*s = ListAllowancesStatusExpired
-		return nil
-	case ListAllowancesStatusVoided:
-		*s = ListAllowancesStatusVoided
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type ListCancellationsStatus string
-
-const (
-	ListCancellationsStatusOpen      ListCancellationsStatus = "open"
-	ListCancellationsStatusRequested ListCancellationsStatus = "requested"
-	ListCancellationsStatusScheduled ListCancellationsStatus = "scheduled"
-	ListCancellationsStatusReleasing ListCancellationsStatus = "releasing"
-	ListCancellationsStatusCompleted ListCancellationsStatus = "completed"
-	ListCancellationsStatusCanceled  ListCancellationsStatus = "canceled"
-	ListCancellationsStatusFailed    ListCancellationsStatus = "failed"
-)
-
-// AllValues returns all ListCancellationsStatus values.
-func (ListCancellationsStatus) AllValues() []ListCancellationsStatus {
-	return []ListCancellationsStatus{
-		ListCancellationsStatusOpen,
-		ListCancellationsStatusRequested,
-		ListCancellationsStatusScheduled,
-		ListCancellationsStatusReleasing,
-		ListCancellationsStatusCompleted,
-		ListCancellationsStatusCanceled,
-		ListCancellationsStatusFailed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ListCancellationsStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case ListCancellationsStatusOpen:
-		return []byte(s), nil
-	case ListCancellationsStatusRequested:
-		return []byte(s), nil
-	case ListCancellationsStatusScheduled:
-		return []byte(s), nil
-	case ListCancellationsStatusReleasing:
-		return []byte(s), nil
-	case ListCancellationsStatusCompleted:
-		return []byte(s), nil
-	case ListCancellationsStatusCanceled:
-		return []byte(s), nil
-	case ListCancellationsStatusFailed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ListCancellationsStatus) UnmarshalText(data []byte) error {
-	switch ListCancellationsStatus(data) {
-	case ListCancellationsStatusOpen:
-		*s = ListCancellationsStatusOpen
-		return nil
-	case ListCancellationsStatusRequested:
-		*s = ListCancellationsStatusRequested
-		return nil
-	case ListCancellationsStatusScheduled:
-		*s = ListCancellationsStatusScheduled
-		return nil
-	case ListCancellationsStatusReleasing:
-		*s = ListCancellationsStatusReleasing
-		return nil
-	case ListCancellationsStatusCompleted:
-		*s = ListCancellationsStatusCompleted
-		return nil
-	case ListCancellationsStatusCanceled:
-		*s = ListCancellationsStatusCanceled
-		return nil
-	case ListCancellationsStatusFailed:
-		*s = ListCancellationsStatusFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type ListCreditGrantsStatus string
-
-const (
-	ListCreditGrantsStatusActive   ListCreditGrantsStatus = "active"
-	ListCreditGrantsStatusDepleted ListCreditGrantsStatus = "depleted"
-	ListCreditGrantsStatusExpired  ListCreditGrantsStatus = "expired"
-	ListCreditGrantsStatusVoided   ListCreditGrantsStatus = "voided"
-)
-
-// AllValues returns all ListCreditGrantsStatus values.
-func (ListCreditGrantsStatus) AllValues() []ListCreditGrantsStatus {
-	return []ListCreditGrantsStatus{
-		ListCreditGrantsStatusActive,
-		ListCreditGrantsStatusDepleted,
-		ListCreditGrantsStatusExpired,
-		ListCreditGrantsStatusVoided,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ListCreditGrantsStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case ListCreditGrantsStatusActive:
-		return []byte(s), nil
-	case ListCreditGrantsStatusDepleted:
-		return []byte(s), nil
-	case ListCreditGrantsStatusExpired:
-		return []byte(s), nil
-	case ListCreditGrantsStatusVoided:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ListCreditGrantsStatus) UnmarshalText(data []byte) error {
-	switch ListCreditGrantsStatus(data) {
-	case ListCreditGrantsStatusActive:
-		*s = ListCreditGrantsStatusActive
-		return nil
-	case ListCreditGrantsStatusDepleted:
-		*s = ListCreditGrantsStatusDepleted
-		return nil
-	case ListCreditGrantsStatusExpired:
-		*s = ListCreditGrantsStatusExpired
-		return nil
-	case ListCreditGrantsStatusVoided:
-		*s = ListCreditGrantsStatusVoided
+	case ListPaymentMethodsStatusItemExpired:
+		*s = ListPaymentMethodsStatusItemExpired
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -8112,52 +7991,6 @@ func (o OptCheckoutSessionCreateInterval) Or(d CheckoutSessionCreateInterval) Ch
 	return d
 }
 
-// NewOptCheckoutSessionStatus returns new OptCheckoutSessionStatus with value set to v.
-func NewOptCheckoutSessionStatus(v CheckoutSessionStatus) OptCheckoutSessionStatus {
-	return OptCheckoutSessionStatus{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptCheckoutSessionStatus is optional CheckoutSessionStatus.
-type OptCheckoutSessionStatus struct {
-	Value CheckoutSessionStatus
-	Set   bool
-}
-
-// IsSet returns true if OptCheckoutSessionStatus was set.
-func (o OptCheckoutSessionStatus) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptCheckoutSessionStatus) Reset() {
-	var v CheckoutSessionStatus
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptCheckoutSessionStatus) SetTo(v CheckoutSessionStatus) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptCheckoutSessionStatus) Get() (v CheckoutSessionStatus, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptCheckoutSessionStatus) Or(d CheckoutSessionStatus) CheckoutSessionStatus {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptDateTime returns new OptDateTime with value set to v.
 func NewOptDateTime(v time.Time) OptDateTime {
 	return OptDateTime{
@@ -8290,52 +8123,6 @@ func (o OptErrorStatusMetadata) Get() (v ErrorStatusMetadata, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptErrorStatusMetadata) Or(d ErrorStatusMetadata) ErrorStatusMetadata {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptFeatureGrantStatus returns new OptFeatureGrantStatus with value set to v.
-func NewOptFeatureGrantStatus(v FeatureGrantStatus) OptFeatureGrantStatus {
-	return OptFeatureGrantStatus{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptFeatureGrantStatus is optional FeatureGrantStatus.
-type OptFeatureGrantStatus struct {
-	Value FeatureGrantStatus
-	Set   bool
-}
-
-// IsSet returns true if OptFeatureGrantStatus was set.
-func (o OptFeatureGrantStatus) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptFeatureGrantStatus) Reset() {
-	var v FeatureGrantStatus
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptFeatureGrantStatus) SetTo(v FeatureGrantStatus) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptFeatureGrantStatus) Get() (v FeatureGrantStatus, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptFeatureGrantStatus) Or(d FeatureGrantStatus) FeatureGrantStatus {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -8612,236 +8399,6 @@ func (o OptInvoiceItemDimensions) Get() (v InvoiceItemDimensions, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptInvoiceItemDimensions) Or(d InvoiceItemDimensions) InvoiceItemDimensions {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptInvoiceStatus returns new OptInvoiceStatus with value set to v.
-func NewOptInvoiceStatus(v InvoiceStatus) OptInvoiceStatus {
-	return OptInvoiceStatus{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptInvoiceStatus is optional InvoiceStatus.
-type OptInvoiceStatus struct {
-	Value InvoiceStatus
-	Set   bool
-}
-
-// IsSet returns true if OptInvoiceStatus was set.
-func (o OptInvoiceStatus) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptInvoiceStatus) Reset() {
-	var v InvoiceStatus
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptInvoiceStatus) SetTo(v InvoiceStatus) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptInvoiceStatus) Get() (v InvoiceStatus, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptInvoiceStatus) Or(d InvoiceStatus) InvoiceStatus {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptListActiveResourcesStatus returns new OptListActiveResourcesStatus with value set to v.
-func NewOptListActiveResourcesStatus(v ListActiveResourcesStatus) OptListActiveResourcesStatus {
-	return OptListActiveResourcesStatus{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptListActiveResourcesStatus is optional ListActiveResourcesStatus.
-type OptListActiveResourcesStatus struct {
-	Value ListActiveResourcesStatus
-	Set   bool
-}
-
-// IsSet returns true if OptListActiveResourcesStatus was set.
-func (o OptListActiveResourcesStatus) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptListActiveResourcesStatus) Reset() {
-	var v ListActiveResourcesStatus
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptListActiveResourcesStatus) SetTo(v ListActiveResourcesStatus) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptListActiveResourcesStatus) Get() (v ListActiveResourcesStatus, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptListActiveResourcesStatus) Or(d ListActiveResourcesStatus) ListActiveResourcesStatus {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptListAllowancesStatus returns new OptListAllowancesStatus with value set to v.
-func NewOptListAllowancesStatus(v ListAllowancesStatus) OptListAllowancesStatus {
-	return OptListAllowancesStatus{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptListAllowancesStatus is optional ListAllowancesStatus.
-type OptListAllowancesStatus struct {
-	Value ListAllowancesStatus
-	Set   bool
-}
-
-// IsSet returns true if OptListAllowancesStatus was set.
-func (o OptListAllowancesStatus) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptListAllowancesStatus) Reset() {
-	var v ListAllowancesStatus
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptListAllowancesStatus) SetTo(v ListAllowancesStatus) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptListAllowancesStatus) Get() (v ListAllowancesStatus, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptListAllowancesStatus) Or(d ListAllowancesStatus) ListAllowancesStatus {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptListCancellationsStatus returns new OptListCancellationsStatus with value set to v.
-func NewOptListCancellationsStatus(v ListCancellationsStatus) OptListCancellationsStatus {
-	return OptListCancellationsStatus{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptListCancellationsStatus is optional ListCancellationsStatus.
-type OptListCancellationsStatus struct {
-	Value ListCancellationsStatus
-	Set   bool
-}
-
-// IsSet returns true if OptListCancellationsStatus was set.
-func (o OptListCancellationsStatus) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptListCancellationsStatus) Reset() {
-	var v ListCancellationsStatus
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptListCancellationsStatus) SetTo(v ListCancellationsStatus) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptListCancellationsStatus) Get() (v ListCancellationsStatus, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptListCancellationsStatus) Or(d ListCancellationsStatus) ListCancellationsStatus {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptListCreditGrantsStatus returns new OptListCreditGrantsStatus with value set to v.
-func NewOptListCreditGrantsStatus(v ListCreditGrantsStatus) OptListCreditGrantsStatus {
-	return OptListCreditGrantsStatus{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptListCreditGrantsStatus is optional ListCreditGrantsStatus.
-type OptListCreditGrantsStatus struct {
-	Value ListCreditGrantsStatus
-	Set   bool
-}
-
-// IsSet returns true if OptListCreditGrantsStatus was set.
-func (o OptListCreditGrantsStatus) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptListCreditGrantsStatus) Reset() {
-	var v ListCreditGrantsStatus
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptListCreditGrantsStatus) SetTo(v ListCreditGrantsStatus) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptListCreditGrantsStatus) Get() (v ListCreditGrantsStatus, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptListCreditGrantsStatus) Or(d ListCreditGrantsStatus) ListCreditGrantsStatus {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9662,52 +9219,6 @@ func (o OptOrderItemConfiguration) Get() (v OrderItemConfiguration, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptOrderItemConfiguration) Or(d OrderItemConfiguration) OrderItemConfiguration {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptOrderStatus returns new OptOrderStatus with value set to v.
-func NewOptOrderStatus(v OrderStatus) OptOrderStatus {
-	return OptOrderStatus{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptOrderStatus is optional OrderStatus.
-type OptOrderStatus struct {
-	Value OrderStatus
-	Set   bool
-}
-
-// IsSet returns true if OptOrderStatus was set.
-func (o OptOrderStatus) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptOrderStatus) Reset() {
-	var v OrderStatus
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptOrderStatus) SetTo(v OrderStatus) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptOrderStatus) Get() (v OrderStatus, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptOrderStatus) Or(d OrderStatus) OrderStatus {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -10674,52 +10185,6 @@ func (o OptStatementItemDimensions) Get() (v StatementItemDimensions, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptStatementItemDimensions) Or(d StatementItemDimensions) StatementItemDimensions {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptStatementStatus returns new OptStatementStatus with value set to v.
-func NewOptStatementStatus(v StatementStatus) OptStatementStatus {
-	return OptStatementStatus{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptStatementStatus is optional StatementStatus.
-type OptStatementStatus struct {
-	Value StatementStatus
-	Set   bool
-}
-
-// IsSet returns true if OptStatementStatus was set.
-func (o OptStatementStatus) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptStatementStatus) Reset() {
-	var v StatementStatus
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptStatementStatus) SetTo(v StatementStatus) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptStatementStatus) Get() (v StatementStatus, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptStatementStatus) Or(d StatementStatus) StatementStatus {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -16801,17 +16266,7 @@ type Refund struct {
 	//
 	// Deprecated: schema marks this property as deprecated.
 	Destination OptRefundDestination `json:"destination"`
-	// Summary of the parts in `transactions`.
-	//
-	//  - `pending`: nothing has been returned yet, and at least one part is in progress.
-	//  - `processing`: some parts have been returned, and at least one is still in progress.
-	//  - `succeeded`: every part has been returned.
-	//  - `failed`: no part is in progress and at least one has failed. What was returned is in
-	//    settled_amount.
-	//
-	// Returns to the balance and to credit grants complete shortly after the refund is made; a return to a
-	// payment method completes when the gateway confirms it.
-	Status RefundStatus `json:"status"`
+	Status      RefundStatus         `json:"status"`
 	// When the last part was returned. Present with `succeeded`.
 	SettledAt OptDateTime  `json:"settled_at"`
 	Reason    RefundReason `json:"reason"`
@@ -17266,6 +16721,7 @@ func (s *RefundReason) UnmarshalText(data []byte) error {
 //
 // Returns to the balance and to credit grants complete shortly after the refund is made; a return to a
 // payment method completes when the gateway confirms it.
+// Ref: #/components/schemas/RefundStatus
 type RefundStatus string
 
 const (
@@ -18743,13 +18199,8 @@ type Subscription struct {
 	CurrentPeriodEnd OptNilDateTime `json:"current_period_end"`
 	// Whether a licensed subscription renews automatically. A metered subscription continues until it is
 	// canceled; for it this is true until a cancellation is requested, and cannot be set.
-	AutoRenew bool `json:"auto_renew"`
-	// `pending`: the order has not been accepted. `provisioning`: the owning service accepted the order
-	// and is delivering. `active`: delivery was confirmed; payment alone does not make a subscription
-	// active. `suspended`: service is stopped while a lien restricts its use. `canceled`: cancellation
-	// completed, or an undelivered purchase was canceled or failed. `terminated`: an operator or the
-	// owning service ended it immediately.
-	Status SubscriptionStatus `json:"status"`
+	AutoRenew bool               `json:"auto_renew"`
+	Status    SubscriptionStatus `json:"status"`
 	// When service started. Null until a new subscription becomes active, also after payment.
 	StartedAt OptNilDateTime `json:"started_at"`
 	EndedAt   OptNilDateTime `json:"ended_at"`
@@ -19572,6 +19023,7 @@ func (s *SubscriptionRestriction) UnmarshalText(data []byte) error {
 // active. `suspended`: service is stopped while a lien restricts its use. `canceled`: cancellation
 // completed, or an undelivered purchase was canceled or failed. `terminated`: an operator or the
 // owning service ended it immediately.
+// Ref: #/components/schemas/SubscriptionStatus
 type SubscriptionStatus string
 
 const (
@@ -19796,14 +19248,8 @@ type TopUp struct {
 	Currency string `json:"currency"`
 	// The part of this top-up still in the balance. Pending refunds may hold part of it, so not all of it
 	// is necessarily withdrawable.
-	RemainingAmount OptMoney `json:"remaining_amount"`
-	// `pending` until the payment gateway reaches a result; the balance increases on `succeeded`.
-	// `failed`: the gateway declined the payment, which is withdrawn at the gateway; create a new top-up
-	// to pay another way. `canceled`: withdrawn without collecting money, for the reason in
-	// `cancellation_reason`. Unknown gateway outcomes stay `pending`; a browser redirect is not proof of
-	// payment. `failed` and `canceled` are final; a payment the gateway collects afterwards is credited as
-	// a separate `succeeded` top-up.
-	Status TopUpStatus `json:"status"`
+	RemainingAmount OptMoney    `json:"remaining_amount"`
+	Status          TopUpStatus `json:"status"`
 	// Why the top-up was withdrawn. Present with `canceled`.
 	CancellationReason OptPaymentCancellationReason `json:"cancellation_reason"`
 	// Which payment gateway collected it.
@@ -20112,6 +19558,7 @@ func (s *TopUpList) SetPagination(val OffsetPagination) {
 // `cancellation_reason`. Unknown gateway outcomes stay `pending`; a browser redirect is not proof of
 // payment. `failed` and `canceled` are final; a payment the gateway collects afterwards is credited as
 // a separate `succeeded` top-up.
+// Ref: #/components/schemas/TopUpStatus
 type TopUpStatus string
 
 const (
@@ -20180,10 +19627,7 @@ type Transaction struct {
 	// Present on refunds: where this part goes. `balance`: the account balance. `credit`: the credit grant
 	// that paid, keeping its original expiry. `gateway`: the payment method it was paid with.
 	RefundDestination OptTransactionRefundDestination `json:"refund_destination"`
-	// `failed`: the operation did not succeed; for a gateway payment, the gateway declined it. `canceled`:
-	// a gateway payment was withdrawn without collecting money. Either way, the invoice it was for stays
-	// open.
-	Status OptTransactionStatus `json:"status"`
+	Status            OptTransactionStatus            `json:"status"`
 	// Why the payment was withdrawn. Present with `canceled`.
 	CancellationReason OptPaymentCancellationReason `json:"cancellation_reason"`
 	PaymentGateway     OptString                    `json:"payment_gateway"`
@@ -20489,6 +19933,7 @@ func (s *TransactionRefundDestination) UnmarshalText(data []byte) error {
 // `failed`: the operation did not succeed; for a gateway payment, the gateway declined it. `canceled`:
 // a gateway payment was withdrawn without collecting money. Either way, the invoice it was for stays
 // open.
+// Ref: #/components/schemas/TransactionStatus
 type TransactionStatus string
 
 const (
@@ -22028,6 +21473,7 @@ func (s *WithdrawalSource) SetCardLast4(val OptString) {
 	s.CardLast4 = val
 }
 
+// Ref: #/components/schemas/WithdrawalStatus
 type WithdrawalStatus string
 
 const (
