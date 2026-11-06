@@ -2248,6 +2248,102 @@ func (s *MediaUsage) SetResolution(val NilString) {
 	s.Resolution = val
 }
 
+// Per-request media measurements. Omitted values are unknown, not zero. Reference counts are audit
+// data, not an additional billable quantity. video_quantity is the exact decimal quantity for the
+// existing video_seconds meter; video_seconds in the summary remains a rounded compatibility counter.
+// No monetary price or refund is calculated by Canopy.
+// Ref: #/components/schemas/MediaUsageDetails
+type MediaUsageDetails struct {
+	InputVideoSeconds  OptFloat64                          `json:"input_video_seconds"`
+	OutputVideoSeconds OptFloat64                          `json:"output_video_seconds"`
+	InputAudioSeconds  OptFloat64                          `json:"input_audio_seconds"`
+	InputImages        OptInt64                            `json:"input_images"`
+	OutputImages       OptInt64                            `json:"output_images"`
+	VideoQuantity      OptString                           `json:"video_quantity"`
+	ReferenceCounts    OptMediaUsageDetailsReferenceCounts `json:"reference_counts"`
+}
+
+// GetInputVideoSeconds returns the value of InputVideoSeconds.
+func (s *MediaUsageDetails) GetInputVideoSeconds() OptFloat64 {
+	return s.InputVideoSeconds
+}
+
+// GetOutputVideoSeconds returns the value of OutputVideoSeconds.
+func (s *MediaUsageDetails) GetOutputVideoSeconds() OptFloat64 {
+	return s.OutputVideoSeconds
+}
+
+// GetInputAudioSeconds returns the value of InputAudioSeconds.
+func (s *MediaUsageDetails) GetInputAudioSeconds() OptFloat64 {
+	return s.InputAudioSeconds
+}
+
+// GetInputImages returns the value of InputImages.
+func (s *MediaUsageDetails) GetInputImages() OptInt64 {
+	return s.InputImages
+}
+
+// GetOutputImages returns the value of OutputImages.
+func (s *MediaUsageDetails) GetOutputImages() OptInt64 {
+	return s.OutputImages
+}
+
+// GetVideoQuantity returns the value of VideoQuantity.
+func (s *MediaUsageDetails) GetVideoQuantity() OptString {
+	return s.VideoQuantity
+}
+
+// GetReferenceCounts returns the value of ReferenceCounts.
+func (s *MediaUsageDetails) GetReferenceCounts() OptMediaUsageDetailsReferenceCounts {
+	return s.ReferenceCounts
+}
+
+// SetInputVideoSeconds sets the value of InputVideoSeconds.
+func (s *MediaUsageDetails) SetInputVideoSeconds(val OptFloat64) {
+	s.InputVideoSeconds = val
+}
+
+// SetOutputVideoSeconds sets the value of OutputVideoSeconds.
+func (s *MediaUsageDetails) SetOutputVideoSeconds(val OptFloat64) {
+	s.OutputVideoSeconds = val
+}
+
+// SetInputAudioSeconds sets the value of InputAudioSeconds.
+func (s *MediaUsageDetails) SetInputAudioSeconds(val OptFloat64) {
+	s.InputAudioSeconds = val
+}
+
+// SetInputImages sets the value of InputImages.
+func (s *MediaUsageDetails) SetInputImages(val OptInt64) {
+	s.InputImages = val
+}
+
+// SetOutputImages sets the value of OutputImages.
+func (s *MediaUsageDetails) SetOutputImages(val OptInt64) {
+	s.OutputImages = val
+}
+
+// SetVideoQuantity sets the value of VideoQuantity.
+func (s *MediaUsageDetails) SetVideoQuantity(val OptString) {
+	s.VideoQuantity = val
+}
+
+// SetReferenceCounts sets the value of ReferenceCounts.
+func (s *MediaUsageDetails) SetReferenceCounts(val OptMediaUsageDetailsReferenceCounts) {
+	s.ReferenceCounts = val
+}
+
+type MediaUsageDetailsReferenceCounts map[string]int
+
+func (s *MediaUsageDetailsReferenceCounts) init() MediaUsageDetailsReferenceCounts {
+	m := *s
+	if m == nil {
+		m = map[string]int{}
+		*s = m
+	}
+	return m
+}
+
 // Ref: #/components/schemas/Modality
 type Modality string
 
@@ -4126,6 +4222,52 @@ func (o OptErrorStatusMetadata) Or(d ErrorStatusMetadata) ErrorStatusMetadata {
 	return d
 }
 
+// NewOptFloat64 returns new OptFloat64 with value set to v.
+func NewOptFloat64(v float64) OptFloat64 {
+	return OptFloat64{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptFloat64 is optional float64.
+type OptFloat64 struct {
+	Value float64
+	Set   bool
+}
+
+// IsSet returns true if OptFloat64 was set.
+func (o OptFloat64) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptFloat64) Reset() {
+	var v float64
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptFloat64) SetTo(v float64) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptFloat64) Get() (v float64, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptFloat64) Or(d float64) float64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptGetUsageSummaryStatus returns new OptGetUsageSummaryStatus with value set to v.
 func NewOptGetUsageSummaryStatus(v GetUsageSummaryStatus) OptGetUsageSummaryStatus {
 	return OptGetUsageSummaryStatus{
@@ -4488,6 +4630,98 @@ func (o OptListUsageByModelStatus) Get() (v ListUsageByModelStatus, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptListUsageByModelStatus) Or(d ListUsageByModelStatus) ListUsageByModelStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptMediaUsageDetails returns new OptMediaUsageDetails with value set to v.
+func NewOptMediaUsageDetails(v MediaUsageDetails) OptMediaUsageDetails {
+	return OptMediaUsageDetails{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptMediaUsageDetails is optional MediaUsageDetails.
+type OptMediaUsageDetails struct {
+	Value MediaUsageDetails
+	Set   bool
+}
+
+// IsSet returns true if OptMediaUsageDetails was set.
+func (o OptMediaUsageDetails) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptMediaUsageDetails) Reset() {
+	var v MediaUsageDetails
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptMediaUsageDetails) SetTo(v MediaUsageDetails) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptMediaUsageDetails) Get() (v MediaUsageDetails, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptMediaUsageDetails) Or(d MediaUsageDetails) MediaUsageDetails {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptMediaUsageDetailsReferenceCounts returns new OptMediaUsageDetailsReferenceCounts with value set to v.
+func NewOptMediaUsageDetailsReferenceCounts(v MediaUsageDetailsReferenceCounts) OptMediaUsageDetailsReferenceCounts {
+	return OptMediaUsageDetailsReferenceCounts{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptMediaUsageDetailsReferenceCounts is optional MediaUsageDetailsReferenceCounts.
+type OptMediaUsageDetailsReferenceCounts struct {
+	Value MediaUsageDetailsReferenceCounts
+	Set   bool
+}
+
+// IsSet returns true if OptMediaUsageDetailsReferenceCounts was set.
+func (o OptMediaUsageDetailsReferenceCounts) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptMediaUsageDetailsReferenceCounts) Reset() {
+	var v MediaUsageDetailsReferenceCounts
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptMediaUsageDetailsReferenceCounts) SetTo(v MediaUsageDetailsReferenceCounts) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptMediaUsageDetailsReferenceCounts) Get() (v MediaUsageDetailsReferenceCounts, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptMediaUsageDetailsReferenceCounts) Or(d MediaUsageDetailsReferenceCounts) MediaUsageDetailsReferenceCounts {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -5404,6 +5638,52 @@ func (o OptVideoTaskError) Or(d VideoTaskError) VideoTaskError {
 	return d
 }
 
+// NewOptVideoUsage returns new OptVideoUsage with value set to v.
+func NewOptVideoUsage(v VideoUsage) OptVideoUsage {
+	return OptVideoUsage{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptVideoUsage is optional VideoUsage.
+type OptVideoUsage struct {
+	Value VideoUsage
+	Set   bool
+}
+
+// IsSet returns true if OptVideoUsage was set.
+func (o OptVideoUsage) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptVideoUsage) Reset() {
+	var v VideoUsage
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptVideoUsage) SetTo(v VideoUsage) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptVideoUsage) Get() (v VideoUsage, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptVideoUsage) Or(d VideoUsage) VideoUsage {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // Ref: #/components/schemas/ReasoningCapabilities
 type ReasoningCapabilities struct {
 	Supported bool `json:"supported"`
@@ -5573,7 +5853,8 @@ type RequestResource struct {
 	UsageSource RequestResourceUsageSource `json:"usage_source"`
 	Reasoning   NilReasoningDiagnostics    `json:"reasoning"`
 	// Media quantities and their rate dimensions. Null for a token-only request.
-	Media OptNilMediaUsage `json:"media"`
+	Media        OptNilMediaUsage     `json:"media"`
+	MediaDetails OptMediaUsageDetails `json:"media_details"`
 }
 
 // GetAPIKeyID returns the value of APIKeyID.
@@ -5686,6 +5967,11 @@ func (s *RequestResource) GetMedia() OptNilMediaUsage {
 	return s.Media
 }
 
+// GetMediaDetails returns the value of MediaDetails.
+func (s *RequestResource) GetMediaDetails() OptMediaUsageDetails {
+	return s.MediaDetails
+}
+
 // SetAPIKeyID sets the value of APIKeyID.
 func (s *RequestResource) SetAPIKeyID(val NilUUID) {
 	s.APIKeyID = val
@@ -5794,6 +6080,11 @@ func (s *RequestResource) SetReasoning(val NilReasoningDiagnostics) {
 // SetMedia sets the value of Media.
 func (s *RequestResource) SetMedia(val OptNilMediaUsage) {
 	s.Media = val
+}
+
+// SetMediaDetails sets the value of MediaDetails.
+func (s *RequestResource) SetMediaDetails(val OptMediaUsageDetails) {
+	s.MediaDetails = val
 }
 
 func (*RequestResource) getRequestRes() {}
@@ -7098,6 +7389,7 @@ type VideoTask struct {
 	Object string          `json:"object"`
 	Status VideoTaskStatus `json:"status"`
 	Model  OptString       `json:"model"`
+	Usage  OptVideoUsage   `json:"usage"`
 	// Output duration, not the duration of input references.
 	Seconds         OptString         `json:"seconds"`
 	Size            OptString         `json:"size"`
@@ -7127,6 +7419,11 @@ func (s *VideoTask) GetStatus() VideoTaskStatus {
 // GetModel returns the value of Model.
 func (s *VideoTask) GetModel() OptString {
 	return s.Model
+}
+
+// GetUsage returns the value of Usage.
+func (s *VideoTask) GetUsage() OptVideoUsage {
+	return s.Usage
 }
 
 // GetSeconds returns the value of Seconds.
@@ -7187,6 +7484,11 @@ func (s *VideoTask) SetStatus(val VideoTaskStatus) {
 // SetModel sets the value of Model.
 func (s *VideoTask) SetModel(val OptString) {
 	s.Model = val
+}
+
+// SetUsage sets the value of Usage.
+func (s *VideoTask) SetUsage(val OptVideoUsage) {
+	s.Usage = val
 }
 
 // SetSeconds sets the value of Seconds.
@@ -7343,4 +7645,88 @@ func (s *VideoTaskStatus) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Provider measurements on a task; only completed tasks are settled.
+// Ref: #/components/schemas/VideoUsage
+type VideoUsage struct {
+	// Output duration, kept for compatibility.
+	Seconds       OptFloat64 `json:"seconds"`
+	Resolution    OptString  `json:"resolution"`
+	InputSeconds  OptFloat64 `json:"input_seconds"`
+	OutputSeconds OptFloat64 `json:"output_seconds"`
+	// Total measured input and output video duration, not a monetary quote.
+	BillableSeconds OptFloat64 `json:"billable_seconds"`
+	AdditionalProps VideoUsageAdditional
+}
+
+// GetSeconds returns the value of Seconds.
+func (s *VideoUsage) GetSeconds() OptFloat64 {
+	return s.Seconds
+}
+
+// GetResolution returns the value of Resolution.
+func (s *VideoUsage) GetResolution() OptString {
+	return s.Resolution
+}
+
+// GetInputSeconds returns the value of InputSeconds.
+func (s *VideoUsage) GetInputSeconds() OptFloat64 {
+	return s.InputSeconds
+}
+
+// GetOutputSeconds returns the value of OutputSeconds.
+func (s *VideoUsage) GetOutputSeconds() OptFloat64 {
+	return s.OutputSeconds
+}
+
+// GetBillableSeconds returns the value of BillableSeconds.
+func (s *VideoUsage) GetBillableSeconds() OptFloat64 {
+	return s.BillableSeconds
+}
+
+// GetAdditionalProps returns the value of AdditionalProps.
+func (s *VideoUsage) GetAdditionalProps() VideoUsageAdditional {
+	return s.AdditionalProps
+}
+
+// SetSeconds sets the value of Seconds.
+func (s *VideoUsage) SetSeconds(val OptFloat64) {
+	s.Seconds = val
+}
+
+// SetResolution sets the value of Resolution.
+func (s *VideoUsage) SetResolution(val OptString) {
+	s.Resolution = val
+}
+
+// SetInputSeconds sets the value of InputSeconds.
+func (s *VideoUsage) SetInputSeconds(val OptFloat64) {
+	s.InputSeconds = val
+}
+
+// SetOutputSeconds sets the value of OutputSeconds.
+func (s *VideoUsage) SetOutputSeconds(val OptFloat64) {
+	s.OutputSeconds = val
+}
+
+// SetBillableSeconds sets the value of BillableSeconds.
+func (s *VideoUsage) SetBillableSeconds(val OptFloat64) {
+	s.BillableSeconds = val
+}
+
+// SetAdditionalProps sets the value of AdditionalProps.
+func (s *VideoUsage) SetAdditionalProps(val VideoUsageAdditional) {
+	s.AdditionalProps = val
+}
+
+type VideoUsageAdditional map[string]jx.Raw
+
+func (s *VideoUsageAdditional) init() VideoUsageAdditional {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
 }

@@ -4194,6 +4194,227 @@ func (s *MediaUsage) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode implements json.Marshaler.
+func (s *MediaUsageDetails) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *MediaUsageDetails) encodeFields(e *jx.Encoder) {
+	{
+		if s.InputVideoSeconds.Set {
+			e.FieldStart("input_video_seconds")
+			s.InputVideoSeconds.Encode(e)
+		}
+	}
+	{
+		if s.OutputVideoSeconds.Set {
+			e.FieldStart("output_video_seconds")
+			s.OutputVideoSeconds.Encode(e)
+		}
+	}
+	{
+		if s.InputAudioSeconds.Set {
+			e.FieldStart("input_audio_seconds")
+			s.InputAudioSeconds.Encode(e)
+		}
+	}
+	{
+		if s.InputImages.Set {
+			e.FieldStart("input_images")
+			s.InputImages.Encode(e)
+		}
+	}
+	{
+		if s.OutputImages.Set {
+			e.FieldStart("output_images")
+			s.OutputImages.Encode(e)
+		}
+	}
+	{
+		if s.VideoQuantity.Set {
+			e.FieldStart("video_quantity")
+			s.VideoQuantity.Encode(e)
+		}
+	}
+	{
+		if s.ReferenceCounts.Set {
+			e.FieldStart("reference_counts")
+			s.ReferenceCounts.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfMediaUsageDetails = [7]string{
+	0: "input_video_seconds",
+	1: "output_video_seconds",
+	2: "input_audio_seconds",
+	3: "input_images",
+	4: "output_images",
+	5: "video_quantity",
+	6: "reference_counts",
+}
+
+// Decode decodes MediaUsageDetails from json.
+func (s *MediaUsageDetails) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode MediaUsageDetails to nil")
+	}
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "input_video_seconds":
+			if err := func() error {
+				s.InputVideoSeconds.Reset()
+				if err := s.InputVideoSeconds.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"input_video_seconds\"")
+			}
+		case "output_video_seconds":
+			if err := func() error {
+				s.OutputVideoSeconds.Reset()
+				if err := s.OutputVideoSeconds.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"output_video_seconds\"")
+			}
+		case "input_audio_seconds":
+			if err := func() error {
+				s.InputAudioSeconds.Reset()
+				if err := s.InputAudioSeconds.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"input_audio_seconds\"")
+			}
+		case "input_images":
+			if err := func() error {
+				s.InputImages.Reset()
+				if err := s.InputImages.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"input_images\"")
+			}
+		case "output_images":
+			if err := func() error {
+				s.OutputImages.Reset()
+				if err := s.OutputImages.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"output_images\"")
+			}
+		case "video_quantity":
+			if err := func() error {
+				s.VideoQuantity.Reset()
+				if err := s.VideoQuantity.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"video_quantity\"")
+			}
+		case "reference_counts":
+			if err := func() error {
+				s.ReferenceCounts.Reset()
+				if err := s.ReferenceCounts.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"reference_counts\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode MediaUsageDetails")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *MediaUsageDetails) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *MediaUsageDetails) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s MediaUsageDetailsReferenceCounts) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields implements json.Marshaler.
+func (s MediaUsageDetailsReferenceCounts) encodeFields(e *jx.Encoder) {
+	for k, elem := range s {
+		e.FieldStart(k)
+
+		e.Int(elem)
+	}
+}
+
+// Decode decodes MediaUsageDetailsReferenceCounts from json.
+func (s *MediaUsageDetailsReferenceCounts) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode MediaUsageDetailsReferenceCounts to nil")
+	}
+	m := s.init()
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		var elem int
+		if err := func() error {
+			v, err := d.Int()
+			elem = int(v)
+			if err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return errors.Wrapf(err, "decode field %q", k)
+		}
+		m[string(k)] = elem
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode MediaUsageDetailsReferenceCounts")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s MediaUsageDetailsReferenceCounts) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *MediaUsageDetailsReferenceCounts) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes Modality as json.
 func (s Modality) Encode(e *jx.Encoder) {
 	e.Str(string(s))
@@ -7029,6 +7250,41 @@ func (s *OptErrorStatusMetadata) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes float64 as json.
+func (o OptFloat64) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Float64(float64(o.Value))
+}
+
+// Decode decodes float64 from json.
+func (o *OptFloat64) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptFloat64 to nil")
+	}
+	o.Set = true
+	v, err := d.Float64()
+	if err != nil {
+		return err
+	}
+	o.Value = float64(v)
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptFloat64) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptFloat64) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes int as json.
 func (o OptInt) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -7095,6 +7351,73 @@ func (s OptInt64) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptInt64) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes MediaUsageDetails as json.
+func (o OptMediaUsageDetails) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes MediaUsageDetails from json.
+func (o *OptMediaUsageDetails) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptMediaUsageDetails to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptMediaUsageDetails) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptMediaUsageDetails) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes MediaUsageDetailsReferenceCounts as json.
+func (o OptMediaUsageDetailsReferenceCounts) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes MediaUsageDetailsReferenceCounts from json.
+func (o *OptMediaUsageDetailsReferenceCounts) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptMediaUsageDetailsReferenceCounts to nil")
+	}
+	o.Set = true
+	o.Value = make(MediaUsageDetailsReferenceCounts)
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptMediaUsageDetailsReferenceCounts) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptMediaUsageDetailsReferenceCounts) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -7758,6 +8081,39 @@ func (s *OptVideoTaskError) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes VideoUsage as json.
+func (o OptVideoUsage) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes VideoUsage from json.
+func (o *OptVideoUsage) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptVideoUsage to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptVideoUsage) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptVideoUsage) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode implements json.Marshaler.
 func (s *ReasoningCapabilities) Encode(e *jx.Encoder) {
 	e.ObjStart()
@@ -8370,9 +8726,15 @@ func (s *RequestResource) encodeFields(e *jx.Encoder) {
 			s.Media.Encode(e)
 		}
 	}
+	{
+		if s.MediaDetails.Set {
+			e.FieldStart("media_details")
+			s.MediaDetails.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfRequestResource = [22]string{
+var jsonFieldsNameOfRequestResource = [23]string{
 	0:  "api_key_id",
 	1:  "cache_read_tokens",
 	2:  "cache_write_tokens",
@@ -8395,6 +8757,7 @@ var jsonFieldsNameOfRequestResource = [22]string{
 	19: "usage_source",
 	20: "reasoning",
 	21: "media",
+	22: "media_details",
 }
 
 // Decode decodes RequestResource from json.
@@ -8641,6 +9004,16 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"media\"")
+			}
+		case "media_details":
+			if err := func() error {
+				s.MediaDetails.Reset()
+				if err := s.MediaDetails.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"media_details\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -11264,6 +11637,12 @@ func (s *VideoTask) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.Usage.Set {
+			e.FieldStart("usage")
+			s.Usage.Encode(e)
+		}
+	}
+	{
 		if s.Seconds.Set {
 			e.FieldStart("seconds")
 			s.Seconds.Encode(e)
@@ -11314,18 +11693,19 @@ func (s *VideoTask) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfVideoTask = [11]string{
+var jsonFieldsNameOfVideoTask = [12]string{
 	0:  "id",
 	1:  "object",
 	2:  "status",
 	3:  "model",
-	4:  "seconds",
-	5:  "size",
-	6:  "created_at",
-	7:  "completed_at",
-	8:  "expires_at",
-	9:  "progress",
-	10: "error",
+	4:  "usage",
+	5:  "seconds",
+	6:  "size",
+	7:  "created_at",
+	8:  "completed_at",
+	9:  "expires_at",
+	10: "progress",
+	11: "error",
 }
 
 // Decode decodes VideoTask from json.
@@ -11381,6 +11761,16 @@ func (s *VideoTask) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"model\"")
+			}
+		case "usage":
+			if err := func() error {
+				s.Usage.Reset()
+				if err := s.Usage.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"usage\"")
 			}
 		case "seconds":
 			if err := func() error {
@@ -11775,6 +12165,214 @@ func (s VideoTaskStatus) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *VideoTaskStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *VideoUsage) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *VideoUsage) encodeFields(e *jx.Encoder) {
+	{
+		if s.Seconds.Set {
+			e.FieldStart("seconds")
+			s.Seconds.Encode(e)
+		}
+	}
+	{
+		if s.Resolution.Set {
+			e.FieldStart("resolution")
+			s.Resolution.Encode(e)
+		}
+	}
+	{
+		if s.InputSeconds.Set {
+			e.FieldStart("input_seconds")
+			s.InputSeconds.Encode(e)
+		}
+	}
+	{
+		if s.OutputSeconds.Set {
+			e.FieldStart("output_seconds")
+			s.OutputSeconds.Encode(e)
+		}
+	}
+	{
+		if s.BillableSeconds.Set {
+			e.FieldStart("billable_seconds")
+			s.BillableSeconds.Encode(e)
+		}
+	}
+	for k, elem := range s.AdditionalProps {
+		e.FieldStart(k)
+
+		if len(elem) != 0 {
+			e.Raw(elem)
+		}
+	}
+}
+
+var jsonFieldsNameOfVideoUsage = [5]string{
+	0: "seconds",
+	1: "resolution",
+	2: "input_seconds",
+	3: "output_seconds",
+	4: "billable_seconds",
+}
+
+// Decode decodes VideoUsage from json.
+func (s *VideoUsage) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode VideoUsage to nil")
+	}
+	s.AdditionalProps = map[string]jx.Raw{}
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "seconds":
+			if err := func() error {
+				s.Seconds.Reset()
+				if err := s.Seconds.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"seconds\"")
+			}
+		case "resolution":
+			if err := func() error {
+				s.Resolution.Reset()
+				if err := s.Resolution.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"resolution\"")
+			}
+		case "input_seconds":
+			if err := func() error {
+				s.InputSeconds.Reset()
+				if err := s.InputSeconds.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"input_seconds\"")
+			}
+		case "output_seconds":
+			if err := func() error {
+				s.OutputSeconds.Reset()
+				if err := s.OutputSeconds.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"output_seconds\"")
+			}
+		case "billable_seconds":
+			if err := func() error {
+				s.BillableSeconds.Reset()
+				if err := s.BillableSeconds.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"billable_seconds\"")
+			}
+		default:
+			var elem jx.Raw
+			if err := func() error {
+				v, err := d.RawAppend(nil)
+				elem = jx.Raw(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrapf(err, "decode field %q", k)
+			}
+			s.AdditionalProps[string(k)] = elem
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode VideoUsage")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *VideoUsage) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *VideoUsage) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s VideoUsageAdditional) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields implements json.Marshaler.
+func (s VideoUsageAdditional) encodeFields(e *jx.Encoder) {
+	for k, elem := range s {
+		e.FieldStart(k)
+
+		if len(elem) != 0 {
+			e.Raw(elem)
+		}
+	}
+}
+
+// Decode decodes VideoUsageAdditional from json.
+func (s *VideoUsageAdditional) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode VideoUsageAdditional to nil")
+	}
+	m := s.init()
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		var elem jx.Raw
+		if err := func() error {
+			v, err := d.RawAppend(nil)
+			elem = jx.Raw(v)
+			if err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return errors.Wrapf(err, "decode field %q", k)
+		}
+		m[string(k)] = elem
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode VideoUsageAdditional")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s VideoUsageAdditional) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *VideoUsageAdditional) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
