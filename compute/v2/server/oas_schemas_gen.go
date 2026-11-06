@@ -1517,7 +1517,8 @@ type CreateSecurityGroupRuleRequestBody struct {
 	PortRangeMin OptInt64 `json:"port_range_min"`
 	// The last port, or the ICMP code (0–255) when the protocol is ICMP.
 	PortRangeMax OptInt64 `json:"port_range_max"`
-	// A CIDR of the rule's IP version. Every address when omitted.
+	// An IP address or CIDR block of the rule's IP version. A single address admits only itself, and a
+	// block is recorded with its host bits cleared. Every address when omitted.
 	RemoteCidr  OptString `json:"remote_cidr"`
 	Description OptString `json:"description"`
 }

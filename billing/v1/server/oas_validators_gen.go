@@ -4005,37 +4005,7 @@ func (s *InvoiceSummary) Validate() error {
 	return nil
 }
 
-func (s ListActiveResourcesStatus) Validate() error {
-	switch s {
-	case "active":
-		return nil
-	case "suspended":
-		return nil
-	case "closing":
-		return nil
-	case "closed":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s ListAllowancesStatus) Validate() error {
-	switch s {
-	case "active":
-		return nil
-	case "depleted":
-		return nil
-	case "expired":
-		return nil
-	case "voided":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s ListCancellationsStatus) Validate() error {
+func (s ListCancellationsStatusItem) Validate() error {
 	switch s {
 	case "open":
 		return nil
@@ -4056,15 +4026,11 @@ func (s ListCancellationsStatus) Validate() error {
 	}
 }
 
-func (s ListCreditGrantsStatus) Validate() error {
+func (s ListPaymentMethodsStatusItem) Validate() error {
 	switch s {
 	case "active":
 		return nil
-	case "depleted":
-		return nil
 	case "expired":
-		return nil
-	case "voided":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

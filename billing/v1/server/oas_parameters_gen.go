@@ -2571,6 +2571,9 @@ type ListAccountDiscountsParams struct {
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
+	// Only discounts in these statuses; omit for every status. Comma-separated, for example
+	// `status=scheduled,active`.
+	Status []DiscountStatus `json:",omitempty"`
 }
 
 func unpackListAccountDiscountsParams(packed middleware.Parameters) (params ListAccountDiscountsParams) {
@@ -2599,6 +2602,15 @@ func unpackListAccountDiscountsParams(packed middleware.Parameters) (params List
 		}
 		if v, ok := packed[key]; ok {
 			params.BillingAccountID = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "status",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Status = v.([]DiscountStatus)
 		}
 	}
 	return params
@@ -2789,6 +2801,86 @@ func decodeListAccountDiscountsParams(args [0]string, argsEscaped bool, r *http.
 			Err:  err,
 		}
 	}
+	// Decode query: status.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal DiscountStatus
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = DiscountStatus(c)
+						return nil
+					}(); err != nil {
+						return err
+					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    4,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "status",
+			In:   "query",
+			Err:  err,
+		}
+	}
 	return params, nil
 }
 
@@ -2805,10 +2897,12 @@ type ListActiveResourcesParams struct {
 	// accounts. Where an operation is open to project members, each project must be assigned to a billing
 	// account you own or have you as a member, and a member sees the records of the project that the owner
 	// of its current billing account sees.
-	ProjectIds []uuid.UUID                  `json:",omitempty"`
-	MeterID    OptUUID                      `json:",omitempty,omitzero"`
-	ProductID  OptProductID                 `json:",omitempty,omitzero"`
-	Status     OptListActiveResourcesStatus `json:",omitempty,omitzero"`
+	ProjectIds []uuid.UUID  `json:",omitempty"`
+	MeterID    OptUUID      `json:",omitempty,omitzero"`
+	ProductID  OptProductID `json:",omitempty,omitzero"`
+	// Only metering in these statuses; omit for every status. Comma-separated, for example
+	// `status=active,suspended`.
+	Status []ActiveResourceStatus `json:",omitempty"`
 }
 
 func unpackListActiveResourcesParams(packed middleware.Parameters) (params ListActiveResourcesParams) {
@@ -2881,7 +2975,7 @@ func unpackListActiveResourcesParams(packed middleware.Parameters) (params ListA
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.Status = v.(OptListActiveResourcesStatus)
+			params.Status = v.([]ActiveResourceStatus)
 		}
 	}
 	return params
@@ -3285,43 +3379,67 @@ func decodeListActiveResourcesParams(args [0]string, argsEscaped bool, r *http.R
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "status",
 			Style:   uri.QueryStyleForm,
-			Explode: true,
+			Explode: false,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotStatusVal ListActiveResourcesStatus
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotStatusVal = ListActiveResourcesStatus(c)
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Status.SetTo(paramsDotStatusVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.Status.Get(); ok {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal ActiveResourceStatus
 					if err := func() error {
-						if err := value.Validate(); err != nil {
+						val, err := d.DecodeValue()
+						if err != nil {
 							return err
 						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = ActiveResourceStatus(c)
 						return nil
 					}(); err != nil {
 						return err
 					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    4,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
 				}
 				return nil
 			}(); err != nil {
@@ -3348,9 +3466,11 @@ type ListAllowancesParams struct {
 	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 	// Filter by the meter UUID.
-	MeterID   OptUUID                 `json:",omitempty,omitzero"`
-	Status    OptListAllowancesStatus `json:",omitempty,omitzero"`
-	ProductID OptProductID            `json:",omitempty,omitzero"`
+	MeterID OptUUID `json:",omitempty,omitzero"`
+	// Only allowances in these statuses; omit for every status. Comma-separated, for example
+	// `status=active,depleted`.
+	Status    []AllowanceStatus `json:",omitempty"`
+	ProductID OptProductID      `json:",omitempty,omitzero"`
 	// Only records of these projects. Omit for all projects and account-level records of your billing
 	// accounts. Where an operation is open to project members, each project must be assigned to a billing
 	// account you own or have you as a member, and a member sees the records of the project that the owner
@@ -3401,7 +3521,7 @@ func unpackListAllowancesParams(packed middleware.Parameters) (params ListAllowa
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.Status = v.(OptListAllowancesStatus)
+			params.Status = v.([]AllowanceStatus)
 		}
 	}
 	{
@@ -3656,43 +3776,67 @@ func decodeListAllowancesParams(args [0]string, argsEscaped bool, r *http.Reques
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "status",
 			Style:   uri.QueryStyleForm,
-			Explode: true,
+			Explode: false,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotStatusVal ListAllowancesStatus
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotStatusVal = ListAllowancesStatus(c)
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Status.SetTo(paramsDotStatusVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.Status.Get(); ok {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal AllowanceStatus
 					if err := func() error {
-						if err := value.Validate(); err != nil {
+						val, err := d.DecodeValue()
+						if err != nil {
 							return err
 						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = AllowanceStatus(c)
 						return nil
 					}(); err != nil {
 						return err
 					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    4,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
 				}
 				return nil
 			}(); err != nil {
@@ -4115,8 +4259,9 @@ type ListCancellationsParams struct {
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 	// Only cancellations that include this subscription.
 	SubscriptionID OptUUID `json:",omitempty,omitzero"`
-	// Only cancellations in this status. `open` means requested, scheduled or releasing.
-	Status OptListCancellationsStatus `json:",omitempty,omitzero"`
+	// Only cancellations in these statuses; omit for every status. `open` means requested, scheduled or
+	// releasing. Comma-separated, for example `status=open,failed`.
+	Status []ListCancellationsStatusItem `json:",omitempty"`
 	// Only records of these projects. Omit for all projects and account-level records of your billing
 	// accounts. Where an operation is open to project members, each project must be assigned to a billing
 	// account you own or have you as a member, and a member sees the records of the project that the owner
@@ -4167,7 +4312,7 @@ func unpackListCancellationsParams(packed middleware.Parameters) (params ListCan
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.Status = v.(OptListCancellationsStatus)
+			params.Status = v.([]ListCancellationsStatusItem)
 		}
 	}
 	{
@@ -4413,43 +4558,67 @@ func decodeListCancellationsParams(args [0]string, argsEscaped bool, r *http.Req
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "status",
 			Style:   uri.QueryStyleForm,
-			Explode: true,
+			Explode: false,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotStatusVal ListCancellationsStatus
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotStatusVal = ListCancellationsStatus(c)
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Status.SetTo(paramsDotStatusVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.Status.Get(); ok {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal ListCancellationsStatusItem
 					if err := func() error {
-						if err := value.Validate(); err != nil {
+						val, err := d.DecodeValue()
+						if err != nil {
 							return err
 						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = ListCancellationsStatusItem(c)
 						return nil
 					}(); err != nil {
 						return err
 					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    7,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
 				}
 				return nil
 			}(); err != nil {
@@ -4767,8 +4936,10 @@ type ListCheckoutSessionsParams struct {
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 	// Only this account; all of yours when omitted.
-	BillingAccountID OptInt64                 `json:",omitempty,omitzero"`
-	Status           OptCheckoutSessionStatus `json:",omitempty,omitzero"`
+	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
+	// Only sessions in these statuses; omit for every status. Comma-separated, for example
+	// `status=open,expired`.
+	Status []CheckoutSessionStatus `json:",omitempty"`
 	// Only records of these projects. Omit for all projects and account-level records of your billing
 	// accounts. Where an operation is open to project members, each project must be assigned to a billing
 	// account you own or have you as a member, and a member sees the records of the project that the owner
@@ -4810,7 +4981,7 @@ func unpackListCheckoutSessionsParams(packed middleware.Parameters) (params List
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.Status = v.(OptCheckoutSessionStatus)
+			params.Status = v.([]CheckoutSessionStatus)
 		}
 	}
 	{
@@ -5015,43 +5186,67 @@ func decodeListCheckoutSessionsParams(args [0]string, argsEscaped bool, r *http.
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "status",
 			Style:   uri.QueryStyleForm,
-			Explode: true,
+			Explode: false,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotStatusVal CheckoutSessionStatus
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotStatusVal = CheckoutSessionStatus(c)
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Status.SetTo(paramsDotStatusVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.Status.Get(); ok {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal CheckoutSessionStatus
 					if err := func() error {
-						if err := value.Validate(); err != nil {
+						val, err := d.DecodeValue()
+						if err != nil {
 							return err
 						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = CheckoutSessionStatus(c)
 						return nil
 					}(); err != nil {
 						return err
 					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    3,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
 				}
 				return nil
 			}(); err != nil {
@@ -5369,8 +5564,10 @@ type ListCreditGrantsParams struct {
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 	// Only this account; all of yours when omitted.
-	BillingAccountID OptInt64                  `json:",omitempty,omitzero"`
-	Status           OptListCreditGrantsStatus `json:",omitempty,omitzero"`
+	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
+	// Only credit grants in these statuses; omit for every status. Comma-separated, for example
+	// `status=active,depleted`.
+	Status []CreditGrantStatus `json:",omitempty"`
 }
 
 func unpackListCreditGrantsParams(packed middleware.Parameters) (params ListCreditGrantsParams) {
@@ -5407,7 +5604,7 @@ func unpackListCreditGrantsParams(packed middleware.Parameters) (params ListCred
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.Status = v.(OptListCreditGrantsStatus)
+			params.Status = v.([]CreditGrantStatus)
 		}
 	}
 	return params
@@ -5603,43 +5800,67 @@ func decodeListCreditGrantsParams(args [0]string, argsEscaped bool, r *http.Requ
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "status",
 			Style:   uri.QueryStyleForm,
-			Explode: true,
+			Explode: false,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotStatusVal ListCreditGrantsStatus
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotStatusVal = ListCreditGrantsStatus(c)
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Status.SetTo(paramsDotStatusVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.Status.Get(); ok {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal CreditGrantStatus
 					if err := func() error {
-						if err := value.Validate(); err != nil {
+						val, err := d.DecodeValue()
+						if err != nil {
 							return err
 						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = CreditGrantStatus(c)
 						return nil
 					}(); err != nil {
 						return err
 					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    4,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
 				}
 				return nil
 			}(); err != nil {
@@ -5897,6 +6118,8 @@ type ListCreditNotesParams struct {
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 	// Only the notes for this invoice.
 	InvoiceID OptUUID `json:",omitempty,omitzero"`
+	// Only credit notes in these statuses; omit for both. Comma-separated.
+	Status []CreditNoteStatus `json:",omitempty"`
 }
 
 func unpackListCreditNotesParams(packed middleware.Parameters) (params ListCreditNotesParams) {
@@ -5934,6 +6157,15 @@ func unpackListCreditNotesParams(packed middleware.Parameters) (params ListCredi
 		}
 		if v, ok := packed[key]; ok {
 			params.InvoiceID = v.(OptUUID)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "status",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Status = v.([]CreditNoteStatus)
 		}
 	}
 	return params
@@ -6161,6 +6393,86 @@ func decodeListCreditNotesParams(args [0]string, argsEscaped bool, r *http.Reque
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "invoice_id",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: status.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal CreditNoteStatus
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = CreditNoteStatus(c)
+						return nil
+					}(); err != nil {
+						return err
+					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    2,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "status",
 			In:   "query",
 			Err:  err,
 		}
@@ -6731,9 +7043,11 @@ type ListFeatureGrantsParams struct {
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 	// Only this account; all of yours when omitted.
-	BillingAccountID OptInt64              `json:",omitempty,omitzero"`
-	ProductID        OptProductID          `json:",omitempty,omitzero"`
-	Status           OptFeatureGrantStatus `json:",omitempty,omitzero"`
+	BillingAccountID OptInt64     `json:",omitempty,omitzero"`
+	ProductID        OptProductID `json:",omitempty,omitzero"`
+	// Only feature grants in these statuses; omit for every status. Comma-separated, for example
+	// `status=scheduled,active`.
+	Status []FeatureGrantStatus `json:",omitempty"`
 }
 
 func unpackListFeatureGrantsParams(packed middleware.Parameters) (params ListFeatureGrantsParams) {
@@ -6779,7 +7093,7 @@ func unpackListFeatureGrantsParams(packed middleware.Parameters) (params ListFea
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.Status = v.(OptFeatureGrantStatus)
+			params.Status = v.([]FeatureGrantStatus)
 		}
 	}
 	return params
@@ -7038,43 +7352,67 @@ func decodeListFeatureGrantsParams(args [0]string, argsEscaped bool, r *http.Req
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "status",
 			Style:   uri.QueryStyleForm,
-			Explode: true,
+			Explode: false,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotStatusVal FeatureGrantStatus
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotStatusVal = FeatureGrantStatus(c)
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Status.SetTo(paramsDotStatusVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.Status.Get(); ok {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal FeatureGrantStatus
 					if err := func() error {
-						if err := value.Validate(); err != nil {
+						val, err := d.DecodeValue()
+						if err != nil {
 							return err
 						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = FeatureGrantStatus(c)
 						return nil
 					}(); err != nil {
 						return err
 					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    4,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
 				}
 				return nil
 			}(); err != nil {
@@ -7329,8 +7667,10 @@ type ListInvoicesParams struct {
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 	// Only this account; all of yours when omitted.
-	BillingAccountID OptInt64         `json:",omitempty,omitzero"`
-	Status           OptInvoiceStatus `json:",omitempty,omitzero"`
+	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
+	// Only invoices in these statuses; omit for every status. Comma-separated, for example
+	// `status=open,paid`.
+	Status []InvoiceStatus `json:",omitempty"`
 	// Only invoices with a charge from this subscription; amounts are for the whole invoice.
 	SubscriptionID OptUUID     `json:",omitempty,omitzero"`
 	From           OptDateTime `json:",omitempty,omitzero"`
@@ -7372,7 +7712,7 @@ func unpackListInvoicesParams(packed middleware.Parameters) (params ListInvoices
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.Status = v.(OptInvoiceStatus)
+			params.Status = v.([]InvoiceStatus)
 		}
 	}
 	{
@@ -7595,43 +7935,67 @@ func decodeListInvoicesParams(args [0]string, argsEscaped bool, r *http.Request)
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "status",
 			Style:   uri.QueryStyleForm,
-			Explode: true,
+			Explode: false,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotStatusVal InvoiceStatus
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotStatusVal = InvoiceStatus(c)
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Status.SetTo(paramsDotStatusVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.Status.Get(); ok {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal InvoiceStatus
 					if err := func() error {
-						if err := value.Validate(); err != nil {
+						val, err := d.DecodeValue()
+						if err != nil {
 							return err
 						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = InvoiceStatus(c)
 						return nil
 					}(); err != nil {
 						return err
 					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    3,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
 				}
 				return nil
 			}(); err != nil {
@@ -8341,9 +8705,11 @@ type ListOrdersParams struct {
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 	// Only this account; all of yours when omitted.
-	BillingAccountID OptInt64       `json:",omitempty,omitzero"`
-	Status           OptOrderStatus `json:",omitempty,omitzero"`
-	From             OptDateTime    `json:",omitempty,omitzero"`
+	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
+	// Only orders in these statuses; omit for every status. Comma-separated, for example
+	// `status=pending,accepted`.
+	Status []OrderStatus `json:",omitempty"`
+	From   OptDateTime   `json:",omitempty,omitzero"`
 	// Exclusive.
 	To OptDateTime `json:",omitempty,omitzero"`
 	// Only records of these projects. Omit for all projects and account-level records of your billing
@@ -8387,7 +8753,7 @@ func unpackListOrdersParams(packed middleware.Parameters) (params ListOrdersPara
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.Status = v.(OptOrderStatus)
+			params.Status = v.([]OrderStatus)
 		}
 	}
 	{
@@ -8610,43 +8976,67 @@ func decodeListOrdersParams(args [0]string, argsEscaped bool, r *http.Request) (
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "status",
 			Style:   uri.QueryStyleForm,
-			Explode: true,
+			Explode: false,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotStatusVal OrderStatus
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotStatusVal = OrderStatus(c)
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Status.SetTo(paramsDotStatusVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.Status.Get(); ok {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal OrderStatus
 					if err := func() error {
-						if err := value.Validate(); err != nil {
+						val, err := d.DecodeValue()
+						if err != nil {
 							return err
 						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = OrderStatus(c)
 						return nil
 					}(); err != nil {
 						return err
 					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    6,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
 				}
 				return nil
 			}(); err != nil {
@@ -8817,6 +9207,9 @@ type ListPaymentMethodsParams struct {
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
+	// Only payment methods in these statuses; omit for both. Removed payment methods are not listed.
+	// Comma-separated.
+	Status []ListPaymentMethodsStatusItem `json:",omitempty"`
 }
 
 func unpackListPaymentMethodsParams(packed middleware.Parameters) (params ListPaymentMethodsParams) {
@@ -8845,6 +9238,15 @@ func unpackListPaymentMethodsParams(packed middleware.Parameters) (params ListPa
 		}
 		if v, ok := packed[key]; ok {
 			params.BillingAccountID = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "status",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Status = v.([]ListPaymentMethodsStatusItem)
 		}
 	}
 	return params
@@ -9031,6 +9433,86 @@ func decodeListPaymentMethodsParams(args [0]string, argsEscaped bool, r *http.Re
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "billing_account_id",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: status.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal ListPaymentMethodsStatusItem
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = ListPaymentMethodsStatusItem(c)
+						return nil
+					}(); err != nil {
+						return err
+					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    2,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "status",
 			In:   "query",
 			Err:  err,
 		}
@@ -11071,6 +11553,9 @@ type ListRefundsParams struct {
 	// Refunds of this order: those of its invoice, such as for an undeliverable purchase, and those it
 	// caused on an earlier invoice, such as a downgrade difference.
 	OrderID OptUUID `json:",omitempty,omitzero"`
+	// Only refunds in these statuses; omit for every status. Comma-separated, for example
+	// `status=pending,processing`.
+	Status []RefundStatus `json:",omitempty"`
 }
 
 func unpackListRefundsParams(packed middleware.Parameters) (params ListRefundsParams) {
@@ -11117,6 +11602,15 @@ func unpackListRefundsParams(packed middleware.Parameters) (params ListRefundsPa
 		}
 		if v, ok := packed[key]; ok {
 			params.OrderID = v.(OptUUID)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "status",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Status = v.([]RefundStatus)
 		}
 	}
 	return params
@@ -11385,6 +11879,86 @@ func decodeListRefundsParams(args [0]string, argsEscaped bool, r *http.Request) 
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "order_id",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: status.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal RefundStatus
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = RefundStatus(c)
+						return nil
+					}(); err != nil {
+						return err
+					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    4,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "status",
 			In:   "query",
 			Err:  err,
 		}
@@ -12161,10 +12735,11 @@ func decodeListSpendParams(args [0]string, argsEscaped bool, r *http.Request) (p
 
 // ListStatementsParams is parameters of list-statements operation.
 type ListStatementsParams struct {
-	BillingAccountID OptInt64           `json:",omitempty,omitzero"`
-	Status           OptStatementStatus `json:",omitempty,omitzero"`
-	From             OptDateTime        `json:",omitempty,omitzero"`
-	To               OptDateTime        `json:",omitempty,omitzero"`
+	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
+	// Only statements in these statuses; omit for every status. Comma-separated.
+	Status []StatementStatus `json:",omitempty"`
+	From   OptDateTime       `json:",omitempty,omitzero"`
+	To     OptDateTime       `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -12187,7 +12762,7 @@ func unpackListStatementsParams(packed middleware.Parameters) (params ListStatem
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.Status = v.(OptStatementStatus)
+			params.Status = v.([]StatementStatus)
 		}
 	}
 	{
@@ -12277,43 +12852,67 @@ func decodeListStatementsParams(args [0]string, argsEscaped bool, r *http.Reques
 		cfg := uri.QueryParameterDecodingConfig{
 			Name:    "status",
 			Style:   uri.QueryStyleForm,
-			Explode: true,
+			Explode: false,
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotStatusVal StatementStatus
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotStatusVal = StatementStatus(c)
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.Status.SetTo(paramsDotStatusVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.Status.Get(); ok {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal StatementStatus
 					if err := func() error {
-						if err := value.Validate(); err != nil {
+						val, err := d.DecodeValue()
+						if err != nil {
 							return err
 						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = StatementStatus(c)
 						return nil
 					}(); err != nil {
 						return err
 					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    2,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
 				}
 				return nil
 			}(); err != nil {
@@ -12569,6 +13168,9 @@ type ListSubscriptionsParams struct {
 	// account you own or have you as a member, and a member sees the records of the project that the owner
 	// of its current billing account sees.
 	ProjectIds []uuid.UUID `json:",omitempty"`
+	// Only subscriptions in these statuses; omit for every status. Comma-separated, for example
+	// `status=active,suspended`.
+	Status []SubscriptionStatus `json:",omitempty"`
 }
 
 func unpackListSubscriptionsParams(packed middleware.Parameters) (params ListSubscriptionsParams) {
@@ -12615,6 +13217,15 @@ func unpackListSubscriptionsParams(packed middleware.Parameters) (params ListSub
 		}
 		if v, ok := packed[key]; ok {
 			params.ProjectIds = v.([]uuid.UUID)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "status",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Status = v.([]SubscriptionStatus)
 		}
 	}
 	return params
@@ -12909,6 +13520,86 @@ func decodeListSubscriptionsParams(args [0]string, argsEscaped bool, r *http.Req
 			Err:  err,
 		}
 	}
+	// Decode query: status.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal SubscriptionStatus
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = SubscriptionStatus(c)
+						return nil
+					}(); err != nil {
+						return err
+					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    6,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "status",
+			In:   "query",
+			Err:  err,
+		}
+	}
 	return params, nil
 }
 
@@ -12920,6 +13611,9 @@ type ListTopUpsParams struct {
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
+	// Only top-ups in these statuses; omit for every status. Comma-separated, for example
+	// `status=pending,succeeded`.
+	Status []TopUpStatus `json:",omitempty"`
 }
 
 func unpackListTopUpsParams(packed middleware.Parameters) (params ListTopUpsParams) {
@@ -12948,6 +13642,15 @@ func unpackListTopUpsParams(packed middleware.Parameters) (params ListTopUpsPara
 		}
 		if v, ok := packed[key]; ok {
 			params.BillingAccountID = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "status",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Status = v.([]TopUpStatus)
 		}
 	}
 	return params
@@ -13138,6 +13841,86 @@ func decodeListTopUpsParams(args [0]string, argsEscaped bool, r *http.Request) (
 			Err:  err,
 		}
 	}
+	// Decode query: status.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal TopUpStatus
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = TopUpStatus(c)
+						return nil
+					}(); err != nil {
+						return err
+					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    4,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "status",
+			In:   "query",
+			Err:  err,
+		}
+	}
 	return params, nil
 }
 
@@ -13152,6 +13935,12 @@ type ListTransactionsParams struct {
 	From             OptDateTime `json:",omitempty,omitzero"`
 	// Exclusive.
 	To OptDateTime `json:",omitempty,omitzero"`
+	// Only transactions of these types; omit for every type. Comma-separated, for example
+	// `type=topup,refund`.
+	Type []TransactionType `json:",omitempty"`
+	// Only transactions in these statuses; omit for every status. Comma-separated, for example
+	// `status=pending,failed`.
+	Status []TransactionStatus `json:",omitempty"`
 }
 
 func unpackListTransactionsParams(packed middleware.Parameters) (params ListTransactionsParams) {
@@ -13198,6 +13987,24 @@ func unpackListTransactionsParams(packed middleware.Parameters) (params ListTran
 		}
 		if v, ok := packed[key]; ok {
 			params.To = v.(OptDateTime)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "type",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Type = v.([]TransactionType)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "status",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Status = v.([]TransactionStatus)
 		}
 	}
 	return params
@@ -13466,6 +14273,166 @@ func decodeListTransactionsParams(args [0]string, argsEscaped bool, r *http.Requ
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "to",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: type.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "type",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				params.Type = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotTypeVal TransactionType
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotTypeVal = TransactionType(c)
+						return nil
+					}(); err != nil {
+						return err
+					}
+					params.Type = append(params.Type, paramsDotTypeVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Type == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    5,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Type)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Type); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Type {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "type",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: status.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal TransactionStatus
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = TransactionStatus(c)
+						return nil
+					}(); err != nil {
+						return err
+					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    4,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "status",
 			In:   "query",
 			Err:  err,
 		}
@@ -14397,6 +15364,9 @@ type ListWithdrawalsParams struct {
 	// Items per page. Defaults to 50; at most 200.
 	PageSize         OptInt64 `json:",omitempty,omitzero"`
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
+	// Only withdrawals in these statuses; omit for every status. Comma-separated, for example
+	// `status=pending,processing`.
+	Status []WithdrawalStatus `json:",omitempty"`
 }
 
 func unpackListWithdrawalsParams(packed middleware.Parameters) (params ListWithdrawalsParams) {
@@ -14425,6 +15395,15 @@ func unpackListWithdrawalsParams(packed middleware.Parameters) (params ListWithd
 		}
 		if v, ok := packed[key]; ok {
 			params.BillingAccountID = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "status",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Status = v.([]WithdrawalStatus)
 		}
 	}
 	return params
@@ -14611,6 +15590,86 @@ func decodeListWithdrawalsParams(args [0]string, argsEscaped bool, r *http.Reque
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "billing_account_id",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: status.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				params.Status = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotStatusVal WithdrawalStatus
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotStatusVal = WithdrawalStatus(c)
+						return nil
+					}(); err != nil {
+						return err
+					}
+					params.Status = append(params.Status, paramsDotStatusVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.Status == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    6,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.Status)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.Status); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				var failures []validate.FieldError
+				for i, elem := range params.Status {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "status",
 			In:   "query",
 			Err:  err,
 		}
