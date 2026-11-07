@@ -4222,6 +4222,12 @@ func (s *MediaUsageDetails) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.InputImageQuantity.Set {
+			e.FieldStart("input_image_quantity")
+			s.InputImageQuantity.Encode(e)
+		}
+	}
+	{
 		if s.InputImages.Set {
 			e.FieldStart("input_images")
 			s.InputImages.Encode(e)
@@ -4247,14 +4253,15 @@ func (s *MediaUsageDetails) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfMediaUsageDetails = [7]string{
+var jsonFieldsNameOfMediaUsageDetails = [8]string{
 	0: "input_video_seconds",
 	1: "output_video_seconds",
 	2: "input_audio_seconds",
-	3: "input_images",
-	4: "output_images",
-	5: "video_quantity",
-	6: "reference_counts",
+	3: "input_image_quantity",
+	4: "input_images",
+	5: "output_images",
+	6: "video_quantity",
+	7: "reference_counts",
 }
 
 // Decode decodes MediaUsageDetails from json.
@@ -4294,6 +4301,16 @@ func (s *MediaUsageDetails) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"input_audio_seconds\"")
+			}
+		case "input_image_quantity":
+			if err := func() error {
+				s.InputImageQuantity.Reset()
+				if err := s.InputImageQuantity.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"input_image_quantity\"")
 			}
 		case "input_images":
 			if err := func() error {

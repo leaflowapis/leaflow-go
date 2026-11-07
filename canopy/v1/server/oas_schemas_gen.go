@@ -2254,9 +2254,12 @@ func (s *MediaUsage) SetResolution(val NilString) {
 // No monetary price or refund is calculated by Canopy.
 // Ref: #/components/schemas/MediaUsageDetails
 type MediaUsageDetails struct {
-	InputVideoSeconds  OptFloat64                          `json:"input_video_seconds"`
-	OutputVideoSeconds OptFloat64                          `json:"output_video_seconds"`
-	InputAudioSeconds  OptFloat64                          `json:"input_audio_seconds"`
+	InputVideoSeconds  OptFloat64 `json:"input_video_seconds"`
+	OutputVideoSeconds OptFloat64 `json:"output_video_seconds"`
+	InputAudioSeconds  OptFloat64 `json:"input_audio_seconds"`
+	// Recorded input quantity for the input_images meter, independent of its Billing price. Absent when
+	// unmeasured or not separately metered.
+	InputImageQuantity OptString                           `json:"input_image_quantity"`
 	InputImages        OptInt64                            `json:"input_images"`
 	OutputImages       OptInt64                            `json:"output_images"`
 	VideoQuantity      OptString                           `json:"video_quantity"`
@@ -2276,6 +2279,11 @@ func (s *MediaUsageDetails) GetOutputVideoSeconds() OptFloat64 {
 // GetInputAudioSeconds returns the value of InputAudioSeconds.
 func (s *MediaUsageDetails) GetInputAudioSeconds() OptFloat64 {
 	return s.InputAudioSeconds
+}
+
+// GetInputImageQuantity returns the value of InputImageQuantity.
+func (s *MediaUsageDetails) GetInputImageQuantity() OptString {
+	return s.InputImageQuantity
 }
 
 // GetInputImages returns the value of InputImages.
@@ -2311,6 +2319,11 @@ func (s *MediaUsageDetails) SetOutputVideoSeconds(val OptFloat64) {
 // SetInputAudioSeconds sets the value of InputAudioSeconds.
 func (s *MediaUsageDetails) SetInputAudioSeconds(val OptFloat64) {
 	s.InputAudioSeconds = val
+}
+
+// SetInputImageQuantity sets the value of InputImageQuantity.
+func (s *MediaUsageDetails) SetInputImageQuantity(val OptString) {
+	s.InputImageQuantity = val
 }
 
 // SetInputImages sets the value of InputImages.
