@@ -25,6 +25,10 @@ type CreateServiceRes interface {
 	createServiceRes()
 }
 
+type CreateVideoRes interface {
+	createVideoRes()
+}
+
 type DeleteResponseRes interface {
 	deleteResponseRes()
 }
@@ -71,6 +75,14 @@ type GetUsageSummaryRes interface {
 
 type GetUsageTimelineRes interface {
 	getUsageTimelineRes()
+}
+
+type GetVideoContentRes interface {
+	getVideoContentRes()
+}
+
+type GetVideoRes interface {
+	getVideoRes()
 }
 
 type ListAPIKeysRes interface {

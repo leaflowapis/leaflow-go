@@ -1441,6 +1441,38 @@ func (s *GetUsageTimelineStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+type GetVideoContentOK struct {
+	Data io.Reader
+}
+
+// Read reads data from the Data reader.
+//
+// Kept to satisfy the io.Reader interface.
+func (s GetVideoContentOK) Read(p []byte) (n int, err error) {
+	if s.Data == nil {
+		return 0, io.EOF
+	}
+	return s.Data.Read(p)
+}
+
+func (*GetVideoContentOK) getVideoContentRes() {}
+
+type GetVideoContentPartialContent struct {
+	Data io.Reader
+}
+
+// Read reads data from the Data reader.
+//
+// Kept to satisfy the io.Reader interface.
+func (s GetVideoContentPartialContent) Read(p []byte) (n int, err error) {
+	if s.Data == nil {
+		return 0, io.EOF
+	}
+	return s.Data.Read(p)
+}
+
+func (*GetVideoContentPartialContent) getVideoContentRes() {}
+
 // The image parameters this endpoint accepts. The client chooses among them; a value outside the list
 // is rejected before the upstream is called.
 // Ref: #/components/schemas/ImageCapabilities
@@ -2214,6 +2246,115 @@ func (s *MediaUsage) SetQuality(val NilString) {
 // SetResolution sets the value of Resolution.
 func (s *MediaUsage) SetResolution(val NilString) {
 	s.Resolution = val
+}
+
+// Per-request media measurements. Omitted values are unknown, not zero. Reference counts are audit
+// data, not an additional billable quantity. video_quantity is the exact decimal quantity for the
+// existing video_seconds meter; video_seconds in the summary remains a rounded compatibility counter.
+// No monetary price or refund is calculated by Canopy.
+// Ref: #/components/schemas/MediaUsageDetails
+type MediaUsageDetails struct {
+	InputVideoSeconds  OptFloat64 `json:"input_video_seconds"`
+	OutputVideoSeconds OptFloat64 `json:"output_video_seconds"`
+	InputAudioSeconds  OptFloat64 `json:"input_audio_seconds"`
+	// Recorded input quantity for the input_images meter, independent of its Billing price. Absent when
+	// unmeasured or not separately metered.
+	InputImageQuantity OptString                           `json:"input_image_quantity"`
+	InputImages        OptInt64                            `json:"input_images"`
+	OutputImages       OptInt64                            `json:"output_images"`
+	VideoQuantity      OptString                           `json:"video_quantity"`
+	ReferenceCounts    OptMediaUsageDetailsReferenceCounts `json:"reference_counts"`
+}
+
+// GetInputVideoSeconds returns the value of InputVideoSeconds.
+func (s *MediaUsageDetails) GetInputVideoSeconds() OptFloat64 {
+	return s.InputVideoSeconds
+}
+
+// GetOutputVideoSeconds returns the value of OutputVideoSeconds.
+func (s *MediaUsageDetails) GetOutputVideoSeconds() OptFloat64 {
+	return s.OutputVideoSeconds
+}
+
+// GetInputAudioSeconds returns the value of InputAudioSeconds.
+func (s *MediaUsageDetails) GetInputAudioSeconds() OptFloat64 {
+	return s.InputAudioSeconds
+}
+
+// GetInputImageQuantity returns the value of InputImageQuantity.
+func (s *MediaUsageDetails) GetInputImageQuantity() OptString {
+	return s.InputImageQuantity
+}
+
+// GetInputImages returns the value of InputImages.
+func (s *MediaUsageDetails) GetInputImages() OptInt64 {
+	return s.InputImages
+}
+
+// GetOutputImages returns the value of OutputImages.
+func (s *MediaUsageDetails) GetOutputImages() OptInt64 {
+	return s.OutputImages
+}
+
+// GetVideoQuantity returns the value of VideoQuantity.
+func (s *MediaUsageDetails) GetVideoQuantity() OptString {
+	return s.VideoQuantity
+}
+
+// GetReferenceCounts returns the value of ReferenceCounts.
+func (s *MediaUsageDetails) GetReferenceCounts() OptMediaUsageDetailsReferenceCounts {
+	return s.ReferenceCounts
+}
+
+// SetInputVideoSeconds sets the value of InputVideoSeconds.
+func (s *MediaUsageDetails) SetInputVideoSeconds(val OptFloat64) {
+	s.InputVideoSeconds = val
+}
+
+// SetOutputVideoSeconds sets the value of OutputVideoSeconds.
+func (s *MediaUsageDetails) SetOutputVideoSeconds(val OptFloat64) {
+	s.OutputVideoSeconds = val
+}
+
+// SetInputAudioSeconds sets the value of InputAudioSeconds.
+func (s *MediaUsageDetails) SetInputAudioSeconds(val OptFloat64) {
+	s.InputAudioSeconds = val
+}
+
+// SetInputImageQuantity sets the value of InputImageQuantity.
+func (s *MediaUsageDetails) SetInputImageQuantity(val OptString) {
+	s.InputImageQuantity = val
+}
+
+// SetInputImages sets the value of InputImages.
+func (s *MediaUsageDetails) SetInputImages(val OptInt64) {
+	s.InputImages = val
+}
+
+// SetOutputImages sets the value of OutputImages.
+func (s *MediaUsageDetails) SetOutputImages(val OptInt64) {
+	s.OutputImages = val
+}
+
+// SetVideoQuantity sets the value of VideoQuantity.
+func (s *MediaUsageDetails) SetVideoQuantity(val OptString) {
+	s.VideoQuantity = val
+}
+
+// SetReferenceCounts sets the value of ReferenceCounts.
+func (s *MediaUsageDetails) SetReferenceCounts(val OptMediaUsageDetailsReferenceCounts) {
+	s.ReferenceCounts = val
+}
+
+type MediaUsageDetailsReferenceCounts map[string]int
+
+func (s *MediaUsageDetailsReferenceCounts) init() MediaUsageDetailsReferenceCounts {
+	m := *s
+	if m == nil {
+		m = map[string]int{}
+		*s = m
+	}
+	return m
 }
 
 // Ref: #/components/schemas/Modality
@@ -4094,6 +4235,52 @@ func (o OptErrorStatusMetadata) Or(d ErrorStatusMetadata) ErrorStatusMetadata {
 	return d
 }
 
+// NewOptFloat64 returns new OptFloat64 with value set to v.
+func NewOptFloat64(v float64) OptFloat64 {
+	return OptFloat64{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptFloat64 is optional float64.
+type OptFloat64 struct {
+	Value float64
+	Set   bool
+}
+
+// IsSet returns true if OptFloat64 was set.
+func (o OptFloat64) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptFloat64) Reset() {
+	var v float64
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptFloat64) SetTo(v float64) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptFloat64) Get() (v float64, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptFloat64) Or(d float64) float64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptGetUsageSummaryStatus returns new OptGetUsageSummaryStatus with value set to v.
 func NewOptGetUsageSummaryStatus(v GetUsageSummaryStatus) OptGetUsageSummaryStatus {
 	return OptGetUsageSummaryStatus{
@@ -4456,6 +4643,98 @@ func (o OptListUsageByModelStatus) Get() (v ListUsageByModelStatus, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptListUsageByModelStatus) Or(d ListUsageByModelStatus) ListUsageByModelStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptMediaUsageDetails returns new OptMediaUsageDetails with value set to v.
+func NewOptMediaUsageDetails(v MediaUsageDetails) OptMediaUsageDetails {
+	return OptMediaUsageDetails{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptMediaUsageDetails is optional MediaUsageDetails.
+type OptMediaUsageDetails struct {
+	Value MediaUsageDetails
+	Set   bool
+}
+
+// IsSet returns true if OptMediaUsageDetails was set.
+func (o OptMediaUsageDetails) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptMediaUsageDetails) Reset() {
+	var v MediaUsageDetails
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptMediaUsageDetails) SetTo(v MediaUsageDetails) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptMediaUsageDetails) Get() (v MediaUsageDetails, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptMediaUsageDetails) Or(d MediaUsageDetails) MediaUsageDetails {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptMediaUsageDetailsReferenceCounts returns new OptMediaUsageDetailsReferenceCounts with value set to v.
+func NewOptMediaUsageDetailsReferenceCounts(v MediaUsageDetailsReferenceCounts) OptMediaUsageDetailsReferenceCounts {
+	return OptMediaUsageDetailsReferenceCounts{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptMediaUsageDetailsReferenceCounts is optional MediaUsageDetailsReferenceCounts.
+type OptMediaUsageDetailsReferenceCounts struct {
+	Value MediaUsageDetailsReferenceCounts
+	Set   bool
+}
+
+// IsSet returns true if OptMediaUsageDetailsReferenceCounts was set.
+func (o OptMediaUsageDetailsReferenceCounts) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptMediaUsageDetailsReferenceCounts) Reset() {
+	var v MediaUsageDetailsReferenceCounts
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptMediaUsageDetailsReferenceCounts) SetTo(v MediaUsageDetailsReferenceCounts) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptMediaUsageDetailsReferenceCounts) Get() (v MediaUsageDetailsReferenceCounts, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptMediaUsageDetailsReferenceCounts) Or(d MediaUsageDetailsReferenceCounts) MediaUsageDetailsReferenceCounts {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -5326,6 +5605,98 @@ func (o OptURI) Or(d url.URL) url.URL {
 	return d
 }
 
+// NewOptVideoTaskError returns new OptVideoTaskError with value set to v.
+func NewOptVideoTaskError(v VideoTaskError) OptVideoTaskError {
+	return OptVideoTaskError{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptVideoTaskError is optional VideoTaskError.
+type OptVideoTaskError struct {
+	Value VideoTaskError
+	Set   bool
+}
+
+// IsSet returns true if OptVideoTaskError was set.
+func (o OptVideoTaskError) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptVideoTaskError) Reset() {
+	var v VideoTaskError
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptVideoTaskError) SetTo(v VideoTaskError) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptVideoTaskError) Get() (v VideoTaskError, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptVideoTaskError) Or(d VideoTaskError) VideoTaskError {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptVideoUsage returns new OptVideoUsage with value set to v.
+func NewOptVideoUsage(v VideoUsage) OptVideoUsage {
+	return OptVideoUsage{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptVideoUsage is optional VideoUsage.
+type OptVideoUsage struct {
+	Value VideoUsage
+	Set   bool
+}
+
+// IsSet returns true if OptVideoUsage was set.
+func (o OptVideoUsage) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptVideoUsage) Reset() {
+	var v VideoUsage
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptVideoUsage) SetTo(v VideoUsage) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptVideoUsage) Get() (v VideoUsage, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptVideoUsage) Or(d VideoUsage) VideoUsage {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // Ref: #/components/schemas/ReasoningCapabilities
 type ReasoningCapabilities struct {
 	Supported bool `json:"supported"`
@@ -5495,7 +5866,8 @@ type RequestResource struct {
 	UsageSource RequestResourceUsageSource `json:"usage_source"`
 	Reasoning   NilReasoningDiagnostics    `json:"reasoning"`
 	// Media quantities and their rate dimensions. Null for a token-only request.
-	Media OptNilMediaUsage `json:"media"`
+	Media        OptNilMediaUsage     `json:"media"`
+	MediaDetails OptMediaUsageDetails `json:"media_details"`
 }
 
 // GetAPIKeyID returns the value of APIKeyID.
@@ -5608,6 +5980,11 @@ func (s *RequestResource) GetMedia() OptNilMediaUsage {
 	return s.Media
 }
 
+// GetMediaDetails returns the value of MediaDetails.
+func (s *RequestResource) GetMediaDetails() OptMediaUsageDetails {
+	return s.MediaDetails
+}
+
 // SetAPIKeyID sets the value of APIKeyID.
 func (s *RequestResource) SetAPIKeyID(val NilUUID) {
 	s.APIKeyID = val
@@ -5716,6 +6093,11 @@ func (s *RequestResource) SetReasoning(val NilReasoningDiagnostics) {
 // SetMedia sets the value of Media.
 func (s *RequestResource) SetMedia(val OptNilMediaUsage) {
 	s.Media = val
+}
+
+// SetMediaDetails sets the value of MediaDetails.
+func (s *RequestResource) SetMediaDetails(val OptMediaUsageDetails) {
+	s.MediaDetails = val
 }
 
 func (*RequestResource) getRequestRes() {}
@@ -6687,6 +7069,168 @@ func (s *VideoCapabilities) SetSupportsCharacters(val NilBool) {
 	s.SupportsCharacters = val
 }
 
+// Provide a prompt, reference media, or both. Extra fields depend on the selected model and adapter.
+// Ref: #/components/schemas/VideoCreateRequest
+type VideoCreateRequest struct {
+	Model      string    `json:"model"`
+	Prompt     OptString `json:"prompt"`
+	Seconds    OptInt    `json:"seconds"`
+	Size       OptString `json:"size"`
+	Resolution OptString `json:"resolution"`
+	// Backward-compatible first-frame image URL. May be combined with a last_frame, not another
+	// first_frame.
+	InputReference OptString             `json:"input_reference"`
+	ReferenceMedia []VideoReferenceMedia `json:"reference_media"`
+	// Whether the output has audio; separate from a reference_audio input.
+	Audio           OptBool   `json:"audio"`
+	PromptExtend    OptBool   `json:"prompt_extend"`
+	Watermark       OptBool   `json:"watermark"`
+	Seed            OptInt64  `json:"seed"`
+	NegativePrompt  OptString `json:"negative_prompt"`
+	AdditionalProps VideoCreateRequestAdditional
+}
+
+// GetModel returns the value of Model.
+func (s *VideoCreateRequest) GetModel() string {
+	return s.Model
+}
+
+// GetPrompt returns the value of Prompt.
+func (s *VideoCreateRequest) GetPrompt() OptString {
+	return s.Prompt
+}
+
+// GetSeconds returns the value of Seconds.
+func (s *VideoCreateRequest) GetSeconds() OptInt {
+	return s.Seconds
+}
+
+// GetSize returns the value of Size.
+func (s *VideoCreateRequest) GetSize() OptString {
+	return s.Size
+}
+
+// GetResolution returns the value of Resolution.
+func (s *VideoCreateRequest) GetResolution() OptString {
+	return s.Resolution
+}
+
+// GetInputReference returns the value of InputReference.
+func (s *VideoCreateRequest) GetInputReference() OptString {
+	return s.InputReference
+}
+
+// GetReferenceMedia returns the value of ReferenceMedia.
+func (s *VideoCreateRequest) GetReferenceMedia() []VideoReferenceMedia {
+	return s.ReferenceMedia
+}
+
+// GetAudio returns the value of Audio.
+func (s *VideoCreateRequest) GetAudio() OptBool {
+	return s.Audio
+}
+
+// GetPromptExtend returns the value of PromptExtend.
+func (s *VideoCreateRequest) GetPromptExtend() OptBool {
+	return s.PromptExtend
+}
+
+// GetWatermark returns the value of Watermark.
+func (s *VideoCreateRequest) GetWatermark() OptBool {
+	return s.Watermark
+}
+
+// GetSeed returns the value of Seed.
+func (s *VideoCreateRequest) GetSeed() OptInt64 {
+	return s.Seed
+}
+
+// GetNegativePrompt returns the value of NegativePrompt.
+func (s *VideoCreateRequest) GetNegativePrompt() OptString {
+	return s.NegativePrompt
+}
+
+// GetAdditionalProps returns the value of AdditionalProps.
+func (s *VideoCreateRequest) GetAdditionalProps() VideoCreateRequestAdditional {
+	return s.AdditionalProps
+}
+
+// SetModel sets the value of Model.
+func (s *VideoCreateRequest) SetModel(val string) {
+	s.Model = val
+}
+
+// SetPrompt sets the value of Prompt.
+func (s *VideoCreateRequest) SetPrompt(val OptString) {
+	s.Prompt = val
+}
+
+// SetSeconds sets the value of Seconds.
+func (s *VideoCreateRequest) SetSeconds(val OptInt) {
+	s.Seconds = val
+}
+
+// SetSize sets the value of Size.
+func (s *VideoCreateRequest) SetSize(val OptString) {
+	s.Size = val
+}
+
+// SetResolution sets the value of Resolution.
+func (s *VideoCreateRequest) SetResolution(val OptString) {
+	s.Resolution = val
+}
+
+// SetInputReference sets the value of InputReference.
+func (s *VideoCreateRequest) SetInputReference(val OptString) {
+	s.InputReference = val
+}
+
+// SetReferenceMedia sets the value of ReferenceMedia.
+func (s *VideoCreateRequest) SetReferenceMedia(val []VideoReferenceMedia) {
+	s.ReferenceMedia = val
+}
+
+// SetAudio sets the value of Audio.
+func (s *VideoCreateRequest) SetAudio(val OptBool) {
+	s.Audio = val
+}
+
+// SetPromptExtend sets the value of PromptExtend.
+func (s *VideoCreateRequest) SetPromptExtend(val OptBool) {
+	s.PromptExtend = val
+}
+
+// SetWatermark sets the value of Watermark.
+func (s *VideoCreateRequest) SetWatermark(val OptBool) {
+	s.Watermark = val
+}
+
+// SetSeed sets the value of Seed.
+func (s *VideoCreateRequest) SetSeed(val OptInt64) {
+	s.Seed = val
+}
+
+// SetNegativePrompt sets the value of NegativePrompt.
+func (s *VideoCreateRequest) SetNegativePrompt(val OptString) {
+	s.NegativePrompt = val
+}
+
+// SetAdditionalProps sets the value of AdditionalProps.
+func (s *VideoCreateRequest) SetAdditionalProps(val VideoCreateRequestAdditional) {
+	s.AdditionalProps = val
+}
+
+type VideoCreateRequestAdditional map[string]jx.Raw
+
+func (s *VideoCreateRequestAdditional) init() VideoCreateRequestAdditional {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
 // Accepted durations are min + n * step seconds, up to max. Independent of per-second pricing.
 // Ref: #/components/schemas/VideoDurationRange
 type VideoDurationRange struct {
@@ -6723,4 +7267,479 @@ func (s *VideoDurationRange) SetMax(val int) {
 // SetStep sets the value of Step.
 func (s *VideoDurationRange) SetStep(val int) {
 	s.Step = val
+}
+
+// VideoErrorStatusCode wraps InferenceError with StatusCode.
+type VideoErrorStatusCode struct {
+	StatusCode int
+	Response   InferenceError
+}
+
+// GetStatusCode returns the value of StatusCode.
+func (s *VideoErrorStatusCode) GetStatusCode() int {
+	return s.StatusCode
+}
+
+// GetResponse returns the value of Response.
+func (s *VideoErrorStatusCode) GetResponse() InferenceError {
+	return s.Response
+}
+
+// SetStatusCode sets the value of StatusCode.
+func (s *VideoErrorStatusCode) SetStatusCode(val int) {
+	s.StatusCode = val
+}
+
+// SetResponse sets the value of Response.
+func (s *VideoErrorStatusCode) SetResponse(val InferenceError) {
+	s.Response = val
+}
+
+func (*VideoErrorStatusCode) createVideoRes()     {}
+func (*VideoErrorStatusCode) getVideoContentRes() {}
+func (*VideoErrorStatusCode) getVideoRes()        {}
+
+// A typed reference asset. Order is preserved, including order within each media type. Wan 3.0 accepts
+// at most one first frame, one last frame, ten reference images, five reference videos and five
+// reference audio clips. A last frame needs a first frame. First/last frames cannot be combined with
+// reference_image, reference_video or reference_audio. Reference images, videos and audio may be
+// combined. Other models can accept fewer roles. Images accept public HTTP(S) or base64 image data
+// URLs. Video and audio accept public HTTP(S) URLs only. Wan 3.0 limits reference videos and audio to
+// 1-15 seconds each and 15 seconds total per media type; input video plus output duration must not
+// exceed 30 seconds. The upstream validates remote asset size, format and duration. Canopy does not
+// fetch them.
+// Ref: #/components/schemas/VideoReferenceMedia
+type VideoReferenceMedia struct {
+	Type VideoReferenceMediaType `json:"type"`
+	URL  string                  `json:"url"`
+}
+
+// GetType returns the value of Type.
+func (s *VideoReferenceMedia) GetType() VideoReferenceMediaType {
+	return s.Type
+}
+
+// GetURL returns the value of URL.
+func (s *VideoReferenceMedia) GetURL() string {
+	return s.URL
+}
+
+// SetType sets the value of Type.
+func (s *VideoReferenceMedia) SetType(val VideoReferenceMediaType) {
+	s.Type = val
+}
+
+// SetURL sets the value of URL.
+func (s *VideoReferenceMedia) SetURL(val string) {
+	s.URL = val
+}
+
+type VideoReferenceMediaType string
+
+const (
+	VideoReferenceMediaTypeFirstFrame     VideoReferenceMediaType = "first_frame"
+	VideoReferenceMediaTypeLastFrame      VideoReferenceMediaType = "last_frame"
+	VideoReferenceMediaTypeReferenceImage VideoReferenceMediaType = "reference_image"
+	VideoReferenceMediaTypeReferenceVideo VideoReferenceMediaType = "reference_video"
+	VideoReferenceMediaTypeReferenceAudio VideoReferenceMediaType = "reference_audio"
+)
+
+// AllValues returns all VideoReferenceMediaType values.
+func (VideoReferenceMediaType) AllValues() []VideoReferenceMediaType {
+	return []VideoReferenceMediaType{
+		VideoReferenceMediaTypeFirstFrame,
+		VideoReferenceMediaTypeLastFrame,
+		VideoReferenceMediaTypeReferenceImage,
+		VideoReferenceMediaTypeReferenceVideo,
+		VideoReferenceMediaTypeReferenceAudio,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VideoReferenceMediaType) MarshalText() ([]byte, error) {
+	switch s {
+	case VideoReferenceMediaTypeFirstFrame:
+		return []byte(s), nil
+	case VideoReferenceMediaTypeLastFrame:
+		return []byte(s), nil
+	case VideoReferenceMediaTypeReferenceImage:
+		return []byte(s), nil
+	case VideoReferenceMediaTypeReferenceVideo:
+		return []byte(s), nil
+	case VideoReferenceMediaTypeReferenceAudio:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VideoReferenceMediaType) UnmarshalText(data []byte) error {
+	switch VideoReferenceMediaType(data) {
+	case VideoReferenceMediaTypeFirstFrame:
+		*s = VideoReferenceMediaTypeFirstFrame
+		return nil
+	case VideoReferenceMediaTypeLastFrame:
+		*s = VideoReferenceMediaTypeLastFrame
+		return nil
+	case VideoReferenceMediaTypeReferenceImage:
+		*s = VideoReferenceMediaTypeReferenceImage
+		return nil
+	case VideoReferenceMediaTypeReferenceVideo:
+		*s = VideoReferenceMediaTypeReferenceVideo
+		return nil
+	case VideoReferenceMediaTypeReferenceAudio:
+		*s = VideoReferenceMediaTypeReferenceAudio
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/VideoTask
+type VideoTask struct {
+	ID     string          `json:"id"`
+	Object string          `json:"object"`
+	Status VideoTaskStatus `json:"status"`
+	Model  OptString       `json:"model"`
+	Usage  OptVideoUsage   `json:"usage"`
+	// Output duration, not the duration of input references.
+	Seconds         OptString         `json:"seconds"`
+	Size            OptString         `json:"size"`
+	CreatedAt       OptInt64          `json:"created_at"`
+	CompletedAt     OptInt64          `json:"completed_at"`
+	ExpiresAt       OptInt64          `json:"expires_at"`
+	Progress        OptInt            `json:"progress"`
+	Error           OptVideoTaskError `json:"error"`
+	AdditionalProps VideoTaskAdditional
+}
+
+// GetID returns the value of ID.
+func (s *VideoTask) GetID() string {
+	return s.ID
+}
+
+// GetObject returns the value of Object.
+func (s *VideoTask) GetObject() string {
+	return s.Object
+}
+
+// GetStatus returns the value of Status.
+func (s *VideoTask) GetStatus() VideoTaskStatus {
+	return s.Status
+}
+
+// GetModel returns the value of Model.
+func (s *VideoTask) GetModel() OptString {
+	return s.Model
+}
+
+// GetUsage returns the value of Usage.
+func (s *VideoTask) GetUsage() OptVideoUsage {
+	return s.Usage
+}
+
+// GetSeconds returns the value of Seconds.
+func (s *VideoTask) GetSeconds() OptString {
+	return s.Seconds
+}
+
+// GetSize returns the value of Size.
+func (s *VideoTask) GetSize() OptString {
+	return s.Size
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *VideoTask) GetCreatedAt() OptInt64 {
+	return s.CreatedAt
+}
+
+// GetCompletedAt returns the value of CompletedAt.
+func (s *VideoTask) GetCompletedAt() OptInt64 {
+	return s.CompletedAt
+}
+
+// GetExpiresAt returns the value of ExpiresAt.
+func (s *VideoTask) GetExpiresAt() OptInt64 {
+	return s.ExpiresAt
+}
+
+// GetProgress returns the value of Progress.
+func (s *VideoTask) GetProgress() OptInt {
+	return s.Progress
+}
+
+// GetError returns the value of Error.
+func (s *VideoTask) GetError() OptVideoTaskError {
+	return s.Error
+}
+
+// GetAdditionalProps returns the value of AdditionalProps.
+func (s *VideoTask) GetAdditionalProps() VideoTaskAdditional {
+	return s.AdditionalProps
+}
+
+// SetID sets the value of ID.
+func (s *VideoTask) SetID(val string) {
+	s.ID = val
+}
+
+// SetObject sets the value of Object.
+func (s *VideoTask) SetObject(val string) {
+	s.Object = val
+}
+
+// SetStatus sets the value of Status.
+func (s *VideoTask) SetStatus(val VideoTaskStatus) {
+	s.Status = val
+}
+
+// SetModel sets the value of Model.
+func (s *VideoTask) SetModel(val OptString) {
+	s.Model = val
+}
+
+// SetUsage sets the value of Usage.
+func (s *VideoTask) SetUsage(val OptVideoUsage) {
+	s.Usage = val
+}
+
+// SetSeconds sets the value of Seconds.
+func (s *VideoTask) SetSeconds(val OptString) {
+	s.Seconds = val
+}
+
+// SetSize sets the value of Size.
+func (s *VideoTask) SetSize(val OptString) {
+	s.Size = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *VideoTask) SetCreatedAt(val OptInt64) {
+	s.CreatedAt = val
+}
+
+// SetCompletedAt sets the value of CompletedAt.
+func (s *VideoTask) SetCompletedAt(val OptInt64) {
+	s.CompletedAt = val
+}
+
+// SetExpiresAt sets the value of ExpiresAt.
+func (s *VideoTask) SetExpiresAt(val OptInt64) {
+	s.ExpiresAt = val
+}
+
+// SetProgress sets the value of Progress.
+func (s *VideoTask) SetProgress(val OptInt) {
+	s.Progress = val
+}
+
+// SetError sets the value of Error.
+func (s *VideoTask) SetError(val OptVideoTaskError) {
+	s.Error = val
+}
+
+// SetAdditionalProps sets the value of AdditionalProps.
+func (s *VideoTask) SetAdditionalProps(val VideoTaskAdditional) {
+	s.AdditionalProps = val
+}
+
+func (*VideoTask) createVideoRes() {}
+func (*VideoTask) getVideoRes()    {}
+
+type VideoTaskAdditional map[string]jx.Raw
+
+func (s *VideoTaskAdditional) init() VideoTaskAdditional {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+type VideoTaskError struct {
+	Code            OptString `json:"code"`
+	Message         OptString `json:"message"`
+	AdditionalProps VideoTaskErrorAdditional
+}
+
+// GetCode returns the value of Code.
+func (s *VideoTaskError) GetCode() OptString {
+	return s.Code
+}
+
+// GetMessage returns the value of Message.
+func (s *VideoTaskError) GetMessage() OptString {
+	return s.Message
+}
+
+// GetAdditionalProps returns the value of AdditionalProps.
+func (s *VideoTaskError) GetAdditionalProps() VideoTaskErrorAdditional {
+	return s.AdditionalProps
+}
+
+// SetCode sets the value of Code.
+func (s *VideoTaskError) SetCode(val OptString) {
+	s.Code = val
+}
+
+// SetMessage sets the value of Message.
+func (s *VideoTaskError) SetMessage(val OptString) {
+	s.Message = val
+}
+
+// SetAdditionalProps sets the value of AdditionalProps.
+func (s *VideoTaskError) SetAdditionalProps(val VideoTaskErrorAdditional) {
+	s.AdditionalProps = val
+}
+
+type VideoTaskErrorAdditional map[string]jx.Raw
+
+func (s *VideoTaskErrorAdditional) init() VideoTaskErrorAdditional {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+type VideoTaskStatus string
+
+const (
+	VideoTaskStatusQueued     VideoTaskStatus = "queued"
+	VideoTaskStatusInProgress VideoTaskStatus = "in_progress"
+	VideoTaskStatusCompleted  VideoTaskStatus = "completed"
+	VideoTaskStatusFailed     VideoTaskStatus = "failed"
+)
+
+// AllValues returns all VideoTaskStatus values.
+func (VideoTaskStatus) AllValues() []VideoTaskStatus {
+	return []VideoTaskStatus{
+		VideoTaskStatusQueued,
+		VideoTaskStatusInProgress,
+		VideoTaskStatusCompleted,
+		VideoTaskStatusFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s VideoTaskStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case VideoTaskStatusQueued:
+		return []byte(s), nil
+	case VideoTaskStatusInProgress:
+		return []byte(s), nil
+	case VideoTaskStatusCompleted:
+		return []byte(s), nil
+	case VideoTaskStatusFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *VideoTaskStatus) UnmarshalText(data []byte) error {
+	switch VideoTaskStatus(data) {
+	case VideoTaskStatusQueued:
+		*s = VideoTaskStatusQueued
+		return nil
+	case VideoTaskStatusInProgress:
+		*s = VideoTaskStatusInProgress
+		return nil
+	case VideoTaskStatusCompleted:
+		*s = VideoTaskStatusCompleted
+		return nil
+	case VideoTaskStatusFailed:
+		*s = VideoTaskStatusFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Provider measurements on a task; only completed tasks are settled.
+// Ref: #/components/schemas/VideoUsage
+type VideoUsage struct {
+	// Output duration, kept for compatibility.
+	Seconds       OptFloat64 `json:"seconds"`
+	Resolution    OptString  `json:"resolution"`
+	InputSeconds  OptFloat64 `json:"input_seconds"`
+	OutputSeconds OptFloat64 `json:"output_seconds"`
+	// Total measured input and output video duration, not a monetary quote.
+	BillableSeconds OptFloat64 `json:"billable_seconds"`
+	AdditionalProps VideoUsageAdditional
+}
+
+// GetSeconds returns the value of Seconds.
+func (s *VideoUsage) GetSeconds() OptFloat64 {
+	return s.Seconds
+}
+
+// GetResolution returns the value of Resolution.
+func (s *VideoUsage) GetResolution() OptString {
+	return s.Resolution
+}
+
+// GetInputSeconds returns the value of InputSeconds.
+func (s *VideoUsage) GetInputSeconds() OptFloat64 {
+	return s.InputSeconds
+}
+
+// GetOutputSeconds returns the value of OutputSeconds.
+func (s *VideoUsage) GetOutputSeconds() OptFloat64 {
+	return s.OutputSeconds
+}
+
+// GetBillableSeconds returns the value of BillableSeconds.
+func (s *VideoUsage) GetBillableSeconds() OptFloat64 {
+	return s.BillableSeconds
+}
+
+// GetAdditionalProps returns the value of AdditionalProps.
+func (s *VideoUsage) GetAdditionalProps() VideoUsageAdditional {
+	return s.AdditionalProps
+}
+
+// SetSeconds sets the value of Seconds.
+func (s *VideoUsage) SetSeconds(val OptFloat64) {
+	s.Seconds = val
+}
+
+// SetResolution sets the value of Resolution.
+func (s *VideoUsage) SetResolution(val OptString) {
+	s.Resolution = val
+}
+
+// SetInputSeconds sets the value of InputSeconds.
+func (s *VideoUsage) SetInputSeconds(val OptFloat64) {
+	s.InputSeconds = val
+}
+
+// SetOutputSeconds sets the value of OutputSeconds.
+func (s *VideoUsage) SetOutputSeconds(val OptFloat64) {
+	s.OutputSeconds = val
+}
+
+// SetBillableSeconds sets the value of BillableSeconds.
+func (s *VideoUsage) SetBillableSeconds(val OptFloat64) {
+	s.BillableSeconds = val
+}
+
+// SetAdditionalProps sets the value of AdditionalProps.
+func (s *VideoUsage) SetAdditionalProps(val VideoUsageAdditional) {
+	s.AdditionalProps = val
+}
+
+type VideoUsageAdditional map[string]jx.Raw
+
+func (s *VideoUsageAdditional) init() VideoUsageAdditional {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
 }

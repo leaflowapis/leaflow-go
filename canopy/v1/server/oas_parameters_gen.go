@@ -1469,6 +1469,226 @@ func decodeGetUsageTimelineParams(args [0]string, argsEscaped bool, r *http.Requ
 	return params, nil
 }
 
+// GetVideoParams is parameters of get-video operation.
+type GetVideoParams struct {
+	Video string
+}
+
+func unpackGetVideoParams(packed middleware.Parameters) (params GetVideoParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "video",
+			In:   "path",
+		}
+		params.Video = packed[key].(string)
+	}
+	return params
+}
+
+func decodeGetVideoParams(args [1]string, argsEscaped bool, r *http.Request) (params GetVideoParams, _ error) {
+	// Decode path: video.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "video",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Video = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     1,
+					MinLengthSet:  true,
+					MaxLength:     0,
+					MaxLengthSet:  false,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Video)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "video",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetVideoContentParams is parameters of get-video-content operation.
+type GetVideoContentParams struct {
+	Video string
+	Range OptString `json:",omitempty,omitzero"`
+}
+
+func unpackGetVideoContentParams(packed middleware.Parameters) (params GetVideoContentParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "video",
+			In:   "path",
+		}
+		params.Video = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "Range",
+			In:   "header",
+		}
+		if v, ok := packed[key]; ok {
+			params.Range = v.(OptString)
+		}
+	}
+	return params
+}
+
+func decodeGetVideoContentParams(args [1]string, argsEscaped bool, r *http.Request) (params GetVideoContentParams, _ error) {
+	h := uri.NewHeaderDecoder(r.Header)
+	// Decode path: video.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "video",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Video = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     1,
+					MinLengthSet:  true,
+					MaxLength:     0,
+					MaxLengthSet:  false,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Video)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "video",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode header: Range.
+	if err := func() error {
+		cfg := uri.HeaderParameterDecodingConfig{
+			Name:    "Range",
+			Explode: false,
+		}
+		if err := h.HasParam(cfg); err == nil {
+			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotRangeVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotRangeVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Range.SetTo(paramsDotRangeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "Range",
+			In:   "header",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // ListAPIKeysParams is parameters of list-api-keys operation.
 type ListAPIKeysParams struct {
 	// Items returned in this page. Defaults to 50; at most 200.
