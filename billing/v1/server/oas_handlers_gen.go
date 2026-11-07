@@ -7456,6 +7456,10 @@ func (s *Server) handleListAccountDiscountsRequest(args [0]string, argsEscaped b
 					Name: "billing_account_id",
 					In:   "query",
 				}: params.BillingAccountID,
+				{
+					Name: "status",
+					In:   "query",
+				}: params.Status,
 			},
 			Raw: r,
 		}
@@ -9611,6 +9615,10 @@ func (s *Server) handleListCreditNotesRequest(args [0]string, argsEscaped bool, 
 					Name: "invoice_id",
 					In:   "query",
 				}: params.InvoiceID,
+				{
+					Name: "status",
+					In:   "query",
+				}: params.Status,
 			},
 			Raw: r,
 		}
@@ -11500,6 +11508,10 @@ func (s *Server) handleListPaymentMethodsRequest(args [0]string, argsEscaped boo
 					Name: "billing_account_id",
 					In:   "query",
 				}: params.BillingAccountID,
+				{
+					Name: "status",
+					In:   "query",
+				}: params.Status,
 			},
 			Raw: r,
 		}
@@ -12826,6 +12838,10 @@ func (s *Server) handleListRefundsRequest(args [0]string, argsEscaped bool, w ht
 					Name: "order_id",
 					In:   "query",
 				}: params.OrderID,
+				{
+					Name: "status",
+					In:   "query",
+				}: params.Status,
 			},
 			Raw: r,
 		}
@@ -13710,6 +13726,10 @@ func (s *Server) handleListSubscriptionsRequest(args [0]string, argsEscaped bool
 					Name: "project_ids",
 					In:   "query",
 				}: params.ProjectIds,
+				{
+					Name: "status",
+					In:   "query",
+				}: params.Status,
 			},
 			Raw: r,
 		}
@@ -13919,6 +13939,10 @@ func (s *Server) handleListTopUpsRequest(args [0]string, argsEscaped bool, w htt
 					Name: "billing_account_id",
 					In:   "query",
 				}: params.BillingAccountID,
+				{
+					Name: "status",
+					In:   "query",
+				}: params.Status,
 			},
 			Raw: r,
 		}
@@ -14135,6 +14159,14 @@ func (s *Server) handleListTransactionsRequest(args [0]string, argsEscaped bool,
 					Name: "to",
 					In:   "query",
 				}: params.To,
+				{
+					Name: "type",
+					In:   "query",
+				}: params.Type,
+				{
+					Name: "status",
+					In:   "query",
+				}: params.Status,
 			},
 			Raw: r,
 		}
@@ -14794,6 +14826,10 @@ func (s *Server) handleListWithdrawalsRequest(args [0]string, argsEscaped bool, 
 					Name: "billing_account_id",
 					In:   "query",
 				}: params.BillingAccountID,
+				{
+					Name: "status",
+					In:   "query",
+				}: params.Status,
 			},
 			Raw: r,
 		}
