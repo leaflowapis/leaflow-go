@@ -326,18 +326,18 @@ func (s *APIKeyUsageResource) SetRequests(val int64) {
 	s.Requests = val
 }
 
-// The audio parameters this endpoint accepts.
+// The audio parameters this model accepts.
 // Ref: #/components/schemas/AudioCapabilities
 type AudioCapabilities struct {
 	// Voices the speech endpoint accepts. Empty for transcription endpoints. Null means unknown.
 	Voices []string `json:"voices"`
-	// Audio container or codec values the endpoint accepts. Null means unknown.
+	// Audio container or codec values the model accepts. Null means unknown.
 	Formats []string `json:"formats"`
 	// Response formats the transcription endpoint accepts, such as json or srt. Null means unknown.
 	ResponseFormats []string `json:"response_formats"`
-	// The largest upload the endpoint accepts, in bytes. Null means unknown.
+	// The largest upload the model accepts, in bytes. Null means unknown.
 	MaxInputBytes NilInt64 `json:"max_input_bytes"`
-	// Whether the endpoint can stream its response. Null means unknown.
+	// Whether the response can be streamed. Null means unknown.
 	SupportsStream NilBool `json:"supports_stream"`
 }
 
@@ -1017,92 +1017,6 @@ func (s *EmbeddingResponse) init() EmbeddingResponse {
 
 func (*EmbeddingResponse) createEmbeddingsRes() {}
 
-// Ref: #/components/schemas/EndpointCapabilities
-type EndpointCapabilities struct {
-	FunctionCalling  NilBool                  `json:"function_calling"`
-	StructuredOutput NilBool                  `json:"structured_output"`
-	Reasoning        NilReasoningCapabilities `json:"reasoning"`
-	// Present on image generation and edit endpoints. Null or absent elsewhere.
-	Image OptNilImageCapabilities `json:"image"`
-	// Present on speech and transcription endpoints. Null or absent elsewhere.
-	Audio OptNilAudioCapabilities `json:"audio"`
-	// Present on the videos endpoint. Null or absent elsewhere.
-	Video OptNilVideoCapabilities `json:"video"`
-	// Non-standard request fields this endpoint accepts, sent at the top level of the request body. Null
-	// or absent means none are declared.
-	Parameters OptNilModelParameterArray `json:"parameters"`
-}
-
-// GetFunctionCalling returns the value of FunctionCalling.
-func (s *EndpointCapabilities) GetFunctionCalling() NilBool {
-	return s.FunctionCalling
-}
-
-// GetStructuredOutput returns the value of StructuredOutput.
-func (s *EndpointCapabilities) GetStructuredOutput() NilBool {
-	return s.StructuredOutput
-}
-
-// GetReasoning returns the value of Reasoning.
-func (s *EndpointCapabilities) GetReasoning() NilReasoningCapabilities {
-	return s.Reasoning
-}
-
-// GetImage returns the value of Image.
-func (s *EndpointCapabilities) GetImage() OptNilImageCapabilities {
-	return s.Image
-}
-
-// GetAudio returns the value of Audio.
-func (s *EndpointCapabilities) GetAudio() OptNilAudioCapabilities {
-	return s.Audio
-}
-
-// GetVideo returns the value of Video.
-func (s *EndpointCapabilities) GetVideo() OptNilVideoCapabilities {
-	return s.Video
-}
-
-// GetParameters returns the value of Parameters.
-func (s *EndpointCapabilities) GetParameters() OptNilModelParameterArray {
-	return s.Parameters
-}
-
-// SetFunctionCalling sets the value of FunctionCalling.
-func (s *EndpointCapabilities) SetFunctionCalling(val NilBool) {
-	s.FunctionCalling = val
-}
-
-// SetStructuredOutput sets the value of StructuredOutput.
-func (s *EndpointCapabilities) SetStructuredOutput(val NilBool) {
-	s.StructuredOutput = val
-}
-
-// SetReasoning sets the value of Reasoning.
-func (s *EndpointCapabilities) SetReasoning(val NilReasoningCapabilities) {
-	s.Reasoning = val
-}
-
-// SetImage sets the value of Image.
-func (s *EndpointCapabilities) SetImage(val OptNilImageCapabilities) {
-	s.Image = val
-}
-
-// SetAudio sets the value of Audio.
-func (s *EndpointCapabilities) SetAudio(val OptNilAudioCapabilities) {
-	s.Audio = val
-}
-
-// SetVideo sets the value of Video.
-func (s *EndpointCapabilities) SetVideo(val OptNilVideoCapabilities) {
-	s.Video = val
-}
-
-// SetParameters sets the value of Parameters.
-func (s *EndpointCapabilities) SetParameters(val OptNilModelParameterArray) {
-	s.Parameters = val
-}
-
 // A failed request. The envelope follows the Google REST error format: `code` is the HTTP status,
 // `status` is its canonical name, and `reason` is the stable machine-readable code that identifies the
 // failure.
@@ -1473,8 +1387,8 @@ func (s GetVideoContentPartialContent) Read(p []byte) (n int, err error) {
 
 func (*GetVideoContentPartialContent) getVideoContentRes() {}
 
-// The image parameters this endpoint accepts. The client chooses among them; a value outside the list
-// is rejected before the upstream is called.
+// The image parameters this model accepts. The client chooses among them; a value outside the list is
+// rejected before the upstream is called.
 // Ref: #/components/schemas/ImageCapabilities
 type ImageCapabilities struct {
 	// Size values the upstream accepts, such as 1024x1024 or auto. Null means unknown.
@@ -1485,7 +1399,7 @@ type ImageCapabilities struct {
 	ResponseFormats []string `json:"response_formats"`
 	// The largest number of images one request may ask for. Null means unknown.
 	MaxN NilInt `json:"max_n"`
-	// Whether the endpoint can stream partial images. Null means unknown.
+	// Whether partial images can be streamed. Null means unknown.
 	SupportsStream NilBool `json:"supports_stream"`
 }
 
@@ -1653,10 +1567,8 @@ func (*InferenceErrorStatusCode) createChatCompletionRes()  {}
 func (*InferenceErrorStatusCode) createEmbeddingsRes()      {}
 func (*InferenceErrorStatusCode) createMessageRes()         {}
 func (*InferenceErrorStatusCode) createResponseRes()        {}
-func (*InferenceErrorStatusCode) deleteResponseRes()        {}
 func (*InferenceErrorStatusCode) generateContentRes()       {}
 func (*InferenceErrorStatusCode) getInferenceModelRes()     {}
-func (*InferenceErrorStatusCode) getResponseRes()           {}
 func (*InferenceErrorStatusCode) listInferenceModelsRes()   {}
 func (*InferenceErrorStatusCode) streamGenerateContentRes() {}
 
@@ -2444,9 +2356,6 @@ type Model struct {
 	// Produced output modalities. Image input does not imply image generation.
 	OutputModalities []Modality        `json:"output_modalities"`
 	Capabilities     ModelCapabilities `json:"capabilities"`
-	// Explicitly supported API endpoints. Requests to any other endpoint are rejected before upstream
-	// admission.
-	SupportedEndpoints []ModelEndpoint `json:"supported_endpoints"`
 }
 
 // GetID returns the value of ID.
@@ -2509,11 +2418,6 @@ func (s *Model) GetCapabilities() ModelCapabilities {
 	return s.Capabilities
 }
 
-// GetSupportedEndpoints returns the value of SupportedEndpoints.
-func (s *Model) GetSupportedEndpoints() []ModelEndpoint {
-	return s.SupportedEndpoints
-}
-
 // SetID sets the value of ID.
 func (s *Model) SetID(val string) {
 	s.ID = val
@@ -2574,11 +2478,6 @@ func (s *Model) SetCapabilities(val ModelCapabilities) {
 	s.Capabilities = val
 }
 
-// SetSupportedEndpoints sets the value of SupportedEndpoints.
-func (s *Model) SetSupportedEndpoints(val []ModelEndpoint) {
-	s.SupportedEndpoints = val
-}
-
 func (*Model) getInferenceModelRes() {}
 
 // How requests to a model are billed: under the service's subscription, on the Billing plan `plan_id`,
@@ -2626,214 +2525,92 @@ func (s *ModelBilling) SetMeters(val []ModelMeter) {
 	s.Meters = val
 }
 
-// Verified capabilities keyed by API endpoint, for example /v1/chat/completions or /v1/responses.
-// Missing keys and null values mean unknown. Current route availability is separate.
+// Verified capabilities of the model, the same whichever endpoint it is called through. Null values
+// mean unknown. Current route availability is separate.
 // Ref: #/components/schemas/ModelCapabilities
-type ModelCapabilities map[string]EndpointCapabilities
-
-func (s *ModelCapabilities) init() ModelCapabilities {
-	m := *s
-	if m == nil {
-		m = map[string]EndpointCapabilities{}
-		*s = m
-	}
-	return m
+type ModelCapabilities struct {
+	FunctionCalling  NilBool                  `json:"function_calling"`
+	StructuredOutput NilBool                  `json:"structured_output"`
+	Reasoning        NilReasoningCapabilities `json:"reasoning"`
+	// Present on a model that generates or edits images. Null or absent otherwise.
+	Image OptNilImageCapabilities `json:"image"`
+	// Present on a model that synthesizes speech or transcribes audio. Null or absent otherwise.
+	Audio OptNilAudioCapabilities `json:"audio"`
+	// Present on a model that generates videos. Null or absent otherwise.
+	Video OptNilVideoCapabilities `json:"video"`
+	// Non-standard request fields this model accepts, sent at the top level of the request body. Null or
+	// absent means none are declared.
+	Parameters OptNilModelParameterArray `json:"parameters"`
 }
 
-// Ref: #/components/schemas/ModelEndpoint
-type ModelEndpoint string
-
-const (
-	ModelEndpointSlashV1SlashChatSlashCompletions                ModelEndpoint = "/v1/chat/completions"
-	ModelEndpointSlashV1SlashResponses                           ModelEndpoint = "/v1/responses"
-	ModelEndpointSlashV1SlashEmbeddings                          ModelEndpoint = "/v1/embeddings"
-	ModelEndpointSlashV1SlashMessages                            ModelEndpoint = "/v1/messages"
-	ModelEndpointSlashV1betaSlashModelsSlashModelGenerateContent ModelEndpoint = "/v1beta/models/{model}:generateContent"
-	ModelEndpointSlashV1SlashImagesSlashGenerations              ModelEndpoint = "/v1/images/generations"
-	ModelEndpointSlashV1SlashImagesSlashEdits                    ModelEndpoint = "/v1/images/edits"
-	ModelEndpointSlashV1SlashAudioSlashTranscriptions            ModelEndpoint = "/v1/audio/transcriptions"
-	ModelEndpointSlashV1SlashAudioSlashTranslations              ModelEndpoint = "/v1/audio/translations"
-	ModelEndpointSlashV1SlashAudioSlashSpeech                    ModelEndpoint = "/v1/audio/speech"
-	ModelEndpointSlashV1SlashRealtime                            ModelEndpoint = "/v1/realtime"
-	ModelEndpointSlashV1SlashCompletions                         ModelEndpoint = "/v1/completions"
-	ModelEndpointSlashV1SlashRerank                              ModelEndpoint = "/v1/rerank"
-	ModelEndpointSlashV1SlashModerations                         ModelEndpoint = "/v1/moderations"
-	ModelEndpointSlashV1SlashImagesSlashVariations               ModelEndpoint = "/v1/images/variations"
-	ModelEndpointSlashV1SlashFiles                               ModelEndpoint = "/v1/files"
-	ModelEndpointSlashV1SlashUploads                             ModelEndpoint = "/v1/uploads"
-	ModelEndpointSlashV1SlashBatches                             ModelEndpoint = "/v1/batches"
-	ModelEndpointSlashV1SlashFineTuningSlashJobs                 ModelEndpoint = "/v1/fine_tuning/jobs"
-	ModelEndpointSlashV1SlashAssistants                          ModelEndpoint = "/v1/assistants"
-	ModelEndpointSlashV1SlashThreads                             ModelEndpoint = "/v1/threads"
-	ModelEndpointSlashV1SlashVectorStores                        ModelEndpoint = "/v1/vector_stores"
-	ModelEndpointSlashV1SlashContainers                          ModelEndpoint = "/v1/containers"
-	ModelEndpointSlashV1SlashVideos                              ModelEndpoint = "/v1/videos"
-)
-
-// AllValues returns all ModelEndpoint values.
-func (ModelEndpoint) AllValues() []ModelEndpoint {
-	return []ModelEndpoint{
-		ModelEndpointSlashV1SlashChatSlashCompletions,
-		ModelEndpointSlashV1SlashResponses,
-		ModelEndpointSlashV1SlashEmbeddings,
-		ModelEndpointSlashV1SlashMessages,
-		ModelEndpointSlashV1betaSlashModelsSlashModelGenerateContent,
-		ModelEndpointSlashV1SlashImagesSlashGenerations,
-		ModelEndpointSlashV1SlashImagesSlashEdits,
-		ModelEndpointSlashV1SlashAudioSlashTranscriptions,
-		ModelEndpointSlashV1SlashAudioSlashTranslations,
-		ModelEndpointSlashV1SlashAudioSlashSpeech,
-		ModelEndpointSlashV1SlashRealtime,
-		ModelEndpointSlashV1SlashCompletions,
-		ModelEndpointSlashV1SlashRerank,
-		ModelEndpointSlashV1SlashModerations,
-		ModelEndpointSlashV1SlashImagesSlashVariations,
-		ModelEndpointSlashV1SlashFiles,
-		ModelEndpointSlashV1SlashUploads,
-		ModelEndpointSlashV1SlashBatches,
-		ModelEndpointSlashV1SlashFineTuningSlashJobs,
-		ModelEndpointSlashV1SlashAssistants,
-		ModelEndpointSlashV1SlashThreads,
-		ModelEndpointSlashV1SlashVectorStores,
-		ModelEndpointSlashV1SlashContainers,
-		ModelEndpointSlashV1SlashVideos,
-	}
+// GetFunctionCalling returns the value of FunctionCalling.
+func (s *ModelCapabilities) GetFunctionCalling() NilBool {
+	return s.FunctionCalling
 }
 
-// MarshalText implements encoding.TextMarshaler.
-func (s ModelEndpoint) MarshalText() ([]byte, error) {
-	switch s {
-	case ModelEndpointSlashV1SlashChatSlashCompletions:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashResponses:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashEmbeddings:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashMessages:
-		return []byte(s), nil
-	case ModelEndpointSlashV1betaSlashModelsSlashModelGenerateContent:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashImagesSlashGenerations:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashImagesSlashEdits:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashAudioSlashTranscriptions:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashAudioSlashTranslations:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashAudioSlashSpeech:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashRealtime:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashCompletions:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashRerank:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashModerations:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashImagesSlashVariations:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashFiles:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashUploads:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashBatches:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashFineTuningSlashJobs:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashAssistants:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashThreads:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashVectorStores:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashContainers:
-		return []byte(s), nil
-	case ModelEndpointSlashV1SlashVideos:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
+// GetStructuredOutput returns the value of StructuredOutput.
+func (s *ModelCapabilities) GetStructuredOutput() NilBool {
+	return s.StructuredOutput
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ModelEndpoint) UnmarshalText(data []byte) error {
-	switch ModelEndpoint(data) {
-	case ModelEndpointSlashV1SlashChatSlashCompletions:
-		*s = ModelEndpointSlashV1SlashChatSlashCompletions
-		return nil
-	case ModelEndpointSlashV1SlashResponses:
-		*s = ModelEndpointSlashV1SlashResponses
-		return nil
-	case ModelEndpointSlashV1SlashEmbeddings:
-		*s = ModelEndpointSlashV1SlashEmbeddings
-		return nil
-	case ModelEndpointSlashV1SlashMessages:
-		*s = ModelEndpointSlashV1SlashMessages
-		return nil
-	case ModelEndpointSlashV1betaSlashModelsSlashModelGenerateContent:
-		*s = ModelEndpointSlashV1betaSlashModelsSlashModelGenerateContent
-		return nil
-	case ModelEndpointSlashV1SlashImagesSlashGenerations:
-		*s = ModelEndpointSlashV1SlashImagesSlashGenerations
-		return nil
-	case ModelEndpointSlashV1SlashImagesSlashEdits:
-		*s = ModelEndpointSlashV1SlashImagesSlashEdits
-		return nil
-	case ModelEndpointSlashV1SlashAudioSlashTranscriptions:
-		*s = ModelEndpointSlashV1SlashAudioSlashTranscriptions
-		return nil
-	case ModelEndpointSlashV1SlashAudioSlashTranslations:
-		*s = ModelEndpointSlashV1SlashAudioSlashTranslations
-		return nil
-	case ModelEndpointSlashV1SlashAudioSlashSpeech:
-		*s = ModelEndpointSlashV1SlashAudioSlashSpeech
-		return nil
-	case ModelEndpointSlashV1SlashRealtime:
-		*s = ModelEndpointSlashV1SlashRealtime
-		return nil
-	case ModelEndpointSlashV1SlashCompletions:
-		*s = ModelEndpointSlashV1SlashCompletions
-		return nil
-	case ModelEndpointSlashV1SlashRerank:
-		*s = ModelEndpointSlashV1SlashRerank
-		return nil
-	case ModelEndpointSlashV1SlashModerations:
-		*s = ModelEndpointSlashV1SlashModerations
-		return nil
-	case ModelEndpointSlashV1SlashImagesSlashVariations:
-		*s = ModelEndpointSlashV1SlashImagesSlashVariations
-		return nil
-	case ModelEndpointSlashV1SlashFiles:
-		*s = ModelEndpointSlashV1SlashFiles
-		return nil
-	case ModelEndpointSlashV1SlashUploads:
-		*s = ModelEndpointSlashV1SlashUploads
-		return nil
-	case ModelEndpointSlashV1SlashBatches:
-		*s = ModelEndpointSlashV1SlashBatches
-		return nil
-	case ModelEndpointSlashV1SlashFineTuningSlashJobs:
-		*s = ModelEndpointSlashV1SlashFineTuningSlashJobs
-		return nil
-	case ModelEndpointSlashV1SlashAssistants:
-		*s = ModelEndpointSlashV1SlashAssistants
-		return nil
-	case ModelEndpointSlashV1SlashThreads:
-		*s = ModelEndpointSlashV1SlashThreads
-		return nil
-	case ModelEndpointSlashV1SlashVectorStores:
-		*s = ModelEndpointSlashV1SlashVectorStores
-		return nil
-	case ModelEndpointSlashV1SlashContainers:
-		*s = ModelEndpointSlashV1SlashContainers
-		return nil
-	case ModelEndpointSlashV1SlashVideos:
-		*s = ModelEndpointSlashV1SlashVideos
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
+// GetReasoning returns the value of Reasoning.
+func (s *ModelCapabilities) GetReasoning() NilReasoningCapabilities {
+	return s.Reasoning
+}
+
+// GetImage returns the value of Image.
+func (s *ModelCapabilities) GetImage() OptNilImageCapabilities {
+	return s.Image
+}
+
+// GetAudio returns the value of Audio.
+func (s *ModelCapabilities) GetAudio() OptNilAudioCapabilities {
+	return s.Audio
+}
+
+// GetVideo returns the value of Video.
+func (s *ModelCapabilities) GetVideo() OptNilVideoCapabilities {
+	return s.Video
+}
+
+// GetParameters returns the value of Parameters.
+func (s *ModelCapabilities) GetParameters() OptNilModelParameterArray {
+	return s.Parameters
+}
+
+// SetFunctionCalling sets the value of FunctionCalling.
+func (s *ModelCapabilities) SetFunctionCalling(val NilBool) {
+	s.FunctionCalling = val
+}
+
+// SetStructuredOutput sets the value of StructuredOutput.
+func (s *ModelCapabilities) SetStructuredOutput(val NilBool) {
+	s.StructuredOutput = val
+}
+
+// SetReasoning sets the value of Reasoning.
+func (s *ModelCapabilities) SetReasoning(val NilReasoningCapabilities) {
+	s.Reasoning = val
+}
+
+// SetImage sets the value of Image.
+func (s *ModelCapabilities) SetImage(val OptNilImageCapabilities) {
+	s.Image = val
+}
+
+// SetAudio sets the value of Audio.
+func (s *ModelCapabilities) SetAudio(val OptNilAudioCapabilities) {
+	s.Audio = val
+}
+
+// SetVideo sets the value of Video.
+func (s *ModelCapabilities) SetVideo(val OptNilVideoCapabilities) {
+	s.Video = val
+}
+
+// SetParameters sets the value of Parameters.
+func (s *ModelCapabilities) SetParameters(val OptNilModelParameterArray) {
+	s.Parameters = val
 }
 
 // Ref: #/components/schemas/ModelList
@@ -3060,7 +2837,7 @@ func (s *ModelMeterKind) UnmarshalText(data []byte) error {
 	}
 }
 
-// A non-standard request field this endpoint accepts. OpenAI SDK callers pass it through `extra_body`,
+// A non-standard request field this model accepts. OpenAI SDK callers pass it through `extra_body`,
 // which places it at the top level of the body.
 // Ref: #/components/schemas/ModelParameter
 type ModelParameter struct {
@@ -3225,9 +3002,6 @@ type ModelResource struct {
 	// Produced output modalities. Image input does not imply image generation.
 	OutputModalities []Modality        `json:"output_modalities"`
 	Capabilities     ModelCapabilities `json:"capabilities"`
-	// Explicitly supported API endpoints. Requests to any other endpoint are rejected before upstream
-	// admission.
-	SupportedEndpoints []ModelEndpoint `json:"supported_endpoints"`
 }
 
 // GetContextLength returns the value of ContextLength.
@@ -3290,11 +3064,6 @@ func (s *ModelResource) GetCapabilities() ModelCapabilities {
 	return s.Capabilities
 }
 
-// GetSupportedEndpoints returns the value of SupportedEndpoints.
-func (s *ModelResource) GetSupportedEndpoints() []ModelEndpoint {
-	return s.SupportedEndpoints
-}
-
 // SetContextLength sets the value of ContextLength.
 func (s *ModelResource) SetContextLength(val int64) {
 	s.ContextLength = val
@@ -3353,11 +3122,6 @@ func (s *ModelResource) SetOutputModalities(val []Modality) {
 // SetCapabilities sets the value of Capabilities.
 func (s *ModelResource) SetCapabilities(val ModelCapabilities) {
 	s.Capabilities = val
-}
-
-// SetSupportedEndpoints sets the value of SupportedEndpoints.
-func (s *ModelResource) SetSupportedEndpoints(val []ModelEndpoint) {
-	s.SupportedEndpoints = val
 }
 
 func (*ModelResource) getModelRes() {}
@@ -3525,8 +3289,7 @@ func (s *ModelUsageResource) SetRequests(val int64) {
 	s.Requests = val
 }
 
-// A request body in the endpoint's own protocol. Canopy reads only the model name and forwards the
-// rest unchanged.
+// A request body in the endpoint's own protocol.
 // Ref: #/components/schemas/NativeRequest
 type NativeRequest map[string]jx.Raw
 
@@ -3539,7 +3302,7 @@ func (s *NativeRequest) init() NativeRequest {
 	return m
 }
 
-// A response body in the endpoint's own protocol, as the upstream returned it.
+// A response body in the endpoint's own protocol.
 // Ref: #/components/schemas/NativeResponse
 type NativeResponse map[string]jx.Raw
 
@@ -6214,16 +5977,18 @@ func (s *RequestResourceUsageSource) UnmarshalText(data []byte) error {
 	}
 }
 
-// Native Responses request. model may be omitted when continuing a project-owned stored response.
-// store defaults to false. Only caller-executed function and custom tools are supported. background,
+// Native Responses request. Only caller-executed function and custom tools are supported. background,
 // conversation and WebSocket-only fields are rejected over HTTP.
 // Ref: #/components/schemas/ResponseCreate
 type ResponseCreate struct {
-	Model              OptString                  `json:"model"`
-	Input              jx.Raw                     `json:"input"`
-	Instructions       OptNilString               `json:"instructions"`
-	Store              OptBool                    `json:"store"`
-	Stream             OptBool                    `json:"stream"`
+	Model        OptString    `json:"model"`
+	Input        jx.Raw       `json:"input"`
+	Instructions OptNilString `json:"instructions"`
+	// Must be false. True is refused with 400 `RESPONSES_STORE_UNSUPPORTED`.
+	Store  OptBool `json:"store"`
+	Stream OptBool `json:"stream"`
+	// Continues a response created earlier on the same WebSocket connection. Over HTTP no response can be
+	// continued, and a request carrying it is refused with 404 `RESPONSE_NOT_FOUND`.
 	PreviousResponseID OptNilString               `json:"previous_response_id"`
 	Reasoning          OptResponseCreateReasoning `json:"reasoning"`
 	Tools              []ResponseCreateToolsItem  `json:"tools"`
@@ -6364,45 +6129,6 @@ func (s *ResponseCreateToolsItem) init() ResponseCreateToolsItem {
 	return m
 }
 
-// Ref: #/components/schemas/ResponseDeleted
-type ResponseDeleted struct {
-	ID      string `json:"id"`
-	Object  string `json:"object"`
-	Deleted bool   `json:"deleted"`
-}
-
-// GetID returns the value of ID.
-func (s *ResponseDeleted) GetID() string {
-	return s.ID
-}
-
-// GetObject returns the value of Object.
-func (s *ResponseDeleted) GetObject() string {
-	return s.Object
-}
-
-// GetDeleted returns the value of Deleted.
-func (s *ResponseDeleted) GetDeleted() bool {
-	return s.Deleted
-}
-
-// SetID sets the value of ID.
-func (s *ResponseDeleted) SetID(val string) {
-	s.ID = val
-}
-
-// SetObject sets the value of Object.
-func (s *ResponseDeleted) SetObject(val string) {
-	s.Object = val
-}
-
-// SetDeleted sets the value of Deleted.
-func (s *ResponseDeleted) SetDeleted(val bool) {
-	s.Deleted = val
-}
-
-func (*ResponseDeleted) deleteResponseRes() {}
-
 // Ref: #/components/schemas/ResponseResource
 type ResponseResource map[string]jx.Raw
 
@@ -6416,7 +6142,6 @@ func (s *ResponseResource) init() ResponseResource {
 }
 
 func (*ResponseResource) createResponseRes() {}
-func (*ResponseResource) getResponseRes()    {}
 
 // The model platform service of a project.
 // Ref: #/components/schemas/ServiceResource
@@ -6979,8 +6704,8 @@ func (s *UsageTimelineResponseBody) SetItems(val []UsageBucketResource) {
 
 func (*UsageTimelineResponseBody) getUsageTimelineRes() {}
 
-// The video parameters this endpoint accepts. Video is asynchronous on every endpoint that supports
-// it. Create returns a task, and the task is polled separately.
+// The video parameters this model accepts. Video is asynchronous; create returns a task, and the task
+// is polled separately.
 // Ref: #/components/schemas/VideoCapabilities
 type VideoCapabilities struct {
 	// Continuous duration capability. Mutually exclusive with nonempty seconds.

@@ -29,10 +29,6 @@ type CreateVideoRes interface {
 	createVideoRes()
 }
 
-type DeleteResponseRes interface {
-	deleteResponseRes()
-}
-
 type DisableAPIKeyRes interface {
 	disableAPIKeyRes()
 }
@@ -59,10 +55,6 @@ type GetModelRes interface {
 
 type GetRequestRes interface {
 	getRequestRes()
-}
-
-type GetResponseRes interface {
-	getResponseRes()
 }
 
 type GetServiceRes interface {

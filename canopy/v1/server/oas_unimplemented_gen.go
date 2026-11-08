@@ -28,8 +28,9 @@ func (UnimplementedHandler) CreateAPIKey(ctx context.Context, req *CreateAPIKeyR
 
 // CreateChatCompletion implements create-chat-completion operation.
 //
-// Authenticated project inference in the OpenAI Chat Completions protocol, forwarded unchanged to an
-// upstream that speaks it. Billing ownership comes only from the verified project token.
+// Authenticated project inference in the OpenAI Chat Completions protocol. Accepted for every chat
+// model, whichever protocol its providers speak. Billing ownership comes only from the verified
+// project token.
 //
 // POST /v1/chat/completions
 func (UnimplementedHandler) CreateChatCompletion(ctx context.Context, req *ChatCompletionRequest) (r CreateChatCompletionRes, _ error) {
@@ -48,9 +49,9 @@ func (UnimplementedHandler) CreateEmbeddings(ctx context.Context, req *Embedding
 
 // CreateMessage implements create-message operation.
 //
-// Authenticated project inference in the Anthropic Messages protocol, forwarded unchanged to an
-// upstream that speaks it. Accepts the `x-api-key` header as well as Authorization. Streams Anthropic
-// SSE events when `stream` is true.
+// Authenticated project inference in the Anthropic Messages protocol. Accepted for every chat model,
+// whichever protocol its providers speak. Accepts the `x-api-key` header as well as Authorization.
+// Streams Anthropic SSE events when `stream` is true.
 //
 // POST /v1/messages
 func (UnimplementedHandler) CreateMessage(ctx context.Context, req NativeRequest) (r CreateMessageRes, _ error) {
@@ -59,10 +60,13 @@ func (UnimplementedHandler) CreateMessage(ctx context.Context, req NativeRequest
 
 // CreateResponse implements create-response operation.
 //
-// Supports JSON, SSE and native upstream response storage. Stored continuation is restricted to the
-// current project and original provider credential. WebSocket clients connect with GET /v1/responses
-// and send response.create events; one response may be active on a connection at a time. The
-// connection stays on its initial model and provider credential.
+// Returns JSON, or Responses SSE events when `stream` is true. Accepted for every chat model,
+// whichever protocol its providers speak. Responses are not stored, so `store` must be false; send the
+// output items of a response back unchanged, in their order, as input to the next request. Reasoning
+// items carry `encrypted_content`, which has to be returned as received. WebSocket clients connect
+// with GET /v1/responses and send response.create events; one response may be active on a connection
+// at a time, and `previous_response_id` continues a response created earlier on the same connection.
+// The connection stays on its initial model and provider credential.
 //
 // POST /v1/responses
 func (UnimplementedHandler) CreateResponse(ctx context.Context, req *ResponseCreate) (r CreateResponseRes, _ error) {
@@ -99,15 +103,6 @@ func (UnimplementedHandler) CreateVideo(ctx context.Context, req *VideoCreateReq
 	return r, ht.ErrNotImplemented
 }
 
-// DeleteResponse implements delete-response operation.
-//
-// Delete a stored response.
-//
-// DELETE /v1/responses/{response}
-func (UnimplementedHandler) DeleteResponse(ctx context.Context, params DeleteResponseParams) (r DeleteResponseRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // DisableAPIKey implements disable-api-key operation.
 //
 // A temporary measure; the key may be enabled again at any time. Use revocation to invalidate it
@@ -131,8 +126,8 @@ func (UnimplementedHandler) EnableAPIKey(ctx context.Context, params EnableAPIKe
 
 // GenerateContent implements generate-content operation.
 //
-// Authenticated project inference in the Gemini protocol, forwarded unchanged to an upstream that
-// speaks it. Accepts the `x-goog-api-key` header as well as Authorization.
+// Authenticated project inference in the Gemini protocol. Accepted for every chat model, whichever
+// protocol its providers speak. Accepts the `x-goog-api-key` header as well as Authorization.
 //
 // POST /v1beta/models/{model}:generateContent
 func (UnimplementedHandler) GenerateContent(ctx context.Context, req NativeRequest, params GenerateContentParams) (r GenerateContentRes, _ error) {
@@ -173,15 +168,6 @@ func (UnimplementedHandler) GetModel(ctx context.Context, params GetModelParams)
 //
 // GET /api/v1/requests/{requestId}
 func (UnimplementedHandler) GetRequest(ctx context.Context, params GetRequestParams) (r GetRequestRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetResponse implements get-response operation.
-//
-// Get a stored response.
-//
-// GET /v1/responses/{response}
-func (UnimplementedHandler) GetResponse(ctx context.Context, params GetResponseParams) (r GetResponseRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
