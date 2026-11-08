@@ -39,6 +39,34 @@ func encodeCompleteUploadRequest(
 	return nil
 }
 
+func encodeCreateArtifactRequest(
+	req *CreateArtifactRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateArtifactVersionRequest(
+	req *CreateArtifactVersionRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCreateChannelRequest(
 	req *CreateChannelRequestBody,
 	r *http.Request,
@@ -223,8 +251,8 @@ func encodeRotateChannelSecretRequest(
 	return nil
 }
 
-func encodeSearchAttachmentsRequest(
-	req *SearchAttachmentsRequestBody,
+func encodeSearchFilesRequest(
+	req *SearchFilesRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -321,8 +349,8 @@ func encodeSubmitWeixinVerifyCodeRequest(
 	return nil
 }
 
-func encodeUpdateAttachmentRequest(
-	req *UpdateAttachmentRequestBody,
+func encodeUpdateArtifactRequest(
+	req *UpdateArtifactRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -337,6 +365,20 @@ func encodeUpdateAttachmentRequest(
 
 func encodeUpdateChannelRequest(
 	req *UpdateChannelRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateFileRequest(
+	req *UpdateFileRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -419,8 +461,8 @@ func encodeUpdateUploadRequest(
 	return nil
 }
 
-func encodeUploadAttachmentRequest(
-	req *UploadAttachmentReqWithContentType,
+func encodeUploadFileRequest(
+	req *UploadFileReqWithContentType,
 	r *http.Request,
 ) error {
 	contentType := req.ContentType

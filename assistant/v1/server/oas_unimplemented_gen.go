@@ -85,7 +85,27 @@ func (UnimplementedHandler) CompactThread(ctx context.Context, params CompactThr
 // Complete upload.
 //
 // POST /api/v1/uploads/{upload}:complete
-func (UnimplementedHandler) CompleteUpload(ctx context.Context, req *CompleteUploadRequestBody, params CompleteUploadParams) (r *UploadedResource, _ error) {
+func (UnimplementedHandler) CompleteUpload(ctx context.Context, req *CompleteUploadRequestBody, params CompleteUploadParams) (r *FileResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateArtifact implements create-artifact operation.
+//
+// Makes a file the first version of a new artifact. The file must belong to the caller in this
+// project. Fails with 404 and code FILE_NOT_FOUND when it does not.
+//
+// POST /api/v1/artifacts
+func (UnimplementedHandler) CreateArtifact(ctx context.Context, req *CreateArtifactRequestBody) (r *ArtifactResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateArtifactVersion implements create-artifact-version operation.
+//
+// Makes a file the newest version of the artifact. The file must belong to the caller in this project.
+// Fails with 404 and code FILE_NOT_FOUND when it does not.
+//
+// POST /api/v1/artifacts/{artifact}/versions
+func (UnimplementedHandler) CreateArtifactVersion(ctx context.Context, req *CreateArtifactVersionRequestBody, params CreateArtifactVersionParams) (r *ArtifactVersionResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -185,14 +205,14 @@ func (UnimplementedHandler) DecideToolCalls(ctx context.Context, req *DecideTool
 	return ht.ErrNotImplemented
 }
 
-// DeleteAttachment implements delete-attachment operation.
+// DeleteArtifact implements delete-artifact operation.
 //
-// Hides the file from the library. Conversations that already use it keep it: the attachment stays
-// readable by id and keeps rendering in their history. Its bytes are released when the project is
-// deleted. A draft is cleared for good when its expiry passes. Idempotent.
+// Removes the artifact and its versions from lists, and the assistant can no longer add versions to
+// it. Conversations that showed a version keep showing it, and its file stays downloadable.
+// Idempotent.
 //
-// DELETE /api/v1/attachments/{attachment}
-func (UnimplementedHandler) DeleteAttachment(ctx context.Context, params DeleteAttachmentParams) error {
+// DELETE /api/v1/artifacts/{artifact}
+func (UnimplementedHandler) DeleteArtifact(ctx context.Context, params DeleteArtifactParams) error {
 	return ht.ErrNotImplemented
 }
 
@@ -212,6 +232,17 @@ func (UnimplementedHandler) DeleteBinding(ctx context.Context, params DeleteBind
 //
 // DELETE /api/v1/channels/{channel}
 func (UnimplementedHandler) DeleteChannel(ctx context.Context, params DeleteChannelParams) error {
+	return ht.ErrNotImplemented
+}
+
+// DeleteFile implements delete-file operation.
+//
+// Hides the file from the library. Conversations that already use it keep it: the file stays readable
+// by id and keeps rendering in their history. Its bytes are released when the project is deleted. A
+// draft is cleared for good when its expiry passes. Idempotent.
+//
+// DELETE /api/v1/files/{file}
+func (UnimplementedHandler) DeleteFile(ctx context.Context, params DeleteFileParams) error {
 	return ht.ErrNotImplemented
 }
 
@@ -277,32 +308,37 @@ func (UnimplementedHandler) DeleteUpload(ctx context.Context, params DeleteUploa
 	return ht.ErrNotImplemented
 }
 
-// DownloadAttachment implements download-attachment operation.
+// DownloadFile implements download-file operation.
 //
-// Returns the original bytes for an attachment id, including one removed from the library. The
-// response carries long-lived cache headers because the content never changes. Returns 404 when the
-// attachment does not exist or does not belong to the current user.
+// Returns the original bytes of a file, including one removed from the library, a file a tool produced
+// and an artifact version. The response carries long-lived cache headers because the content never
+// changes. Returns 404 when the file does not exist or does not belong to the current user.
 //
-// Only an attachment whose `type` is `image` comes back with its own image type and is usable as the
-// address of an `<img>`. Everything else is served as `application/octet-stream` with
-// `Content-Disposition: attachment`, deliberately: an uploaded file is arbitrary bytes under a name
-// its uploader chose, and serving it back inline would run it on this origin.
+// Only a file whose `type` is `image` comes back with its own image type and is usable as the address
+// of an `<img>`. Everything else is served as `application/octet-stream` with
+// `Content-Disposition: attachment`, deliberately: a file is arbitrary bytes under a name chosen
+// elsewhere, and serving it back inline would run it on this origin.
 //
-// GET /api/v1/attachments/{attachment}:download
-func (UnimplementedHandler) DownloadAttachment(ctx context.Context, params DownloadAttachmentParams) (r *DownloadAttachmentOKHeaders, _ error) {
+// GET /api/v1/files/{file}:download
+func (UnimplementedHandler) DownloadFile(ctx context.Context, params DownloadFileParams) (r *DownloadFileOKHeaders, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// GetAttachment implements get-attachment operation.
+// GetArtifact implements get-artifact operation.
 //
-// Metadata for one attachment. The bytes are at /api/v1/attachments/{attachment}:download.
+// Get an artifact.
 //
-// Returns 404 when the attachment does not exist, does not belong to the current user, or was removed
-// from the library. Removed files stay readable through their conversations but are no longer
-// described here.
+// GET /api/v1/artifacts/{artifact}
+func (UnimplementedHandler) GetArtifact(ctx context.Context, params GetArtifactParams) (r *ArtifactResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetArtifactVersion implements get-artifact-version operation.
 //
-// GET /api/v1/attachments/{attachment}
-func (UnimplementedHandler) GetAttachment(ctx context.Context, params GetAttachmentParams) (r *AttachmentFileResource, _ error) {
+// Get an artifact version.
+//
+// GET /api/v1/artifacts/{artifact}/versions/{version}
+func (UnimplementedHandler) GetArtifactVersion(ctx context.Context, params GetArtifactVersionParams) (r *ArtifactVersionResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -321,6 +357,19 @@ func (UnimplementedHandler) GetBinding(ctx context.Context, params GetBindingPar
 //
 // GET /api/v1/channels/{channel}
 func (UnimplementedHandler) GetChannel(ctx context.Context, params GetChannelParams) (r *ChannelResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetFile implements get-file operation.
+//
+// Metadata for one file. The bytes are at /api/v1/files/{file}:download.
+//
+// Returns 404 when the file does not exist, does not belong to the current user, or was removed from
+// the library. Removed files stay readable through their conversations but are no longer described
+// here.
+//
+// GET /api/v1/files/{file}
+func (UnimplementedHandler) GetFile(ctx context.Context, params GetFileParams) (r *FileResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -430,6 +479,28 @@ func (UnimplementedHandler) GetWeixinLogin(ctx context.Context, params GetWeixin
 // POST /api/v1/threads/{thread}:interrupt
 func (UnimplementedHandler) InterruptThread(ctx context.Context, params InterruptThreadParams) error {
 	return ht.ErrNotImplemented
+}
+
+// ListArtifactVersions implements list-artifact-versions operation.
+//
+// The versions of an artifact, newest first.
+//
+// GET /api/v1/artifacts/{artifact}/versions
+func (UnimplementedHandler) ListArtifactVersions(ctx context.Context, params ListArtifactVersionsParams) (r *ArtifactVersionListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListArtifacts implements list-artifacts operation.
+//
+// The caller's artifacts in this project, most recently updated first. An artifact is a file the
+// assistant handed over, kept under one title across its versions: a later version replaces what the
+// person sees, and earlier versions stay readable.
+//
+// With `thread`, only artifacts that have a version created in that conversation are listed.
+//
+// GET /api/v1/artifacts
+func (UnimplementedHandler) ListArtifacts(ctx context.Context, params ListArtifactsParams) (r *ArtifactListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
 }
 
 // ListBindings implements list-bindings operation.
@@ -712,10 +783,11 @@ func (UnimplementedHandler) RunTask(ctx context.Context, params RunTaskParams) (
 	return r, ht.ErrNotImplemented
 }
 
-// SearchAttachments implements search-attachments operation.
+// SearchFiles implements search-files operation.
 //
-// The caller's files in this project, most recently uploaded first. These are the files uploaded while
-// composing messages, plus uploads that no message has referenced yet.
+// The caller's library in this project, most recently uploaded first: the files they attached to
+// messages, plus uploads that no message has referenced yet. Files that tools produced and artifacts
+// the assistant handed over are not listed here; artifacts are listed by list-artifacts.
 //
 // A file with no message referencing it is a draft: `draftExpiresAt` says when it is cleared. Sending
 // a message with the id makes it permanent and that field becomes null.
@@ -723,8 +795,8 @@ func (UnimplementedHandler) RunTask(ctx context.Context, params RunTaskParams) (
 // Files removed from the library are not listed, but conversations that already use them keep them and
 // download-by-id still works.
 //
-// QUERY /api/v1/attachments
-func (UnimplementedHandler) SearchAttachments(ctx context.Context, req *SearchAttachmentsRequestBody) (r *AttachmentListResponseBody, _ error) {
+// QUERY /api/v1/files
+func (UnimplementedHandler) SearchFiles(ctx context.Context, req *SearchFilesRequestBody) (r *FileListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -802,13 +874,12 @@ func (UnimplementedHandler) SubmitWeixinVerifyCode(ctx context.Context, req *Ver
 	return r, ht.ErrNotImplemented
 }
 
-// UpdateAttachment implements update-attachment operation.
+// UpdateArtifact implements update-artifact operation.
 //
-// Changes the name shown in the library and given to the assistant. The bytes and the attachment id do
-// not change; conversations that already use it see the new name from their next request on.
+// Changes the title shown for every version. The versions and their files do not change.
 //
-// PATCH /api/v1/attachments/{attachment}
-func (UnimplementedHandler) UpdateAttachment(ctx context.Context, req *UpdateAttachmentRequestBody, params UpdateAttachmentParams) (r *AttachmentFileResource, _ error) {
+// PATCH /api/v1/artifacts/{artifact}
+func (UnimplementedHandler) UpdateArtifact(ctx context.Context, req *UpdateArtifactRequestBody, params UpdateArtifactParams) (r *ArtifactResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -820,6 +891,16 @@ func (UnimplementedHandler) UpdateAttachment(ctx context.Context, req *UpdateAtt
 //
 // PATCH /api/v1/channels/{channel}
 func (UnimplementedHandler) UpdateChannel(ctx context.Context, req *UpdateChannelRequestBody, params UpdateChannelParams) (r *ChannelResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateFile implements update-file operation.
+//
+// Changes the name shown in the library and given to the assistant. The bytes and the file id do not
+// change; conversations that already use it see the new name from their next request on.
+//
+// PATCH /api/v1/files/{file}
+func (UnimplementedHandler) UpdateFile(ctx context.Context, req *UpdateFileRequestBody, params UpdateFileParams) (r *FileResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -881,10 +962,10 @@ func (UnimplementedHandler) UpdateUpload(ctx context.Context, req *UpdateUploadR
 	return r, ht.ErrNotImplemented
 }
 
-// UploadAttachment implements upload-attachment operation.
+// UploadFile implements upload-file operation.
 //
 // The body is the file bytes themselves, not multipart, one file per request. The type is determined
-// from the content, not from Content-Type or from the name. Put the returned id in attachmentIds when
+// from the content, not from Content-Type or from the name. Put the returned id in a `file` part when
 // sending a message.
 //
 // An upload that no message ever references is a draft, and drafts are collected — `draftExpiresAt`
@@ -895,8 +976,8 @@ func (UnimplementedHandler) UpdateUpload(ctx context.Context, req *UpdateUploadR
 // file, and anything `binary`, arrives as a reference the assistant reads on demand — for a binary
 // that usually means downloading it onto one of the project's cloud instances.
 //
-// POST /api/v1/attachments
-func (UnimplementedHandler) UploadAttachment(ctx context.Context, req *UploadAttachmentReqWithContentType, params UploadAttachmentParams) (r *UploadedResource, _ error) {
+// POST /api/v1/files
+func (UnimplementedHandler) UploadFile(ctx context.Context, req *UploadFileReqWithContentType, params UploadFileParams) (r *FileResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

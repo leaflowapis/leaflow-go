@@ -79,9 +79,35 @@ func encodeCompactThreadResponse(response *TurnStartedResponseBody, w http.Respo
 	return nil
 }
 
-func encodeCompleteUploadResponse(response *UploadedResource, w http.ResponseWriter, span trace.Span) error {
+func encodeCompleteUploadResponse(response *FileResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeCreateArtifactResponse(response *ArtifactResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeCreateArtifactVersionResponse(response *ArtifactVersionResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -176,7 +202,7 @@ func encodeDecideToolCallsResponse(response *DecideToolCallsNoContent, w http.Re
 	return nil
 }
 
-func encodeDeleteAttachmentResponse(response *DeleteAttachmentNoContent, w http.ResponseWriter, span trace.Span) error {
+func encodeDeleteArtifactResponse(response *DeleteArtifactNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
 	return nil
@@ -189,6 +215,12 @@ func encodeDeleteBindingResponse(response *DeleteBindingNoContent, w http.Respon
 }
 
 func encodeDeleteChannelResponse(response *DeleteChannelNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
+}
+
+func encodeDeleteFileResponse(response *DeleteFileNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
 	return nil
@@ -230,7 +262,7 @@ func encodeDeleteUploadResponse(response *DeleteUploadOK, w http.ResponseWriter,
 	return nil
 }
 
-func encodeDownloadAttachmentResponse(response *DownloadAttachmentOKHeaders, w http.ResponseWriter, span trace.Span) error {
+func encodeDownloadFileResponse(response *DownloadFileOKHeaders, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Access-Control-Expose-Headers", "Content-Disposition")
 	// Encoding response headers.
 	{
@@ -291,7 +323,20 @@ func encodeDownloadAttachmentResponse(response *DownloadAttachmentOKHeaders, w h
 	return nil
 }
 
-func encodeGetAttachmentResponse(response *AttachmentFileResource, w http.ResponseWriter, span trace.Span) error {
+func encodeGetArtifactResponse(response *ArtifactResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetArtifactVersionResponse(response *ArtifactVersionResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -318,6 +363,19 @@ func encodeGetBindingResponse(response *BindingResource, w http.ResponseWriter, 
 }
 
 func encodeGetChannelResponse(response *ChannelResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetFileResponse(response *FileResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -462,6 +520,32 @@ func encodeGetWeixinLoginResponse(response *LoginResource, w http.ResponseWriter
 
 func encodeInterruptThreadResponse(response *InterruptThreadNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
+
+	return nil
+}
+
+func encodeListArtifactVersionsResponse(response *ArtifactVersionListResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListArtifactsResponse(response *ArtifactListResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
 
 	return nil
 }
@@ -764,7 +848,7 @@ func encodeRunTaskResponse(response *TaskRunResource, w http.ResponseWriter, spa
 	return nil
 }
 
-func encodeSearchAttachmentsResponse(response *AttachmentListResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeSearchFilesResponse(response *FileListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -848,7 +932,7 @@ func encodeSubmitWeixinVerifyCodeResponse(response *LoginResource, w http.Respon
 	return nil
 }
 
-func encodeUpdateAttachmentResponse(response *AttachmentFileResource, w http.ResponseWriter, span trace.Span) error {
+func encodeUpdateArtifactResponse(response *ArtifactResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -862,6 +946,19 @@ func encodeUpdateAttachmentResponse(response *AttachmentFileResource, w http.Res
 }
 
 func encodeUpdateChannelResponse(response *ChannelResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeUpdateFileResponse(response *FileResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -939,7 +1036,7 @@ func encodeUpdateUploadResponse(response *UploadResource, w http.ResponseWriter,
 	return nil
 }
 
-func encodeUploadAttachmentResponse(response *UploadedResource, w http.ResponseWriter, span trace.Span) error {
+func encodeUploadFileResponse(response *FileResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
 
