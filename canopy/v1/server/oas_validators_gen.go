@@ -586,125 +586,6 @@ func (s EmbeddingRequestInput) Validate() error {
 	}
 }
 
-func (s *EndpointCapabilities) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if value, ok := s.Reasoning.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "reasoning",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.Image.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "image",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.Audio.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "audio",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.Video.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "video",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.Parameters.Get(); ok {
-			if err := func() error {
-				if value == nil {
-					return errors.New("nil is invalid value")
-				}
-				var failures []validate.FieldError
-				for i, elem := range value {
-					if err := func() error {
-						if err := elem.Validate(); err != nil {
-							return err
-						}
-						return nil
-					}(); err != nil {
-						failures = append(failures, validate.FieldError{
-							Name:  fmt.Sprintf("[%d]", i),
-							Error: err,
-						})
-					}
-				}
-				if len(failures) > 0 {
-					return &validate.Error{Fields: failures}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "parameters",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
 func (s GetUsageSummaryStatus) Validate() error {
 	switch s {
 	case "in_flight":
@@ -1278,45 +1159,6 @@ func (s *Model) Validate() error {
 			Error: err,
 		})
 	}
-	if err := func() error {
-		if s.SupportedEndpoints == nil {
-			return errors.New("nil is invalid value")
-		}
-		if err := (validate.Array{
-			MinLength:    0,
-			MinLengthSet: false,
-			MaxLength:    0,
-			MaxLengthSet: false,
-		}).ValidateLength(len(s.SupportedEndpoints)); err != nil {
-			return errors.Wrap(err, "array")
-		}
-		if err := validate.UniqueItems(s.SupportedEndpoints); err != nil {
-			return errors.Wrap(err, "array")
-		}
-		var failures []validate.FieldError
-		for i, elem := range s.SupportedEndpoints {
-			if err := func() error {
-				if err := elem.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				failures = append(failures, validate.FieldError{
-					Name:  fmt.Sprintf("[%d]", i),
-					Error: err,
-				})
-			}
-		}
-		if len(failures) > 0 {
-			return &validate.Error{Fields: failures}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "supported_endpoints",
-			Error: err,
-		})
-	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -1363,81 +1205,123 @@ func (s *ModelBilling) Validate() error {
 	return nil
 }
 
-func (s ModelCapabilities) Validate() error {
-	var failures []validate.FieldError
-	for key, elem := range s {
-		if err := func() error {
-			if err := elem.Validate(); err != nil {
-				return err
-			}
-			return nil
-		}(); err != nil {
-			failures = append(failures, validate.FieldError{
-				Name:  key,
-				Error: err,
-			})
-		}
+func (s *ModelCapabilities) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
 	}
 
+	var failures []validate.FieldError
+	if err := func() error {
+		if value, ok := s.Reasoning.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "reasoning",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Image.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "image",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Audio.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "audio",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Video.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "video",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Parameters.Get(); ok {
+			if err := func() error {
+				if value == nil {
+					return errors.New("nil is invalid value")
+				}
+				var failures []validate.FieldError
+				for i, elem := range value {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "parameters",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
-}
-
-func (s ModelEndpoint) Validate() error {
-	switch s {
-	case "/v1/chat/completions":
-		return nil
-	case "/v1/responses":
-		return nil
-	case "/v1/embeddings":
-		return nil
-	case "/v1/messages":
-		return nil
-	case "/v1beta/models/{model}:generateContent":
-		return nil
-	case "/v1/images/generations":
-		return nil
-	case "/v1/images/edits":
-		return nil
-	case "/v1/audio/transcriptions":
-		return nil
-	case "/v1/audio/translations":
-		return nil
-	case "/v1/audio/speech":
-		return nil
-	case "/v1/realtime":
-		return nil
-	case "/v1/completions":
-		return nil
-	case "/v1/rerank":
-		return nil
-	case "/v1/moderations":
-		return nil
-	case "/v1/images/variations":
-		return nil
-	case "/v1/files":
-		return nil
-	case "/v1/uploads":
-		return nil
-	case "/v1/batches":
-		return nil
-	case "/v1/fine_tuning/jobs":
-		return nil
-	case "/v1/assistants":
-		return nil
-	case "/v1/threads":
-		return nil
-	case "/v1/vector_stores":
-		return nil
-	case "/v1/containers":
-		return nil
-	case "/v1/videos":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
 }
 
 func (s *ModelList) Validate() error {
@@ -1727,45 +1611,6 @@ func (s *ModelResource) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "capabilities",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if s.SupportedEndpoints == nil {
-			return errors.New("nil is invalid value")
-		}
-		if err := (validate.Array{
-			MinLength:    0,
-			MinLengthSet: false,
-			MaxLength:    0,
-			MaxLengthSet: false,
-		}).ValidateLength(len(s.SupportedEndpoints)); err != nil {
-			return errors.Wrap(err, "array")
-		}
-		if err := validate.UniqueItems(s.SupportedEndpoints); err != nil {
-			return errors.Wrap(err, "array")
-		}
-		var failures []validate.FieldError
-		for i, elem := range s.SupportedEndpoints {
-			if err := func() error {
-				if err := elem.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				failures = append(failures, validate.FieldError{
-					Name:  fmt.Sprintf("[%d]", i),
-					Error: err,
-				})
-			}
-		}
-		if len(failures) > 0 {
-			return &validate.Error{Fields: failures}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "supported_endpoints",
 			Error: err,
 		})
 	}
