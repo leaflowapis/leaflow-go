@@ -11,7 +11,7 @@ func (s *ClientActionRequest) setDefaults() {
 }
 
 // setDefaults set default value of fields.
-func (s *SearchAttachmentsRequestBody) setDefaults() {
+func (s *SearchFilesRequestBody) setDefaults() {
 	{
 		val := int(50)
 		s.Limit.SetTo(val)

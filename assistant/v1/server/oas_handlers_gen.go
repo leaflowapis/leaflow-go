@@ -1423,7 +1423,7 @@ func (s *Server) handleCompleteUploadRequest(args [1]string, argsEscaped bool, w
 		}
 	}()
 
-	var response *UploadedResource
+	var response *FileResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -1444,7 +1444,7 @@ func (s *Server) handleCompleteUploadRequest(args [1]string, argsEscaped bool, w
 		type (
 			Request  = *CompleteUploadRequestBody
 			Params   = CompleteUploadParams
-			Response = *UploadedResource
+			Response = *FileResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1480,6 +1480,423 @@ func (s *Server) handleCompleteUploadRequest(args [1]string, argsEscaped bool, w
 	}
 
 	if err := encodeCompleteUploadResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateArtifactRequest handles create-artifact operation.
+//
+// Makes a file the first version of a new artifact. The file must belong to the caller in this
+// project. Fails with 404 and code FILE_NOT_FOUND when it does not.
+//
+// POST /api/v1/artifacts
+func (s *Server) handleCreateArtifactRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-artifact"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/artifacts"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateArtifactOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateArtifactOperation,
+			ID:   "create-artifact",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, CreateArtifactOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateArtifactRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *ArtifactResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateArtifactOperation,
+			OperationSummary: "Create an artifact",
+			OperationID:      "create-artifact",
+			Body:             request,
+			RawBody:          rawBody,
+			Params:           middleware.Parameters{},
+			Raw:              r,
+		}
+
+		type (
+			Request  = *CreateArtifactRequestBody
+			Params   = struct{}
+			Response = *ArtifactResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			nil,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateArtifact(ctx, request)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateArtifact(ctx, request)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateArtifactResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateArtifactVersionRequest handles create-artifact-version operation.
+//
+// Makes a file the newest version of the artifact. The file must belong to the caller in this project.
+// Fails with 404 and code FILE_NOT_FOUND when it does not.
+//
+// POST /api/v1/artifacts/{artifact}/versions
+func (s *Server) handleCreateArtifactVersionRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-artifact-version"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/artifacts/{artifact}/versions"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateArtifactVersionOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateArtifactVersionOperation,
+			ID:   "create-artifact-version",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, CreateArtifactVersionOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCreateArtifactVersionParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateArtifactVersionRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *ArtifactVersionResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateArtifactVersionOperation,
+			OperationSummary: "Add a version",
+			OperationID:      "create-artifact-version",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "artifact",
+					In:   "path",
+				}: params.Artifact,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *CreateArtifactVersionRequestBody
+			Params   = CreateArtifactVersionParams
+			Response = *ArtifactVersionResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCreateArtifactVersionParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateArtifactVersion(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateArtifactVersion(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateArtifactVersionResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -2936,26 +3353,26 @@ func (s *Server) handleDecideToolCallsRequest(args [1]string, argsEscaped bool, 
 	}
 }
 
-// handleDeleteAttachmentRequest handles delete-attachment operation.
+// handleDeleteArtifactRequest handles delete-artifact operation.
 //
-// Hides the file from the library. Conversations that already use it keep it: the attachment stays
-// readable by id and keeps rendering in their history. Its bytes are released when the project is
-// deleted. A draft is cleared for good when its expiry passes. Idempotent.
+// Removes the artifact and its versions from lists, and the assistant can no longer add versions to
+// it. Conversations that showed a version keep showing it, and its file stays downloadable.
+// Idempotent.
 //
-// DELETE /api/v1/attachments/{attachment}
-func (s *Server) handleDeleteAttachmentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// DELETE /api/v1/artifacts/{artifact}
+func (s *Server) handleDeleteArtifactRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-attachment"),
+		otelogen.OperationID("delete-artifact"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/attachments/{attachment}"),
+		semconv.HTTPRouteKey.String("/api/v1/artifacts/{artifact}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteAttachmentOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteArtifactOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -3010,15 +3427,15 @@ func (s *Server) handleDeleteAttachmentRequest(args [1]string, argsEscaped bool,
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: DeleteAttachmentOperation,
-			ID:   "delete-attachment",
+			Name: DeleteArtifactOperation,
+			ID:   "delete-artifact",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DeleteAttachmentOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, DeleteArtifactOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -3060,7 +3477,7 @@ func (s *Server) handleDeleteAttachmentRequest(args [1]string, argsEscaped bool,
 			return
 		}
 	}
-	params, err := decodeDeleteAttachmentParams(args, argsEscaped, r)
+	params, err := decodeDeleteArtifactParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -3073,28 +3490,28 @@ func (s *Server) handleDeleteAttachmentRequest(args [1]string, argsEscaped bool,
 
 	var rawBody []byte
 
-	var response *DeleteAttachmentNoContent
+	var response *DeleteArtifactNoContent
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    DeleteAttachmentOperation,
-			OperationSummary: "Remove a file from the library",
-			OperationID:      "delete-attachment",
+			OperationName:    DeleteArtifactOperation,
+			OperationSummary: "Delete an artifact",
+			OperationID:      "delete-artifact",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "attachment",
+					Name: "artifact",
 					In:   "path",
-				}: params.Attachment,
+				}: params.Artifact,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = DeleteAttachmentParams
-			Response = *DeleteAttachmentNoContent
+			Params   = DeleteArtifactParams
+			Response = *DeleteArtifactNoContent
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -3103,14 +3520,14 @@ func (s *Server) handleDeleteAttachmentRequest(args [1]string, argsEscaped bool,
 		](
 			m,
 			mreq,
-			unpackDeleteAttachmentParams,
+			unpackDeleteArtifactParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.DeleteAttachment(ctx, params)
+				err = s.h.DeleteArtifact(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		err = s.h.DeleteAttachment(ctx, params)
+		err = s.h.DeleteArtifact(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -3129,7 +3546,7 @@ func (s *Server) handleDeleteAttachmentRequest(args [1]string, argsEscaped bool,
 		return
 	}
 
-	if err := encodeDeleteAttachmentResponse(response, w, span); err != nil {
+	if err := encodeDeleteArtifactResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -3531,6 +3948,208 @@ func (s *Server) handleDeleteChannelRequest(args [1]string, argsEscaped bool, w 
 	}
 
 	if err := encodeDeleteChannelResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleDeleteFileRequest handles delete-file operation.
+//
+// Hides the file from the library. Conversations that already use it keep it: the file stays readable
+// by id and keeps rendering in their history. Its bytes are released when the project is deleted. A
+// draft is cleared for good when its expiry passes. Idempotent.
+//
+// DELETE /api/v1/files/{file}
+func (s *Server) handleDeleteFileRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-file"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/api/v1/files/{file}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DeleteFileOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: DeleteFileOperation,
+			ID:   "delete-file",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, DeleteFileOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeDeleteFileParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *DeleteFileNoContent
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    DeleteFileOperation,
+			OperationSummary: "Remove a file from the library",
+			OperationID:      "delete-file",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "file",
+					In:   "path",
+				}: params.File,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = DeleteFileParams
+			Response = *DeleteFileNoContent
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackDeleteFileParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				err = s.h.DeleteFile(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		err = s.h.DeleteFile(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeDeleteFileResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -4747,31 +5366,31 @@ func (s *Server) handleDeleteUploadRequest(args [1]string, argsEscaped bool, w h
 	}
 }
 
-// handleDownloadAttachmentRequest handles download-attachment operation.
+// handleDownloadFileRequest handles download-file operation.
 //
-// Returns the original bytes for an attachment id, including one removed from the library. The
-// response carries long-lived cache headers because the content never changes. Returns 404 when the
-// attachment does not exist or does not belong to the current user.
+// Returns the original bytes of a file, including one removed from the library, a file a tool produced
+// and an artifact version. The response carries long-lived cache headers because the content never
+// changes. Returns 404 when the file does not exist or does not belong to the current user.
 //
-// Only an attachment whose `type` is `image` comes back with its own image type and is usable as the
-// address of an `<img>`. Everything else is served as `application/octet-stream` with
-// `Content-Disposition: attachment`, deliberately: an uploaded file is arbitrary bytes under a name
-// its uploader chose, and serving it back inline would run it on this origin.
+// Only a file whose `type` is `image` comes back with its own image type and is usable as the address
+// of an `<img>`. Everything else is served as `application/octet-stream` with
+// `Content-Disposition: attachment`, deliberately: a file is arbitrary bytes under a name chosen
+// elsewhere, and serving it back inline would run it on this origin.
 //
-// GET /api/v1/attachments/{attachment}:download
-func (s *Server) handleDownloadAttachmentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/files/{file}:download
+func (s *Server) handleDownloadFileRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("download-attachment"),
+		otelogen.OperationID("download-file"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/attachments/{attachment}:download"),
+		semconv.HTTPRouteKey.String("/api/v1/files/{file}:download"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DownloadAttachmentOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DownloadFileOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -4826,15 +5445,15 @@ func (s *Server) handleDownloadAttachmentRequest(args [1]string, argsEscaped boo
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: DownloadAttachmentOperation,
-			ID:   "download-attachment",
+			Name: DownloadFileOperation,
+			ID:   "download-file",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DownloadAttachmentOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, DownloadFileOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -4876,7 +5495,7 @@ func (s *Server) handleDownloadAttachmentRequest(args [1]string, argsEscaped boo
 			return
 		}
 	}
-	params, err := decodeDownloadAttachmentParams(args, argsEscaped, r)
+	params, err := decodeDownloadFileParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -4889,28 +5508,28 @@ func (s *Server) handleDownloadAttachmentRequest(args [1]string, argsEscaped boo
 
 	var rawBody []byte
 
-	var response *DownloadAttachmentOKHeaders
+	var response *DownloadFileOKHeaders
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    DownloadAttachmentOperation,
+			OperationName:    DownloadFileOperation,
 			OperationSummary: "Download a file",
-			OperationID:      "download-attachment",
+			OperationID:      "download-file",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "attachment",
+					Name: "file",
 					In:   "path",
-				}: params.Attachment,
+				}: params.File,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = DownloadAttachmentParams
-			Response = *DownloadAttachmentOKHeaders
+			Params   = DownloadFileParams
+			Response = *DownloadFileOKHeaders
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -4919,14 +5538,14 @@ func (s *Server) handleDownloadAttachmentRequest(args [1]string, argsEscaped boo
 		](
 			m,
 			mreq,
-			unpackDownloadAttachmentParams,
+			unpackDownloadFileParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DownloadAttachment(ctx, params)
+				response, err = s.h.DownloadFile(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.DownloadAttachment(ctx, params)
+		response, err = s.h.DownloadFile(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -4945,7 +5564,7 @@ func (s *Server) handleDownloadAttachmentRequest(args [1]string, argsEscaped boo
 		return
 	}
 
-	if err := encodeDownloadAttachmentResponse(response, w, span); err != nil {
+	if err := encodeDownloadFileResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -4954,28 +5573,24 @@ func (s *Server) handleDownloadAttachmentRequest(args [1]string, argsEscaped boo
 	}
 }
 
-// handleGetAttachmentRequest handles get-attachment operation.
+// handleGetArtifactRequest handles get-artifact operation.
 //
-// Metadata for one attachment. The bytes are at /api/v1/attachments/{attachment}:download.
+// Get an artifact.
 //
-// Returns 404 when the attachment does not exist, does not belong to the current user, or was removed
-// from the library. Removed files stay readable through their conversations but are no longer
-// described here.
-//
-// GET /api/v1/attachments/{attachment}
-func (s *Server) handleGetAttachmentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/artifacts/{artifact}
+func (s *Server) handleGetArtifactRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-attachment"),
+		otelogen.OperationID("get-artifact"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/attachments/{attachment}"),
+		semconv.HTTPRouteKey.String("/api/v1/artifacts/{artifact}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetAttachmentOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetArtifactOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -5030,15 +5645,15 @@ func (s *Server) handleGetAttachmentRequest(args [1]string, argsEscaped bool, w 
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: GetAttachmentOperation,
-			ID:   "get-attachment",
+			Name: GetArtifactOperation,
+			ID:   "get-artifact",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetAttachmentOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, GetArtifactOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -5080,7 +5695,7 @@ func (s *Server) handleGetAttachmentRequest(args [1]string, argsEscaped bool, w 
 			return
 		}
 	}
-	params, err := decodeGetAttachmentParams(args, argsEscaped, r)
+	params, err := decodeGetArtifactParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -5093,28 +5708,28 @@ func (s *Server) handleGetAttachmentRequest(args [1]string, argsEscaped bool, w 
 
 	var rawBody []byte
 
-	var response *AttachmentFileResource
+	var response *ArtifactResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    GetAttachmentOperation,
-			OperationSummary: "Get a file",
-			OperationID:      "get-attachment",
+			OperationName:    GetArtifactOperation,
+			OperationSummary: "Get an artifact",
+			OperationID:      "get-artifact",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "attachment",
+					Name: "artifact",
 					In:   "path",
-				}: params.Attachment,
+				}: params.Artifact,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = GetAttachmentParams
-			Response = *AttachmentFileResource
+			Params   = GetArtifactParams
+			Response = *ArtifactResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -5123,14 +5738,14 @@ func (s *Server) handleGetAttachmentRequest(args [1]string, argsEscaped bool, w 
 		](
 			m,
 			mreq,
-			unpackGetAttachmentParams,
+			unpackGetArtifactParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetAttachment(ctx, params)
+				response, err = s.h.GetArtifact(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.GetAttachment(ctx, params)
+		response, err = s.h.GetArtifact(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -5149,7 +5764,211 @@ func (s *Server) handleGetAttachmentRequest(args [1]string, argsEscaped bool, w 
 		return
 	}
 
-	if err := encodeGetAttachmentResponse(response, w, span); err != nil {
+	if err := encodeGetArtifactResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleGetArtifactVersionRequest handles get-artifact-version operation.
+//
+// Get an artifact version.
+//
+// GET /api/v1/artifacts/{artifact}/versions/{version}
+func (s *Server) handleGetArtifactVersionRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-artifact-version"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/artifacts/{artifact}/versions/{version}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetArtifactVersionOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetArtifactVersionOperation,
+			ID:   "get-artifact-version",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, GetArtifactVersionOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetArtifactVersionParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *ArtifactVersionResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetArtifactVersionOperation,
+			OperationSummary: "Get an artifact version",
+			OperationID:      "get-artifact-version",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "artifact",
+					In:   "path",
+				}: params.Artifact,
+				{
+					Name: "version",
+					In:   "path",
+				}: params.Version,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetArtifactVersionParams
+			Response = *ArtifactVersionResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetArtifactVersionParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetArtifactVersion(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetArtifactVersion(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetArtifactVersionResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -5550,6 +6369,210 @@ func (s *Server) handleGetChannelRequest(args [1]string, argsEscaped bool, w htt
 	}
 
 	if err := encodeGetChannelResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleGetFileRequest handles get-file operation.
+//
+// Metadata for one file. The bytes are at /api/v1/files/{file}:download.
+//
+// Returns 404 when the file does not exist, does not belong to the current user, or was removed from
+// the library. Removed files stay readable through their conversations but are no longer described
+// here.
+//
+// GET /api/v1/files/{file}
+func (s *Server) handleGetFileRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-file"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/files/{file}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetFileOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetFileOperation,
+			ID:   "get-file",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, GetFileOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetFileParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *FileResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetFileOperation,
+			OperationSummary: "Get a file",
+			OperationID:      "get-file",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "file",
+					In:   "path",
+				}: params.File,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetFileParams
+			Response = *FileResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetFileParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetFile(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetFile(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetFileResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -7737,6 +8760,426 @@ func (s *Server) handleInterruptThreadRequest(args [1]string, argsEscaped bool, 
 	}
 
 	if err := encodeInterruptThreadResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListArtifactVersionsRequest handles list-artifact-versions operation.
+//
+// The versions of an artifact, newest first.
+//
+// GET /api/v1/artifacts/{artifact}/versions
+func (s *Server) handleListArtifactVersionsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-artifact-versions"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/artifacts/{artifact}/versions"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListArtifactVersionsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListArtifactVersionsOperation,
+			ID:   "list-artifact-versions",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, ListArtifactVersionsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListArtifactVersionsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *ArtifactVersionListResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListArtifactVersionsOperation,
+			OperationSummary: "List artifact versions",
+			OperationID:      "list-artifact-versions",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "cursor",
+					In:   "query",
+				}: params.Cursor,
+				{
+					Name: "limit",
+					In:   "query",
+				}: params.Limit,
+				{
+					Name: "artifact",
+					In:   "path",
+				}: params.Artifact,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListArtifactVersionsParams
+			Response = *ArtifactVersionListResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListArtifactVersionsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListArtifactVersions(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListArtifactVersions(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListArtifactVersionsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListArtifactsRequest handles list-artifacts operation.
+//
+// The caller's artifacts in this project, most recently updated first. An artifact is a file the
+// assistant handed over, kept under one title across its versions: a later version replaces what the
+// person sees, and earlier versions stay readable.
+//
+// With `thread`, only artifacts that have a version created in that conversation are listed.
+//
+// GET /api/v1/artifacts
+func (s *Server) handleListArtifactsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-artifacts"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/artifacts"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListArtifactsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListArtifactsOperation,
+			ID:   "list-artifacts",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, ListArtifactsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListArtifactsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *ArtifactListResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListArtifactsOperation,
+			OperationSummary: "List artifacts",
+			OperationID:      "list-artifacts",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "thread",
+					In:   "query",
+				}: params.Thread,
+				{
+					Name: "cursor",
+					In:   "query",
+				}: params.Cursor,
+				{
+					Name: "limit",
+					In:   "query",
+				}: params.Limit,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListArtifactsParams
+			Response = *ArtifactListResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListArtifactsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListArtifacts(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListArtifacts(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListArtifactsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -12716,10 +14159,11 @@ func (s *Server) handleRunTaskRequest(args [1]string, argsEscaped bool, w http.R
 	}
 }
 
-// handleSearchAttachmentsRequest handles search-attachments operation.
+// handleSearchFilesRequest handles search-files operation.
 //
-// The caller's files in this project, most recently uploaded first. These are the files uploaded while
-// composing messages, plus uploads that no message has referenced yet.
+// The caller's library in this project, most recently uploaded first: the files they attached to
+// messages, plus uploads that no message has referenced yet. Files that tools produced and artifacts
+// the assistant handed over are not listed here; artifacts are listed by list-artifacts.
 //
 // A file with no message referencing it is a draft: `draftExpiresAt` says when it is cleared. Sending
 // a message with the id makes it permanent and that field becomes null.
@@ -12727,20 +14171,20 @@ func (s *Server) handleRunTaskRequest(args [1]string, argsEscaped bool, w http.R
 // Files removed from the library are not listed, but conversations that already use them keep them and
 // download-by-id still works.
 //
-// QUERY /api/v1/attachments
-func (s *Server) handleSearchAttachmentsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// QUERY /api/v1/files
+func (s *Server) handleSearchFilesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("search-attachments"),
+		otelogen.OperationID("search-files"),
 		semconv.HTTPRequestMethodKey.String("QUERY"),
-		semconv.HTTPRouteKey.String("/api/v1/attachments"),
+		semconv.HTTPRouteKey.String("/api/v1/files"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), SearchAttachmentsOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), SearchFilesOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -12795,15 +14239,15 @@ func (s *Server) handleSearchAttachmentsRequest(args [0]string, argsEscaped bool
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: SearchAttachmentsOperation,
-			ID:   "search-attachments",
+			Name: SearchFilesOperation,
+			ID:   "search-files",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, SearchAttachmentsOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, SearchFilesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -12847,7 +14291,7 @@ func (s *Server) handleSearchAttachmentsRequest(args [0]string, argsEscaped bool
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeSearchAttachmentsRequest(r)
+	request, rawBody, close, err := s.decodeSearchFilesRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -12863,13 +14307,13 @@ func (s *Server) handleSearchAttachmentsRequest(args [0]string, argsEscaped bool
 		}
 	}()
 
-	var response *AttachmentListResponseBody
+	var response *FileListResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    SearchAttachmentsOperation,
-			OperationSummary: "Search attachments",
-			OperationID:      "search-attachments",
+			OperationName:    SearchFilesOperation,
+			OperationSummary: "Search files",
+			OperationID:      "search-files",
 			Body:             request,
 			RawBody:          rawBody,
 			Params:           middleware.Parameters{},
@@ -12877,9 +14321,9 @@ func (s *Server) handleSearchAttachmentsRequest(args [0]string, argsEscaped bool
 		}
 
 		type (
-			Request  = *SearchAttachmentsRequestBody
+			Request  = *SearchFilesRequestBody
 			Params   = struct{}
-			Response = *AttachmentListResponseBody
+			Response = *FileListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -12890,12 +14334,12 @@ func (s *Server) handleSearchAttachmentsRequest(args [0]string, argsEscaped bool
 			mreq,
 			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.SearchAttachments(ctx, request)
+				response, err = s.h.SearchFiles(ctx, request)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.SearchAttachments(ctx, request)
+		response, err = s.h.SearchFiles(ctx, request)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -12914,7 +14358,7 @@ func (s *Server) handleSearchAttachmentsRequest(args [0]string, argsEscaped bool
 		return
 	}
 
-	if err := encodeSearchAttachmentsResponse(response, w, span); err != nil {
+	if err := encodeSearchFilesResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -14207,25 +15651,24 @@ func (s *Server) handleSubmitWeixinVerifyCodeRequest(args [1]string, argsEscaped
 	}
 }
 
-// handleUpdateAttachmentRequest handles update-attachment operation.
+// handleUpdateArtifactRequest handles update-artifact operation.
 //
-// Changes the name shown in the library and given to the assistant. The bytes and the attachment id do
-// not change; conversations that already use it see the new name from their next request on.
+// Changes the title shown for every version. The versions and their files do not change.
 //
-// PATCH /api/v1/attachments/{attachment}
-func (s *Server) handleUpdateAttachmentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// PATCH /api/v1/artifacts/{artifact}
+func (s *Server) handleUpdateArtifactRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-attachment"),
+		otelogen.OperationID("update-artifact"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.HTTPRouteKey.String("/api/v1/attachments/{attachment}"),
+		semconv.HTTPRouteKey.String("/api/v1/artifacts/{artifact}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateAttachmentOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateArtifactOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -14280,15 +15723,15 @@ func (s *Server) handleUpdateAttachmentRequest(args [1]string, argsEscaped bool,
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: UpdateAttachmentOperation,
-			ID:   "update-attachment",
+			Name: UpdateArtifactOperation,
+			ID:   "update-artifact",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, UpdateAttachmentOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, UpdateArtifactOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -14330,7 +15773,7 @@ func (s *Server) handleUpdateAttachmentRequest(args [1]string, argsEscaped bool,
 			return
 		}
 	}
-	params, err := decodeUpdateAttachmentParams(args, argsEscaped, r)
+	params, err := decodeUpdateArtifactParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -14342,7 +15785,7 @@ func (s *Server) handleUpdateAttachmentRequest(args [1]string, argsEscaped bool,
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeUpdateAttachmentRequest(r)
+	request, rawBody, close, err := s.decodeUpdateArtifactRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -14358,28 +15801,28 @@ func (s *Server) handleUpdateAttachmentRequest(args [1]string, argsEscaped bool,
 		}
 	}()
 
-	var response *AttachmentFileResource
+	var response *ArtifactResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    UpdateAttachmentOperation,
-			OperationSummary: "Rename a file",
-			OperationID:      "update-attachment",
+			OperationName:    UpdateArtifactOperation,
+			OperationSummary: "Rename an artifact",
+			OperationID:      "update-artifact",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "attachment",
+					Name: "artifact",
 					In:   "path",
-				}: params.Attachment,
+				}: params.Artifact,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *UpdateAttachmentRequestBody
-			Params   = UpdateAttachmentParams
-			Response = *AttachmentFileResource
+			Request  = *UpdateArtifactRequestBody
+			Params   = UpdateArtifactParams
+			Response = *ArtifactResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -14388,14 +15831,14 @@ func (s *Server) handleUpdateAttachmentRequest(args [1]string, argsEscaped bool,
 		](
 			m,
 			mreq,
-			unpackUpdateAttachmentParams,
+			unpackUpdateArtifactParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.UpdateAttachment(ctx, request, params)
+				response, err = s.h.UpdateArtifact(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.UpdateAttachment(ctx, request, params)
+		response, err = s.h.UpdateArtifact(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -14414,7 +15857,7 @@ func (s *Server) handleUpdateAttachmentRequest(args [1]string, argsEscaped bool,
 		return
 	}
 
-	if err := encodeUpdateAttachmentResponse(response, w, span); err != nil {
+	if err := encodeUpdateArtifactResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -14632,6 +16075,222 @@ func (s *Server) handleUpdateChannelRequest(args [1]string, argsEscaped bool, w 
 	}
 
 	if err := encodeUpdateChannelResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleUpdateFileRequest handles update-file operation.
+//
+// Changes the name shown in the library and given to the assistant. The bytes and the file id do not
+// change; conversations that already use it see the new name from their next request on.
+//
+// PATCH /api/v1/files/{file}
+func (s *Server) handleUpdateFileRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-file"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.HTTPRouteKey.String("/api/v1/files/{file}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateFileOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: UpdateFileOperation,
+			ID:   "update-file",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, UpdateFileOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeUpdateFileParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeUpdateFileRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *FileResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    UpdateFileOperation,
+			OperationSummary: "Rename a file",
+			OperationID:      "update-file",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "file",
+					In:   "path",
+				}: params.File,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *UpdateFileRequestBody
+			Params   = UpdateFileParams
+			Response = *FileResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackUpdateFileParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.UpdateFile(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.UpdateFile(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeUpdateFileResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -15713,10 +17372,10 @@ func (s *Server) handleUpdateUploadRequest(args [1]string, argsEscaped bool, w h
 	}
 }
 
-// handleUploadAttachmentRequest handles upload-attachment operation.
+// handleUploadFileRequest handles upload-file operation.
 //
 // The body is the file bytes themselves, not multipart, one file per request. The type is determined
-// from the content, not from Content-Type or from the name. Put the returned id in attachmentIds when
+// from the content, not from Content-Type or from the name. Put the returned id in a `file` part when
 // sending a message.
 //
 // An upload that no message ever references is a draft, and drafts are collected — `draftExpiresAt`
@@ -15727,20 +17386,20 @@ func (s *Server) handleUpdateUploadRequest(args [1]string, argsEscaped bool, w h
 // file, and anything `binary`, arrives as a reference the assistant reads on demand — for a binary
 // that usually means downloading it onto one of the project's cloud instances.
 //
-// POST /api/v1/attachments
-func (s *Server) handleUploadAttachmentRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/files
+func (s *Server) handleUploadFileRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("upload-attachment"),
+		otelogen.OperationID("upload-file"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/attachments"),
+		semconv.HTTPRouteKey.String("/api/v1/files"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), UploadAttachmentOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), UploadFileOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -15795,15 +17454,15 @@ func (s *Server) handleUploadAttachmentRequest(args [0]string, argsEscaped bool,
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: UploadAttachmentOperation,
-			ID:   "upload-attachment",
+			Name: UploadFileOperation,
+			ID:   "upload-file",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, UploadAttachmentOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, UploadFileOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -15845,7 +17504,7 @@ func (s *Server) handleUploadAttachmentRequest(args [0]string, argsEscaped bool,
 			return
 		}
 	}
-	params, err := decodeUploadAttachmentParams(args, argsEscaped, r)
+	params, err := decodeUploadFileParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -15857,7 +17516,7 @@ func (s *Server) handleUploadAttachmentRequest(args [0]string, argsEscaped bool,
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeUploadAttachmentRequest(r)
+	request, rawBody, close, err := s.decodeUploadFileRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -15873,13 +17532,13 @@ func (s *Server) handleUploadAttachmentRequest(args [0]string, argsEscaped bool,
 		}
 	}()
 
-	var response *UploadedResource
+	var response *FileResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    UploadAttachmentOperation,
+			OperationName:    UploadFileOperation,
 			OperationSummary: "Upload a file",
-			OperationID:      "upload-attachment",
+			OperationID:      "upload-file",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -15892,9 +17551,9 @@ func (s *Server) handleUploadAttachmentRequest(args [0]string, argsEscaped bool,
 		}
 
 		type (
-			Request  = *UploadAttachmentReqWithContentType
-			Params   = UploadAttachmentParams
-			Response = *UploadedResource
+			Request  = *UploadFileReqWithContentType
+			Params   = UploadFileParams
+			Response = *FileResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -15903,14 +17562,14 @@ func (s *Server) handleUploadAttachmentRequest(args [0]string, argsEscaped bool,
 		](
 			m,
 			mreq,
-			unpackUploadAttachmentParams,
+			unpackUploadFileParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.UploadAttachment(ctx, request, params)
+				response, err = s.h.UploadFile(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.UploadAttachment(ctx, request, params)
+		response, err = s.h.UploadFile(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -15929,7 +17588,7 @@ func (s *Server) handleUploadAttachmentRequest(args [0]string, argsEscaped bool,
 		return
 	}
 
-	if err := encodeUploadAttachmentResponse(response, w, span); err != nil {
+	if err := encodeUploadFileResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)

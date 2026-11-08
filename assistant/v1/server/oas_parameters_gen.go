@@ -706,6 +706,92 @@ func decodeCompleteUploadParams(args [1]string, argsEscaped bool, r *http.Reques
 	return params, nil
 }
 
+// CreateArtifactVersionParams is parameters of create-artifact-version operation.
+type CreateArtifactVersionParams struct {
+	// An artifact id.
+	Artifact string
+}
+
+func unpackCreateArtifactVersionParams(packed middleware.Parameters) (params CreateArtifactVersionParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "artifact",
+			In:   "path",
+		}
+		params.Artifact = packed[key].(string)
+	}
+	return params
+}
+
+func decodeCreateArtifactVersionParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateArtifactVersionParams, _ error) {
+	// Decode path: artifact.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "artifact",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Artifact = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Artifact)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "artifact",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // CreateBindingCodeParams is parameters of create-binding-code operation.
 type CreateBindingCodeParams struct {
 	Channel uuid.UUID
@@ -857,24 +943,25 @@ func decodeDecideToolCallsParams(args [1]string, argsEscaped bool, r *http.Reque
 	return params, nil
 }
 
-// DeleteAttachmentParams is parameters of delete-attachment operation.
-type DeleteAttachmentParams struct {
-	Attachment string
+// DeleteArtifactParams is parameters of delete-artifact operation.
+type DeleteArtifactParams struct {
+	// An artifact id.
+	Artifact string
 }
 
-func unpackDeleteAttachmentParams(packed middleware.Parameters) (params DeleteAttachmentParams) {
+func unpackDeleteArtifactParams(packed middleware.Parameters) (params DeleteArtifactParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "attachment",
+			Name: "artifact",
 			In:   "path",
 		}
-		params.Attachment = packed[key].(string)
+		params.Artifact = packed[key].(string)
 	}
 	return params
 }
 
-func decodeDeleteAttachmentParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteAttachmentParams, _ error) {
-	// Decode path: attachment.
+func decodeDeleteArtifactParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteArtifactParams, _ error) {
+	// Decode path: artifact.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -886,7 +973,7 @@ func decodeDeleteAttachmentParams(args [1]string, argsEscaped bool, r *http.Requ
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "attachment",
+				Param:   "artifact",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -903,7 +990,27 @@ func decodeDeleteAttachmentParams(args [1]string, argsEscaped bool, r *http.Requ
 					return err
 				}
 
-				params.Attachment = c
+				params.Artifact = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Artifact)); err != nil {
+					return errors.Wrap(err, "string")
+				}
 				return nil
 			}(); err != nil {
 				return err
@@ -914,7 +1021,7 @@ func decodeDeleteAttachmentParams(args [1]string, argsEscaped bool, r *http.Requ
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "attachment",
+			Name: "artifact",
 			In:   "path",
 			Err:  err,
 		}
@@ -1045,6 +1152,71 @@ func decodeDeleteChannelParams(args [1]string, argsEscaped bool, r *http.Request
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "channel",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// DeleteFileParams is parameters of delete-file operation.
+type DeleteFileParams struct {
+	File string
+}
+
+func unpackDeleteFileParams(packed middleware.Parameters) (params DeleteFileParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "file",
+			In:   "path",
+		}
+		params.File = packed[key].(string)
+	}
+	return params
+}
+
+func decodeDeleteFileParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteFileParams, _ error) {
+	// Decode path: file.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "file",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.File = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "file",
 			In:   "path",
 			Err:  err,
 		}
@@ -1505,24 +1677,24 @@ func decodeDeleteUploadParams(args [1]string, argsEscaped bool, r *http.Request)
 	return params, nil
 }
 
-// DownloadAttachmentParams is parameters of download-attachment operation.
-type DownloadAttachmentParams struct {
-	Attachment string
+// DownloadFileParams is parameters of download-file operation.
+type DownloadFileParams struct {
+	File string
 }
 
-func unpackDownloadAttachmentParams(packed middleware.Parameters) (params DownloadAttachmentParams) {
+func unpackDownloadFileParams(packed middleware.Parameters) (params DownloadFileParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "attachment",
+			Name: "file",
 			In:   "path",
 		}
-		params.Attachment = packed[key].(string)
+		params.File = packed[key].(string)
 	}
 	return params
 }
 
-func decodeDownloadAttachmentParams(args [1]string, argsEscaped bool, r *http.Request) (params DownloadAttachmentParams, _ error) {
-	// Decode path: attachment.
+func decodeDownloadFileParams(args [1]string, argsEscaped bool, r *http.Request) (params DownloadFileParams, _ error) {
+	// Decode path: file.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -1534,7 +1706,7 @@ func decodeDownloadAttachmentParams(args [1]string, argsEscaped bool, r *http.Re
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "attachment",
+				Param:   "file",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -1551,7 +1723,7 @@ func decodeDownloadAttachmentParams(args [1]string, argsEscaped bool, r *http.Re
 					return err
 				}
 
-				params.Attachment = c
+				params.File = c
 				return nil
 			}(); err != nil {
 				return err
@@ -1562,7 +1734,7 @@ func decodeDownloadAttachmentParams(args [1]string, argsEscaped bool, r *http.Re
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "attachment",
+			Name: "file",
 			In:   "path",
 			Err:  err,
 		}
@@ -1570,24 +1742,25 @@ func decodeDownloadAttachmentParams(args [1]string, argsEscaped bool, r *http.Re
 	return params, nil
 }
 
-// GetAttachmentParams is parameters of get-attachment operation.
-type GetAttachmentParams struct {
-	Attachment string
+// GetArtifactParams is parameters of get-artifact operation.
+type GetArtifactParams struct {
+	// An artifact id.
+	Artifact string
 }
 
-func unpackGetAttachmentParams(packed middleware.Parameters) (params GetAttachmentParams) {
+func unpackGetArtifactParams(packed middleware.Parameters) (params GetArtifactParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "attachment",
+			Name: "artifact",
 			In:   "path",
 		}
-		params.Attachment = packed[key].(string)
+		params.Artifact = packed[key].(string)
 	}
 	return params
 }
 
-func decodeGetAttachmentParams(args [1]string, argsEscaped bool, r *http.Request) (params GetAttachmentParams, _ error) {
-	// Decode path: attachment.
+func decodeGetArtifactParams(args [1]string, argsEscaped bool, r *http.Request) (params GetArtifactParams, _ error) {
+	// Decode path: artifact.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -1599,7 +1772,7 @@ func decodeGetAttachmentParams(args [1]string, argsEscaped bool, r *http.Request
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "attachment",
+				Param:   "artifact",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -1616,7 +1789,27 @@ func decodeGetAttachmentParams(args [1]string, argsEscaped bool, r *http.Request
 					return err
 				}
 
-				params.Attachment = c
+				params.Artifact = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Artifact)); err != nil {
+					return errors.Wrap(err, "string")
+				}
 				return nil
 			}(); err != nil {
 				return err
@@ -1627,7 +1820,167 @@ func decodeGetAttachmentParams(args [1]string, argsEscaped bool, r *http.Request
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "attachment",
+			Name: "artifact",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetArtifactVersionParams is parameters of get-artifact-version operation.
+type GetArtifactVersionParams struct {
+	// An artifact id.
+	Artifact string
+	// An artifact version id.
+	Version string
+}
+
+func unpackGetArtifactVersionParams(packed middleware.Parameters) (params GetArtifactVersionParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "artifact",
+			In:   "path",
+		}
+		params.Artifact = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "version",
+			In:   "path",
+		}
+		params.Version = packed[key].(string)
+	}
+	return params
+}
+
+func decodeGetArtifactVersionParams(args [2]string, argsEscaped bool, r *http.Request) (params GetArtifactVersionParams, _ error) {
+	// Decode path: artifact.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "artifact",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Artifact = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Artifact)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "artifact",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: version.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "version",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Version = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Version)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "version",
 			In:   "path",
 			Err:  err,
 		}
@@ -1758,6 +2111,71 @@ func decodeGetChannelParams(args [1]string, argsEscaped bool, r *http.Request) (
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "channel",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetFileParams is parameters of get-file operation.
+type GetFileParams struct {
+	File string
+}
+
+func unpackGetFileParams(packed middleware.Parameters) (params GetFileParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "file",
+			In:   "path",
+		}
+		params.File = packed[key].(string)
+	}
+	return params
+}
+
+func decodeGetFileParams(args [1]string, argsEscaped bool, r *http.Request) (params GetFileParams, _ error) {
+	// Decode path: file.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "file",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.File = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "file",
 			In:   "path",
 			Err:  err,
 		}
@@ -2619,6 +3037,507 @@ func decodeInterruptThreadParams(args [1]string, argsEscaped bool, r *http.Reque
 		return params, &ogenerrors.DecodeParamError{
 			Name: "thread",
 			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListArtifactVersionsParams is parameters of list-artifact-versions operation.
+type ListArtifactVersionsParams struct {
+	// The next_cursor returned by the previous page. Omit it for the first page.
+	Cursor OptString `json:",omitempty,omitzero"`
+	// Items returned in this page. Defaults to 50; at most 200.
+	Limit OptInt64 `json:",omitempty,omitzero"`
+	// An artifact id.
+	Artifact string
+}
+
+func unpackListArtifactVersionsParams(packed middleware.Parameters) (params ListArtifactVersionsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "cursor",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Cursor = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "limit",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Limit = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "artifact",
+			In:   "path",
+		}
+		params.Artifact = packed[key].(string)
+	}
+	return params
+}
+
+func decodeListArtifactVersionsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListArtifactVersionsParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: cursor.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "cursor",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotCursorVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCursorVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Cursor.SetTo(paramsDotCursorVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Cursor.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     1024,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "cursor",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: limit.
+	{
+		val := int64(50)
+		params.Limit.SetTo(val)
+	}
+	// Decode query: limit.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotLimitVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotLimitVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Limit.SetTo(paramsDotLimitVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Limit.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           200,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "limit",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode path: artifact.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "artifact",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Artifact = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Artifact)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "artifact",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListArtifactsParams is parameters of list-artifacts operation.
+type ListArtifactsParams struct {
+	// Only artifacts with a version created in this conversation.
+	Thread OptString `json:",omitempty,omitzero"`
+	// The next_cursor returned by the previous page. Omit it for the first page.
+	Cursor OptString `json:",omitempty,omitzero"`
+	// Items returned in this page. Defaults to 50; at most 200.
+	Limit OptInt64 `json:",omitempty,omitzero"`
+}
+
+func unpackListArtifactsParams(packed middleware.Parameters) (params ListArtifactsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "thread",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Thread = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "cursor",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Cursor = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "limit",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Limit = v.(OptInt64)
+		}
+	}
+	return params
+}
+
+func decodeListArtifactsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListArtifactsParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: thread.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "thread",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotThreadVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotThreadVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Thread.SetTo(paramsDotThreadVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Thread.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     0,
+							MinLengthSet:  false,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "thread",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: cursor.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "cursor",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotCursorVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCursorVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Cursor.SetTo(paramsDotCursorVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Cursor.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     1024,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "cursor",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: limit.
+	{
+		val := int64(50)
+		params.Limit.SetTo(val)
+	}
+	// Decode query: limit.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotLimitVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotLimitVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Limit.SetTo(paramsDotLimitVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Limit.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           200,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "limit",
+			In:   "query",
 			Err:  err,
 		}
 	}
@@ -6134,24 +7053,25 @@ func decodeSubmitWeixinVerifyCodeParams(args [1]string, argsEscaped bool, r *htt
 	return params, nil
 }
 
-// UpdateAttachmentParams is parameters of update-attachment operation.
-type UpdateAttachmentParams struct {
-	Attachment string
+// UpdateArtifactParams is parameters of update-artifact operation.
+type UpdateArtifactParams struct {
+	// An artifact id.
+	Artifact string
 }
 
-func unpackUpdateAttachmentParams(packed middleware.Parameters) (params UpdateAttachmentParams) {
+func unpackUpdateArtifactParams(packed middleware.Parameters) (params UpdateArtifactParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "attachment",
+			Name: "artifact",
 			In:   "path",
 		}
-		params.Attachment = packed[key].(string)
+		params.Artifact = packed[key].(string)
 	}
 	return params
 }
 
-func decodeUpdateAttachmentParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateAttachmentParams, _ error) {
-	// Decode path: attachment.
+func decodeUpdateArtifactParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateArtifactParams, _ error) {
+	// Decode path: artifact.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -6163,7 +7083,7 @@ func decodeUpdateAttachmentParams(args [1]string, argsEscaped bool, r *http.Requ
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "attachment",
+				Param:   "artifact",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -6180,7 +7100,27 @@ func decodeUpdateAttachmentParams(args [1]string, argsEscaped bool, r *http.Requ
 					return err
 				}
 
-				params.Attachment = c
+				params.Artifact = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Artifact)); err != nil {
+					return errors.Wrap(err, "string")
+				}
 				return nil
 			}(); err != nil {
 				return err
@@ -6191,7 +7131,7 @@ func decodeUpdateAttachmentParams(args [1]string, argsEscaped bool, r *http.Requ
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "attachment",
+			Name: "artifact",
 			In:   "path",
 			Err:  err,
 		}
@@ -6257,6 +7197,71 @@ func decodeUpdateChannelParams(args [1]string, argsEscaped bool, r *http.Request
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "channel",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UpdateFileParams is parameters of update-file operation.
+type UpdateFileParams struct {
+	File string
+}
+
+func unpackUpdateFileParams(packed middleware.Parameters) (params UpdateFileParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "file",
+			In:   "path",
+		}
+		params.File = packed[key].(string)
+	}
+	return params
+}
+
+func decodeUpdateFileParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateFileParams, _ error) {
+	// Decode path: file.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "file",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.File = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "file",
 			In:   "path",
 			Err:  err,
 		}
@@ -6587,14 +7592,14 @@ func decodeUpdateUploadParams(args [1]string, argsEscaped bool, r *http.Request)
 	return params, nil
 }
 
-// UploadAttachmentParams is parameters of upload-attachment operation.
-type UploadAttachmentParams struct {
+// UploadFileParams is parameters of upload-file operation.
+type UploadFileParams struct {
 	// The name to show and to give the assistant. Images do not need one; anything else does, because the
 	// name is most of what says what the file is. Falls back to a generated name.
 	Filename OptString `json:",omitempty,omitzero"`
 }
 
-func unpackUploadAttachmentParams(packed middleware.Parameters) (params UploadAttachmentParams) {
+func unpackUploadFileParams(packed middleware.Parameters) (params UploadFileParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "filename",
@@ -6607,7 +7612,7 @@ func unpackUploadAttachmentParams(packed middleware.Parameters) (params UploadAt
 	return params
 }
 
-func decodeUploadAttachmentParams(args [0]string, argsEscaped bool, r *http.Request) (params UploadAttachmentParams, _ error) {
+func decodeUploadFileParams(args [0]string, argsEscaped bool, r *http.Request) (params UploadFileParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
 	// Decode query: filename.
 	if err := func() error {
