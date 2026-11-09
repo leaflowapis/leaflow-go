@@ -288,20 +288,6 @@ func encodeSearchPricesRequest(
 	return nil
 }
 
-func encodeSetAutoRenewRequest(
-	req *AutoRenewSet,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
 func encodeSetProjectAssignmentRequest(
 	req *SetProjectAssignmentRequest,
 	r *http.Request,
@@ -332,6 +318,20 @@ func encodeUpdateBillingAccountRequest(
 
 func encodeUpdateContactRequest(
 	req *ContactUpdate,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateSubscriptionRequest(
+	req *SubscriptionUpdate,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

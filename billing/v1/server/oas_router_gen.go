@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	rn33AllowedHeaders = map[string]string{
+	rn35AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn61AllowedHeaders = map[string]string{
@@ -36,14 +36,14 @@ var (
 		"GET":   "Authorization",
 		"PATCH": "Authorization,Content-Type",
 	}
-	rn32AllowedHeaders = map[string]string{
+	rn34AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn20AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
-	rn25AllowedHeaders = map[string]string{
+	rn27AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
@@ -54,14 +54,14 @@ var (
 	rn106AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
-	rn111AllowedHeaders = map[string]string{
+	rn109AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
 	rn16AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
-	rn35AllowedHeaders = map[string]string{
+	rn25AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 	}
@@ -84,7 +84,7 @@ var (
 	rn13AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn30AllowedHeaders = map[string]string{
+	rn32AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
 	rn66AllowedHeaders = map[string]string{
@@ -147,10 +147,10 @@ var (
 	rn21AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn27AllowedHeaders = map[string]string{
+	rn29AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
-	rn109AllowedHeaders = map[string]string{
+	rn107AllowedHeaders = map[string]string{
 		"PUT": "Authorization",
 	}
 	rn96AllowedHeaders = map[string]string{
@@ -205,9 +205,7 @@ var (
 	rn6AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
-	}
-	rn108AllowedHeaders = map[string]string{
-		"PUT": "Authorization,Content-Type",
+		"PATCH":  "Authorization,Content-Type",
 	}
 	rn85AllowedHeaders = map[string]string{
 		"GET": "Authorization",
@@ -234,7 +232,7 @@ var (
 	rn92AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn28AllowedHeaders = map[string]string{
+	rn30AllowedHeaders = map[string]string{
 		"QUERY": "Content-Type",
 	}
 	rn23AllowedHeaders = map[string]string{
@@ -343,7 +341,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "GET",
-									allowedHeaders: rn33AllowedHeaders,
+									allowedHeaders: rn35AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -571,7 +569,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "GET",
-										allowedHeaders: rn32AllowedHeaders,
+										allowedHeaders: rn34AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -648,7 +646,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "DELETE,GET,PATCH",
-											allowedHeaders: rn25AllowedHeaders,
+											allowedHeaders: rn27AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "application/json",
 										})
@@ -745,7 +743,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn111AllowedHeaders,
+										allowedHeaders: rn109AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -819,7 +817,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							// Leaf node.
 							switch r.Method {
 							case "DELETE":
-								s.handleWithdrawCancellationRequest([1]string{
+								s.handleDeleteCancellationRequest([1]string{
 									args[0],
 								}, elemIsEscaped, w, r)
 							case "GET":
@@ -829,7 +827,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "DELETE,GET",
-									allowedHeaders: rn35AllowedHeaders,
+									allowedHeaders: rn25AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -1051,7 +1049,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "POST",
-											allowedHeaders: rn30AllowedHeaders,
+											allowedHeaders: rn32AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -1743,7 +1741,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "DELETE",
-										allowedHeaders: rn27AllowedHeaders,
+										allowedHeaders: rn29AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -1770,7 +1768,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "PUT",
-											allowedHeaders: rn109AllowedHeaders,
+											allowedHeaders: rn107AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -2296,84 +2294,47 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								s.handleGetSubscriptionRequest([1]string{
 									args[0],
 								}, elemIsEscaped, w, r)
+							case "PATCH":
+								s.handleUpdateSubscriptionRequest([1]string{
+									args[0],
+								}, elemIsEscaped, w, r)
 							default:
 								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "DELETE,GET",
+									allowedMethods: "DELETE,GET,PATCH",
 									allowedHeaders: rn6AllowedHeaders,
 									acceptPost:     "",
-									acceptPatch:    "",
+									acceptPatch:    "application/json",
 								})
 							}
 
 							return
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/"
+						case '/': // Prefix: "/renewal-options"
 
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							if l := len("/renewal-options"); len(elem) >= l && elem[0:l] == "/renewal-options" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								break
-							}
-							switch elem[0] {
-							case 'a': // Prefix: "auto-renew"
-
-								if l := len("auto-renew"); len(elem) >= l && elem[0:l] == "auto-renew" {
-									elem = elem[l:]
-								} else {
-									break
+								// Leaf node.
+								switch r.Method {
+								case "GET":
+									s.handleListRenewalOptionsRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "GET",
+										allowedHeaders: rn85AllowedHeaders,
+										acceptPost:     "",
+										acceptPatch:    "",
+									})
 								}
 
-								if len(elem) == 0 {
-									// Leaf node.
-									switch r.Method {
-									case "PUT":
-										s.handleSetAutoRenewRequest([1]string{
-											args[0],
-										}, elemIsEscaped, w, r)
-									default:
-										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "PUT",
-											allowedHeaders: rn108AllowedHeaders,
-											acceptPost:     "",
-											acceptPatch:    "",
-										})
-									}
-
-									return
-								}
-
-							case 'r': // Prefix: "renewal-prices"
-
-								if l := len("renewal-prices"); len(elem) >= l && elem[0:l] == "renewal-prices" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch r.Method {
-									case "GET":
-										s.handleListRenewalPricesRequest([1]string{
-											args[0],
-										}, elemIsEscaped, w, r)
-									default:
-										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "GET",
-											allowedHeaders: rn85AllowedHeaders,
-											acceptPost:     "",
-											acceptPatch:    "",
-										})
-									}
-
-									return
-								}
-
+								return
 							}
 
 						case ':': // Prefix: ":"
@@ -2634,7 +2595,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "QUERY",
-								allowedHeaders: rn28AllowedHeaders,
+								allowedHeaders: rn30AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -3370,7 +3331,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "POST":
 							r.name = CreateCancellationOperation
-							r.summary = "Cancel subscriptions"
+							r.summary = "Cancel subscription items"
 							r.operationID = "create-cancellation"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/cancellations"
@@ -3403,9 +3364,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							// Leaf node.
 							switch method {
 							case "DELETE":
-								r.name = WithdrawCancellationOperation
+								r.name = DeleteCancellationOperation
 								r.summary = "Withdraw a cancellation"
-								r.operationID = "withdraw-cancellation"
+								r.operationID = "delete-cancellation"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/cancellations/{cancellationId}"
 								r.args = args
@@ -4861,73 +4822,43 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								r.args = args
 								r.count = 1
 								return r, true
+							case "PATCH":
+								r.name = UpdateSubscriptionOperation
+								r.summary = "Update subscription"
+								r.operationID = "update-subscription"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/subscriptions/{subscriptionId}"
+								r.args = args
+								r.count = 1
+								return r, true
 							default:
 								return
 							}
 						}
 						switch elem[0] {
-						case '/': // Prefix: "/"
+						case '/': // Prefix: "/renewal-options"
 
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							if l := len("/renewal-options"); len(elem) >= l && elem[0:l] == "/renewal-options" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								break
-							}
-							switch elem[0] {
-							case 'a': // Prefix: "auto-renew"
-
-								if l := len("auto-renew"); len(elem) >= l && elem[0:l] == "auto-renew" {
-									elem = elem[l:]
-								} else {
-									break
+								// Leaf node.
+								switch method {
+								case "GET":
+									r.name = ListRenewalOptionsOperation
+									r.summary = "List the terms the subscription can be renewed for"
+									r.operationID = "list-renewal-options"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/subscriptions/{subscriptionId}/renewal-options"
+									r.args = args
+									r.count = 1
+									return r, true
+								default:
+									return
 								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch method {
-									case "PUT":
-										r.name = SetAutoRenewOperation
-										r.summary = "Set auto renew"
-										r.operationID = "set-auto-renew"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/subscriptions/{subscriptionId}/auto-renew"
-										r.args = args
-										r.count = 1
-										return r, true
-									default:
-										return
-									}
-								}
-
-							case 'r': // Prefix: "renewal-prices"
-
-								if l := len("renewal-prices"); len(elem) >= l && elem[0:l] == "renewal-prices" {
-									elem = elem[l:]
-								} else {
-									break
-								}
-
-								if len(elem) == 0 {
-									// Leaf node.
-									switch method {
-									case "GET":
-										r.name = ListRenewalPricesOperation
-										r.summary = "List the terms this item can be renewed for"
-										r.operationID = "list-renewal-prices"
-										r.operationGroup = ""
-										r.pathPattern = "/api/v1/subscriptions/{subscriptionId}/renewal-prices"
-										r.args = args
-										r.count = 1
-										return r, true
-									default:
-										return
-									}
-								}
-
 							}
 
 						case ':': // Prefix: ":"

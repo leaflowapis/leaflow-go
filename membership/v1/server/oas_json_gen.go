@@ -497,12 +497,19 @@ func (s *CheckoutOptions) encodeFields(e *jx.Encoder) {
 			s.ReturnURL.Encode(e)
 		}
 	}
+	{
+		if s.AutoRenew.Set {
+			e.FieldStart("auto_renew")
+			s.AutoRenew.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfCheckoutOptions = [3]string{
+var jsonFieldsNameOfCheckoutOptions = [4]string{
 	0: "mode",
 	1: "expected_amount",
 	2: "return_url",
+	3: "auto_renew",
 }
 
 // Decode decodes CheckoutOptions from json.
@@ -543,6 +550,16 @@ func (s *CheckoutOptions) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"return_url\"")
+			}
+		case "auto_renew":
+			if err := func() error {
+				s.AutoRenew.Reset()
+				if err := s.AutoRenew.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"auto_renew\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -3591,6 +3608,41 @@ func (s OptAllowanceBenefit) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptAllowanceBenefit) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes bool as json.
+func (o OptBool) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Bool(bool(o.Value))
+}
+
+// Decode decodes bool from json.
+func (o *OptBool) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptBool to nil")
+	}
+	o.Set = true
+	v, err := d.Bool()
+	if err != nil {
+		return err
+	}
+	o.Value = bool(v)
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptBool) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptBool) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

@@ -46,7 +46,7 @@ func (UnimplementedHandler) AcceptVirtualPrivateCloudPeering(ctx context.Context
 // limit is refused with `INSTANCE_BANDWIDTH_CEILING`.
 //
 // POST /api/v2/elastic-ips/{elasticIpId}:associate
-func (UnimplementedHandler) AssociateElasticIP(ctx context.Context, req AssociateElasticIPRequestBody, params AssociateElasticIPParams) (r AssociateElasticIPRes, _ error) {
+func (UnimplementedHandler) AssociateElasticIP(ctx context.Context, req AssociateElasticIpRequestBody, params AssociateElasticIPParams) (r AssociateElasticIPRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -72,6 +72,56 @@ func (UnimplementedHandler) AttachInstanceVolume(ctx context.Context, req *Attac
 	return r, ht.ErrNotImplemented
 }
 
+// ChangeElasticIPBandwidth implements change-elastic-ip-bandwidth operation.
+//
+// Changes the bandwidth ceiling of this elastic IP. No separate bandwidth resource is created, and the
+// limit applies to inbound and outbound traffic alike. The new value may be any whole number of Mbps
+// within the line's bandwidth range, otherwise the request is refused with
+// `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic IP's network item:
+//
+//   - Prepaid: the change goes through a Checkout Session that changes the network item, priced for the
+//     rest of its period. It starts once Billing accepts the order; if checkout is not completed, the
+//     order is not accepted or the change fails, `bandwidth_mbps` keeps its value and Billing shows the
+//     outcome.
+//   - Pay-as-you-go: there is no checkout. The change starts at once, `checkout_session_id` and
+//     `order_id` are null, and the new limit is metered from the instant it is applied; if it fails,
+//     the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
+//     `ELASTIC_IP_CHECKOUT_UNUSED`.
+//
+// The elastic IP is `updating_bandwidth` until the change is applied or ends, so other operations and
+// a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in
+// effect until the change is applied.
+//
+// While the address is associated with an instance, the limit must not exceed the `max_bandwidth_mbps`
+// of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of
+// an address that is not associated is checked when the address is associated with an instance.
+//
+// POST /api/v2/elastic-ips/{elasticIpId}:changeBandwidth
+func (UnimplementedHandler) ChangeElasticIPBandwidth(ctx context.Context, req *ChangeElasticIpBandwidthRequestBody, params ChangeElasticIPBandwidthParams) (r ChangeElasticIPBandwidthRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ChangeElasticIPChargeType implements change-elastic-ip-charge-type operation.
+//
+// Moves a pay-as-you-go elastic IP between charging for its bandwidth and charging for its traffic,
+// within the same network item and without checkout. A prepaid network item has paid for its bandwidth
+// and is refused with `ELASTIC_IP_CHARGE_TYPE_PREPAID`; `traffic` on a line whose
+// `traffic_sale_status` is `off_sale` is refused with `ELASTIC_IP_TRAFFIC_UNAVAILABLE`, the type
+// already in effect with `ELASTIC_IP_CHARGE_TYPE_UNCHANGED`, and a type the currency of the network
+// item does not offer on the line with HTTP 403 `ELASTIC_IP_CHARGE_TYPE_NOT_OFFERED`: prices are set
+// per currency, and a currency without one there does not sell that type.
+//
+// The change takes effect at the instant it is applied: bandwidth stops being metered then and traffic
+// starts being, or the other way round. Traffic is counted in windows, and a window is charged the way
+// the elastic IP was charged for most of it, so a report that arrives late is still charged as it was
+// at the time and a window the change falls in is never charged both ways. `bandwidth_mbps` stays the
+// ceiling either way. The elastic IP is `updating_internet_charge_type` until the change is applied.
+//
+// POST /api/v2/elastic-ips/{elasticIpId}:changeChargeType
+func (UnimplementedHandler) ChangeElasticIPChargeType(ctx context.Context, req *ChangeElasticIpChargeTypeRequestBody, params ChangeElasticIPChargeTypeParams) (r ChangeElasticIPChargeTypeRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CreateElasticIP implements create-elastic-ip operation.
 //
 // Select an elastic IP line. The elastic IP is bought through a Billing Checkout Session, and no
@@ -93,13 +143,26 @@ func (UnimplementedHandler) AttachInstanceVolume(ctx context.Context, req *Attac
 // Allocation does not select or create a virtual private cloud. A later association selects an
 // assigned network-interface address; Compute then establishes the required network connectivity.
 //
+// An elastic IP bought on its own has a Billing subscription of its own, with two items: the address,
+// always pay-as-you-go and charged while the address is not associated with anything, and the network,
+// on the chosen terms.
+//
+// Buying for an instance. With `instance_id`, the elastic IP is associated with the primary network
+// interface of that instance of the project once created, and its two items join the instance's
+// Billing subscription: a prepaid network item is charged up to the instance's term end, the rest of
+// the current period in proportion to the time left, and from then on renews, renews automatically and
+// expires with the instance. `billing` may be omitted to take the instance's terms; given, its usage
+// type and period must be the instance's (422 `ELASTIC_IP_BILLING_TERMS_MISMATCH`). An instance that
+// cannot take another elastic IP, or whose type allows less bandwidth than `bandwidth_mbps`, is
+// refused before anything is ordered, as associating would be.
+//
 // The elastic IP is `pending` from the moment its Checkout Session is created until it is delivered or
 // its checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
 // meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its purchase awaits checkout or
 // payment.
 //
 // POST /api/v2/elastic-ips
-func (UnimplementedHandler) CreateElasticIP(ctx context.Context, req *CreateElasticIPRequestBody) (r CreateElasticIPRes, _ error) {
+func (UnimplementedHandler) CreateElasticIP(ctx context.Context, req *CreateElasticIpRequestBody) (r CreateElasticIPRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -134,8 +197,10 @@ func (UnimplementedHandler) CreateElasticIP(ctx context.Context, req *CreateElas
 // subnet_id. Existing network interfaces, boot volumes or elastic IPs require count=1. They are not
 // held while the instance is pending; if one is no longer usable when the order is accepted, the
 // instance ends `failed` with `provisioning_failed`. Image boots require boot_volume; existing volumes
-// retain their own subscription. Instances, volumes and public IPs keep their own subscription items
-// on the same order.
+// retain their own subscription. Each instance gets its own Billing subscription, with the boot
+// volume, data volumes and elastic IP bought with it as items of it: they renew, renew automatically
+// and expire with the machine as a whole, while each can still be changed or released alone.
+// `checkout.auto_renew` turns automatic renewal on for each machine.
 //
 // Instances of one request succeed or fail individually. Each instance, with its boot volume, network
 // interface and elastic IP, is created or fails as a whole. Instances that were created are kept; each
@@ -160,6 +225,20 @@ func (UnimplementedHandler) CreateElasticIP(ctx context.Context, req *CreateElas
 //
 // POST /api/v2/instances
 func (UnimplementedHandler) CreateInstance(ctx context.Context, req *CreateInstanceRequestBody) (r CreateInstanceRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateInstanceConsoleURL implements create-instance-console-url operation.
+//
+// Issues an address for the instance's VNC console, operated from a browser through a noVNC client. It
+// does not require the instance to be reachable over the network, which makes it usable when a network
+// misconfiguration prevents login.
+//
+// The address is single-use and expires within minutes. Every request issues a new address, so request
+// one before each use and do not cache the response.
+//
+// POST /api/v2/instances/{instanceId}:createConsoleUrl
+func (UnimplementedHandler) CreateInstanceConsoleURL(ctx context.Context, params CreateInstanceConsoleURLParams) (r *ConsoleResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -344,9 +423,18 @@ func (UnimplementedHandler) CreateVirtualPrivateCloudSubnet(ctx context.Context,
 // still resolves. Types that are off sale do not appear in the volume type listing; volumes already
 // bought on one keep working and can still be resized.
 //
-// A volume bought on its own is licensed: `billing.usage_type` `metered` is refused with
-// `VOLUME_USAGE_TYPE_UNAVAILABLE`. A volume created with an instance follows the machine's terms
-// instead and may be metered.
+// A volume bought on its own is licensed, with a Billing subscription of its own: `billing.usage_type`
+// `metered` is refused with `VOLUME_USAGE_TYPE_UNAVAILABLE`. A volume created with an instance follows
+// the machine's terms instead and may be metered.
+//
+// Buying for an instance. With `instance_id`, the volume is attached to that instance of the project
+// once created, and becomes an item of the instance's Billing subscription: it is charged up to the
+// instance's term end, the rest of the current period in proportion to the time left, and from then on
+// renews, renews automatically and expires with the instance. Its volume type has to be of the
+// instance's availability zone (422 `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`). `billing` may be omitted
+// to take the instance's terms; given, its usage type and period must be the instance's (422
+// `VOLUME_BILLING_TERMS_MISMATCH`), while its termination policy may differ. An instance with no room
+// for another volume is refused before anything is ordered, as attaching would be.
 //
 // The volume is `pending` from the moment its Checkout Session is created until it is delivered or its
 // checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
@@ -413,10 +501,10 @@ func (UnimplementedHandler) CreateVolumeSnapshot(ctx context.Context, req *Creat
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
 // checkout created one. Expire the session or cancel the order in Billing instead.
 //
-// While subscriptions pay for the elastic IP (those in its `release_set`), deleting it cancels them
-// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the elastic IP working
+// While subscription items pay for the elastic IP (those in its `release_set`), deleting it cancels
+// them rather than being refused: Compute creates one Billing cancellation for the whole set and
+// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
+// now, a licensed item being refunded under its terms, and `period_end` keeps the elastic IP working
 // until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
 // with it again, whatever mode is asked for.
 //
@@ -438,12 +526,13 @@ func (UnimplementedHandler) DeleteElasticIP(ctx context.Context, params DeleteEl
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
 // checkout created one. Expire the session or cancel the order in Billing instead.
 //
-// While subscriptions pay for the instance (those in its `release_set`), deleting it cancels them
+// While subscription items pay for the instance (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
 // with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the instance working
-// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
-// with it again, whatever mode is asked for.
+// licensed item being refunded under its terms, and `period_end` keeps the instance working until
+// `scheduled_at` and releases it then. Volumes and elastic IPs kept after the release keep their
+// items, and the subscription continues with them. Asking again while that cancellation is pending
+// answers with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/instances/{instanceId}
 func (UnimplementedHandler) DeleteInstance(ctx context.Context, params DeleteInstanceParams) (r DeleteInstanceRes, _ error) {
@@ -511,10 +600,10 @@ func (UnimplementedHandler) DeleteNetworkInterfaceAddress(ctx context.Context, p
 // Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 // must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 //
-// While subscriptions pay for the private image (those in its `release_set`), deleting it cancels them
-// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the private image
+// While subscription items pay for the private image (those in its `release_set`), deleting it cancels
+// them rather than being refused: Compute creates one Billing cancellation for the whole set and
+// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
+// now, a licensed item being refunded under its terms, and `period_end` keeps the private image
 // working until `scheduled_at` and releases it then. Asking again while that cancellation is pending
 // answers with it again, whatever mode is asked for.
 //
@@ -589,10 +678,10 @@ func (UnimplementedHandler) DeleteVirtualPrivateCloudSubnet(ctx context.Context,
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
 // checkout created one. Expire the session or cancel the order in Billing instead.
 //
-// While subscriptions pay for the volume (those in its `release_set`), deleting it cancels them rather
-// than being refused: Compute creates one Billing cancellation for the whole set and answers with it
-// in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a licensed
-// subscription being refunded under its terms, and `period_end` keeps the volume working until
+// While subscription items pay for the volume (those in its `release_set`), deleting it cancels them
+// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed item being refunded under its terms, and `period_end` keeps the volume working until
 // `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
 // again, whatever mode is asked for.
 //
@@ -614,10 +703,10 @@ func (UnimplementedHandler) DeleteVolume(ctx context.Context, params DeleteVolum
 // Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 // must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 //
-// While subscriptions pay for the volume backup (those in its `release_set`), deleting it cancels them
-// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the volume backup
+// While subscription items pay for the volume backup (those in its `release_set`), deleting it cancels
+// them rather than being refused: Compute creates one Billing cancellation for the whole set and
+// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
+// now, a licensed item being refunded under its terms, and `period_end` keeps the volume backup
 // working until `scheduled_at` and releases it then. Asking again while that cancellation is pending
 // answers with it again, whatever mode is asked for.
 //
@@ -637,12 +726,12 @@ func (UnimplementedHandler) DeleteVolumeBackup(ctx context.Context, params Delet
 // Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 // must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 //
-// While subscriptions pay for the snapshot (those in its `release_set`), deleting it cancels them
+// While subscription items pay for the snapshot (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
 // with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the snapshot working
-// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
-// with it again, whatever mode is asked for.
+// licensed item being refunded under its terms, and `period_end` keeps the snapshot working until
+// `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
+// again, whatever mode is asked for.
 //
 // DELETE /api/v2/volume-snapshots/{volumeSnapshotId}
 func (UnimplementedHandler) DeleteVolumeSnapshot(ctx context.Context, params DeleteVolumeSnapshotParams) (r DeleteVolumeSnapshotRes, _ error) {
@@ -731,7 +820,7 @@ func (UnimplementedHandler) GetAvailabilityZone(ctx context.Context, params GetA
 // Retrieve an elastic IP.
 //
 // GET /api/v2/elastic-ips/{elasticIpId}
-func (UnimplementedHandler) GetElasticIP(ctx context.Context, params GetElasticIPParams) (r *ElasticIP, _ error) {
+func (UnimplementedHandler) GetElasticIP(ctx context.Context, params GetElasticIPParams) (r *ElasticIp, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -744,7 +833,7 @@ func (UnimplementedHandler) GetElasticIP(ctx context.Context, params GetElasticI
 // `ELASTIC_IP_NOT_ASSOCIATED`.
 //
 // GET /api/v2/elastic-ips/{elasticIpId}/association
-func (UnimplementedHandler) GetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (r *ElasticIPAssociation, _ error) {
+func (UnimplementedHandler) GetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (r *ElasticIpAssociation, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -754,7 +843,7 @@ func (UnimplementedHandler) GetElasticIPAssociation(ctx context.Context, params 
 // returned.
 //
 // GET /api/v2/elastic-ip-lines/{elasticIpLineId}
-func (UnimplementedHandler) GetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (r *ElasticIPLine, _ error) {
+func (UnimplementedHandler) GetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (r *ElasticIpLine, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -765,20 +854,6 @@ func (UnimplementedHandler) GetElasticIPLine(ctx context.Context, params GetElas
 //
 // GET /api/v2/instances/{instanceId}
 func (UnimplementedHandler) GetInstance(ctx context.Context, params GetInstanceParams) (r *Instance, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetInstanceConsole implements get-instance-console operation.
-//
-// The instance's VNC console, operated from a browser through a noVNC client. It does not require the
-// instance to be reachable over the network, which makes it usable when a network misconfiguration
-// prevents login.
-//
-// The returned address is single-use and expires within minutes. Every request issues a new address,
-// so request one before each use and do not cache the response.
-//
-// GET /api/v2/instances/{instanceId}/console
-func (UnimplementedHandler) GetInstanceConsole(ctx context.Context, params GetInstanceConsoleParams) (r *ConsoleResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1002,7 +1077,7 @@ func (UnimplementedHandler) ListAvailabilityZones(ctx context.Context, params Li
 // descriptions of the lines on sale; filters combine with AND, and pagination is independent of them.
 //
 // GET /api/v2/elastic-ip-lines
-func (UnimplementedHandler) ListElasticIPLines(ctx context.Context, params ListElasticIPLinesParams) (r *ElasticIPLineListResponseBody, _ error) {
+func (UnimplementedHandler) ListElasticIPLines(ctx context.Context, params ListElasticIPLinesParams) (r *ElasticIpLineListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1027,7 +1102,7 @@ func (UnimplementedHandler) ListElasticIPTrafficUsage(ctx context.Context, param
 // List elastic IPs.
 //
 // GET /api/v2/elastic-ips
-func (UnimplementedHandler) ListElasticIps(ctx context.Context, params ListElasticIpsParams) (r *ElasticIPListResponseBody, _ error) {
+func (UnimplementedHandler) ListElasticIps(ctx context.Context, params ListElasticIpsParams) (r *ElasticIpListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1328,6 +1403,17 @@ func (UnimplementedHandler) RejectVirtualPrivateCloudPeering(ctx context.Context
 	return r, ht.ErrNotImplemented
 }
 
+// ReplaceNetworkInterfaceSecurityGroups implements replace-network-interface-security-groups operation.
+//
+// `security_group_ids` is the complete new set, one to five groups of the network interface's virtual
+// private cloud; groups left out are removed. It applies to traffic of the running instance as soon as
+// it is in place, and the network interface is `updating_security_groups` until then.
+//
+// POST /api/v2/network-interfaces/{networkInterfaceId}:replaceSecurityGroups
+func (UnimplementedHandler) ReplaceNetworkInterfaceSecurityGroups(ctx context.Context, req *ReplaceNetworkInterfaceSecurityGroupsRequestBody, params ReplaceNetworkInterfaceSecurityGroupsParams) (r ReplaceNetworkInterfaceSecurityGroupsRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // RescueInstance implements rescue-instance operation.
 //
 // Boots a temporary rescue environment in place of the instance's own system, with the original boot
@@ -1372,6 +1458,81 @@ func (UnimplementedHandler) RescueInstance(ctx context.Context, params RescueIns
 //
 // POST /api/v2/instances/{instanceId}:resetPassword
 func (UnimplementedHandler) ResetInstancePassword(ctx context.Context, req PasswordChoice, params ResetInstancePasswordParams) (r ResetInstancePasswordRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ResizeInstance implements resize-instance operation.
+//
+// Changes the instance's type cold, through a change of its subscription item purchased in Billing:
+// the instance has to be stopped, and is refused with 409 `INSTANCE_RESIZE_REQUIRES_STOP` otherwise.
+// Its operating system is not booted for the change, and it is still stopped once the change is
+// applied; start it when you are ready. An instance stopped by the legacy stop, which released its
+// host, is refused with 409 `INSTANCE_SHELVED`; start it once and stop it again. A target type that
+// cannot hold what the instance already uses is refused before anything is ordered: fewer network
+// interfaces than are attached with 409 `INSTANCE_RESIZE_NETWORK_INTERFACES_EXCEED`, fewer elastic IPs
+// than are associated with 409 `INSTANCE_RESIZE_ELASTIC_IPS_EXCEED`, and less purchasable bandwidth
+// than an associated elastic IP has with 409 `INSTANCE_BANDWIDTH_CEILING` naming it in
+// `meta.elastic_ip_id`. The request returns 202 with the instance and the Checkout Session for the
+// change, including for metered terms. The instance keeps its usage type and period, priced with the
+// target type's matching option; a target type without that option is refused with 409
+// `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing accepts the order. Do not submit the
+// change again after paying. After an uncertain response, look the Checkout Session up in Billing
+// before submitting again.
+//
+// The instance is `resizing` until the resize is applied, its Checkout Session expires or its order is
+// canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
+// meanwhile. It keeps its current type until the resize is applied; the new type takes effect, and is
+// billed from then on, when `instance_type_id` shows it. If checkout is not completed, the order is
+// not accepted or the resize fails, the instance keeps its current type and Billing shows the outcome.
+// A completed resize is final and cannot be reverted; to return to the previous type, submit another
+// resize.
+//
+// POST /api/v2/instances/{instanceId}:resize
+func (UnimplementedHandler) ResizeInstance(ctx context.Context, req *ResizeInstanceRequestBody, params ResizeInstanceParams) (r ResizeInstanceRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ResizeVolume implements resize-volume operation.
+//
+// Grows the volume through a change of its subscription item purchased in Billing. Only an increase is
+// accepted; a smaller `size_gib` is refused with `VOLUME_CANNOT_SHRINK` (422), since a file system
+// cannot be shrunk from outside the instance. It returns 202 with the volume and the Checkout Session
+// for the resize, which keeps the volume's usage type and period. The volume is `resizing` until the
+// resize is applied, its Checkout Session expires or its order is canceled, so other operations and a
+// second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The volume keeps its current size
+// until the resize is applied; once `size_gib` shows the new size, extend the file system inside the
+// instance. If checkout is not completed, the order is not accepted or the resize fails, the volume
+// keeps its size and Billing shows the outcome.
+//
+// An attached volume, including a boot volume, can be resized. The capacity is usable at once, and the
+// volume's `performance` shows what its type gives the new size. That performance applies from the
+// volume's next attachment, or the next start of its stopped instance: the storage reads a volume's
+// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
+//
+// POST /api/v2/volumes/{volumeId}:resize
+func (UnimplementedHandler) ResizeVolume(ctx context.Context, req *ResizeVolumeRequestBody, params ResizeVolumeParams) (r ResizeVolumeRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RetypeVolume implements retype-volume operation.
+//
+// Moves the volume to another volume type at the same capacity, priced as that type, through a change
+// of its subscription item purchased in Billing, and returns 202 with the volume and the Checkout
+// Session for the change, which keeps the volume's usage type and period. The volume has to be
+// detached (409 `VOLUME_RETYPE_ATTACHED`), so a boot volume cannot change its type. The target has to
+// be on sale (`VOLUME_TYPE_OFF_SALE`), in the volume's region (422 `VOLUME_RETYPE_OTHER_REGION`), of
+// the volume's availability zone (422 `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`) with room for the volume
+// (409 `VOLUME_TYPE_SOLD_OUT`, `VOLUME_TYPE_CAPACITY_REACHED`, `VOLUME_TYPE_NO_POOL_ROOM`), admit the
+// volume's capacity (422 `VOLUME_SIZE_OUT_OF_RANGE`, `VOLUME_SIZE_NOT_ON_STEP`) and differ from the
+// current one (422 `VOLUME_RETYPE_SAME_TYPE`). The volume is `retyping` until the change is applied,
+// its Checkout Session expires or its order is canceled. A target on the same storage backend takes
+// effect at once; one on another backend copies the volume's data there first, which takes longer the
+// larger the volume is. The volume keeps its type until `volume_type_id` shows the new one, and its
+// `performance` follows from then on; a change that did not take effect leaves the volume as it was
+// and is refunded.
+//
+// POST /api/v2/volumes/{volumeId}:retype
+func (UnimplementedHandler) RetypeVolume(ctx context.Context, req *RetypeVolumeRequestBody, params RetypeVolumeParams) (r RetypeVolumeRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1454,9 +1615,8 @@ func (UnimplementedHandler) StartInstance(ctx context.Context, params StartInsta
 // non-payment or by the platform, is not charged for compute while the suspension lasts. It is
 // `stopping` until it is stopped. Stopping a stopped instance changes nothing.
 //
-// Changing `instance_type_id` is done on a stopped instance and only then. A stopped instance can also
-// be rebuilt and have network interfaces and volumes attached and detached; rescuing it needs it
-// running.
+// Resizing is done on a stopped instance and only then. A stopped instance can also be rebuilt and
+// have network interfaces and volumes attached and detached; rescuing it needs it running.
 //
 // POST /api/v2/instances/{instanceId}:stop
 func (UnimplementedHandler) StopInstance(ctx context.Context, params StopInstanceParams) (r StopInstanceRes, _ error) {
@@ -1473,96 +1633,23 @@ func (UnimplementedHandler) UnrescueInstance(ctx context.Context, params Unrescu
 	return r, ht.ErrNotImplemented
 }
 
-// UpdateElasticIP implements update-elastic-ip operation.
-//
-// Changes the bandwidth of this elastic IP, or what its pay-as-you-go network subscription charges
-// for. `bandwidth_mbps` and `internet_charge_type` are operational fields: each starts a change and
-// cannot be combined with any other field in the same request. Such a request is refused with 422
-// `UPDATE_FIELDS_COMBINED`, because a change that committed beside another that was then refused would
-// leave the request half applied. An elastic IP has no descriptive field today, so 200 is reserved for
-// the fields that may be added to it and every accepted update answers 202. `checkout` and
-// `proration_date` belong to the purchase of the `bandwidth_mbps` change and are accepted only
-// together with it.
-//
-// No separate bandwidth resource is created, and the limit applies to inbound and outbound traffic
-// alike. The new value may be any whole number of Mbps within the line's bandwidth range, otherwise
-// the request is refused with `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic
-// IP's network subscription:
-//
-//   - Prepaid: the change goes through a Checkout Session that changes the network subscription, priced
-//     for the rest of its period. It starts once Billing accepts the order; if checkout is not
-//     completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and
-//     Billing shows the outcome.
-//   - Pay-as-you-go: there is no checkout. The change starts at once, `checkout_session_id` and
-//     `order_id` are null, and the new limit is metered from the instant it is applied; if it fails,
-//     the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
-//     `ELASTIC_IP_CHECKOUT_UNUSED`.
-//
-// A change of `internet_charge_type` needs no checkout and is `updating_internet_charge_type` until it
-// is applied; see the field.
-//
-// The elastic IP is `updating_bandwidth` until the change is applied or ends, so other operations and
-// a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in
-// effect until the change is applied.
-//
-// While the address is associated with an instance, the limit must not exceed the `max_bandwidth_mbps`
-// of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of
-// an address that is not associated is checked when the address is associated with an instance.
-//
-// PATCH /api/v2/elastic-ips/{elasticIpId}
-func (UnimplementedHandler) UpdateElasticIP(ctx context.Context, req *UpdateElasticIPRequestBody, params UpdateElasticIPParams) (r UpdateElasticIPRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // UpdateInstance implements update-instance operation.
 //
-// Changes the descriptive fields (`name`, `labels`, `notes`) or the operational field
-// `instance_type_id`. All fields are optional and at least one is required. Starting and stopping are
-// the `:start` and `:stop` methods.
-//
-// `instance_type_id` starts a workflow and cannot be combined with any other field in the same
-// request. Such a request is refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that
-// committed beside a change that was then refused would leave the request half applied. `checkout` and
-// `proration_date` belong to the purchase of the `instance_type_id` change and are accepted only
-// together with it.
-//
-// Descriptive fields are not operations and are accepted at any time, whatever the instance is doing.
-// The request returns 200 with `checkout_session_id` and `order_id` null.
+// Changes the descriptive fields `name`, `labels` and `description`; all are optional and at least one
+// is required. They are not operations and are accepted at any time, whatever the instance is doing.
+// Changing the instance type is the `:resize` method; starting and stopping are `:start` and `:stop`.
 //
 //   - `name` changes the display name only. The hostname inside the instance is unchanged; it equals
 //     the instance id.
 //   - `labels` records what this instance is for, as key-value pairs. Nothing on the platform reads
 //     them. The whole set is replaced: whatever is absent from the request is removed, and an empty
 //     object clears them all. Do not put credentials here. Labels are visible to platform operators.
-//   - `notes` is a free-text note about this instance: what it runs, and what to be careful about
+//   - `description` is a free-text note about this instance: what it runs, and what to be careful about
 //     before touching it. The whole note is replaced; send an empty string to clear it. Do not put
 //     credentials here. The note is visible to platform operators.
 //
-// `instance_type_id` changes the instance's type cold: the instance has to be stopped, and is refused
-// with 409 `INSTANCE_RESIZE_REQUIRES_STOP` otherwise. Its operating system is not booted for the
-// change, and it is still stopped once the change is applied; start it when you are ready. An instance
-// stopped by the legacy stop, which released its host, is refused with 409 `INSTANCE_SHELVED`; start
-// it once and stop it again. A target type that cannot hold what the instance already uses is refused
-// before anything is ordered: fewer network interfaces than are attached with 409
-// `INSTANCE_RESIZE_NETWORK_INTERFACES_EXCEED`, fewer elastic IPs than are associated with 409
-// `INSTANCE_RESIZE_ELASTIC_IPS_EXCEED`, and less purchasable bandwidth than an associated elastic IP
-// has with 409 `INSTANCE_BANDWIDTH_CEILING` naming it in `meta.elastic_ip_id`. The request returns 202
-// with the instance and the Checkout Session for the change, including for metered terms. The instance
-// keeps its usage type and period, priced with the target type's matching option; a target type
-// without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing
-// accepts the order. Do not submit the change again after paying. After an uncertain response, look
-// the Checkout Session up in Billing before submitting again.
-//
-// The instance is `resizing` until the resize is applied, its Checkout Session expires or its order is
-// canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
-// meanwhile. It keeps its current type until the resize is applied; the new type takes effect, and is
-// billed from then on, when `instance_type_id` shows it. If checkout is not completed, the order is
-// not accepted or the resize fails, the instance keeps its current type and Billing shows the outcome.
-// A completed resize is final and cannot be reverted; to return to the previous type, submit another
-// resize.
-//
 // PATCH /api/v2/instances/{instanceId}
-func (UnimplementedHandler) UpdateInstance(ctx context.Context, req *UpdateInstanceRequestBody, params UpdateInstanceParams) (r UpdateInstanceRes, _ error) {
+func (UnimplementedHandler) UpdateInstance(ctx context.Context, req *UpdateInstanceRequestBody, params UpdateInstanceParams) (r *Instance, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1579,20 +1666,14 @@ func (UnimplementedHandler) UpdateLaunchTemplate(ctx context.Context, req *Updat
 
 // UpdateNetworkInterface implements update-network-interface operation.
 //
-// Changes the name, or replaces the security groups. The two are never combined (422
-// `UPDATE_FIELDS_COMBINED`).
-//
-//   - `name` is not an operation, is accepted at any time and answers 200.
-//   - `security_group_ids` is the complete new set, one to five groups of the network interface's
-//     virtual private cloud; groups left out are removed. It applies to traffic of the running instance
-//     as soon as it is in place, and answers 202 with the network interface `updating_security_groups`
-//     until then.
+// Changes the name. It is not an operation and is accepted at any time. Replacing the security groups
+// is `:replaceSecurityGroups`.
 //
 // Secondary IPv4 addresses are added and removed under
 // `/network-interfaces/{networkInterfaceId}/addresses`.
 //
 // PATCH /api/v2/network-interfaces/{networkInterfaceId}
-func (UnimplementedHandler) UpdateNetworkInterface(ctx context.Context, req *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (r UpdateNetworkInterfaceRes, _ error) {
+func (UnimplementedHandler) UpdateNetworkInterface(ctx context.Context, req *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (r *NetworkInterface, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1638,47 +1719,11 @@ func (UnimplementedHandler) UpdateVirtualPrivateCloudSubnet(ctx context.Context,
 
 // UpdateVolume implements update-volume operation.
 //
-// Changes the name, the capacity or the volume type. The availability zone is immutable.
-//
-// `size_gib` and `volume_type_id` are operational fields: each starts a change and cannot be combined
-// with any other field in the same request, including the other one. Such a request is refused with
-// 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside a change that was then refused
-// would leave the request half applied. `checkout` and `proration_date` belong to the purchase of the
-// change and are accepted only together with one of them.
-//
-// Renaming is not an operation and is accepted at any time. It returns 200 with `checkout_session_id`
-// and `order_id` null.
-//
-// Resizing accepts only an increase; a smaller `size_gib` is refused with `VOLUME_CANNOT_SHRINK`
-// (422), since a file system cannot be shrunk from outside the instance. It returns 202 with the
-// volume and the Checkout Session for the resize, which keeps the volume's usage type and period. The
-// volume is `resizing` until the resize is applied, its Checkout Session expires or its order is
-// canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
-// meanwhile. The volume keeps its current size until the resize is applied; once `size_gib` shows the
-// new size, extend the file system inside the instance. If checkout is not completed, the order is not
-// accepted or the resize fails, the volume keeps its size and Billing shows the outcome.
-//
-// Changing the type moves the volume to another volume type at the same capacity, priced as that type,
-// and returns 202 with the volume and the Checkout Session for the change, which keeps the volume's
-// usage type and period. The volume has to be detached (409 `VOLUME_RETYPE_ATTACHED`), so a boot
-// volume cannot change its type. The target has to be on sale (`VOLUME_TYPE_OFF_SALE`), in the
-// volume's region (422 `VOLUME_RETYPE_OTHER_REGION`), of the volume's availability zone (422
-// `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`) with room for the volume (409 `VOLUME_TYPE_SOLD_OUT`,
-// `VOLUME_TYPE_CAPACITY_REACHED`, `VOLUME_TYPE_NO_POOL_ROOM`), admit the volume's capacity (422
-// `VOLUME_SIZE_OUT_OF_RANGE`, `VOLUME_SIZE_NOT_ON_STEP`) and differ from the current one (422
-// `VOLUME_RETYPE_SAME_TYPE`). The volume is `retyping` until the change is applied, its Checkout
-// Session expires or its order is canceled. A target on the same storage backend takes effect at once;
-// one on another backend copies the volume's data there first, which takes longer the larger the
-// volume is. The volume keeps its type until `volume_type_id` shows the new one, and its `performance`
-// follows from then on; a change that did not take effect leaves the volume as it was and is refunded.
-//
-// An attached volume, including a boot volume, can be resized. The capacity is usable at once, and the
-// volume's `performance` shows what its type gives the new size. That performance applies from the
-// volume's next attachment, or the next start of its stopped instance: the storage reads a volume's
-// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
+// Changes the name. It is not an operation and is accepted at any time. Growing the volume is
+// `:resize` and moving it to another type is `:retype`.
 //
 // PATCH /api/v2/volumes/{volumeId}
-func (UnimplementedHandler) UpdateVolume(ctx context.Context, req *UpdateVolumeRequestBody, params UpdateVolumeParams) (r UpdateVolumeRes, _ error) {
+func (UnimplementedHandler) UpdateVolume(ctx context.Context, req *UpdateVolumeRequestBody, params UpdateVolumeParams) (r *VolumeResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

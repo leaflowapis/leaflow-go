@@ -26,9 +26,9 @@ var _ Handler = UnimplementedHandler{}
 // with `BILLING_PAYMENT_PENDING` and `meta.transaction_id`. Repeating the cancellation does not refund
 // twice.
 //
-// An accepted order is canceled by its owning service, and delivered items through subscription
-// cancellation. Refunds are previewed with `preview-order-refund`. Open to the owner of the order's
-// billing account and to members of its project.
+// An accepted order is canceled by its owning service, and delivered items through cancellation of
+// their subscription items. Refunds are previewed with `preview-order-refund`. Open to the owner of
+// the order's billing account and to members of its project.
 //
 // POST /api/v1/orders/{orderId}:cancel
 func (UnimplementedHandler) CancelOrder(ctx context.Context, req OptOrderCancel, params CancelOrderParams) (r CancelOrderRes, _ error) {
@@ -37,16 +37,17 @@ func (UnimplementedHandler) CancelOrder(ctx context.Context, req OptOrderCancel,
 
 // CancelSubscription implements cancel-subscription operation.
 //
-// Requests cancellation on the purchase's agreed terms, with the same rules as creating a
-// cancellation. Give the `proration_date` and `refundable_amount` of preview-cancellation for this
-// subscription. Open to the owner of the subscription's current billing account and to members of its
-// project with the project permission `billing:finance.manage`.
+// Requests cancellation of every continuing item of the subscription on their agreed terms, with the
+// same rules as creating a cancellation. Give the `proration_date` and `refundable_amount` of
+// preview-cancellation for these items. Open to the owner of the subscription's current billing
+// account and to members of its project with the project permission `billing:finance.manage`.
 //
 // Immediate cancellation asks the owning service to release the resources now; period-end cancellation
-// keeps the subscription active or suspended until the paid term ends. The subscription becomes
-// canceled when the service confirms the release; follow the returned cancellation. Subscriptions
-// released together must be canceled together through create-cancellation, and pending or provisioning
-// purchases through their order. Repeating the request while the cancellation is open returns it.
+// keeps the subscription in service until its current term ends. The subscription becomes canceled
+// when the service confirms the release; follow the returned cancellation. To cancel some items, or
+// items released together across subscriptions, use create-cancellation; pending or provisioning
+// purchases are canceled through their order. Repeating the request while the cancellation is open
+// returns it.
 //
 // POST /api/v1/subscriptions/{subscriptionId}:cancel
 func (UnimplementedHandler) CancelSubscription(ctx context.Context, req *CancelSubscriptionRequest, params CancelSubscriptionParams) (r *Cancellation, _ error) {
@@ -102,43 +103,44 @@ func (UnimplementedHandler) CreateBillingAccount(ctx context.Context, req *Billi
 
 // CreateCancellation implements create-cancellation operation.
 //
-// Ends subscriptions of one service together. Deleting a resource is an `immediate` cancellation of
-// every subscription released with it, such as a server with its disks or an address with its
-// bandwidth. Open to the owner of the subscriptions' current billing account and to members of their
-// project with the project permission `billing:finance.manage`.
+// Ends subscription items of one service together, from one subscription or several. Deleting a
+// resource is an `immediate` cancellation of every item released with it, such as a server with its
+// disks or an address with its bandwidth. Open to the owner of the items' current billing account and
+// to members of their project with the project permission `billing:finance.manage`.
 //
 // The owning service releases the resources at once for `immediate`, or at `scheduled_at`, the end of
-// the paid term, for `period_end`. When release is confirmed, the unused value is returned to the
-// original payment sources under each subscription's refund terms. For `immediate` the refund is
-// computed as of `proration_date` and is not reduced by service used during release. Metered usage is
-// charged until release.
+// the subscription's current term, for `period_end`; until then the items are left out of renewals.
+// When release is confirmed, the unused value is returned to the original payment sources under each
+// item's refund terms. For `immediate` the refund is computed as of `proration_date` and is not
+// reduced by service used during release. Metered usage is charged until release. A subscription whose
+// continuing items all end is canceled.
 //
-// `mode` must be allowed for every subscription. Metered and one-time subscriptions end only
-// `immediate`. A licensed subscription ends `period_end` while its paid term lasts, and `immediate`
-// unless its terms allow only the end of the paid term and that term has not ended. For `period_end`
-// all paid terms must end at the same time.
+// `mode` must be allowed for every item. Metered and one-time items end only `immediate`. A licensed
+// item ends `period_end` while its subscription's paid term lasts, and `immediate` unless its terms
+// allow only the end of the paid term and that term has not ended. For `period_end` the paid terms of
+// all items must end at the same time.
 //
 // Refused with:
 //
-//   - 400 `BILLING_CANCELLATION_INVALID` when `subscription_ids` or `proration_date` is invalid
-//     (`meta.field`), or the subscriptions do not share one service, project, account and currency;
-//   - 409 `BILLING_CANCELLATION_CONFLICT` when a subscription has not started or has ended;
+//   - 400 `BILLING_CANCELLATION_INVALID` when `items` or `proration_date` is invalid (`meta.field`), or
+//     the items do not share one service, project, account and currency;
+//   - 409 `BILLING_CANCELLATION_CONFLICT` when an item has not started or has ended;
 //   - 422 `BILLING_CANCELLATION_MODE_FIXED` when `mode` is not allowed, and
-//     `BILLING_CANCELLATION_TERMS_UNSET` when a licensed subscription has no cancellation terms, both
-//     with `meta.subscription_id`;
+//     `BILLING_CANCELLATION_TERMS_UNSET` when a licensed item has no cancellation terms, both with
+//     `meta.subscription_item_id`;
 //   - 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when, for `period_end`, the paid terms end at
 //     different times;
-//   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a subscription is already being canceled
-//     (`meta.cancellation_id`) or reclaimed (`meta.reason` `reclaim_requested`), or has a paid change
-//     waiting to switch (`meta.order_id`);
-//   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online renewal payment for one of them is in
-//     progress;
+//   - 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when an item is already being canceled
+//     (`meta.cancellation_id`), its subscription is being reclaimed (`meta.reason`
+//     `reclaim_requested`), or the item has a paid change waiting to switch (`meta.order_id`);
+//   - 409 `BILLING_ORDER_PAYMENT_IN_FLIGHT` while an online renewal payment for one of their
+//     subscriptions is in progress;
 //   - 409 `BILLING_CANCELLATION_REFUND_CHANGED` when the refund no longer equals
 //     `expected_refundable_amount`.
 //
-// Repeating the request for the same subscriptions, mode and amount while the cancellation is open
-// returns it with 200. Unpaid renewal orders are canceled with it, and automatic renewal is turned off
-// for every subscription.
+// Repeating the request for the same items, mode and amount while the cancellation is open returns it
+// with 200. When it covers every continuing item of a subscription, unpaid renewal orders of that
+// subscription are canceled with it and its automatic renewal is turned off.
 //
 // POST /api/v1/cancellations
 func (UnimplementedHandler) CreateCancellation(ctx context.Context, req *CancellationCreate) (r CreateCancellationRes, _ error) {
@@ -147,13 +149,15 @@ func (UnimplementedHandler) CreateCancellation(ctx context.Context, req *Cancell
 
 // CreateCheckoutSession implements create-checkout-session operation.
 //
-// Opens a Checkout Session renewing a licensed subscription, with periods and price chosen as in
-// renewing. Nothing is charged until you complete it, when a promotion code can be applied; it then
-// renews from the subscription's current_term_end at that time. To renew at once from credit grants,
-// balance or a payment method, renew the subscription instead. Purchases and changes of a service's
-// resources are created through that service.
+// Opens a Checkout Session renewing one or more subscriptions in one order, such as a machine and the
+// separately bought volumes and elastic IPs attached to it, with periods and price chosen as in
+// renewing. Every subscription must be paid by the same billing account and belong to the same project
+// and service. Nothing is charged until you complete it, when a promotion code can be applied; each
+// subscription then renews from its current_term_end at that time. To renew one subscription at once
+// from credit grants, balance or a payment method, renew the subscription instead. Purchases and
+// changes of a service's resources are created through that service.
 //
-// Open to the owner of the subscription's current billing account and to members of its project with
+// Open to the owner of the subscriptions' current billing account and to members of their project with
 // the project permission `billing:finance.manage`. Keep `checkout_session_id` and read the session
 // after an unknown outcome; creating it again conflicts.
 //
@@ -204,6 +208,20 @@ func (UnimplementedHandler) CreateWithdrawal(ctx context.Context, req *Withdrawa
 	return r, ht.ErrNotImplemented
 }
 
+// DeleteCancellation implements delete-cancellation operation.
+//
+// Withdraws the whole cancellation, which stays with status `canceled`, while no resource has begun to
+// be released; afterwards it is refused with 409 `BILLING_CANCELLATION_CONFLICT`. The items continue
+// and renew with their subscriptions again; a subscription's automatic renewal, turned off when the
+// cancellation covered all of its continuing items, stays off until it is turned on again. Withdrawing
+// a withdrawn cancellation returns it unchanged. Open to the owner of the items' current billing
+// account and to members of their project with the project permission `billing:finance.manage`.
+//
+// DELETE /api/v1/cancellations/{cancellationId}
+func (UnimplementedHandler) DeleteCancellation(ctx context.Context, params DeleteCancellationParams) (r *Cancellation, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // DeleteContact implements delete-contact operation.
 //
 // Deletes a contact of this billing account; 404 if it does not exist in the account. A contact
@@ -226,8 +244,8 @@ func (UnimplementedHandler) DeletePaymentMethod(ctx context.Context, params Dele
 // DeleteSubscription implements delete-subscription operation.
 //
 // Hides a canceled or terminated subscription from your subscription list and detail by setting
-// deleted_at; its status, ended_at and history are kept. Only the owner of the subscription's current
-// billing account can delete it. A subscription that has not ended is refused with 409
+// deleted_at; its status, ended_at, items and history are kept. Only the owner of the subscription's
+// current billing account can delete it. A subscription that has not ended is refused with 409
 // `BILLING_SUBSCRIPTION_NOT_ENDED` and `status`. Repeating it keeps the original deleted_at. It sends
 // no cleanup command and creates no refund.
 //
@@ -299,7 +317,7 @@ func (UnimplementedHandler) GetBillingAccount(ctx context.Context, params GetBil
 // GetCancellation implements get-cancellation operation.
 //
 // A cancellation paid by your billing account or of a project you are a member of, with its schedule,
-// expected refundable amount and the outcome for each subscription, including partial success.
+// expected refundable amount and the outcome for each item, including partial success.
 //
 // GET /api/v1/cancellations/{cancellationId}
 func (UnimplementedHandler) GetCancellation(ctx context.Context, params GetCancellationParams) (r *Cancellation, _ error) {
@@ -464,8 +482,8 @@ func (UnimplementedHandler) GetStatementUsage(ctx context.Context, params GetSta
 
 // GetSubscription implements get-subscription operation.
 //
-// A subscription paid by your billing account or of a project you are a member of. Deleted
-// subscriptions are reported as not found.
+// A subscription paid by your billing account or of a project you are a member of, with its items.
+// Deleted subscriptions are reported as not found.
 //
 // GET /api/v1/subscriptions/{subscriptionId}
 func (UnimplementedHandler) GetSubscription(ctx context.Context, params GetSubscriptionParams) (r *Subscription, _ error) {
@@ -539,7 +557,8 @@ func (UnimplementedHandler) ListBillingAccounts(ctx context.Context, params List
 // ListCancellations implements list-cancellations operation.
 //
 // Newest first; members of a project list its cancellations with `project_ids`. Filter by
-// `subscription_id` and `status=open` to find a subscription's cancellation in progress.
+// `subscription_item_id` and `status=open` to find an item's cancellation in progress, or by
+// `subscription_id` for every item of a subscription.
 //
 // GET /api/v1/cancellations
 func (UnimplementedHandler) ListCancellations(ctx context.Context, params ListCancellationsParams) (r *CancellationList, _ error) {
@@ -764,15 +783,16 @@ func (UnimplementedHandler) ListRefunds(ctx context.Context, params ListRefundsP
 	return r, ht.ErrNotImplemented
 }
 
-// ListRenewalPrices implements list-renewal-prices operation.
+// ListRenewalOptions implements list-renewal-options operation.
 //
-// Lists the current renewal agreement and available intervals. The current option preserves
-// recurring_amount; other options use current prices. Amounts cover the whole subscription quantity
-// and exclude tax. Open to the owner of the subscription's current billing account and to members of
-// its project.
+// The current agreement first, then each other term every continuing licensed item sells in the
+// subscription's currency. The current option keeps each item's recurring_amount; other options use
+// current prices, each item taking the price of that term with its own cancellation policy, or the
+// only price of that term. Amounts exclude tax and discounts. Open to the owner of the subscription's
+// current billing account and to members of its project.
 //
-// GET /api/v1/subscriptions/{subscriptionId}/renewal-prices
-func (UnimplementedHandler) ListRenewalPrices(ctx context.Context, params ListRenewalPricesParams) (r *RenewalPriceList, _ error) {
+// GET /api/v1/subscriptions/{subscriptionId}/renewal-options
+func (UnimplementedHandler) ListRenewalOptions(ctx context.Context, params ListRenewalOptionsParams) (r *RenewalOptionList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -805,7 +825,7 @@ func (UnimplementedHandler) ListStatements(ctx context.Context, params ListState
 // ListSubscriptions implements list-subscriptions operation.
 //
 // Subscriptions paid by your billing accounts; members of a project list its subscriptions with
-// `project_ids`. Deleted subscriptions are not listed.
+// `project_ids`. Each subscription includes its items. Deleted subscriptions are not listed.
 //
 // GET /api/v1/subscriptions
 func (UnimplementedHandler) ListSubscriptions(ctx context.Context, params ListSubscriptionsParams) (r *SubscriptionList, _ error) {
@@ -915,9 +935,9 @@ func (UnimplementedHandler) PayTogether(ctx context.Context, req *PayTogetherReq
 
 // PreviewCancellation implements preview-cancellation operation.
 //
-// What creating the cancellation now would return, per subscription and in total. Nothing is canceled,
-// ended or refunded. Open to the owner of the subscriptions' current billing account and to members of
-// their project; refused for the same states as creating it.
+// What creating the cancellation now would return, per item and in total. Nothing is canceled, ended
+// or refunded. Open to the owner of the items' current billing account and to members of their
+// project; refused for the same states as creating it.
 //
 // QUERY /api/v1/cancellations:preview
 func (UnimplementedHandler) PreviewCancellation(ctx context.Context, req *CancellationPreviewRequest) (r *CancellationPreview, _ error) {
@@ -975,13 +995,17 @@ func (UnimplementedHandler) PreviewWithdrawal(ctx context.Context, req *Withdraw
 
 // RenewSubscription implements renew-subscription operation.
 //
-// Buys licensed periods from current_term_end at the agreed recurring amount and pays for them at
-// once. A different interval selects the price currently sold for it and fixes new terms on the order,
-// applied after fulfillment. Paid periods keep their value.
+// Buys further periods for the whole subscription from current_term_end and pays for them at once:
+// every continuing licensed item renews, at its agreed recurring amount or, with a different interval,
+// at the price each item currently sells that term for, and the new terms are fixed on the order.
+// Items with an open cancellation end with the current term and are left out. Paid periods keep their
+// value. A trialing subscription converts to paid this way; renewed after its trial expired, its first
+// paid period starts at payment.
 //
 // Without `payment_method_id`, the renewal is paid from credit grants and balance as `use_credits` and
 // `use_balance` allow; when they cannot cover it, the request fails with `BILLING_INSUFFICIENT_FUNDS`
-// and no order is left. To apply a promotion code or pay later, create a renewal Checkout Session.
+// and no order is left. To apply a promotion code, pay later, or renew several subscriptions in one
+// order, create a renewal Checkout Session.
 //
 // Open to the owner of the subscription's current billing account and to members of its project with
 // the project permission `billing:finance.manage`. Only the owner can pay with `payment_method_id`.
@@ -1012,22 +1036,6 @@ func (UnimplementedHandler) ResumeBillingAccount(ctx context.Context, params Res
 //
 // QUERY /api/v1/prices
 func (UnimplementedHandler) SearchPrices(ctx context.Context, req *PriceSearch) (r *PriceList, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// SetAutoRenew implements set-auto-renew operation.
-//
-// Turns automatic renewal of an active or suspended licensed subscription on or off. Turning it off
-// does not shorten current_term_end and still allows manual renewal. Refused with 409
-// `BILLING_SUBSCRIPTION_AUTO_RENEW_INACTIVE` for a pending or provisioning subscription, 409
-// `BILLING_SUBSCRIPTION_AUTO_RENEW_FIXED` for a metered subscription, which continues until it is
-// canceled, and 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` with `meta.cancellation_id` while a
-// cancellation is open: creating it turned renewal off, and withdrawing it does not turn renewal back
-// on. Open to the owner of the subscription's current billing account and to members of its project
-// with the project permission `billing:finance.manage`.
-//
-// PUT /api/v1/subscriptions/{subscriptionId}/auto-renew
-func (UnimplementedHandler) SetAutoRenew(ctx context.Context, req *AutoRenewSet, params SetAutoRenewParams) (r *Subscription, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1105,17 +1113,23 @@ func (UnimplementedHandler) UpdateContact(ctx context.Context, req *ContactUpdat
 	return r, ht.ErrNotImplemented
 }
 
-// WithdrawCancellation implements withdraw-cancellation operation.
+// UpdateSubscription implements update-subscription operation.
 //
-// Withdraws the whole cancellation, which stays with status `canceled`, while no resource has begun to
-// be released; afterwards it is refused with 409 `BILLING_CANCELLATION_CONFLICT`. The subscriptions
-// continue, but automatic renewal, turned off when the cancellation was created, stays off until it is
-// turned on again. Withdrawing a withdrawn cancellation returns it unchanged. Open to the owner of the
-// subscriptions' current billing account and to members of their project with the project permission
-// `billing:finance.manage`.
+// Changes the subscription's settings given in the request; settings left out keep their values.
+// `auto_renew` turns automatic renewal on or off for the whole subscription, or, on a trialing
+// subscription, whether the trial converts to paid. Turning it off does not shorten current_term_end
+// and still allows manual renewal.
 //
-// DELETE /api/v1/cancellations/{cancellationId}
-func (UnimplementedHandler) WithdrawCancellation(ctx context.Context, params WithdrawCancellationParams) (r *Cancellation, _ error) {
+// `auto_renew` is refused with 409 `BILLING_SUBSCRIPTION_AUTO_RENEW_INACTIVE` for a pending or
+// provisioning subscription, 409 `BILLING_SUBSCRIPTION_AUTO_RENEW_FIXED` for a subscription with only
+// metered items, which continues until it is canceled, and 409
+// `BILLING_SUBSCRIPTION_OPERATION_PENDING` with `meta.cancellation_id` while a cancellation of the
+// whole subscription is open: creating it turned renewal off, and withdrawing it does not turn renewal
+// back on. Open to the owner of the subscription's current billing account and to members of its
+// project with the project permission `billing:finance.manage`.
+//
+// PATCH /api/v1/subscriptions/{subscriptionId}
+func (UnimplementedHandler) UpdateSubscription(ctx context.Context, req *SubscriptionUpdate, params UpdateSubscriptionParams) (r *Subscription, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

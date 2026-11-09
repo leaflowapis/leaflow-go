@@ -17,7 +17,7 @@ import (
 
 // AcceptVirtualPrivateCloudPeeringParams is parameters of accept-virtual-private-cloud-peering operation.
 type AcceptVirtualPrivateCloudPeeringParams struct {
-	VirtualPrivateCloudPeeringId VirtualPrivateCloudPeeringID
+	VirtualPrivateCloudPeeringId VirtualPrivateCloudPeeringId
 }
 
 func unpackAcceptVirtualPrivateCloudPeeringParams(packed middleware.Parameters) (params AcceptVirtualPrivateCloudPeeringParams) {
@@ -26,7 +26,7 @@ func unpackAcceptVirtualPrivateCloudPeeringParams(packed middleware.Parameters) 
 			Name: "virtualPrivateCloudPeeringId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudPeeringId = packed[key].(VirtualPrivateCloudPeeringID)
+		params.VirtualPrivateCloudPeeringId = packed[key].(VirtualPrivateCloudPeeringId)
 	}
 	return params
 }
@@ -68,7 +68,7 @@ func decodeAcceptVirtualPrivateCloudPeeringParams(args [1]string, argsEscaped bo
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudPeeringId = VirtualPrivateCloudPeeringID(paramsDotVirtualPrivateCloudPeeringIdVal)
+				params.VirtualPrivateCloudPeeringId = VirtualPrivateCloudPeeringId(paramsDotVirtualPrivateCloudPeeringIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -97,7 +97,7 @@ func decodeAcceptVirtualPrivateCloudPeeringParams(args [1]string, argsEscaped bo
 
 // AssociateElasticIPParams is parameters of associate-elastic-ip operation.
 type AssociateElasticIPParams struct {
-	ElasticIpId ElasticIPID
+	ElasticIpId ElasticIpId
 }
 
 func unpackAssociateElasticIPParams(packed middleware.Parameters) (params AssociateElasticIPParams) {
@@ -106,7 +106,7 @@ func unpackAssociateElasticIPParams(packed middleware.Parameters) (params Associ
 			Name: "elasticIpId",
 			In:   "path",
 		}
-		params.ElasticIpId = packed[key].(ElasticIPID)
+		params.ElasticIpId = packed[key].(ElasticIpId)
 	}
 	return params
 }
@@ -148,7 +148,7 @@ func decodeAssociateElasticIPParams(args [1]string, argsEscaped bool, r *http.Re
 				}(); err != nil {
 					return err
 				}
-				params.ElasticIpId = ElasticIPID(paramsDotElasticIpIdVal)
+				params.ElasticIpId = ElasticIpId(paramsDotElasticIpIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -177,7 +177,7 @@ func decodeAssociateElasticIPParams(args [1]string, argsEscaped bool, r *http.Re
 
 // AttachInstanceNetworkInterfaceParams is parameters of attach-instance-network-interface operation.
 type AttachInstanceNetworkInterfaceParams struct {
-	InstanceId InstanceID
+	InstanceId InstanceId
 }
 
 func unpackAttachInstanceNetworkInterfaceParams(packed middleware.Parameters) (params AttachInstanceNetworkInterfaceParams) {
@@ -186,7 +186,7 @@ func unpackAttachInstanceNetworkInterfaceParams(packed middleware.Parameters) (p
 			Name: "instanceId",
 			In:   "path",
 		}
-		params.InstanceId = packed[key].(InstanceID)
+		params.InstanceId = packed[key].(InstanceId)
 	}
 	return params
 }
@@ -228,7 +228,7 @@ func decodeAttachInstanceNetworkInterfaceParams(args [1]string, argsEscaped bool
 				}(); err != nil {
 					return err
 				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -257,7 +257,7 @@ func decodeAttachInstanceNetworkInterfaceParams(args [1]string, argsEscaped bool
 
 // AttachInstanceVolumeParams is parameters of attach-instance-volume operation.
 type AttachInstanceVolumeParams struct {
-	InstanceId InstanceID
+	InstanceId InstanceId
 }
 
 func unpackAttachInstanceVolumeParams(packed middleware.Parameters) (params AttachInstanceVolumeParams) {
@@ -266,7 +266,7 @@ func unpackAttachInstanceVolumeParams(packed middleware.Parameters) (params Atta
 			Name: "instanceId",
 			In:   "path",
 		}
-		params.InstanceId = packed[key].(InstanceID)
+		params.InstanceId = packed[key].(InstanceId)
 	}
 	return params
 }
@@ -308,7 +308,247 @@ func decodeAttachInstanceVolumeParams(args [1]string, argsEscaped bool, r *http.
 				}(); err != nil {
 					return err
 				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.InstanceId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "instanceId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ChangeElasticIPBandwidthParams is parameters of change-elastic-ip-bandwidth operation.
+type ChangeElasticIPBandwidthParams struct {
+	ElasticIpId ElasticIpId
+}
+
+func unpackChangeElasticIPBandwidthParams(packed middleware.Parameters) (params ChangeElasticIPBandwidthParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "elasticIpId",
+			In:   "path",
+		}
+		params.ElasticIpId = packed[key].(ElasticIpId)
+	}
+	return params
+}
+
+func decodeChangeElasticIPBandwidthParams(args [1]string, argsEscaped bool, r *http.Request) (params ChangeElasticIPBandwidthParams, _ error) {
+	// Decode path: elasticIpId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "elasticIpId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotElasticIpIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotElasticIpIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ElasticIpId = ElasticIpId(paramsDotElasticIpIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.ElasticIpId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "elasticIpId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ChangeElasticIPChargeTypeParams is parameters of change-elastic-ip-charge-type operation.
+type ChangeElasticIPChargeTypeParams struct {
+	ElasticIpId ElasticIpId
+}
+
+func unpackChangeElasticIPChargeTypeParams(packed middleware.Parameters) (params ChangeElasticIPChargeTypeParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "elasticIpId",
+			In:   "path",
+		}
+		params.ElasticIpId = packed[key].(ElasticIpId)
+	}
+	return params
+}
+
+func decodeChangeElasticIPChargeTypeParams(args [1]string, argsEscaped bool, r *http.Request) (params ChangeElasticIPChargeTypeParams, _ error) {
+	// Decode path: elasticIpId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "elasticIpId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotElasticIpIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotElasticIpIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ElasticIpId = ElasticIpId(paramsDotElasticIpIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.ElasticIpId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "elasticIpId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// CreateInstanceConsoleURLParams is parameters of create-instance-console-url operation.
+type CreateInstanceConsoleURLParams struct {
+	InstanceId InstanceId
+}
+
+func unpackCreateInstanceConsoleURLParams(packed middleware.Parameters) (params CreateInstanceConsoleURLParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "instanceId",
+			In:   "path",
+		}
+		params.InstanceId = packed[key].(InstanceId)
+	}
+	return params
+}
+
+func decodeCreateInstanceConsoleURLParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateInstanceConsoleURLParams, _ error) {
+	// Decode path: instanceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "instanceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotInstanceIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotInstanceIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -337,7 +577,7 @@ func decodeAttachInstanceVolumeParams(args [1]string, argsEscaped bool, r *http.
 
 // CreateLaunchTemplateVersionParams is parameters of create-launch-template-version operation.
 type CreateLaunchTemplateVersionParams struct {
-	LaunchTemplateId LaunchTemplateID
+	LaunchTemplateId LaunchTemplateId
 }
 
 func unpackCreateLaunchTemplateVersionParams(packed middleware.Parameters) (params CreateLaunchTemplateVersionParams) {
@@ -346,7 +586,7 @@ func unpackCreateLaunchTemplateVersionParams(packed middleware.Parameters) (para
 			Name: "launchTemplateId",
 			In:   "path",
 		}
-		params.LaunchTemplateId = packed[key].(LaunchTemplateID)
+		params.LaunchTemplateId = packed[key].(LaunchTemplateId)
 	}
 	return params
 }
@@ -388,7 +628,7 @@ func decodeCreateLaunchTemplateVersionParams(args [1]string, argsEscaped bool, r
 				}(); err != nil {
 					return err
 				}
-				params.LaunchTemplateId = LaunchTemplateID(paramsDotLaunchTemplateIdVal)
+				params.LaunchTemplateId = LaunchTemplateId(paramsDotLaunchTemplateIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -417,7 +657,7 @@ func decodeCreateLaunchTemplateVersionParams(args [1]string, argsEscaped bool, r
 
 // CreateNetworkInterfaceAddressParams is parameters of create-network-interface-address operation.
 type CreateNetworkInterfaceAddressParams struct {
-	NetworkInterfaceId NetworkInterfaceID
+	NetworkInterfaceId NetworkInterfaceId
 }
 
 func unpackCreateNetworkInterfaceAddressParams(packed middleware.Parameters) (params CreateNetworkInterfaceAddressParams) {
@@ -426,7 +666,7 @@ func unpackCreateNetworkInterfaceAddressParams(packed middleware.Parameters) (pa
 			Name: "networkInterfaceId",
 			In:   "path",
 		}
-		params.NetworkInterfaceId = packed[key].(NetworkInterfaceID)
+		params.NetworkInterfaceId = packed[key].(NetworkInterfaceId)
 	}
 	return params
 }
@@ -468,7 +708,7 @@ func decodeCreateNetworkInterfaceAddressParams(args [1]string, argsEscaped bool,
 				}(); err != nil {
 					return err
 				}
-				params.NetworkInterfaceId = NetworkInterfaceID(paramsDotNetworkInterfaceIdVal)
+				params.NetworkInterfaceId = NetworkInterfaceId(paramsDotNetworkInterfaceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -497,7 +737,7 @@ func decodeCreateNetworkInterfaceAddressParams(args [1]string, argsEscaped bool,
 
 // CreateSecurityGroupRuleParams is parameters of create-security-group-rule operation.
 type CreateSecurityGroupRuleParams struct {
-	SecurityGroupId SecurityGroupID
+	SecurityGroupId SecurityGroupId
 }
 
 func unpackCreateSecurityGroupRuleParams(packed middleware.Parameters) (params CreateSecurityGroupRuleParams) {
@@ -506,7 +746,7 @@ func unpackCreateSecurityGroupRuleParams(packed middleware.Parameters) (params C
 			Name: "securityGroupId",
 			In:   "path",
 		}
-		params.SecurityGroupId = packed[key].(SecurityGroupID)
+		params.SecurityGroupId = packed[key].(SecurityGroupId)
 	}
 	return params
 }
@@ -548,7 +788,7 @@ func decodeCreateSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *ht
 				}(); err != nil {
 					return err
 				}
-				params.SecurityGroupId = SecurityGroupID(paramsDotSecurityGroupIdVal)
+				params.SecurityGroupId = SecurityGroupId(paramsDotSecurityGroupIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -577,7 +817,7 @@ func decodeCreateSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *ht
 
 // CreateVirtualPrivateCloudRouteParams is parameters of create-virtual-private-cloud-route operation.
 type CreateVirtualPrivateCloudRouteParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
+	VirtualPrivateCloudId VirtualPrivateCloudId
 }
 
 func unpackCreateVirtualPrivateCloudRouteParams(packed middleware.Parameters) (params CreateVirtualPrivateCloudRouteParams) {
@@ -586,7 +826,7 @@ func unpackCreateVirtualPrivateCloudRouteParams(packed middleware.Parameters) (p
 			Name: "virtualPrivateCloudId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudId)
 	}
 	return params
 }
@@ -628,7 +868,7 @@ func decodeCreateVirtualPrivateCloudRouteParams(args [1]string, argsEscaped bool
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				params.VirtualPrivateCloudId = VirtualPrivateCloudId(paramsDotVirtualPrivateCloudIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -657,7 +897,7 @@ func decodeCreateVirtualPrivateCloudRouteParams(args [1]string, argsEscaped bool
 
 // CreateVirtualPrivateCloudSubnetParams is parameters of create-virtual-private-cloud-subnet operation.
 type CreateVirtualPrivateCloudSubnetParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
+	VirtualPrivateCloudId VirtualPrivateCloudId
 }
 
 func unpackCreateVirtualPrivateCloudSubnetParams(packed middleware.Parameters) (params CreateVirtualPrivateCloudSubnetParams) {
@@ -666,7 +906,7 @@ func unpackCreateVirtualPrivateCloudSubnetParams(packed middleware.Parameters) (
 			Name: "virtualPrivateCloudId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudId)
 	}
 	return params
 }
@@ -708,7 +948,7 @@ func decodeCreateVirtualPrivateCloudSubnetParams(args [1]string, argsEscaped boo
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				params.VirtualPrivateCloudId = VirtualPrivateCloudId(paramsDotVirtualPrivateCloudIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -737,16 +977,16 @@ func decodeCreateVirtualPrivateCloudSubnetParams(args [1]string, argsEscaped boo
 
 // DeleteElasticIPParams is parameters of delete-elastic-ip operation.
 type DeleteElasticIPParams struct {
-	ElasticIpId ElasticIPID
-	// When the subscriptions that pay for what is deleted end. `immediate` cancels them now and refunds a
-	// licensed one under its terms; `period_end` cancels them at the end of their paid period and keeps
-	// what is deleted working until then. Omitted, they are canceled now where the terms of every one of
-	// them allow it, and otherwise all at the end of the paid period, since one cancellation releases the
-	// whole set at one instant.
+	ElasticIpId ElasticIpId
+	// When the subscription items that pay for what is deleted end. `immediate` cancels them now and
+	// refunds a licensed one under its terms; `period_end` cancels them at the end of their subscription's
+	// paid period and keeps what is deleted working until then. Omitted, they are canceled now where the
+	// terms of every one of them allow it, and otherwise all at the end of the paid period, since one
+	// cancellation releases the whole set at one instant.
 	//
-	// Billing alone judges the mode against the terms each subscription was bought with. It refuses with
-	// 422 `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go subscription
-	// ends only now, and a prepaid one whose terms allow only the end of its period only then. It refuses
+	// Billing alone judges the mode against the terms each item was bought with. It refuses with 422
+	// `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go item ends only
+	// now, and a prepaid one whose terms allow only the end of its period only then. It refuses
 	// `period_end` with 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when the paid periods end at different
 	// times. Ignored when nothing is subscribed, and when a cancellation is already open: deleting again
 	// answers with that one as it is.
@@ -759,7 +999,7 @@ func unpackDeleteElasticIPParams(packed middleware.Parameters) (params DeleteEla
 			Name: "elasticIpId",
 			In:   "path",
 		}
-		params.ElasticIpId = packed[key].(ElasticIPID)
+		params.ElasticIpId = packed[key].(ElasticIpId)
 	}
 	{
 		key := middleware.ParameterKey{
@@ -811,7 +1051,7 @@ func decodeDeleteElasticIPParams(args [1]string, argsEscaped bool, r *http.Reque
 				}(); err != nil {
 					return err
 				}
-				params.ElasticIpId = ElasticIPID(paramsDotElasticIpIdVal)
+				params.ElasticIpId = ElasticIpId(paramsDotElasticIpIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -896,16 +1136,16 @@ func decodeDeleteElasticIPParams(args [1]string, argsEscaped bool, r *http.Reque
 
 // DeleteInstanceParams is parameters of delete-instance operation.
 type DeleteInstanceParams struct {
-	InstanceId InstanceID
-	// When the subscriptions that pay for what is deleted end. `immediate` cancels them now and refunds a
-	// licensed one under its terms; `period_end` cancels them at the end of their paid period and keeps
-	// what is deleted working until then. Omitted, they are canceled now where the terms of every one of
-	// them allow it, and otherwise all at the end of the paid period, since one cancellation releases the
-	// whole set at one instant.
+	InstanceId InstanceId
+	// When the subscription items that pay for what is deleted end. `immediate` cancels them now and
+	// refunds a licensed one under its terms; `period_end` cancels them at the end of their subscription's
+	// paid period and keeps what is deleted working until then. Omitted, they are canceled now where the
+	// terms of every one of them allow it, and otherwise all at the end of the paid period, since one
+	// cancellation releases the whole set at one instant.
 	//
-	// Billing alone judges the mode against the terms each subscription was bought with. It refuses with
-	// 422 `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go subscription
-	// ends only now, and a prepaid one whose terms allow only the end of its period only then. It refuses
+	// Billing alone judges the mode against the terms each item was bought with. It refuses with 422
+	// `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go item ends only
+	// now, and a prepaid one whose terms allow only the end of its period only then. It refuses
 	// `period_end` with 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when the paid periods end at different
 	// times. Ignored when nothing is subscribed, and when a cancellation is already open: deleting again
 	// answers with that one as it is.
@@ -918,7 +1158,7 @@ func unpackDeleteInstanceParams(packed middleware.Parameters) (params DeleteInst
 			Name: "instanceId",
 			In:   "path",
 		}
-		params.InstanceId = packed[key].(InstanceID)
+		params.InstanceId = packed[key].(InstanceId)
 	}
 	{
 		key := middleware.ParameterKey{
@@ -970,7 +1210,7 @@ func decodeDeleteInstanceParams(args [1]string, argsEscaped bool, r *http.Reques
 				}(); err != nil {
 					return err
 				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -1055,7 +1295,7 @@ func decodeDeleteInstanceParams(args [1]string, argsEscaped bool, r *http.Reques
 
 // DeleteLaunchTemplateParams is parameters of delete-launch-template operation.
 type DeleteLaunchTemplateParams struct {
-	LaunchTemplateId LaunchTemplateID
+	LaunchTemplateId LaunchTemplateId
 }
 
 func unpackDeleteLaunchTemplateParams(packed middleware.Parameters) (params DeleteLaunchTemplateParams) {
@@ -1064,7 +1304,7 @@ func unpackDeleteLaunchTemplateParams(packed middleware.Parameters) (params Dele
 			Name: "launchTemplateId",
 			In:   "path",
 		}
-		params.LaunchTemplateId = packed[key].(LaunchTemplateID)
+		params.LaunchTemplateId = packed[key].(LaunchTemplateId)
 	}
 	return params
 }
@@ -1106,7 +1346,7 @@ func decodeDeleteLaunchTemplateParams(args [1]string, argsEscaped bool, r *http.
 				}(); err != nil {
 					return err
 				}
-				params.LaunchTemplateId = LaunchTemplateID(paramsDotLaunchTemplateIdVal)
+				params.LaunchTemplateId = LaunchTemplateId(paramsDotLaunchTemplateIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -1135,7 +1375,7 @@ func decodeDeleteLaunchTemplateParams(args [1]string, argsEscaped bool, r *http.
 
 // DeleteLaunchTemplateVersionParams is parameters of delete-launch-template-version operation.
 type DeleteLaunchTemplateVersionParams struct {
-	LaunchTemplateId LaunchTemplateID
+	LaunchTemplateId LaunchTemplateId
 	VersionNumber    int64
 }
 
@@ -1145,7 +1385,7 @@ func unpackDeleteLaunchTemplateVersionParams(packed middleware.Parameters) (para
 			Name: "launchTemplateId",
 			In:   "path",
 		}
-		params.LaunchTemplateId = packed[key].(LaunchTemplateID)
+		params.LaunchTemplateId = packed[key].(LaunchTemplateId)
 	}
 	{
 		key := middleware.ParameterKey{
@@ -1194,7 +1434,7 @@ func decodeDeleteLaunchTemplateVersionParams(args [2]string, argsEscaped bool, r
 				}(); err != nil {
 					return err
 				}
-				params.LaunchTemplateId = LaunchTemplateID(paramsDotLaunchTemplateIdVal)
+				params.LaunchTemplateId = LaunchTemplateId(paramsDotLaunchTemplateIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -1286,7 +1526,7 @@ func decodeDeleteLaunchTemplateVersionParams(args [2]string, argsEscaped bool, r
 
 // DeleteNetworkInterfaceParams is parameters of delete-network-interface operation.
 type DeleteNetworkInterfaceParams struct {
-	NetworkInterfaceId NetworkInterfaceID
+	NetworkInterfaceId NetworkInterfaceId
 }
 
 func unpackDeleteNetworkInterfaceParams(packed middleware.Parameters) (params DeleteNetworkInterfaceParams) {
@@ -1295,7 +1535,7 @@ func unpackDeleteNetworkInterfaceParams(packed middleware.Parameters) (params De
 			Name: "networkInterfaceId",
 			In:   "path",
 		}
-		params.NetworkInterfaceId = packed[key].(NetworkInterfaceID)
+		params.NetworkInterfaceId = packed[key].(NetworkInterfaceId)
 	}
 	return params
 }
@@ -1337,7 +1577,7 @@ func decodeDeleteNetworkInterfaceParams(args [1]string, argsEscaped bool, r *htt
 				}(); err != nil {
 					return err
 				}
-				params.NetworkInterfaceId = NetworkInterfaceID(paramsDotNetworkInterfaceIdVal)
+				params.NetworkInterfaceId = NetworkInterfaceId(paramsDotNetworkInterfaceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -1366,8 +1606,8 @@ func decodeDeleteNetworkInterfaceParams(args [1]string, argsEscaped bool, r *htt
 
 // DeleteNetworkInterfaceAddressParams is parameters of delete-network-interface-address operation.
 type DeleteNetworkInterfaceAddressParams struct {
-	NetworkInterfaceId NetworkInterfaceID
-	AddressId          NetworkInterfaceAddressID
+	NetworkInterfaceId NetworkInterfaceId
+	AddressId          NetworkInterfaceAddressId
 }
 
 func unpackDeleteNetworkInterfaceAddressParams(packed middleware.Parameters) (params DeleteNetworkInterfaceAddressParams) {
@@ -1376,14 +1616,14 @@ func unpackDeleteNetworkInterfaceAddressParams(packed middleware.Parameters) (pa
 			Name: "networkInterfaceId",
 			In:   "path",
 		}
-		params.NetworkInterfaceId = packed[key].(NetworkInterfaceID)
+		params.NetworkInterfaceId = packed[key].(NetworkInterfaceId)
 	}
 	{
 		key := middleware.ParameterKey{
 			Name: "addressId",
 			In:   "path",
 		}
-		params.AddressId = packed[key].(NetworkInterfaceAddressID)
+		params.AddressId = packed[key].(NetworkInterfaceAddressId)
 	}
 	return params
 }
@@ -1425,7 +1665,7 @@ func decodeDeleteNetworkInterfaceAddressParams(args [2]string, argsEscaped bool,
 				}(); err != nil {
 					return err
 				}
-				params.NetworkInterfaceId = NetworkInterfaceID(paramsDotNetworkInterfaceIdVal)
+				params.NetworkInterfaceId = NetworkInterfaceId(paramsDotNetworkInterfaceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -1485,7 +1725,7 @@ func decodeDeleteNetworkInterfaceAddressParams(args [2]string, argsEscaped bool,
 				}(); err != nil {
 					return err
 				}
-				params.AddressId = NetworkInterfaceAddressID(paramsDotAddressIdVal)
+				params.AddressId = NetworkInterfaceAddressId(paramsDotAddressIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -1514,16 +1754,16 @@ func decodeDeleteNetworkInterfaceAddressParams(args [2]string, argsEscaped bool,
 
 // DeletePrivateImageParams is parameters of delete-private-image operation.
 type DeletePrivateImageParams struct {
-	PrivateImageId ImageID
-	// When the subscriptions that pay for what is deleted end. `immediate` cancels them now and refunds a
-	// licensed one under its terms; `period_end` cancels them at the end of their paid period and keeps
-	// what is deleted working until then. Omitted, they are canceled now where the terms of every one of
-	// them allow it, and otherwise all at the end of the paid period, since one cancellation releases the
-	// whole set at one instant.
+	PrivateImageId ImageId
+	// When the subscription items that pay for what is deleted end. `immediate` cancels them now and
+	// refunds a licensed one under its terms; `period_end` cancels them at the end of their subscription's
+	// paid period and keeps what is deleted working until then. Omitted, they are canceled now where the
+	// terms of every one of them allow it, and otherwise all at the end of the paid period, since one
+	// cancellation releases the whole set at one instant.
 	//
-	// Billing alone judges the mode against the terms each subscription was bought with. It refuses with
-	// 422 `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go subscription
-	// ends only now, and a prepaid one whose terms allow only the end of its period only then. It refuses
+	// Billing alone judges the mode against the terms each item was bought with. It refuses with 422
+	// `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go item ends only
+	// now, and a prepaid one whose terms allow only the end of its period only then. It refuses
 	// `period_end` with 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when the paid periods end at different
 	// times. Ignored when nothing is subscribed, and when a cancellation is already open: deleting again
 	// answers with that one as it is.
@@ -1536,7 +1776,7 @@ func unpackDeletePrivateImageParams(packed middleware.Parameters) (params Delete
 			Name: "privateImageId",
 			In:   "path",
 		}
-		params.PrivateImageId = packed[key].(ImageID)
+		params.PrivateImageId = packed[key].(ImageId)
 	}
 	{
 		key := middleware.ParameterKey{
@@ -1588,7 +1828,7 @@ func decodeDeletePrivateImageParams(args [1]string, argsEscaped bool, r *http.Re
 				}(); err != nil {
 					return err
 				}
-				params.PrivateImageId = ImageID(paramsDotPrivateImageIdVal)
+				params.PrivateImageId = ImageId(paramsDotPrivateImageIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -1673,7 +1913,7 @@ func decodeDeletePrivateImageParams(args [1]string, argsEscaped bool, r *http.Re
 
 // DeleteSecurityGroupParams is parameters of delete-security-group operation.
 type DeleteSecurityGroupParams struct {
-	SecurityGroupId SecurityGroupID
+	SecurityGroupId SecurityGroupId
 }
 
 func unpackDeleteSecurityGroupParams(packed middleware.Parameters) (params DeleteSecurityGroupParams) {
@@ -1682,7 +1922,7 @@ func unpackDeleteSecurityGroupParams(packed middleware.Parameters) (params Delet
 			Name: "securityGroupId",
 			In:   "path",
 		}
-		params.SecurityGroupId = packed[key].(SecurityGroupID)
+		params.SecurityGroupId = packed[key].(SecurityGroupId)
 	}
 	return params
 }
@@ -1724,7 +1964,7 @@ func decodeDeleteSecurityGroupParams(args [1]string, argsEscaped bool, r *http.R
 				}(); err != nil {
 					return err
 				}
-				params.SecurityGroupId = SecurityGroupID(paramsDotSecurityGroupIdVal)
+				params.SecurityGroupId = SecurityGroupId(paramsDotSecurityGroupIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -1753,8 +1993,8 @@ func decodeDeleteSecurityGroupParams(args [1]string, argsEscaped bool, r *http.R
 
 // DeleteSecurityGroupRuleParams is parameters of delete-security-group-rule operation.
 type DeleteSecurityGroupRuleParams struct {
-	SecurityGroupId     SecurityGroupID
-	SecurityGroupRuleId SecurityGroupRuleID
+	SecurityGroupId     SecurityGroupId
+	SecurityGroupRuleId SecurityGroupRuleId
 }
 
 func unpackDeleteSecurityGroupRuleParams(packed middleware.Parameters) (params DeleteSecurityGroupRuleParams) {
@@ -1763,14 +2003,14 @@ func unpackDeleteSecurityGroupRuleParams(packed middleware.Parameters) (params D
 			Name: "securityGroupId",
 			In:   "path",
 		}
-		params.SecurityGroupId = packed[key].(SecurityGroupID)
+		params.SecurityGroupId = packed[key].(SecurityGroupId)
 	}
 	{
 		key := middleware.ParameterKey{
 			Name: "securityGroupRuleId",
 			In:   "path",
 		}
-		params.SecurityGroupRuleId = packed[key].(SecurityGroupRuleID)
+		params.SecurityGroupRuleId = packed[key].(SecurityGroupRuleId)
 	}
 	return params
 }
@@ -1812,7 +2052,7 @@ func decodeDeleteSecurityGroupRuleParams(args [2]string, argsEscaped bool, r *ht
 				}(); err != nil {
 					return err
 				}
-				params.SecurityGroupId = SecurityGroupID(paramsDotSecurityGroupIdVal)
+				params.SecurityGroupId = SecurityGroupId(paramsDotSecurityGroupIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -1872,7 +2112,7 @@ func decodeDeleteSecurityGroupRuleParams(args [2]string, argsEscaped bool, r *ht
 				}(); err != nil {
 					return err
 				}
-				params.SecurityGroupRuleId = SecurityGroupRuleID(paramsDotSecurityGroupRuleIdVal)
+				params.SecurityGroupRuleId = SecurityGroupRuleId(paramsDotSecurityGroupRuleIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -1901,7 +2141,7 @@ func decodeDeleteSecurityGroupRuleParams(args [2]string, argsEscaped bool, r *ht
 
 // DeleteVirtualPrivateCloudParams is parameters of delete-virtual-private-cloud operation.
 type DeleteVirtualPrivateCloudParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
+	VirtualPrivateCloudId VirtualPrivateCloudId
 }
 
 func unpackDeleteVirtualPrivateCloudParams(packed middleware.Parameters) (params DeleteVirtualPrivateCloudParams) {
@@ -1910,7 +2150,7 @@ func unpackDeleteVirtualPrivateCloudParams(packed middleware.Parameters) (params
 			Name: "virtualPrivateCloudId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudId)
 	}
 	return params
 }
@@ -1952,7 +2192,7 @@ func decodeDeleteVirtualPrivateCloudParams(args [1]string, argsEscaped bool, r *
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				params.VirtualPrivateCloudId = VirtualPrivateCloudId(paramsDotVirtualPrivateCloudIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -1981,7 +2221,7 @@ func decodeDeleteVirtualPrivateCloudParams(args [1]string, argsEscaped bool, r *
 
 // DeleteVirtualPrivateCloudPeeringParams is parameters of delete-virtual-private-cloud-peering operation.
 type DeleteVirtualPrivateCloudPeeringParams struct {
-	VirtualPrivateCloudPeeringId VirtualPrivateCloudPeeringID
+	VirtualPrivateCloudPeeringId VirtualPrivateCloudPeeringId
 }
 
 func unpackDeleteVirtualPrivateCloudPeeringParams(packed middleware.Parameters) (params DeleteVirtualPrivateCloudPeeringParams) {
@@ -1990,7 +2230,7 @@ func unpackDeleteVirtualPrivateCloudPeeringParams(packed middleware.Parameters) 
 			Name: "virtualPrivateCloudPeeringId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudPeeringId = packed[key].(VirtualPrivateCloudPeeringID)
+		params.VirtualPrivateCloudPeeringId = packed[key].(VirtualPrivateCloudPeeringId)
 	}
 	return params
 }
@@ -2032,7 +2272,7 @@ func decodeDeleteVirtualPrivateCloudPeeringParams(args [1]string, argsEscaped bo
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudPeeringId = VirtualPrivateCloudPeeringID(paramsDotVirtualPrivateCloudPeeringIdVal)
+				params.VirtualPrivateCloudPeeringId = VirtualPrivateCloudPeeringId(paramsDotVirtualPrivateCloudPeeringIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -2061,8 +2301,8 @@ func decodeDeleteVirtualPrivateCloudPeeringParams(args [1]string, argsEscaped bo
 
 // DeleteVirtualPrivateCloudRouteParams is parameters of delete-virtual-private-cloud-route operation.
 type DeleteVirtualPrivateCloudRouteParams struct {
-	VirtualPrivateCloudId      VirtualPrivateCloudID
-	VirtualPrivateCloudRouteId VirtualPrivateCloudRouteID
+	VirtualPrivateCloudId      VirtualPrivateCloudId
+	VirtualPrivateCloudRouteId VirtualPrivateCloudRouteId
 }
 
 func unpackDeleteVirtualPrivateCloudRouteParams(packed middleware.Parameters) (params DeleteVirtualPrivateCloudRouteParams) {
@@ -2071,14 +2311,14 @@ func unpackDeleteVirtualPrivateCloudRouteParams(packed middleware.Parameters) (p
 			Name: "virtualPrivateCloudId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudId)
 	}
 	{
 		key := middleware.ParameterKey{
 			Name: "virtualPrivateCloudRouteId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudRouteId = packed[key].(VirtualPrivateCloudRouteID)
+		params.VirtualPrivateCloudRouteId = packed[key].(VirtualPrivateCloudRouteId)
 	}
 	return params
 }
@@ -2120,7 +2360,7 @@ func decodeDeleteVirtualPrivateCloudRouteParams(args [2]string, argsEscaped bool
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				params.VirtualPrivateCloudId = VirtualPrivateCloudId(paramsDotVirtualPrivateCloudIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -2180,7 +2420,7 @@ func decodeDeleteVirtualPrivateCloudRouteParams(args [2]string, argsEscaped bool
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudRouteId = VirtualPrivateCloudRouteID(paramsDotVirtualPrivateCloudRouteIdVal)
+				params.VirtualPrivateCloudRouteId = VirtualPrivateCloudRouteId(paramsDotVirtualPrivateCloudRouteIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -2209,8 +2449,8 @@ func decodeDeleteVirtualPrivateCloudRouteParams(args [2]string, argsEscaped bool
 
 // DeleteVirtualPrivateCloudSubnetParams is parameters of delete-virtual-private-cloud-subnet operation.
 type DeleteVirtualPrivateCloudSubnetParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
-	SubnetId              SubnetID
+	VirtualPrivateCloudId VirtualPrivateCloudId
+	SubnetId              SubnetId
 }
 
 func unpackDeleteVirtualPrivateCloudSubnetParams(packed middleware.Parameters) (params DeleteVirtualPrivateCloudSubnetParams) {
@@ -2219,14 +2459,14 @@ func unpackDeleteVirtualPrivateCloudSubnetParams(packed middleware.Parameters) (
 			Name: "virtualPrivateCloudId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudId)
 	}
 	{
 		key := middleware.ParameterKey{
 			Name: "subnetId",
 			In:   "path",
 		}
-		params.SubnetId = packed[key].(SubnetID)
+		params.SubnetId = packed[key].(SubnetId)
 	}
 	return params
 }
@@ -2268,7 +2508,7 @@ func decodeDeleteVirtualPrivateCloudSubnetParams(args [2]string, argsEscaped boo
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				params.VirtualPrivateCloudId = VirtualPrivateCloudId(paramsDotVirtualPrivateCloudIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -2328,7 +2568,7 @@ func decodeDeleteVirtualPrivateCloudSubnetParams(args [2]string, argsEscaped boo
 				}(); err != nil {
 					return err
 				}
-				params.SubnetId = SubnetID(paramsDotSubnetIdVal)
+				params.SubnetId = SubnetId(paramsDotSubnetIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -2357,16 +2597,16 @@ func decodeDeleteVirtualPrivateCloudSubnetParams(args [2]string, argsEscaped boo
 
 // DeleteVolumeParams is parameters of delete-volume operation.
 type DeleteVolumeParams struct {
-	VolumeId VolumeID
-	// When the subscriptions that pay for what is deleted end. `immediate` cancels them now and refunds a
-	// licensed one under its terms; `period_end` cancels them at the end of their paid period and keeps
-	// what is deleted working until then. Omitted, they are canceled now where the terms of every one of
-	// them allow it, and otherwise all at the end of the paid period, since one cancellation releases the
-	// whole set at one instant.
+	VolumeId VolumeId
+	// When the subscription items that pay for what is deleted end. `immediate` cancels them now and
+	// refunds a licensed one under its terms; `period_end` cancels them at the end of their subscription's
+	// paid period and keeps what is deleted working until then. Omitted, they are canceled now where the
+	// terms of every one of them allow it, and otherwise all at the end of the paid period, since one
+	// cancellation releases the whole set at one instant.
 	//
-	// Billing alone judges the mode against the terms each subscription was bought with. It refuses with
-	// 422 `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go subscription
-	// ends only now, and a prepaid one whose terms allow only the end of its period only then. It refuses
+	// Billing alone judges the mode against the terms each item was bought with. It refuses with 422
+	// `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go item ends only
+	// now, and a prepaid one whose terms allow only the end of its period only then. It refuses
 	// `period_end` with 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when the paid periods end at different
 	// times. Ignored when nothing is subscribed, and when a cancellation is already open: deleting again
 	// answers with that one as it is.
@@ -2379,7 +2619,7 @@ func unpackDeleteVolumeParams(packed middleware.Parameters) (params DeleteVolume
 			Name: "volumeId",
 			In:   "path",
 		}
-		params.VolumeId = packed[key].(VolumeID)
+		params.VolumeId = packed[key].(VolumeId)
 	}
 	{
 		key := middleware.ParameterKey{
@@ -2431,7 +2671,7 @@ func decodeDeleteVolumeParams(args [1]string, argsEscaped bool, r *http.Request)
 				}(); err != nil {
 					return err
 				}
-				params.VolumeId = VolumeID(paramsDotVolumeIdVal)
+				params.VolumeId = VolumeId(paramsDotVolumeIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -2516,16 +2756,16 @@ func decodeDeleteVolumeParams(args [1]string, argsEscaped bool, r *http.Request)
 
 // DeleteVolumeBackupParams is parameters of delete-volume-backup operation.
 type DeleteVolumeBackupParams struct {
-	VolumeBackupId VolumeBackupID
-	// When the subscriptions that pay for what is deleted end. `immediate` cancels them now and refunds a
-	// licensed one under its terms; `period_end` cancels them at the end of their paid period and keeps
-	// what is deleted working until then. Omitted, they are canceled now where the terms of every one of
-	// them allow it, and otherwise all at the end of the paid period, since one cancellation releases the
-	// whole set at one instant.
+	VolumeBackupId VolumeBackupId
+	// When the subscription items that pay for what is deleted end. `immediate` cancels them now and
+	// refunds a licensed one under its terms; `period_end` cancels them at the end of their subscription's
+	// paid period and keeps what is deleted working until then. Omitted, they are canceled now where the
+	// terms of every one of them allow it, and otherwise all at the end of the paid period, since one
+	// cancellation releases the whole set at one instant.
 	//
-	// Billing alone judges the mode against the terms each subscription was bought with. It refuses with
-	// 422 `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go subscription
-	// ends only now, and a prepaid one whose terms allow only the end of its period only then. It refuses
+	// Billing alone judges the mode against the terms each item was bought with. It refuses with 422
+	// `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go item ends only
+	// now, and a prepaid one whose terms allow only the end of its period only then. It refuses
 	// `period_end` with 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when the paid periods end at different
 	// times. Ignored when nothing is subscribed, and when a cancellation is already open: deleting again
 	// answers with that one as it is.
@@ -2538,7 +2778,7 @@ func unpackDeleteVolumeBackupParams(packed middleware.Parameters) (params Delete
 			Name: "volumeBackupId",
 			In:   "path",
 		}
-		params.VolumeBackupId = packed[key].(VolumeBackupID)
+		params.VolumeBackupId = packed[key].(VolumeBackupId)
 	}
 	{
 		key := middleware.ParameterKey{
@@ -2590,7 +2830,7 @@ func decodeDeleteVolumeBackupParams(args [1]string, argsEscaped bool, r *http.Re
 				}(); err != nil {
 					return err
 				}
-				params.VolumeBackupId = VolumeBackupID(paramsDotVolumeBackupIdVal)
+				params.VolumeBackupId = VolumeBackupId(paramsDotVolumeBackupIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -2675,16 +2915,16 @@ func decodeDeleteVolumeBackupParams(args [1]string, argsEscaped bool, r *http.Re
 
 // DeleteVolumeSnapshotParams is parameters of delete-volume-snapshot operation.
 type DeleteVolumeSnapshotParams struct {
-	VolumeSnapshotId VolumeSnapshotID
-	// When the subscriptions that pay for what is deleted end. `immediate` cancels them now and refunds a
-	// licensed one under its terms; `period_end` cancels them at the end of their paid period and keeps
-	// what is deleted working until then. Omitted, they are canceled now where the terms of every one of
-	// them allow it, and otherwise all at the end of the paid period, since one cancellation releases the
-	// whole set at one instant.
+	VolumeSnapshotId VolumeSnapshotId
+	// When the subscription items that pay for what is deleted end. `immediate` cancels them now and
+	// refunds a licensed one under its terms; `period_end` cancels them at the end of their subscription's
+	// paid period and keeps what is deleted working until then. Omitted, they are canceled now where the
+	// terms of every one of them allow it, and otherwise all at the end of the paid period, since one
+	// cancellation releases the whole set at one instant.
 	//
-	// Billing alone judges the mode against the terms each subscription was bought with. It refuses with
-	// 422 `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go subscription
-	// ends only now, and a prepaid one whose terms allow only the end of its period only then. It refuses
+	// Billing alone judges the mode against the terms each item was bought with. It refuses with 422
+	// `BILLING_CANCELLATION_MODE_FIXED` a mode those terms do not allow: a pay-as-you-go item ends only
+	// now, and a prepaid one whose terms allow only the end of its period only then. It refuses
 	// `period_end` with 409 `BILLING_CANCELLATION_SCHEDULES_DIFFER` when the paid periods end at different
 	// times. Ignored when nothing is subscribed, and when a cancellation is already open: deleting again
 	// answers with that one as it is.
@@ -2697,7 +2937,7 @@ func unpackDeleteVolumeSnapshotParams(packed middleware.Parameters) (params Dele
 			Name: "volumeSnapshotId",
 			In:   "path",
 		}
-		params.VolumeSnapshotId = packed[key].(VolumeSnapshotID)
+		params.VolumeSnapshotId = packed[key].(VolumeSnapshotId)
 	}
 	{
 		key := middleware.ParameterKey{
@@ -2749,7 +2989,7 @@ func decodeDeleteVolumeSnapshotParams(args [1]string, argsEscaped bool, r *http.
 				}(); err != nil {
 					return err
 				}
-				params.VolumeSnapshotId = VolumeSnapshotID(paramsDotVolumeSnapshotIdVal)
+				params.VolumeSnapshotId = VolumeSnapshotId(paramsDotVolumeSnapshotIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -2834,8 +3074,8 @@ func decodeDeleteVolumeSnapshotParams(args [1]string, argsEscaped bool, r *http.
 
 // DetachInstanceNetworkInterfaceParams is parameters of detach-instance-network-interface operation.
 type DetachInstanceNetworkInterfaceParams struct {
-	InstanceId         InstanceID
-	NetworkInterfaceId NetworkInterfaceID
+	InstanceId         InstanceId
+	NetworkInterfaceId NetworkInterfaceId
 }
 
 func unpackDetachInstanceNetworkInterfaceParams(packed middleware.Parameters) (params DetachInstanceNetworkInterfaceParams) {
@@ -2844,14 +3084,14 @@ func unpackDetachInstanceNetworkInterfaceParams(packed middleware.Parameters) (p
 			Name: "instanceId",
 			In:   "path",
 		}
-		params.InstanceId = packed[key].(InstanceID)
+		params.InstanceId = packed[key].(InstanceId)
 	}
 	{
 		key := middleware.ParameterKey{
 			Name: "networkInterfaceId",
 			In:   "path",
 		}
-		params.NetworkInterfaceId = packed[key].(NetworkInterfaceID)
+		params.NetworkInterfaceId = packed[key].(NetworkInterfaceId)
 	}
 	return params
 }
@@ -2893,7 +3133,7 @@ func decodeDetachInstanceNetworkInterfaceParams(args [2]string, argsEscaped bool
 				}(); err != nil {
 					return err
 				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -2953,7 +3193,7 @@ func decodeDetachInstanceNetworkInterfaceParams(args [2]string, argsEscaped bool
 				}(); err != nil {
 					return err
 				}
-				params.NetworkInterfaceId = NetworkInterfaceID(paramsDotNetworkInterfaceIdVal)
+				params.NetworkInterfaceId = NetworkInterfaceId(paramsDotNetworkInterfaceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -2982,8 +3222,8 @@ func decodeDetachInstanceNetworkInterfaceParams(args [2]string, argsEscaped bool
 
 // DetachInstanceVolumeParams is parameters of detach-instance-volume operation.
 type DetachInstanceVolumeParams struct {
-	InstanceId InstanceID
-	VolumeId   VolumeID
+	InstanceId InstanceId
+	VolumeId   VolumeId
 }
 
 func unpackDetachInstanceVolumeParams(packed middleware.Parameters) (params DetachInstanceVolumeParams) {
@@ -2992,14 +3232,14 @@ func unpackDetachInstanceVolumeParams(packed middleware.Parameters) (params Deta
 			Name: "instanceId",
 			In:   "path",
 		}
-		params.InstanceId = packed[key].(InstanceID)
+		params.InstanceId = packed[key].(InstanceId)
 	}
 	{
 		key := middleware.ParameterKey{
 			Name: "volumeId",
 			In:   "path",
 		}
-		params.VolumeId = packed[key].(VolumeID)
+		params.VolumeId = packed[key].(VolumeId)
 	}
 	return params
 }
@@ -3041,7 +3281,7 @@ func decodeDetachInstanceVolumeParams(args [2]string, argsEscaped bool, r *http.
 				}(); err != nil {
 					return err
 				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -3101,7 +3341,7 @@ func decodeDetachInstanceVolumeParams(args [2]string, argsEscaped bool, r *http.
 				}(); err != nil {
 					return err
 				}
-				params.VolumeId = VolumeID(paramsDotVolumeIdVal)
+				params.VolumeId = VolumeId(paramsDotVolumeIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -3130,7 +3370,7 @@ func decodeDetachInstanceVolumeParams(args [2]string, argsEscaped bool, r *http.
 
 // DisableVirtualPrivateCloudIpv6Params is parameters of disable-virtual-private-cloud-ipv6 operation.
 type DisableVirtualPrivateCloudIpv6Params struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
+	VirtualPrivateCloudId VirtualPrivateCloudId
 }
 
 func unpackDisableVirtualPrivateCloudIpv6Params(packed middleware.Parameters) (params DisableVirtualPrivateCloudIpv6Params) {
@@ -3139,7 +3379,7 @@ func unpackDisableVirtualPrivateCloudIpv6Params(packed middleware.Parameters) (p
 			Name: "virtualPrivateCloudId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudId)
 	}
 	return params
 }
@@ -3181,7 +3421,7 @@ func decodeDisableVirtualPrivateCloudIpv6Params(args [1]string, argsEscaped bool
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				params.VirtualPrivateCloudId = VirtualPrivateCloudId(paramsDotVirtualPrivateCloudIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -3210,7 +3450,7 @@ func decodeDisableVirtualPrivateCloudIpv6Params(args [1]string, argsEscaped bool
 
 // DisassociateElasticIPParams is parameters of disassociate-elastic-ip operation.
 type DisassociateElasticIPParams struct {
-	ElasticIpId ElasticIPID
+	ElasticIpId ElasticIpId
 }
 
 func unpackDisassociateElasticIPParams(packed middleware.Parameters) (params DisassociateElasticIPParams) {
@@ -3219,7 +3459,7 @@ func unpackDisassociateElasticIPParams(packed middleware.Parameters) (params Dis
 			Name: "elasticIpId",
 			In:   "path",
 		}
-		params.ElasticIpId = packed[key].(ElasticIPID)
+		params.ElasticIpId = packed[key].(ElasticIpId)
 	}
 	return params
 }
@@ -3261,7 +3501,7 @@ func decodeDisassociateElasticIPParams(args [1]string, argsEscaped bool, r *http
 				}(); err != nil {
 					return err
 				}
-				params.ElasticIpId = ElasticIPID(paramsDotElasticIpIdVal)
+				params.ElasticIpId = ElasticIpId(paramsDotElasticIpIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -3290,7 +3530,7 @@ func decodeDisassociateElasticIPParams(args [1]string, argsEscaped bool, r *http
 
 // EnableVirtualPrivateCloudIpv6Params is parameters of enable-virtual-private-cloud-ipv6 operation.
 type EnableVirtualPrivateCloudIpv6Params struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
+	VirtualPrivateCloudId VirtualPrivateCloudId
 }
 
 func unpackEnableVirtualPrivateCloudIpv6Params(packed middleware.Parameters) (params EnableVirtualPrivateCloudIpv6Params) {
@@ -3299,7 +3539,7 @@ func unpackEnableVirtualPrivateCloudIpv6Params(packed middleware.Parameters) (pa
 			Name: "virtualPrivateCloudId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudId)
 	}
 	return params
 }
@@ -3341,7 +3581,7 @@ func decodeEnableVirtualPrivateCloudIpv6Params(args [1]string, argsEscaped bool,
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				params.VirtualPrivateCloudId = VirtualPrivateCloudId(paramsDotVirtualPrivateCloudIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -3370,7 +3610,7 @@ func decodeEnableVirtualPrivateCloudIpv6Params(args [1]string, argsEscaped bool,
 
 // GetAvailabilityZoneParams is parameters of get-availability-zone operation.
 type GetAvailabilityZoneParams struct {
-	AvailabilityZoneId AvailabilityZoneID
+	AvailabilityZoneId AvailabilityZoneId
 }
 
 func unpackGetAvailabilityZoneParams(packed middleware.Parameters) (params GetAvailabilityZoneParams) {
@@ -3379,7 +3619,7 @@ func unpackGetAvailabilityZoneParams(packed middleware.Parameters) (params GetAv
 			Name: "availabilityZoneId",
 			In:   "path",
 		}
-		params.AvailabilityZoneId = packed[key].(AvailabilityZoneID)
+		params.AvailabilityZoneId = packed[key].(AvailabilityZoneId)
 	}
 	return params
 }
@@ -3421,7 +3661,7 @@ func decodeGetAvailabilityZoneParams(args [1]string, argsEscaped bool, r *http.R
 				}(); err != nil {
 					return err
 				}
-				params.AvailabilityZoneId = AvailabilityZoneID(paramsDotAvailabilityZoneIdVal)
+				params.AvailabilityZoneId = AvailabilityZoneId(paramsDotAvailabilityZoneIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -3450,7 +3690,7 @@ func decodeGetAvailabilityZoneParams(args [1]string, argsEscaped bool, r *http.R
 
 // GetElasticIPParams is parameters of get-elastic-ip operation.
 type GetElasticIPParams struct {
-	ElasticIpId ElasticIPID
+	ElasticIpId ElasticIpId
 }
 
 func unpackGetElasticIPParams(packed middleware.Parameters) (params GetElasticIPParams) {
@@ -3459,7 +3699,7 @@ func unpackGetElasticIPParams(packed middleware.Parameters) (params GetElasticIP
 			Name: "elasticIpId",
 			In:   "path",
 		}
-		params.ElasticIpId = packed[key].(ElasticIPID)
+		params.ElasticIpId = packed[key].(ElasticIpId)
 	}
 	return params
 }
@@ -3501,7 +3741,7 @@ func decodeGetElasticIPParams(args [1]string, argsEscaped bool, r *http.Request)
 				}(); err != nil {
 					return err
 				}
-				params.ElasticIpId = ElasticIPID(paramsDotElasticIpIdVal)
+				params.ElasticIpId = ElasticIpId(paramsDotElasticIpIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -3530,7 +3770,7 @@ func decodeGetElasticIPParams(args [1]string, argsEscaped bool, r *http.Request)
 
 // GetElasticIPAssociationParams is parameters of get-elastic-ip-association operation.
 type GetElasticIPAssociationParams struct {
-	ElasticIpId ElasticIPID
+	ElasticIpId ElasticIpId
 }
 
 func unpackGetElasticIPAssociationParams(packed middleware.Parameters) (params GetElasticIPAssociationParams) {
@@ -3539,7 +3779,7 @@ func unpackGetElasticIPAssociationParams(packed middleware.Parameters) (params G
 			Name: "elasticIpId",
 			In:   "path",
 		}
-		params.ElasticIpId = packed[key].(ElasticIPID)
+		params.ElasticIpId = packed[key].(ElasticIpId)
 	}
 	return params
 }
@@ -3581,7 +3821,7 @@ func decodeGetElasticIPAssociationParams(args [1]string, argsEscaped bool, r *ht
 				}(); err != nil {
 					return err
 				}
-				params.ElasticIpId = ElasticIPID(paramsDotElasticIpIdVal)
+				params.ElasticIpId = ElasticIpId(paramsDotElasticIpIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -3610,7 +3850,7 @@ func decodeGetElasticIPAssociationParams(args [1]string, argsEscaped bool, r *ht
 
 // GetElasticIPLineParams is parameters of get-elastic-ip-line operation.
 type GetElasticIPLineParams struct {
-	ElasticIpLineId ElasticIPLineID
+	ElasticIpLineId ElasticIpLineId
 }
 
 func unpackGetElasticIPLineParams(packed middleware.Parameters) (params GetElasticIPLineParams) {
@@ -3619,7 +3859,7 @@ func unpackGetElasticIPLineParams(packed middleware.Parameters) (params GetElast
 			Name: "elasticIpLineId",
 			In:   "path",
 		}
-		params.ElasticIpLineId = packed[key].(ElasticIPLineID)
+		params.ElasticIpLineId = packed[key].(ElasticIpLineId)
 	}
 	return params
 }
@@ -3661,7 +3901,7 @@ func decodeGetElasticIPLineParams(args [1]string, argsEscaped bool, r *http.Requ
 				}(); err != nil {
 					return err
 				}
-				params.ElasticIpLineId = ElasticIPLineID(paramsDotElasticIpLineIdVal)
+				params.ElasticIpLineId = ElasticIpLineId(paramsDotElasticIpLineIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -3690,7 +3930,7 @@ func decodeGetElasticIPLineParams(args [1]string, argsEscaped bool, r *http.Requ
 
 // GetInstanceParams is parameters of get-instance operation.
 type GetInstanceParams struct {
-	InstanceId InstanceID
+	InstanceId InstanceId
 }
 
 func unpackGetInstanceParams(packed middleware.Parameters) (params GetInstanceParams) {
@@ -3699,7 +3939,7 @@ func unpackGetInstanceParams(packed middleware.Parameters) (params GetInstancePa
 			Name: "instanceId",
 			In:   "path",
 		}
-		params.InstanceId = packed[key].(InstanceID)
+		params.InstanceId = packed[key].(InstanceId)
 	}
 	return params
 }
@@ -3741,87 +3981,7 @@ func decodeGetInstanceParams(args [1]string, argsEscaped bool, r *http.Request) 
 				}(); err != nil {
 					return err
 				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.InstanceId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "instanceId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// GetInstanceConsoleParams is parameters of get-instance-console operation.
-type GetInstanceConsoleParams struct {
-	InstanceId InstanceID
-}
-
-func unpackGetInstanceConsoleParams(packed middleware.Parameters) (params GetInstanceConsoleParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "instanceId",
-			In:   "path",
-		}
-		params.InstanceId = packed[key].(InstanceID)
-	}
-	return params
-}
-
-func decodeGetInstanceConsoleParams(args [1]string, argsEscaped bool, r *http.Request) (params GetInstanceConsoleParams, _ error) {
-	// Decode path: instanceId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "instanceId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotInstanceIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotInstanceIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -3850,7 +4010,7 @@ func decodeGetInstanceConsoleParams(args [1]string, argsEscaped bool, r *http.Re
 
 // GetInstanceFamilyParams is parameters of get-instance-family operation.
 type GetInstanceFamilyParams struct {
-	InstanceFamilyId InstanceFamilyID
+	InstanceFamilyId InstanceFamilyId
 }
 
 func unpackGetInstanceFamilyParams(packed middleware.Parameters) (params GetInstanceFamilyParams) {
@@ -3859,7 +4019,7 @@ func unpackGetInstanceFamilyParams(packed middleware.Parameters) (params GetInst
 			Name: "instanceFamilyId",
 			In:   "path",
 		}
-		params.InstanceFamilyId = packed[key].(InstanceFamilyID)
+		params.InstanceFamilyId = packed[key].(InstanceFamilyId)
 	}
 	return params
 }
@@ -3901,7 +4061,7 @@ func decodeGetInstanceFamilyParams(args [1]string, argsEscaped bool, r *http.Req
 				}(); err != nil {
 					return err
 				}
-				params.InstanceFamilyId = InstanceFamilyID(paramsDotInstanceFamilyIdVal)
+				params.InstanceFamilyId = InstanceFamilyId(paramsDotInstanceFamilyIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -3930,7 +4090,7 @@ func decodeGetInstanceFamilyParams(args [1]string, argsEscaped bool, r *http.Req
 
 // GetInstanceTypeParams is parameters of get-instance-type operation.
 type GetInstanceTypeParams struct {
-	InstanceTypeId InstanceTypeID
+	InstanceTypeId InstanceTypeId
 }
 
 func unpackGetInstanceTypeParams(packed middleware.Parameters) (params GetInstanceTypeParams) {
@@ -3939,7 +4099,7 @@ func unpackGetInstanceTypeParams(packed middleware.Parameters) (params GetInstan
 			Name: "instanceTypeId",
 			In:   "path",
 		}
-		params.InstanceTypeId = packed[key].(InstanceTypeID)
+		params.InstanceTypeId = packed[key].(InstanceTypeId)
 	}
 	return params
 }
@@ -3981,7 +4141,7 @@ func decodeGetInstanceTypeParams(args [1]string, argsEscaped bool, r *http.Reque
 				}(); err != nil {
 					return err
 				}
-				params.InstanceTypeId = InstanceTypeID(paramsDotInstanceTypeIdVal)
+				params.InstanceTypeId = InstanceTypeId(paramsDotInstanceTypeIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -4010,7 +4170,7 @@ func decodeGetInstanceTypeParams(args [1]string, argsEscaped bool, r *http.Reque
 
 // GetLaunchTemplateParams is parameters of get-launch-template operation.
 type GetLaunchTemplateParams struct {
-	LaunchTemplateId LaunchTemplateID
+	LaunchTemplateId LaunchTemplateId
 }
 
 func unpackGetLaunchTemplateParams(packed middleware.Parameters) (params GetLaunchTemplateParams) {
@@ -4019,7 +4179,7 @@ func unpackGetLaunchTemplateParams(packed middleware.Parameters) (params GetLaun
 			Name: "launchTemplateId",
 			In:   "path",
 		}
-		params.LaunchTemplateId = packed[key].(LaunchTemplateID)
+		params.LaunchTemplateId = packed[key].(LaunchTemplateId)
 	}
 	return params
 }
@@ -4061,7 +4221,7 @@ func decodeGetLaunchTemplateParams(args [1]string, argsEscaped bool, r *http.Req
 				}(); err != nil {
 					return err
 				}
-				params.LaunchTemplateId = LaunchTemplateID(paramsDotLaunchTemplateIdVal)
+				params.LaunchTemplateId = LaunchTemplateId(paramsDotLaunchTemplateIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -4090,7 +4250,7 @@ func decodeGetLaunchTemplateParams(args [1]string, argsEscaped bool, r *http.Req
 
 // GetLaunchTemplateVersionParams is parameters of get-launch-template-version operation.
 type GetLaunchTemplateVersionParams struct {
-	LaunchTemplateId LaunchTemplateID
+	LaunchTemplateId LaunchTemplateId
 	VersionNumber    int64
 }
 
@@ -4100,7 +4260,7 @@ func unpackGetLaunchTemplateVersionParams(packed middleware.Parameters) (params 
 			Name: "launchTemplateId",
 			In:   "path",
 		}
-		params.LaunchTemplateId = packed[key].(LaunchTemplateID)
+		params.LaunchTemplateId = packed[key].(LaunchTemplateId)
 	}
 	{
 		key := middleware.ParameterKey{
@@ -4149,7 +4309,7 @@ func decodeGetLaunchTemplateVersionParams(args [2]string, argsEscaped bool, r *h
 				}(); err != nil {
 					return err
 				}
-				params.LaunchTemplateId = LaunchTemplateID(paramsDotLaunchTemplateIdVal)
+				params.LaunchTemplateId = LaunchTemplateId(paramsDotLaunchTemplateIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -4241,7 +4401,7 @@ func decodeGetLaunchTemplateVersionParams(args [2]string, argsEscaped bool, r *h
 
 // GetNetworkInterfaceParams is parameters of get-network-interface operation.
 type GetNetworkInterfaceParams struct {
-	NetworkInterfaceId NetworkInterfaceID
+	NetworkInterfaceId NetworkInterfaceId
 }
 
 func unpackGetNetworkInterfaceParams(packed middleware.Parameters) (params GetNetworkInterfaceParams) {
@@ -4250,7 +4410,7 @@ func unpackGetNetworkInterfaceParams(packed middleware.Parameters) (params GetNe
 			Name: "networkInterfaceId",
 			In:   "path",
 		}
-		params.NetworkInterfaceId = packed[key].(NetworkInterfaceID)
+		params.NetworkInterfaceId = packed[key].(NetworkInterfaceId)
 	}
 	return params
 }
@@ -4292,7 +4452,7 @@ func decodeGetNetworkInterfaceParams(args [1]string, argsEscaped bool, r *http.R
 				}(); err != nil {
 					return err
 				}
-				params.NetworkInterfaceId = NetworkInterfaceID(paramsDotNetworkInterfaceIdVal)
+				params.NetworkInterfaceId = NetworkInterfaceId(paramsDotNetworkInterfaceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -4321,7 +4481,7 @@ func decodeGetNetworkInterfaceParams(args [1]string, argsEscaped bool, r *http.R
 
 // GetOperationLogParams is parameters of get-operation-log operation.
 type GetOperationLogParams struct {
-	OperationLogId OperationLogID
+	OperationLogId OperationLogId
 }
 
 func unpackGetOperationLogParams(packed middleware.Parameters) (params GetOperationLogParams) {
@@ -4330,7 +4490,7 @@ func unpackGetOperationLogParams(packed middleware.Parameters) (params GetOperat
 			Name: "operationLogId",
 			In:   "path",
 		}
-		params.OperationLogId = packed[key].(OperationLogID)
+		params.OperationLogId = packed[key].(OperationLogId)
 	}
 	return params
 }
@@ -4372,7 +4532,7 @@ func decodeGetOperationLogParams(args [1]string, argsEscaped bool, r *http.Reque
 				}(); err != nil {
 					return err
 				}
-				params.OperationLogId = OperationLogID(paramsDotOperationLogIdVal)
+				params.OperationLogId = OperationLogId(paramsDotOperationLogIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -4401,7 +4561,7 @@ func decodeGetOperationLogParams(args [1]string, argsEscaped bool, r *http.Reque
 
 // GetPrivateImageParams is parameters of get-private-image operation.
 type GetPrivateImageParams struct {
-	PrivateImageId ImageID
+	PrivateImageId ImageId
 }
 
 func unpackGetPrivateImageParams(packed middleware.Parameters) (params GetPrivateImageParams) {
@@ -4410,7 +4570,7 @@ func unpackGetPrivateImageParams(packed middleware.Parameters) (params GetPrivat
 			Name: "privateImageId",
 			In:   "path",
 		}
-		params.PrivateImageId = packed[key].(ImageID)
+		params.PrivateImageId = packed[key].(ImageId)
 	}
 	return params
 }
@@ -4452,7 +4612,7 @@ func decodeGetPrivateImageParams(args [1]string, argsEscaped bool, r *http.Reque
 				}(); err != nil {
 					return err
 				}
-				params.PrivateImageId = ImageID(paramsDotPrivateImageIdVal)
+				params.PrivateImageId = ImageId(paramsDotPrivateImageIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -4481,7 +4641,7 @@ func decodeGetPrivateImageParams(args [1]string, argsEscaped bool, r *http.Reque
 
 // GetPublicImageParams is parameters of get-public-image operation.
 type GetPublicImageParams struct {
-	PublicImageId ImageID
+	PublicImageId ImageId
 }
 
 func unpackGetPublicImageParams(packed middleware.Parameters) (params GetPublicImageParams) {
@@ -4490,7 +4650,7 @@ func unpackGetPublicImageParams(packed middleware.Parameters) (params GetPublicI
 			Name: "publicImageId",
 			In:   "path",
 		}
-		params.PublicImageId = packed[key].(ImageID)
+		params.PublicImageId = packed[key].(ImageId)
 	}
 	return params
 }
@@ -4532,7 +4692,7 @@ func decodeGetPublicImageParams(args [1]string, argsEscaped bool, r *http.Reques
 				}(); err != nil {
 					return err
 				}
-				params.PublicImageId = ImageID(paramsDotPublicImageIdVal)
+				params.PublicImageId = ImageId(paramsDotPublicImageIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -4561,7 +4721,7 @@ func decodeGetPublicImageParams(args [1]string, argsEscaped bool, r *http.Reques
 
 // GetQuotaParams is parameters of get-quota operation.
 type GetQuotaParams struct {
-	RegionId RegionID
+	RegionId RegionId
 	Resource QuotaResourceType
 }
 
@@ -4571,7 +4731,7 @@ func unpackGetQuotaParams(packed middleware.Parameters) (params GetQuotaParams) 
 			Name: "regionId",
 			In:   "path",
 		}
-		params.RegionId = packed[key].(RegionID)
+		params.RegionId = packed[key].(RegionId)
 	}
 	{
 		key := middleware.ParameterKey{
@@ -4620,7 +4780,7 @@ func decodeGetQuotaParams(args [2]string, argsEscaped bool, r *http.Request) (pa
 				}(); err != nil {
 					return err
 				}
-				params.RegionId = RegionID(paramsDotRegionIdVal)
+				params.RegionId = RegionId(paramsDotRegionIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -4702,7 +4862,7 @@ func decodeGetQuotaParams(args [2]string, argsEscaped bool, r *http.Request) (pa
 
 // GetRegionParams is parameters of get-region operation.
 type GetRegionParams struct {
-	RegionId RegionID
+	RegionId RegionId
 }
 
 func unpackGetRegionParams(packed middleware.Parameters) (params GetRegionParams) {
@@ -4711,7 +4871,7 @@ func unpackGetRegionParams(packed middleware.Parameters) (params GetRegionParams
 			Name: "regionId",
 			In:   "path",
 		}
-		params.RegionId = packed[key].(RegionID)
+		params.RegionId = packed[key].(RegionId)
 	}
 	return params
 }
@@ -4753,7 +4913,7 @@ func decodeGetRegionParams(args [1]string, argsEscaped bool, r *http.Request) (p
 				}(); err != nil {
 					return err
 				}
-				params.RegionId = RegionID(paramsDotRegionIdVal)
+				params.RegionId = RegionId(paramsDotRegionIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -4782,7 +4942,7 @@ func decodeGetRegionParams(args [1]string, argsEscaped bool, r *http.Request) (p
 
 // GetSecurityGroupParams is parameters of get-security-group operation.
 type GetSecurityGroupParams struct {
-	SecurityGroupId SecurityGroupID
+	SecurityGroupId SecurityGroupId
 }
 
 func unpackGetSecurityGroupParams(packed middleware.Parameters) (params GetSecurityGroupParams) {
@@ -4791,7 +4951,7 @@ func unpackGetSecurityGroupParams(packed middleware.Parameters) (params GetSecur
 			Name: "securityGroupId",
 			In:   "path",
 		}
-		params.SecurityGroupId = packed[key].(SecurityGroupID)
+		params.SecurityGroupId = packed[key].(SecurityGroupId)
 	}
 	return params
 }
@@ -4833,7 +4993,7 @@ func decodeGetSecurityGroupParams(args [1]string, argsEscaped bool, r *http.Requ
 				}(); err != nil {
 					return err
 				}
-				params.SecurityGroupId = SecurityGroupID(paramsDotSecurityGroupIdVal)
+				params.SecurityGroupId = SecurityGroupId(paramsDotSecurityGroupIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -4862,8 +5022,8 @@ func decodeGetSecurityGroupParams(args [1]string, argsEscaped bool, r *http.Requ
 
 // GetSecurityGroupRuleParams is parameters of get-security-group-rule operation.
 type GetSecurityGroupRuleParams struct {
-	SecurityGroupId     SecurityGroupID
-	SecurityGroupRuleId SecurityGroupRuleID
+	SecurityGroupId     SecurityGroupId
+	SecurityGroupRuleId SecurityGroupRuleId
 }
 
 func unpackGetSecurityGroupRuleParams(packed middleware.Parameters) (params GetSecurityGroupRuleParams) {
@@ -4872,14 +5032,14 @@ func unpackGetSecurityGroupRuleParams(packed middleware.Parameters) (params GetS
 			Name: "securityGroupId",
 			In:   "path",
 		}
-		params.SecurityGroupId = packed[key].(SecurityGroupID)
+		params.SecurityGroupId = packed[key].(SecurityGroupId)
 	}
 	{
 		key := middleware.ParameterKey{
 			Name: "securityGroupRuleId",
 			In:   "path",
 		}
-		params.SecurityGroupRuleId = packed[key].(SecurityGroupRuleID)
+		params.SecurityGroupRuleId = packed[key].(SecurityGroupRuleId)
 	}
 	return params
 }
@@ -4921,7 +5081,7 @@ func decodeGetSecurityGroupRuleParams(args [2]string, argsEscaped bool, r *http.
 				}(); err != nil {
 					return err
 				}
-				params.SecurityGroupId = SecurityGroupID(paramsDotSecurityGroupIdVal)
+				params.SecurityGroupId = SecurityGroupId(paramsDotSecurityGroupIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -4981,7 +5141,7 @@ func decodeGetSecurityGroupRuleParams(args [2]string, argsEscaped bool, r *http.
 				}(); err != nil {
 					return err
 				}
-				params.SecurityGroupRuleId = SecurityGroupRuleID(paramsDotSecurityGroupRuleIdVal)
+				params.SecurityGroupRuleId = SecurityGroupRuleId(paramsDotSecurityGroupRuleIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -5010,7 +5170,7 @@ func decodeGetSecurityGroupRuleParams(args [2]string, argsEscaped bool, r *http.
 
 // GetVirtualPrivateCloudParams is parameters of get-virtual-private-cloud operation.
 type GetVirtualPrivateCloudParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
+	VirtualPrivateCloudId VirtualPrivateCloudId
 }
 
 func unpackGetVirtualPrivateCloudParams(packed middleware.Parameters) (params GetVirtualPrivateCloudParams) {
@@ -5019,7 +5179,7 @@ func unpackGetVirtualPrivateCloudParams(packed middleware.Parameters) (params Ge
 			Name: "virtualPrivateCloudId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudId)
 	}
 	return params
 }
@@ -5061,7 +5221,7 @@ func decodeGetVirtualPrivateCloudParams(args [1]string, argsEscaped bool, r *htt
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				params.VirtualPrivateCloudId = VirtualPrivateCloudId(paramsDotVirtualPrivateCloudIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -5090,7 +5250,7 @@ func decodeGetVirtualPrivateCloudParams(args [1]string, argsEscaped bool, r *htt
 
 // GetVirtualPrivateCloudFreeSubnetCidrParams is parameters of get-virtual-private-cloud-free-subnet-cidr operation.
 type GetVirtualPrivateCloudFreeSubnetCidrParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
+	VirtualPrivateCloudId VirtualPrivateCloudId
 	PrefixLength          OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -5100,7 +5260,7 @@ func unpackGetVirtualPrivateCloudFreeSubnetCidrParams(packed middleware.Paramete
 			Name: "virtualPrivateCloudId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudId)
 	}
 	{
 		key := middleware.ParameterKey{
@@ -5152,7 +5312,7 @@ func decodeGetVirtualPrivateCloudFreeSubnetCidrParams(args [1]string, argsEscape
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				params.VirtualPrivateCloudId = VirtualPrivateCloudId(paramsDotVirtualPrivateCloudIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -5252,7 +5412,7 @@ func decodeGetVirtualPrivateCloudFreeSubnetCidrParams(args [1]string, argsEscape
 
 // GetVirtualPrivateCloudPeeringParams is parameters of get-virtual-private-cloud-peering operation.
 type GetVirtualPrivateCloudPeeringParams struct {
-	VirtualPrivateCloudPeeringId VirtualPrivateCloudPeeringID
+	VirtualPrivateCloudPeeringId VirtualPrivateCloudPeeringId
 }
 
 func unpackGetVirtualPrivateCloudPeeringParams(packed middleware.Parameters) (params GetVirtualPrivateCloudPeeringParams) {
@@ -5261,7 +5421,7 @@ func unpackGetVirtualPrivateCloudPeeringParams(packed middleware.Parameters) (pa
 			Name: "virtualPrivateCloudPeeringId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudPeeringId = packed[key].(VirtualPrivateCloudPeeringID)
+		params.VirtualPrivateCloudPeeringId = packed[key].(VirtualPrivateCloudPeeringId)
 	}
 	return params
 }
@@ -5303,7 +5463,7 @@ func decodeGetVirtualPrivateCloudPeeringParams(args [1]string, argsEscaped bool,
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudPeeringId = VirtualPrivateCloudPeeringID(paramsDotVirtualPrivateCloudPeeringIdVal)
+				params.VirtualPrivateCloudPeeringId = VirtualPrivateCloudPeeringId(paramsDotVirtualPrivateCloudPeeringIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -5332,8 +5492,8 @@ func decodeGetVirtualPrivateCloudPeeringParams(args [1]string, argsEscaped bool,
 
 // GetVirtualPrivateCloudRouteParams is parameters of get-virtual-private-cloud-route operation.
 type GetVirtualPrivateCloudRouteParams struct {
-	VirtualPrivateCloudId      VirtualPrivateCloudID
-	VirtualPrivateCloudRouteId VirtualPrivateCloudRouteID
+	VirtualPrivateCloudId      VirtualPrivateCloudId
+	VirtualPrivateCloudRouteId VirtualPrivateCloudRouteId
 }
 
 func unpackGetVirtualPrivateCloudRouteParams(packed middleware.Parameters) (params GetVirtualPrivateCloudRouteParams) {
@@ -5342,14 +5502,14 @@ func unpackGetVirtualPrivateCloudRouteParams(packed middleware.Parameters) (para
 			Name: "virtualPrivateCloudId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudId)
 	}
 	{
 		key := middleware.ParameterKey{
 			Name: "virtualPrivateCloudRouteId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudRouteId = packed[key].(VirtualPrivateCloudRouteID)
+		params.VirtualPrivateCloudRouteId = packed[key].(VirtualPrivateCloudRouteId)
 	}
 	return params
 }
@@ -5391,7 +5551,7 @@ func decodeGetVirtualPrivateCloudRouteParams(args [2]string, argsEscaped bool, r
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				params.VirtualPrivateCloudId = VirtualPrivateCloudId(paramsDotVirtualPrivateCloudIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -5451,7 +5611,7 @@ func decodeGetVirtualPrivateCloudRouteParams(args [2]string, argsEscaped bool, r
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudRouteId = VirtualPrivateCloudRouteID(paramsDotVirtualPrivateCloudRouteIdVal)
+				params.VirtualPrivateCloudRouteId = VirtualPrivateCloudRouteId(paramsDotVirtualPrivateCloudRouteIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -5480,8 +5640,8 @@ func decodeGetVirtualPrivateCloudRouteParams(args [2]string, argsEscaped bool, r
 
 // GetVirtualPrivateCloudSubnetParams is parameters of get-virtual-private-cloud-subnet operation.
 type GetVirtualPrivateCloudSubnetParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
-	SubnetId              SubnetID
+	VirtualPrivateCloudId VirtualPrivateCloudId
+	SubnetId              SubnetId
 }
 
 func unpackGetVirtualPrivateCloudSubnetParams(packed middleware.Parameters) (params GetVirtualPrivateCloudSubnetParams) {
@@ -5490,14 +5650,14 @@ func unpackGetVirtualPrivateCloudSubnetParams(packed middleware.Parameters) (par
 			Name: "virtualPrivateCloudId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudId)
 	}
 	{
 		key := middleware.ParameterKey{
 			Name: "subnetId",
 			In:   "path",
 		}
-		params.SubnetId = packed[key].(SubnetID)
+		params.SubnetId = packed[key].(SubnetId)
 	}
 	return params
 }
@@ -5539,7 +5699,7 @@ func decodeGetVirtualPrivateCloudSubnetParams(args [2]string, argsEscaped bool, 
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				params.VirtualPrivateCloudId = VirtualPrivateCloudId(paramsDotVirtualPrivateCloudIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -5599,7 +5759,7 @@ func decodeGetVirtualPrivateCloudSubnetParams(args [2]string, argsEscaped bool, 
 				}(); err != nil {
 					return err
 				}
-				params.SubnetId = SubnetID(paramsDotSubnetIdVal)
+				params.SubnetId = SubnetId(paramsDotSubnetIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -5628,7 +5788,7 @@ func decodeGetVirtualPrivateCloudSubnetParams(args [2]string, argsEscaped bool, 
 
 // GetVolumeParams is parameters of get-volume operation.
 type GetVolumeParams struct {
-	VolumeId VolumeID
+	VolumeId VolumeId
 }
 
 func unpackGetVolumeParams(packed middleware.Parameters) (params GetVolumeParams) {
@@ -5637,7 +5797,7 @@ func unpackGetVolumeParams(packed middleware.Parameters) (params GetVolumeParams
 			Name: "volumeId",
 			In:   "path",
 		}
-		params.VolumeId = packed[key].(VolumeID)
+		params.VolumeId = packed[key].(VolumeId)
 	}
 	return params
 }
@@ -5679,7 +5839,7 @@ func decodeGetVolumeParams(args [1]string, argsEscaped bool, r *http.Request) (p
 				}(); err != nil {
 					return err
 				}
-				params.VolumeId = VolumeID(paramsDotVolumeIdVal)
+				params.VolumeId = VolumeId(paramsDotVolumeIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -5708,7 +5868,7 @@ func decodeGetVolumeParams(args [1]string, argsEscaped bool, r *http.Request) (p
 
 // GetVolumeBackupParams is parameters of get-volume-backup operation.
 type GetVolumeBackupParams struct {
-	VolumeBackupId VolumeBackupID
+	VolumeBackupId VolumeBackupId
 }
 
 func unpackGetVolumeBackupParams(packed middleware.Parameters) (params GetVolumeBackupParams) {
@@ -5717,7 +5877,7 @@ func unpackGetVolumeBackupParams(packed middleware.Parameters) (params GetVolume
 			Name: "volumeBackupId",
 			In:   "path",
 		}
-		params.VolumeBackupId = packed[key].(VolumeBackupID)
+		params.VolumeBackupId = packed[key].(VolumeBackupId)
 	}
 	return params
 }
@@ -5759,7 +5919,7 @@ func decodeGetVolumeBackupParams(args [1]string, argsEscaped bool, r *http.Reque
 				}(); err != nil {
 					return err
 				}
-				params.VolumeBackupId = VolumeBackupID(paramsDotVolumeBackupIdVal)
+				params.VolumeBackupId = VolumeBackupId(paramsDotVolumeBackupIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -5788,7 +5948,7 @@ func decodeGetVolumeBackupParams(args [1]string, argsEscaped bool, r *http.Reque
 
 // GetVolumeSnapshotParams is parameters of get-volume-snapshot operation.
 type GetVolumeSnapshotParams struct {
-	VolumeSnapshotId VolumeSnapshotID
+	VolumeSnapshotId VolumeSnapshotId
 }
 
 func unpackGetVolumeSnapshotParams(packed middleware.Parameters) (params GetVolumeSnapshotParams) {
@@ -5797,7 +5957,7 @@ func unpackGetVolumeSnapshotParams(packed middleware.Parameters) (params GetVolu
 			Name: "volumeSnapshotId",
 			In:   "path",
 		}
-		params.VolumeSnapshotId = packed[key].(VolumeSnapshotID)
+		params.VolumeSnapshotId = packed[key].(VolumeSnapshotId)
 	}
 	return params
 }
@@ -5839,7 +5999,7 @@ func decodeGetVolumeSnapshotParams(args [1]string, argsEscaped bool, r *http.Req
 				}(); err != nil {
 					return err
 				}
-				params.VolumeSnapshotId = VolumeSnapshotID(paramsDotVolumeSnapshotIdVal)
+				params.VolumeSnapshotId = VolumeSnapshotId(paramsDotVolumeSnapshotIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -5868,7 +6028,7 @@ func decodeGetVolumeSnapshotParams(args [1]string, argsEscaped bool, r *http.Req
 
 // GetVolumeTypeParams is parameters of get-volume-type operation.
 type GetVolumeTypeParams struct {
-	VolumeTypeId VolumeTypeID
+	VolumeTypeId VolumeTypeId
 }
 
 func unpackGetVolumeTypeParams(packed middleware.Parameters) (params GetVolumeTypeParams) {
@@ -5877,7 +6037,7 @@ func unpackGetVolumeTypeParams(packed middleware.Parameters) (params GetVolumeTy
 			Name: "volumeTypeId",
 			In:   "path",
 		}
-		params.VolumeTypeId = packed[key].(VolumeTypeID)
+		params.VolumeTypeId = packed[key].(VolumeTypeId)
 	}
 	return params
 }
@@ -5919,7 +6079,7 @@ func decodeGetVolumeTypeParams(args [1]string, argsEscaped bool, r *http.Request
 				}(); err != nil {
 					return err
 				}
-				params.VolumeTypeId = VolumeTypeID(paramsDotVolumeTypeIdVal)
+				params.VolumeTypeId = VolumeTypeId(paramsDotVolumeTypeIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -5949,7 +6109,7 @@ func decodeGetVolumeTypeParams(args [1]string, argsEscaped bool, r *http.Request
 // ListAvailabilityZonesParams is parameters of list-availability-zones operation.
 type ListAvailabilityZonesParams struct {
 	// Return only the zones of this region.
-	RegionID OptRegionID `json:",omitempty,omitzero"`
+	RegionID OptRegionId `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -5963,7 +6123,7 @@ func unpackListAvailabilityZonesParams(packed middleware.Parameters) (params Lis
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.RegionID = v.(OptRegionID)
+			params.RegionID = v.(OptRegionId)
 		}
 	}
 	{
@@ -5999,7 +6159,7 @@ func decodeListAvailabilityZonesParams(args [0]string, argsEscaped bool, r *http
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotRegionIDVal RegionID
+				var paramsDotRegionIDVal RegionId
 				if err := func() error {
 					var paramsDotRegionIDValVal string
 					if err := func() error {
@@ -6018,7 +6178,7 @@ func decodeListAvailabilityZonesParams(args [0]string, argsEscaped bool, r *http
 					}(); err != nil {
 						return err
 					}
-					paramsDotRegionIDVal = RegionID(paramsDotRegionIDValVal)
+					paramsDotRegionIDVal = RegionId(paramsDotRegionIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -6199,7 +6359,7 @@ func decodeListAvailabilityZonesParams(args [0]string, argsEscaped bool, r *http
 
 // ListElasticIPLinesParams is parameters of list-elastic-ip-lines operation.
 type ListElasticIPLinesParams struct {
-	RegionID OptRegionID `json:",omitempty,omitzero"`
+	RegionID OptRegionId `json:",omitempty,omitzero"`
 	// Search text matched against line names and descriptions; combined with the other filters using AND.
 	Q OptString `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
@@ -6215,7 +6375,7 @@ func unpackListElasticIPLinesParams(packed middleware.Parameters) (params ListEl
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.RegionID = v.(OptRegionID)
+			params.RegionID = v.(OptRegionId)
 		}
 	}
 	{
@@ -6260,7 +6420,7 @@ func decodeListElasticIPLinesParams(args [0]string, argsEscaped bool, r *http.Re
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotRegionIDVal RegionID
+				var paramsDotRegionIDVal RegionId
 				if err := func() error {
 					var paramsDotRegionIDValVal string
 					if err := func() error {
@@ -6279,7 +6439,7 @@ func decodeListElasticIPLinesParams(args [0]string, argsEscaped bool, r *http.Re
 					}(); err != nil {
 						return err
 					}
-					paramsDotRegionIDVal = RegionID(paramsDotRegionIDValVal)
+					paramsDotRegionIDVal = RegionId(paramsDotRegionIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -6528,7 +6688,7 @@ func decodeListElasticIPLinesParams(args [0]string, argsEscaped bool, r *http.Re
 
 // ListElasticIPTrafficUsageParams is parameters of list-elastic-ip-traffic-usage operation.
 type ListElasticIPTrafficUsageParams struct {
-	ElasticIpId ElasticIPID
+	ElasticIpId ElasticIpId
 	Interval    OptListElasticIPTrafficUsageInterval `json:",omitempty,omitzero"`
 	StartTime   time.Time
 	EndTime     time.Time
@@ -6544,7 +6704,7 @@ func unpackListElasticIPTrafficUsageParams(packed middleware.Parameters) (params
 			Name: "elasticIpId",
 			In:   "path",
 		}
-		params.ElasticIpId = packed[key].(ElasticIPID)
+		params.ElasticIpId = packed[key].(ElasticIpId)
 	}
 	{
 		key := middleware.ParameterKey{
@@ -6628,7 +6788,7 @@ func decodeListElasticIPTrafficUsageParams(args [1]string, argsEscaped bool, r *
 				}(); err != nil {
 					return err
 				}
-				params.ElasticIpId = ElasticIPID(paramsDotElasticIpIdVal)
+				params.ElasticIpId = ElasticIpId(paramsDotElasticIpIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -7109,7 +7269,7 @@ func decodeListElasticIpsParams(args [0]string, argsEscaped bool, r *http.Reques
 
 // ListInstanceFamiliesParams is parameters of list-instance-families operation.
 type ListInstanceFamiliesParams struct {
-	RegionID OptRegionID `json:",omitempty,omitzero"`
+	RegionID OptRegionId `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -7123,7 +7283,7 @@ func unpackListInstanceFamiliesParams(packed middleware.Parameters) (params List
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.RegionID = v.(OptRegionID)
+			params.RegionID = v.(OptRegionId)
 		}
 	}
 	{
@@ -7159,7 +7319,7 @@ func decodeListInstanceFamiliesParams(args [0]string, argsEscaped bool, r *http.
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotRegionIDVal RegionID
+				var paramsDotRegionIDVal RegionId
 				if err := func() error {
 					var paramsDotRegionIDValVal string
 					if err := func() error {
@@ -7178,7 +7338,7 @@ func decodeListInstanceFamiliesParams(args [0]string, argsEscaped bool, r *http.
 					}(); err != nil {
 						return err
 					}
-					paramsDotRegionIDVal = RegionID(paramsDotRegionIDValVal)
+					paramsDotRegionIDVal = RegionId(paramsDotRegionIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -7359,7 +7519,7 @@ func decodeListInstanceFamiliesParams(args [0]string, argsEscaped bool, r *http.
 
 // ListInstanceNetworkInterfacesParams is parameters of list-instance-network-interfaces operation.
 type ListInstanceNetworkInterfacesParams struct {
-	InstanceId InstanceID
+	InstanceId InstanceId
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -7372,7 +7532,7 @@ func unpackListInstanceNetworkInterfacesParams(packed middleware.Parameters) (pa
 			Name: "instanceId",
 			In:   "path",
 		}
-		params.InstanceId = packed[key].(InstanceID)
+		params.InstanceId = packed[key].(InstanceId)
 	}
 	{
 		key := middleware.ParameterKey{
@@ -7433,7 +7593,7 @@ func decodeListInstanceNetworkInterfacesParams(args [1]string, argsEscaped bool,
 				}(); err != nil {
 					return err
 				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -7604,11 +7764,11 @@ func decodeListInstanceNetworkInterfacesParams(args [1]string, argsEscaped bool,
 
 // ListInstanceTypesParams is parameters of list-instance-types operation.
 type ListInstanceTypesParams struct {
-	RegionID OptRegionID `json:",omitempty,omitzero"`
+	RegionID OptRegionId `json:",omitempty,omitzero"`
 	// Return only the types of this instance family.
-	InstanceFamilyID OptInstanceFamilyID `json:",omitempty,omitzero"`
+	InstanceFamilyID OptInstanceFamilyId `json:",omitempty,omitzero"`
 	// Return only the types of this availability zone, sold out or not.
-	AvailabilityZoneID OptAvailabilityZoneID `json:",omitempty,omitzero"`
+	AvailabilityZoneID OptAvailabilityZoneId `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -7622,7 +7782,7 @@ func unpackListInstanceTypesParams(packed middleware.Parameters) (params ListIns
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.RegionID = v.(OptRegionID)
+			params.RegionID = v.(OptRegionId)
 		}
 	}
 	{
@@ -7631,7 +7791,7 @@ func unpackListInstanceTypesParams(packed middleware.Parameters) (params ListIns
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.InstanceFamilyID = v.(OptInstanceFamilyID)
+			params.InstanceFamilyID = v.(OptInstanceFamilyId)
 		}
 	}
 	{
@@ -7640,7 +7800,7 @@ func unpackListInstanceTypesParams(packed middleware.Parameters) (params ListIns
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.AvailabilityZoneID = v.(OptAvailabilityZoneID)
+			params.AvailabilityZoneID = v.(OptAvailabilityZoneId)
 		}
 	}
 	{
@@ -7676,7 +7836,7 @@ func decodeListInstanceTypesParams(args [0]string, argsEscaped bool, r *http.Req
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotRegionIDVal RegionID
+				var paramsDotRegionIDVal RegionId
 				if err := func() error {
 					var paramsDotRegionIDValVal string
 					if err := func() error {
@@ -7695,7 +7855,7 @@ func decodeListInstanceTypesParams(args [0]string, argsEscaped bool, r *http.Req
 					}(); err != nil {
 						return err
 					}
-					paramsDotRegionIDVal = RegionID(paramsDotRegionIDValVal)
+					paramsDotRegionIDVal = RegionId(paramsDotRegionIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -7739,7 +7899,7 @@ func decodeListInstanceTypesParams(args [0]string, argsEscaped bool, r *http.Req
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotInstanceFamilyIDVal InstanceFamilyID
+				var paramsDotInstanceFamilyIDVal InstanceFamilyId
 				if err := func() error {
 					var paramsDotInstanceFamilyIDValVal string
 					if err := func() error {
@@ -7758,7 +7918,7 @@ func decodeListInstanceTypesParams(args [0]string, argsEscaped bool, r *http.Req
 					}(); err != nil {
 						return err
 					}
-					paramsDotInstanceFamilyIDVal = InstanceFamilyID(paramsDotInstanceFamilyIDValVal)
+					paramsDotInstanceFamilyIDVal = InstanceFamilyId(paramsDotInstanceFamilyIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -7802,7 +7962,7 @@ func decodeListInstanceTypesParams(args [0]string, argsEscaped bool, r *http.Req
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotAvailabilityZoneIDVal AvailabilityZoneID
+				var paramsDotAvailabilityZoneIDVal AvailabilityZoneId
 				if err := func() error {
 					var paramsDotAvailabilityZoneIDValVal string
 					if err := func() error {
@@ -7821,7 +7981,7 @@ func decodeListInstanceTypesParams(args [0]string, argsEscaped bool, r *http.Req
 					}(); err != nil {
 						return err
 					}
-					paramsDotAvailabilityZoneIDVal = AvailabilityZoneID(paramsDotAvailabilityZoneIDValVal)
+					paramsDotAvailabilityZoneIDVal = AvailabilityZoneId(paramsDotAvailabilityZoneIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -8002,7 +8162,7 @@ func decodeListInstanceTypesParams(args [0]string, argsEscaped bool, r *http.Req
 
 // ListInstanceVolumesParams is parameters of list-instance-volumes operation.
 type ListInstanceVolumesParams struct {
-	InstanceId InstanceID
+	InstanceId InstanceId
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -8015,7 +8175,7 @@ func unpackListInstanceVolumesParams(packed middleware.Parameters) (params ListI
 			Name: "instanceId",
 			In:   "path",
 		}
-		params.InstanceId = packed[key].(InstanceID)
+		params.InstanceId = packed[key].(InstanceId)
 	}
 	{
 		key := middleware.ParameterKey{
@@ -8076,7 +8236,7 @@ func decodeListInstanceVolumesParams(args [1]string, argsEscaped bool, r *http.R
 				}(); err != nil {
 					return err
 				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -8508,7 +8668,7 @@ type ListLaunchTemplateVersionsParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize         OptInt64 `json:",omitempty,omitzero"`
-	LaunchTemplateId LaunchTemplateID
+	LaunchTemplateId LaunchTemplateId
 }
 
 func unpackListLaunchTemplateVersionsParams(packed middleware.Parameters) (params ListLaunchTemplateVersionsParams) {
@@ -8535,7 +8695,7 @@ func unpackListLaunchTemplateVersionsParams(packed middleware.Parameters) (param
 			Name: "launchTemplateId",
 			In:   "path",
 		}
-		params.LaunchTemplateId = packed[key].(LaunchTemplateID)
+		params.LaunchTemplateId = packed[key].(LaunchTemplateId)
 	}
 	return params
 }
@@ -8720,7 +8880,7 @@ func decodeListLaunchTemplateVersionsParams(args [1]string, argsEscaped bool, r 
 				}(); err != nil {
 					return err
 				}
-				params.LaunchTemplateId = LaunchTemplateID(paramsDotLaunchTemplateIdVal)
+				params.LaunchTemplateId = LaunchTemplateId(paramsDotLaunchTemplateIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -8750,7 +8910,7 @@ func decodeListLaunchTemplateVersionsParams(args [1]string, argsEscaped bool, r 
 // ListLaunchTemplatesParams is parameters of list-launch-templates operation.
 type ListLaunchTemplatesParams struct {
 	// Only launch templates of this region.
-	RegionID OptRegionID `json:",omitempty,omitzero"`
+	RegionID OptRegionId `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -8764,7 +8924,7 @@ func unpackListLaunchTemplatesParams(packed middleware.Parameters) (params ListL
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.RegionID = v.(OptRegionID)
+			params.RegionID = v.(OptRegionId)
 		}
 	}
 	{
@@ -8800,7 +8960,7 @@ func decodeListLaunchTemplatesParams(args [0]string, argsEscaped bool, r *http.R
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotRegionIDVal RegionID
+				var paramsDotRegionIDVal RegionId
 				if err := func() error {
 					var paramsDotRegionIDValVal string
 					if err := func() error {
@@ -8819,7 +8979,7 @@ func decodeListLaunchTemplatesParams(args [0]string, argsEscaped bool, r *http.R
 					}(); err != nil {
 						return err
 					}
-					paramsDotRegionIDVal = RegionID(paramsDotRegionIDValVal)
+					paramsDotRegionIDVal = RegionId(paramsDotRegionIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -9434,7 +9594,7 @@ func decodeListOperationLogsParams(args [0]string, argsEscaped bool, r *http.Req
 // ListPrivateImagesParams is parameters of list-private-images operation.
 type ListPrivateImagesParams struct {
 	// Return only the images of this region.
-	RegionID OptRegionID `json:",omitempty,omitzero"`
+	RegionID OptRegionId `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -9448,7 +9608,7 @@ func unpackListPrivateImagesParams(packed middleware.Parameters) (params ListPri
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.RegionID = v.(OptRegionID)
+			params.RegionID = v.(OptRegionId)
 		}
 	}
 	{
@@ -9484,7 +9644,7 @@ func decodeListPrivateImagesParams(args [0]string, argsEscaped bool, r *http.Req
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotRegionIDVal RegionID
+				var paramsDotRegionIDVal RegionId
 				if err := func() error {
 					var paramsDotRegionIDValVal string
 					if err := func() error {
@@ -9503,7 +9663,7 @@ func decodeListPrivateImagesParams(args [0]string, argsEscaped bool, r *http.Req
 					}(); err != nil {
 						return err
 					}
-					paramsDotRegionIDVal = RegionID(paramsDotRegionIDValVal)
+					paramsDotRegionIDVal = RegionId(paramsDotRegionIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -9685,7 +9845,7 @@ func decodeListPrivateImagesParams(args [0]string, argsEscaped bool, r *http.Req
 // ListPublicImagesParams is parameters of list-public-images operation.
 type ListPublicImagesParams struct {
 	// Return only the images of this region.
-	RegionID OptRegionID `json:",omitempty,omitzero"`
+	RegionID OptRegionId `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -9699,7 +9859,7 @@ func unpackListPublicImagesParams(packed middleware.Parameters) (params ListPubl
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.RegionID = v.(OptRegionID)
+			params.RegionID = v.(OptRegionId)
 		}
 	}
 	{
@@ -9735,7 +9895,7 @@ func decodeListPublicImagesParams(args [0]string, argsEscaped bool, r *http.Requ
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotRegionIDVal RegionID
+				var paramsDotRegionIDVal RegionId
 				if err := func() error {
 					var paramsDotRegionIDValVal string
 					if err := func() error {
@@ -9754,7 +9914,7 @@ func decodeListPublicImagesParams(args [0]string, argsEscaped bool, r *http.Requ
 					}(); err != nil {
 						return err
 					}
-					paramsDotRegionIDVal = RegionID(paramsDotRegionIDValVal)
+					paramsDotRegionIDVal = RegionId(paramsDotRegionIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -9939,7 +10099,7 @@ type ListQuotasParams struct {
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
 	PageSize OptInt64 `json:",omitempty,omitzero"`
-	RegionId RegionID
+	RegionId RegionId
 }
 
 func unpackListQuotasParams(packed middleware.Parameters) (params ListQuotasParams) {
@@ -9966,7 +10126,7 @@ func unpackListQuotasParams(packed middleware.Parameters) (params ListQuotasPara
 			Name: "regionId",
 			In:   "path",
 		}
-		params.RegionId = packed[key].(RegionID)
+		params.RegionId = packed[key].(RegionId)
 	}
 	return params
 }
@@ -10151,7 +10311,7 @@ func decodeListQuotasParams(args [1]string, argsEscaped bool, r *http.Request) (
 				}(); err != nil {
 					return err
 				}
-				params.RegionId = RegionID(paramsDotRegionIdVal)
+				params.RegionId = RegionId(paramsDotRegionIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -10357,7 +10517,7 @@ func decodeListRegionsParams(args [0]string, argsEscaped bool, r *http.Request) 
 
 // ListSecurityGroupRulesParams is parameters of list-security-group-rules operation.
 type ListSecurityGroupRulesParams struct {
-	SecurityGroupId SecurityGroupIDOrWildcard
+	SecurityGroupId SecurityGroupIdOrWildcard
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -10370,7 +10530,7 @@ func unpackListSecurityGroupRulesParams(packed middleware.Parameters) (params Li
 			Name: "securityGroupId",
 			In:   "path",
 		}
-		params.SecurityGroupId = packed[key].(SecurityGroupIDOrWildcard)
+		params.SecurityGroupId = packed[key].(SecurityGroupIdOrWildcard)
 	}
 	{
 		key := middleware.ParameterKey{
@@ -10431,7 +10591,7 @@ func decodeListSecurityGroupRulesParams(args [1]string, argsEscaped bool, r *htt
 				}(); err != nil {
 					return err
 				}
-				params.SecurityGroupId = SecurityGroupIDOrWildcard(paramsDotSecurityGroupIdVal)
+				params.SecurityGroupId = SecurityGroupIdOrWildcard(paramsDotSecurityGroupIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -10603,9 +10763,9 @@ func decodeListSecurityGroupRulesParams(args [1]string, argsEscaped bool, r *htt
 // ListSecurityGroupsParams is parameters of list-security-groups operation.
 type ListSecurityGroupsParams struct {
 	// Only security groups in this region.
-	RegionID OptRegionID `json:",omitempty,omitzero"`
+	RegionID OptRegionId `json:",omitempty,omitzero"`
 	// Only security groups of this virtual private cloud.
-	VirtualPrivateCloudID OptVirtualPrivateCloudID `json:",omitempty,omitzero"`
+	VirtualPrivateCloudID OptVirtualPrivateCloudId `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -10619,7 +10779,7 @@ func unpackListSecurityGroupsParams(packed middleware.Parameters) (params ListSe
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.RegionID = v.(OptRegionID)
+			params.RegionID = v.(OptRegionId)
 		}
 	}
 	{
@@ -10628,7 +10788,7 @@ func unpackListSecurityGroupsParams(packed middleware.Parameters) (params ListSe
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.VirtualPrivateCloudID = v.(OptVirtualPrivateCloudID)
+			params.VirtualPrivateCloudID = v.(OptVirtualPrivateCloudId)
 		}
 	}
 	{
@@ -10664,7 +10824,7 @@ func decodeListSecurityGroupsParams(args [0]string, argsEscaped bool, r *http.Re
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotRegionIDVal RegionID
+				var paramsDotRegionIDVal RegionId
 				if err := func() error {
 					var paramsDotRegionIDValVal string
 					if err := func() error {
@@ -10683,7 +10843,7 @@ func decodeListSecurityGroupsParams(args [0]string, argsEscaped bool, r *http.Re
 					}(); err != nil {
 						return err
 					}
-					paramsDotRegionIDVal = RegionID(paramsDotRegionIDValVal)
+					paramsDotRegionIDVal = RegionId(paramsDotRegionIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -10727,7 +10887,7 @@ func decodeListSecurityGroupsParams(args [0]string, argsEscaped bool, r *http.Re
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotVirtualPrivateCloudIDVal VirtualPrivateCloudID
+				var paramsDotVirtualPrivateCloudIDVal VirtualPrivateCloudId
 				if err := func() error {
 					var paramsDotVirtualPrivateCloudIDValVal string
 					if err := func() error {
@@ -10746,7 +10906,7 @@ func decodeListSecurityGroupsParams(args [0]string, argsEscaped bool, r *http.Re
 					}(); err != nil {
 						return err
 					}
-					paramsDotVirtualPrivateCloudIDVal = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIDValVal)
+					paramsDotVirtualPrivateCloudIDVal = VirtualPrivateCloudId(paramsDotVirtualPrivateCloudIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -11104,7 +11264,7 @@ func decodeListVirtualPrivateCloudPeeringsParams(args [0]string, argsEscaped boo
 
 // ListVirtualPrivateCloudRoutesParams is parameters of list-virtual-private-cloud-routes operation.
 type ListVirtualPrivateCloudRoutesParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudIDOrWildcard
+	VirtualPrivateCloudId VirtualPrivateCloudIdOrWildcard
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -11117,7 +11277,7 @@ func unpackListVirtualPrivateCloudRoutesParams(packed middleware.Parameters) (pa
 			Name: "virtualPrivateCloudId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudIDOrWildcard)
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudIdOrWildcard)
 	}
 	{
 		key := middleware.ParameterKey{
@@ -11178,7 +11338,7 @@ func decodeListVirtualPrivateCloudRoutesParams(args [1]string, argsEscaped bool,
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudIDOrWildcard(paramsDotVirtualPrivateCloudIdVal)
+				params.VirtualPrivateCloudId = VirtualPrivateCloudIdOrWildcard(paramsDotVirtualPrivateCloudIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -11349,7 +11509,7 @@ func decodeListVirtualPrivateCloudRoutesParams(args [1]string, argsEscaped bool,
 
 // ListVirtualPrivateCloudSubnetsParams is parameters of list-virtual-private-cloud-subnets operation.
 type ListVirtualPrivateCloudSubnetsParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudIDOrWildcard
+	VirtualPrivateCloudId VirtualPrivateCloudIdOrWildcard
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -11362,7 +11522,7 @@ func unpackListVirtualPrivateCloudSubnetsParams(packed middleware.Parameters) (p
 			Name: "virtualPrivateCloudId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudIDOrWildcard)
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudIdOrWildcard)
 	}
 	{
 		key := middleware.ParameterKey{
@@ -11423,7 +11583,7 @@ func decodeListVirtualPrivateCloudSubnetsParams(args [1]string, argsEscaped bool
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudIDOrWildcard(paramsDotVirtualPrivateCloudIdVal)
+				params.VirtualPrivateCloudId = VirtualPrivateCloudIdOrWildcard(paramsDotVirtualPrivateCloudIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -11595,7 +11755,7 @@ func decodeListVirtualPrivateCloudSubnetsParams(args [1]string, argsEscaped bool
 // ListVirtualPrivateCloudsParams is parameters of list-virtual-private-clouds operation.
 type ListVirtualPrivateCloudsParams struct {
 	// Returns every region when omitted.
-	RegionID OptRegionID `json:",omitempty,omitzero"`
+	RegionID OptRegionId `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -11609,7 +11769,7 @@ func unpackListVirtualPrivateCloudsParams(packed middleware.Parameters) (params 
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.RegionID = v.(OptRegionID)
+			params.RegionID = v.(OptRegionId)
 		}
 	}
 	{
@@ -11645,7 +11805,7 @@ func decodeListVirtualPrivateCloudsParams(args [0]string, argsEscaped bool, r *h
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotRegionIDVal RegionID
+				var paramsDotRegionIDVal RegionId
 				if err := func() error {
 					var paramsDotRegionIDValVal string
 					if err := func() error {
@@ -11664,7 +11824,7 @@ func decodeListVirtualPrivateCloudsParams(args [0]string, argsEscaped bool, r *h
 					}(); err != nil {
 						return err
 					}
-					paramsDotRegionIDVal = RegionID(paramsDotRegionIDValVal)
+					paramsDotRegionIDVal = RegionId(paramsDotRegionIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -11846,7 +12006,7 @@ func decodeListVirtualPrivateCloudsParams(args [0]string, argsEscaped bool, r *h
 // ListVolumeBackupsParams is parameters of list-volume-backups operation.
 type ListVolumeBackupsParams struct {
 	// Return only the backups of this volume.
-	VolumeID OptVolumeID `json:",omitempty,omitzero"`
+	VolumeID OptVolumeId `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -11860,7 +12020,7 @@ func unpackListVolumeBackupsParams(packed middleware.Parameters) (params ListVol
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.VolumeID = v.(OptVolumeID)
+			params.VolumeID = v.(OptVolumeId)
 		}
 	}
 	{
@@ -11896,7 +12056,7 @@ func decodeListVolumeBackupsParams(args [0]string, argsEscaped bool, r *http.Req
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotVolumeIDVal VolumeID
+				var paramsDotVolumeIDVal VolumeId
 				if err := func() error {
 					var paramsDotVolumeIDValVal string
 					if err := func() error {
@@ -11915,7 +12075,7 @@ func decodeListVolumeBackupsParams(args [0]string, argsEscaped bool, r *http.Req
 					}(); err != nil {
 						return err
 					}
-					paramsDotVolumeIDVal = VolumeID(paramsDotVolumeIDValVal)
+					paramsDotVolumeIDVal = VolumeId(paramsDotVolumeIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -12097,7 +12257,7 @@ func decodeListVolumeBackupsParams(args [0]string, argsEscaped bool, r *http.Req
 // ListVolumeSnapshotsParams is parameters of list-volume-snapshots operation.
 type ListVolumeSnapshotsParams struct {
 	// Return only the snapshots of this volume.
-	VolumeID OptVolumeID `json:",omitempty,omitzero"`
+	VolumeID OptVolumeId `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -12111,7 +12271,7 @@ func unpackListVolumeSnapshotsParams(packed middleware.Parameters) (params ListV
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.VolumeID = v.(OptVolumeID)
+			params.VolumeID = v.(OptVolumeId)
 		}
 	}
 	{
@@ -12147,7 +12307,7 @@ func decodeListVolumeSnapshotsParams(args [0]string, argsEscaped bool, r *http.R
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotVolumeIDVal VolumeID
+				var paramsDotVolumeIDVal VolumeId
 				if err := func() error {
 					var paramsDotVolumeIDValVal string
 					if err := func() error {
@@ -12166,7 +12326,7 @@ func decodeListVolumeSnapshotsParams(args [0]string, argsEscaped bool, r *http.R
 					}(); err != nil {
 						return err
 					}
-					paramsDotVolumeIDVal = VolumeID(paramsDotVolumeIDValVal)
+					paramsDotVolumeIDVal = VolumeId(paramsDotVolumeIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -12347,9 +12507,9 @@ func decodeListVolumeSnapshotsParams(args [0]string, argsEscaped bool, r *http.R
 
 // ListVolumeTypesParams is parameters of list-volume-types operation.
 type ListVolumeTypesParams struct {
-	RegionID OptRegionID `json:",omitempty,omitzero"`
+	RegionID OptRegionId `json:",omitempty,omitzero"`
 	// Return only the types of this availability zone, sold out or not.
-	AvailabilityZoneID OptAvailabilityZoneID `json:",omitempty,omitzero"`
+	AvailabilityZoneID OptAvailabilityZoneId `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -12363,7 +12523,7 @@ func unpackListVolumeTypesParams(packed middleware.Parameters) (params ListVolum
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.RegionID = v.(OptRegionID)
+			params.RegionID = v.(OptRegionId)
 		}
 	}
 	{
@@ -12372,7 +12532,7 @@ func unpackListVolumeTypesParams(packed middleware.Parameters) (params ListVolum
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.AvailabilityZoneID = v.(OptAvailabilityZoneID)
+			params.AvailabilityZoneID = v.(OptAvailabilityZoneId)
 		}
 	}
 	{
@@ -12408,7 +12568,7 @@ func decodeListVolumeTypesParams(args [0]string, argsEscaped bool, r *http.Reque
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotRegionIDVal RegionID
+				var paramsDotRegionIDVal RegionId
 				if err := func() error {
 					var paramsDotRegionIDValVal string
 					if err := func() error {
@@ -12427,7 +12587,7 @@ func decodeListVolumeTypesParams(args [0]string, argsEscaped bool, r *http.Reque
 					}(); err != nil {
 						return err
 					}
-					paramsDotRegionIDVal = RegionID(paramsDotRegionIDValVal)
+					paramsDotRegionIDVal = RegionId(paramsDotRegionIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -12471,7 +12631,7 @@ func decodeListVolumeTypesParams(args [0]string, argsEscaped bool, r *http.Reque
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotAvailabilityZoneIDVal AvailabilityZoneID
+				var paramsDotAvailabilityZoneIDVal AvailabilityZoneId
 				if err := func() error {
 					var paramsDotAvailabilityZoneIDValVal string
 					if err := func() error {
@@ -12490,7 +12650,7 @@ func decodeListVolumeTypesParams(args [0]string, argsEscaped bool, r *http.Reque
 					}(); err != nil {
 						return err
 					}
-					paramsDotAvailabilityZoneIDVal = AvailabilityZoneID(paramsDotAvailabilityZoneIDValVal)
+					paramsDotAvailabilityZoneIDVal = AvailabilityZoneId(paramsDotAvailabilityZoneIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -12671,9 +12831,9 @@ func decodeListVolumeTypesParams(args [0]string, argsEscaped bool, r *http.Reque
 
 // ListVolumesParams is parameters of list-volumes operation.
 type ListVolumesParams struct {
-	RegionID OptRegionID `json:",omitempty,omitzero"`
+	RegionID OptRegionId `json:",omitempty,omitzero"`
 	// Supplied together with `region_id` to filter attachable volumes.
-	AvailabilityZoneID OptAvailabilityZoneID `json:",omitempty,omitzero"`
+	AvailabilityZoneID OptAvailabilityZoneId `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -12687,7 +12847,7 @@ func unpackListVolumesParams(packed middleware.Parameters) (params ListVolumesPa
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.RegionID = v.(OptRegionID)
+			params.RegionID = v.(OptRegionId)
 		}
 	}
 	{
@@ -12696,7 +12856,7 @@ func unpackListVolumesParams(packed middleware.Parameters) (params ListVolumesPa
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.AvailabilityZoneID = v.(OptAvailabilityZoneID)
+			params.AvailabilityZoneID = v.(OptAvailabilityZoneId)
 		}
 	}
 	{
@@ -12732,7 +12892,7 @@ func decodeListVolumesParams(args [0]string, argsEscaped bool, r *http.Request) 
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotRegionIDVal RegionID
+				var paramsDotRegionIDVal RegionId
 				if err := func() error {
 					var paramsDotRegionIDValVal string
 					if err := func() error {
@@ -12751,7 +12911,7 @@ func decodeListVolumesParams(args [0]string, argsEscaped bool, r *http.Request) 
 					}(); err != nil {
 						return err
 					}
-					paramsDotRegionIDVal = RegionID(paramsDotRegionIDValVal)
+					paramsDotRegionIDVal = RegionId(paramsDotRegionIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -12795,7 +12955,7 @@ func decodeListVolumesParams(args [0]string, argsEscaped bool, r *http.Request) 
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotAvailabilityZoneIDVal AvailabilityZoneID
+				var paramsDotAvailabilityZoneIDVal AvailabilityZoneId
 				if err := func() error {
 					var paramsDotAvailabilityZoneIDValVal string
 					if err := func() error {
@@ -12814,7 +12974,7 @@ func decodeListVolumesParams(args [0]string, argsEscaped bool, r *http.Request) 
 					}(); err != nil {
 						return err
 					}
-					paramsDotAvailabilityZoneIDVal = AvailabilityZoneID(paramsDotAvailabilityZoneIDValVal)
+					paramsDotAvailabilityZoneIDVal = AvailabilityZoneId(paramsDotAvailabilityZoneIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -12995,7 +13155,7 @@ func decodeListVolumesParams(args [0]string, argsEscaped bool, r *http.Request) 
 
 // RebootInstanceParams is parameters of reboot-instance operation.
 type RebootInstanceParams struct {
-	InstanceId InstanceID
+	InstanceId InstanceId
 }
 
 func unpackRebootInstanceParams(packed middleware.Parameters) (params RebootInstanceParams) {
@@ -13004,7 +13164,7 @@ func unpackRebootInstanceParams(packed middleware.Parameters) (params RebootInst
 			Name: "instanceId",
 			In:   "path",
 		}
-		params.InstanceId = packed[key].(InstanceID)
+		params.InstanceId = packed[key].(InstanceId)
 	}
 	return params
 }
@@ -13046,7 +13206,7 @@ func decodeRebootInstanceParams(args [1]string, argsEscaped bool, r *http.Reques
 				}(); err != nil {
 					return err
 				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -13075,7 +13235,7 @@ func decodeRebootInstanceParams(args [1]string, argsEscaped bool, r *http.Reques
 
 // RebuildInstanceParams is parameters of rebuild-instance operation.
 type RebuildInstanceParams struct {
-	InstanceId InstanceID
+	InstanceId InstanceId
 }
 
 func unpackRebuildInstanceParams(packed middleware.Parameters) (params RebuildInstanceParams) {
@@ -13084,7 +13244,7 @@ func unpackRebuildInstanceParams(packed middleware.Parameters) (params RebuildIn
 			Name: "instanceId",
 			In:   "path",
 		}
-		params.InstanceId = packed[key].(InstanceID)
+		params.InstanceId = packed[key].(InstanceId)
 	}
 	return params
 }
@@ -13126,7 +13286,7 @@ func decodeRebuildInstanceParams(args [1]string, argsEscaped bool, r *http.Reque
 				}(); err != nil {
 					return err
 				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -13155,7 +13315,7 @@ func decodeRebuildInstanceParams(args [1]string, argsEscaped bool, r *http.Reque
 
 // RejectVirtualPrivateCloudPeeringParams is parameters of reject-virtual-private-cloud-peering operation.
 type RejectVirtualPrivateCloudPeeringParams struct {
-	VirtualPrivateCloudPeeringId VirtualPrivateCloudPeeringID
+	VirtualPrivateCloudPeeringId VirtualPrivateCloudPeeringId
 }
 
 func unpackRejectVirtualPrivateCloudPeeringParams(packed middleware.Parameters) (params RejectVirtualPrivateCloudPeeringParams) {
@@ -13164,7 +13324,7 @@ func unpackRejectVirtualPrivateCloudPeeringParams(packed middleware.Parameters) 
 			Name: "virtualPrivateCloudPeeringId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudPeeringId = packed[key].(VirtualPrivateCloudPeeringID)
+		params.VirtualPrivateCloudPeeringId = packed[key].(VirtualPrivateCloudPeeringId)
 	}
 	return params
 }
@@ -13206,7 +13366,7 @@ func decodeRejectVirtualPrivateCloudPeeringParams(args [1]string, argsEscaped bo
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudPeeringId = VirtualPrivateCloudPeeringID(paramsDotVirtualPrivateCloudPeeringIdVal)
+				params.VirtualPrivateCloudPeeringId = VirtualPrivateCloudPeeringId(paramsDotVirtualPrivateCloudPeeringIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -13233,9 +13393,89 @@ func decodeRejectVirtualPrivateCloudPeeringParams(args [1]string, argsEscaped bo
 	return params, nil
 }
 
+// ReplaceNetworkInterfaceSecurityGroupsParams is parameters of replace-network-interface-security-groups operation.
+type ReplaceNetworkInterfaceSecurityGroupsParams struct {
+	NetworkInterfaceId NetworkInterfaceId
+}
+
+func unpackReplaceNetworkInterfaceSecurityGroupsParams(packed middleware.Parameters) (params ReplaceNetworkInterfaceSecurityGroupsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "networkInterfaceId",
+			In:   "path",
+		}
+		params.NetworkInterfaceId = packed[key].(NetworkInterfaceId)
+	}
+	return params
+}
+
+func decodeReplaceNetworkInterfaceSecurityGroupsParams(args [1]string, argsEscaped bool, r *http.Request) (params ReplaceNetworkInterfaceSecurityGroupsParams, _ error) {
+	// Decode path: networkInterfaceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "networkInterfaceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotNetworkInterfaceIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotNetworkInterfaceIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.NetworkInterfaceId = NetworkInterfaceId(paramsDotNetworkInterfaceIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.NetworkInterfaceId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "networkInterfaceId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // RescueInstanceParams is parameters of rescue-instance operation.
 type RescueInstanceParams struct {
-	InstanceId InstanceID
+	InstanceId InstanceId
 }
 
 func unpackRescueInstanceParams(packed middleware.Parameters) (params RescueInstanceParams) {
@@ -13244,7 +13484,7 @@ func unpackRescueInstanceParams(packed middleware.Parameters) (params RescueInst
 			Name: "instanceId",
 			In:   "path",
 		}
-		params.InstanceId = packed[key].(InstanceID)
+		params.InstanceId = packed[key].(InstanceId)
 	}
 	return params
 }
@@ -13286,7 +13526,7 @@ func decodeRescueInstanceParams(args [1]string, argsEscaped bool, r *http.Reques
 				}(); err != nil {
 					return err
 				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -13315,7 +13555,7 @@ func decodeRescueInstanceParams(args [1]string, argsEscaped bool, r *http.Reques
 
 // ResetInstancePasswordParams is parameters of reset-instance-password operation.
 type ResetInstancePasswordParams struct {
-	InstanceId InstanceID
+	InstanceId InstanceId
 }
 
 func unpackResetInstancePasswordParams(packed middleware.Parameters) (params ResetInstancePasswordParams) {
@@ -13324,7 +13564,7 @@ func unpackResetInstancePasswordParams(packed middleware.Parameters) (params Res
 			Name: "instanceId",
 			In:   "path",
 		}
-		params.InstanceId = packed[key].(InstanceID)
+		params.InstanceId = packed[key].(InstanceId)
 	}
 	return params
 }
@@ -13366,7 +13606,7 @@ func decodeResetInstancePasswordParams(args [1]string, argsEscaped bool, r *http
 				}(); err != nil {
 					return err
 				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -13393,9 +13633,249 @@ func decodeResetInstancePasswordParams(args [1]string, argsEscaped bool, r *http
 	return params, nil
 }
 
+// ResizeInstanceParams is parameters of resize-instance operation.
+type ResizeInstanceParams struct {
+	InstanceId InstanceId
+}
+
+func unpackResizeInstanceParams(packed middleware.Parameters) (params ResizeInstanceParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "instanceId",
+			In:   "path",
+		}
+		params.InstanceId = packed[key].(InstanceId)
+	}
+	return params
+}
+
+func decodeResizeInstanceParams(args [1]string, argsEscaped bool, r *http.Request) (params ResizeInstanceParams, _ error) {
+	// Decode path: instanceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "instanceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotInstanceIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotInstanceIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.InstanceId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "instanceId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ResizeVolumeParams is parameters of resize-volume operation.
+type ResizeVolumeParams struct {
+	VolumeId VolumeId
+}
+
+func unpackResizeVolumeParams(packed middleware.Parameters) (params ResizeVolumeParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "volumeId",
+			In:   "path",
+		}
+		params.VolumeId = packed[key].(VolumeId)
+	}
+	return params
+}
+
+func decodeResizeVolumeParams(args [1]string, argsEscaped bool, r *http.Request) (params ResizeVolumeParams, _ error) {
+	// Decode path: volumeId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "volumeId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotVolumeIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotVolumeIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.VolumeId = VolumeId(paramsDotVolumeIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.VolumeId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "volumeId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// RetypeVolumeParams is parameters of retype-volume operation.
+type RetypeVolumeParams struct {
+	VolumeId VolumeId
+}
+
+func unpackRetypeVolumeParams(packed middleware.Parameters) (params RetypeVolumeParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "volumeId",
+			In:   "path",
+		}
+		params.VolumeId = packed[key].(VolumeId)
+	}
+	return params
+}
+
+func decodeRetypeVolumeParams(args [1]string, argsEscaped bool, r *http.Request) (params RetypeVolumeParams, _ error) {
+	// Decode path: volumeId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "volumeId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				var paramsDotVolumeIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotVolumeIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.VolumeId = VolumeId(paramsDotVolumeIdVal)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.VolumeId.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "volumeId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // RevertVolumeParams is parameters of revert-volume operation.
 type RevertVolumeParams struct {
-	VolumeId VolumeID
+	VolumeId VolumeId
 }
 
 func unpackRevertVolumeParams(packed middleware.Parameters) (params RevertVolumeParams) {
@@ -13404,7 +13884,7 @@ func unpackRevertVolumeParams(packed middleware.Parameters) (params RevertVolume
 			Name: "volumeId",
 			In:   "path",
 		}
-		params.VolumeId = packed[key].(VolumeID)
+		params.VolumeId = packed[key].(VolumeId)
 	}
 	return params
 }
@@ -13446,7 +13926,7 @@ func decodeRevertVolumeParams(args [1]string, argsEscaped bool, r *http.Request)
 				}(); err != nil {
 					return err
 				}
-				params.VolumeId = VolumeID(paramsDotVolumeIdVal)
+				params.VolumeId = VolumeId(paramsDotVolumeIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -13475,7 +13955,7 @@ func decodeRevertVolumeParams(args [1]string, argsEscaped bool, r *http.Request)
 
 // RunInstanceCommandParams is parameters of run-instance-command operation.
 type RunInstanceCommandParams struct {
-	InstanceId InstanceID
+	InstanceId InstanceId
 }
 
 func unpackRunInstanceCommandParams(packed middleware.Parameters) (params RunInstanceCommandParams) {
@@ -13484,7 +13964,7 @@ func unpackRunInstanceCommandParams(packed middleware.Parameters) (params RunIns
 			Name: "instanceId",
 			In:   "path",
 		}
-		params.InstanceId = packed[key].(InstanceID)
+		params.InstanceId = packed[key].(InstanceId)
 	}
 	return params
 }
@@ -13526,7 +14006,7 @@ func decodeRunInstanceCommandParams(args [1]string, argsEscaped bool, r *http.Re
 				}(); err != nil {
 					return err
 				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -13555,7 +14035,7 @@ func decodeRunInstanceCommandParams(args [1]string, argsEscaped bool, r *http.Re
 
 // StartInstanceParams is parameters of start-instance operation.
 type StartInstanceParams struct {
-	InstanceId InstanceID
+	InstanceId InstanceId
 }
 
 func unpackStartInstanceParams(packed middleware.Parameters) (params StartInstanceParams) {
@@ -13564,7 +14044,7 @@ func unpackStartInstanceParams(packed middleware.Parameters) (params StartInstan
 			Name: "instanceId",
 			In:   "path",
 		}
-		params.InstanceId = packed[key].(InstanceID)
+		params.InstanceId = packed[key].(InstanceId)
 	}
 	return params
 }
@@ -13606,7 +14086,7 @@ func decodeStartInstanceParams(args [1]string, argsEscaped bool, r *http.Request
 				}(); err != nil {
 					return err
 				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -13635,7 +14115,7 @@ func decodeStartInstanceParams(args [1]string, argsEscaped bool, r *http.Request
 
 // StopInstanceParams is parameters of stop-instance operation.
 type StopInstanceParams struct {
-	InstanceId InstanceID
+	InstanceId InstanceId
 }
 
 func unpackStopInstanceParams(packed middleware.Parameters) (params StopInstanceParams) {
@@ -13644,7 +14124,7 @@ func unpackStopInstanceParams(packed middleware.Parameters) (params StopInstance
 			Name: "instanceId",
 			In:   "path",
 		}
-		params.InstanceId = packed[key].(InstanceID)
+		params.InstanceId = packed[key].(InstanceId)
 	}
 	return params
 }
@@ -13686,7 +14166,7 @@ func decodeStopInstanceParams(args [1]string, argsEscaped bool, r *http.Request)
 				}(); err != nil {
 					return err
 				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -13715,7 +14195,7 @@ func decodeStopInstanceParams(args [1]string, argsEscaped bool, r *http.Request)
 
 // UnrescueInstanceParams is parameters of unrescue-instance operation.
 type UnrescueInstanceParams struct {
-	InstanceId InstanceID
+	InstanceId InstanceId
 }
 
 func unpackUnrescueInstanceParams(packed middleware.Parameters) (params UnrescueInstanceParams) {
@@ -13724,7 +14204,7 @@ func unpackUnrescueInstanceParams(packed middleware.Parameters) (params Unrescue
 			Name: "instanceId",
 			In:   "path",
 		}
-		params.InstanceId = packed[key].(InstanceID)
+		params.InstanceId = packed[key].(InstanceId)
 	}
 	return params
 }
@@ -13766,7 +14246,7 @@ func decodeUnrescueInstanceParams(args [1]string, argsEscaped bool, r *http.Requ
 				}(); err != nil {
 					return err
 				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -13793,89 +14273,9 @@ func decodeUnrescueInstanceParams(args [1]string, argsEscaped bool, r *http.Requ
 	return params, nil
 }
 
-// UpdateElasticIPParams is parameters of update-elastic-ip operation.
-type UpdateElasticIPParams struct {
-	ElasticIpId ElasticIPID
-}
-
-func unpackUpdateElasticIPParams(packed middleware.Parameters) (params UpdateElasticIPParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "elasticIpId",
-			In:   "path",
-		}
-		params.ElasticIpId = packed[key].(ElasticIPID)
-	}
-	return params
-}
-
-func decodeUpdateElasticIPParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateElasticIPParams, _ error) {
-	// Decode path: elasticIpId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "elasticIpId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				var paramsDotElasticIpIdVal string
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotElasticIpIdVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.ElasticIpId = ElasticIPID(paramsDotElasticIpIdVal)
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := params.ElasticIpId.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "elasticIpId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // UpdateInstanceParams is parameters of update-instance operation.
 type UpdateInstanceParams struct {
-	InstanceId InstanceID
+	InstanceId InstanceId
 }
 
 func unpackUpdateInstanceParams(packed middleware.Parameters) (params UpdateInstanceParams) {
@@ -13884,7 +14284,7 @@ func unpackUpdateInstanceParams(packed middleware.Parameters) (params UpdateInst
 			Name: "instanceId",
 			In:   "path",
 		}
-		params.InstanceId = packed[key].(InstanceID)
+		params.InstanceId = packed[key].(InstanceId)
 	}
 	return params
 }
@@ -13926,7 +14326,7 @@ func decodeUpdateInstanceParams(args [1]string, argsEscaped bool, r *http.Reques
 				}(); err != nil {
 					return err
 				}
-				params.InstanceId = InstanceID(paramsDotInstanceIdVal)
+				params.InstanceId = InstanceId(paramsDotInstanceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -13955,7 +14355,7 @@ func decodeUpdateInstanceParams(args [1]string, argsEscaped bool, r *http.Reques
 
 // UpdateLaunchTemplateParams is parameters of update-launch-template operation.
 type UpdateLaunchTemplateParams struct {
-	LaunchTemplateId LaunchTemplateID
+	LaunchTemplateId LaunchTemplateId
 }
 
 func unpackUpdateLaunchTemplateParams(packed middleware.Parameters) (params UpdateLaunchTemplateParams) {
@@ -13964,7 +14364,7 @@ func unpackUpdateLaunchTemplateParams(packed middleware.Parameters) (params Upda
 			Name: "launchTemplateId",
 			In:   "path",
 		}
-		params.LaunchTemplateId = packed[key].(LaunchTemplateID)
+		params.LaunchTemplateId = packed[key].(LaunchTemplateId)
 	}
 	return params
 }
@@ -14006,7 +14406,7 @@ func decodeUpdateLaunchTemplateParams(args [1]string, argsEscaped bool, r *http.
 				}(); err != nil {
 					return err
 				}
-				params.LaunchTemplateId = LaunchTemplateID(paramsDotLaunchTemplateIdVal)
+				params.LaunchTemplateId = LaunchTemplateId(paramsDotLaunchTemplateIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -14035,7 +14435,7 @@ func decodeUpdateLaunchTemplateParams(args [1]string, argsEscaped bool, r *http.
 
 // UpdateNetworkInterfaceParams is parameters of update-network-interface operation.
 type UpdateNetworkInterfaceParams struct {
-	NetworkInterfaceId NetworkInterfaceID
+	NetworkInterfaceId NetworkInterfaceId
 }
 
 func unpackUpdateNetworkInterfaceParams(packed middleware.Parameters) (params UpdateNetworkInterfaceParams) {
@@ -14044,7 +14444,7 @@ func unpackUpdateNetworkInterfaceParams(packed middleware.Parameters) (params Up
 			Name: "networkInterfaceId",
 			In:   "path",
 		}
-		params.NetworkInterfaceId = packed[key].(NetworkInterfaceID)
+		params.NetworkInterfaceId = packed[key].(NetworkInterfaceId)
 	}
 	return params
 }
@@ -14086,7 +14486,7 @@ func decodeUpdateNetworkInterfaceParams(args [1]string, argsEscaped bool, r *htt
 				}(); err != nil {
 					return err
 				}
-				params.NetworkInterfaceId = NetworkInterfaceID(paramsDotNetworkInterfaceIdVal)
+				params.NetworkInterfaceId = NetworkInterfaceId(paramsDotNetworkInterfaceIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -14115,7 +14515,7 @@ func decodeUpdateNetworkInterfaceParams(args [1]string, argsEscaped bool, r *htt
 
 // UpdatePrivateImageParams is parameters of update-private-image operation.
 type UpdatePrivateImageParams struct {
-	PrivateImageId ImageID
+	PrivateImageId ImageId
 }
 
 func unpackUpdatePrivateImageParams(packed middleware.Parameters) (params UpdatePrivateImageParams) {
@@ -14124,7 +14524,7 @@ func unpackUpdatePrivateImageParams(packed middleware.Parameters) (params Update
 			Name: "privateImageId",
 			In:   "path",
 		}
-		params.PrivateImageId = packed[key].(ImageID)
+		params.PrivateImageId = packed[key].(ImageId)
 	}
 	return params
 }
@@ -14166,7 +14566,7 @@ func decodeUpdatePrivateImageParams(args [1]string, argsEscaped bool, r *http.Re
 				}(); err != nil {
 					return err
 				}
-				params.PrivateImageId = ImageID(paramsDotPrivateImageIdVal)
+				params.PrivateImageId = ImageId(paramsDotPrivateImageIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -14195,7 +14595,7 @@ func decodeUpdatePrivateImageParams(args [1]string, argsEscaped bool, r *http.Re
 
 // UpdateSecurityGroupParams is parameters of update-security-group operation.
 type UpdateSecurityGroupParams struct {
-	SecurityGroupId SecurityGroupID
+	SecurityGroupId SecurityGroupId
 }
 
 func unpackUpdateSecurityGroupParams(packed middleware.Parameters) (params UpdateSecurityGroupParams) {
@@ -14204,7 +14604,7 @@ func unpackUpdateSecurityGroupParams(packed middleware.Parameters) (params Updat
 			Name: "securityGroupId",
 			In:   "path",
 		}
-		params.SecurityGroupId = packed[key].(SecurityGroupID)
+		params.SecurityGroupId = packed[key].(SecurityGroupId)
 	}
 	return params
 }
@@ -14246,7 +14646,7 @@ func decodeUpdateSecurityGroupParams(args [1]string, argsEscaped bool, r *http.R
 				}(); err != nil {
 					return err
 				}
-				params.SecurityGroupId = SecurityGroupID(paramsDotSecurityGroupIdVal)
+				params.SecurityGroupId = SecurityGroupId(paramsDotSecurityGroupIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -14275,7 +14675,7 @@ func decodeUpdateSecurityGroupParams(args [1]string, argsEscaped bool, r *http.R
 
 // UpdateVirtualPrivateCloudParams is parameters of update-virtual-private-cloud operation.
 type UpdateVirtualPrivateCloudParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
+	VirtualPrivateCloudId VirtualPrivateCloudId
 }
 
 func unpackUpdateVirtualPrivateCloudParams(packed middleware.Parameters) (params UpdateVirtualPrivateCloudParams) {
@@ -14284,7 +14684,7 @@ func unpackUpdateVirtualPrivateCloudParams(packed middleware.Parameters) (params
 			Name: "virtualPrivateCloudId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudId)
 	}
 	return params
 }
@@ -14326,7 +14726,7 @@ func decodeUpdateVirtualPrivateCloudParams(args [1]string, argsEscaped bool, r *
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				params.VirtualPrivateCloudId = VirtualPrivateCloudId(paramsDotVirtualPrivateCloudIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -14355,8 +14755,8 @@ func decodeUpdateVirtualPrivateCloudParams(args [1]string, argsEscaped bool, r *
 
 // UpdateVirtualPrivateCloudSubnetParams is parameters of update-virtual-private-cloud-subnet operation.
 type UpdateVirtualPrivateCloudSubnetParams struct {
-	VirtualPrivateCloudId VirtualPrivateCloudID
-	SubnetId              SubnetID
+	VirtualPrivateCloudId VirtualPrivateCloudId
+	SubnetId              SubnetId
 }
 
 func unpackUpdateVirtualPrivateCloudSubnetParams(packed middleware.Parameters) (params UpdateVirtualPrivateCloudSubnetParams) {
@@ -14365,14 +14765,14 @@ func unpackUpdateVirtualPrivateCloudSubnetParams(packed middleware.Parameters) (
 			Name: "virtualPrivateCloudId",
 			In:   "path",
 		}
-		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudID)
+		params.VirtualPrivateCloudId = packed[key].(VirtualPrivateCloudId)
 	}
 	{
 		key := middleware.ParameterKey{
 			Name: "subnetId",
 			In:   "path",
 		}
-		params.SubnetId = packed[key].(SubnetID)
+		params.SubnetId = packed[key].(SubnetId)
 	}
 	return params
 }
@@ -14414,7 +14814,7 @@ func decodeUpdateVirtualPrivateCloudSubnetParams(args [2]string, argsEscaped boo
 				}(); err != nil {
 					return err
 				}
-				params.VirtualPrivateCloudId = VirtualPrivateCloudID(paramsDotVirtualPrivateCloudIdVal)
+				params.VirtualPrivateCloudId = VirtualPrivateCloudId(paramsDotVirtualPrivateCloudIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -14474,7 +14874,7 @@ func decodeUpdateVirtualPrivateCloudSubnetParams(args [2]string, argsEscaped boo
 				}(); err != nil {
 					return err
 				}
-				params.SubnetId = SubnetID(paramsDotSubnetIdVal)
+				params.SubnetId = SubnetId(paramsDotSubnetIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -14503,7 +14903,7 @@ func decodeUpdateVirtualPrivateCloudSubnetParams(args [2]string, argsEscaped boo
 
 // UpdateVolumeParams is parameters of update-volume operation.
 type UpdateVolumeParams struct {
-	VolumeId VolumeID
+	VolumeId VolumeId
 }
 
 func unpackUpdateVolumeParams(packed middleware.Parameters) (params UpdateVolumeParams) {
@@ -14512,7 +14912,7 @@ func unpackUpdateVolumeParams(packed middleware.Parameters) (params UpdateVolume
 			Name: "volumeId",
 			In:   "path",
 		}
-		params.VolumeId = packed[key].(VolumeID)
+		params.VolumeId = packed[key].(VolumeId)
 	}
 	return params
 }
@@ -14554,7 +14954,7 @@ func decodeUpdateVolumeParams(args [1]string, argsEscaped bool, r *http.Request)
 				}(); err != nil {
 					return err
 				}
-				params.VolumeId = VolumeID(paramsDotVolumeIdVal)
+				params.VolumeId = VolumeId(paramsDotVolumeIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -14583,7 +14983,7 @@ func decodeUpdateVolumeParams(args [1]string, argsEscaped bool, r *http.Request)
 
 // UpdateVolumeBackupParams is parameters of update-volume-backup operation.
 type UpdateVolumeBackupParams struct {
-	VolumeBackupId VolumeBackupID
+	VolumeBackupId VolumeBackupId
 }
 
 func unpackUpdateVolumeBackupParams(packed middleware.Parameters) (params UpdateVolumeBackupParams) {
@@ -14592,7 +14992,7 @@ func unpackUpdateVolumeBackupParams(packed middleware.Parameters) (params Update
 			Name: "volumeBackupId",
 			In:   "path",
 		}
-		params.VolumeBackupId = packed[key].(VolumeBackupID)
+		params.VolumeBackupId = packed[key].(VolumeBackupId)
 	}
 	return params
 }
@@ -14634,7 +15034,7 @@ func decodeUpdateVolumeBackupParams(args [1]string, argsEscaped bool, r *http.Re
 				}(); err != nil {
 					return err
 				}
-				params.VolumeBackupId = VolumeBackupID(paramsDotVolumeBackupIdVal)
+				params.VolumeBackupId = VolumeBackupId(paramsDotVolumeBackupIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -14663,7 +15063,7 @@ func decodeUpdateVolumeBackupParams(args [1]string, argsEscaped bool, r *http.Re
 
 // UpdateVolumeSnapshotParams is parameters of update-volume-snapshot operation.
 type UpdateVolumeSnapshotParams struct {
-	VolumeSnapshotId VolumeSnapshotID
+	VolumeSnapshotId VolumeSnapshotId
 }
 
 func unpackUpdateVolumeSnapshotParams(packed middleware.Parameters) (params UpdateVolumeSnapshotParams) {
@@ -14672,7 +15072,7 @@ func unpackUpdateVolumeSnapshotParams(packed middleware.Parameters) (params Upda
 			Name: "volumeSnapshotId",
 			In:   "path",
 		}
-		params.VolumeSnapshotId = packed[key].(VolumeSnapshotID)
+		params.VolumeSnapshotId = packed[key].(VolumeSnapshotId)
 	}
 	return params
 }
@@ -14714,7 +15114,7 @@ func decodeUpdateVolumeSnapshotParams(args [1]string, argsEscaped bool, r *http.
 				}(); err != nil {
 					return err
 				}
-				params.VolumeSnapshotId = VolumeSnapshotID(paramsDotVolumeSnapshotIdVal)
+				params.VolumeSnapshotId = VolumeSnapshotId(paramsDotVolumeSnapshotIdVal)
 				return nil
 			}(); err != nil {
 				return err

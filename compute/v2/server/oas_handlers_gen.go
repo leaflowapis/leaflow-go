@@ -421,7 +421,7 @@ func (s *Server) handleAssociateElasticIPRequest(args [1]string, argsEscaped boo
 		}
 
 		type (
-			Request  = AssociateElasticIPRequestBody
+			Request  = AssociateElasticIpRequestBody
 			Params   = AssociateElasticIPParams
 			Response = AssociateElasticIPRes
 		)
@@ -901,6 +901,468 @@ func (s *Server) handleAttachInstanceVolumeRequest(args [1]string, argsEscaped b
 	}
 }
 
+// handleChangeElasticIPBandwidthRequest handles change-elastic-ip-bandwidth operation.
+//
+// Changes the bandwidth ceiling of this elastic IP. No separate bandwidth resource is created, and the
+// limit applies to inbound and outbound traffic alike. The new value may be any whole number of Mbps
+// within the line's bandwidth range, otherwise the request is refused with
+// `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic IP's network item:
+//
+//   - Prepaid: the change goes through a Checkout Session that changes the network item, priced for the
+//     rest of its period. It starts once Billing accepts the order; if checkout is not completed, the
+//     order is not accepted or the change fails, `bandwidth_mbps` keeps its value and Billing shows the
+//     outcome.
+//   - Pay-as-you-go: there is no checkout. The change starts at once, `checkout_session_id` and
+//     `order_id` are null, and the new limit is metered from the instant it is applied; if it fails,
+//     the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
+//     `ELASTIC_IP_CHECKOUT_UNUSED`.
+//
+// The elastic IP is `updating_bandwidth` until the change is applied or ends, so other operations and
+// a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in
+// effect until the change is applied.
+//
+// While the address is associated with an instance, the limit must not exceed the `max_bandwidth_mbps`
+// of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of
+// an address that is not associated is checked when the address is associated with an instance.
+//
+// POST /api/v2/elastic-ips/{elasticIpId}:changeBandwidth
+func (s *Server) handleChangeElasticIPBandwidthRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("change-elastic-ip-bandwidth"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v2/elastic-ips/{elasticIpId}:changeBandwidth"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ChangeElasticIPBandwidthOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ChangeElasticIPBandwidthOperation,
+			ID:   "change-elastic-ip-bandwidth",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ChangeElasticIPBandwidthOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeChangeElasticIPBandwidthParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeChangeElasticIPBandwidthRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response ChangeElasticIPBandwidthRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ChangeElasticIPBandwidthOperation,
+			OperationSummary: "Change the bandwidth of an elastic IP",
+			OperationID:      "change-elastic-ip-bandwidth",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "elasticIpId",
+					In:   "path",
+				}: params.ElasticIpId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *ChangeElasticIpBandwidthRequestBody
+			Params   = ChangeElasticIPBandwidthParams
+			Response = ChangeElasticIPBandwidthRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackChangeElasticIPBandwidthParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ChangeElasticIPBandwidth(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ChangeElasticIPBandwidth(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeChangeElasticIPBandwidthResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleChangeElasticIPChargeTypeRequest handles change-elastic-ip-charge-type operation.
+//
+// Moves a pay-as-you-go elastic IP between charging for its bandwidth and charging for its traffic,
+// within the same network item and without checkout. A prepaid network item has paid for its bandwidth
+// and is refused with `ELASTIC_IP_CHARGE_TYPE_PREPAID`; `traffic` on a line whose
+// `traffic_sale_status` is `off_sale` is refused with `ELASTIC_IP_TRAFFIC_UNAVAILABLE`, the type
+// already in effect with `ELASTIC_IP_CHARGE_TYPE_UNCHANGED`, and a type the currency of the network
+// item does not offer on the line with HTTP 403 `ELASTIC_IP_CHARGE_TYPE_NOT_OFFERED`: prices are set
+// per currency, and a currency without one there does not sell that type.
+//
+// The change takes effect at the instant it is applied: bandwidth stops being metered then and traffic
+// starts being, or the other way round. Traffic is counted in windows, and a window is charged the way
+// the elastic IP was charged for most of it, so a report that arrives late is still charged as it was
+// at the time and a window the change falls in is never charged both ways. `bandwidth_mbps` stays the
+// ceiling either way. The elastic IP is `updating_internet_charge_type` until the change is applied.
+//
+// POST /api/v2/elastic-ips/{elasticIpId}:changeChargeType
+func (s *Server) handleChangeElasticIPChargeTypeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("change-elastic-ip-charge-type"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v2/elastic-ips/{elasticIpId}:changeChargeType"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ChangeElasticIPChargeTypeOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ChangeElasticIPChargeTypeOperation,
+			ID:   "change-elastic-ip-charge-type",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ChangeElasticIPChargeTypeOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeChangeElasticIPChargeTypeParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeChangeElasticIPChargeTypeRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response ChangeElasticIPChargeTypeRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ChangeElasticIPChargeTypeOperation,
+			OperationSummary: "Change what an elastic IP is charged for",
+			OperationID:      "change-elastic-ip-charge-type",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "elasticIpId",
+					In:   "path",
+				}: params.ElasticIpId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *ChangeElasticIpChargeTypeRequestBody
+			Params   = ChangeElasticIPChargeTypeParams
+			Response = ChangeElasticIPChargeTypeRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackChangeElasticIPChargeTypeParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ChangeElasticIPChargeType(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ChangeElasticIPChargeType(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeChangeElasticIPChargeTypeResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleCreateElasticIPRequest handles create-elastic-ip operation.
 //
 // Select an elastic IP line. The elastic IP is bought through a Billing Checkout Session, and no
@@ -921,6 +1383,19 @@ func (s *Server) handleAttachInstanceVolumeRequest(args [1]string, argsEscaped b
 //
 // Allocation does not select or create a virtual private cloud. A later association selects an
 // assigned network-interface address; Compute then establishes the required network connectivity.
+//
+// An elastic IP bought on its own has a Billing subscription of its own, with two items: the address,
+// always pay-as-you-go and charged while the address is not associated with anything, and the network,
+// on the chosen terms.
+//
+// Buying for an instance. With `instance_id`, the elastic IP is associated with the primary network
+// interface of that instance of the project once created, and its two items join the instance's
+// Billing subscription: a prepaid network item is charged up to the instance's term end, the rest of
+// the current period in proportion to the time left, and from then on renews, renews automatically and
+// expires with the instance. `billing` may be omitted to take the instance's terms; given, its usage
+// type and period must be the instance's (422 `ELASTIC_IP_BILLING_TERMS_MISMATCH`). An instance that
+// cannot take another elastic IP, or whose type allows less bandwidth than `bandwidth_mbps`, is
+// refused before anything is ordered, as associating would be.
 //
 // The elastic IP is `pending` from the moment its Checkout Session is created until it is delivered or
 // its checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
@@ -1077,7 +1552,7 @@ func (s *Server) handleCreateElasticIPRequest(args [0]string, argsEscaped bool, 
 		}
 
 		type (
-			Request  = *CreateElasticIPRequestBody
+			Request  = *CreateElasticIpRequestBody
 			Params   = struct{}
 			Response = CreateElasticIPRes
 		)
@@ -1154,8 +1629,10 @@ func (s *Server) handleCreateElasticIPRequest(args [0]string, argsEscaped bool, 
 // subnet_id. Existing network interfaces, boot volumes or elastic IPs require count=1. They are not
 // held while the instance is pending; if one is no longer usable when the order is accepted, the
 // instance ends `failed` with `provisioning_failed`. Image boots require boot_volume; existing volumes
-// retain their own subscription. Instances, volumes and public IPs keep their own subscription items
-// on the same order.
+// retain their own subscription. Each instance gets its own Billing subscription, with the boot
+// volume, data volumes and elastic IP bought with it as items of it: they renew, renew automatically
+// and expire with the machine as a whole, while each can still be changed or released alone.
+// `checkout.auto_renew` turns automatic renewal on for each machine.
 //
 // Instances of one request succeed or fail individually. Each instance, with its boot volume, network
 // interface and elastic IP, is created or fails as a whole. Instances that were created are kept; each
@@ -1366,6 +1843,211 @@ func (s *Server) handleCreateInstanceRequest(args [0]string, argsEscaped bool, w
 	}
 
 	if err := encodeCreateInstanceResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateInstanceConsoleURLRequest handles create-instance-console-url operation.
+//
+// Issues an address for the instance's VNC console, operated from a browser through a noVNC client. It
+// does not require the instance to be reachable over the network, which makes it usable when a network
+// misconfiguration prevents login.
+//
+// The address is single-use and expires within minutes. Every request issues a new address, so request
+// one before each use and do not cache the response.
+//
+// POST /api/v2/instances/{instanceId}:createConsoleUrl
+func (s *Server) handleCreateInstanceConsoleURLRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-instance-console-url"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}:createConsoleUrl"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateInstanceConsoleURLOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateInstanceConsoleURLOperation,
+			ID:   "create-instance-console-url",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, CreateInstanceConsoleURLOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCreateInstanceConsoleURLParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *ConsoleResponseBody
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateInstanceConsoleURLOperation,
+			OperationSummary: "Create a VNC console address",
+			OperationID:      "create-instance-console-url",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "instanceId",
+					In:   "path",
+				}: params.InstanceId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = CreateInstanceConsoleURLParams
+			Response = *ConsoleResponseBody
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCreateInstanceConsoleURLParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateInstanceConsoleURL(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateInstanceConsoleURL(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateInstanceConsoleURLResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -3731,9 +4413,18 @@ func (s *Server) handleCreateVirtualPrivateCloudSubnetRequest(args [1]string, ar
 // still resolves. Types that are off sale do not appear in the volume type listing; volumes already
 // bought on one keep working and can still be resized.
 //
-// A volume bought on its own is licensed: `billing.usage_type` `metered` is refused with
-// `VOLUME_USAGE_TYPE_UNAVAILABLE`. A volume created with an instance follows the machine's terms
-// instead and may be metered.
+// A volume bought on its own is licensed, with a Billing subscription of its own: `billing.usage_type`
+// `metered` is refused with `VOLUME_USAGE_TYPE_UNAVAILABLE`. A volume created with an instance follows
+// the machine's terms instead and may be metered.
+//
+// Buying for an instance. With `instance_id`, the volume is attached to that instance of the project
+// once created, and becomes an item of the instance's Billing subscription: it is charged up to the
+// instance's term end, the rest of the current period in proportion to the time left, and from then on
+// renews, renews automatically and expires with the instance. Its volume type has to be of the
+// instance's availability zone (422 `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`). `billing` may be omitted
+// to take the instance's terms; given, its usage type and period must be the instance's (422
+// `VOLUME_BILLING_TERMS_MISMATCH`), while its termination policy may differ. An instance with no room
+// for another volume is refused before anything is ordered, as attaching would be.
 //
 // The volume is `pending` from the moment its Checkout Session is created until it is delivered or its
 // checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
@@ -4373,10 +5064,10 @@ func (s *Server) handleCreateVolumeSnapshotRequest(args [0]string, argsEscaped b
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
 // checkout created one. Expire the session or cancel the order in Billing instead.
 //
-// While subscriptions pay for the elastic IP (those in its `release_set`), deleting it cancels them
-// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the elastic IP working
+// While subscription items pay for the elastic IP (those in its `release_set`), deleting it cancels
+// them rather than being refused: Compute creates one Billing cancellation for the whole set and
+// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
+// now, a licensed item being refunded under its terms, and `period_end` keeps the elastic IP working
 // until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
 // with it again, whatever mode is asked for.
 //
@@ -4593,12 +5284,13 @@ func (s *Server) handleDeleteElasticIPRequest(args [1]string, argsEscaped bool, 
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
 // checkout created one. Expire the session or cancel the order in Billing instead.
 //
-// While subscriptions pay for the instance (those in its `release_set`), deleting it cancels them
+// While subscription items pay for the instance (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
 // with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the instance working
-// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
-// with it again, whatever mode is asked for.
+// licensed item being refunded under its terms, and `period_end` keeps the instance working until
+// `scheduled_at` and releases it then. Volumes and elastic IPs kept after the release keep their
+// items, and the subscription continues with them. Asking again while that cancellation is pending
+// answers with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/instances/{instanceId}
 func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5633,10 +6325,10 @@ func (s *Server) handleDeleteNetworkInterfaceAddressRequest(args [2]string, args
 // Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 // must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 //
-// While subscriptions pay for the private image (those in its `release_set`), deleting it cancels them
-// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the private image
+// While subscription items pay for the private image (those in its `release_set`), deleting it cancels
+// them rather than being refused: Compute creates one Billing cancellation for the whole set and
+// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
+// now, a licensed item being refunded under its terms, and `period_end` keeps the private image
 // working until `scheduled_at` and releases it then. Asking again while that cancellation is pending
 // answers with it again, whatever mode is asked for.
 //
@@ -7064,10 +7756,10 @@ func (s *Server) handleDeleteVirtualPrivateCloudSubnetRequest(args [2]string, ar
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
 // checkout created one. Expire the session or cancel the order in Billing instead.
 //
-// While subscriptions pay for the volume (those in its `release_set`), deleting it cancels them rather
-// than being refused: Compute creates one Billing cancellation for the whole set and answers with it
-// in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a licensed
-// subscription being refunded under its terms, and `period_end` keeps the volume working until
+// While subscription items pay for the volume (those in its `release_set`), deleting it cancels them
+// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed item being refunded under its terms, and `period_end` keeps the volume working until
 // `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
 // again, whatever mode is asked for.
 //
@@ -7284,10 +7976,10 @@ func (s *Server) handleDeleteVolumeRequest(args [1]string, argsEscaped bool, w h
 // Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 // must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 //
-// While subscriptions pay for the volume backup (those in its `release_set`), deleting it cancels them
-// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the volume backup
+// While subscription items pay for the volume backup (those in its `release_set`), deleting it cancels
+// them rather than being refused: Compute creates one Billing cancellation for the whole set and
+// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
+// now, a licensed item being refunded under its terms, and `period_end` keeps the volume backup
 // working until `scheduled_at` and releases it then. Asking again while that cancellation is pending
 // answers with it again, whatever mode is asked for.
 //
@@ -7502,12 +8194,12 @@ func (s *Server) handleDeleteVolumeBackupRequest(args [1]string, argsEscaped boo
 // Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 // must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 //
-// While subscriptions pay for the snapshot (those in its `release_set`), deleting it cancels them
+// While subscription items pay for the snapshot (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
 // with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the snapshot working
-// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
-// with it again, whatever mode is asked for.
+// licensed item being refunded under its terms, and `period_end` keeps the snapshot working until
+// `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
+// again, whatever mode is asked for.
 //
 // DELETE /api/v2/volume-snapshots/{volumeSnapshotId}
 func (s *Server) handleDeleteVolumeSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9076,7 +9768,7 @@ func (s *Server) handleGetElasticIPRequest(args [1]string, argsEscaped bool, w h
 
 	var rawBody []byte
 
-	var response *ElasticIP
+	var response *ElasticIp
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -9097,7 +9789,7 @@ func (s *Server) handleGetElasticIPRequest(args [1]string, argsEscaped bool, w h
 		type (
 			Request  = struct{}
 			Params   = GetElasticIPParams
-			Response = *ElasticIP
+			Response = *ElasticIp
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -9280,7 +9972,7 @@ func (s *Server) handleGetElasticIPAssociationRequest(args [1]string, argsEscape
 
 	var rawBody []byte
 
-	var response *ElasticIPAssociation
+	var response *ElasticIpAssociation
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -9301,7 +9993,7 @@ func (s *Server) handleGetElasticIPAssociationRequest(args [1]string, argsEscape
 		type (
 			Request  = struct{}
 			Params   = GetElasticIPAssociationParams
-			Response = *ElasticIPAssociation
+			Response = *ElasticIpAssociation
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -9482,7 +10174,7 @@ func (s *Server) handleGetElasticIPLineRequest(args [1]string, argsEscaped bool,
 
 	var rawBody []byte
 
-	var response *ElasticIPLine
+	var response *ElasticIpLine
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -9503,7 +10195,7 @@ func (s *Server) handleGetElasticIPLineRequest(args [1]string, argsEscaped bool,
 		type (
 			Request  = struct{}
 			Params   = GetElasticIPLineParams
-			Response = *ElasticIPLine
+			Response = *ElasticIpLine
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -9740,211 +10432,6 @@ func (s *Server) handleGetInstanceRequest(args [1]string, argsEscaped bool, w ht
 	}
 
 	if err := encodeGetInstanceResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleGetInstanceConsoleRequest handles get-instance-console operation.
-//
-// The instance's VNC console, operated from a browser through a noVNC client. It does not require the
-// instance to be reachable over the network, which makes it usable when a network misconfiguration
-// prevents login.
-//
-// The returned address is single-use and expires within minutes. Every request issues a new address,
-// so request one before each use and do not cache the response.
-//
-// GET /api/v2/instances/{instanceId}/console
-func (s *Server) handleGetInstanceConsoleRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-instance-console"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}/console"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetInstanceConsoleOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetInstanceConsoleOperation,
-			ID:   "get-instance-console",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, GetInstanceConsoleOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetInstanceConsoleParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *ConsoleResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetInstanceConsoleOperation,
-			OperationSummary: "Retrieve a VNC console",
-			OperationID:      "get-instance-console",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "instanceId",
-					In:   "path",
-				}: params.InstanceId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetInstanceConsoleParams
-			Response = *ConsoleResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetInstanceConsoleParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetInstanceConsole(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetInstanceConsole(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetInstanceConsoleResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -14544,7 +15031,7 @@ func (s *Server) handleListElasticIPLinesRequest(args [0]string, argsEscaped boo
 
 	var rawBody []byte
 
-	var response *ElasticIPLineListResponseBody
+	var response *ElasticIpLineListResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -14577,7 +15064,7 @@ func (s *Server) handleListElasticIPLinesRequest(args [0]string, argsEscaped boo
 		type (
 			Request  = struct{}
 			Params   = ListElasticIPLinesParams
-			Response = *ElasticIPLineListResponseBody
+			Response = *ElasticIpLineListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -14983,7 +15470,7 @@ func (s *Server) handleListElasticIpsRequest(args [0]string, argsEscaped bool, w
 
 	var rawBody []byte
 
-	var response *ElasticIPListResponseBody
+	var response *ElasticIpListResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -15008,7 +15495,7 @@ func (s *Server) handleListElasticIpsRequest(args [0]string, argsEscaped bool, w
 		type (
 			Request  = struct{}
 			Params   = ListElasticIpsParams
-			Response = *ElasticIPListResponseBody
+			Response = *ElasticIpListResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -20542,6 +21029,223 @@ func (s *Server) handleRejectVirtualPrivateCloudPeeringRequest(args [1]string, a
 	}
 }
 
+// handleReplaceNetworkInterfaceSecurityGroupsRequest handles replace-network-interface-security-groups operation.
+//
+// `security_group_ids` is the complete new set, one to five groups of the network interface's virtual
+// private cloud; groups left out are removed. It applies to traffic of the running instance as soon as
+// it is in place, and the network interface is `updating_security_groups` until then.
+//
+// POST /api/v2/network-interfaces/{networkInterfaceId}:replaceSecurityGroups
+func (s *Server) handleReplaceNetworkInterfaceSecurityGroupsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("replace-network-interface-security-groups"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v2/network-interfaces/{networkInterfaceId}:replaceSecurityGroups"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ReplaceNetworkInterfaceSecurityGroupsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ReplaceNetworkInterfaceSecurityGroupsOperation,
+			ID:   "replace-network-interface-security-groups",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ReplaceNetworkInterfaceSecurityGroupsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeReplaceNetworkInterfaceSecurityGroupsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeReplaceNetworkInterfaceSecurityGroupsRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response ReplaceNetworkInterfaceSecurityGroupsRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ReplaceNetworkInterfaceSecurityGroupsOperation,
+			OperationSummary: "Replace the security groups of a network interface",
+			OperationID:      "replace-network-interface-security-groups",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "networkInterfaceId",
+					In:   "path",
+				}: params.NetworkInterfaceId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *ReplaceNetworkInterfaceSecurityGroupsRequestBody
+			Params   = ReplaceNetworkInterfaceSecurityGroupsParams
+			Response = ReplaceNetworkInterfaceSecurityGroupsRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackReplaceNetworkInterfaceSecurityGroupsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ReplaceNetworkInterfaceSecurityGroups(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ReplaceNetworkInterfaceSecurityGroups(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeReplaceNetworkInterfaceSecurityGroupsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleRescueInstanceRequest handles rescue-instance operation.
 //
 // Boots a temporary rescue environment in place of the instance's own system, with the original boot
@@ -20978,6 +21682,699 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 	}
 
 	if err := encodeResetInstancePasswordResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleResizeInstanceRequest handles resize-instance operation.
+//
+// Changes the instance's type cold, through a change of its subscription item purchased in Billing:
+// the instance has to be stopped, and is refused with 409 `INSTANCE_RESIZE_REQUIRES_STOP` otherwise.
+// Its operating system is not booted for the change, and it is still stopped once the change is
+// applied; start it when you are ready. An instance stopped by the legacy stop, which released its
+// host, is refused with 409 `INSTANCE_SHELVED`; start it once and stop it again. A target type that
+// cannot hold what the instance already uses is refused before anything is ordered: fewer network
+// interfaces than are attached with 409 `INSTANCE_RESIZE_NETWORK_INTERFACES_EXCEED`, fewer elastic IPs
+// than are associated with 409 `INSTANCE_RESIZE_ELASTIC_IPS_EXCEED`, and less purchasable bandwidth
+// than an associated elastic IP has with 409 `INSTANCE_BANDWIDTH_CEILING` naming it in
+// `meta.elastic_ip_id`. The request returns 202 with the instance and the Checkout Session for the
+// change, including for metered terms. The instance keeps its usage type and period, priced with the
+// target type's matching option; a target type without that option is refused with 409
+// `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing accepts the order. Do not submit the
+// change again after paying. After an uncertain response, look the Checkout Session up in Billing
+// before submitting again.
+//
+// The instance is `resizing` until the resize is applied, its Checkout Session expires or its order is
+// canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
+// meanwhile. It keeps its current type until the resize is applied; the new type takes effect, and is
+// billed from then on, when `instance_type_id` shows it. If checkout is not completed, the order is
+// not accepted or the resize fails, the instance keeps its current type and Billing shows the outcome.
+// A completed resize is final and cannot be reverted; to return to the previous type, submit another
+// resize.
+//
+// POST /api/v2/instances/{instanceId}:resize
+func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("resize-instance"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v2/instances/{instanceId}:resize"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ResizeInstanceOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ResizeInstanceOperation,
+			ID:   "resize-instance",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ResizeInstanceOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeResizeInstanceParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeResizeInstanceRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response ResizeInstanceRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ResizeInstanceOperation,
+			OperationSummary: "Resize an instance",
+			OperationID:      "resize-instance",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "instanceId",
+					In:   "path",
+				}: params.InstanceId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *ResizeInstanceRequestBody
+			Params   = ResizeInstanceParams
+			Response = ResizeInstanceRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackResizeInstanceParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ResizeInstance(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ResizeInstance(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeResizeInstanceResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleResizeVolumeRequest handles resize-volume operation.
+//
+// Grows the volume through a change of its subscription item purchased in Billing. Only an increase is
+// accepted; a smaller `size_gib` is refused with `VOLUME_CANNOT_SHRINK` (422), since a file system
+// cannot be shrunk from outside the instance. It returns 202 with the volume and the Checkout Session
+// for the resize, which keeps the volume's usage type and period. The volume is `resizing` until the
+// resize is applied, its Checkout Session expires or its order is canceled, so other operations and a
+// second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The volume keeps its current size
+// until the resize is applied; once `size_gib` shows the new size, extend the file system inside the
+// instance. If checkout is not completed, the order is not accepted or the resize fails, the volume
+// keeps its size and Billing shows the outcome.
+//
+// An attached volume, including a boot volume, can be resized. The capacity is usable at once, and the
+// volume's `performance` shows what its type gives the new size. That performance applies from the
+// volume's next attachment, or the next start of its stopped instance: the storage reads a volume's
+// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
+//
+// POST /api/v2/volumes/{volumeId}:resize
+func (s *Server) handleResizeVolumeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("resize-volume"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v2/volumes/{volumeId}:resize"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ResizeVolumeOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ResizeVolumeOperation,
+			ID:   "resize-volume",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, ResizeVolumeOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeResizeVolumeParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeResizeVolumeRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response ResizeVolumeRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ResizeVolumeOperation,
+			OperationSummary: "Resize a volume",
+			OperationID:      "resize-volume",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "volumeId",
+					In:   "path",
+				}: params.VolumeId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *ResizeVolumeRequestBody
+			Params   = ResizeVolumeParams
+			Response = ResizeVolumeRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackResizeVolumeParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ResizeVolume(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ResizeVolume(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeResizeVolumeResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleRetypeVolumeRequest handles retype-volume operation.
+//
+// Moves the volume to another volume type at the same capacity, priced as that type, through a change
+// of its subscription item purchased in Billing, and returns 202 with the volume and the Checkout
+// Session for the change, which keeps the volume's usage type and period. The volume has to be
+// detached (409 `VOLUME_RETYPE_ATTACHED`), so a boot volume cannot change its type. The target has to
+// be on sale (`VOLUME_TYPE_OFF_SALE`), in the volume's region (422 `VOLUME_RETYPE_OTHER_REGION`), of
+// the volume's availability zone (422 `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`) with room for the volume
+// (409 `VOLUME_TYPE_SOLD_OUT`, `VOLUME_TYPE_CAPACITY_REACHED`, `VOLUME_TYPE_NO_POOL_ROOM`), admit the
+// volume's capacity (422 `VOLUME_SIZE_OUT_OF_RANGE`, `VOLUME_SIZE_NOT_ON_STEP`) and differ from the
+// current one (422 `VOLUME_RETYPE_SAME_TYPE`). The volume is `retyping` until the change is applied,
+// its Checkout Session expires or its order is canceled. A target on the same storage backend takes
+// effect at once; one on another backend copies the volume's data there first, which takes longer the
+// larger the volume is. The volume keeps its type until `volume_type_id` shows the new one, and its
+// `performance` follows from then on; a change that did not take effect leaves the volume as it was
+// and is refunded.
+//
+// POST /api/v2/volumes/{volumeId}:retype
+func (s *Server) handleRetypeVolumeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("retype-volume"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v2/volumes/{volumeId}:retype"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RetypeVolumeOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: RetypeVolumeOperation,
+			ID:   "retype-volume",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityScopedTokenAuth(ctx, RetypeVolumeOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ScopedTokenAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ScopedTokenAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeRetypeVolumeParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeRetypeVolumeRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response RetypeVolumeRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    RetypeVolumeOperation,
+			OperationSummary: "Change the type of a volume",
+			OperationID:      "retype-volume",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "volumeId",
+					In:   "path",
+				}: params.VolumeId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *RetypeVolumeRequestBody
+			Params   = RetypeVolumeParams
+			Response = RetypeVolumeRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackRetypeVolumeParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.RetypeVolume(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.RetypeVolume(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeRetypeVolumeResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -21668,9 +23065,8 @@ func (s *Server) handleStartInstanceRequest(args [1]string, argsEscaped bool, w 
 // non-payment or by the platform, is not charged for compute while the suspension lasts. It is
 // `stopping` until it is stopped. Stopping a stopped instance changes nothing.
 //
-// Changing `instance_type_id` is done on a stopped instance and only then. A stopped instance can also
-// be rebuilt and have network interfaces and volumes attached and detached; rescuing it needs it
-// running.
+// Resizing is done on a stopped instance and only then. A stopped instance can also be rebuilt and
+// have network interfaces and volumes attached and detached; rescuing it needs it running.
 //
 // POST /api/v2/instances/{instanceId}:stop
 func (s *Server) handleStopInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -22069,299 +23465,20 @@ func (s *Server) handleUnrescueInstanceRequest(args [1]string, argsEscaped bool,
 	}
 }
 
-// handleUpdateElasticIPRequest handles update-elastic-ip operation.
-//
-// Changes the bandwidth of this elastic IP, or what its pay-as-you-go network subscription charges
-// for. `bandwidth_mbps` and `internet_charge_type` are operational fields: each starts a change and
-// cannot be combined with any other field in the same request. Such a request is refused with 422
-// `UPDATE_FIELDS_COMBINED`, because a change that committed beside another that was then refused would
-// leave the request half applied. An elastic IP has no descriptive field today, so 200 is reserved for
-// the fields that may be added to it and every accepted update answers 202. `checkout` and
-// `proration_date` belong to the purchase of the `bandwidth_mbps` change and are accepted only
-// together with it.
-//
-// No separate bandwidth resource is created, and the limit applies to inbound and outbound traffic
-// alike. The new value may be any whole number of Mbps within the line's bandwidth range, otherwise
-// the request is refused with `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic
-// IP's network subscription:
-//
-//   - Prepaid: the change goes through a Checkout Session that changes the network subscription, priced
-//     for the rest of its period. It starts once Billing accepts the order; if checkout is not
-//     completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and
-//     Billing shows the outcome.
-//   - Pay-as-you-go: there is no checkout. The change starts at once, `checkout_session_id` and
-//     `order_id` are null, and the new limit is metered from the instant it is applied; if it fails,
-//     the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
-//     `ELASTIC_IP_CHECKOUT_UNUSED`.
-//
-// A change of `internet_charge_type` needs no checkout and is `updating_internet_charge_type` until it
-// is applied; see the field.
-//
-// The elastic IP is `updating_bandwidth` until the change is applied or ends, so other operations and
-// a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in
-// effect until the change is applied.
-//
-// While the address is associated with an instance, the limit must not exceed the `max_bandwidth_mbps`
-// of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of
-// an address that is not associated is checked when the address is associated with an instance.
-//
-// PATCH /api/v2/elastic-ips/{elasticIpId}
-func (s *Server) handleUpdateElasticIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-elastic-ip"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.HTTPRouteKey.String("/api/v2/elastic-ips/{elasticIpId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateElasticIPOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: UpdateElasticIPOperation,
-			ID:   "update-elastic-ip",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityScopedTokenAuth(ctx, UpdateElasticIPOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "ScopedTokenAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:ScopedTokenAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeUpdateElasticIPParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeUpdateElasticIPRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response UpdateElasticIPRes
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    UpdateElasticIPOperation,
-			OperationSummary: "Update an elastic IP",
-			OperationID:      "update-elastic-ip",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "elasticIpId",
-					In:   "path",
-				}: params.ElasticIpId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *UpdateElasticIPRequestBody
-			Params   = UpdateElasticIPParams
-			Response = UpdateElasticIPRes
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackUpdateElasticIPParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.UpdateElasticIP(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.UpdateElasticIP(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeUpdateElasticIPResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleUpdateInstanceRequest handles update-instance operation.
 //
-// Changes the descriptive fields (`name`, `labels`, `notes`) or the operational field
-// `instance_type_id`. All fields are optional and at least one is required. Starting and stopping are
-// the `:start` and `:stop` methods.
-//
-// `instance_type_id` starts a workflow and cannot be combined with any other field in the same
-// request. Such a request is refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that
-// committed beside a change that was then refused would leave the request half applied. `checkout` and
-// `proration_date` belong to the purchase of the `instance_type_id` change and are accepted only
-// together with it.
-//
-// Descriptive fields are not operations and are accepted at any time, whatever the instance is doing.
-// The request returns 200 with `checkout_session_id` and `order_id` null.
+// Changes the descriptive fields `name`, `labels` and `description`; all are optional and at least one
+// is required. They are not operations and are accepted at any time, whatever the instance is doing.
+// Changing the instance type is the `:resize` method; starting and stopping are `:start` and `:stop`.
 //
 //   - `name` changes the display name only. The hostname inside the instance is unchanged; it equals
 //     the instance id.
 //   - `labels` records what this instance is for, as key-value pairs. Nothing on the platform reads
 //     them. The whole set is replaced: whatever is absent from the request is removed, and an empty
 //     object clears them all. Do not put credentials here. Labels are visible to platform operators.
-//   - `notes` is a free-text note about this instance: what it runs, and what to be careful about
+//   - `description` is a free-text note about this instance: what it runs, and what to be careful about
 //     before touching it. The whole note is replaced; send an empty string to clear it. Do not put
 //     credentials here. The note is visible to platform operators.
-//
-// `instance_type_id` changes the instance's type cold: the instance has to be stopped, and is refused
-// with 409 `INSTANCE_RESIZE_REQUIRES_STOP` otherwise. Its operating system is not booted for the
-// change, and it is still stopped once the change is applied; start it when you are ready. An instance
-// stopped by the legacy stop, which released its host, is refused with 409 `INSTANCE_SHELVED`; start
-// it once and stop it again. A target type that cannot hold what the instance already uses is refused
-// before anything is ordered: fewer network interfaces than are attached with 409
-// `INSTANCE_RESIZE_NETWORK_INTERFACES_EXCEED`, fewer elastic IPs than are associated with 409
-// `INSTANCE_RESIZE_ELASTIC_IPS_EXCEED`, and less purchasable bandwidth than an associated elastic IP
-// has with 409 `INSTANCE_BANDWIDTH_CEILING` naming it in `meta.elastic_ip_id`. The request returns 202
-// with the instance and the Checkout Session for the change, including for metered terms. The instance
-// keeps its usage type and period, priced with the target type's matching option; a target type
-// without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing
-// accepts the order. Do not submit the change again after paying. After an uncertain response, look
-// the Checkout Session up in Billing before submitting again.
-//
-// The instance is `resizing` until the resize is applied, its Checkout Session expires or its order is
-// canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
-// meanwhile. It keeps its current type until the resize is applied; the new type takes effect, and is
-// billed from then on, when `instance_type_id` shows it. If checkout is not completed, the order is
-// not accepted or the resize fails, the instance keeps its current type and Billing shows the outcome.
-// A completed resize is final and cannot be reverted; to return to the previous type, submit another
-// resize.
 //
 // PATCH /api/v2/instances/{instanceId}
 func (s *Server) handleUpdateInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -22509,7 +23626,7 @@ func (s *Server) handleUpdateInstanceRequest(args [1]string, argsEscaped bool, w
 		}
 	}()
 
-	var response UpdateInstanceRes
+	var response *Instance
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -22530,7 +23647,7 @@ func (s *Server) handleUpdateInstanceRequest(args [1]string, argsEscaped bool, w
 		type (
 			Request  = *UpdateInstanceRequestBody
 			Params   = UpdateInstanceParams
-			Response = UpdateInstanceRes
+			Response = *Instance
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -22793,14 +23910,8 @@ func (s *Server) handleUpdateLaunchTemplateRequest(args [1]string, argsEscaped b
 
 // handleUpdateNetworkInterfaceRequest handles update-network-interface operation.
 //
-// Changes the name, or replaces the security groups. The two are never combined (422
-// `UPDATE_FIELDS_COMBINED`).
-//
-//   - `name` is not an operation, is accepted at any time and answers 200.
-//   - `security_group_ids` is the complete new set, one to five groups of the network interface's
-//     virtual private cloud; groups left out are removed. It applies to traffic of the running instance
-//     as soon as it is in place, and answers 202 with the network interface `updating_security_groups`
-//     until then.
+// Changes the name. It is not an operation and is accepted at any time. Replacing the security groups
+// is `:replaceSecurityGroups`.
 //
 // Secondary IPv4 addresses are added and removed under
 // `/network-interfaces/{networkInterfaceId}/addresses`.
@@ -22951,7 +24062,7 @@ func (s *Server) handleUpdateNetworkInterfaceRequest(args [1]string, argsEscaped
 		}
 	}()
 
-	var response UpdateNetworkInterfaceRes
+	var response *NetworkInterface
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -22972,7 +24083,7 @@ func (s *Server) handleUpdateNetworkInterfaceRequest(args [1]string, argsEscaped
 		type (
 			Request  = *UpdateNetworkInterfaceRequestBody
 			Params   = UpdateNetworkInterfaceParams
-			Response = UpdateNetworkInterfaceRes
+			Response = *NetworkInterface
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -23886,44 +24997,8 @@ func (s *Server) handleUpdateVirtualPrivateCloudSubnetRequest(args [2]string, ar
 
 // handleUpdateVolumeRequest handles update-volume operation.
 //
-// Changes the name, the capacity or the volume type. The availability zone is immutable.
-//
-// `size_gib` and `volume_type_id` are operational fields: each starts a change and cannot be combined
-// with any other field in the same request, including the other one. Such a request is refused with
-// 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside a change that was then refused
-// would leave the request half applied. `checkout` and `proration_date` belong to the purchase of the
-// change and are accepted only together with one of them.
-//
-// Renaming is not an operation and is accepted at any time. It returns 200 with `checkout_session_id`
-// and `order_id` null.
-//
-// Resizing accepts only an increase; a smaller `size_gib` is refused with `VOLUME_CANNOT_SHRINK`
-// (422), since a file system cannot be shrunk from outside the instance. It returns 202 with the
-// volume and the Checkout Session for the resize, which keeps the volume's usage type and period. The
-// volume is `resizing` until the resize is applied, its Checkout Session expires or its order is
-// canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
-// meanwhile. The volume keeps its current size until the resize is applied; once `size_gib` shows the
-// new size, extend the file system inside the instance. If checkout is not completed, the order is not
-// accepted or the resize fails, the volume keeps its size and Billing shows the outcome.
-//
-// Changing the type moves the volume to another volume type at the same capacity, priced as that type,
-// and returns 202 with the volume and the Checkout Session for the change, which keeps the volume's
-// usage type and period. The volume has to be detached (409 `VOLUME_RETYPE_ATTACHED`), so a boot
-// volume cannot change its type. The target has to be on sale (`VOLUME_TYPE_OFF_SALE`), in the
-// volume's region (422 `VOLUME_RETYPE_OTHER_REGION`), of the volume's availability zone (422
-// `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`) with room for the volume (409 `VOLUME_TYPE_SOLD_OUT`,
-// `VOLUME_TYPE_CAPACITY_REACHED`, `VOLUME_TYPE_NO_POOL_ROOM`), admit the volume's capacity (422
-// `VOLUME_SIZE_OUT_OF_RANGE`, `VOLUME_SIZE_NOT_ON_STEP`) and differ from the current one (422
-// `VOLUME_RETYPE_SAME_TYPE`). The volume is `retyping` until the change is applied, its Checkout
-// Session expires or its order is canceled. A target on the same storage backend takes effect at once;
-// one on another backend copies the volume's data there first, which takes longer the larger the
-// volume is. The volume keeps its type until `volume_type_id` shows the new one, and its `performance`
-// follows from then on; a change that did not take effect leaves the volume as it was and is refunded.
-//
-// An attached volume, including a boot volume, can be resized. The capacity is usable at once, and the
-// volume's `performance` shows what its type gives the new size. That performance applies from the
-// volume's next attachment, or the next start of its stopped instance: the storage reads a volume's
-// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
+// Changes the name. It is not an operation and is accepted at any time. Growing the volume is
+// `:resize` and moving it to another type is `:retype`.
 //
 // PATCH /api/v2/volumes/{volumeId}
 func (s *Server) handleUpdateVolumeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -24071,7 +25146,7 @@ func (s *Server) handleUpdateVolumeRequest(args [1]string, argsEscaped bool, w h
 		}
 	}()
 
-	var response UpdateVolumeRes
+	var response *VolumeResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -24092,7 +25167,7 @@ func (s *Server) handleUpdateVolumeRequest(args [1]string, argsEscaped bool, w h
 		type (
 			Request  = *UpdateVolumeRequestBody
 			Params   = UpdateVolumeParams
-			Response = UpdateVolumeRes
+			Response = *VolumeResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,

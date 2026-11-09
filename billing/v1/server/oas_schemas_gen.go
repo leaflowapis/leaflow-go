@@ -380,7 +380,9 @@ type ActiveResource struct {
 	EndedAt        OptDateTime `json:"ended_at"`
 	SuspendedAt    OptDateTime `json:"suspended_at"`
 	StateChangedAt OptDateTime `json:"state_changed_at"`
-	// The metered subscription charged for this metering record.
+	// The metered subscription item charged for this metering record.
+	SubscriptionItemID uuid.UUID `json:"subscription_item_id"`
+	// The subscription the item belongs to.
 	SubscriptionID uuid.UUID `json:"subscription_id"`
 	ResourceID     string    `json:"resource_id"`
 	Product        Product   `json:"product"`
@@ -416,6 +418,11 @@ func (s *ActiveResource) GetSuspendedAt() OptDateTime {
 // GetStateChangedAt returns the value of StateChangedAt.
 func (s *ActiveResource) GetStateChangedAt() OptDateTime {
 	return s.StateChangedAt
+}
+
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *ActiveResource) GetSubscriptionItemID() uuid.UUID {
+	return s.SubscriptionItemID
 }
 
 // GetSubscriptionID returns the value of SubscriptionID.
@@ -496,6 +503,11 @@ func (s *ActiveResource) SetSuspendedAt(val OptDateTime) {
 // SetStateChangedAt sets the value of StateChangedAt.
 func (s *ActiveResource) SetStateChangedAt(val OptDateTime) {
 	s.StateChangedAt = val
+}
+
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *ActiveResource) SetSubscriptionItemID(val uuid.UUID) {
+	s.SubscriptionItemID = val
 }
 
 // SetSubscriptionID sets the value of SubscriptionID.
@@ -654,7 +666,11 @@ func (s *ActiveResourceStatus) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/Allowance
 type Allowance struct {
 	// Optional issuance key, unique within this billing account.
-	IdempotencyKey   OptString      `json:"idempotency_key"`
+	IdempotencyKey OptString `json:"idempotency_key"`
+	// The subscription item whose purchase includes the allowance; absent for an allowance not included in
+	// a purchase.
+	SubscriptionItemID OptUUID `json:"subscription_item_id"`
+	// The subscription that item belongs to.
 	SubscriptionID   OptUUID        `json:"subscription_id"`
 	ID               uuid.UUID      `json:"id"`
 	BillingAccountID OptInt64       `json:"billing_account_id"`
@@ -683,6 +699,11 @@ type Allowance struct {
 // GetIdempotencyKey returns the value of IdempotencyKey.
 func (s *Allowance) GetIdempotencyKey() OptString {
 	return s.IdempotencyKey
+}
+
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *Allowance) GetSubscriptionItemID() OptUUID {
+	return s.SubscriptionItemID
 }
 
 // GetSubscriptionID returns the value of SubscriptionID.
@@ -763,6 +784,11 @@ func (s *Allowance) GetValidUntil() OptNilDateTime {
 // SetIdempotencyKey sets the value of IdempotencyKey.
 func (s *Allowance) SetIdempotencyKey(val OptString) {
 	s.IdempotencyKey = val
+}
+
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *Allowance) SetSubscriptionItemID(val OptUUID) {
+	s.SubscriptionItemID = val
 }
 
 // SetSubscriptionID sets the value of SubscriptionID.
@@ -1187,21 +1213,6 @@ func (s *AppliedCredit) SetAmount(val Money) {
 	s.Amount = val
 }
 
-// Ref: #/components/schemas/AutoRenewSet
-type AutoRenewSet struct {
-	AutoRenew bool `json:"auto_renew"`
-}
-
-// GetAutoRenew returns the value of AutoRenew.
-func (s *AutoRenewSet) GetAutoRenew() bool {
-	return s.AutoRenew
-}
-
-// SetAutoRenew sets the value of AutoRenew.
-func (s *AutoRenewSet) SetAutoRenew(val bool) {
-	s.AutoRenew = val
-}
-
 // Ref: #/components/schemas/BillingAccount
 type BillingAccount struct {
 	// The active contact used for invoices, of this account; null clears it.
@@ -1599,14 +1610,14 @@ func (s *CancelSubscriptionRequest) SetReason(val OptString) {
 	s.Reason = val
 }
 
-// One cancellation of a set of subscriptions of one service, released together at one time.
+// One cancellation of a set of subscription items of one service, released together at one time.
 //
 //   - `requested`: `immediate`, release has not begun.
 //   - `scheduled`: `period_end`, waiting for `scheduled_at`.
 //   - `releasing`: release has begun; it can no longer be withdrawn.
-//   - `completed`: every subscription has ended and its refund has been made.
-//   - `canceled`: withdrawn before release began; the subscriptions continue.
-//   - `failed`: the service could not carry it out, for the reason in `failure_code`; the subscriptions
+//   - `completed`: every item has ended and its refund has been made.
+//   - `canceled`: withdrawn before release began; the items continue.
+//   - `failed`: the service could not carry it out, for the reason in `failure_code`; the items
 //     continue and can be canceled again.
 //
 // Ref: #/components/schemas/Cancellation
@@ -1619,8 +1630,8 @@ type Cancellation struct {
 	ProrationDate OptDateTime `json:"proration_date"`
 	// Who requested it; `project_deletion` means the project was deleted.
 	Origin CancellationOrigin `json:"origin"`
-	// The billing account paying for these subscriptions when the cancellation was created: the purchasing
-	// account of an account-level purchase, or the project's linked account.
+	// The billing account paying for these items when the cancellation was created: the purchasing account
+	// of an account-level purchase, or the project's linked account.
 	BillingAccountID int64  `json:"billing_account_id"`
 	Currency         string `json:"currency"`
 	// The refund confirmed when the cancellation was created. Absent when the platform created it.
@@ -1777,8 +1788,8 @@ func (s *Cancellation) SetItems(val []CancellationItem) {
 // Ref: #/components/schemas/CancellationCreate
 type CancellationCreate struct {
 	// As in the preview.
-	SubscriptionIds []uuid.UUID      `json:"subscription_ids"`
-	Mode            CancellationMode `json:"mode"`
+	Items []CancellationItemInput `json:"items"`
+	Mode  CancellationMode        `json:"mode"`
 	// For `immediate`, the preview's `proration_date`: a whole second, not in the future and at most ten
 	// minutes old; the refund is computed as of it. Now when omitted.
 	ProrationDate OptDateTime `json:"proration_date"`
@@ -1788,9 +1799,9 @@ type CancellationCreate struct {
 	Reason OptString `json:"reason"`
 }
 
-// GetSubscriptionIds returns the value of SubscriptionIds.
-func (s *CancellationCreate) GetSubscriptionIds() []uuid.UUID {
-	return s.SubscriptionIds
+// GetItems returns the value of Items.
+func (s *CancellationCreate) GetItems() []CancellationItemInput {
+	return s.Items
 }
 
 // GetMode returns the value of Mode.
@@ -1813,9 +1824,9 @@ func (s *CancellationCreate) GetReason() OptString {
 	return s.Reason
 }
 
-// SetSubscriptionIds sets the value of SubscriptionIds.
-func (s *CancellationCreate) SetSubscriptionIds(val []uuid.UUID) {
-	s.SubscriptionIds = val
+// SetItems sets the value of Items.
+func (s *CancellationCreate) SetItems(val []CancellationItemInput) {
+	s.Items = val
 }
 
 // SetMode sets the value of Mode.
@@ -1838,17 +1849,20 @@ func (s *CancellationCreate) SetReason(val OptString) {
 	s.Reason = val
 }
 
-// One subscription of the cancellation.
+// One subscription item of the cancellation.
 // Ref: #/components/schemas/CancellationItem
 type CancellationItem struct {
-	// The subscription's cancellation item, the same as `Subscription.cancellation.id`.
-	ID             uuid.UUID `json:"id"`
+	// The item's entry in the cancellation, the same as `SubscriptionItem.cancellation.id`.
+	ID                 uuid.UUID `json:"id"`
+	SubscriptionItemID uuid.UUID `json:"subscription_item_id"`
+	// The subscription the item belongs to.
 	SubscriptionID uuid.UUID `json:"subscription_id"`
 	PlanID         uuid.UUID `json:"plan_id"`
 	PlanName       string    `json:"plan_name"`
 	Type           PriceType `json:"type"`
-	// Creating the cancellation turned automatic renewal off; withdrawing it turns renewal back on for a
-	// `metered` subscription and leaves it off for a `licensed` one.
+	// When the cancellation covers every continuing item of a subscription, creating it turned the
+	// subscription's automatic renewal off; withdrawing it turns renewal back on for a subscription with
+	// only `metered` items and leaves it off for one with `licensed` items.
 	UsageType UsageType              `json:"usage_type"`
 	Status    CancellationItemStatus `json:"status"`
 	// The release stopped or its result is unknown; present while the release needs resolution.
@@ -1867,6 +1881,11 @@ type CancellationItem struct {
 // GetID returns the value of ID.
 func (s *CancellationItem) GetID() uuid.UUID {
 	return s.ID
+}
+
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *CancellationItem) GetSubscriptionItemID() uuid.UUID {
+	return s.SubscriptionItemID
 }
 
 // GetSubscriptionID returns the value of SubscriptionID.
@@ -1934,6 +1953,11 @@ func (s *CancellationItem) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *CancellationItem) SetSubscriptionItemID(val uuid.UUID) {
+	s.SubscriptionItemID = val
+}
+
 // SetSubscriptionID sets the value of SubscriptionID.
 func (s *CancellationItem) SetSubscriptionID(val uuid.UUID) {
 	s.SubscriptionID = val
@@ -1992,6 +2016,22 @@ func (s *CancellationItem) SetCreditAmount(val OptMoney) {
 // SetGatewayAmount sets the value of GatewayAmount.
 func (s *CancellationItem) SetGatewayAmount(val OptMoney) {
 	s.GatewayAmount = val
+}
+
+// One subscription item to end, each at most once.
+// Ref: #/components/schemas/CancellationItemInput
+type CancellationItemInput struct {
+	SubscriptionItemID uuid.UUID `json:"subscription_item_id"`
+}
+
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *CancellationItemInput) GetSubscriptionItemID() uuid.UUID {
+	return s.SubscriptionItemID
+}
+
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *CancellationItemInput) SetSubscriptionItemID(val uuid.UUID) {
+	s.SubscriptionItemID = val
 }
 
 type CancellationItemStatus string
@@ -2229,8 +2269,8 @@ func (s *CancellationPolicy) UnmarshalText(data []byte) error {
 	}
 }
 
-// What the cancellation would return, per subscription and in total, as of now. Give `proration_date`
-// and `refundable_amount` when creating the cancellation.
+// What the cancellation would return, per item and in total, as of now. Give `proration_date` and
+// `refundable_amount` when creating the cancellation.
 //
 //   - `unused_amount`: before tax, the amount paid for the current periods in proportion to the time
 //     remaining.
@@ -2243,11 +2283,11 @@ func (s *CancellationPolicy) UnmarshalText(data []byte) error {
 //   - `tax_amount`: the tax included in `refundable_amount`.
 //   - `forfeited_amount`: before tax, the part of `unused_amount` the refund terms do not return.
 //
-// Metered and one-time subscriptions show zero; their usage until release is charged as usual.
+// Metered and one-time items show zero; their usage until release is charged as usual.
 // Ref: #/components/schemas/CancellationPreview
 type CancellationPreview struct {
 	Mode CancellationMode `json:"mode"`
-	// For `period_end`, when release begins, the end of the paid terms.
+	// For `period_end`, when release begins, the end of the subscriptions' current terms.
 	ScheduledAt OptDateTime `json:"scheduled_at"`
 	// For `immediate`, the second the refund is computed as of. Give it when creating the cancellation.
 	ProrationDate            OptDateTime               `json:"proration_date"`
@@ -2382,9 +2422,11 @@ func (s *CancellationPreview) SetItems(val []CancellationPreviewItem) {
 	s.Items = val
 }
 
-// One subscription of the previewed cancellation.
+// One subscription item of the previewed cancellation.
 // Ref: #/components/schemas/CancellationPreviewItem
 type CancellationPreviewItem struct {
+	SubscriptionItemID uuid.UUID `json:"subscription_item_id"`
+	// The subscription the item belongs to.
 	SubscriptionID uuid.UUID `json:"subscription_id"`
 	PlanID         uuid.UUID `json:"plan_id"`
 	PlanName       string    `json:"plan_name"`
@@ -2393,8 +2435,9 @@ type CancellationPreviewItem struct {
 	Project   OptNilNamedIdentity `json:"project"`
 	Type      PriceType           `json:"type"`
 	UsageType UsageType           `json:"usage_type"`
-	// Whether automatic renewal is on now. Creating the cancellation turns it off; withdrawing it turns it
-	// back on for a metered subscription but not for a licensed one.
+	// Whether the item's subscription renews automatically now. Creating a cancellation of every
+	// continuing item of the subscription turns it off; withdrawing it turns it back on for a subscription
+	// with only metered items but not for one with licensed items.
 	AutoRenew                bool  `json:"auto_renew"`
 	UnusedAmount             Money `json:"unused_amount"`
 	ShortRateSurchargeAmount Money `json:"short_rate_surcharge_amount"`
@@ -2403,6 +2446,11 @@ type CancellationPreviewItem struct {
 	CreditAmount             Money `json:"credit_amount"`
 	TaxAmount                Money `json:"tax_amount"`
 	ForfeitedAmount          Money `json:"forfeited_amount"`
+}
+
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *CancellationPreviewItem) GetSubscriptionItemID() uuid.UUID {
+	return s.SubscriptionItemID
 }
 
 // GetSubscriptionID returns the value of SubscriptionID.
@@ -2475,6 +2523,11 @@ func (s *CancellationPreviewItem) GetForfeitedAmount() Money {
 	return s.ForfeitedAmount
 }
 
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *CancellationPreviewItem) SetSubscriptionItemID(val uuid.UUID) {
+	s.SubscriptionItemID = val
+}
+
 // SetSubscriptionID sets the value of SubscriptionID.
 func (s *CancellationPreviewItem) SetSubscriptionID(val uuid.UUID) {
 	s.SubscriptionID = val
@@ -2545,18 +2598,17 @@ func (s *CancellationPreviewItem) SetForfeitedAmount(val Money) {
 	s.ForfeitedAmount = val
 }
 
-// What ending these subscriptions together would return, for one mode; preview `immediate` and
-// `period_end` separately to compare. Refused with 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when a
-// subscription is already being canceled (`meta.cancellation_id`), is being reclaimed (`meta.reason`
-// `reclaim_requested`) or has a paid change waiting to switch (`meta.order_id`).
+// What ending these items together would return, for one mode; preview `immediate` and `period_end`
+// separately to compare. Refused with 409 `BILLING_SUBSCRIPTION_OPERATION_PENDING` when an item is
+// already being canceled (`meta.cancellation_id`), its subscription is being reclaimed (`meta.reason`
+// `reclaim_requested`) or the item has a paid change waiting to switch (`meta.order_id`).
 // Ref: #/components/schemas/CancellationPreviewRequest
 type CancellationPreviewRequest struct {
-	// A billing account you own that currently pays for every subscription.
+	// A billing account you own that currently pays for every item.
 	BillingAccountID int64 `json:"billing_account_id"`
-	// The subscriptions to end together, all of one service, including every subscription released with a
-	// resource.
-	SubscriptionIds []uuid.UUID      `json:"subscription_ids"`
-	Mode            CancellationMode `json:"mode"`
+	// The items to end together, all of one service, including every item released with a resource.
+	Items []CancellationItemInput `json:"items"`
+	Mode  CancellationMode        `json:"mode"`
 }
 
 // GetBillingAccountID returns the value of BillingAccountID.
@@ -2564,9 +2616,9 @@ func (s *CancellationPreviewRequest) GetBillingAccountID() int64 {
 	return s.BillingAccountID
 }
 
-// GetSubscriptionIds returns the value of SubscriptionIds.
-func (s *CancellationPreviewRequest) GetSubscriptionIds() []uuid.UUID {
-	return s.SubscriptionIds
+// GetItems returns the value of Items.
+func (s *CancellationPreviewRequest) GetItems() []CancellationItemInput {
+	return s.Items
 }
 
 // GetMode returns the value of Mode.
@@ -2579,9 +2631,9 @@ func (s *CancellationPreviewRequest) SetBillingAccountID(val int64) {
 	s.BillingAccountID = val
 }
 
-// SetSubscriptionIds sets the value of SubscriptionIds.
-func (s *CancellationPreviewRequest) SetSubscriptionIds(val []uuid.UUID) {
-	s.SubscriptionIds = val
+// SetItems sets the value of Items.
+func (s *CancellationPreviewRequest) SetItems(val []CancellationItemInput) {
+	s.Items = val
 }
 
 // SetMode sets the value of Mode.
@@ -2675,6 +2727,9 @@ type CheckoutOptions struct {
 	// scheme, including mobile and desktop application schemes. Billing stores it without checking the
 	// target; each client validates its own.
 	ReturnURL OptURI `json:"return_url"`
+	// Turns on automatic renewal of every subscription with licensed items that the purchase opens. Off
+	// when omitted. It must be the customer's own choice.
+	AutoRenew OptBool `json:"auto_renew"`
 }
 
 // GetMode returns the value of Mode.
@@ -2692,6 +2747,11 @@ func (s *CheckoutOptions) GetReturnURL() OptURI {
 	return s.ReturnURL
 }
 
+// GetAutoRenew returns the value of AutoRenew.
+func (s *CheckoutOptions) GetAutoRenew() OptBool {
+	return s.AutoRenew
+}
+
 // SetMode sets the value of Mode.
 func (s *CheckoutOptions) SetMode(val OptCheckoutOptionsMode) {
 	s.Mode = val
@@ -2705,6 +2765,11 @@ func (s *CheckoutOptions) SetExpectedAmount(val OptString) {
 // SetReturnURL sets the value of ReturnURL.
 func (s *CheckoutOptions) SetReturnURL(val OptURI) {
 	s.ReturnURL = val
+}
+
+// SetAutoRenew sets the value of AutoRenew.
+func (s *CheckoutOptions) SetAutoRenew(val OptBool) {
+	s.AutoRenew = val
 }
 
 // Merged schema.
@@ -2755,7 +2820,7 @@ func (s *CheckoutOptionsMode) UnmarshalText(data []byte) error {
 type CheckoutSession struct {
 	ID uuid.UUID `json:"id"`
 	// The service the purchase is for.
-	ProductID        ProductID       `json:"product_id"`
+	ProductID        ProductId       `json:"product_id"`
 	BillingAccountID int64           `json:"billing_account_id"`
 	Account          AccountIdentity `json:"account"`
 	// The project the purchase is for. Null for an account-level purchase, such as a membership.
@@ -2763,8 +2828,8 @@ type CheckoutSession struct {
 	// The project and its current name. Null for an account-level purchase or when the project cannot be
 	// read; `project_id` still identifies it.
 	Project NilNamedIdentity `json:"project"`
-	// `new` buys, `renew` extends a licensed subscription, `modify` changes a subscription's configuration
-	// or billing terms.
+	// `new` buys, `renew` extends subscriptions, `modify` changes subscription items' configuration or
+	// billing terms.
 	Type CheckoutSessionType `json:"type"`
 	// When a change takes effect, as on the order it creates; `none` for anything that is not a change.
 	ChangeEffective CheckoutSessionChangeEffective `json:"change_effective"`
@@ -2780,6 +2845,9 @@ type CheckoutSession struct {
 	ExpiredAt   NilDateTime `json:"expired_at"`
 	// The order created when the session completed. Null otherwise.
 	OrderID NilUUID `json:"order_id"`
+	// The subscriptions the session buys, renews or changes, in order; each item names its entry in
+	// `subscription_index`.
+	Subscriptions []CheckoutSessionSubscription `json:"subscriptions"`
 }
 
 // GetID returns the value of ID.
@@ -2788,7 +2856,7 @@ func (s *CheckoutSession) GetID() uuid.UUID {
 }
 
 // GetProductID returns the value of ProductID.
-func (s *CheckoutSession) GetProductID() ProductID {
+func (s *CheckoutSession) GetProductID() ProductId {
 	return s.ProductID
 }
 
@@ -2862,13 +2930,18 @@ func (s *CheckoutSession) GetOrderID() NilUUID {
 	return s.OrderID
 }
 
+// GetSubscriptions returns the value of Subscriptions.
+func (s *CheckoutSession) GetSubscriptions() []CheckoutSessionSubscription {
+	return s.Subscriptions
+}
+
 // SetID sets the value of ID.
 func (s *CheckoutSession) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
 // SetProductID sets the value of ProductID.
-func (s *CheckoutSession) SetProductID(val ProductID) {
+func (s *CheckoutSession) SetProductID(val ProductId) {
 	s.ProductID = val
 }
 
@@ -2940,6 +3013,11 @@ func (s *CheckoutSession) SetExpiredAt(val NilDateTime) {
 // SetOrderID sets the value of OrderID.
 func (s *CheckoutSession) SetOrderID(val NilUUID) {
 	s.OrderID = val
+}
+
+// SetSubscriptions sets the value of Subscriptions.
+func (s *CheckoutSession) SetSubscriptions(val []CheckoutSessionSubscription) {
+	s.Subscriptions = val
 }
 
 func (*CheckoutSession) createCheckoutSessionRes() {}
@@ -3036,12 +3114,14 @@ func (s *CheckoutSessionConfirm) SetProrationDate(val OptDateTime) {
 	s.ProrationDate = val
 }
 
-// The subscription to renew, and its periods and price chosen as in renewing.
+// The subscriptions to renew together, and the periods and price chosen as in renewing, applied to
+// each.
 // Ref: #/components/schemas/CheckoutSessionCreate
 type CheckoutSessionCreate struct {
 	// Chosen by the caller. Creating it again conflicts; read the session after an unknown outcome.
 	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
-	SubscriptionID    uuid.UUID `json:"subscription_id"`
+	// Each subscription at most once.
+	Subscriptions []CheckoutSessionSubscriptionInput `json:"subscriptions"`
 	// As in renewing.
 	Periods OptInt `json:"periods"`
 	// As in renewing.
@@ -3057,9 +3137,9 @@ func (s *CheckoutSessionCreate) GetCheckoutSessionID() uuid.UUID {
 	return s.CheckoutSessionID
 }
 
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *CheckoutSessionCreate) GetSubscriptionID() uuid.UUID {
-	return s.SubscriptionID
+// GetSubscriptions returns the value of Subscriptions.
+func (s *CheckoutSessionCreate) GetSubscriptions() []CheckoutSessionSubscriptionInput {
+	return s.Subscriptions
 }
 
 // GetPeriods returns the value of Periods.
@@ -3087,9 +3167,9 @@ func (s *CheckoutSessionCreate) SetCheckoutSessionID(val uuid.UUID) {
 	s.CheckoutSessionID = val
 }
 
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *CheckoutSessionCreate) SetSubscriptionID(val uuid.UUID) {
-	s.SubscriptionID = val
+// SetSubscriptions sets the value of Subscriptions.
+func (s *CheckoutSessionCreate) SetSubscriptions(val []CheckoutSessionSubscriptionInput) {
+	s.Subscriptions = val
 }
 
 // SetPeriods sets the value of Periods.
@@ -3174,8 +3254,10 @@ type CheckoutSessionItem struct {
 	Quantity string  `json:"quantity"`
 	// The dimension values of what is bought, such as region and instance type.
 	Dimensions CheckoutSessionItemDimensions `json:"dimensions"`
-	// The subscription changed or renewed. Null for a new purchase.
-	SubscriptionID NilUUID `json:"subscription_id"`
+	// The item's subscription, as its index in the session's `subscriptions`.
+	SubscriptionIndex int `json:"subscription_index"`
+	// The subscription item changed or renewed. Null for an item the purchase adds.
+	SubscriptionItemID NilUUID `json:"subscription_item_id"`
 	// Renewals only; null otherwise. How many consecutive periods are renewed.
 	Periods NilInt `json:"periods"`
 }
@@ -3210,9 +3292,14 @@ func (s *CheckoutSessionItem) GetDimensions() CheckoutSessionItemDimensions {
 	return s.Dimensions
 }
 
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *CheckoutSessionItem) GetSubscriptionID() NilUUID {
-	return s.SubscriptionID
+// GetSubscriptionIndex returns the value of SubscriptionIndex.
+func (s *CheckoutSessionItem) GetSubscriptionIndex() int {
+	return s.SubscriptionIndex
+}
+
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *CheckoutSessionItem) GetSubscriptionItemID() NilUUID {
+	return s.SubscriptionItemID
 }
 
 // GetPeriods returns the value of Periods.
@@ -3250,9 +3337,14 @@ func (s *CheckoutSessionItem) SetDimensions(val CheckoutSessionItemDimensions) {
 	s.Dimensions = val
 }
 
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *CheckoutSessionItem) SetSubscriptionID(val NilUUID) {
-	s.SubscriptionID = val
+// SetSubscriptionIndex sets the value of SubscriptionIndex.
+func (s *CheckoutSessionItem) SetSubscriptionIndex(val int) {
+	s.SubscriptionIndex = val
+}
+
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *CheckoutSessionItem) SetSubscriptionItemID(val NilUUID) {
+	s.SubscriptionItemID = val
 }
 
 // SetPeriods sets the value of Periods.
@@ -3405,8 +3497,67 @@ func (s *CheckoutSessionStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// `new` buys, `renew` extends a licensed subscription, `modify` changes a subscription's configuration
-// or billing terms.
+// One subscription of the session.
+// Ref: #/components/schemas/CheckoutSessionSubscription
+type CheckoutSessionSubscription struct {
+	// The existing subscription renewed or changed, or that new items are added to. Null for a
+	// subscription the purchase opens.
+	SubscriptionID NilUUID `json:"subscription_id"`
+	// The free trial a subscription the purchase opens gets; null without one.
+	TrialPeriodDays NilInt `json:"trial_period_days"`
+	// The end of the free trial a subscription the purchase opens gets; null without one or when given in
+	// days.
+	TrialEnd NilDateTime `json:"trial_end"`
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *CheckoutSessionSubscription) GetSubscriptionID() NilUUID {
+	return s.SubscriptionID
+}
+
+// GetTrialPeriodDays returns the value of TrialPeriodDays.
+func (s *CheckoutSessionSubscription) GetTrialPeriodDays() NilInt {
+	return s.TrialPeriodDays
+}
+
+// GetTrialEnd returns the value of TrialEnd.
+func (s *CheckoutSessionSubscription) GetTrialEnd() NilDateTime {
+	return s.TrialEnd
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *CheckoutSessionSubscription) SetSubscriptionID(val NilUUID) {
+	s.SubscriptionID = val
+}
+
+// SetTrialPeriodDays sets the value of TrialPeriodDays.
+func (s *CheckoutSessionSubscription) SetTrialPeriodDays(val NilInt) {
+	s.TrialPeriodDays = val
+}
+
+// SetTrialEnd sets the value of TrialEnd.
+func (s *CheckoutSessionSubscription) SetTrialEnd(val NilDateTime) {
+	s.TrialEnd = val
+}
+
+// One subscription to renew.
+// Ref: #/components/schemas/CheckoutSessionSubscriptionInput
+type CheckoutSessionSubscriptionInput struct {
+	SubscriptionID uuid.UUID `json:"subscription_id"`
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *CheckoutSessionSubscriptionInput) GetSubscriptionID() uuid.UUID {
+	return s.SubscriptionID
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *CheckoutSessionSubscriptionInput) SetSubscriptionID(val uuid.UUID) {
+	s.SubscriptionID = val
+}
+
+// `new` buys, `renew` extends subscriptions, `modify` changes subscription items' configuration or
+// billing terms.
 type CheckoutSessionType string
 
 const (
@@ -5082,7 +5233,7 @@ type Entitlement struct {
 	Feature ObjectIdentity `json:"feature"`
 	Name    OptString      `json:"name"`
 	Enabled bool           `json:"enabled"`
-	// When the providing subscription ends. Absent for a metered subscription.
+	// When the providing subscription item ends with its current term. Absent for a metered item.
 	ExpiresAt OptNilDateTime `json:"expires_at"`
 }
 
@@ -6150,8 +6301,8 @@ type InvoiceItem struct {
 	// For a usage line, the values of its meter's presentation dimensions, such as the model and token
 	// kind. Empty for other lines.
 	Dimensions OptInvoiceItemDimensions `json:"dimensions"`
-	// Present on a line that changes a subscription immediately, one entry for each paid period it covers.
-	// `amount` is the sum of `remaining_amount` minus `credited_amount` over the entries.
+	// Present on a line that changes a subscription item immediately, one entry for each paid period it
+	// covers. `amount` is the sum of `remaining_amount` minus `credited_amount` over the entries.
 	Prorations []InvoiceItemProration `json:"prorations"`
 }
 
@@ -6434,7 +6585,7 @@ func (s *InvoiceItemList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// The value of one paid period moved to the new configuration of a subscription.
+// The value of one paid period moved to the new configuration of a subscription item.
 // Ref: #/components/schemas/InvoiceItemProration
 type InvoiceItemProration struct {
 	// The earlier invoice line that paid for the period.
@@ -7297,6 +7448,51 @@ func (o NilInt) Get() (v int, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilInt) Or(d int) int {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilInt64 returns new NilInt64 with value set to v.
+func NewNilInt64(v int64) NilInt64 {
+	return NilInt64{
+		Value: v,
+	}
+}
+
+// NilInt64 is nullable int64.
+type NilInt64 struct {
+	Value int64
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilInt64) SetTo(v int64) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilInt64) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilInt64) SetToNull() {
+	o.Null = true
+	var v int64
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilInt64) Get() (v int64, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilInt64) Or(d int64) int64 {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -8973,6 +9169,74 @@ func (o OptNilString) Or(d string) string {
 	return d
 }
 
+// NewOptNilTrialSettings returns new OptNilTrialSettings with value set to v.
+func NewOptNilTrialSettings(v TrialSettings) OptNilTrialSettings {
+	return OptNilTrialSettings{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilTrialSettings is optional nullable TrialSettings.
+type OptNilTrialSettings struct {
+	Value TrialSettings
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilTrialSettings was set.
+func (o OptNilTrialSettings) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilTrialSettings) Reset() {
+	var v TrialSettings
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilTrialSettings) SetTo(v TrialSettings) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilTrialSettings) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilTrialSettings) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v TrialSettings
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilTrialSettings) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilTrialSettings) Get() (v TrialSettings, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilTrialSettings) Or(d TrialSettings) TrialSettings {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilUUID returns new OptNilUUID with value set to v.
 func NewOptNilUUID(v uuid.UUID) OptNilUUID {
 	return OptNilUUID{
@@ -9547,38 +9811,38 @@ func (o OptProduct) Or(d Product) Product {
 	return d
 }
 
-// NewOptProductID returns new OptProductID with value set to v.
-func NewOptProductID(v ProductID) OptProductID {
-	return OptProductID{
+// NewOptProductId returns new OptProductId with value set to v.
+func NewOptProductId(v ProductId) OptProductId {
+	return OptProductId{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptProductID is optional ProductID.
-type OptProductID struct {
-	Value ProductID
+// OptProductId is optional ProductId.
+type OptProductId struct {
+	Value ProductId
 	Set   bool
 }
 
-// IsSet returns true if OptProductID was set.
-func (o OptProductID) IsSet() bool { return o.Set }
+// IsSet returns true if OptProductId was set.
+func (o OptProductId) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptProductID) Reset() {
-	var v ProductID
+func (o *OptProductId) Reset() {
+	var v ProductId
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptProductID) SetTo(v ProductID) {
+func (o *OptProductId) SetTo(v ProductId) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptProductID) Get() (v ProductID, ok bool) {
+func (o OptProductId) Get() (v ProductId, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -9586,7 +9850,7 @@ func (o OptProductID) Get() (v ProductID, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptProductID) Or(d ProductID) ProductID {
+func (o OptProductId) Or(d ProductId) ProductId {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -10237,38 +10501,38 @@ func (o OptString) Or(d string) string {
 	return d
 }
 
-// NewOptSubscriptionCancellation returns new OptSubscriptionCancellation with value set to v.
-func NewOptSubscriptionCancellation(v SubscriptionCancellation) OptSubscriptionCancellation {
-	return OptSubscriptionCancellation{
+// NewOptSubscriptionItemCancellation returns new OptSubscriptionItemCancellation with value set to v.
+func NewOptSubscriptionItemCancellation(v SubscriptionItemCancellation) OptSubscriptionItemCancellation {
+	return OptSubscriptionItemCancellation{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptSubscriptionCancellation is optional SubscriptionCancellation.
-type OptSubscriptionCancellation struct {
-	Value SubscriptionCancellation
+// OptSubscriptionItemCancellation is optional SubscriptionItemCancellation.
+type OptSubscriptionItemCancellation struct {
+	Value SubscriptionItemCancellation
 	Set   bool
 }
 
-// IsSet returns true if OptSubscriptionCancellation was set.
-func (o OptSubscriptionCancellation) IsSet() bool { return o.Set }
+// IsSet returns true if OptSubscriptionItemCancellation was set.
+func (o OptSubscriptionItemCancellation) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptSubscriptionCancellation) Reset() {
-	var v SubscriptionCancellation
+func (o *OptSubscriptionItemCancellation) Reset() {
+	var v SubscriptionItemCancellation
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptSubscriptionCancellation) SetTo(v SubscriptionCancellation) {
+func (o *OptSubscriptionItemCancellation) SetTo(v SubscriptionItemCancellation) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptSubscriptionCancellation) Get() (v SubscriptionCancellation, ok bool) {
+func (o OptSubscriptionItemCancellation) Get() (v SubscriptionItemCancellation, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -10276,7 +10540,7 @@ func (o OptSubscriptionCancellation) Get() (v SubscriptionCancellation, ok bool)
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptSubscriptionCancellation) Or(d SubscriptionCancellation) SubscriptionCancellation {
+func (o OptSubscriptionItemCancellation) Or(d SubscriptionItemCancellation) SubscriptionItemCancellation {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -10634,14 +10898,14 @@ type Order struct {
 	// called off when the current period ends; such requests fail with `BILLING_ACCOUNT_UNAVAILABLE`.
 	BillingAccountID OptInt64 `json:"billing_account_id"`
 	Currency         string   `json:"currency"`
-	// `new` buys, `renew` extends a licensed subscription, `modify` changes a subscription's configuration
-	// or billing terms.
+	// `new` buys, `renew` extends subscriptions, `modify` changes subscription items' configuration or
+	// billing terms.
 	Type   OrderType   `json:"type"`
 	Status OrderStatus `json:"status"`
 	// When a plan change takes effect; `none` for anything that is not a change. A `period_end` order
 	// stays pending until the first period at the new price is paid. That period is invoiced when the
 	// order is created and starts when the current paid period ends; if the invoice is unpaid by then, the
-	// order is canceled and the subscription renews or ends as usual.
+	// order is canceled and the item renews or ends with its subscription as usual.
 	ChangeEffective OptOrderChangeEffective `json:"change_effective"`
 	// Acceptance deadline; a pending order expires after it.
 	ExpiresAt OptNilDateTime `json:"expires_at"`
@@ -10885,7 +11149,7 @@ func (s *OrderCancel) SetOrderItemIds(val []uuid.UUID) {
 // When a plan change takes effect; `none` for anything that is not a change. A `period_end` order
 // stays pending until the first period at the new price is paid. That period is invoiced when the
 // order is created and starts when the current paid period ends; if the invoice is unpaid by then, the
-// order is canceled and the subscription renews or ends as usual.
+// order is canceled and the item renews or ends with its subscription as usual.
 type OrderChangeEffective string
 
 const (
@@ -10936,7 +11200,8 @@ func (s *OrderChangeEffective) UnmarshalText(data []byte) error {
 
 // The purchase terms frozen at placement. Monetary fields come from the order's invoice lines and are
 // zero without an immediate charge, such as for a metered purchase. Later catalog changes do not
-// reprice the line. A new service purchase has its pending subscription from placement.
+// reprice the line. A new service purchase has its pending subscription and subscription item from
+// placement.
 // Ref: #/components/schemas/OrderItem
 type OrderItem struct {
 	// Whether new account discounts may apply to future renewals. A fixed operator renewal agreement
@@ -10946,9 +11211,13 @@ type OrderItem struct {
 	InvoiceItemIds []uuid.UUID               `json:"invoice_item_ids"`
 	Position       OptInt                    `json:"position"`
 	Configuration  OptOrderItemConfiguration `json:"configuration"`
-	// The Billing subscription: the new pending subscription of a recurring purchase, or the existing one
-	// renewed or changed, which keeps its ID. Absent for a purchase without a subscription.
-	SubscriptionID     OptUUID               `json:"subscription_id"`
+	// The Billing subscription the line belongs to: a new pending one, the existing one an added item
+	// joins, or the one renewed or changed, which keeps its ID. Absent for a purchase without a
+	// subscription.
+	SubscriptionID OptUUID `json:"subscription_id"`
+	// The subscription item the line created, renewed or changed, which keeps its ID. Absent for a
+	// purchase without a subscription.
+	SubscriptionItemID OptUUID               `json:"subscription_item_id"`
 	Interval           OrderItemInterval     `json:"interval"`
 	IntervalCount      OptInt                `json:"interval_count"`
 	CancellationPolicy OptCancellationPolicy `json:"cancellation_policy"`
@@ -10978,7 +11247,7 @@ type OrderItem struct {
 	OrderID           OptUUID   `json:"order_id"`
 	PriceID           uuid.UUID `json:"price_id"`
 	// Which service this line belongs to.
-	ProductID OptProductID `json:"product_id"`
+	ProductID OptProductId `json:"product_id"`
 	Product   OptProduct   `json:"product"`
 	// Which plan was bought.
 	PlanID uuid.UUID `json:"plan_id"`
@@ -11036,6 +11305,11 @@ func (s *OrderItem) GetConfiguration() OptOrderItemConfiguration {
 // GetSubscriptionID returns the value of SubscriptionID.
 func (s *OrderItem) GetSubscriptionID() OptUUID {
 	return s.SubscriptionID
+}
+
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *OrderItem) GetSubscriptionItemID() OptUUID {
+	return s.SubscriptionItemID
 }
 
 // GetInterval returns the value of Interval.
@@ -11124,7 +11398,7 @@ func (s *OrderItem) GetPriceID() uuid.UUID {
 }
 
 // GetProductID returns the value of ProductID.
-func (s *OrderItem) GetProductID() OptProductID {
+func (s *OrderItem) GetProductID() OptProductId {
 	return s.ProductID
 }
 
@@ -11213,6 +11487,11 @@ func (s *OrderItem) SetSubscriptionID(val OptUUID) {
 	s.SubscriptionID = val
 }
 
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *OrderItem) SetSubscriptionItemID(val OptUUID) {
+	s.SubscriptionItemID = val
+}
+
 // SetInterval sets the value of Interval.
 func (s *OrderItem) SetInterval(val OrderItemInterval) {
 	s.Interval = val
@@ -11299,7 +11578,7 @@ func (s *OrderItem) SetPriceID(val uuid.UUID) {
 }
 
 // SetProductID sets the value of ProductID.
-func (s *OrderItem) SetProductID(val OptProductID) {
+func (s *OrderItem) SetProductID(val OptProductId) {
 	s.ProductID = val
 }
 
@@ -11470,7 +11749,7 @@ func (s *OrderItemList) SetPagination(val OffsetPagination) {
 
 // `pending`: waiting to be set up. `completed`: set up, as confirmed by the service. `failed`: not set
 // up; its amount was refunded to the original payment sources. `canceled`: withdrawn without delivery;
-// any collected amount is returned. A completed item ends when its subscription is canceled.
+// any collected amount is returned. A completed item ends when its subscription item is canceled.
 // Ref: #/components/schemas/OrderItemStatus
 type OrderItemStatus string
 
@@ -11696,8 +11975,8 @@ func (s *OrderStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// `new` buys, `renew` extends a licensed subscription, `modify` changes a subscription's configuration
-// or billing terms.
+// `new` buys, `renew` extends subscriptions, `modify` changes subscription items' configuration or
+// billing terms.
 type OrderType string
 
 const (
@@ -12861,7 +13140,7 @@ type Plan struct {
 	Product     Product       `json:"product"`
 	Features    []PlanFeature `json:"features"`
 	ID          uuid.UUID     `json:"id"`
-	ProductID   ProductID     `json:"product_id"`
+	ProductID   ProductId     `json:"product_id"`
 	Name        string        `json:"name"`
 	Description OptString     `json:"description"`
 }
@@ -12892,7 +13171,7 @@ func (s *Plan) GetID() uuid.UUID {
 }
 
 // GetProductID returns the value of ProductID.
-func (s *Plan) GetProductID() ProductID {
+func (s *Plan) GetProductID() ProductId {
 	return s.ProductID
 }
 
@@ -12932,7 +13211,7 @@ func (s *Plan) SetID(val uuid.UUID) {
 }
 
 // SetProductID sets the value of ProductID.
-func (s *Plan) SetProductID(val ProductID) {
+func (s *Plan) SetProductID(val ProductId) {
 	s.ProductID = val
 }
 
@@ -13079,7 +13358,7 @@ type Price struct {
 	ShortRateMultiplier OptString `json:"short_rate_multiplier"`
 	// Refund policy `short_rate` only, how long after the period start `short_rate_multiplier` applies.
 	ShortRateThresholdSeconds OptInt64     `json:"short_rate_threshold_seconds"`
-	ProductID                 OptProductID `json:"product_id"`
+	ProductID                 OptProductId `json:"product_id"`
 	ID                        uuid.UUID    `json:"id"`
 	PlanID                    uuid.UUID    `json:"plan_id"`
 	Currency                  string       `json:"currency"`
@@ -13169,7 +13448,7 @@ func (s *Price) GetShortRateThresholdSeconds() OptInt64 {
 }
 
 // GetProductID returns the value of ProductID.
-func (s *Price) GetProductID() OptProductID {
+func (s *Price) GetProductID() OptProductId {
 	return s.ProductID
 }
 
@@ -13309,7 +13588,7 @@ func (s *Price) SetShortRateThresholdSeconds(val OptInt64) {
 }
 
 // SetProductID sets the value of ProductID.
-func (s *Price) SetProductID(val OptProductID) {
+func (s *Price) SetProductID(val OptProductId) {
 	s.ProductID = val
 }
 
@@ -13730,7 +14009,7 @@ type PriceSearch struct {
 	Ids []uuid.UUID `json:"ids"`
 	// Only prices of these plans.
 	PlanIds   []uuid.UUID  `json:"plan_ids"`
-	ProductID OptProductID `json:"product_id"`
+	ProductID OptProductId `json:"product_id"`
 	// Narrows to one price type.
 	Type OptPriceType `json:"type"`
 	// Narrows to one usage type.
@@ -13760,7 +14039,7 @@ func (s *PriceSearch) GetPlanIds() []uuid.UUID {
 }
 
 // GetProductID returns the value of ProductID.
-func (s *PriceSearch) GetProductID() OptProductID {
+func (s *PriceSearch) GetProductID() OptProductId {
 	return s.ProductID
 }
 
@@ -13805,7 +14084,7 @@ func (s *PriceSearch) SetPlanIds(val []uuid.UUID) {
 }
 
 // SetProductID sets the value of ProductID.
-func (s *PriceSearch) SetProductID(val OptProductID) {
+func (s *PriceSearch) SetProductID(val OptProductId) {
 	s.ProductID = val
 }
 
@@ -13941,13 +14220,13 @@ func (s *PriceType) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/Product
 type Product struct {
-	ID          ProductID `json:"id"`
+	ID          ProductId `json:"id"`
 	Name        string    `json:"name"`
 	Description OptString `json:"description"`
 }
 
 // GetID returns the value of ID.
-func (s *Product) GetID() ProductID {
+func (s *Product) GetID() ProductId {
 	return s.ID
 }
 
@@ -13962,7 +14241,7 @@ func (s *Product) GetDescription() OptString {
 }
 
 // SetID sets the value of ID.
-func (s *Product) SetID(val ProductID) {
+func (s *Product) SetID(val ProductId) {
 	s.ID = val
 }
 
@@ -14004,7 +14283,7 @@ func (s *ProductHeaders) SetResponse(val Product) {
 
 func (*ProductHeaders) getProductRes() {}
 
-type ProductID string
+type ProductId string
 
 // Ref: #/components/schemas/ProductList
 type ProductList struct {
@@ -14240,12 +14519,12 @@ type Quote struct {
 	Items    []QuoteItem          `json:"items"`
 	Renewals []QuoteRenewalResult `json:"renewals"`
 	// Subtotal minus discount_amount plus tax_amount, before credit grants and balance. For a Checkout
-	// Session quote, pass it as expected_amount when confirming the session. Renewal entries are separate
-	// orders; use each entry's total.
+	// Session quote, pass it as expected_amount when confirming the session. Renewals quoted together are
+	// one order, and this is its total.
 	Total    Money  `json:"total"`
 	Currency string `json:"currency"`
-	// Immediate changes only; null otherwise. The instant the change is priced from; pass it when
-	// confirming the Checkout Session so it is priced from the same instant.
+	// Immediate changes and items added to an existing subscription only; null otherwise. The instant they
+	// are priced from; pass it when confirming the Checkout Session so it is priced from the same instant.
 	ProrationDate NilDateTime `json:"proration_date"`
 	// `complete`: tax is calculated for the billing account's invoice contact, or for `address` without an
 	// account. `requires_location_inputs`: a quote without an account or `address`, which leaves out tax
@@ -14391,21 +14670,21 @@ func (s *QuoteAddress) SetState(val OptString) {
 	s.State = val
 }
 
-// The new terms of one subscription. Identify the price, or the plan to select one from, as for a
-// proposed item. Without a price or billing terms, the plan's price with the subscription's price
-// type, usage type, interval, interval count and cancellation policy is selected. Omitted dimensions
-// keep the subscription's.
+// The new terms of one subscription item. Identify the price, or the plan to select one from, as for a
+// proposed item. Without a price or billing terms, the plan's price with the item's price type, usage
+// type, interval, interval count and cancellation policy is selected. Omitted dimensions keep the
+// item's.
 // Ref: #/components/schemas/QuoteChangeInput
 type QuoteChangeInput struct {
-	SubscriptionID uuid.UUID    `json:"subscription_id"`
-	PriceLookupKey OptString    `json:"price_lookup_key"`
-	PlanLookupKey  OptString    `json:"plan_lookup_key"`
-	PriceID        OptUUID      `json:"price_id"`
-	ProductID      OptProductID `json:"product_id"`
-	PlanID         OptUUID      `json:"plan_id"`
-	// Selects the price type instead of keeping the subscription's.
+	SubscriptionItemID uuid.UUID    `json:"subscription_item_id"`
+	PriceLookupKey     OptString    `json:"price_lookup_key"`
+	PlanLookupKey      OptString    `json:"plan_lookup_key"`
+	PriceID            OptUUID      `json:"price_id"`
+	ProductID          OptProductId `json:"product_id"`
+	PlanID             OptUUID      `json:"plan_id"`
+	// Selects the price type instead of keeping the item's.
 	PriceType OptPriceType `json:"price_type"`
-	// Selects the usage type instead of keeping the subscription's.
+	// Selects the usage type instead of keeping the item's.
 	UsageType     OptUsageType                `json:"usage_type"`
 	Interval      OptQuoteChangeInputInterval `json:"interval"`
 	IntervalCount OptInt                      `json:"interval_count"`
@@ -14413,13 +14692,13 @@ type QuoteChangeInput struct {
 	CancellationPolicy OptCancellationPolicy `json:"cancellation_policy"`
 	// The quantity after the change.
 	Quantity string `json:"quantity"`
-	// The dimension values after the change, given in full; omit to keep the subscription's.
+	// The dimension values after the change, given in full; omit to keep the item's.
 	Dimensions OptQuoteChangeInputDimensions `json:"dimensions"`
 }
 
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *QuoteChangeInput) GetSubscriptionID() uuid.UUID {
-	return s.SubscriptionID
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *QuoteChangeInput) GetSubscriptionItemID() uuid.UUID {
+	return s.SubscriptionItemID
 }
 
 // GetPriceLookupKey returns the value of PriceLookupKey.
@@ -14438,7 +14717,7 @@ func (s *QuoteChangeInput) GetPriceID() OptUUID {
 }
 
 // GetProductID returns the value of ProductID.
-func (s *QuoteChangeInput) GetProductID() OptProductID {
+func (s *QuoteChangeInput) GetProductID() OptProductId {
 	return s.ProductID
 }
 
@@ -14482,9 +14761,9 @@ func (s *QuoteChangeInput) GetDimensions() OptQuoteChangeInputDimensions {
 	return s.Dimensions
 }
 
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *QuoteChangeInput) SetSubscriptionID(val uuid.UUID) {
-	s.SubscriptionID = val
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *QuoteChangeInput) SetSubscriptionItemID(val uuid.UUID) {
+	s.SubscriptionItemID = val
 }
 
 // SetPriceLookupKey sets the value of PriceLookupKey.
@@ -14503,7 +14782,7 @@ func (s *QuoteChangeInput) SetPriceID(val OptUUID) {
 }
 
 // SetProductID sets the value of ProductID.
-func (s *QuoteChangeInput) SetProductID(val OptProductID) {
+func (s *QuoteChangeInput) SetProductID(val OptProductId) {
 	s.ProductID = val
 }
 
@@ -14547,7 +14826,7 @@ func (s *QuoteChangeInput) SetDimensions(val OptQuoteChangeInputDimensions) {
 	s.Dimensions = val
 }
 
-// The dimension values after the change, given in full; omit to keep the subscription's.
+// The dimension values after the change, given in full; omit to keep the item's.
 type QuoteChangeInputDimensions map[string]string
 
 func (s *QuoteChangeInputDimensions) init() QuoteChangeInputDimensions {
@@ -14620,7 +14899,7 @@ func (s *QuoteChangeInputInterval) UnmarshalText(data []byte) error {
 type QuoteDowngradeRefund struct {
 	// Returned to the original payment sources, tax paid on it included.
 	RefundableAmount Money `json:"refundable_amount"`
-	// Before tax, the part of the excess that the subscription's refund terms do not return.
+	// Before tax, the part of the excess that the item's refund terms do not return.
 	ForfeitedAmount Money `json:"forfeited_amount"`
 }
 
@@ -14655,10 +14934,13 @@ type QuoteItem struct {
 	// The zero-based index of the item or change in the request, or the item's position for a Checkout
 	// Session quote.
 	Index int `json:"index"`
-	// The subscription changed; null for a new purchase.
-	SubscriptionID NilUUID   `json:"subscription_id"`
-	ProductID      ProductID `json:"product_id"`
-	PlanID         uuid.UUID `json:"plan_id"`
+	// The subscription the line belongs to when it changes an item or is added to an existing
+	// subscription; null when it opens a new one.
+	SubscriptionID NilUUID `json:"subscription_id"`
+	// The subscription item changed; null for a new line.
+	SubscriptionItemID NilUUID   `json:"subscription_item_id"`
+	ProductID          ProductId `json:"product_id"`
+	PlanID             uuid.UUID `json:"plan_id"`
 	// The selected price, also when the request identified it indirectly.
 	PriceID   uuid.UUID `json:"price_id"`
 	PlanName  string    `json:"plan_name"`
@@ -14719,8 +15001,13 @@ func (s *QuoteItem) GetSubscriptionID() NilUUID {
 	return s.SubscriptionID
 }
 
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *QuoteItem) GetSubscriptionItemID() NilUUID {
+	return s.SubscriptionItemID
+}
+
 // GetProductID returns the value of ProductID.
-func (s *QuoteItem) GetProductID() ProductID {
+func (s *QuoteItem) GetProductID() ProductId {
 	return s.ProductID
 }
 
@@ -14839,8 +15126,13 @@ func (s *QuoteItem) SetSubscriptionID(val NilUUID) {
 	s.SubscriptionID = val
 }
 
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *QuoteItem) SetSubscriptionItemID(val NilUUID) {
+	s.SubscriptionItemID = val
+}
+
 // SetProductID sets the value of ProductID.
-func (s *QuoteItem) SetProductID(val ProductID) {
+func (s *QuoteItem) SetProductID(val ProductId) {
 	s.ProductID = val
 }
 
@@ -14959,7 +15251,7 @@ type QuoteItemInput struct {
 	PriceLookupKey OptString    `json:"price_lookup_key"`
 	PlanLookupKey  OptString    `json:"plan_lookup_key"`
 	PriceID        OptUUID      `json:"price_id"`
-	ProductID      OptProductID `json:"product_id"`
+	ProductID      OptProductId `json:"product_id"`
 	PlanID         OptUUID      `json:"plan_id"`
 	// Narrows the selection when a plan offers more than one price type.
 	PriceType OptPriceType `json:"price_type"`
@@ -14977,6 +15269,13 @@ type QuoteItemInput struct {
 	// priced at zero. Prices are set per currency, and a currency may not offer some combinations at all,
 	// for example in a region it does not sell to.
 	Dimensions OptQuoteItemInputDimensions `json:"dimensions"`
+	// Price the line as a new item added to this existing subscription, as the owning service adds it when
+	// buying for a resource the subscription pays for. Needs `billing_account_id`, which must currently
+	// pay for the subscription. A licensed line is priced up to the subscription's `current_term_end`, the
+	// rest of the current period in proportion to the time left from `proration_date`, and must have the
+	// subscription's interval and interval count; a metered line has no immediate charge; added to a
+	// trialing subscription, the line is free until the trial ends.
+	SubscriptionID OptUUID `json:"subscription_id"`
 }
 
 // GetPriceLookupKey returns the value of PriceLookupKey.
@@ -14995,7 +15294,7 @@ func (s *QuoteItemInput) GetPriceID() OptUUID {
 }
 
 // GetProductID returns the value of ProductID.
-func (s *QuoteItemInput) GetProductID() OptProductID {
+func (s *QuoteItemInput) GetProductID() OptProductId {
 	return s.ProductID
 }
 
@@ -15039,6 +15338,11 @@ func (s *QuoteItemInput) GetDimensions() OptQuoteItemInputDimensions {
 	return s.Dimensions
 }
 
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *QuoteItemInput) GetSubscriptionID() OptUUID {
+	return s.SubscriptionID
+}
+
 // SetPriceLookupKey sets the value of PriceLookupKey.
 func (s *QuoteItemInput) SetPriceLookupKey(val OptString) {
 	s.PriceLookupKey = val
@@ -15055,7 +15359,7 @@ func (s *QuoteItemInput) SetPriceID(val OptUUID) {
 }
 
 // SetProductID sets the value of ProductID.
-func (s *QuoteItemInput) SetProductID(val OptProductID) {
+func (s *QuoteItemInput) SetProductID(val OptProductId) {
 	s.ProductID = val
 }
 
@@ -15097,6 +15401,11 @@ func (s *QuoteItemInput) SetQuantity(val string) {
 // SetDimensions sets the value of Dimensions.
 func (s *QuoteItemInput) SetDimensions(val OptQuoteItemInputDimensions) {
 	s.Dimensions = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *QuoteItemInput) SetSubscriptionID(val OptUUID) {
+	s.SubscriptionID = val
 }
 
 // The dimension values of what is bought, such as region and instance type. Required whenever the
@@ -15226,19 +15535,19 @@ func (s *QuoteItemInterval) UnmarshalText(data []byte) error {
 	}
 }
 
-// Price renewing a licensed subscription. Give `price_id`, or `interval` with `interval_count`, to
-// renew for another term at the price currently sold for it. Naming the current term, or giving
-// neither, renews at the agreed amount. A term sold at several prices that differ in cancellation
-// policy is refused with 409 `BILLING_RENEWAL_OPTION_AMBIGUOUS` unless `cancellation_policy` or
-// `price_id` is given.
+// Price renewing a whole subscription: every continuing licensed item. Give `interval` with
+// `interval_count` to renew for another term at the price each item currently sells it for, with its
+// own cancellation policy or the only price of that term. Naming the current term, or giving neither,
+// renews every item at its agreed amount. A term an item does not sell is refused with 409
+// `BILLING_RENEWAL_PRICE_UNAVAILABLE` and `meta.subscription_item_id`; prices the rule cannot choose
+// between, with 409 `BILLING_RENEWAL_OPTION_AMBIGUOUS` unless `cancellation_policy` is given.
 // Ref: #/components/schemas/QuoteRenewal
 type QuoteRenewal struct {
 	SubscriptionID uuid.UUID               `json:"subscription_id"`
-	PriceID        OptUUID                 `json:"price_id"`
 	Interval       OptQuoteRenewalInterval `json:"interval"`
 	IntervalCount  OptInt                  `json:"interval_count"`
-	// With `interval` and `interval_count`, chooses among prices of that term that differ in cancellation
-	// policy.
+	// With `interval` and `interval_count`, renews every item at its price of that term with this
+	// cancellation policy.
 	CancellationPolicy OptCancellationPolicy `json:"cancellation_policy"`
 	// How many consecutive periods to renew for.
 	Periods OptInt `json:"periods"`
@@ -15247,11 +15556,6 @@ type QuoteRenewal struct {
 // GetSubscriptionID returns the value of SubscriptionID.
 func (s *QuoteRenewal) GetSubscriptionID() uuid.UUID {
 	return s.SubscriptionID
-}
-
-// GetPriceID returns the value of PriceID.
-func (s *QuoteRenewal) GetPriceID() OptUUID {
-	return s.PriceID
 }
 
 // GetInterval returns the value of Interval.
@@ -15277,11 +15581,6 @@ func (s *QuoteRenewal) GetPeriods() OptInt {
 // SetSubscriptionID sets the value of SubscriptionID.
 func (s *QuoteRenewal) SetSubscriptionID(val uuid.UUID) {
 	s.SubscriptionID = val
-}
-
-// SetPriceID sets the value of PriceID.
-func (s *QuoteRenewal) SetPriceID(val OptUUID) {
-	s.PriceID = val
 }
 
 // SetInterval sets the value of Interval.
@@ -15352,20 +15651,81 @@ func (s *QuoteRenewalInterval) UnmarshalText(data []byte) error {
 	}
 }
 
-// What renewing would charge. Renewing the same subscription for the same term and periods charges
-// exactly `total` unless prices or the account's discounts change first.
+// One item of a quoted renewal.
+// Ref: #/components/schemas/QuoteRenewalItem
+type QuoteRenewalItem struct {
+	SubscriptionItemID uuid.UUID `json:"subscription_item_id"`
+	PlanID             uuid.UUID `json:"plan_id"`
+	PlanName           string    `json:"plan_name"`
+	// The price the item is charged under.
+	PriceID uuid.UUID `json:"price_id"`
+	// The price of the periods for this item before the account's discounts.
+	Amount Money `json:"amount"`
+}
+
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *QuoteRenewalItem) GetSubscriptionItemID() uuid.UUID {
+	return s.SubscriptionItemID
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *QuoteRenewalItem) GetPlanID() uuid.UUID {
+	return s.PlanID
+}
+
+// GetPlanName returns the value of PlanName.
+func (s *QuoteRenewalItem) GetPlanName() string {
+	return s.PlanName
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *QuoteRenewalItem) GetPriceID() uuid.UUID {
+	return s.PriceID
+}
+
+// GetAmount returns the value of Amount.
+func (s *QuoteRenewalItem) GetAmount() Money {
+	return s.Amount
+}
+
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *QuoteRenewalItem) SetSubscriptionItemID(val uuid.UUID) {
+	s.SubscriptionItemID = val
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *QuoteRenewalItem) SetPlanID(val uuid.UUID) {
+	s.PlanID = val
+}
+
+// SetPlanName sets the value of PlanName.
+func (s *QuoteRenewalItem) SetPlanName(val string) {
+	s.PlanName = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *QuoteRenewalItem) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *QuoteRenewalItem) SetAmount(val Money) {
+	s.Amount = val
+}
+
+// What renewing one subscription would charge as part of the quoted renewal order.
 // Ref: #/components/schemas/QuoteRenewalResult
 type QuoteRenewalResult struct {
 	// Which renewal of the request this answers.
 	Index          int       `json:"index"`
 	SubscriptionID uuid.UUID `json:"subscription_id"`
-	// The price the renewal is charged under.
-	PriceID       uuid.UUID                  `json:"price_id"`
+	// Each item the renewal covers, with the price it is charged under.
+	Items         []QuoteRenewalItem         `json:"items"`
 	Interval      QuoteRenewalResultInterval `json:"interval"`
 	IntervalCount int                        `json:"interval_count"`
 	Periods       int                        `json:"periods"`
-	// The price of the periods before the account's discounts, with any discount the subscription carries
-	// already reflected; includes tax only where the price does.
+	// The price of the periods for every item before the account's discounts, with any discount the items
+	// carry already reflected; includes tax only where the price does.
 	Amount Money `json:"amount"`
 	// The reduction from a discount the account holds.
 	DiscountAmount Money `json:"discount_amount"`
@@ -15388,9 +15748,9 @@ func (s *QuoteRenewalResult) GetSubscriptionID() uuid.UUID {
 	return s.SubscriptionID
 }
 
-// GetPriceID returns the value of PriceID.
-func (s *QuoteRenewalResult) GetPriceID() uuid.UUID {
-	return s.PriceID
+// GetItems returns the value of Items.
+func (s *QuoteRenewalResult) GetItems() []QuoteRenewalItem {
+	return s.Items
 }
 
 // GetInterval returns the value of Interval.
@@ -15443,9 +15803,9 @@ func (s *QuoteRenewalResult) SetSubscriptionID(val uuid.UUID) {
 	s.SubscriptionID = val
 }
 
-// SetPriceID sets the value of PriceID.
-func (s *QuoteRenewalResult) SetPriceID(val uuid.UUID) {
-	s.PriceID = val
+// SetItems sets the value of Items.
+func (s *QuoteRenewalResult) SetItems(val []QuoteRenewalItem) {
+	s.Items = val
 }
 
 // SetInterval sets the value of Interval.
@@ -15537,9 +15897,9 @@ func (s *QuoteRenewalResultInterval) UnmarshalText(data []byte) error {
 }
 
 // Quote proposed items, changes or renewals: exactly one of them. Give exactly one of
-// `billing_account_id` and `currency`; changes and renewals need the account. Promotion codes apply to
-// proposed items and changes. An invalid combination fails with `BILLING_PURCHASE_INVALID` and the
-// field.
+// `billing_account_id` and `currency`; changes, renewals and items added to an existing subscription
+// need the account. Promotion codes apply to proposed items and changes. An invalid combination fails
+// with `BILLING_PURCHASE_INVALID` and the field.
 // Ref: #/components/schemas/QuoteRequest
 type QuoteRequest struct {
 	// The billing account to price for; it must be yours or currently pay for a project you are a member
@@ -15549,13 +15909,14 @@ type QuoteRequest struct {
 	Currency OptString `json:"currency"`
 	// A proposed purchase.
 	Items []QuoteItemInput `json:"items"`
-	// Preview renewing these subscriptions, each at most once; each entry is a separate renewal order.
-	// Each must currently be paid by `billing_account_id` and be yours to read, as the owner of that
-	// account or a member of the subscription's project. To apply a promotion code, create a renewal
-	// Checkout Session and quote it.
+	// Preview renewing these subscriptions together in one renewal order, as a renewal Checkout Session
+	// does, each at most once; `total` is that order's. Each must currently be paid by
+	// `billing_account_id`, be yours to read as the owner of that account or a member of the
+	// subscription's project, and all must belong to the same project and service. To apply a promotion
+	// code, create a renewal Checkout Session and quote it.
 	Renewals []QuoteRenewal `json:"renewals"`
-	// Preview changing these subscriptions in one order, each at most once. Each must currently be paid by
-	// `billing_account_id` and be yours to read, as the owner of that account or a member of the
+	// Preview changing these subscription items in one order, each at most once. Each must currently be
+	// paid by `billing_account_id` and be yours to read, as the owner of that account or a member of the
 	// subscription's project; all must belong to the same project, or all to no project.
 	Changes []QuoteChangeInput `json:"changes"`
 	// When the changes take effect; defaults to `immediate`. `immediate` prices the rest of the paid
@@ -16595,7 +16956,8 @@ func (s *RefundPolicy) UnmarshalText(data []byte) error {
 //   - `order_canceled`: the order was canceled after part of it was paid.
 //   - `change_canceled`: a scheduled change was withdrawn after part of it was paid.
 //   - `change_expired`: a scheduled change could not take effect in time.
-//   - `subscription_canceled`: the unused value of a canceled subscription, under its refund terms.
+//   - `subscription_canceled`: the unused value of a canceled subscription item, under its refund
+//     terms.
 //   - `future_period_canceled`: a renewal that had not started was withdrawn.
 //   - `downgrade_difference`: after a downgrade, the remaining paid value, valued under each paid
 //     period's refund policy and as `prorated` where that policy is `none`, minus the new
@@ -16782,24 +17144,25 @@ type RenewRequest struct {
 	// The order ID, chosen by the caller. Creating it again conflicts; read the order after an unknown
 	// outcome.
 	OrderID uuid.UUID `json:"order_id"`
-	// How many further periods to buy, each at the price the subscription already renews at. To buy a
-	// longer term at its own price, give `interval` and `interval_count` instead.
+	// How many further periods to buy for every renewed item, each at the price it already renews at. To
+	// buy a longer term at its own price, give `interval` and `interval_count` instead.
 	Periods OptInt `json:"periods"`
 	// Renew for a term of this length instead, at the price currently sold for it. Give `interval` with
 	// it.
 	//
-	// Leaving both out renews at the price this item already bills at, which a later price change does not
-	// affect. Naming a term that differs from the current one is a fresh choice, so it is bought at
-	// today's price. Naming the current term changes nothing. A term sold at several prices that differ in
-	// cancellation policy is refused with 409 `BILLING_RENEWAL_OPTION_AMBIGUOUS` unless
-	// `cancellation_policy` is given.
+	// Leaving both out renews every item at the price it already bills at, which a later price change does
+	// not affect. Naming a term that differs from the current one is a fresh choice, so every item is
+	// bought at today's price for that term, with its own cancellation policy or, without one, the only
+	// price of that term. Naming the current term changes nothing. A term an item does not sell is refused
+	// with 409 `BILLING_RENEWAL_PRICE_UNAVAILABLE` and `meta.subscription_item_id`; prices the rule cannot
+	// choose between, with 409 `BILLING_RENEWAL_OPTION_AMBIGUOUS` unless `cancellation_policy` is given.
 	//
-	// List the terms on offer with the renewal prices operation.
+	// List the terms on offer with the renewal options operation.
 	IntervalCount OptInt `json:"interval_count"`
 	// The unit interval_count counts in.
 	Interval OptRenewRequestInterval `json:"interval"`
-	// With `interval` and `interval_count`, chooses among prices of that term that differ in cancellation
-	// policy.
+	// With `interval` and `interval_count`, renews every item at its price of that term with this
+	// cancellation policy.
 	CancellationPolicy OptCancellationPolicy `json:"cancellation_policy"`
 	PaymentMethodID    OptUUID               `json:"payment_method_id"`
 	// Whether to pay from the balance, with or without `payment_method_id`.
@@ -16948,150 +17311,106 @@ func (s *RenewRequestInterval) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/RenewalPrice
-type RenewalPrice struct {
-	CancellationPolicy OptCancellationPolicy `json:"cancellation_policy"`
-	RefundPolicy       OptRefundPolicy       `json:"refund_policy"`
-	// Refund policy `short_rate` only.
-	ShortRateMultiplier OptString `json:"short_rate_multiplier"`
-	// Refund policy `short_rate` only.
-	ShortRateThresholdSeconds OptInt64  `json:"short_rate_threshold_seconds"`
-	PriceID                   uuid.UUID `json:"price_id"`
-	// How many periods one renewal covers.
-	IntervalCount int                  `json:"interval_count"`
-	Interval      RenewalPriceInterval `json:"interval"`
-	// What renewing for this term costs, for the quantity held.
-	Amount   OptMoney  `json:"amount"`
-	Currency OptString `json:"currency"`
-	// The term the subscription renews at now; renewing for it keeps the agreed price.
+// One term the whole subscription can renew for. Every continuing licensed item renews at it; items
+// with an open cancellation end with the current term and are left out.
+// Ref: #/components/schemas/RenewalOption
+type RenewalOption struct {
+	Interval RenewalOptionInterval `json:"interval"`
+	// How many intervals one renewal covers.
+	IntervalCount int `json:"interval_count"`
+	// The term the subscription renews at now; renewing for it keeps every item's agreed price.
 	Current bool `json:"current"`
-}
-
-// GetCancellationPolicy returns the value of CancellationPolicy.
-func (s *RenewalPrice) GetCancellationPolicy() OptCancellationPolicy {
-	return s.CancellationPolicy
-}
-
-// GetRefundPolicy returns the value of RefundPolicy.
-func (s *RenewalPrice) GetRefundPolicy() OptRefundPolicy {
-	return s.RefundPolicy
-}
-
-// GetShortRateMultiplier returns the value of ShortRateMultiplier.
-func (s *RenewalPrice) GetShortRateMultiplier() OptString {
-	return s.ShortRateMultiplier
-}
-
-// GetShortRateThresholdSeconds returns the value of ShortRateThresholdSeconds.
-func (s *RenewalPrice) GetShortRateThresholdSeconds() OptInt64 {
-	return s.ShortRateThresholdSeconds
-}
-
-// GetPriceID returns the value of PriceID.
-func (s *RenewalPrice) GetPriceID() uuid.UUID {
-	return s.PriceID
-}
-
-// GetIntervalCount returns the value of IntervalCount.
-func (s *RenewalPrice) GetIntervalCount() int {
-	return s.IntervalCount
+	// One period for every item, before tax and discounts.
+	Amount   Money               `json:"amount"`
+	Currency string              `json:"currency"`
+	Items    []RenewalOptionItem `json:"items"`
 }
 
 // GetInterval returns the value of Interval.
-func (s *RenewalPrice) GetInterval() RenewalPriceInterval {
+func (s *RenewalOption) GetInterval() RenewalOptionInterval {
 	return s.Interval
 }
 
+// GetIntervalCount returns the value of IntervalCount.
+func (s *RenewalOption) GetIntervalCount() int {
+	return s.IntervalCount
+}
+
+// GetCurrent returns the value of Current.
+func (s *RenewalOption) GetCurrent() bool {
+	return s.Current
+}
+
 // GetAmount returns the value of Amount.
-func (s *RenewalPrice) GetAmount() OptMoney {
+func (s *RenewalOption) GetAmount() Money {
 	return s.Amount
 }
 
 // GetCurrency returns the value of Currency.
-func (s *RenewalPrice) GetCurrency() OptString {
+func (s *RenewalOption) GetCurrency() string {
 	return s.Currency
 }
 
-// GetCurrent returns the value of Current.
-func (s *RenewalPrice) GetCurrent() bool {
-	return s.Current
-}
-
-// SetCancellationPolicy sets the value of CancellationPolicy.
-func (s *RenewalPrice) SetCancellationPolicy(val OptCancellationPolicy) {
-	s.CancellationPolicy = val
-}
-
-// SetRefundPolicy sets the value of RefundPolicy.
-func (s *RenewalPrice) SetRefundPolicy(val OptRefundPolicy) {
-	s.RefundPolicy = val
-}
-
-// SetShortRateMultiplier sets the value of ShortRateMultiplier.
-func (s *RenewalPrice) SetShortRateMultiplier(val OptString) {
-	s.ShortRateMultiplier = val
-}
-
-// SetShortRateThresholdSeconds sets the value of ShortRateThresholdSeconds.
-func (s *RenewalPrice) SetShortRateThresholdSeconds(val OptInt64) {
-	s.ShortRateThresholdSeconds = val
-}
-
-// SetPriceID sets the value of PriceID.
-func (s *RenewalPrice) SetPriceID(val uuid.UUID) {
-	s.PriceID = val
-}
-
-// SetIntervalCount sets the value of IntervalCount.
-func (s *RenewalPrice) SetIntervalCount(val int) {
-	s.IntervalCount = val
+// GetItems returns the value of Items.
+func (s *RenewalOption) GetItems() []RenewalOptionItem {
+	return s.Items
 }
 
 // SetInterval sets the value of Interval.
-func (s *RenewalPrice) SetInterval(val RenewalPriceInterval) {
+func (s *RenewalOption) SetInterval(val RenewalOptionInterval) {
 	s.Interval = val
 }
 
+// SetIntervalCount sets the value of IntervalCount.
+func (s *RenewalOption) SetIntervalCount(val int) {
+	s.IntervalCount = val
+}
+
+// SetCurrent sets the value of Current.
+func (s *RenewalOption) SetCurrent(val bool) {
+	s.Current = val
+}
+
 // SetAmount sets the value of Amount.
-func (s *RenewalPrice) SetAmount(val OptMoney) {
+func (s *RenewalOption) SetAmount(val Money) {
 	s.Amount = val
 }
 
 // SetCurrency sets the value of Currency.
-func (s *RenewalPrice) SetCurrency(val OptString) {
+func (s *RenewalOption) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// SetCurrent sets the value of Current.
-func (s *RenewalPrice) SetCurrent(val bool) {
-	s.Current = val
+// SetItems sets the value of Items.
+func (s *RenewalOption) SetItems(val []RenewalOptionItem) {
+	s.Items = val
 }
 
-type RenewalPriceInterval string
+type RenewalOptionInterval string
 
 const (
-	RenewalPriceIntervalDay   RenewalPriceInterval = "day"
-	RenewalPriceIntervalMonth RenewalPriceInterval = "month"
-	RenewalPriceIntervalYear  RenewalPriceInterval = "year"
+	RenewalOptionIntervalDay   RenewalOptionInterval = "day"
+	RenewalOptionIntervalMonth RenewalOptionInterval = "month"
+	RenewalOptionIntervalYear  RenewalOptionInterval = "year"
 )
 
-// AllValues returns all RenewalPriceInterval values.
-func (RenewalPriceInterval) AllValues() []RenewalPriceInterval {
-	return []RenewalPriceInterval{
-		RenewalPriceIntervalDay,
-		RenewalPriceIntervalMonth,
-		RenewalPriceIntervalYear,
+// AllValues returns all RenewalOptionInterval values.
+func (RenewalOptionInterval) AllValues() []RenewalOptionInterval {
+	return []RenewalOptionInterval{
+		RenewalOptionIntervalDay,
+		RenewalOptionIntervalMonth,
+		RenewalOptionIntervalYear,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s RenewalPriceInterval) MarshalText() ([]byte, error) {
+func (s RenewalOptionInterval) MarshalText() ([]byte, error) {
 	switch s {
-	case RenewalPriceIntervalDay:
+	case RenewalOptionIntervalDay:
 		return []byte(s), nil
-	case RenewalPriceIntervalMonth:
+	case RenewalOptionIntervalMonth:
 		return []byte(s), nil
-	case RenewalPriceIntervalYear:
+	case RenewalOptionIntervalYear:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -17099,49 +17418,135 @@ func (s RenewalPriceInterval) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *RenewalPriceInterval) UnmarshalText(data []byte) error {
-	switch RenewalPriceInterval(data) {
-	case RenewalPriceIntervalDay:
-		*s = RenewalPriceIntervalDay
+func (s *RenewalOptionInterval) UnmarshalText(data []byte) error {
+	switch RenewalOptionInterval(data) {
+	case RenewalOptionIntervalDay:
+		*s = RenewalOptionIntervalDay
 		return nil
-	case RenewalPriceIntervalMonth:
-		*s = RenewalPriceIntervalMonth
+	case RenewalOptionIntervalMonth:
+		*s = RenewalOptionIntervalMonth
 		return nil
-	case RenewalPriceIntervalYear:
-		*s = RenewalPriceIntervalYear
+	case RenewalOptionIntervalYear:
+		*s = RenewalOptionIntervalYear
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// Ref: #/components/schemas/RenewalPriceList
-type RenewalPriceList struct {
-	Items      []RenewalPrice   `json:"items"`
+// What one item renews at under a renewal option.
+// Ref: #/components/schemas/RenewalOptionItem
+type RenewalOptionItem struct {
+	SubscriptionItemID uuid.UUID `json:"subscription_item_id"`
+	// The price the item renews at; null on the current option, which keeps the agreed amount.
+	PriceID NilUUID `json:"price_id"`
+	// One period of this item, before tax and discounts.
+	Amount             Money                 `json:"amount"`
+	CancellationPolicy OptCancellationPolicy `json:"cancellation_policy"`
+	RefundPolicy       OptRefundPolicy       `json:"refund_policy"`
+	// Refund policy `short_rate` only.
+	ShortRateMultiplier OptString `json:"short_rate_multiplier"`
+	// Refund policy `short_rate` only.
+	ShortRateThresholdSeconds OptInt64 `json:"short_rate_threshold_seconds"`
+}
+
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *RenewalOptionItem) GetSubscriptionItemID() uuid.UUID {
+	return s.SubscriptionItemID
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *RenewalOptionItem) GetPriceID() NilUUID {
+	return s.PriceID
+}
+
+// GetAmount returns the value of Amount.
+func (s *RenewalOptionItem) GetAmount() Money {
+	return s.Amount
+}
+
+// GetCancellationPolicy returns the value of CancellationPolicy.
+func (s *RenewalOptionItem) GetCancellationPolicy() OptCancellationPolicy {
+	return s.CancellationPolicy
+}
+
+// GetRefundPolicy returns the value of RefundPolicy.
+func (s *RenewalOptionItem) GetRefundPolicy() OptRefundPolicy {
+	return s.RefundPolicy
+}
+
+// GetShortRateMultiplier returns the value of ShortRateMultiplier.
+func (s *RenewalOptionItem) GetShortRateMultiplier() OptString {
+	return s.ShortRateMultiplier
+}
+
+// GetShortRateThresholdSeconds returns the value of ShortRateThresholdSeconds.
+func (s *RenewalOptionItem) GetShortRateThresholdSeconds() OptInt64 {
+	return s.ShortRateThresholdSeconds
+}
+
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *RenewalOptionItem) SetSubscriptionItemID(val uuid.UUID) {
+	s.SubscriptionItemID = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *RenewalOptionItem) SetPriceID(val NilUUID) {
+	s.PriceID = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *RenewalOptionItem) SetAmount(val Money) {
+	s.Amount = val
+}
+
+// SetCancellationPolicy sets the value of CancellationPolicy.
+func (s *RenewalOptionItem) SetCancellationPolicy(val OptCancellationPolicy) {
+	s.CancellationPolicy = val
+}
+
+// SetRefundPolicy sets the value of RefundPolicy.
+func (s *RenewalOptionItem) SetRefundPolicy(val OptRefundPolicy) {
+	s.RefundPolicy = val
+}
+
+// SetShortRateMultiplier sets the value of ShortRateMultiplier.
+func (s *RenewalOptionItem) SetShortRateMultiplier(val OptString) {
+	s.ShortRateMultiplier = val
+}
+
+// SetShortRateThresholdSeconds sets the value of ShortRateThresholdSeconds.
+func (s *RenewalOptionItem) SetShortRateThresholdSeconds(val OptInt64) {
+	s.ShortRateThresholdSeconds = val
+}
+
+// Ref: #/components/schemas/RenewalOptionList
+type RenewalOptionList struct {
+	Items      []RenewalOption  `json:"items"`
 	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
-func (s *RenewalPriceList) GetItems() []RenewalPrice {
+func (s *RenewalOptionList) GetItems() []RenewalOption {
 	return s.Items
 }
 
 // GetPagination returns the value of Pagination.
-func (s *RenewalPriceList) GetPagination() OffsetPagination {
+func (s *RenewalOptionList) GetPagination() OffsetPagination {
 	return s.Pagination
 }
 
 // SetItems sets the value of Items.
-func (s *RenewalPriceList) SetItems(val []RenewalPrice) {
+func (s *RenewalOptionList) SetItems(val []RenewalOption) {
 	s.Items = val
 }
 
 // SetPagination sets the value of Pagination.
-func (s *RenewalPriceList) SetPagination(val OffsetPagination) {
+func (s *RenewalOptionList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// The next accepted period-end change of the subscription: the target terms, applied at effective_at.
+// The next accepted period-end change of the item: the target terms, applied at effective_at.
 // Ref: #/components/schemas/ScheduledChange
 type ScheduledChange struct {
 	OrderID uuid.UUID   `json:"order_id"`
@@ -18116,209 +18521,72 @@ func (s *StatementType) UnmarshalText(data []byte) error {
 	}
 }
 
-// A purchase that is billed, renewed and changed on its own, separate from the owning service's
-// resource. A new recurring purchase creates a pending subscription for each order line; its ID is
-// returned on the order item and stays the same through checkout, delivery, renewals and changes. A
-// one-time purchase may create none.
+// A billing relationship that renews as a whole, as a Stripe subscription: one term, one renewal date,
+// one automatic renewal setting and one service state for all of its items. The owning service decides
+// which order lines form one subscription, such as a machine and the volumes and elastic IP bought
+// with it; a resource bought on its own has its own. A purchase creates pending subscriptions and
+// items whose IDs are returned on the order items and stay the same through checkout, delivery,
+// renewals and changes.
 //
 // Pending and provisioning subscriptions grant no service. A subscription becomes provisioning when
-// the owning service accepts the order, and active when the service confirms delivery, which sets
-// started_at; payment changes neither. Licensed service periods start at delivery, and metered usage
-// is charged as the service reports it. Canceling or failing an undelivered purchase cancels its
-// subscriptions without starting a period. Renewals use recurring_amount and the agreed interval; paid
-// periods keep their value.
-//
-// A shared capacity limit, such as a regional snapshot quota, has one subscription for the purchased
-// quantity rather than one per item.
+// the owning service accepts the order, and active, or trialing during a free trial, when the service
+// confirms delivery, which sets started_at; payment changes neither. Renewing buys further periods for
+// every continuing licensed item at once; items cannot be renewed on their own, but each can be
+// changed or canceled alone.
 // Ref: #/components/schemas/Subscription
 type Subscription struct {
-	// Whether new account discounts may apply to future renewals. A fixed operator renewal agreement
-	// disables automatic discounts; catalog repricing or a newly selected purchase agreement enables them.
-	RenewalDiscountsEnabled OptBool   `json:"renewal_discounts_enabled"`
-	Currency                string    `json:"currency"`
-	Type                    PriceType `json:"type"`
-	UsageType               UsageType `json:"usage_type"`
-	// The dimension values of what was bought, such as region and instance type. Empty when the purchase
-	// gave none.
-	Dimensions    SubscriptionDimensions `json:"dimensions"`
-	Interval      SubscriptionInterval   `json:"interval"`
-	IntervalCount OptInt                 `json:"interval_count"`
-	// The whole licensed subscription's renewal amount, after continuing discounts and before tax. A
-	// pending subscription shows base terms until paying the order fixes any new discount. Absent for
-	// metered and one-time subscriptions.
-	RecurringAmount    OptString             `json:"recurring_amount"`
-	CancellationPolicy OptCancellationPolicy `json:"cancellation_policy"`
-	RefundPolicy       OptRefundPolicy       `json:"refund_policy"`
-	// Refund policy `short_rate` only, as on the price bought.
-	ShortRateMultiplier OptString `json:"short_rate_multiplier"`
-	// Refund policy `short_rate` only, as on the price bought.
-	ShortRateThresholdSeconds OptInt64 `json:"short_rate_threshold_seconds"`
-	// Licensed recurring only, the `monthly_list_amount` that a renewal at the agreed amount keeps; see
-	// the order item.
-	MonthlyListAmount           OptString         `json:"monthly_list_amount"`
-	OrderItemID                 OptUUID           `json:"order_item_id"`
-	CouponID                    OptUUID           `json:"coupon_id"`
-	Coupon                      OptObjectIdentity `json:"coupon"`
-	DiscountedRenewalsRemaining OptInt            `json:"discounted_renewals_remaining"`
-	// The operations currently prevented on the subscription, sorted; it is suspended while this contains
-	// `billing.subscriptions.use`.
-	Restrictions       []SubscriptionRestriction   `json:"restrictions"`
-	BillingCycleAnchor OptDateTime                 `json:"billing_cycle_anchor"`
-	Cancellation       OptSubscriptionCancellation `json:"cancellation"`
-	// The accepted period-end change scheduled for this subscription; null when there is none.
-	ScheduledChange OptNilScheduledChange `json:"scheduled_change"`
-	// The saved payment method automatic renewal charges after balance and credits, before the account's
-	// default payment method. Set when a purchase, renewal or change is paid with a saved payment method.
-	// Used only while it belongs to the account paying the renewal.
-	DefaultPaymentMethodID OptNilUUID  `json:"default_payment_method_id"`
-	CreatedAt              OptDateTime `json:"created_at"`
-	ID                     uuid.UUID   `json:"id"`
+	ID uuid.UUID `json:"id"`
 	// The billing account that made the purchase. Renewals of a project subscription are charged to the
 	// project's current billing account.
 	BillingAccountID int64           `json:"billing_account_id"`
 	Account          AccountIdentity `json:"account"`
-	ProductID        ProductID       `json:"product_id"`
+	ProductID        ProductId       `json:"product_id"`
+	Product          Product         `json:"product"`
 	// The project it is for. Absent for an account-level purchase, such as a membership.
 	ProjectID OptNilUUID `json:"project_id"`
 	// The project and its current name. Absent for an account-level purchase or when the project cannot be
 	// read; `project_id` still identifies it.
 	Project  OptNilNamedIdentity `json:"project"`
-	Product  Product             `json:"product"`
-	PlanID   uuid.UUID           `json:"plan_id"`
-	PlanName string              `json:"plan_name"`
-	PriceID  uuid.UUID           `json:"price_id"`
-	Quantity string              `json:"quantity"`
-	// When a licensed subscription renews or expires: the end of the last period bought, moved by renewing
-	// in advance. Null until the subscription becomes active, even when its purchase has been paid, and
-	// for metered subscriptions.
+	Currency string              `json:"currency"`
+	Status   SubscriptionStatus  `json:"status"`
+	// The renewal term of its licensed items, `interval_count` intervals long; `none` when every item is
+	// metered.
+	Interval      SubscriptionInterval `json:"interval"`
+	IntervalCount OptInt               `json:"interval_count"`
+	// When the subscription renews or expires: the end of the free trial or of the last period bought for
+	// its licensed items, moved by renewing in advance. Null until the subscription becomes active, even
+	// when its purchase has been paid, and when every item is metered.
 	CurrentTermEnd OptNilDateTime `json:"current_term_end"`
-	// Start of the service period in effect now. Null when none is, including for metered subscriptions.
+	// Start of the service period in effect now. Null when none is, including when every item is metered.
 	CurrentPeriodStart OptNilDateTime `json:"current_period_start"`
 	// End of the service period in effect now; renewing in advance moves `current_term_end`, not this.
-	// Null when no period is in effect, including for metered subscriptions.
-	CurrentPeriodEnd OptNilDateTime `json:"current_period_end"`
-	// Whether a licensed subscription renews automatically. A metered subscription continues until it is
-	// canceled; for it this is true until a cancellation is requested, and cannot be set.
-	AutoRenew bool               `json:"auto_renew"`
-	Status    SubscriptionStatus `json:"status"`
+	// Null when no period is in effect, including when every item is metered.
+	CurrentPeriodEnd   OptNilDateTime `json:"current_period_end"`
+	BillingCycleAnchor OptDateTime    `json:"billing_cycle_anchor"`
+	// Whether the subscription renews automatically, or converts to paid when its free trial ends. Without
+	// licensed items it continues until it is canceled; then this is true until a cancellation is
+	// requested, and cannot be set.
+	AutoRenew bool `json:"auto_renew"`
+	// Start of the free trial; null without one.
+	TrialStart OptNilDateTime `json:"trial_start"`
+	// End of the free trial; null without one. It is `current_term_end` until the first paid period is
+	// bought.
+	TrialEnd OptNilDateTime `json:"trial_end"`
+	// How the free trial ends; null without one.
+	TrialSettings OptNilTrialSettings `json:"trial_settings"`
+	// The operations currently prevented on the subscription, sorted; it is suspended while this contains
+	// `billing.subscriptions.use`.
+	Restrictions []SubscriptionRestriction `json:"restrictions"`
+	// The saved payment method automatic renewal charges after balance and credits, before the account's
+	// default payment method. Set when a purchase, renewal or change is paid with a saved payment method.
+	// Used only while it belongs to the account paying the renewal.
+	DefaultPaymentMethodID OptNilUUID `json:"default_payment_method_id"`
+	// Every item, ended ones included, oldest first.
+	Items     []SubscriptionItem `json:"items"`
+	CreatedAt OptDateTime        `json:"created_at"`
 	// When service started. Null until a new subscription becomes active, also after payment.
 	StartedAt OptNilDateTime `json:"started_at"`
 	EndedAt   OptNilDateTime `json:"ended_at"`
-}
-
-// GetRenewalDiscountsEnabled returns the value of RenewalDiscountsEnabled.
-func (s *Subscription) GetRenewalDiscountsEnabled() OptBool {
-	return s.RenewalDiscountsEnabled
-}
-
-// GetCurrency returns the value of Currency.
-func (s *Subscription) GetCurrency() string {
-	return s.Currency
-}
-
-// GetType returns the value of Type.
-func (s *Subscription) GetType() PriceType {
-	return s.Type
-}
-
-// GetUsageType returns the value of UsageType.
-func (s *Subscription) GetUsageType() UsageType {
-	return s.UsageType
-}
-
-// GetDimensions returns the value of Dimensions.
-func (s *Subscription) GetDimensions() SubscriptionDimensions {
-	return s.Dimensions
-}
-
-// GetInterval returns the value of Interval.
-func (s *Subscription) GetInterval() SubscriptionInterval {
-	return s.Interval
-}
-
-// GetIntervalCount returns the value of IntervalCount.
-func (s *Subscription) GetIntervalCount() OptInt {
-	return s.IntervalCount
-}
-
-// GetRecurringAmount returns the value of RecurringAmount.
-func (s *Subscription) GetRecurringAmount() OptString {
-	return s.RecurringAmount
-}
-
-// GetCancellationPolicy returns the value of CancellationPolicy.
-func (s *Subscription) GetCancellationPolicy() OptCancellationPolicy {
-	return s.CancellationPolicy
-}
-
-// GetRefundPolicy returns the value of RefundPolicy.
-func (s *Subscription) GetRefundPolicy() OptRefundPolicy {
-	return s.RefundPolicy
-}
-
-// GetShortRateMultiplier returns the value of ShortRateMultiplier.
-func (s *Subscription) GetShortRateMultiplier() OptString {
-	return s.ShortRateMultiplier
-}
-
-// GetShortRateThresholdSeconds returns the value of ShortRateThresholdSeconds.
-func (s *Subscription) GetShortRateThresholdSeconds() OptInt64 {
-	return s.ShortRateThresholdSeconds
-}
-
-// GetMonthlyListAmount returns the value of MonthlyListAmount.
-func (s *Subscription) GetMonthlyListAmount() OptString {
-	return s.MonthlyListAmount
-}
-
-// GetOrderItemID returns the value of OrderItemID.
-func (s *Subscription) GetOrderItemID() OptUUID {
-	return s.OrderItemID
-}
-
-// GetCouponID returns the value of CouponID.
-func (s *Subscription) GetCouponID() OptUUID {
-	return s.CouponID
-}
-
-// GetCoupon returns the value of Coupon.
-func (s *Subscription) GetCoupon() OptObjectIdentity {
-	return s.Coupon
-}
-
-// GetDiscountedRenewalsRemaining returns the value of DiscountedRenewalsRemaining.
-func (s *Subscription) GetDiscountedRenewalsRemaining() OptInt {
-	return s.DiscountedRenewalsRemaining
-}
-
-// GetRestrictions returns the value of Restrictions.
-func (s *Subscription) GetRestrictions() []SubscriptionRestriction {
-	return s.Restrictions
-}
-
-// GetBillingCycleAnchor returns the value of BillingCycleAnchor.
-func (s *Subscription) GetBillingCycleAnchor() OptDateTime {
-	return s.BillingCycleAnchor
-}
-
-// GetCancellation returns the value of Cancellation.
-func (s *Subscription) GetCancellation() OptSubscriptionCancellation {
-	return s.Cancellation
-}
-
-// GetScheduledChange returns the value of ScheduledChange.
-func (s *Subscription) GetScheduledChange() OptNilScheduledChange {
-	return s.ScheduledChange
-}
-
-// GetDefaultPaymentMethodID returns the value of DefaultPaymentMethodID.
-func (s *Subscription) GetDefaultPaymentMethodID() OptNilUUID {
-	return s.DefaultPaymentMethodID
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *Subscription) GetCreatedAt() OptDateTime {
-	return s.CreatedAt
 }
 
 // GetID returns the value of ID.
@@ -18337,8 +18605,13 @@ func (s *Subscription) GetAccount() AccountIdentity {
 }
 
 // GetProductID returns the value of ProductID.
-func (s *Subscription) GetProductID() ProductID {
+func (s *Subscription) GetProductID() ProductId {
 	return s.ProductID
+}
+
+// GetProduct returns the value of Product.
+func (s *Subscription) GetProduct() Product {
+	return s.Product
 }
 
 // GetProjectID returns the value of ProjectID.
@@ -18351,29 +18624,24 @@ func (s *Subscription) GetProject() OptNilNamedIdentity {
 	return s.Project
 }
 
-// GetProduct returns the value of Product.
-func (s *Subscription) GetProduct() Product {
-	return s.Product
+// GetCurrency returns the value of Currency.
+func (s *Subscription) GetCurrency() string {
+	return s.Currency
 }
 
-// GetPlanID returns the value of PlanID.
-func (s *Subscription) GetPlanID() uuid.UUID {
-	return s.PlanID
+// GetStatus returns the value of Status.
+func (s *Subscription) GetStatus() SubscriptionStatus {
+	return s.Status
 }
 
-// GetPlanName returns the value of PlanName.
-func (s *Subscription) GetPlanName() string {
-	return s.PlanName
+// GetInterval returns the value of Interval.
+func (s *Subscription) GetInterval() SubscriptionInterval {
+	return s.Interval
 }
 
-// GetPriceID returns the value of PriceID.
-func (s *Subscription) GetPriceID() uuid.UUID {
-	return s.PriceID
-}
-
-// GetQuantity returns the value of Quantity.
-func (s *Subscription) GetQuantity() string {
-	return s.Quantity
+// GetIntervalCount returns the value of IntervalCount.
+func (s *Subscription) GetIntervalCount() OptInt {
+	return s.IntervalCount
 }
 
 // GetCurrentTermEnd returns the value of CurrentTermEnd.
@@ -18391,14 +18659,49 @@ func (s *Subscription) GetCurrentPeriodEnd() OptNilDateTime {
 	return s.CurrentPeriodEnd
 }
 
+// GetBillingCycleAnchor returns the value of BillingCycleAnchor.
+func (s *Subscription) GetBillingCycleAnchor() OptDateTime {
+	return s.BillingCycleAnchor
+}
+
 // GetAutoRenew returns the value of AutoRenew.
 func (s *Subscription) GetAutoRenew() bool {
 	return s.AutoRenew
 }
 
-// GetStatus returns the value of Status.
-func (s *Subscription) GetStatus() SubscriptionStatus {
-	return s.Status
+// GetTrialStart returns the value of TrialStart.
+func (s *Subscription) GetTrialStart() OptNilDateTime {
+	return s.TrialStart
+}
+
+// GetTrialEnd returns the value of TrialEnd.
+func (s *Subscription) GetTrialEnd() OptNilDateTime {
+	return s.TrialEnd
+}
+
+// GetTrialSettings returns the value of TrialSettings.
+func (s *Subscription) GetTrialSettings() OptNilTrialSettings {
+	return s.TrialSettings
+}
+
+// GetRestrictions returns the value of Restrictions.
+func (s *Subscription) GetRestrictions() []SubscriptionRestriction {
+	return s.Restrictions
+}
+
+// GetDefaultPaymentMethodID returns the value of DefaultPaymentMethodID.
+func (s *Subscription) GetDefaultPaymentMethodID() OptNilUUID {
+	return s.DefaultPaymentMethodID
+}
+
+// GetItems returns the value of Items.
+func (s *Subscription) GetItems() []SubscriptionItem {
+	return s.Items
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *Subscription) GetCreatedAt() OptDateTime {
+	return s.CreatedAt
 }
 
 // GetStartedAt returns the value of StartedAt.
@@ -18409,121 +18712,6 @@ func (s *Subscription) GetStartedAt() OptNilDateTime {
 // GetEndedAt returns the value of EndedAt.
 func (s *Subscription) GetEndedAt() OptNilDateTime {
 	return s.EndedAt
-}
-
-// SetRenewalDiscountsEnabled sets the value of RenewalDiscountsEnabled.
-func (s *Subscription) SetRenewalDiscountsEnabled(val OptBool) {
-	s.RenewalDiscountsEnabled = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *Subscription) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// SetType sets the value of Type.
-func (s *Subscription) SetType(val PriceType) {
-	s.Type = val
-}
-
-// SetUsageType sets the value of UsageType.
-func (s *Subscription) SetUsageType(val UsageType) {
-	s.UsageType = val
-}
-
-// SetDimensions sets the value of Dimensions.
-func (s *Subscription) SetDimensions(val SubscriptionDimensions) {
-	s.Dimensions = val
-}
-
-// SetInterval sets the value of Interval.
-func (s *Subscription) SetInterval(val SubscriptionInterval) {
-	s.Interval = val
-}
-
-// SetIntervalCount sets the value of IntervalCount.
-func (s *Subscription) SetIntervalCount(val OptInt) {
-	s.IntervalCount = val
-}
-
-// SetRecurringAmount sets the value of RecurringAmount.
-func (s *Subscription) SetRecurringAmount(val OptString) {
-	s.RecurringAmount = val
-}
-
-// SetCancellationPolicy sets the value of CancellationPolicy.
-func (s *Subscription) SetCancellationPolicy(val OptCancellationPolicy) {
-	s.CancellationPolicy = val
-}
-
-// SetRefundPolicy sets the value of RefundPolicy.
-func (s *Subscription) SetRefundPolicy(val OptRefundPolicy) {
-	s.RefundPolicy = val
-}
-
-// SetShortRateMultiplier sets the value of ShortRateMultiplier.
-func (s *Subscription) SetShortRateMultiplier(val OptString) {
-	s.ShortRateMultiplier = val
-}
-
-// SetShortRateThresholdSeconds sets the value of ShortRateThresholdSeconds.
-func (s *Subscription) SetShortRateThresholdSeconds(val OptInt64) {
-	s.ShortRateThresholdSeconds = val
-}
-
-// SetMonthlyListAmount sets the value of MonthlyListAmount.
-func (s *Subscription) SetMonthlyListAmount(val OptString) {
-	s.MonthlyListAmount = val
-}
-
-// SetOrderItemID sets the value of OrderItemID.
-func (s *Subscription) SetOrderItemID(val OptUUID) {
-	s.OrderItemID = val
-}
-
-// SetCouponID sets the value of CouponID.
-func (s *Subscription) SetCouponID(val OptUUID) {
-	s.CouponID = val
-}
-
-// SetCoupon sets the value of Coupon.
-func (s *Subscription) SetCoupon(val OptObjectIdentity) {
-	s.Coupon = val
-}
-
-// SetDiscountedRenewalsRemaining sets the value of DiscountedRenewalsRemaining.
-func (s *Subscription) SetDiscountedRenewalsRemaining(val OptInt) {
-	s.DiscountedRenewalsRemaining = val
-}
-
-// SetRestrictions sets the value of Restrictions.
-func (s *Subscription) SetRestrictions(val []SubscriptionRestriction) {
-	s.Restrictions = val
-}
-
-// SetBillingCycleAnchor sets the value of BillingCycleAnchor.
-func (s *Subscription) SetBillingCycleAnchor(val OptDateTime) {
-	s.BillingCycleAnchor = val
-}
-
-// SetCancellation sets the value of Cancellation.
-func (s *Subscription) SetCancellation(val OptSubscriptionCancellation) {
-	s.Cancellation = val
-}
-
-// SetScheduledChange sets the value of ScheduledChange.
-func (s *Subscription) SetScheduledChange(val OptNilScheduledChange) {
-	s.ScheduledChange = val
-}
-
-// SetDefaultPaymentMethodID sets the value of DefaultPaymentMethodID.
-func (s *Subscription) SetDefaultPaymentMethodID(val OptNilUUID) {
-	s.DefaultPaymentMethodID = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *Subscription) SetCreatedAt(val OptDateTime) {
-	s.CreatedAt = val
 }
 
 // SetID sets the value of ID.
@@ -18542,8 +18730,13 @@ func (s *Subscription) SetAccount(val AccountIdentity) {
 }
 
 // SetProductID sets the value of ProductID.
-func (s *Subscription) SetProductID(val ProductID) {
+func (s *Subscription) SetProductID(val ProductId) {
 	s.ProductID = val
+}
+
+// SetProduct sets the value of Product.
+func (s *Subscription) SetProduct(val Product) {
+	s.Product = val
 }
 
 // SetProjectID sets the value of ProjectID.
@@ -18556,29 +18749,24 @@ func (s *Subscription) SetProject(val OptNilNamedIdentity) {
 	s.Project = val
 }
 
-// SetProduct sets the value of Product.
-func (s *Subscription) SetProduct(val Product) {
-	s.Product = val
+// SetCurrency sets the value of Currency.
+func (s *Subscription) SetCurrency(val string) {
+	s.Currency = val
 }
 
-// SetPlanID sets the value of PlanID.
-func (s *Subscription) SetPlanID(val uuid.UUID) {
-	s.PlanID = val
+// SetStatus sets the value of Status.
+func (s *Subscription) SetStatus(val SubscriptionStatus) {
+	s.Status = val
 }
 
-// SetPlanName sets the value of PlanName.
-func (s *Subscription) SetPlanName(val string) {
-	s.PlanName = val
+// SetInterval sets the value of Interval.
+func (s *Subscription) SetInterval(val SubscriptionInterval) {
+	s.Interval = val
 }
 
-// SetPriceID sets the value of PriceID.
-func (s *Subscription) SetPriceID(val uuid.UUID) {
-	s.PriceID = val
-}
-
-// SetQuantity sets the value of Quantity.
-func (s *Subscription) SetQuantity(val string) {
-	s.Quantity = val
+// SetIntervalCount sets the value of IntervalCount.
+func (s *Subscription) SetIntervalCount(val OptInt) {
+	s.IntervalCount = val
 }
 
 // SetCurrentTermEnd sets the value of CurrentTermEnd.
@@ -18596,14 +18784,49 @@ func (s *Subscription) SetCurrentPeriodEnd(val OptNilDateTime) {
 	s.CurrentPeriodEnd = val
 }
 
+// SetBillingCycleAnchor sets the value of BillingCycleAnchor.
+func (s *Subscription) SetBillingCycleAnchor(val OptDateTime) {
+	s.BillingCycleAnchor = val
+}
+
 // SetAutoRenew sets the value of AutoRenew.
 func (s *Subscription) SetAutoRenew(val bool) {
 	s.AutoRenew = val
 }
 
-// SetStatus sets the value of Status.
-func (s *Subscription) SetStatus(val SubscriptionStatus) {
-	s.Status = val
+// SetTrialStart sets the value of TrialStart.
+func (s *Subscription) SetTrialStart(val OptNilDateTime) {
+	s.TrialStart = val
+}
+
+// SetTrialEnd sets the value of TrialEnd.
+func (s *Subscription) SetTrialEnd(val OptNilDateTime) {
+	s.TrialEnd = val
+}
+
+// SetTrialSettings sets the value of TrialSettings.
+func (s *Subscription) SetTrialSettings(val OptNilTrialSettings) {
+	s.TrialSettings = val
+}
+
+// SetRestrictions sets the value of Restrictions.
+func (s *Subscription) SetRestrictions(val []SubscriptionRestriction) {
+	s.Restrictions = val
+}
+
+// SetDefaultPaymentMethodID sets the value of DefaultPaymentMethodID.
+func (s *Subscription) SetDefaultPaymentMethodID(val OptNilUUID) {
+	s.DefaultPaymentMethodID = val
+}
+
+// SetItems sets the value of Items.
+func (s *Subscription) SetItems(val []SubscriptionItem) {
+	s.Items = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *Subscription) SetCreatedAt(val OptDateTime) {
+	s.CreatedAt = val
 }
 
 // SetStartedAt sets the value of StartedAt.
@@ -18616,261 +18839,8 @@ func (s *Subscription) SetEndedAt(val OptNilDateTime) {
 	s.EndedAt = val
 }
 
-// The latest cancellation including the subscription, with this subscription's item: `id` is the item
-// and `cancellation_id` the cancellation. scheduled_at is the intended time and effective_at the
-// confirmed end of service.
-// Ref: #/components/schemas/SubscriptionCancellation
-type SubscriptionCancellation struct {
-	Reason OptString `json:"reason"`
-	// The cancellation this item belongs to, with the other subscriptions released together.
-	CancellationID        OptUUID                        `json:"cancellation_id"`
-	ID                    uuid.UUID                      `json:"id"`
-	SubscriptionID        uuid.UUID                      `json:"subscription_id"`
-	Status                SubscriptionCancellationStatus `json:"status"`
-	Mode                  CancellationMode               `json:"mode"`
-	RequestedAt           time.Time                      `json:"requested_at"`
-	ScheduledAt           OptDateTime                    `json:"scheduled_at"`
-	EffectiveAt           OptDateTime                    `json:"effective_at"`
-	CompletedAt           OptDateTime                    `json:"completed_at"`
-	ReleaseStartedAt      OptDateTime                    `json:"release_started_at"`
-	CanceledAt            OptDateTime                    `json:"canceled_at"`
-	ForfeitRemainingValue bool                           `json:"forfeit_remaining_value"`
-	FailureCode           OptString                      `json:"failure_code"`
-	FailureReason         OptString                      `json:"failure_reason"`
-}
-
-// GetReason returns the value of Reason.
-func (s *SubscriptionCancellation) GetReason() OptString {
-	return s.Reason
-}
-
-// GetCancellationID returns the value of CancellationID.
-func (s *SubscriptionCancellation) GetCancellationID() OptUUID {
-	return s.CancellationID
-}
-
-// GetID returns the value of ID.
-func (s *SubscriptionCancellation) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *SubscriptionCancellation) GetSubscriptionID() uuid.UUID {
-	return s.SubscriptionID
-}
-
-// GetStatus returns the value of Status.
-func (s *SubscriptionCancellation) GetStatus() SubscriptionCancellationStatus {
-	return s.Status
-}
-
-// GetMode returns the value of Mode.
-func (s *SubscriptionCancellation) GetMode() CancellationMode {
-	return s.Mode
-}
-
-// GetRequestedAt returns the value of RequestedAt.
-func (s *SubscriptionCancellation) GetRequestedAt() time.Time {
-	return s.RequestedAt
-}
-
-// GetScheduledAt returns the value of ScheduledAt.
-func (s *SubscriptionCancellation) GetScheduledAt() OptDateTime {
-	return s.ScheduledAt
-}
-
-// GetEffectiveAt returns the value of EffectiveAt.
-func (s *SubscriptionCancellation) GetEffectiveAt() OptDateTime {
-	return s.EffectiveAt
-}
-
-// GetCompletedAt returns the value of CompletedAt.
-func (s *SubscriptionCancellation) GetCompletedAt() OptDateTime {
-	return s.CompletedAt
-}
-
-// GetReleaseStartedAt returns the value of ReleaseStartedAt.
-func (s *SubscriptionCancellation) GetReleaseStartedAt() OptDateTime {
-	return s.ReleaseStartedAt
-}
-
-// GetCanceledAt returns the value of CanceledAt.
-func (s *SubscriptionCancellation) GetCanceledAt() OptDateTime {
-	return s.CanceledAt
-}
-
-// GetForfeitRemainingValue returns the value of ForfeitRemainingValue.
-func (s *SubscriptionCancellation) GetForfeitRemainingValue() bool {
-	return s.ForfeitRemainingValue
-}
-
-// GetFailureCode returns the value of FailureCode.
-func (s *SubscriptionCancellation) GetFailureCode() OptString {
-	return s.FailureCode
-}
-
-// GetFailureReason returns the value of FailureReason.
-func (s *SubscriptionCancellation) GetFailureReason() OptString {
-	return s.FailureReason
-}
-
-// SetReason sets the value of Reason.
-func (s *SubscriptionCancellation) SetReason(val OptString) {
-	s.Reason = val
-}
-
-// SetCancellationID sets the value of CancellationID.
-func (s *SubscriptionCancellation) SetCancellationID(val OptUUID) {
-	s.CancellationID = val
-}
-
-// SetID sets the value of ID.
-func (s *SubscriptionCancellation) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *SubscriptionCancellation) SetSubscriptionID(val uuid.UUID) {
-	s.SubscriptionID = val
-}
-
-// SetStatus sets the value of Status.
-func (s *SubscriptionCancellation) SetStatus(val SubscriptionCancellationStatus) {
-	s.Status = val
-}
-
-// SetMode sets the value of Mode.
-func (s *SubscriptionCancellation) SetMode(val CancellationMode) {
-	s.Mode = val
-}
-
-// SetRequestedAt sets the value of RequestedAt.
-func (s *SubscriptionCancellation) SetRequestedAt(val time.Time) {
-	s.RequestedAt = val
-}
-
-// SetScheduledAt sets the value of ScheduledAt.
-func (s *SubscriptionCancellation) SetScheduledAt(val OptDateTime) {
-	s.ScheduledAt = val
-}
-
-// SetEffectiveAt sets the value of EffectiveAt.
-func (s *SubscriptionCancellation) SetEffectiveAt(val OptDateTime) {
-	s.EffectiveAt = val
-}
-
-// SetCompletedAt sets the value of CompletedAt.
-func (s *SubscriptionCancellation) SetCompletedAt(val OptDateTime) {
-	s.CompletedAt = val
-}
-
-// SetReleaseStartedAt sets the value of ReleaseStartedAt.
-func (s *SubscriptionCancellation) SetReleaseStartedAt(val OptDateTime) {
-	s.ReleaseStartedAt = val
-}
-
-// SetCanceledAt sets the value of CanceledAt.
-func (s *SubscriptionCancellation) SetCanceledAt(val OptDateTime) {
-	s.CanceledAt = val
-}
-
-// SetForfeitRemainingValue sets the value of ForfeitRemainingValue.
-func (s *SubscriptionCancellation) SetForfeitRemainingValue(val bool) {
-	s.ForfeitRemainingValue = val
-}
-
-// SetFailureCode sets the value of FailureCode.
-func (s *SubscriptionCancellation) SetFailureCode(val OptString) {
-	s.FailureCode = val
-}
-
-// SetFailureReason sets the value of FailureReason.
-func (s *SubscriptionCancellation) SetFailureReason(val OptString) {
-	s.FailureReason = val
-}
-
-type SubscriptionCancellationStatus string
-
-const (
-	SubscriptionCancellationStatusRequested SubscriptionCancellationStatus = "requested"
-	SubscriptionCancellationStatusScheduled SubscriptionCancellationStatus = "scheduled"
-	SubscriptionCancellationStatusReleasing SubscriptionCancellationStatus = "releasing"
-	SubscriptionCancellationStatusFailed    SubscriptionCancellationStatus = "failed"
-	SubscriptionCancellationStatusCompleted SubscriptionCancellationStatus = "completed"
-	SubscriptionCancellationStatusCanceled  SubscriptionCancellationStatus = "canceled"
-)
-
-// AllValues returns all SubscriptionCancellationStatus values.
-func (SubscriptionCancellationStatus) AllValues() []SubscriptionCancellationStatus {
-	return []SubscriptionCancellationStatus{
-		SubscriptionCancellationStatusRequested,
-		SubscriptionCancellationStatusScheduled,
-		SubscriptionCancellationStatusReleasing,
-		SubscriptionCancellationStatusFailed,
-		SubscriptionCancellationStatusCompleted,
-		SubscriptionCancellationStatusCanceled,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s SubscriptionCancellationStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case SubscriptionCancellationStatusRequested:
-		return []byte(s), nil
-	case SubscriptionCancellationStatusScheduled:
-		return []byte(s), nil
-	case SubscriptionCancellationStatusReleasing:
-		return []byte(s), nil
-	case SubscriptionCancellationStatusFailed:
-		return []byte(s), nil
-	case SubscriptionCancellationStatusCompleted:
-		return []byte(s), nil
-	case SubscriptionCancellationStatusCanceled:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *SubscriptionCancellationStatus) UnmarshalText(data []byte) error {
-	switch SubscriptionCancellationStatus(data) {
-	case SubscriptionCancellationStatusRequested:
-		*s = SubscriptionCancellationStatusRequested
-		return nil
-	case SubscriptionCancellationStatusScheduled:
-		*s = SubscriptionCancellationStatusScheduled
-		return nil
-	case SubscriptionCancellationStatusReleasing:
-		*s = SubscriptionCancellationStatusReleasing
-		return nil
-	case SubscriptionCancellationStatusFailed:
-		*s = SubscriptionCancellationStatusFailed
-		return nil
-	case SubscriptionCancellationStatusCompleted:
-		*s = SubscriptionCancellationStatusCompleted
-		return nil
-	case SubscriptionCancellationStatusCanceled:
-		*s = SubscriptionCancellationStatusCanceled
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// The dimension values of what was bought, such as region and instance type. Empty when the purchase
-// gave none.
-type SubscriptionDimensions map[string]string
-
-func (s *SubscriptionDimensions) init() SubscriptionDimensions {
-	m := *s
-	if m == nil {
-		m = map[string]string{}
-		*s = m
-	}
-	return m
-}
-
+// The renewal term of its licensed items, `interval_count` intervals long; `none` when every item is
+// metered.
 type SubscriptionInterval string
 
 const (
@@ -18924,6 +18894,558 @@ func (s *SubscriptionInterval) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// One priced part of a subscription, as a Stripe subscription item, such as the instance, a volume or
+// the bandwidth of an elastic IP. It renews with its subscription and can be changed or canceled
+// alone.
+// Ref: #/components/schemas/SubscriptionItem
+type SubscriptionItem struct {
+	ID             uuid.UUID `json:"id"`
+	SubscriptionID uuid.UUID `json:"subscription_id"`
+	PlanID         uuid.UUID `json:"plan_id"`
+	PlanName       string    `json:"plan_name"`
+	PriceID        uuid.UUID `json:"price_id"`
+	Type           PriceType `json:"type"`
+	UsageType      UsageType `json:"usage_type"`
+	// The dimension values of what was bought, such as region and instance type. Empty when the purchase
+	// gave none.
+	Dimensions SubscriptionItemDimensions `json:"dimensions"`
+	Quantity   string                     `json:"quantity"`
+	// This item's renewal amount, after continuing discounts and before tax. A pending item shows base
+	// terms until paying the order fixes any new discount. Absent for metered and one-time items.
+	RecurringAmount OptString `json:"recurring_amount"`
+	// Whether new account discounts may apply to this item in future renewals. A fixed operator renewal
+	// agreement disables automatic discounts; catalog repricing or a newly selected purchase agreement
+	// enables them.
+	RenewalDiscountsEnabled OptBool               `json:"renewal_discounts_enabled"`
+	CancellationPolicy      OptCancellationPolicy `json:"cancellation_policy"`
+	RefundPolicy            OptRefundPolicy       `json:"refund_policy"`
+	// Refund policy `short_rate` only, as on the price bought.
+	ShortRateMultiplier OptString `json:"short_rate_multiplier"`
+	// Refund policy `short_rate` only, as on the price bought.
+	ShortRateThresholdSeconds OptInt64 `json:"short_rate_threshold_seconds"`
+	// Licensed recurring only, the `monthly_list_amount` that a renewal at the agreed amount keeps; see
+	// the order item.
+	MonthlyListAmount           OptString         `json:"monthly_list_amount"`
+	CouponID                    OptUUID           `json:"coupon_id"`
+	Coupon                      OptObjectIdentity `json:"coupon"`
+	DiscountedRenewalsRemaining OptInt            `json:"discounted_renewals_remaining"`
+	// The order item that created it.
+	OrderItemID  OptUUID                         `json:"order_item_id"`
+	Cancellation OptSubscriptionItemCancellation `json:"cancellation"`
+	// The accepted period-end change scheduled for this item; null when there is none.
+	ScheduledChange OptNilScheduledChange `json:"scheduled_change"`
+	CreatedAt       OptDateTime           `json:"created_at"`
+	// When the item's service started. Null until its delivery is confirmed.
+	StartedAt OptNilDateTime `json:"started_at"`
+	// When the item ended, alone or with its subscription.
+	EndedAt OptNilDateTime `json:"ended_at"`
+}
+
+// GetID returns the value of ID.
+func (s *SubscriptionItem) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *SubscriptionItem) GetSubscriptionID() uuid.UUID {
+	return s.SubscriptionID
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *SubscriptionItem) GetPlanID() uuid.UUID {
+	return s.PlanID
+}
+
+// GetPlanName returns the value of PlanName.
+func (s *SubscriptionItem) GetPlanName() string {
+	return s.PlanName
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *SubscriptionItem) GetPriceID() uuid.UUID {
+	return s.PriceID
+}
+
+// GetType returns the value of Type.
+func (s *SubscriptionItem) GetType() PriceType {
+	return s.Type
+}
+
+// GetUsageType returns the value of UsageType.
+func (s *SubscriptionItem) GetUsageType() UsageType {
+	return s.UsageType
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *SubscriptionItem) GetDimensions() SubscriptionItemDimensions {
+	return s.Dimensions
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *SubscriptionItem) GetQuantity() string {
+	return s.Quantity
+}
+
+// GetRecurringAmount returns the value of RecurringAmount.
+func (s *SubscriptionItem) GetRecurringAmount() OptString {
+	return s.RecurringAmount
+}
+
+// GetRenewalDiscountsEnabled returns the value of RenewalDiscountsEnabled.
+func (s *SubscriptionItem) GetRenewalDiscountsEnabled() OptBool {
+	return s.RenewalDiscountsEnabled
+}
+
+// GetCancellationPolicy returns the value of CancellationPolicy.
+func (s *SubscriptionItem) GetCancellationPolicy() OptCancellationPolicy {
+	return s.CancellationPolicy
+}
+
+// GetRefundPolicy returns the value of RefundPolicy.
+func (s *SubscriptionItem) GetRefundPolicy() OptRefundPolicy {
+	return s.RefundPolicy
+}
+
+// GetShortRateMultiplier returns the value of ShortRateMultiplier.
+func (s *SubscriptionItem) GetShortRateMultiplier() OptString {
+	return s.ShortRateMultiplier
+}
+
+// GetShortRateThresholdSeconds returns the value of ShortRateThresholdSeconds.
+func (s *SubscriptionItem) GetShortRateThresholdSeconds() OptInt64 {
+	return s.ShortRateThresholdSeconds
+}
+
+// GetMonthlyListAmount returns the value of MonthlyListAmount.
+func (s *SubscriptionItem) GetMonthlyListAmount() OptString {
+	return s.MonthlyListAmount
+}
+
+// GetCouponID returns the value of CouponID.
+func (s *SubscriptionItem) GetCouponID() OptUUID {
+	return s.CouponID
+}
+
+// GetCoupon returns the value of Coupon.
+func (s *SubscriptionItem) GetCoupon() OptObjectIdentity {
+	return s.Coupon
+}
+
+// GetDiscountedRenewalsRemaining returns the value of DiscountedRenewalsRemaining.
+func (s *SubscriptionItem) GetDiscountedRenewalsRemaining() OptInt {
+	return s.DiscountedRenewalsRemaining
+}
+
+// GetOrderItemID returns the value of OrderItemID.
+func (s *SubscriptionItem) GetOrderItemID() OptUUID {
+	return s.OrderItemID
+}
+
+// GetCancellation returns the value of Cancellation.
+func (s *SubscriptionItem) GetCancellation() OptSubscriptionItemCancellation {
+	return s.Cancellation
+}
+
+// GetScheduledChange returns the value of ScheduledChange.
+func (s *SubscriptionItem) GetScheduledChange() OptNilScheduledChange {
+	return s.ScheduledChange
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *SubscriptionItem) GetCreatedAt() OptDateTime {
+	return s.CreatedAt
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *SubscriptionItem) GetStartedAt() OptNilDateTime {
+	return s.StartedAt
+}
+
+// GetEndedAt returns the value of EndedAt.
+func (s *SubscriptionItem) GetEndedAt() OptNilDateTime {
+	return s.EndedAt
+}
+
+// SetID sets the value of ID.
+func (s *SubscriptionItem) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *SubscriptionItem) SetSubscriptionID(val uuid.UUID) {
+	s.SubscriptionID = val
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *SubscriptionItem) SetPlanID(val uuid.UUID) {
+	s.PlanID = val
+}
+
+// SetPlanName sets the value of PlanName.
+func (s *SubscriptionItem) SetPlanName(val string) {
+	s.PlanName = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *SubscriptionItem) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
+}
+
+// SetType sets the value of Type.
+func (s *SubscriptionItem) SetType(val PriceType) {
+	s.Type = val
+}
+
+// SetUsageType sets the value of UsageType.
+func (s *SubscriptionItem) SetUsageType(val UsageType) {
+	s.UsageType = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *SubscriptionItem) SetDimensions(val SubscriptionItemDimensions) {
+	s.Dimensions = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *SubscriptionItem) SetQuantity(val string) {
+	s.Quantity = val
+}
+
+// SetRecurringAmount sets the value of RecurringAmount.
+func (s *SubscriptionItem) SetRecurringAmount(val OptString) {
+	s.RecurringAmount = val
+}
+
+// SetRenewalDiscountsEnabled sets the value of RenewalDiscountsEnabled.
+func (s *SubscriptionItem) SetRenewalDiscountsEnabled(val OptBool) {
+	s.RenewalDiscountsEnabled = val
+}
+
+// SetCancellationPolicy sets the value of CancellationPolicy.
+func (s *SubscriptionItem) SetCancellationPolicy(val OptCancellationPolicy) {
+	s.CancellationPolicy = val
+}
+
+// SetRefundPolicy sets the value of RefundPolicy.
+func (s *SubscriptionItem) SetRefundPolicy(val OptRefundPolicy) {
+	s.RefundPolicy = val
+}
+
+// SetShortRateMultiplier sets the value of ShortRateMultiplier.
+func (s *SubscriptionItem) SetShortRateMultiplier(val OptString) {
+	s.ShortRateMultiplier = val
+}
+
+// SetShortRateThresholdSeconds sets the value of ShortRateThresholdSeconds.
+func (s *SubscriptionItem) SetShortRateThresholdSeconds(val OptInt64) {
+	s.ShortRateThresholdSeconds = val
+}
+
+// SetMonthlyListAmount sets the value of MonthlyListAmount.
+func (s *SubscriptionItem) SetMonthlyListAmount(val OptString) {
+	s.MonthlyListAmount = val
+}
+
+// SetCouponID sets the value of CouponID.
+func (s *SubscriptionItem) SetCouponID(val OptUUID) {
+	s.CouponID = val
+}
+
+// SetCoupon sets the value of Coupon.
+func (s *SubscriptionItem) SetCoupon(val OptObjectIdentity) {
+	s.Coupon = val
+}
+
+// SetDiscountedRenewalsRemaining sets the value of DiscountedRenewalsRemaining.
+func (s *SubscriptionItem) SetDiscountedRenewalsRemaining(val OptInt) {
+	s.DiscountedRenewalsRemaining = val
+}
+
+// SetOrderItemID sets the value of OrderItemID.
+func (s *SubscriptionItem) SetOrderItemID(val OptUUID) {
+	s.OrderItemID = val
+}
+
+// SetCancellation sets the value of Cancellation.
+func (s *SubscriptionItem) SetCancellation(val OptSubscriptionItemCancellation) {
+	s.Cancellation = val
+}
+
+// SetScheduledChange sets the value of ScheduledChange.
+func (s *SubscriptionItem) SetScheduledChange(val OptNilScheduledChange) {
+	s.ScheduledChange = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *SubscriptionItem) SetCreatedAt(val OptDateTime) {
+	s.CreatedAt = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *SubscriptionItem) SetStartedAt(val OptNilDateTime) {
+	s.StartedAt = val
+}
+
+// SetEndedAt sets the value of EndedAt.
+func (s *SubscriptionItem) SetEndedAt(val OptNilDateTime) {
+	s.EndedAt = val
+}
+
+// The latest cancellation including the subscription item, with this item's entry: `id` is the entry
+// and `cancellation_id` the cancellation. scheduled_at is the intended time and effective_at the
+// confirmed end of service.
+// Ref: #/components/schemas/SubscriptionItemCancellation
+type SubscriptionItemCancellation struct {
+	Reason OptString `json:"reason"`
+	// The cancellation this entry belongs to, with the other items released together.
+	CancellationID        OptUUID                            `json:"cancellation_id"`
+	ID                    uuid.UUID                          `json:"id"`
+	SubscriptionItemID    uuid.UUID                          `json:"subscription_item_id"`
+	Status                SubscriptionItemCancellationStatus `json:"status"`
+	Mode                  CancellationMode                   `json:"mode"`
+	RequestedAt           time.Time                          `json:"requested_at"`
+	ScheduledAt           OptDateTime                        `json:"scheduled_at"`
+	EffectiveAt           OptDateTime                        `json:"effective_at"`
+	CompletedAt           OptDateTime                        `json:"completed_at"`
+	ReleaseStartedAt      OptDateTime                        `json:"release_started_at"`
+	CanceledAt            OptDateTime                        `json:"canceled_at"`
+	ForfeitRemainingValue bool                               `json:"forfeit_remaining_value"`
+	FailureCode           OptString                          `json:"failure_code"`
+	FailureReason         OptString                          `json:"failure_reason"`
+}
+
+// GetReason returns the value of Reason.
+func (s *SubscriptionItemCancellation) GetReason() OptString {
+	return s.Reason
+}
+
+// GetCancellationID returns the value of CancellationID.
+func (s *SubscriptionItemCancellation) GetCancellationID() OptUUID {
+	return s.CancellationID
+}
+
+// GetID returns the value of ID.
+func (s *SubscriptionItemCancellation) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *SubscriptionItemCancellation) GetSubscriptionItemID() uuid.UUID {
+	return s.SubscriptionItemID
+}
+
+// GetStatus returns the value of Status.
+func (s *SubscriptionItemCancellation) GetStatus() SubscriptionItemCancellationStatus {
+	return s.Status
+}
+
+// GetMode returns the value of Mode.
+func (s *SubscriptionItemCancellation) GetMode() CancellationMode {
+	return s.Mode
+}
+
+// GetRequestedAt returns the value of RequestedAt.
+func (s *SubscriptionItemCancellation) GetRequestedAt() time.Time {
+	return s.RequestedAt
+}
+
+// GetScheduledAt returns the value of ScheduledAt.
+func (s *SubscriptionItemCancellation) GetScheduledAt() OptDateTime {
+	return s.ScheduledAt
+}
+
+// GetEffectiveAt returns the value of EffectiveAt.
+func (s *SubscriptionItemCancellation) GetEffectiveAt() OptDateTime {
+	return s.EffectiveAt
+}
+
+// GetCompletedAt returns the value of CompletedAt.
+func (s *SubscriptionItemCancellation) GetCompletedAt() OptDateTime {
+	return s.CompletedAt
+}
+
+// GetReleaseStartedAt returns the value of ReleaseStartedAt.
+func (s *SubscriptionItemCancellation) GetReleaseStartedAt() OptDateTime {
+	return s.ReleaseStartedAt
+}
+
+// GetCanceledAt returns the value of CanceledAt.
+func (s *SubscriptionItemCancellation) GetCanceledAt() OptDateTime {
+	return s.CanceledAt
+}
+
+// GetForfeitRemainingValue returns the value of ForfeitRemainingValue.
+func (s *SubscriptionItemCancellation) GetForfeitRemainingValue() bool {
+	return s.ForfeitRemainingValue
+}
+
+// GetFailureCode returns the value of FailureCode.
+func (s *SubscriptionItemCancellation) GetFailureCode() OptString {
+	return s.FailureCode
+}
+
+// GetFailureReason returns the value of FailureReason.
+func (s *SubscriptionItemCancellation) GetFailureReason() OptString {
+	return s.FailureReason
+}
+
+// SetReason sets the value of Reason.
+func (s *SubscriptionItemCancellation) SetReason(val OptString) {
+	s.Reason = val
+}
+
+// SetCancellationID sets the value of CancellationID.
+func (s *SubscriptionItemCancellation) SetCancellationID(val OptUUID) {
+	s.CancellationID = val
+}
+
+// SetID sets the value of ID.
+func (s *SubscriptionItemCancellation) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *SubscriptionItemCancellation) SetSubscriptionItemID(val uuid.UUID) {
+	s.SubscriptionItemID = val
+}
+
+// SetStatus sets the value of Status.
+func (s *SubscriptionItemCancellation) SetStatus(val SubscriptionItemCancellationStatus) {
+	s.Status = val
+}
+
+// SetMode sets the value of Mode.
+func (s *SubscriptionItemCancellation) SetMode(val CancellationMode) {
+	s.Mode = val
+}
+
+// SetRequestedAt sets the value of RequestedAt.
+func (s *SubscriptionItemCancellation) SetRequestedAt(val time.Time) {
+	s.RequestedAt = val
+}
+
+// SetScheduledAt sets the value of ScheduledAt.
+func (s *SubscriptionItemCancellation) SetScheduledAt(val OptDateTime) {
+	s.ScheduledAt = val
+}
+
+// SetEffectiveAt sets the value of EffectiveAt.
+func (s *SubscriptionItemCancellation) SetEffectiveAt(val OptDateTime) {
+	s.EffectiveAt = val
+}
+
+// SetCompletedAt sets the value of CompletedAt.
+func (s *SubscriptionItemCancellation) SetCompletedAt(val OptDateTime) {
+	s.CompletedAt = val
+}
+
+// SetReleaseStartedAt sets the value of ReleaseStartedAt.
+func (s *SubscriptionItemCancellation) SetReleaseStartedAt(val OptDateTime) {
+	s.ReleaseStartedAt = val
+}
+
+// SetCanceledAt sets the value of CanceledAt.
+func (s *SubscriptionItemCancellation) SetCanceledAt(val OptDateTime) {
+	s.CanceledAt = val
+}
+
+// SetForfeitRemainingValue sets the value of ForfeitRemainingValue.
+func (s *SubscriptionItemCancellation) SetForfeitRemainingValue(val bool) {
+	s.ForfeitRemainingValue = val
+}
+
+// SetFailureCode sets the value of FailureCode.
+func (s *SubscriptionItemCancellation) SetFailureCode(val OptString) {
+	s.FailureCode = val
+}
+
+// SetFailureReason sets the value of FailureReason.
+func (s *SubscriptionItemCancellation) SetFailureReason(val OptString) {
+	s.FailureReason = val
+}
+
+type SubscriptionItemCancellationStatus string
+
+const (
+	SubscriptionItemCancellationStatusRequested SubscriptionItemCancellationStatus = "requested"
+	SubscriptionItemCancellationStatusScheduled SubscriptionItemCancellationStatus = "scheduled"
+	SubscriptionItemCancellationStatusReleasing SubscriptionItemCancellationStatus = "releasing"
+	SubscriptionItemCancellationStatusFailed    SubscriptionItemCancellationStatus = "failed"
+	SubscriptionItemCancellationStatusCompleted SubscriptionItemCancellationStatus = "completed"
+	SubscriptionItemCancellationStatusCanceled  SubscriptionItemCancellationStatus = "canceled"
+)
+
+// AllValues returns all SubscriptionItemCancellationStatus values.
+func (SubscriptionItemCancellationStatus) AllValues() []SubscriptionItemCancellationStatus {
+	return []SubscriptionItemCancellationStatus{
+		SubscriptionItemCancellationStatusRequested,
+		SubscriptionItemCancellationStatusScheduled,
+		SubscriptionItemCancellationStatusReleasing,
+		SubscriptionItemCancellationStatusFailed,
+		SubscriptionItemCancellationStatusCompleted,
+		SubscriptionItemCancellationStatusCanceled,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SubscriptionItemCancellationStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case SubscriptionItemCancellationStatusRequested:
+		return []byte(s), nil
+	case SubscriptionItemCancellationStatusScheduled:
+		return []byte(s), nil
+	case SubscriptionItemCancellationStatusReleasing:
+		return []byte(s), nil
+	case SubscriptionItemCancellationStatusFailed:
+		return []byte(s), nil
+	case SubscriptionItemCancellationStatusCompleted:
+		return []byte(s), nil
+	case SubscriptionItemCancellationStatusCanceled:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SubscriptionItemCancellationStatus) UnmarshalText(data []byte) error {
+	switch SubscriptionItemCancellationStatus(data) {
+	case SubscriptionItemCancellationStatusRequested:
+		*s = SubscriptionItemCancellationStatusRequested
+		return nil
+	case SubscriptionItemCancellationStatusScheduled:
+		*s = SubscriptionItemCancellationStatusScheduled
+		return nil
+	case SubscriptionItemCancellationStatusReleasing:
+		*s = SubscriptionItemCancellationStatusReleasing
+		return nil
+	case SubscriptionItemCancellationStatusFailed:
+		*s = SubscriptionItemCancellationStatusFailed
+		return nil
+	case SubscriptionItemCancellationStatusCompleted:
+		*s = SubscriptionItemCancellationStatusCompleted
+		return nil
+	case SubscriptionItemCancellationStatusCanceled:
+		*s = SubscriptionItemCancellationStatusCanceled
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The dimension values of what was bought, such as region and instance type. Empty when the purchase
+// gave none.
+type SubscriptionItemDimensions map[string]string
+
+func (s *SubscriptionItemDimensions) init() SubscriptionItemDimensions {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
 }
 
 // Ref: #/components/schemas/SubscriptionList
@@ -19020,9 +19542,10 @@ func (s *SubscriptionRestriction) UnmarshalText(data []byte) error {
 
 // `pending`: the order has not been accepted. `provisioning`: the owning service accepted the order
 // and is delivering. `active`: delivery was confirmed; payment alone does not make a subscription
-// active. `suspended`: service is stopped while a lien restricts its use. `canceled`: cancellation
-// completed, or an undelivered purchase was canceled or failed. `terminated`: an operator or the
-// owning service ended it immediately.
+// active. `trialing`: in a free trial, in service and not charged until `trial_end`. `suspended`:
+// service is stopped while a lien restricts its use. `canceled`: cancellation of every item completed,
+// or an undelivered purchase was canceled or failed. `terminated`: an operator or the owning service
+// ended it immediately.
 // Ref: #/components/schemas/SubscriptionStatus
 type SubscriptionStatus string
 
@@ -19030,6 +19553,7 @@ const (
 	SubscriptionStatusPending      SubscriptionStatus = "pending"
 	SubscriptionStatusProvisioning SubscriptionStatus = "provisioning"
 	SubscriptionStatusActive       SubscriptionStatus = "active"
+	SubscriptionStatusTrialing     SubscriptionStatus = "trialing"
 	SubscriptionStatusSuspended    SubscriptionStatus = "suspended"
 	SubscriptionStatusCanceled     SubscriptionStatus = "canceled"
 	SubscriptionStatusTerminated   SubscriptionStatus = "terminated"
@@ -19041,6 +19565,7 @@ func (SubscriptionStatus) AllValues() []SubscriptionStatus {
 		SubscriptionStatusPending,
 		SubscriptionStatusProvisioning,
 		SubscriptionStatusActive,
+		SubscriptionStatusTrialing,
 		SubscriptionStatusSuspended,
 		SubscriptionStatusCanceled,
 		SubscriptionStatusTerminated,
@@ -19055,6 +19580,8 @@ func (s SubscriptionStatus) MarshalText() ([]byte, error) {
 	case SubscriptionStatusProvisioning:
 		return []byte(s), nil
 	case SubscriptionStatusActive:
+		return []byte(s), nil
+	case SubscriptionStatusTrialing:
 		return []byte(s), nil
 	case SubscriptionStatusSuspended:
 		return []byte(s), nil
@@ -19079,6 +19606,9 @@ func (s *SubscriptionStatus) UnmarshalText(data []byte) error {
 	case SubscriptionStatusActive:
 		*s = SubscriptionStatusActive
 		return nil
+	case SubscriptionStatusTrialing:
+		*s = SubscriptionStatusTrialing
+		return nil
 	case SubscriptionStatusSuspended:
 		*s = SubscriptionStatusSuspended
 		return nil
@@ -19091,6 +19621,22 @@ func (s *SubscriptionStatus) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// The settings to change; settings left out keep their values.
+// Ref: #/components/schemas/SubscriptionUpdate
+type SubscriptionUpdate struct {
+	AutoRenew OptBool `json:"auto_renew"`
+}
+
+// GetAutoRenew returns the value of AutoRenew.
+func (s *SubscriptionUpdate) GetAutoRenew() OptBool {
+	return s.AutoRenew
+}
+
+// SetAutoRenew sets the value of AutoRenew.
+func (s *SubscriptionUpdate) SetAutoRenew(val OptBool) {
+	s.AutoRenew = val
 }
 
 // Tax name, rate and amounts frozen on the invoice.
@@ -20054,11 +20600,116 @@ func (s *TransactionType) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/TrialEndBehavior
+type TrialEndBehavior struct {
+	// What happens when the trial ends while automatic renewal is off. With it on, the first paid period
+	// is charged to the account's funds or saved payment method, and this applies only when that charge
+	// fails. `cancel`: the subscription ends and its resources are released. `pause`: service stops, and
+	// renewing before the retention period ends restores it, with the first paid period starting at
+	// payment. `create_invoice`: as `pause`, and an invoice for the first paid period is issued to pay.
+	MissingPaymentMethod TrialEndBehaviorMissingPaymentMethod `json:"missing_payment_method"`
+	// How long a subscription stopped at the end of its trial keeps its resources before they are
+	// reclaimed; null for the platform's retention period.
+	RetentionSeconds NilInt64 `json:"retention_seconds"`
+}
+
+// GetMissingPaymentMethod returns the value of MissingPaymentMethod.
+func (s *TrialEndBehavior) GetMissingPaymentMethod() TrialEndBehaviorMissingPaymentMethod {
+	return s.MissingPaymentMethod
+}
+
+// GetRetentionSeconds returns the value of RetentionSeconds.
+func (s *TrialEndBehavior) GetRetentionSeconds() NilInt64 {
+	return s.RetentionSeconds
+}
+
+// SetMissingPaymentMethod sets the value of MissingPaymentMethod.
+func (s *TrialEndBehavior) SetMissingPaymentMethod(val TrialEndBehaviorMissingPaymentMethod) {
+	s.MissingPaymentMethod = val
+}
+
+// SetRetentionSeconds sets the value of RetentionSeconds.
+func (s *TrialEndBehavior) SetRetentionSeconds(val NilInt64) {
+	s.RetentionSeconds = val
+}
+
+// What happens when the trial ends while automatic renewal is off. With it on, the first paid period
+// is charged to the account's funds or saved payment method, and this applies only when that charge
+// fails. `cancel`: the subscription ends and its resources are released. `pause`: service stops, and
+// renewing before the retention period ends restores it, with the first paid period starting at
+// payment. `create_invoice`: as `pause`, and an invoice for the first paid period is issued to pay.
+type TrialEndBehaviorMissingPaymentMethod string
+
+const (
+	TrialEndBehaviorMissingPaymentMethodCancel        TrialEndBehaviorMissingPaymentMethod = "cancel"
+	TrialEndBehaviorMissingPaymentMethodPause         TrialEndBehaviorMissingPaymentMethod = "pause"
+	TrialEndBehaviorMissingPaymentMethodCreateInvoice TrialEndBehaviorMissingPaymentMethod = "create_invoice"
+)
+
+// AllValues returns all TrialEndBehaviorMissingPaymentMethod values.
+func (TrialEndBehaviorMissingPaymentMethod) AllValues() []TrialEndBehaviorMissingPaymentMethod {
+	return []TrialEndBehaviorMissingPaymentMethod{
+		TrialEndBehaviorMissingPaymentMethodCancel,
+		TrialEndBehaviorMissingPaymentMethodPause,
+		TrialEndBehaviorMissingPaymentMethodCreateInvoice,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TrialEndBehaviorMissingPaymentMethod) MarshalText() ([]byte, error) {
+	switch s {
+	case TrialEndBehaviorMissingPaymentMethodCancel:
+		return []byte(s), nil
+	case TrialEndBehaviorMissingPaymentMethodPause:
+		return []byte(s), nil
+	case TrialEndBehaviorMissingPaymentMethodCreateInvoice:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TrialEndBehaviorMissingPaymentMethod) UnmarshalText(data []byte) error {
+	switch TrialEndBehaviorMissingPaymentMethod(data) {
+	case TrialEndBehaviorMissingPaymentMethodCancel:
+		*s = TrialEndBehaviorMissingPaymentMethodCancel
+		return nil
+	case TrialEndBehaviorMissingPaymentMethodPause:
+		*s = TrialEndBehaviorMissingPaymentMethodPause
+		return nil
+	case TrialEndBehaviorMissingPaymentMethodCreateInvoice:
+		*s = TrialEndBehaviorMissingPaymentMethodCreateInvoice
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// How a free trial ends, as Stripe's trial_settings.
+// Ref: #/components/schemas/TrialSettings
+type TrialSettings struct {
+	EndBehavior TrialEndBehavior `json:"end_behavior"`
+}
+
+// GetEndBehavior returns the value of EndBehavior.
+func (s *TrialSettings) GetEndBehavior() TrialEndBehavior {
+	return s.EndBehavior
+}
+
+// SetEndBehavior sets the value of EndBehavior.
+func (s *TrialSettings) SetEndBehavior(val TrialEndBehavior) {
+	s.EndBehavior = val
+}
+
 // UnlinkProjectBillingAccountNoContent is response for UnlinkProjectBillingAccount operation.
 type UnlinkProjectBillingAccountNoContent struct{}
 
 // Ref: #/components/schemas/UsageCharge
 type UsageCharge struct {
+	// The subscription item the usage belongs to.
+	SubscriptionItemID uuid.UUID `json:"subscription_item_id"`
+	// The subscription the item belongs to.
 	SubscriptionID uuid.UUID `json:"subscription_id"`
 	ID             uuid.UUID `json:"id"`
 	ProjectID      OptUUID   `json:"project_id"`
@@ -20093,6 +20744,11 @@ type UsageCharge struct {
 	InvoiceItemID OptNilUUID `json:"invoice_item_id"`
 	// The statement this charge was collected into.
 	StatementID OptUUID `json:"statement_id"`
+}
+
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *UsageCharge) GetSubscriptionItemID() uuid.UUID {
+	return s.SubscriptionItemID
 }
 
 // GetSubscriptionID returns the value of SubscriptionID.
@@ -20198,6 +20854,11 @@ func (s *UsageCharge) GetInvoiceItemID() OptNilUUID {
 // GetStatementID returns the value of StatementID.
 func (s *UsageCharge) GetStatementID() OptUUID {
 	return s.StatementID
+}
+
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *UsageCharge) SetSubscriptionItemID(val uuid.UUID) {
+	s.SubscriptionItemID = val
 }
 
 // SetSubscriptionID sets the value of SubscriptionID.
@@ -20387,7 +21048,7 @@ func (s *UsageEstimate) SetItems(val []UsageEstimateItem) {
 // and product_id with lookup keys.
 // Ref: #/components/schemas/UsageEstimateInput
 type UsageEstimateInput struct {
-	ProductID      OptProductID `json:"product_id"`
+	ProductID      OptProductId `json:"product_id"`
 	PlanID         OptUUID      `json:"plan_id"`
 	PlanLookupKey  OptString    `json:"plan_lookup_key"`
 	PriceID        OptUUID      `json:"price_id"`
@@ -20405,7 +21066,7 @@ type UsageEstimateInput struct {
 }
 
 // GetProductID returns the value of ProductID.
-func (s *UsageEstimateInput) GetProductID() OptProductID {
+func (s *UsageEstimateInput) GetProductID() OptProductId {
 	return s.ProductID
 }
 
@@ -20455,7 +21116,7 @@ func (s *UsageEstimateInput) GetDurationSeconds() OptInt64 {
 }
 
 // SetProductID sets the value of ProductID.
-func (s *UsageEstimateInput) SetProductID(val OptProductID) {
+func (s *UsageEstimateInput) SetProductID(val OptProductId) {
 	s.ProductID = val
 }
 

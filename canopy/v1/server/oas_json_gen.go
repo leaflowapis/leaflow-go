@@ -1297,12 +1297,19 @@ func (s *CheckoutOptions) encodeFields(e *jx.Encoder) {
 			s.ReturnURL.Encode(e)
 		}
 	}
+	{
+		if s.AutoRenew.Set {
+			e.FieldStart("auto_renew")
+			s.AutoRenew.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfCheckoutOptions = [3]string{
+var jsonFieldsNameOfCheckoutOptions = [4]string{
 	0: "mode",
 	1: "expected_amount",
 	2: "return_url",
+	3: "auto_renew",
 }
 
 // Decode decodes CheckoutOptions from json.
@@ -1343,6 +1350,16 @@ func (s *CheckoutOptions) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"return_url\"")
+			}
+		case "auto_renew":
+			if err := func() error {
+				s.AutoRenew.Reset()
+				if err := s.AutoRenew.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"auto_renew\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)

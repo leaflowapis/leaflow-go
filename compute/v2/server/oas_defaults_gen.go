@@ -3,15 +3,27 @@
 package computev2server
 
 // setDefaults set default value of fields.
+func (s *ChangeElasticIpChargeTypeRequestBody) setDefaults() {
+	{
+		val := InternetChargeType("bandwidth")
+		s.InternetChargeType = val
+	}
+}
+
+// setDefaults set default value of fields.
 func (s *CheckoutOptions) setDefaults() {
 	{
 		val := CheckoutOptionsMode("automatic")
 		s.Mode.SetTo(val)
 	}
+	{
+		val := bool(false)
+		s.AutoRenew.SetTo(val)
+	}
 }
 
 // setDefaults set default value of fields.
-func (s *CreateElasticIPRequestBody) setDefaults() {
+func (s *CreateElasticIpRequestBody) setDefaults() {
 	{
 		val := InternetChargeType("bandwidth")
 		s.InternetChargeType.SetTo(val)
@@ -27,7 +39,7 @@ func (s *CreateInstanceRequestBody) setDefaults() {
 }
 
 // setDefaults set default value of fields.
-func (s *ElasticIP) setDefaults() {
+func (s *ElasticIp) setDefaults() {
 	{
 		val := InternetChargeType("bandwidth")
 		s.InternetChargeType = val
@@ -51,7 +63,7 @@ func (s *LaunchTemplateDataVolume) setDefaults() {
 }
 
 // setDefaults set default value of fields.
-func (s *LaunchTemplateElasticIP) setDefaults() {
+func (s *LaunchTemplateElasticIp) setDefaults() {
 	{
 		val := InternetChargeType("bandwidth")
 		s.InternetChargeType.SetTo(val)
@@ -75,7 +87,7 @@ func (s *NewDataVolume) setDefaults() {
 }
 
 // setDefaults set default value of fields.
-func (s *NewElasticIP) setDefaults() {
+func (s *NewElasticIp) setDefaults() {
 	{
 		val := InternetChargeType("bandwidth")
 		s.InternetChargeType.SetTo(val)

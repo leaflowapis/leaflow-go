@@ -268,6 +268,9 @@ type CheckoutOptions struct {
 	// scheme, including mobile and desktop application schemes. Billing stores it without checking the
 	// target; each client validates its own.
 	ReturnURL OptURI `json:"return_url"`
+	// Turns on automatic renewal of every subscription with licensed items that the purchase opens. Off
+	// when omitted. It must be the customer's own choice.
+	AutoRenew OptBool `json:"auto_renew"`
 }
 
 // GetMode returns the value of Mode.
@@ -285,6 +288,11 @@ func (s *CheckoutOptions) GetReturnURL() OptURI {
 	return s.ReturnURL
 }
 
+// GetAutoRenew returns the value of AutoRenew.
+func (s *CheckoutOptions) GetAutoRenew() OptBool {
+	return s.AutoRenew
+}
+
 // SetMode sets the value of Mode.
 func (s *CheckoutOptions) SetMode(val OptCheckoutOptionsMode) {
 	s.Mode = val
@@ -298,6 +306,11 @@ func (s *CheckoutOptions) SetExpectedAmount(val OptString) {
 // SetReturnURL sets the value of ReturnURL.
 func (s *CheckoutOptions) SetReturnURL(val OptURI) {
 	s.ReturnURL = val
+}
+
+// SetAutoRenew sets the value of AutoRenew.
+func (s *CheckoutOptions) SetAutoRenew(val OptBool) {
+	s.AutoRenew = val
 }
 
 // Merged schema.
@@ -1858,6 +1871,52 @@ func (o OptAllowanceBenefit) Get() (v AllowanceBenefit, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptAllowanceBenefit) Or(d AllowanceBenefit) AllowanceBenefit {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptBool returns new OptBool with value set to v.
+func NewOptBool(v bool) OptBool {
+	return OptBool{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptBool is optional bool.
+type OptBool struct {
+	Value bool
+	Set   bool
+}
+
+// IsSet returns true if OptBool was set.
+func (o OptBool) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptBool) Reset() {
+	var v bool
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptBool) SetTo(v bool) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptBool) Get() (v bool, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptBool) Or(d bool) bool {
 	if v, ok := o.Get(); ok {
 		return v
 	}
