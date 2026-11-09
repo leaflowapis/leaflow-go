@@ -59,7 +59,7 @@ type Invoker interface {
 	// limit is refused with `INSTANCE_BANDWIDTH_CEILING`.
 	//
 	// POST /api/v2/elastic-ips/{elasticIpId}:associate
-	AssociateElasticIP(ctx context.Context, request AssociateElasticIPRequestBody, params AssociateElasticIPParams) (AssociateElasticIPRes, error)
+	AssociateElasticIP(ctx context.Context, request AssociateElasticIpRequestBody, params AssociateElasticIPParams) (AssociateElasticIPRes, error)
 	// AttachInstanceNetworkInterface invokes attach-instance-network-interface operation.
 	//
 	// Returns the network interface; the instance is `attaching_network_interface` and the interface is
@@ -76,6 +76,50 @@ type Invoker interface {
 	//
 	// POST /api/v2/instances/{instanceId}/volumes
 	AttachInstanceVolume(ctx context.Context, request *AttachVolumeRequestBody, params AttachInstanceVolumeParams) (AttachInstanceVolumeRes, error)
+	// ChangeElasticIPBandwidth invokes change-elastic-ip-bandwidth operation.
+	//
+	// Changes the bandwidth ceiling of this elastic IP. No separate bandwidth resource is created, and the
+	// limit applies to inbound and outbound traffic alike. The new value may be any whole number of Mbps
+	// within the line's bandwidth range, otherwise the request is refused with
+	// `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic IP's network item:
+	//
+	//  - Prepaid: the change goes through a Checkout Session that changes the network item, priced for the
+	//    rest of its period. It starts once Billing accepts the order; if checkout is not completed, the
+	//    order is not accepted or the change fails, `bandwidth_mbps` keeps its value and Billing shows the
+	//    outcome.
+	//  - Pay-as-you-go: there is no checkout. The change starts at once, `checkout_session_id` and
+	//    `order_id` are null, and the new limit is metered from the instant it is applied; if it fails,
+	//    the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
+	//    `ELASTIC_IP_CHECKOUT_UNUSED`.
+	//
+	// The elastic IP is `updating_bandwidth` until the change is applied or ends, so other operations and
+	// a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in
+	// effect until the change is applied.
+	//
+	// While the address is associated with an instance, the limit must not exceed the `max_bandwidth_mbps`
+	// of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of
+	// an address that is not associated is checked when the address is associated with an instance.
+	//
+	// POST /api/v2/elastic-ips/{elasticIpId}:changeBandwidth
+	ChangeElasticIPBandwidth(ctx context.Context, request *ChangeElasticIpBandwidthRequestBody, params ChangeElasticIPBandwidthParams) (ChangeElasticIPBandwidthRes, error)
+	// ChangeElasticIPChargeType invokes change-elastic-ip-charge-type operation.
+	//
+	// Moves a pay-as-you-go elastic IP between charging for its bandwidth and charging for its traffic,
+	// within the same network item and without checkout. A prepaid network item has paid for its bandwidth
+	// and is refused with `ELASTIC_IP_CHARGE_TYPE_PREPAID`; `traffic` on a line whose
+	// `traffic_sale_status` is `off_sale` is refused with `ELASTIC_IP_TRAFFIC_UNAVAILABLE`, the type
+	// already in effect with `ELASTIC_IP_CHARGE_TYPE_UNCHANGED`, and a type the currency of the network
+	// item does not offer on the line with HTTP 403 `ELASTIC_IP_CHARGE_TYPE_NOT_OFFERED`: prices are set
+	// per currency, and a currency without one there does not sell that type.
+	//
+	// The change takes effect at the instant it is applied: bandwidth stops being metered then and traffic
+	// starts being, or the other way round. Traffic is counted in windows, and a window is charged the way
+	// the elastic IP was charged for most of it, so a report that arrives late is still charged as it was
+	// at the time and a window the change falls in is never charged both ways. `bandwidth_mbps` stays the
+	// ceiling either way. The elastic IP is `updating_internet_charge_type` until the change is applied.
+	//
+	// POST /api/v2/elastic-ips/{elasticIpId}:changeChargeType
+	ChangeElasticIPChargeType(ctx context.Context, request *ChangeElasticIpChargeTypeRequestBody, params ChangeElasticIPChargeTypeParams) (ChangeElasticIPChargeTypeRes, error)
 	// CreateElasticIP invokes create-elastic-ip operation.
 	//
 	// Select an elastic IP line. The elastic IP is bought through a Billing Checkout Session, and no
@@ -97,13 +141,26 @@ type Invoker interface {
 	// Allocation does not select or create a virtual private cloud. A later association selects an
 	// assigned network-interface address; Compute then establishes the required network connectivity.
 	//
+	// An elastic IP bought on its own has a Billing subscription of its own, with two items: the address,
+	// always pay-as-you-go and charged while the address is not associated with anything, and the network,
+	// on the chosen terms.
+	//
+	// Buying for an instance. With `instance_id`, the elastic IP is associated with the primary network
+	// interface of that instance of the project once created, and its two items join the instance's
+	// Billing subscription: a prepaid network item is charged up to the instance's term end, the rest of
+	// the current period in proportion to the time left, and from then on renews, renews automatically and
+	// expires with the instance. `billing` may be omitted to take the instance's terms; given, its usage
+	// type and period must be the instance's (422 `ELASTIC_IP_BILLING_TERMS_MISMATCH`). An instance that
+	// cannot take another elastic IP, or whose type allows less bandwidth than `bandwidth_mbps`, is
+	// refused before anything is ordered, as associating would be.
+	//
 	// The elastic IP is `pending` from the moment its Checkout Session is created until it is delivered or
 	// its checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
 	// meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its purchase awaits checkout or
 	// payment.
 	//
 	// POST /api/v2/elastic-ips
-	CreateElasticIP(ctx context.Context, request *CreateElasticIPRequestBody) (CreateElasticIPRes, error)
+	CreateElasticIP(ctx context.Context, request *CreateElasticIpRequestBody) (CreateElasticIPRes, error)
 	// CreateInstance invokes create-instance operation.
 	//
 	// Creates a Billing Checkout Session, including for metered terms, and returns one `pending` instance
@@ -135,8 +192,10 @@ type Invoker interface {
 	// subnet_id. Existing network interfaces, boot volumes or elastic IPs require count=1. They are not
 	// held while the instance is pending; if one is no longer usable when the order is accepted, the
 	// instance ends `failed` with `provisioning_failed`. Image boots require boot_volume; existing volumes
-	// retain their own subscription. Instances, volumes and public IPs keep their own subscription items
-	// on the same order.
+	// retain their own subscription. Each instance gets its own Billing subscription, with the boot
+	// volume, data volumes and elastic IP bought with it as items of it: they renew, renew automatically
+	// and expire with the machine as a whole, while each can still be changed or released alone.
+	// `checkout.auto_renew` turns automatic renewal on for each machine.
 	//
 	// Instances of one request succeed or fail individually. Each instance, with its boot volume, network
 	// interface and elastic IP, is created or fails as a whole. Instances that were created are kept; each
@@ -161,6 +220,17 @@ type Invoker interface {
 	//
 	// POST /api/v2/instances
 	CreateInstance(ctx context.Context, request *CreateInstanceRequestBody) (CreateInstanceRes, error)
+	// CreateInstanceConsoleURL invokes create-instance-console-url operation.
+	//
+	// Issues an address for the instance's VNC console, operated from a browser through a noVNC client. It
+	// does not require the instance to be reachable over the network, which makes it usable when a network
+	// misconfiguration prevents login.
+	//
+	// The address is single-use and expires within minutes. Every request issues a new address, so request
+	// one before each use and do not cache the response.
+	//
+	// POST /api/v2/instances/{instanceId}:createConsoleUrl
+	CreateInstanceConsoleURL(ctx context.Context, params CreateInstanceConsoleURLParams) (*ConsoleResponseBody, error)
 	// CreateLaunchTemplate invokes create-launch-template operation.
 	//
 	// Creates a launch template with its first version, which becomes its default. A launch template
@@ -309,9 +379,18 @@ type Invoker interface {
 	// still resolves. Types that are off sale do not appear in the volume type listing; volumes already
 	// bought on one keep working and can still be resized.
 	//
-	// A volume bought on its own is licensed: `billing.usage_type` `metered` is refused with
-	// `VOLUME_USAGE_TYPE_UNAVAILABLE`. A volume created with an instance follows the machine's terms
-	// instead and may be metered.
+	// A volume bought on its own is licensed, with a Billing subscription of its own: `billing.usage_type`
+	// `metered` is refused with `VOLUME_USAGE_TYPE_UNAVAILABLE`. A volume created with an instance follows
+	// the machine's terms instead and may be metered.
+	//
+	// Buying for an instance. With `instance_id`, the volume is attached to that instance of the project
+	// once created, and becomes an item of the instance's Billing subscription: it is charged up to the
+	// instance's term end, the rest of the current period in proportion to the time left, and from then on
+	// renews, renews automatically and expires with the instance. Its volume type has to be of the
+	// instance's availability zone (422 `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`). `billing` may be omitted
+	// to take the instance's terms; given, its usage type and period must be the instance's (422
+	// `VOLUME_BILLING_TERMS_MISMATCH`), while its termination policy may differ. An instance with no room
+	// for another volume is refused before anything is ordered, as attaching would be.
 	//
 	// The volume is `pending` from the moment its Checkout Session is created until it is delivered or its
 	// checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
@@ -369,10 +448,10 @@ type Invoker interface {
 	// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
 	// checkout created one. Expire the session or cancel the order in Billing instead.
 	//
-	// While subscriptions pay for the elastic IP (those in its `release_set`), deleting it cancels them
-	// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-	// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-	// licensed subscription being refunded under its terms, and `period_end` keeps the elastic IP working
+	// While subscription items pay for the elastic IP (those in its `release_set`), deleting it cancels
+	// them rather than being refused: Compute creates one Billing cancellation for the whole set and
+	// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
+	// now, a licensed item being refunded under its terms, and `period_end` keeps the elastic IP working
 	// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
 	// with it again, whatever mode is asked for.
 	//
@@ -391,12 +470,13 @@ type Invoker interface {
 	// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
 	// checkout created one. Expire the session or cancel the order in Billing instead.
 	//
-	// While subscriptions pay for the instance (those in its `release_set`), deleting it cancels them
+	// While subscription items pay for the instance (those in its `release_set`), deleting it cancels them
 	// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
 	// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-	// licensed subscription being refunded under its terms, and `period_end` keeps the instance working
-	// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
-	// with it again, whatever mode is asked for.
+	// licensed item being refunded under its terms, and `period_end` keeps the instance working until
+	// `scheduled_at` and releases it then. Volumes and elastic IPs kept after the release keep their
+	// items, and the subscription continues with them. Asking again while that cancellation is pending
+	// answers with it again, whatever mode is asked for.
 	//
 	// DELETE /api/v2/instances/{instanceId}
 	DeleteInstance(ctx context.Context, params DeleteInstanceParams) (DeleteInstanceRes, error)
@@ -449,10 +529,10 @@ type Invoker interface {
 	// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 	// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 	//
-	// While subscriptions pay for the private image (those in its `release_set`), deleting it cancels them
-	// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-	// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-	// licensed subscription being refunded under its terms, and `period_end` keeps the private image
+	// While subscription items pay for the private image (those in its `release_set`), deleting it cancels
+	// them rather than being refused: Compute creates one Billing cancellation for the whole set and
+	// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
+	// now, a licensed item being refunded under its terms, and `period_end` keeps the private image
 	// working until `scheduled_at` and releases it then. Asking again while that cancellation is pending
 	// answers with it again, whatever mode is asked for.
 	//
@@ -506,10 +586,10 @@ type Invoker interface {
 	// payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
 	// checkout created one. Expire the session or cancel the order in Billing instead.
 	//
-	// While subscriptions pay for the volume (those in its `release_set`), deleting it cancels them rather
-	// than being refused: Compute creates one Billing cancellation for the whole set and answers with it
-	// in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a licensed
-	// subscription being refunded under its terms, and `period_end` keeps the volume working until
+	// While subscription items pay for the volume (those in its `release_set`), deleting it cancels them
+	// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+	// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+	// licensed item being refunded under its terms, and `period_end` keeps the volume working until
 	// `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
 	// again, whatever mode is asked for.
 	//
@@ -528,10 +608,10 @@ type Invoker interface {
 	// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 	// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 	//
-	// While subscriptions pay for the volume backup (those in its `release_set`), deleting it cancels them
-	// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-	// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-	// licensed subscription being refunded under its terms, and `period_end` keeps the volume backup
+	// While subscription items pay for the volume backup (those in its `release_set`), deleting it cancels
+	// them rather than being refused: Compute creates one Billing cancellation for the whole set and
+	// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
+	// now, a licensed item being refunded under its terms, and `period_end` keeps the volume backup
 	// working until `scheduled_at` and releases it then. Asking again while that cancellation is pending
 	// answers with it again, whatever mode is asked for.
 	//
@@ -548,12 +628,12 @@ type Invoker interface {
 	// Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 	// must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 	//
-	// While subscriptions pay for the snapshot (those in its `release_set`), deleting it cancels them
+	// While subscription items pay for the snapshot (those in its `release_set`), deleting it cancels them
 	// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
 	// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-	// licensed subscription being refunded under its terms, and `period_end` keeps the snapshot working
-	// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
-	// with it again, whatever mode is asked for.
+	// licensed item being refunded under its terms, and `period_end` keeps the snapshot working until
+	// `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
+	// again, whatever mode is asked for.
 	//
 	// DELETE /api/v2/volume-snapshots/{volumeSnapshotId}
 	DeleteVolumeSnapshot(ctx context.Context, params DeleteVolumeSnapshotParams) (DeleteVolumeSnapshotRes, error)
@@ -621,7 +701,7 @@ type Invoker interface {
 	// Retrieve an elastic IP.
 	//
 	// GET /api/v2/elastic-ips/{elasticIpId}
-	GetElasticIP(ctx context.Context, params GetElasticIPParams) (*ElasticIP, error)
+	GetElasticIP(ctx context.Context, params GetElasticIPParams) (*ElasticIp, error)
 	// GetElasticIPAssociation invokes get-elastic-ip-association operation.
 	//
 	// The private address of a network interface this elastic IP currently points at. Returns the stored
@@ -631,14 +711,14 @@ type Invoker interface {
 	// `ELASTIC_IP_NOT_ASSOCIATED`.
 	//
 	// GET /api/v2/elastic-ips/{elasticIpId}/association
-	GetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (*ElasticIPAssociation, error)
+	GetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (*ElasticIpAssociation, error)
 	// GetElasticIPLine invokes get-elastic-ip-line operation.
 	//
 	// Includes lines off sale that existing elastic IPs are on. No inventory or gateway facts are
 	// returned.
 	//
 	// GET /api/v2/elastic-ip-lines/{elasticIpLineId}
-	GetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (*ElasticIPLine, error)
+	GetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (*ElasticIpLine, error)
 	// GetInstance invokes get-instance operation.
 	//
 	// Returns the stored state of the instance; it does not query the cloud. Use it to poll creation
@@ -646,17 +726,6 @@ type Invoker interface {
 	//
 	// GET /api/v2/instances/{instanceId}
 	GetInstance(ctx context.Context, params GetInstanceParams) (*Instance, error)
-	// GetInstanceConsole invokes get-instance-console operation.
-	//
-	// The instance's VNC console, operated from a browser through a noVNC client. It does not require the
-	// instance to be reachable over the network, which makes it usable when a network misconfiguration
-	// prevents login.
-	//
-	// The returned address is single-use and expires within minutes. Every request issues a new address,
-	// so request one before each use and do not cache the response.
-	//
-	// GET /api/v2/instances/{instanceId}/console
-	GetInstanceConsole(ctx context.Context, params GetInstanceConsoleParams) (*ConsoleResponseBody, error)
 	// GetInstanceFamily invokes get-instance-family operation.
 	//
 	// Returns an instance family under the same rule as listing; a family with no instance type on sale or
@@ -811,7 +880,7 @@ type Invoker interface {
 	// descriptions of the lines on sale; filters combine with AND, and pagination is independent of them.
 	//
 	// GET /api/v2/elastic-ip-lines
-	ListElasticIPLines(ctx context.Context, params ListElasticIPLinesParams) (*ElasticIPLineListResponseBody, error)
+	ListElasticIPLines(ctx context.Context, params ListElasticIPLinesParams) (*ElasticIpLineListResponseBody, error)
 	// ListElasticIPTrafficUsage invokes list-elastic-ip-traffic-usage operation.
 	//
 	// The bytes and packets the elastic IP's address sent upstream while the elastic IP held it, summed by
@@ -830,7 +899,7 @@ type Invoker interface {
 	// List elastic IPs.
 	//
 	// GET /api/v2/elastic-ips
-	ListElasticIps(ctx context.Context, params ListElasticIpsParams) (*ElasticIPListResponseBody, error)
+	ListElasticIps(ctx context.Context, params ListElasticIpsParams) (*ElasticIpListResponseBody, error)
 	// ListInstanceFamilies invokes list-instance-families operation.
 	//
 	// An instance family is one hardware line of a region, such as `g7`, and its instance types are its
@@ -1050,6 +1119,14 @@ type Invoker interface {
 	//
 	// POST /api/v2/virtual-private-cloud-peerings/{virtualPrivateCloudPeeringId}:reject
 	RejectVirtualPrivateCloudPeering(ctx context.Context, params RejectVirtualPrivateCloudPeeringParams) (RejectVirtualPrivateCloudPeeringRes, error)
+	// ReplaceNetworkInterfaceSecurityGroups invokes replace-network-interface-security-groups operation.
+	//
+	// `security_group_ids` is the complete new set, one to five groups of the network interface's virtual
+	// private cloud; groups left out are removed. It applies to traffic of the running instance as soon as
+	// it is in place, and the network interface is `updating_security_groups` until then.
+	//
+	// POST /api/v2/network-interfaces/{networkInterfaceId}:replaceSecurityGroups
+	ReplaceNetworkInterfaceSecurityGroups(ctx context.Context, request *ReplaceNetworkInterfaceSecurityGroupsRequestBody, params ReplaceNetworkInterfaceSecurityGroupsParams) (ReplaceNetworkInterfaceSecurityGroupsRes, error)
 	// RescueInstance invokes rescue-instance operation.
 	//
 	// Boots a temporary rescue environment in place of the instance's own system, with the original boot
@@ -1091,6 +1168,72 @@ type Invoker interface {
 	//
 	// POST /api/v2/instances/{instanceId}:resetPassword
 	ResetInstancePassword(ctx context.Context, request PasswordChoice, params ResetInstancePasswordParams) (ResetInstancePasswordRes, error)
+	// ResizeInstance invokes resize-instance operation.
+	//
+	// Changes the instance's type cold, through a change of its subscription item purchased in Billing:
+	// the instance has to be stopped, and is refused with 409 `INSTANCE_RESIZE_REQUIRES_STOP` otherwise.
+	// Its operating system is not booted for the change, and it is still stopped once the change is
+	// applied; start it when you are ready. An instance stopped by the legacy stop, which released its
+	// host, is refused with 409 `INSTANCE_SHELVED`; start it once and stop it again. A target type that
+	// cannot hold what the instance already uses is refused before anything is ordered: fewer network
+	// interfaces than are attached with 409 `INSTANCE_RESIZE_NETWORK_INTERFACES_EXCEED`, fewer elastic IPs
+	// than are associated with 409 `INSTANCE_RESIZE_ELASTIC_IPS_EXCEED`, and less purchasable bandwidth
+	// than an associated elastic IP has with 409 `INSTANCE_BANDWIDTH_CEILING` naming it in
+	// `meta.elastic_ip_id`. The request returns 202 with the instance and the Checkout Session for the
+	// change, including for metered terms. The instance keeps its usage type and period, priced with the
+	// target type's matching option; a target type without that option is refused with 409
+	// `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing accepts the order. Do not submit the
+	// change again after paying. After an uncertain response, look the Checkout Session up in Billing
+	// before submitting again.
+	//
+	// The instance is `resizing` until the resize is applied, its Checkout Session expires or its order is
+	// canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
+	// meanwhile. It keeps its current type until the resize is applied; the new type takes effect, and is
+	// billed from then on, when `instance_type_id` shows it. If checkout is not completed, the order is
+	// not accepted or the resize fails, the instance keeps its current type and Billing shows the outcome.
+	// A completed resize is final and cannot be reverted; to return to the previous type, submit another
+	// resize.
+	//
+	// POST /api/v2/instances/{instanceId}:resize
+	ResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (ResizeInstanceRes, error)
+	// ResizeVolume invokes resize-volume operation.
+	//
+	// Grows the volume through a change of its subscription item purchased in Billing. Only an increase is
+	// accepted; a smaller `size_gib` is refused with `VOLUME_CANNOT_SHRINK` (422), since a file system
+	// cannot be shrunk from outside the instance. It returns 202 with the volume and the Checkout Session
+	// for the resize, which keeps the volume's usage type and period. The volume is `resizing` until the
+	// resize is applied, its Checkout Session expires or its order is canceled, so other operations and a
+	// second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The volume keeps its current size
+	// until the resize is applied; once `size_gib` shows the new size, extend the file system inside the
+	// instance. If checkout is not completed, the order is not accepted or the resize fails, the volume
+	// keeps its size and Billing shows the outcome.
+	//
+	// An attached volume, including a boot volume, can be resized. The capacity is usable at once, and the
+	// volume's `performance` shows what its type gives the new size. That performance applies from the
+	// volume's next attachment, or the next start of its stopped instance: the storage reads a volume's
+	// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
+	//
+	// POST /api/v2/volumes/{volumeId}:resize
+	ResizeVolume(ctx context.Context, request *ResizeVolumeRequestBody, params ResizeVolumeParams) (ResizeVolumeRes, error)
+	// RetypeVolume invokes retype-volume operation.
+	//
+	// Moves the volume to another volume type at the same capacity, priced as that type, through a change
+	// of its subscription item purchased in Billing, and returns 202 with the volume and the Checkout
+	// Session for the change, which keeps the volume's usage type and period. The volume has to be
+	// detached (409 `VOLUME_RETYPE_ATTACHED`), so a boot volume cannot change its type. The target has to
+	// be on sale (`VOLUME_TYPE_OFF_SALE`), in the volume's region (422 `VOLUME_RETYPE_OTHER_REGION`), of
+	// the volume's availability zone (422 `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`) with room for the volume
+	// (409 `VOLUME_TYPE_SOLD_OUT`, `VOLUME_TYPE_CAPACITY_REACHED`, `VOLUME_TYPE_NO_POOL_ROOM`), admit the
+	// volume's capacity (422 `VOLUME_SIZE_OUT_OF_RANGE`, `VOLUME_SIZE_NOT_ON_STEP`) and differ from the
+	// current one (422 `VOLUME_RETYPE_SAME_TYPE`). The volume is `retyping` until the change is applied,
+	// its Checkout Session expires or its order is canceled. A target on the same storage backend takes
+	// effect at once; one on another backend copies the volume's data there first, which takes longer the
+	// larger the volume is. The volume keeps its type until `volume_type_id` shows the new one, and its
+	// `performance` follows from then on; a change that did not take effect leaves the volume as it was
+	// and is refunded.
+	//
+	// POST /api/v2/volumes/{volumeId}:retype
+	RetypeVolume(ctx context.Context, request *RetypeVolumeRequestBody, params RetypeVolumeParams) (RetypeVolumeRes, error)
 	// RevertVolume invokes revert-volume operation.
 	//
 	// Restores the contents of the volume to the moment the snapshot was taken. All data written after
@@ -1161,9 +1304,8 @@ type Invoker interface {
 	// non-payment or by the platform, is not charged for compute while the suspension lasts. It is
 	// `stopping` until it is stopped. Stopping a stopped instance changes nothing.
 	//
-	// Changing `instance_type_id` is done on a stopped instance and only then. A stopped instance can also
-	// be rebuilt and have network interfaces and volumes attached and detached; rescuing it needs it
-	// running.
+	// Resizing is done on a stopped instance and only then. A stopped instance can also be rebuilt and
+	// have network interfaces and volumes attached and detached; rescuing it needs it running.
 	//
 	// POST /api/v2/instances/{instanceId}:stop
 	StopInstance(ctx context.Context, params StopInstanceParams) (StopInstanceRes, error)
@@ -1174,93 +1316,23 @@ type Invoker interface {
 	//
 	// POST /api/v2/instances/{instanceId}:unrescue
 	UnrescueInstance(ctx context.Context, params UnrescueInstanceParams) (UnrescueInstanceRes, error)
-	// UpdateElasticIP invokes update-elastic-ip operation.
-	//
-	// Changes the bandwidth of this elastic IP, or what its pay-as-you-go network subscription charges
-	// for. `bandwidth_mbps` and `internet_charge_type` are operational fields: each starts a change and
-	// cannot be combined with any other field in the same request. Such a request is refused with 422
-	// `UPDATE_FIELDS_COMBINED`, because a change that committed beside another that was then refused would
-	// leave the request half applied. An elastic IP has no descriptive field today, so 200 is reserved for
-	// the fields that may be added to it and every accepted update answers 202. `checkout` and
-	// `proration_date` belong to the purchase of the `bandwidth_mbps` change and are accepted only
-	// together with it.
-	//
-	// No separate bandwidth resource is created, and the limit applies to inbound and outbound traffic
-	// alike. The new value may be any whole number of Mbps within the line's bandwidth range, otherwise
-	// the request is refused with `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic
-	// IP's network subscription:
-	//
-	//  - Prepaid: the change goes through a Checkout Session that changes the network subscription, priced
-	//    for the rest of its period. It starts once Billing accepts the order; if checkout is not
-	//    completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and
-	//    Billing shows the outcome.
-	//  - Pay-as-you-go: there is no checkout. The change starts at once, `checkout_session_id` and
-	//    `order_id` are null, and the new limit is metered from the instant it is applied; if it fails,
-	//    the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
-	//    `ELASTIC_IP_CHECKOUT_UNUSED`.
-	//
-	// A change of `internet_charge_type` needs no checkout and is `updating_internet_charge_type` until it
-	// is applied; see the field.
-	//
-	// The elastic IP is `updating_bandwidth` until the change is applied or ends, so other operations and
-	// a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in
-	// effect until the change is applied.
-	//
-	// While the address is associated with an instance, the limit must not exceed the `max_bandwidth_mbps`
-	// of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of
-	// an address that is not associated is checked when the address is associated with an instance.
-	//
-	// PATCH /api/v2/elastic-ips/{elasticIpId}
-	UpdateElasticIP(ctx context.Context, request *UpdateElasticIPRequestBody, params UpdateElasticIPParams) (UpdateElasticIPRes, error)
 	// UpdateInstance invokes update-instance operation.
 	//
-	// Changes the descriptive fields (`name`, `labels`, `notes`) or the operational field
-	// `instance_type_id`. All fields are optional and at least one is required. Starting and stopping are
-	// the `:start` and `:stop` methods.
-	//
-	// `instance_type_id` starts a workflow and cannot be combined with any other field in the same
-	// request. Such a request is refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that
-	// committed beside a change that was then refused would leave the request half applied. `checkout` and
-	// `proration_date` belong to the purchase of the `instance_type_id` change and are accepted only
-	// together with it.
-	//
-	// Descriptive fields are not operations and are accepted at any time, whatever the instance is doing.
-	// The request returns 200 with `checkout_session_id` and `order_id` null.
+	// Changes the descriptive fields `name`, `labels` and `description`; all are optional and at least one
+	// is required. They are not operations and are accepted at any time, whatever the instance is doing.
+	// Changing the instance type is the `:resize` method; starting and stopping are `:start` and `:stop`.
 	//
 	//  - `name` changes the display name only. The hostname inside the instance is unchanged; it equals
 	//    the instance id.
 	//  - `labels` records what this instance is for, as key-value pairs. Nothing on the platform reads
 	//    them. The whole set is replaced: whatever is absent from the request is removed, and an empty
 	//    object clears them all. Do not put credentials here. Labels are visible to platform operators.
-	//  - `notes` is a free-text note about this instance: what it runs, and what to be careful about
+	//  - `description` is a free-text note about this instance: what it runs, and what to be careful about
 	//    before touching it. The whole note is replaced; send an empty string to clear it. Do not put
 	//    credentials here. The note is visible to platform operators.
 	//
-	// `instance_type_id` changes the instance's type cold: the instance has to be stopped, and is refused
-	// with 409 `INSTANCE_RESIZE_REQUIRES_STOP` otherwise. Its operating system is not booted for the
-	// change, and it is still stopped once the change is applied; start it when you are ready. An instance
-	// stopped by the legacy stop, which released its host, is refused with 409 `INSTANCE_SHELVED`; start
-	// it once and stop it again. A target type that cannot hold what the instance already uses is refused
-	// before anything is ordered: fewer network interfaces than are attached with 409
-	// `INSTANCE_RESIZE_NETWORK_INTERFACES_EXCEED`, fewer elastic IPs than are associated with 409
-	// `INSTANCE_RESIZE_ELASTIC_IPS_EXCEED`, and less purchasable bandwidth than an associated elastic IP
-	// has with 409 `INSTANCE_BANDWIDTH_CEILING` naming it in `meta.elastic_ip_id`. The request returns 202
-	// with the instance and the Checkout Session for the change, including for metered terms. The instance
-	// keeps its usage type and period, priced with the target type's matching option; a target type
-	// without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing
-	// accepts the order. Do not submit the change again after paying. After an uncertain response, look
-	// the Checkout Session up in Billing before submitting again.
-	//
-	// The instance is `resizing` until the resize is applied, its Checkout Session expires or its order is
-	// canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
-	// meanwhile. It keeps its current type until the resize is applied; the new type takes effect, and is
-	// billed from then on, when `instance_type_id` shows it. If checkout is not completed, the order is
-	// not accepted or the resize fails, the instance keeps its current type and Billing shows the outcome.
-	// A completed resize is final and cannot be reverted; to return to the previous type, submit another
-	// resize.
-	//
 	// PATCH /api/v2/instances/{instanceId}
-	UpdateInstance(ctx context.Context, request *UpdateInstanceRequestBody, params UpdateInstanceParams) (UpdateInstanceRes, error)
+	UpdateInstance(ctx context.Context, request *UpdateInstanceRequestBody, params UpdateInstanceParams) (*Instance, error)
 	// UpdateLaunchTemplate invokes update-launch-template operation.
 	//
 	// Changes the name or description, or makes another live version the default, the one a creation
@@ -1271,20 +1343,14 @@ type Invoker interface {
 	UpdateLaunchTemplate(ctx context.Context, request *UpdateLaunchTemplateRequestBody, params UpdateLaunchTemplateParams) (*LaunchTemplate, error)
 	// UpdateNetworkInterface invokes update-network-interface operation.
 	//
-	// Changes the name, or replaces the security groups. The two are never combined (422
-	// `UPDATE_FIELDS_COMBINED`).
-	//
-	//  - `name` is not an operation, is accepted at any time and answers 200.
-	//  - `security_group_ids` is the complete new set, one to five groups of the network interface's
-	//    virtual private cloud; groups left out are removed. It applies to traffic of the running instance
-	//    as soon as it is in place, and answers 202 with the network interface `updating_security_groups`
-	//    until then.
+	// Changes the name. It is not an operation and is accepted at any time. Replacing the security groups
+	// is `:replaceSecurityGroups`.
 	//
 	// Secondary IPv4 addresses are added and removed under
 	// `/network-interfaces/{networkInterfaceId}/addresses`.
 	//
 	// PATCH /api/v2/network-interfaces/{networkInterfaceId}
-	UpdateNetworkInterface(ctx context.Context, request *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (UpdateNetworkInterfaceRes, error)
+	UpdateNetworkInterface(ctx context.Context, request *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (*NetworkInterface, error)
 	// UpdatePrivateImage invokes update-private-image operation.
 	//
 	// Renames a private image of this project. Any other image, public images included, is reported as not
@@ -1315,47 +1381,11 @@ type Invoker interface {
 	UpdateVirtualPrivateCloudSubnet(ctx context.Context, request *UpdateVirtualPrivateCloudSubnetRequestBody, params UpdateVirtualPrivateCloudSubnetParams) (*VirtualPrivateCloudSubnet, error)
 	// UpdateVolume invokes update-volume operation.
 	//
-	// Changes the name, the capacity or the volume type. The availability zone is immutable.
-	//
-	// `size_gib` and `volume_type_id` are operational fields: each starts a change and cannot be combined
-	// with any other field in the same request, including the other one. Such a request is refused with
-	// 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside a change that was then refused
-	// would leave the request half applied. `checkout` and `proration_date` belong to the purchase of the
-	// change and are accepted only together with one of them.
-	//
-	// Renaming is not an operation and is accepted at any time. It returns 200 with `checkout_session_id`
-	// and `order_id` null.
-	//
-	// Resizing accepts only an increase; a smaller `size_gib` is refused with `VOLUME_CANNOT_SHRINK`
-	// (422), since a file system cannot be shrunk from outside the instance. It returns 202 with the
-	// volume and the Checkout Session for the resize, which keeps the volume's usage type and period. The
-	// volume is `resizing` until the resize is applied, its Checkout Session expires or its order is
-	// canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
-	// meanwhile. The volume keeps its current size until the resize is applied; once `size_gib` shows the
-	// new size, extend the file system inside the instance. If checkout is not completed, the order is not
-	// accepted or the resize fails, the volume keeps its size and Billing shows the outcome.
-	//
-	// Changing the type moves the volume to another volume type at the same capacity, priced as that type,
-	// and returns 202 with the volume and the Checkout Session for the change, which keeps the volume's
-	// usage type and period. The volume has to be detached (409 `VOLUME_RETYPE_ATTACHED`), so a boot
-	// volume cannot change its type. The target has to be on sale (`VOLUME_TYPE_OFF_SALE`), in the
-	// volume's region (422 `VOLUME_RETYPE_OTHER_REGION`), of the volume's availability zone (422
-	// `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`) with room for the volume (409 `VOLUME_TYPE_SOLD_OUT`,
-	// `VOLUME_TYPE_CAPACITY_REACHED`, `VOLUME_TYPE_NO_POOL_ROOM`), admit the volume's capacity (422
-	// `VOLUME_SIZE_OUT_OF_RANGE`, `VOLUME_SIZE_NOT_ON_STEP`) and differ from the current one (422
-	// `VOLUME_RETYPE_SAME_TYPE`). The volume is `retyping` until the change is applied, its Checkout
-	// Session expires or its order is canceled. A target on the same storage backend takes effect at once;
-	// one on another backend copies the volume's data there first, which takes longer the larger the
-	// volume is. The volume keeps its type until `volume_type_id` shows the new one, and its `performance`
-	// follows from then on; a change that did not take effect leaves the volume as it was and is refunded.
-	//
-	// An attached volume, including a boot volume, can be resized. The capacity is usable at once, and the
-	// volume's `performance` shows what its type gives the new size. That performance applies from the
-	// volume's next attachment, or the next start of its stopped instance: the storage reads a volume's
-	// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
+	// Changes the name. It is not an operation and is accepted at any time. Growing the volume is
+	// `:resize` and moving it to another type is `:retype`.
 	//
 	// PATCH /api/v2/volumes/{volumeId}
-	UpdateVolume(ctx context.Context, request *UpdateVolumeRequestBody, params UpdateVolumeParams) (UpdateVolumeRes, error)
+	UpdateVolume(ctx context.Context, request *UpdateVolumeRequestBody, params UpdateVolumeParams) (*VolumeResource, error)
 	// UpdateVolumeBackup invokes update-volume-backup operation.
 	//
 	// Changes the name only. A backup's source volume and capacity cannot be changed.
@@ -1570,12 +1600,12 @@ func (c *Client) sendAcceptVirtualPrivateCloudPeering(ctx context.Context, param
 // limit is refused with `INSTANCE_BANDWIDTH_CEILING`.
 //
 // POST /api/v2/elastic-ips/{elasticIpId}:associate
-func (c *Client) AssociateElasticIP(ctx context.Context, request AssociateElasticIPRequestBody, params AssociateElasticIPParams) (AssociateElasticIPRes, error) {
+func (c *Client) AssociateElasticIP(ctx context.Context, request AssociateElasticIpRequestBody, params AssociateElasticIPParams) (AssociateElasticIPRes, error) {
 	res, err := c.sendAssociateElasticIP(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendAssociateElasticIP(ctx context.Context, request AssociateElasticIPRequestBody, params AssociateElasticIPParams) (res AssociateElasticIPRes, err error) {
+func (c *Client) sendAssociateElasticIP(ctx context.Context, request AssociateElasticIpRequestBody, params AssociateElasticIPParams) (res AssociateElasticIPRes, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -2010,6 +2040,332 @@ func (c *Client) sendAttachInstanceVolume(ctx context.Context, request *AttachVo
 	return result, nil
 }
 
+// ChangeElasticIPBandwidth invokes change-elastic-ip-bandwidth operation.
+//
+// Changes the bandwidth ceiling of this elastic IP. No separate bandwidth resource is created, and the
+// limit applies to inbound and outbound traffic alike. The new value may be any whole number of Mbps
+// within the line's bandwidth range, otherwise the request is refused with
+// `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic IP's network item:
+//
+//   - Prepaid: the change goes through a Checkout Session that changes the network item, priced for the
+//     rest of its period. It starts once Billing accepts the order; if checkout is not completed, the
+//     order is not accepted or the change fails, `bandwidth_mbps` keeps its value and Billing shows the
+//     outcome.
+//   - Pay-as-you-go: there is no checkout. The change starts at once, `checkout_session_id` and
+//     `order_id` are null, and the new limit is metered from the instant it is applied; if it fails,
+//     the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
+//     `ELASTIC_IP_CHECKOUT_UNUSED`.
+//
+// The elastic IP is `updating_bandwidth` until the change is applied or ends, so other operations and
+// a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in
+// effect until the change is applied.
+//
+// While the address is associated with an instance, the limit must not exceed the `max_bandwidth_mbps`
+// of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of
+// an address that is not associated is checked when the address is associated with an instance.
+//
+// POST /api/v2/elastic-ips/{elasticIpId}:changeBandwidth
+func (c *Client) ChangeElasticIPBandwidth(ctx context.Context, request *ChangeElasticIpBandwidthRequestBody, params ChangeElasticIPBandwidthParams) (ChangeElasticIPBandwidthRes, error) {
+	res, err := c.sendChangeElasticIPBandwidth(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendChangeElasticIPBandwidth(ctx context.Context, request *ChangeElasticIpBandwidthRequestBody, params ChangeElasticIPBandwidthParams) (res ChangeElasticIPBandwidthRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("change-elastic-ip-bandwidth"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v2/elastic-ips/{elasticIpId}:changeBandwidth"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ChangeElasticIPBandwidthOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v2/elastic-ips/"
+	{
+		// Encode "elasticIpId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "elasticIpId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.ElasticIpId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = ":changeBandwidth"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeChangeElasticIPBandwidthRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ChangeElasticIPBandwidthOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeChangeElasticIPBandwidthResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ChangeElasticIPChargeType invokes change-elastic-ip-charge-type operation.
+//
+// Moves a pay-as-you-go elastic IP between charging for its bandwidth and charging for its traffic,
+// within the same network item and without checkout. A prepaid network item has paid for its bandwidth
+// and is refused with `ELASTIC_IP_CHARGE_TYPE_PREPAID`; `traffic` on a line whose
+// `traffic_sale_status` is `off_sale` is refused with `ELASTIC_IP_TRAFFIC_UNAVAILABLE`, the type
+// already in effect with `ELASTIC_IP_CHARGE_TYPE_UNCHANGED`, and a type the currency of the network
+// item does not offer on the line with HTTP 403 `ELASTIC_IP_CHARGE_TYPE_NOT_OFFERED`: prices are set
+// per currency, and a currency without one there does not sell that type.
+//
+// The change takes effect at the instant it is applied: bandwidth stops being metered then and traffic
+// starts being, or the other way round. Traffic is counted in windows, and a window is charged the way
+// the elastic IP was charged for most of it, so a report that arrives late is still charged as it was
+// at the time and a window the change falls in is never charged both ways. `bandwidth_mbps` stays the
+// ceiling either way. The elastic IP is `updating_internet_charge_type` until the change is applied.
+//
+// POST /api/v2/elastic-ips/{elasticIpId}:changeChargeType
+func (c *Client) ChangeElasticIPChargeType(ctx context.Context, request *ChangeElasticIpChargeTypeRequestBody, params ChangeElasticIPChargeTypeParams) (ChangeElasticIPChargeTypeRes, error) {
+	res, err := c.sendChangeElasticIPChargeType(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendChangeElasticIPChargeType(ctx context.Context, request *ChangeElasticIpChargeTypeRequestBody, params ChangeElasticIPChargeTypeParams) (res ChangeElasticIPChargeTypeRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("change-elastic-ip-charge-type"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v2/elastic-ips/{elasticIpId}:changeChargeType"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ChangeElasticIPChargeTypeOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v2/elastic-ips/"
+	{
+		// Encode "elasticIpId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "elasticIpId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.ElasticIpId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = ":changeChargeType"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeChangeElasticIPChargeTypeRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ChangeElasticIPChargeTypeOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeChangeElasticIPChargeTypeResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // CreateElasticIP invokes create-elastic-ip operation.
 //
 // Select an elastic IP line. The elastic IP is bought through a Billing Checkout Session, and no
@@ -2031,18 +2387,31 @@ func (c *Client) sendAttachInstanceVolume(ctx context.Context, request *AttachVo
 // Allocation does not select or create a virtual private cloud. A later association selects an
 // assigned network-interface address; Compute then establishes the required network connectivity.
 //
+// An elastic IP bought on its own has a Billing subscription of its own, with two items: the address,
+// always pay-as-you-go and charged while the address is not associated with anything, and the network,
+// on the chosen terms.
+//
+// Buying for an instance. With `instance_id`, the elastic IP is associated with the primary network
+// interface of that instance of the project once created, and its two items join the instance's
+// Billing subscription: a prepaid network item is charged up to the instance's term end, the rest of
+// the current period in proportion to the time left, and from then on renews, renews automatically and
+// expires with the instance. `billing` may be omitted to take the instance's terms; given, its usage
+// type and period must be the instance's (422 `ELASTIC_IP_BILLING_TERMS_MISMATCH`). An instance that
+// cannot take another elastic IP, or whose type allows less bandwidth than `bandwidth_mbps`, is
+// refused before anything is ordered, as associating would be.
+//
 // The elastic IP is `pending` from the moment its Checkout Session is created until it is delivered or
 // its checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
 // meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its purchase awaits checkout or
 // payment.
 //
 // POST /api/v2/elastic-ips
-func (c *Client) CreateElasticIP(ctx context.Context, request *CreateElasticIPRequestBody) (CreateElasticIPRes, error) {
+func (c *Client) CreateElasticIP(ctx context.Context, request *CreateElasticIpRequestBody) (CreateElasticIPRes, error) {
 	res, err := c.sendCreateElasticIP(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateElasticIP(ctx context.Context, request *CreateElasticIPRequestBody) (res CreateElasticIPRes, err error) {
+func (c *Client) sendCreateElasticIP(ctx context.Context, request *CreateElasticIpRequestBody) (res CreateElasticIPRes, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -2188,8 +2557,10 @@ func (c *Client) sendCreateElasticIP(ctx context.Context, request *CreateElastic
 // subnet_id. Existing network interfaces, boot volumes or elastic IPs require count=1. They are not
 // held while the instance is pending; if one is no longer usable when the order is accepted, the
 // instance ends `failed` with `provisioning_failed`. Image boots require boot_volume; existing volumes
-// retain their own subscription. Instances, volumes and public IPs keep their own subscription items
-// on the same order.
+// retain their own subscription. Each instance gets its own Billing subscription, with the boot
+// volume, data volumes and elastic IP bought with it as items of it: they renew, renew automatically
+// and expire with the machine as a whole, while each can still be changed or released alone.
+// `checkout.auto_renew` turns automatic renewal on for each machine.
 //
 // Instances of one request succeed or fail individually. Each instance, with its boot volume, network
 // interface and elastic IP, is created or fails as a whole. Instances that were created are kept; each
@@ -2326,6 +2697,146 @@ func (c *Client) sendCreateInstance(ctx context.Context, request *CreateInstance
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateInstanceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateInstanceConsoleURL invokes create-instance-console-url operation.
+//
+// Issues an address for the instance's VNC console, operated from a browser through a noVNC client. It
+// does not require the instance to be reachable over the network, which makes it usable when a network
+// misconfiguration prevents login.
+//
+// The address is single-use and expires within minutes. Every request issues a new address, so request
+// one before each use and do not cache the response.
+//
+// POST /api/v2/instances/{instanceId}:createConsoleUrl
+func (c *Client) CreateInstanceConsoleURL(ctx context.Context, params CreateInstanceConsoleURLParams) (*ConsoleResponseBody, error) {
+	res, err := c.sendCreateInstanceConsoleURL(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendCreateInstanceConsoleURL(ctx context.Context, params CreateInstanceConsoleURLParams) (res *ConsoleResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-instance-console-url"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}:createConsoleUrl"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateInstanceConsoleURLOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v2/instances/"
+	{
+		// Encode "instanceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InstanceId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = ":createConsoleUrl"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateInstanceConsoleURLOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateInstanceConsoleURLResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3900,9 +4411,18 @@ func (c *Client) sendCreateVirtualPrivateCloudSubnet(ctx context.Context, reques
 // still resolves. Types that are off sale do not appear in the volume type listing; volumes already
 // bought on one keep working and can still be resized.
 //
-// A volume bought on its own is licensed: `billing.usage_type` `metered` is refused with
-// `VOLUME_USAGE_TYPE_UNAVAILABLE`. A volume created with an instance follows the machine's terms
-// instead and may be metered.
+// A volume bought on its own is licensed, with a Billing subscription of its own: `billing.usage_type`
+// `metered` is refused with `VOLUME_USAGE_TYPE_UNAVAILABLE`. A volume created with an instance follows
+// the machine's terms instead and may be metered.
+//
+// Buying for an instance. With `instance_id`, the volume is attached to that instance of the project
+// once created, and becomes an item of the instance's Billing subscription: it is charged up to the
+// instance's term end, the rest of the current period in proportion to the time left, and from then on
+// renews, renews automatically and expires with the instance. Its volume type has to be of the
+// instance's availability zone (422 `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`). `billing` may be omitted
+// to take the instance's terms; given, its usage type and period must be the instance's (422
+// `VOLUME_BILLING_TERMS_MISMATCH`), while its termination policy may differ. An instance with no room
+// for another volume is refused before anything is ordered, as attaching would be.
 //
 // The volume is `pending` from the moment its Checkout Session is created until it is delivered or its
 // checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
@@ -4317,10 +4837,10 @@ func (c *Client) sendCreateVolumeSnapshot(ctx context.Context, request *CreateVo
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
 // checkout created one. Expire the session or cancel the order in Billing instead.
 //
-// While subscriptions pay for the elastic IP (those in its `release_set`), deleting it cancels them
-// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the elastic IP working
+// While subscription items pay for the elastic IP (those in its `release_set`), deleting it cancels
+// them rather than being refused: Compute creates one Billing cancellation for the whole set and
+// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
+// now, a licensed item being refunded under its terms, and `period_end` keeps the elastic IP working
 // until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
 // with it again, whatever mode is asked for.
 //
@@ -4488,12 +5008,13 @@ func (c *Client) sendDeleteElasticIP(ctx context.Context, params DeleteElasticIP
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
 // checkout created one. Expire the session or cancel the order in Billing instead.
 //
-// While subscriptions pay for the instance (those in its `release_set`), deleting it cancels them
+// While subscription items pay for the instance (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
 // with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the instance working
-// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
-// with it again, whatever mode is asked for.
+// licensed item being refunded under its terms, and `period_end` keeps the instance working until
+// `scheduled_at` and releases it then. Volumes and elastic IPs kept after the release keep their
+// items, and the subscription continues with them. Asking again while that cancellation is pending
+// answers with it again, whatever mode is asked for.
 //
 // DELETE /api/v2/instances/{instanceId}
 func (c *Client) DeleteInstance(ctx context.Context, params DeleteInstanceParams) (DeleteInstanceRes, error) {
@@ -5248,10 +5769,10 @@ func (c *Client) sendDeleteNetworkInterfaceAddress(ctx context.Context, params D
 // Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 // must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 //
-// While subscriptions pay for the private image (those in its `release_set`), deleting it cancels them
-// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the private image
+// While subscription items pay for the private image (those in its `release_set`), deleting it cancels
+// them rather than being refused: Compute creates one Billing cancellation for the whole set and
+// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
+// now, a licensed item being refunded under its terms, and `period_end` keeps the private image
 // working until `scheduled_at` and releases it then. Asking again while that cancellation is pending
 // answers with it again, whatever mode is asked for.
 //
@@ -6288,10 +6809,10 @@ func (c *Client) sendDeleteVirtualPrivateCloudSubnet(ctx context.Context, params
 // payment; `meta.checkout_session_id` names its Checkout Session and `meta.order_id` its order once
 // checkout created one. Expire the session or cancel the order in Billing instead.
 //
-// While subscriptions pay for the volume (those in its `release_set`), deleting it cancels them rather
-// than being refused: Compute creates one Billing cancellation for the whole set and answers with it
-// in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a licensed
-// subscription being refunded under its terms, and `period_end` keeps the volume working until
+// While subscription items pay for the volume (those in its `release_set`), deleting it cancels them
+// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
+// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
+// licensed item being refunded under its terms, and `period_end` keeps the volume working until
 // `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
 // again, whatever mode is asked for.
 //
@@ -6459,10 +6980,10 @@ func (c *Client) sendDeleteVolume(ctx context.Context, params DeleteVolumeParams
 // Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 // must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 //
-// While subscriptions pay for the volume backup (those in its `release_set`), deleting it cancels them
-// rather than being refused: Compute creates one Billing cancellation for the whole set and answers
-// with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the volume backup
+// While subscription items pay for the volume backup (those in its `release_set`), deleting it cancels
+// them rather than being refused: Compute creates one Billing cancellation for the whole set and
+// answers with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set
+// now, a licensed item being refunded under its terms, and `period_end` keeps the volume backup
 // working until `scheduled_at` and releases it then. Asking again while that cancellation is pending
 // answers with it again, whatever mode is asked for.
 //
@@ -6628,12 +7149,12 @@ func (c *Client) sendDeleteVolumeBackup(ctx context.Context, params DeleteVolume
 // Billing instead. A subscribed resource is released through its subscription cancellation. Cleanup
 // must be confirmed before metering is stopped; unknown cleanup is not proof of release.
 //
-// While subscriptions pay for the snapshot (those in its `release_set`), deleting it cancels them
+// While subscription items pay for the snapshot (those in its `release_set`), deleting it cancels them
 // rather than being refused: Compute creates one Billing cancellation for the whole set and answers
 // with it in `cancellation`. `cancellation_mode` chooses when: `immediate` cancels the set now, a
-// licensed subscription being refunded under its terms, and `period_end` keeps the snapshot working
-// until `scheduled_at` and releases it then. Asking again while that cancellation is pending answers
-// with it again, whatever mode is asked for.
+// licensed item being refunded under its terms, and `period_end` keeps the snapshot working until
+// `scheduled_at` and releases it then. Asking again while that cancellation is pending answers with it
+// again, whatever mode is asked for.
 //
 // DELETE /api/v2/volume-snapshots/{volumeSnapshotId}
 func (c *Client) DeleteVolumeSnapshot(ctx context.Context, params DeleteVolumeSnapshotParams) (DeleteVolumeSnapshotRes, error) {
@@ -7666,12 +8187,12 @@ func (c *Client) sendGetAvailabilityZone(ctx context.Context, params GetAvailabi
 // Retrieve an elastic IP.
 //
 // GET /api/v2/elastic-ips/{elasticIpId}
-func (c *Client) GetElasticIP(ctx context.Context, params GetElasticIPParams) (*ElasticIP, error) {
+func (c *Client) GetElasticIP(ctx context.Context, params GetElasticIPParams) (*ElasticIp, error) {
 	res, err := c.sendGetElasticIP(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetElasticIP(ctx context.Context, params GetElasticIPParams) (res *ElasticIP, err error) {
+func (c *Client) sendGetElasticIP(ctx context.Context, params GetElasticIPParams) (res *ElasticIp, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-elastic-ip"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -7804,12 +8325,12 @@ func (c *Client) sendGetElasticIP(ctx context.Context, params GetElasticIPParams
 // `ELASTIC_IP_NOT_ASSOCIATED`.
 //
 // GET /api/v2/elastic-ips/{elasticIpId}/association
-func (c *Client) GetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (*ElasticIPAssociation, error) {
+func (c *Client) GetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (*ElasticIpAssociation, error) {
 	res, err := c.sendGetElasticIPAssociation(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (res *ElasticIPAssociation, err error) {
+func (c *Client) sendGetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (res *ElasticIpAssociation, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-elastic-ip-association"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -7940,12 +8461,12 @@ func (c *Client) sendGetElasticIPAssociation(ctx context.Context, params GetElas
 // returned.
 //
 // GET /api/v2/elastic-ip-lines/{elasticIpLineId}
-func (c *Client) GetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (*ElasticIPLine, error) {
+func (c *Client) GetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (*ElasticIpLine, error) {
 	res, err := c.sendGetElasticIPLine(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (res *ElasticIPLine, err error) {
+func (c *Client) sendGetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (res *ElasticIpLine, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-elastic-ip-line"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -8198,146 +8719,6 @@ func (c *Client) sendGetInstance(ctx context.Context, params GetInstanceParams) 
 
 	stage = "DecodeResponse"
 	result, err := decodeGetInstanceResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetInstanceConsole invokes get-instance-console operation.
-//
-// The instance's VNC console, operated from a browser through a noVNC client. It does not require the
-// instance to be reachable over the network, which makes it usable when a network misconfiguration
-// prevents login.
-//
-// The returned address is single-use and expires within minutes. Every request issues a new address,
-// so request one before each use and do not cache the response.
-//
-// GET /api/v2/instances/{instanceId}/console
-func (c *Client) GetInstanceConsole(ctx context.Context, params GetInstanceConsoleParams) (*ConsoleResponseBody, error) {
-	res, err := c.sendGetInstanceConsole(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetInstanceConsole(ctx context.Context, params GetInstanceConsoleParams) (res *ConsoleResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-instance-console"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}/console"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetInstanceConsoleOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v2/instances/"
-	{
-		// Encode "instanceId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "instanceId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.InstanceId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/console"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, GetInstanceConsoleOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetInstanceConsoleResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -11484,12 +11865,12 @@ func (c *Client) sendListAvailabilityZones(ctx context.Context, params ListAvail
 // descriptions of the lines on sale; filters combine with AND, and pagination is independent of them.
 //
 // GET /api/v2/elastic-ip-lines
-func (c *Client) ListElasticIPLines(ctx context.Context, params ListElasticIPLinesParams) (*ElasticIPLineListResponseBody, error) {
+func (c *Client) ListElasticIPLines(ctx context.Context, params ListElasticIPLinesParams) (*ElasticIpLineListResponseBody, error) {
 	res, err := c.sendListElasticIPLines(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListElasticIPLines(ctx context.Context, params ListElasticIPLinesParams) (res *ElasticIPLineListResponseBody, err error) {
+func (c *Client) sendListElasticIPLines(ctx context.Context, params ListElasticIPLinesParams) (res *ElasticIpLineListResponseBody, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-elastic-ip-lines"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -11898,12 +12279,12 @@ func (c *Client) sendListElasticIPTrafficUsage(ctx context.Context, params ListE
 // List elastic IPs.
 //
 // GET /api/v2/elastic-ips
-func (c *Client) ListElasticIps(ctx context.Context, params ListElasticIpsParams) (*ElasticIPListResponseBody, error) {
+func (c *Client) ListElasticIps(ctx context.Context, params ListElasticIpsParams) (*ElasticIpListResponseBody, error) {
 	res, err := c.sendListElasticIps(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListElasticIps(ctx context.Context, params ListElasticIpsParams) (res *ElasticIPListResponseBody, err error) {
+func (c *Client) sendListElasticIps(ctx context.Context, params ListElasticIpsParams) (res *ElasticIpListResponseBody, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-elastic-ips"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -16513,6 +16894,155 @@ func (c *Client) sendRejectVirtualPrivateCloudPeering(ctx context.Context, param
 	return result, nil
 }
 
+// ReplaceNetworkInterfaceSecurityGroups invokes replace-network-interface-security-groups operation.
+//
+// `security_group_ids` is the complete new set, one to five groups of the network interface's virtual
+// private cloud; groups left out are removed. It applies to traffic of the running instance as soon as
+// it is in place, and the network interface is `updating_security_groups` until then.
+//
+// POST /api/v2/network-interfaces/{networkInterfaceId}:replaceSecurityGroups
+func (c *Client) ReplaceNetworkInterfaceSecurityGroups(ctx context.Context, request *ReplaceNetworkInterfaceSecurityGroupsRequestBody, params ReplaceNetworkInterfaceSecurityGroupsParams) (ReplaceNetworkInterfaceSecurityGroupsRes, error) {
+	res, err := c.sendReplaceNetworkInterfaceSecurityGroups(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendReplaceNetworkInterfaceSecurityGroups(ctx context.Context, request *ReplaceNetworkInterfaceSecurityGroupsRequestBody, params ReplaceNetworkInterfaceSecurityGroupsParams) (res ReplaceNetworkInterfaceSecurityGroupsRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("replace-network-interface-security-groups"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v2/network-interfaces/{networkInterfaceId}:replaceSecurityGroups"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ReplaceNetworkInterfaceSecurityGroupsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v2/network-interfaces/"
+	{
+		// Encode "networkInterfaceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "networkInterfaceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.NetworkInterfaceId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = ":replaceSecurityGroups"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeReplaceNetworkInterfaceSecurityGroupsRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ReplaceNetworkInterfaceSecurityGroupsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeReplaceNetworkInterfaceSecurityGroupsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // RescueInstance invokes rescue-instance operation.
 //
 // Boots a temporary rescue environment in place of the instance's own system, with the original boot
@@ -16817,6 +17347,495 @@ func (c *Client) sendResetInstancePassword(ctx context.Context, request Password
 
 	stage = "DecodeResponse"
 	result, err := decodeResetInstancePasswordResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ResizeInstance invokes resize-instance operation.
+//
+// Changes the instance's type cold, through a change of its subscription item purchased in Billing:
+// the instance has to be stopped, and is refused with 409 `INSTANCE_RESIZE_REQUIRES_STOP` otherwise.
+// Its operating system is not booted for the change, and it is still stopped once the change is
+// applied; start it when you are ready. An instance stopped by the legacy stop, which released its
+// host, is refused with 409 `INSTANCE_SHELVED`; start it once and stop it again. A target type that
+// cannot hold what the instance already uses is refused before anything is ordered: fewer network
+// interfaces than are attached with 409 `INSTANCE_RESIZE_NETWORK_INTERFACES_EXCEED`, fewer elastic IPs
+// than are associated with 409 `INSTANCE_RESIZE_ELASTIC_IPS_EXCEED`, and less purchasable bandwidth
+// than an associated elastic IP has with 409 `INSTANCE_BANDWIDTH_CEILING` naming it in
+// `meta.elastic_ip_id`. The request returns 202 with the instance and the Checkout Session for the
+// change, including for metered terms. The instance keeps its usage type and period, priced with the
+// target type's matching option; a target type without that option is refused with 409
+// `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing accepts the order. Do not submit the
+// change again after paying. After an uncertain response, look the Checkout Session up in Billing
+// before submitting again.
+//
+// The instance is `resizing` until the resize is applied, its Checkout Session expires or its order is
+// canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
+// meanwhile. It keeps its current type until the resize is applied; the new type takes effect, and is
+// billed from then on, when `instance_type_id` shows it. If checkout is not completed, the order is
+// not accepted or the resize fails, the instance keeps its current type and Billing shows the outcome.
+// A completed resize is final and cannot be reverted; to return to the previous type, submit another
+// resize.
+//
+// POST /api/v2/instances/{instanceId}:resize
+func (c *Client) ResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (ResizeInstanceRes, error) {
+	res, err := c.sendResizeInstance(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendResizeInstance(ctx context.Context, request *ResizeInstanceRequestBody, params ResizeInstanceParams) (res ResizeInstanceRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("resize-instance"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v2/instances/{instanceId}:resize"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ResizeInstanceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v2/instances/"
+	{
+		// Encode "instanceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InstanceId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = ":resize"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeResizeInstanceRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ResizeInstanceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeResizeInstanceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ResizeVolume invokes resize-volume operation.
+//
+// Grows the volume through a change of its subscription item purchased in Billing. Only an increase is
+// accepted; a smaller `size_gib` is refused with `VOLUME_CANNOT_SHRINK` (422), since a file system
+// cannot be shrunk from outside the instance. It returns 202 with the volume and the Checkout Session
+// for the resize, which keeps the volume's usage type and period. The volume is `resizing` until the
+// resize is applied, its Checkout Session expires or its order is canceled, so other operations and a
+// second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The volume keeps its current size
+// until the resize is applied; once `size_gib` shows the new size, extend the file system inside the
+// instance. If checkout is not completed, the order is not accepted or the resize fails, the volume
+// keeps its size and Billing shows the outcome.
+//
+// An attached volume, including a boot volume, can be resized. The capacity is usable at once, and the
+// volume's `performance` shows what its type gives the new size. That performance applies from the
+// volume's next attachment, or the next start of its stopped instance: the storage reads a volume's
+// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
+//
+// POST /api/v2/volumes/{volumeId}:resize
+func (c *Client) ResizeVolume(ctx context.Context, request *ResizeVolumeRequestBody, params ResizeVolumeParams) (ResizeVolumeRes, error) {
+	res, err := c.sendResizeVolume(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendResizeVolume(ctx context.Context, request *ResizeVolumeRequestBody, params ResizeVolumeParams) (res ResizeVolumeRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("resize-volume"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v2/volumes/{volumeId}:resize"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ResizeVolumeOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v2/volumes/"
+	{
+		// Encode "volumeId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "volumeId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VolumeId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = ":resize"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeResizeVolumeRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ResizeVolumeOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeResizeVolumeResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// RetypeVolume invokes retype-volume operation.
+//
+// Moves the volume to another volume type at the same capacity, priced as that type, through a change
+// of its subscription item purchased in Billing, and returns 202 with the volume and the Checkout
+// Session for the change, which keeps the volume's usage type and period. The volume has to be
+// detached (409 `VOLUME_RETYPE_ATTACHED`), so a boot volume cannot change its type. The target has to
+// be on sale (`VOLUME_TYPE_OFF_SALE`), in the volume's region (422 `VOLUME_RETYPE_OTHER_REGION`), of
+// the volume's availability zone (422 `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`) with room for the volume
+// (409 `VOLUME_TYPE_SOLD_OUT`, `VOLUME_TYPE_CAPACITY_REACHED`, `VOLUME_TYPE_NO_POOL_ROOM`), admit the
+// volume's capacity (422 `VOLUME_SIZE_OUT_OF_RANGE`, `VOLUME_SIZE_NOT_ON_STEP`) and differ from the
+// current one (422 `VOLUME_RETYPE_SAME_TYPE`). The volume is `retyping` until the change is applied,
+// its Checkout Session expires or its order is canceled. A target on the same storage backend takes
+// effect at once; one on another backend copies the volume's data there first, which takes longer the
+// larger the volume is. The volume keeps its type until `volume_type_id` shows the new one, and its
+// `performance` follows from then on; a change that did not take effect leaves the volume as it was
+// and is refunded.
+//
+// POST /api/v2/volumes/{volumeId}:retype
+func (c *Client) RetypeVolume(ctx context.Context, request *RetypeVolumeRequestBody, params RetypeVolumeParams) (RetypeVolumeRes, error) {
+	res, err := c.sendRetypeVolume(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendRetypeVolume(ctx context.Context, request *RetypeVolumeRequestBody, params RetypeVolumeParams) (res RetypeVolumeRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("retype-volume"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v2/volumes/{volumeId}:retype"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RetypeVolumeOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v2/volumes/"
+	{
+		// Encode "volumeId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "volumeId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.VolumeId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = ":retype"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRetypeVolumeRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, RetypeVolumeOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRetypeVolumeResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -17305,9 +18324,8 @@ func (c *Client) sendStartInstance(ctx context.Context, params StartInstancePara
 // non-payment or by the platform, is not charged for compute while the suspension lasts. It is
 // `stopping` until it is stopped. Stopping a stopped instance changes nothing.
 //
-// Changing `instance_type_id` is done on a stopped instance and only then. A stopped instance can also
-// be rebuilt and have network interfaces and volumes attached and detached; rescuing it needs it
-// running.
+// Resizing is done on a stopped instance and only then. A stopped instance can also be rebuilt and
+// have network interfaces and volumes attached and detached; rescuing it needs it running.
 //
 // POST /api/v2/instances/{instanceId}:stop
 func (c *Client) StopInstance(ctx context.Context, params StopInstanceParams) (StopInstanceRes, error) {
@@ -17576,238 +18594,28 @@ func (c *Client) sendUnrescueInstance(ctx context.Context, params UnrescueInstan
 	return result, nil
 }
 
-// UpdateElasticIP invokes update-elastic-ip operation.
-//
-// Changes the bandwidth of this elastic IP, or what its pay-as-you-go network subscription charges
-// for. `bandwidth_mbps` and `internet_charge_type` are operational fields: each starts a change and
-// cannot be combined with any other field in the same request. Such a request is refused with 422
-// `UPDATE_FIELDS_COMBINED`, because a change that committed beside another that was then refused would
-// leave the request half applied. An elastic IP has no descriptive field today, so 200 is reserved for
-// the fields that may be added to it and every accepted update answers 202. `checkout` and
-// `proration_date` belong to the purchase of the `bandwidth_mbps` change and are accepted only
-// together with it.
-//
-// No separate bandwidth resource is created, and the limit applies to inbound and outbound traffic
-// alike. The new value may be any whole number of Mbps within the line's bandwidth range, otherwise
-// the request is refused with `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic
-// IP's network subscription:
-//
-//   - Prepaid: the change goes through a Checkout Session that changes the network subscription, priced
-//     for the rest of its period. It starts once Billing accepts the order; if checkout is not
-//     completed, the order is not accepted or the change fails, `bandwidth_mbps` keeps its value and
-//     Billing shows the outcome.
-//   - Pay-as-you-go: there is no checkout. The change starts at once, `checkout_session_id` and
-//     `order_id` are null, and the new limit is metered from the instant it is applied; if it fails,
-//     the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
-//     `ELASTIC_IP_CHECKOUT_UNUSED`.
-//
-// A change of `internet_charge_type` needs no checkout and is `updating_internet_charge_type` until it
-// is applied; see the field.
-//
-// The elastic IP is `updating_bandwidth` until the change is applied or ends, so other operations and
-// a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in
-// effect until the change is applied.
-//
-// While the address is associated with an instance, the limit must not exceed the `max_bandwidth_mbps`
-// of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of
-// an address that is not associated is checked when the address is associated with an instance.
-//
-// PATCH /api/v2/elastic-ips/{elasticIpId}
-func (c *Client) UpdateElasticIP(ctx context.Context, request *UpdateElasticIPRequestBody, params UpdateElasticIPParams) (UpdateElasticIPRes, error) {
-	res, err := c.sendUpdateElasticIP(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendUpdateElasticIP(ctx context.Context, request *UpdateElasticIPRequestBody, params UpdateElasticIPParams) (res UpdateElasticIPRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-elastic-ip"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v2/elastic-ips/{elasticIpId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, UpdateElasticIPOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v2/elastic-ips/"
-	{
-		// Encode "elasticIpId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "elasticIpId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.ElasticIpId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PATCH", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeUpdateElasticIPRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, UpdateElasticIPOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeUpdateElasticIPResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // UpdateInstance invokes update-instance operation.
 //
-// Changes the descriptive fields (`name`, `labels`, `notes`) or the operational field
-// `instance_type_id`. All fields are optional and at least one is required. Starting and stopping are
-// the `:start` and `:stop` methods.
-//
-// `instance_type_id` starts a workflow and cannot be combined with any other field in the same
-// request. Such a request is refused with 422 `UPDATE_FIELDS_COMBINED`, because a rename that
-// committed beside a change that was then refused would leave the request half applied. `checkout` and
-// `proration_date` belong to the purchase of the `instance_type_id` change and are accepted only
-// together with it.
-//
-// Descriptive fields are not operations and are accepted at any time, whatever the instance is doing.
-// The request returns 200 with `checkout_session_id` and `order_id` null.
+// Changes the descriptive fields `name`, `labels` and `description`; all are optional and at least one
+// is required. They are not operations and are accepted at any time, whatever the instance is doing.
+// Changing the instance type is the `:resize` method; starting and stopping are `:start` and `:stop`.
 //
 //   - `name` changes the display name only. The hostname inside the instance is unchanged; it equals
 //     the instance id.
 //   - `labels` records what this instance is for, as key-value pairs. Nothing on the platform reads
 //     them. The whole set is replaced: whatever is absent from the request is removed, and an empty
 //     object clears them all. Do not put credentials here. Labels are visible to platform operators.
-//   - `notes` is a free-text note about this instance: what it runs, and what to be careful about
+//   - `description` is a free-text note about this instance: what it runs, and what to be careful about
 //     before touching it. The whole note is replaced; send an empty string to clear it. Do not put
 //     credentials here. The note is visible to platform operators.
 //
-// `instance_type_id` changes the instance's type cold: the instance has to be stopped, and is refused
-// with 409 `INSTANCE_RESIZE_REQUIRES_STOP` otherwise. Its operating system is not booted for the
-// change, and it is still stopped once the change is applied; start it when you are ready. An instance
-// stopped by the legacy stop, which released its host, is refused with 409 `INSTANCE_SHELVED`; start
-// it once and stop it again. A target type that cannot hold what the instance already uses is refused
-// before anything is ordered: fewer network interfaces than are attached with 409
-// `INSTANCE_RESIZE_NETWORK_INTERFACES_EXCEED`, fewer elastic IPs than are associated with 409
-// `INSTANCE_RESIZE_ELASTIC_IPS_EXCEED`, and less purchasable bandwidth than an associated elastic IP
-// has with 409 `INSTANCE_BANDWIDTH_CEILING` naming it in `meta.elastic_ip_id`. The request returns 202
-// with the instance and the Checkout Session for the change, including for metered terms. The instance
-// keeps its usage type and period, priced with the target type's matching option; a target type
-// without that option is refused with 409 `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing
-// accepts the order. Do not submit the change again after paying. After an uncertain response, look
-// the Checkout Session up in Billing before submitting again.
-//
-// The instance is `resizing` until the resize is applied, its Checkout Session expires or its order is
-// canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
-// meanwhile. It keeps its current type until the resize is applied; the new type takes effect, and is
-// billed from then on, when `instance_type_id` shows it. If checkout is not completed, the order is
-// not accepted or the resize fails, the instance keeps its current type and Billing shows the outcome.
-// A completed resize is final and cannot be reverted; to return to the previous type, submit another
-// resize.
-//
 // PATCH /api/v2/instances/{instanceId}
-func (c *Client) UpdateInstance(ctx context.Context, request *UpdateInstanceRequestBody, params UpdateInstanceParams) (UpdateInstanceRes, error) {
+func (c *Client) UpdateInstance(ctx context.Context, request *UpdateInstanceRequestBody, params UpdateInstanceParams) (*Instance, error) {
 	res, err := c.sendUpdateInstance(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendUpdateInstance(ctx context.Context, request *UpdateInstanceRequestBody, params UpdateInstanceParams) (res UpdateInstanceRes, err error) {
+func (c *Client) sendUpdateInstance(ctx context.Context, request *UpdateInstanceRequestBody, params UpdateInstanceParams) (res *Instance, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -18093,25 +18901,19 @@ func (c *Client) sendUpdateLaunchTemplate(ctx context.Context, request *UpdateLa
 
 // UpdateNetworkInterface invokes update-network-interface operation.
 //
-// Changes the name, or replaces the security groups. The two are never combined (422
-// `UPDATE_FIELDS_COMBINED`).
-//
-//   - `name` is not an operation, is accepted at any time and answers 200.
-//   - `security_group_ids` is the complete new set, one to five groups of the network interface's
-//     virtual private cloud; groups left out are removed. It applies to traffic of the running instance
-//     as soon as it is in place, and answers 202 with the network interface `updating_security_groups`
-//     until then.
+// Changes the name. It is not an operation and is accepted at any time. Replacing the security groups
+// is `:replaceSecurityGroups`.
 //
 // Secondary IPv4 addresses are added and removed under
 // `/network-interfaces/{networkInterfaceId}/addresses`.
 //
 // PATCH /api/v2/network-interfaces/{networkInterfaceId}
-func (c *Client) UpdateNetworkInterface(ctx context.Context, request *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (UpdateNetworkInterfaceRes, error) {
+func (c *Client) UpdateNetworkInterface(ctx context.Context, request *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (*NetworkInterface, error) {
 	res, err := c.sendUpdateNetworkInterface(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendUpdateNetworkInterface(ctx context.Context, request *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (res UpdateNetworkInterfaceRes, err error) {
+func (c *Client) sendUpdateNetworkInterface(ctx context.Context, request *UpdateNetworkInterfaceRequestBody, params UpdateNetworkInterfaceParams) (res *NetworkInterface, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {
@@ -18859,52 +19661,16 @@ func (c *Client) sendUpdateVirtualPrivateCloudSubnet(ctx context.Context, reques
 
 // UpdateVolume invokes update-volume operation.
 //
-// Changes the name, the capacity or the volume type. The availability zone is immutable.
-//
-// `size_gib` and `volume_type_id` are operational fields: each starts a change and cannot be combined
-// with any other field in the same request, including the other one. Such a request is refused with
-// 422 `UPDATE_FIELDS_COMBINED`, because a rename that committed beside a change that was then refused
-// would leave the request half applied. `checkout` and `proration_date` belong to the purchase of the
-// change and are accepted only together with one of them.
-//
-// Renaming is not an operation and is accepted at any time. It returns 200 with `checkout_session_id`
-// and `order_id` null.
-//
-// Resizing accepts only an increase; a smaller `size_gib` is refused with `VOLUME_CANNOT_SHRINK`
-// (422), since a file system cannot be shrunk from outside the instance. It returns 202 with the
-// volume and the Checkout Session for the resize, which keeps the volume's usage type and period. The
-// volume is `resizing` until the resize is applied, its Checkout Session expires or its order is
-// canceled, so other operations and a second resize are refused with `COMPUTE_RESOURCE_BUSY`
-// meanwhile. The volume keeps its current size until the resize is applied; once `size_gib` shows the
-// new size, extend the file system inside the instance. If checkout is not completed, the order is not
-// accepted or the resize fails, the volume keeps its size and Billing shows the outcome.
-//
-// Changing the type moves the volume to another volume type at the same capacity, priced as that type,
-// and returns 202 with the volume and the Checkout Session for the change, which keeps the volume's
-// usage type and period. The volume has to be detached (409 `VOLUME_RETYPE_ATTACHED`), so a boot
-// volume cannot change its type. The target has to be on sale (`VOLUME_TYPE_OFF_SALE`), in the
-// volume's region (422 `VOLUME_RETYPE_OTHER_REGION`), of the volume's availability zone (422
-// `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`) with room for the volume (409 `VOLUME_TYPE_SOLD_OUT`,
-// `VOLUME_TYPE_CAPACITY_REACHED`, `VOLUME_TYPE_NO_POOL_ROOM`), admit the volume's capacity (422
-// `VOLUME_SIZE_OUT_OF_RANGE`, `VOLUME_SIZE_NOT_ON_STEP`) and differ from the current one (422
-// `VOLUME_RETYPE_SAME_TYPE`). The volume is `retyping` until the change is applied, its Checkout
-// Session expires or its order is canceled. A target on the same storage backend takes effect at once;
-// one on another backend copies the volume's data there first, which takes longer the larger the
-// volume is. The volume keeps its type until `volume_type_id` shows the new one, and its `performance`
-// follows from then on; a change that did not take effect leaves the volume as it was and is refunded.
-//
-// An attached volume, including a boot volume, can be resized. The capacity is usable at once, and the
-// volume's `performance` shows what its type gives the new size. That performance applies from the
-// volume's next attachment, or the next start of its stopped instance: the storage reads a volume's
-// limits only while connecting it. Until then the attachment's `performance` shows what is in effect.
+// Changes the name. It is not an operation and is accepted at any time. Growing the volume is
+// `:resize` and moving it to another type is `:retype`.
 //
 // PATCH /api/v2/volumes/{volumeId}
-func (c *Client) UpdateVolume(ctx context.Context, request *UpdateVolumeRequestBody, params UpdateVolumeParams) (UpdateVolumeRes, error) {
+func (c *Client) UpdateVolume(ctx context.Context, request *UpdateVolumeRequestBody, params UpdateVolumeParams) (*VolumeResource, error) {
 	res, err := c.sendUpdateVolume(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendUpdateVolume(ctx context.Context, request *UpdateVolumeRequestBody, params UpdateVolumeParams) (res UpdateVolumeRes, err error) {
+func (c *Client) sendUpdateVolume(ctx context.Context, request *UpdateVolumeRequestBody, params UpdateVolumeParams) (res *VolumeResource, err error) {
 	// Validate request before sending.
 	if err := func() error {
 		if err := request.Validate(); err != nil {

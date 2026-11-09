@@ -11,7 +11,7 @@ import (
 )
 
 func encodeAssociateElasticIPRequest(
-	req AssociateElasticIPRequestBody,
+	req AssociateElasticIpRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -52,8 +52,36 @@ func encodeAttachInstanceVolumeRequest(
 	return nil
 }
 
+func encodeChangeElasticIPBandwidthRequest(
+	req *ChangeElasticIpBandwidthRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeChangeElasticIPChargeTypeRequest(
+	req *ChangeElasticIpChargeTypeRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCreateElasticIPRequest(
-	req *CreateElasticIPRequestBody,
+	req *CreateElasticIpRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -304,8 +332,64 @@ func encodeRebuildInstanceRequest(
 	return nil
 }
 
+func encodeReplaceNetworkInterfaceSecurityGroupsRequest(
+	req *ReplaceNetworkInterfaceSecurityGroupsRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeResetInstancePasswordRequest(
 	req PasswordChoice,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeResizeInstanceRequest(
+	req *ResizeInstanceRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeResizeVolumeRequest(
+	req *ResizeVolumeRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeRetypeVolumeRequest(
+	req *RetypeVolumeRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -334,20 +418,6 @@ func encodeRevertVolumeRequest(
 
 func encodeRunInstanceCommandRequest(
 	req *RunInstanceCommandRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeUpdateElasticIPRequest(
-	req *UpdateElasticIPRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

@@ -247,6 +247,19 @@ func encodeCreateWithdrawalResponse(response *Withdrawal, w http.ResponseWriter,
 	return nil
 }
 
+func encodeDeleteCancellationResponse(response *Cancellation, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeDeleteContactResponse(response *DeleteContactNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
@@ -1197,7 +1210,7 @@ func encodeListRefundsResponse(response *RefundList, w http.ResponseWriter, span
 	return nil
 }
 
-func encodeListRenewalPricesResponse(response *RenewalPriceList, w http.ResponseWriter, span trace.Span) error {
+func encodeListRenewalOptionsResponse(response *RenewalOptionList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -1462,19 +1475,6 @@ func encodeSearchPricesResponse(response *PriceList, w http.ResponseWriter, span
 	return nil
 }
 
-func encodeSetAutoRenewResponse(response *Subscription, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeSetDefaultPaymentMethodResponse(response *PaymentMethod, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -1546,7 +1546,7 @@ func encodeUpdateContactResponse(response *Contact, w http.ResponseWriter, span 
 	return nil
 }
 
-func encodeWithdrawCancellationResponse(response *Cancellation, w http.ResponseWriter, span trace.Span) error {
+func encodeUpdateSubscriptionResponse(response *Subscription, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

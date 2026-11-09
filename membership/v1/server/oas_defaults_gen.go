@@ -8,4 +8,8 @@ func (s *CheckoutOptions) setDefaults() {
 		val := CheckoutOptionsMode("automatic")
 		s.Mode.SetTo(val)
 	}
+	{
+		val := bool(false)
+		s.AutoRenew.SetTo(val)
+	}
 }

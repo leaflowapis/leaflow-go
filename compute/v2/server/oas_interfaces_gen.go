@@ -17,6 +17,14 @@ type AttachInstanceVolumeRes interface {
 	attachInstanceVolumeRes()
 }
 
+type ChangeElasticIPBandwidthRes interface {
+	changeElasticIPBandwidthRes()
+}
+
+type ChangeElasticIPChargeTypeRes interface {
+	changeElasticIPChargeTypeRes()
+}
+
 type CreateElasticIPRes interface {
 	createElasticIPRes()
 }
@@ -109,12 +117,28 @@ type RejectVirtualPrivateCloudPeeringRes interface {
 	rejectVirtualPrivateCloudPeeringRes()
 }
 
+type ReplaceNetworkInterfaceSecurityGroupsRes interface {
+	replaceNetworkInterfaceSecurityGroupsRes()
+}
+
 type RescueInstanceRes interface {
 	rescueInstanceRes()
 }
 
 type ResetInstancePasswordRes interface {
 	resetInstancePasswordRes()
+}
+
+type ResizeInstanceRes interface {
+	resizeInstanceRes()
+}
+
+type ResizeVolumeRes interface {
+	resizeVolumeRes()
+}
+
+type RetypeVolumeRes interface {
+	retypeVolumeRes()
 }
 
 type RevertVolumeRes interface {
@@ -131,20 +155,4 @@ type StopInstanceRes interface {
 
 type UnrescueInstanceRes interface {
 	unrescueInstanceRes()
-}
-
-type UpdateElasticIPRes interface {
-	updateElasticIPRes()
-}
-
-type UpdateInstanceRes interface {
-	updateInstanceRes()
-}
-
-type UpdateNetworkInterfaceRes interface {
-	updateNetworkInterfaceRes()
-}
-
-type UpdateVolumeRes interface {
-	updateVolumeRes()
 }

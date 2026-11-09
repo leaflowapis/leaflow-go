@@ -9,14 +9,14 @@ import (
 	"github.com/ogen-go/ogen/validate"
 )
 
-func (s AssociateElasticIPRequestBody) Validate() error {
+func (s AssociateElasticIpRequestBody) Validate() error {
 	switch s.Type {
-	case InstanceAssociationTargetAssociateElasticIPRequestBody:
+	case InstanceAssociationTargetAssociateElasticIpRequestBody:
 		if err := s.InstanceAssociationTarget.Validate(); err != nil {
 			return err
 		}
 		return nil
-	case NetworkInterfaceAddressAssociationTargetAssociateElasticIPRequestBody:
+	case NetworkInterfaceAddressAssociationTargetAssociateElasticIpRequestBody:
 		if err := s.NetworkInterfaceAddressAssociationTarget.Validate(); err != nil {
 			return err
 		}
@@ -72,7 +72,7 @@ func (s *AttachVolumeRequestBody) Validate() error {
 	return nil
 }
 
-func (s AvailabilityZoneID) Validate() error {
+func (s AvailabilityZoneId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     31,
@@ -513,6 +513,80 @@ func (s CancellationMode) Validate() error {
 	}
 }
 
+func (s *ChangeElasticIpBandwidthRequestBody) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := (validate.Int{
+			MinSet:        true,
+			Min:           1,
+			MaxSet:        false,
+			Max:           0,
+			MinExclusive:  false,
+			MaxExclusive:  false,
+			MultipleOfSet: false,
+			MultipleOf:    0,
+			Pattern:       nil,
+		}).Validate(int64(s.BandwidthMbps)); err != nil {
+			return errors.Wrap(err, "int")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "bandwidth_mbps",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Checkout.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "checkout",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *ChangeElasticIpChargeTypeRequestBody) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.InternetChargeType.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "internet_charge_type",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
 func (s *CheckoutOptions) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -584,7 +658,7 @@ func (s CheckoutOptionsMode) Validate() error {
 	}
 }
 
-func (s *CreateElasticIPRequestBody) Validate() error {
+func (s *CreateElasticIpRequestBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
@@ -659,8 +733,15 @@ func (s *CreateElasticIPRequestBody) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.Billing.Validate(); err != nil {
-			return err
+		if value, ok := s.Billing.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		}
 		return nil
 	}(); err != nil {
@@ -687,13 +768,31 @@ func (s *CreateElasticIPRequestBody) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if value, ok := s.InstanceID.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "instance_id",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
 }
 
-func (s *CreateElasticIPResponseBody) Validate() error {
+func (s *CreateElasticIpResponseBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
@@ -2108,8 +2207,15 @@ func (s *CreateVolumeRequestBody) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.Billing.Validate(); err != nil {
-			return err
+		if value, ok := s.Billing.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
 		}
 		return nil
 	}(); err != nil {
@@ -2133,6 +2239,24 @@ func (s *CreateVolumeRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "checkout",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.InstanceID.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "instance_id",
 			Error: err,
 		})
 	}
@@ -2252,7 +2376,7 @@ func (s *CreateVolumeSnapshotResponseBody) Validate() error {
 	return nil
 }
 
-func (s *DeleteElasticIPResponseBody) Validate() error {
+func (s *DeleteElasticIpResponseBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
@@ -2498,7 +2622,7 @@ func (s *DeleteVolumeSnapshotResponseBody) Validate() error {
 	return nil
 }
 
-func (s *ElasticIP) Validate() error {
+func (s *ElasticIp) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
@@ -2683,7 +2807,7 @@ func (s *ElasticIP) Validate() error {
 	return nil
 }
 
-func (s ElasticIPAccessState) Validate() error {
+func (s ElasticIpAccessState) Validate() error {
 	switch s {
 	case "pending":
 		return nil
@@ -2698,7 +2822,7 @@ func (s ElasticIPAccessState) Validate() error {
 	}
 }
 
-func (s *ElasticIPAssociation) Validate() error {
+func (s *ElasticIpAssociation) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
@@ -2776,7 +2900,7 @@ func (s *ElasticIPAssociation) Validate() error {
 	return nil
 }
 
-func (s ElasticIPAssociationID) Validate() error {
+func (s ElasticIpAssociationId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     41,
@@ -2796,7 +2920,7 @@ func (s ElasticIPAssociationID) Validate() error {
 	return nil
 }
 
-func (s ElasticIPAssociationState) Validate() error {
+func (s ElasticIpAssociationState) Validate() error {
 	switch s {
 	case "associated":
 		return nil
@@ -2807,7 +2931,30 @@ func (s ElasticIPAssociationState) Validate() error {
 	}
 }
 
-func (s ElasticIPFailureReason) Validate() error {
+func (s *ElasticIpChangeResponseBody) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.ElasticIP.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "elastic_ip",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s ElasticIpFailureReason) Validate() error {
 	switch s {
 	case "order_declined":
 		return nil
@@ -2824,7 +2971,7 @@ func (s ElasticIPFailureReason) Validate() error {
 	}
 }
 
-func (s ElasticIPID) Validate() error {
+func (s ElasticIpId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     30,
@@ -2844,7 +2991,7 @@ func (s ElasticIPID) Validate() error {
 	return nil
 }
 
-func (s *ElasticIPLine) Validate() error {
+func (s *ElasticIpLine) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
@@ -2968,7 +3115,7 @@ func (s *ElasticIPLine) Validate() error {
 	return nil
 }
 
-func (s ElasticIPLineID) Validate() error {
+func (s ElasticIpLineId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     34,
@@ -2988,7 +3135,7 @@ func (s ElasticIPLineID) Validate() error {
 	return nil
 }
 
-func (s *ElasticIPLineListResponseBody) Validate() error {
+func (s *ElasticIpLineListResponseBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
@@ -3039,7 +3186,7 @@ func (s *ElasticIPLineListResponseBody) Validate() error {
 	return nil
 }
 
-func (s ElasticIPLineSaleStatus) Validate() error {
+func (s ElasticIpLineSaleStatus) Validate() error {
 	switch s {
 	case "on_sale":
 		return nil
@@ -3050,7 +3197,7 @@ func (s ElasticIPLineSaleStatus) Validate() error {
 	}
 }
 
-func (s ElasticIPLineTrafficSaleStatus) Validate() error {
+func (s ElasticIpLineTrafficSaleStatus) Validate() error {
 	switch s {
 	case "on_sale":
 		return nil
@@ -3061,7 +3208,7 @@ func (s ElasticIPLineTrafficSaleStatus) Validate() error {
 	}
 }
 
-func (s *ElasticIPListResponseBody) Validate() error {
+func (s *ElasticIpListResponseBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
@@ -3109,7 +3256,7 @@ func (s *ElasticIPListResponseBody) Validate() error {
 	return nil
 }
 
-func (s *ElasticIPReleaseResource) Validate() error {
+func (s *ElasticIpReleaseResource) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
@@ -3143,7 +3290,7 @@ func (s *ElasticIPReleaseResource) Validate() error {
 	return nil
 }
 
-func (s ElasticIPReleaseResourceType) Validate() error {
+func (s ElasticIpReleaseResourceType) Validate() error {
 	switch s {
 	case "elastic_ip":
 		return nil
@@ -3152,7 +3299,7 @@ func (s ElasticIPReleaseResourceType) Validate() error {
 	}
 }
 
-func (s ElasticIPStatus) Validate() error {
+func (s ElasticIpStatus) Validate() error {
 	switch s {
 	case "pending":
 		return nil
@@ -3249,7 +3396,7 @@ func (s ExistingBootVolumeType) Validate() error {
 	}
 }
 
-func (s *ExistingElasticIP) Validate() error {
+func (s *ExistingElasticIp) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
@@ -3283,7 +3430,7 @@ func (s *ExistingElasticIP) Validate() error {
 	return nil
 }
 
-func (s ExistingElasticIPType) Validate() error {
+func (s ExistingElasticIpType) Validate() error {
 	switch s {
 	case "existing":
 		return nil
@@ -3367,27 +3514,7 @@ func (s GeneratedPasswordType) Validate() error {
 	}
 }
 
-func (s IPv4HostAddress) Validate() error {
-	alias := (string)(s)
-	if err := (validate.String{
-		MinLength:     7,
-		MinLengthSet:  true,
-		MaxLength:     15,
-		MaxLengthSet:  true,
-		Email:         false,
-		Hostname:      false,
-		Regex:         regexMap["^(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}$"],
-		MinNumeric:    0,
-		MinNumericSet: false,
-		MaxNumeric:    0,
-		MaxNumericSet: false,
-	}).Validate(string(alias)); err != nil {
-		return errors.Wrap(err, "string")
-	}
-	return nil
-}
-
-func (s ImageID) Validate() error {
+func (s ImageId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     32,
@@ -3787,15 +3914,15 @@ func (s *InstanceAssociationTarget) Validate() error {
 	return nil
 }
 
-func (s InstanceElasticIP) Validate() error {
+func (s InstanceElasticIp) Validate() error {
 	switch s.Type {
-	case NewElasticIPInstanceElasticIP:
-		if err := s.NewElasticIP.Validate(); err != nil {
+	case NewElasticIpInstanceElasticIp:
+		if err := s.NewElasticIp.Validate(); err != nil {
 			return err
 		}
 		return nil
-	case ExistingElasticIPInstanceElasticIP:
-		if err := s.ExistingElasticIP.Validate(); err != nil {
+	case ExistingElasticIpInstanceElasticIp:
+		if err := s.ExistingElasticIp.Validate(); err != nil {
 			return err
 		}
 		return nil
@@ -3923,7 +4050,7 @@ func (s InstanceFamilyCategory) Validate() error {
 	}
 }
 
-func (s InstanceFamilyID) Validate() error {
+func (s InstanceFamilyId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     36,
@@ -3994,7 +4121,7 @@ func (s *InstanceFamilyListResponseBody) Validate() error {
 	return nil
 }
 
-func (s InstanceID) Validate() error {
+func (s InstanceId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     30,
@@ -4110,7 +4237,7 @@ func (s *InstanceListResponseBody) Validate() error {
 	return nil
 }
 
-func (s InstanceNetworkInterfaceID) Validate() error {
+func (s InstanceNetworkInterfaceId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     33,
@@ -4370,7 +4497,7 @@ func (s *InstanceType) Validate() error {
 	return nil
 }
 
-func (s InstanceTypeID) Validate() error {
+func (s InstanceTypeId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     34,
@@ -4452,7 +4579,7 @@ func (s InstanceTypeSaleStatus) Validate() error {
 	}
 }
 
-func (s InstanceVolumeID) Validate() error {
+func (s InstanceVolumeId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     33,
@@ -4481,6 +4608,26 @@ func (s InternetChargeType) Validate() error {
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}
+}
+
+func (s Ipv4HostAddress) Validate() error {
+	alias := (string)(s)
+	if err := (validate.String{
+		MinLength:     7,
+		MinLengthSet:  true,
+		MaxLength:     15,
+		MaxLengthSet:  true,
+		Email:         false,
+		Hostname:      false,
+		Regex:         regexMap["^(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}$"],
+		MinNumeric:    0,
+		MinNumericSet: false,
+		MaxNumeric:    0,
+		MaxNumericSet: false,
+	}).Validate(string(alias)); err != nil {
+		return errors.Wrap(err, "string")
+	}
+	return nil
 }
 
 func (s *LatestOperation) Validate() error {
@@ -4710,7 +4857,7 @@ func (s LaunchTemplateDataVolumeOnInstanceRelease) Validate() error {
 	}
 }
 
-func (s *LaunchTemplateElasticIP) Validate() error {
+func (s *LaunchTemplateElasticIp) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
@@ -4772,7 +4919,7 @@ func (s *LaunchTemplateElasticIP) Validate() error {
 	return nil
 }
 
-func (s LaunchTemplateID) Validate() error {
+func (s LaunchTemplateId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     29,
@@ -5374,7 +5521,7 @@ func (s *NetworkInterfaceAddressAssociationTarget) Validate() error {
 	return nil
 }
 
-func (s NetworkInterfaceAddressID) Validate() error {
+func (s NetworkInterfaceAddressId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     37,
@@ -5582,7 +5729,7 @@ func (s NetworkInterfaceAttachmentState) Validate() error {
 	}
 }
 
-func (s NetworkInterfaceID) Validate() error {
+func (s NetworkInterfaceId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     30,
@@ -5931,7 +6078,7 @@ func (s NewDataVolumeOnInstanceRelease) Validate() error {
 	}
 }
 
-func (s *NewElasticIP) Validate() error {
+func (s *NewElasticIp) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
@@ -6022,7 +6169,7 @@ func (s *NewElasticIP) Validate() error {
 	return nil
 }
 
-func (s NewElasticIPType) Validate() error {
+func (s NewElasticIpType) Validate() error {
 	switch s {
 	case "new":
 		return nil
@@ -6424,7 +6571,7 @@ func (s *OffsetPagination) Validate() error {
 	return nil
 }
 
-func (s OperationLogID) Validate() error {
+func (s OperationLogId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     39,
@@ -7250,7 +7397,7 @@ func (s *RebuildInstanceResponseBody) Validate() error {
 	return nil
 }
 
-func (s RegionID) Validate() error {
+func (s RegionId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     33,
@@ -7386,8 +7533,8 @@ func (s ReleaseResource) Validate() error {
 			return err
 		}
 		return nil
-	case ElasticIPReleaseResourceReleaseResource:
-		if err := s.ElasticIPReleaseResource.Validate(); err != nil {
+	case ElasticIpReleaseResourceReleaseResource:
+		if err := s.ElasticIpReleaseResource.Validate(); err != nil {
 			return err
 		}
 		return nil
@@ -7434,6 +7581,54 @@ func (s *ReleaseSetItem) Validate() error {
 	return nil
 }
 
+func (s *ReplaceNetworkInterfaceSecurityGroupsRequestBody) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if s.SecurityGroupIds == nil {
+			return errors.New("nil is invalid value")
+		}
+		if err := (validate.Array{
+			MinLength:    1,
+			MinLengthSet: true,
+			MaxLength:    5,
+			MaxLengthSet: true,
+		}).ValidateLength(len(s.SecurityGroupIds)); err != nil {
+			return errors.Wrap(err, "array")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.SecurityGroupIds {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "security_group_ids",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
 func (s *RescueInstanceResponseBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -7448,6 +7643,162 @@ func (s *RescueInstanceResponseBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "instance",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *ResizeInstanceRequestBody) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.InstanceTypeID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "instance_type_id",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Checkout.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "checkout",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *ResizeInstanceResponseBody) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Instance.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "instance",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *ResizeVolumeRequestBody) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := (validate.Int{
+			MinSet:        true,
+			Min:           1,
+			MaxSet:        false,
+			Max:           0,
+			MinExclusive:  false,
+			MaxExclusive:  false,
+			MultipleOfSet: false,
+			MultipleOf:    0,
+			Pattern:       nil,
+		}).Validate(int64(s.SizeGib)); err != nil {
+			return errors.Wrap(err, "int")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "size_gib",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Checkout.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "checkout",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s *RetypeVolumeRequestBody) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.VolumeTypeID.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "volume_type_id",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Checkout.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "checkout",
 			Error: err,
 		})
 	}
@@ -7577,7 +7928,7 @@ func (s *SecurityGroup) Validate() error {
 	return nil
 }
 
-func (s SecurityGroupID) Validate() error {
+func (s SecurityGroupId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     29,
@@ -7597,7 +7948,7 @@ func (s SecurityGroupID) Validate() error {
 	return nil
 }
 
-func (s SecurityGroupIDOrWildcard) Validate() error {
+func (s SecurityGroupIdOrWildcard) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     0,
@@ -7735,7 +8086,18 @@ func (s SecurityGroupRuleDirection) Validate() error {
 	}
 }
 
-func (s SecurityGroupRuleID) Validate() error {
+func (s SecurityGroupRuleIPVersion) Validate() error {
+	switch s {
+	case 4:
+		return nil
+	case 6:
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s SecurityGroupRuleId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     33,
@@ -7753,17 +8115,6 @@ func (s SecurityGroupRuleID) Validate() error {
 		return errors.Wrap(err, "string")
 	}
 	return nil
-}
-
-func (s SecurityGroupRuleIPVersion) Validate() error {
-	switch s {
-	case 4:
-		return nil
-	case 6:
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
 }
 
 func (s *SecurityGroupRuleListResponseBody) Validate() error {
@@ -7817,7 +8168,7 @@ func (s *SecurityGroupRuleListResponseBody) Validate() error {
 	return nil
 }
 
-func (s SubnetID) Validate() error {
+func (s SubnetId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     33,
@@ -8008,137 +8359,6 @@ func (s *TrafficUsageListResponseBody) Validate() error {
 	return nil
 }
 
-func (s *UpdateElasticIPAccepted) Validate() error {
-	alias := (*UpdateElasticIPResponseBody)(s)
-	if err := alias.Validate(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *UpdateElasticIPOK) Validate() error {
-	alias := (*UpdateElasticIPResponseBody)(s)
-	if err := alias.Validate(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *UpdateElasticIPRequestBody) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if value, ok := s.InternetChargeType.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "internet_charge_type",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.BandwidthMbps.Get(); ok {
-			if err := func() error {
-				if err := (validate.Int{
-					MinSet:        true,
-					Min:           1,
-					MaxSet:        false,
-					Max:           0,
-					MinExclusive:  false,
-					MaxExclusive:  false,
-					MultipleOfSet: false,
-					MultipleOf:    0,
-					Pattern:       nil,
-				}).Validate(int64(value)); err != nil {
-					return errors.Wrap(err, "int")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "bandwidth_mbps",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.Checkout.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "checkout",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s *UpdateElasticIPResponseBody) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.ElasticIP.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "elastic_ip",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s *UpdateInstanceAccepted) Validate() error {
-	alias := (*UpdateInstanceResponseBody)(s)
-	if err := alias.Validate(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *UpdateInstanceOK) Validate() error {
-	alias := (*UpdateInstanceResponseBody)(s)
-	if err := alias.Validate(); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (s *UpdateInstanceRequestBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -8223,42 +8443,6 @@ func (s *UpdateInstanceRequestBody) Validate() error {
 			Error: err,
 		})
 	}
-	if err := func() error {
-		if value, ok := s.InstanceTypeID.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "instance_type_id",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.Checkout.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "checkout",
-			Error: err,
-		})
-	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -8293,29 +8477,6 @@ func (s UpdateInstanceRequestBodyLabels) Validate() error {
 		}
 	}
 
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s *UpdateInstanceResponseBody) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Instance.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "instance",
-			Error: err,
-		})
-	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -8422,22 +8583,6 @@ func (s *UpdateLaunchTemplateRequestBody) Validate() error {
 	return nil
 }
 
-func (s *UpdateNetworkInterfaceAccepted) Validate() error {
-	alias := (*NetworkInterface)(s)
-	if err := alias.Validate(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *UpdateNetworkInterfaceOK) Validate() error {
-	alias := (*NetworkInterface)(s)
-	if err := alias.Validate(); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (s *UpdateNetworkInterfaceRequestBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -8471,42 +8616,6 @@ func (s *UpdateNetworkInterfaceRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "name",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if s.SecurityGroupIds == nil {
-			return nil // optional
-		}
-		if err := (validate.Array{
-			MinLength:    1,
-			MinLengthSet: true,
-			MaxLength:    5,
-			MaxLengthSet: true,
-		}).ValidateLength(len(s.SecurityGroupIds)); err != nil {
-			return errors.Wrap(err, "array")
-		}
-		var failures []validate.FieldError
-		for i, elem := range s.SecurityGroupIds {
-			if err := func() error {
-				if err := elem.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				failures = append(failures, validate.FieldError{
-					Name:  fmt.Sprintf("[%d]", i),
-					Error: err,
-				})
-			}
-		}
-		if len(failures) > 0 {
-			return &validate.Error{Fields: failures}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "security_group_ids",
 			Error: err,
 		})
 	}
@@ -8707,14 +8816,6 @@ func (s *UpdateVirtualPrivateCloudSubnetRequestBody) Validate() error {
 	return nil
 }
 
-func (s *UpdateVolumeAccepted) Validate() error {
-	alias := (*UpdateVolumeResponseBody)(s)
-	if err := alias.Validate(); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (s *UpdateVolumeBackupRequestBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -8757,14 +8858,6 @@ func (s *UpdateVolumeBackupRequestBody) Validate() error {
 	return nil
 }
 
-func (s *UpdateVolumeOK) Validate() error {
-	alias := (*UpdateVolumeResponseBody)(s)
-	if err := alias.Validate(); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (s *UpdateVolumeRequestBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -8798,93 +8891,6 @@ func (s *UpdateVolumeRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "name",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.SizeGib.Get(); ok {
-			if err := func() error {
-				if err := (validate.Int{
-					MinSet:        true,
-					Min:           1,
-					MaxSet:        false,
-					Max:           0,
-					MinExclusive:  false,
-					MaxExclusive:  false,
-					MultipleOfSet: false,
-					MultipleOf:    0,
-					Pattern:       nil,
-				}).Validate(int64(value)); err != nil {
-					return errors.Wrap(err, "int")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "size_gib",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.VolumeTypeID.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "volume_type_id",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.Checkout.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "checkout",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s *UpdateVolumeResponseBody) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Volume.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "volume",
 			Error: err,
 		})
 	}
@@ -8999,7 +9005,7 @@ func (s *VirtualPrivateCloud) Validate() error {
 	return nil
 }
 
-func (s VirtualPrivateCloudID) Validate() error {
+func (s VirtualPrivateCloudId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     30,
@@ -9019,7 +9025,7 @@ func (s VirtualPrivateCloudID) Validate() error {
 	return nil
 }
 
-func (s VirtualPrivateCloudIDOrWildcard) Validate() error {
+func (s VirtualPrivateCloudIdOrWildcard) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     0,
@@ -9090,7 +9096,7 @@ func (s *VirtualPrivateCloudListResponseBody) Validate() error {
 	return nil
 }
 
-func (s VirtualPrivateCloudPeeringID) Validate() error {
+func (s VirtualPrivateCloudPeeringId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     37,
@@ -9289,7 +9295,7 @@ func (s VirtualPrivateCloudPeeringResourceStatus) Validate() error {
 	}
 }
 
-func (s VirtualPrivateCloudRouteID) Validate() error {
+func (s VirtualPrivateCloudRouteId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     35,
@@ -9702,7 +9708,7 @@ func (s VolumeAttachmentState) Validate() error {
 	}
 }
 
-func (s VolumeBackupID) Validate() error {
+func (s VolumeBackupId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     36,
@@ -9982,7 +9988,30 @@ func (s VolumeBackupResourceStatus) Validate() error {
 	}
 }
 
-func (s VolumeID) Validate() error {
+func (s *VolumeChangeResponseBody) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Volume.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "volume",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s VolumeId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     30,
@@ -10327,7 +10356,7 @@ func (s VolumeResourceStatus) Validate() error {
 	}
 }
 
-func (s VolumeSnapshotID) Validate() error {
+func (s VolumeSnapshotId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     38,
@@ -10607,7 +10636,7 @@ func (s VolumeSnapshotResourceStatus) Validate() error {
 	}
 }
 
-func (s VolumeTypeID) Validate() error {
+func (s VolumeTypeId) Validate() error {
 	alias := (string)(s)
 	if err := (validate.String{
 		MinLength:     34,

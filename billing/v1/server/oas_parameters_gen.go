@@ -342,6 +342,71 @@ func decodeCreateContactParams(args [1]string, argsEscaped bool, r *http.Request
 	return params, nil
 }
 
+// DeleteCancellationParams is parameters of delete-cancellation operation.
+type DeleteCancellationParams struct {
+	CancellationId uuid.UUID
+}
+
+func unpackDeleteCancellationParams(packed middleware.Parameters) (params DeleteCancellationParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "cancellationId",
+			In:   "path",
+		}
+		params.CancellationId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeDeleteCancellationParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteCancellationParams, _ error) {
+	// Decode path: cancellationId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "cancellationId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.CancellationId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "cancellationId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // DeleteContactParams is parameters of delete-contact operation.
 type DeleteContactParams struct {
 	AccountId int64
@@ -1611,7 +1676,7 @@ type GetProductParams struct {
 	// The `ETag` of an earlier response. When the catalogue has not changed since, the response is `304`
 	// with no body.
 	IfNoneMatch OptString `json:",omitempty,omitzero"`
-	ProductId   ProductID
+	ProductId   ProductId
 }
 
 func unpackGetProductParams(packed middleware.Parameters) (params GetProductParams) {
@@ -1629,7 +1694,7 @@ func unpackGetProductParams(packed middleware.Parameters) (params GetProductPara
 			Name: "productId",
 			In:   "path",
 		}
-		params.ProductId = packed[key].(ProductID)
+		params.ProductId = packed[key].(ProductId)
 	}
 	return params
 }
@@ -1711,7 +1776,7 @@ func decodeGetProductParams(args [1]string, argsEscaped bool, r *http.Request) (
 				}(); err != nil {
 					return err
 				}
-				params.ProductId = ProductID(paramsDotProductIdVal)
+				params.ProductId = ProductId(paramsDotProductIdVal)
 				return nil
 			}(); err != nil {
 				return err
@@ -2899,7 +2964,7 @@ type ListActiveResourcesParams struct {
 	// of its current billing account sees.
 	ProjectIds []uuid.UUID  `json:",omitempty"`
 	MeterID    OptUUID      `json:",omitempty,omitzero"`
-	ProductID  OptProductID `json:",omitempty,omitzero"`
+	ProductID  OptProductId `json:",omitempty,omitzero"`
 	// Only metering in these statuses; omit for every status. Comma-separated, for example
 	// `status=active,suspended`.
 	Status []ActiveResourceStatus `json:",omitempty"`
@@ -2966,7 +3031,7 @@ func unpackListActiveResourcesParams(packed middleware.Parameters) (params ListA
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.ProductID = v.(OptProductID)
+			params.ProductID = v.(OptProductId)
 		}
 	}
 	{
@@ -3321,7 +3386,7 @@ func decodeListActiveResourcesParams(args [0]string, argsEscaped bool, r *http.R
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotProductIDVal ProductID
+				var paramsDotProductIDVal ProductId
 				if err := func() error {
 					var paramsDotProductIDValVal string
 					if err := func() error {
@@ -3340,7 +3405,7 @@ func decodeListActiveResourcesParams(args [0]string, argsEscaped bool, r *http.R
 					}(); err != nil {
 						return err
 					}
-					paramsDotProductIDVal = ProductID(paramsDotProductIDValVal)
+					paramsDotProductIDVal = ProductId(paramsDotProductIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -3470,7 +3535,7 @@ type ListAllowancesParams struct {
 	// Only allowances in these statuses; omit for every status. Comma-separated, for example
 	// `status=active,depleted`.
 	Status    []AllowanceStatus `json:",omitempty"`
-	ProductID OptProductID      `json:",omitempty,omitzero"`
+	ProductID OptProductId      `json:",omitempty,omitzero"`
 	// Only records of these projects. Omit for all projects and account-level records of your billing
 	// accounts. Where an operation is open to project members, each project must be assigned to a billing
 	// account you own or have you as a member, and a member sees the records of the project that the owner
@@ -3530,7 +3595,7 @@ func unpackListAllowancesParams(packed middleware.Parameters) (params ListAllowa
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.ProductID = v.(OptProductID)
+			params.ProductID = v.(OptProductId)
 		}
 	}
 	{
@@ -3861,7 +3926,7 @@ func decodeListAllowancesParams(args [0]string, argsEscaped bool, r *http.Reques
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotProductIDVal ProductID
+				var paramsDotProductIDVal ProductId
 				if err := func() error {
 					var paramsDotProductIDValVal string
 					if err := func() error {
@@ -3880,7 +3945,7 @@ func decodeListAllowancesParams(args [0]string, argsEscaped bool, r *http.Reques
 					}(); err != nil {
 						return err
 					}
-					paramsDotProductIDVal = ProductID(paramsDotProductIDValVal)
+					paramsDotProductIDVal = ProductId(paramsDotProductIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -4257,8 +4322,10 @@ type ListCancellationsParams struct {
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
-	// Only cancellations that include this subscription.
+	// Only cancellations that include an item of this subscription.
 	SubscriptionID OptUUID `json:",omitempty,omitzero"`
+	// Only cancellations that include this subscription item.
+	SubscriptionItemID OptUUID `json:",omitempty,omitzero"`
 	// Only cancellations in these statuses; omit for every status. `open` means requested, scheduled or
 	// releasing. Comma-separated, for example `status=open,failed`.
 	Status []ListCancellationsStatusItem `json:",omitempty"`
@@ -4304,6 +4371,15 @@ func unpackListCancellationsParams(packed middleware.Parameters) (params ListCan
 		}
 		if v, ok := packed[key]; ok {
 			params.SubscriptionID = v.(OptUUID)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "subscription_item_id",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.SubscriptionItemID = v.(OptUUID)
 		}
 	}
 	{
@@ -4549,6 +4625,47 @@ func decodeListCancellationsParams(args [0]string, argsEscaped bool, r *http.Req
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "subscription_id",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: subscription_item_id.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "subscription_item_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotSubscriptionItemIDVal uuid.UUID
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToUUID(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotSubscriptionItemIDVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.SubscriptionItemID.SetTo(paramsDotSubscriptionItemIDVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "subscription_item_id",
 			In:   "query",
 			Err:  err,
 		}
@@ -6670,7 +6787,7 @@ type ListEntitlementsParams struct {
 	// account you own or have you as a member, and a member sees the records of the project that the owner
 	// of its current billing account sees.
 	ProjectIds []uuid.UUID  `json:",omitempty"`
-	ProductID  OptProductID `json:",omitempty,omitzero"`
+	ProductID  OptProductId `json:",omitempty,omitzero"`
 }
 
 func unpackListEntitlementsParams(packed middleware.Parameters) (params ListEntitlementsParams) {
@@ -6716,7 +6833,7 @@ func unpackListEntitlementsParams(packed middleware.Parameters) (params ListEnti
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.ProductID = v.(OptProductID)
+			params.ProductID = v.(OptProductId)
 		}
 	}
 	return params
@@ -6980,7 +7097,7 @@ func decodeListEntitlementsParams(args [0]string, argsEscaped bool, r *http.Requ
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotProductIDVal ProductID
+				var paramsDotProductIDVal ProductId
 				if err := func() error {
 					var paramsDotProductIDValVal string
 					if err := func() error {
@@ -6999,7 +7116,7 @@ func decodeListEntitlementsParams(args [0]string, argsEscaped bool, r *http.Requ
 					}(); err != nil {
 						return err
 					}
-					paramsDotProductIDVal = ProductID(paramsDotProductIDValVal)
+					paramsDotProductIDVal = ProductId(paramsDotProductIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -7044,7 +7161,7 @@ type ListFeatureGrantsParams struct {
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64     `json:",omitempty,omitzero"`
-	ProductID        OptProductID `json:",omitempty,omitzero"`
+	ProductID        OptProductId `json:",omitempty,omitzero"`
 	// Only feature grants in these statuses; omit for every status. Comma-separated, for example
 	// `status=scheduled,active`.
 	Status []FeatureGrantStatus `json:",omitempty"`
@@ -7084,7 +7201,7 @@ func unpackListFeatureGrantsParams(packed middleware.Parameters) (params ListFea
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.ProductID = v.(OptProductID)
+			params.ProductID = v.(OptProductId)
 		}
 	}
 	{
@@ -7294,7 +7411,7 @@ func decodeListFeatureGrantsParams(args [0]string, argsEscaped bool, r *http.Req
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotProductIDVal ProductID
+				var paramsDotProductIDVal ProductId
 				if err := func() error {
 					var paramsDotProductIDValVal string
 					if err := func() error {
@@ -7313,7 +7430,7 @@ func decodeListFeatureGrantsParams(args [0]string, argsEscaped bool, r *http.Req
 					}(); err != nil {
 						return err
 					}
-					paramsDotProductIDVal = ProductID(paramsDotProductIDValVal)
+					paramsDotProductIDVal = ProductId(paramsDotProductIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -9759,7 +9876,7 @@ type ListPlansParams struct {
 	// The `ETag` of an earlier response. When the catalogue has not changed since, the response is `304`
 	// with no body.
 	IfNoneMatch OptString `json:",omitempty,omitzero"`
-	ProductID   ProductID
+	ProductID   ProductId
 }
 
 func unpackListPlansParams(packed middleware.Parameters) (params ListPlansParams) {
@@ -9795,7 +9912,7 @@ func unpackListPlansParams(packed middleware.Parameters) (params ListPlansParams
 			Name: "product_id",
 			In:   "query",
 		}
-		params.ProductID = packed[key].(ProductID)
+		params.ProductID = packed[key].(ProductId)
 	}
 	return params
 }
@@ -10011,7 +10128,7 @@ func decodeListPlansParams(args [0]string, argsEscaped bool, r *http.Request) (p
 				}(); err != nil {
 					return err
 				}
-				params.ProductID = ProductID(paramsDotProductIDVal)
+				params.ProductID = ProductId(paramsDotProductIDVal)
 				return nil
 			}); err != nil {
 				return err
@@ -10049,7 +10166,7 @@ type ListPricesParams struct {
 	IfNoneMatch OptString `json:",omitempty,omitzero"`
 	// ISO 4217, three uppercase letters.
 	Currency  string
-	ProductID OptProductID `json:",omitempty,omitzero"`
+	ProductID OptProductId `json:",omitempty,omitzero"`
 	// Narrows to one price type.
 	Type OptPriceType `json:",omitempty,omitzero"`
 	// Narrows to one usage type.
@@ -10097,7 +10214,7 @@ func unpackListPricesParams(packed middleware.Parameters) (params ListPricesPara
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.ProductID = v.(OptProductID)
+			params.ProductID = v.(OptProductId)
 		}
 	}
 	{
@@ -10371,7 +10488,7 @@ func decodeListPricesParams(args [0]string, argsEscaped bool, r *http.Request) (
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotProductIDVal ProductID
+				var paramsDotProductIDVal ProductId
 				if err := func() error {
 					var paramsDotProductIDValVal string
 					if err := func() error {
@@ -10390,7 +10507,7 @@ func decodeListPricesParams(args [0]string, argsEscaped bool, r *http.Request) (
 					}(); err != nil {
 						return err
 					}
-					paramsDotProductIDVal = ProductID(paramsDotProductIDValVal)
+					paramsDotProductIDVal = ProductId(paramsDotProductIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -11966,8 +12083,8 @@ func decodeListRefundsParams(args [0]string, argsEscaped bool, r *http.Request) 
 	return params, nil
 }
 
-// ListRenewalPricesParams is parameters of list-renewal-prices operation.
-type ListRenewalPricesParams struct {
+// ListRenewalOptionsParams is parameters of list-renewal-options operation.
+type ListRenewalOptionsParams struct {
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -11975,7 +12092,7 @@ type ListRenewalPricesParams struct {
 	SubscriptionId uuid.UUID
 }
 
-func unpackListRenewalPricesParams(packed middleware.Parameters) (params ListRenewalPricesParams) {
+func unpackListRenewalOptionsParams(packed middleware.Parameters) (params ListRenewalOptionsParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "page",
@@ -12004,7 +12121,7 @@ func unpackListRenewalPricesParams(packed middleware.Parameters) (params ListRen
 	return params
 }
 
-func decodeListRenewalPricesParams(args [1]string, argsEscaped bool, r *http.Request) (params ListRenewalPricesParams, _ error) {
+func decodeListRenewalOptionsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListRenewalOptionsParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
 	// Set default value for query: page.
 	{
@@ -12207,7 +12324,7 @@ type ListSpendParams struct {
 	// dimensions, such as the model and token kind, and includes the quantity used.
 	GroupBy OptListSpendGroupBy `json:",omitempty,omitzero"`
 	// Filter by the fixed platform service ID.
-	ProductID OptProductID `json:",omitempty,omitzero"`
+	ProductID OptProductId `json:",omitempty,omitzero"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -12251,7 +12368,7 @@ func unpackListSpendParams(packed middleware.Parameters) (params ListSpendParams
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.ProductID = v.(OptProductID)
+			params.ProductID = v.(OptProductId)
 		}
 	}
 	{
@@ -12436,7 +12553,7 @@ func decodeListSpendParams(args [0]string, argsEscaped bool, r *http.Request) (p
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotProductIDVal ProductID
+				var paramsDotProductIDVal ProductId
 				if err := func() error {
 					var paramsDotProductIDValVal string
 					if err := func() error {
@@ -12455,7 +12572,7 @@ func decodeListSpendParams(args [0]string, argsEscaped bool, r *http.Request) (p
 					}(); err != nil {
 						return err
 					}
-					paramsDotProductIDVal = ProductID(paramsDotProductIDValVal)
+					paramsDotProductIDVal = ProductId(paramsDotProductIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -13157,6 +13274,8 @@ func decodeListStatementsParams(args [0]string, argsEscaped bool, r *http.Reques
 // ListSubscriptionsParams is parameters of list-subscriptions operation.
 type ListSubscriptionsParams struct {
 	ExpiringBefore OptDateTime `json:",omitempty,omitzero"`
+	// Only these subscriptions, such as those of the resources shown on one page. Comma-separated.
+	SubscriptionIds []uuid.UUID `json:",omitempty"`
 	// 1-based page number. Defaults to 1.
 	Page OptInt64 `json:",omitempty,omitzero"`
 	// Items per page. Defaults to 50; at most 200.
@@ -13181,6 +13300,15 @@ func unpackListSubscriptionsParams(packed middleware.Parameters) (params ListSub
 		}
 		if v, ok := packed[key]; ok {
 			params.ExpiringBefore = v.(OptDateTime)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "subscription_ids",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.SubscriptionIds = v.([]uuid.UUID)
 		}
 	}
 	{
@@ -13270,6 +13398,69 @@ func decodeListSubscriptionsParams(args [0]string, argsEscaped bool, r *http.Req
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "expiring_before",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: subscription_ids.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "subscription_ids",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				params.SubscriptionIds = nil
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotSubscriptionIdsVal uuid.UUID
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToUUID(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotSubscriptionIdsVal = c
+						return nil
+					}(); err != nil {
+						return err
+					}
+					params.SubscriptionIds = append(params.SubscriptionIds, paramsDotSubscriptionIdsVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if params.SubscriptionIds == nil {
+					return nil // optional
+				}
+				if err := (validate.Array{
+					MinLength:    1,
+					MinLengthSet: true,
+					MaxLength:    200,
+					MaxLengthSet: true,
+				}).ValidateLength(len(params.SubscriptionIds)); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				if err := validate.UniqueItems(params.SubscriptionIds); err != nil {
+					return errors.Wrap(err, "array")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "subscription_ids",
 			In:   "query",
 			Err:  err,
 		}
@@ -13562,7 +13753,7 @@ func decodeListSubscriptionsParams(args [0]string, argsEscaped bool, r *http.Req
 				if err := (validate.Array{
 					MinLength:    1,
 					MinLengthSet: true,
-					MaxLength:    6,
+					MaxLength:    7,
 					MaxLengthSet: true,
 				}).ValidateLength(len(params.Status)); err != nil {
 					return errors.Wrap(err, "array")
@@ -14448,7 +14639,7 @@ type ListUsageChargesParams struct {
 	PageSize OptInt64 `json:",omitempty,omitzero"`
 	// Only this account; all of yours when omitted.
 	BillingAccountID OptInt64     `json:",omitempty,omitzero"`
-	ProductID        OptProductID `json:",omitempty,omitzero"`
+	ProductID        OptProductId `json:",omitempty,omitzero"`
 	ResourceID       OptString    `json:",omitempty,omitzero"`
 	// Only the charges summed into this usage invoice line.
 	InvoiceItemID OptUUID     `json:",omitempty,omitzero"`
@@ -14498,7 +14689,7 @@ func unpackListUsageChargesParams(packed middleware.Parameters) (params ListUsag
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.ProductID = v.(OptProductID)
+			params.ProductID = v.(OptProductId)
 		}
 	}
 	{
@@ -14762,7 +14953,7 @@ func decodeListUsageChargesParams(args [0]string, argsEscaped bool, r *http.Requ
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotProductIDVal ProductID
+				var paramsDotProductIDVal ProductId
 				if err := func() error {
 					var paramsDotProductIDValVal string
 					if err := func() error {
@@ -14781,7 +14972,7 @@ func decodeListUsageChargesParams(args [0]string, argsEscaped bool, r *http.Requ
 					}(); err != nil {
 						return err
 					}
-					paramsDotProductIDVal = ProductID(paramsDotProductIDValVal)
+					paramsDotProductIDVal = ProductId(paramsDotProductIDValVal)
 					return nil
 				}(); err != nil {
 					return err
@@ -16192,71 +16383,6 @@ func decodeResumeBillingAccountParams(args [1]string, argsEscaped bool, r *http.
 	return params, nil
 }
 
-// SetAutoRenewParams is parameters of set-auto-renew operation.
-type SetAutoRenewParams struct {
-	SubscriptionId uuid.UUID
-}
-
-func unpackSetAutoRenewParams(packed middleware.Parameters) (params SetAutoRenewParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "subscriptionId",
-			In:   "path",
-		}
-		params.SubscriptionId = packed[key].(uuid.UUID)
-	}
-	return params
-}
-
-func decodeSetAutoRenewParams(args [1]string, argsEscaped bool, r *http.Request) (params SetAutoRenewParams, _ error) {
-	// Decode path: subscriptionId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "subscriptionId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToUUID(val)
-				if err != nil {
-					return err
-				}
-
-				params.SubscriptionId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "subscriptionId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // SetDefaultPaymentMethodParams is parameters of set-default-payment-method operation.
 type SetDefaultPaymentMethodParams struct {
 	PaymentMethodId uuid.UUID
@@ -16700,24 +16826,24 @@ func decodeUpdateContactParams(args [2]string, argsEscaped bool, r *http.Request
 	return params, nil
 }
 
-// WithdrawCancellationParams is parameters of withdraw-cancellation operation.
-type WithdrawCancellationParams struct {
-	CancellationId uuid.UUID
+// UpdateSubscriptionParams is parameters of update-subscription operation.
+type UpdateSubscriptionParams struct {
+	SubscriptionId uuid.UUID
 }
 
-func unpackWithdrawCancellationParams(packed middleware.Parameters) (params WithdrawCancellationParams) {
+func unpackUpdateSubscriptionParams(packed middleware.Parameters) (params UpdateSubscriptionParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "cancellationId",
+			Name: "subscriptionId",
 			In:   "path",
 		}
-		params.CancellationId = packed[key].(uuid.UUID)
+		params.SubscriptionId = packed[key].(uuid.UUID)
 	}
 	return params
 }
 
-func decodeWithdrawCancellationParams(args [1]string, argsEscaped bool, r *http.Request) (params WithdrawCancellationParams, _ error) {
-	// Decode path: cancellationId.
+func decodeUpdateSubscriptionParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateSubscriptionParams, _ error) {
+	// Decode path: subscriptionId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -16729,7 +16855,7 @@ func decodeWithdrawCancellationParams(args [1]string, argsEscaped bool, r *http.
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "cancellationId",
+				Param:   "subscriptionId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -16746,7 +16872,7 @@ func decodeWithdrawCancellationParams(args [1]string, argsEscaped bool, r *http.
 					return err
 				}
 
-				params.CancellationId = c
+				params.SubscriptionId = c
 				return nil
 			}(); err != nil {
 				return err
@@ -16757,7 +16883,7 @@ func decodeWithdrawCancellationParams(args [1]string, argsEscaped bool, r *http.
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "cancellationId",
+			Name: "subscriptionId",
 			In:   "path",
 			Err:  err,
 		}
