@@ -22,10 +22,11 @@ func TestTenantCancellationDiagnosticWire(t *testing.T) {
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			fields := map[string]any{
-				"id":              "bb3b9c54-99ea-4aef-b375-ec61df426d5c",
-				"subscription_id": "74825f39-3b5a-47be-ae44-0b8f55a39f0b",
-				"plan_id":         "2289b2ca-cfa8-4ae9-9b11-c76b93a78593",
-				"plan_name":       "Plan", "type": "recurring", "usage_type": "licensed", "status": "releasing",
+				"id":                   "bb3b9c54-99ea-4aef-b375-ec61df426d5c",
+				"subscription_id":      "74825f39-3b5a-47be-ae44-0b8f55a39f0b",
+				"subscription_item_id": "5c1d43b0-7d0e-4c1a-9b8e-2a9f6f1e0d11",
+				"plan_id":              "2289b2ca-cfa8-4ae9-9b11-c76b93a78593",
+				"plan_name":            "Plan", "type": "recurring", "usage_type": "licensed", "status": "releasing",
 				"failure_reason": "Private operator diagnostic",
 			}
 			if row.set {

@@ -130,8 +130,9 @@ func TestNativeCreateVolumePreservesPeriod(t *testing.T) {
 				t.Fatalf("period inline=%v valid=%v", err, row.valid)
 			}
 			if row.valid {
-				period, set := value.Billing.Period.Get()
-				if !set || fmt.Sprint(period.Count) != row.count {
+				billing, given := value.Billing.Get()
+				period, set := billing.Period.Get()
+				if !given || !set || fmt.Sprint(period.Count) != row.count {
 					t.Fatal("period count/presence changed")
 				}
 			}
@@ -143,7 +144,7 @@ func TestNativeCreateVolumePreservesPeriod(t *testing.T) {
 func TestNativeRequestSerdePreservesWireFields(t *testing.T) {
 	for _, raw := range []string{
 		`{"volume_type_id":"voltype_00000000000000000000000001","name":"volume","size_gib":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":1}}}`,
-		`{"volume_type_id":"voltype_00000000000000000000000001","name":"volume","size_gib":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":1},"termination_policy":"period_end"},"checkout":{"mode":"deferred"}}`,
+		`{"volume_type_id":"voltype_00000000000000000000000001","name":"volume","size_gib":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":1},"termination_policy":"period_end"},"checkout":{"mode":"deferred","auto_renew":false}}`,
 	} {
 		var value CreateVolumeRequestBody
 		if err := value.Decode(jx.DecodeBytes([]byte(raw))); err != nil {
