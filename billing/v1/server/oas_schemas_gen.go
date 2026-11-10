@@ -3638,6 +3638,10 @@ type CheckoutSessionItem struct {
 	Amount NilMoney `json:"amount"`
 	// Total reduction on this item, including any continuing renewal discount.
 	DiscountAmount NilMoney `json:"discount_amount"`
+	// The coupon behind `discount_amount`, so the discount can be named: the one this checkout applies, or
+	// on a renewal the one continuing from the purchase that first used it. Null when the item has no
+	// coupon discount.
+	Coupon NilObjectIdentity `json:"coupon"`
 	// Tax on the discounted amount, including any tax already contained in that amount.
 	TaxAmount NilMoney `json:"tax_amount"`
 	// The part of tax_amount already contained in amount minus discount_amount.
@@ -3743,6 +3747,11 @@ func (s *CheckoutSessionItem) GetAmount() NilMoney {
 // GetDiscountAmount returns the value of DiscountAmount.
 func (s *CheckoutSessionItem) GetDiscountAmount() NilMoney {
 	return s.DiscountAmount
+}
+
+// GetCoupon returns the value of Coupon.
+func (s *CheckoutSessionItem) GetCoupon() NilObjectIdentity {
+	return s.Coupon
 }
 
 // GetTaxAmount returns the value of TaxAmount.
@@ -3863,6 +3872,11 @@ func (s *CheckoutSessionItem) SetAmount(val NilMoney) {
 // SetDiscountAmount sets the value of DiscountAmount.
 func (s *CheckoutSessionItem) SetDiscountAmount(val NilMoney) {
 	s.DiscountAmount = val
+}
+
+// SetCoupon sets the value of Coupon.
+func (s *CheckoutSessionItem) SetCoupon(val NilObjectIdentity) {
+	s.Coupon = val
 }
 
 // SetTaxAmount sets the value of TaxAmount.
@@ -7777,7 +7791,8 @@ type InvoiceItem struct {
 	DiscountAmount OptString `json:"discount_amount"`
 	// The account discount applied to this line.
 	DiscountID OptNilUUID `json:"discount_id"`
-	// The coupon applied to this line.
+	// The coupon whose discount this line gets, including one continuing on a renewal from the purchase
+	// that first used it.
 	CouponID OptNilUUID `json:"coupon_id"`
 	// Tax on the discounted line, including tax already included in the price.
 	TaxAmount OptString `json:"tax_amount"`
@@ -9273,6 +9288,51 @@ func (o NilNamedIdentity) Get() (v NamedIdentity, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilNamedIdentity) Or(d NamedIdentity) NamedIdentity {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilObjectIdentity returns new NilObjectIdentity with value set to v.
+func NewNilObjectIdentity(v ObjectIdentity) NilObjectIdentity {
+	return NilObjectIdentity{
+		Value: v,
+	}
+}
+
+// NilObjectIdentity is nullable ObjectIdentity.
+type NilObjectIdentity struct {
+	Value ObjectIdentity
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilObjectIdentity) SetTo(v ObjectIdentity) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilObjectIdentity) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilObjectIdentity) SetToNull() {
+	o.Null = true
+	var v ObjectIdentity
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilObjectIdentity) Get() (v ObjectIdentity, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilObjectIdentity) Or(d ObjectIdentity) ObjectIdentity {
 	if v, ok := o.Get(); ok {
 		return v
 	}

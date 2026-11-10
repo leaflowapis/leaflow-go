@@ -6760,6 +6760,10 @@ func (s *CheckoutSessionItem) encodeFields(e *jx.Encoder) {
 		s.DiscountAmount.Encode(e)
 	}
 	{
+		e.FieldStart("coupon")
+		s.Coupon.Encode(e)
+	}
+	{
 		e.FieldStart("tax_amount")
 		s.TaxAmount.Encode(e)
 	}
@@ -6785,7 +6789,7 @@ func (s *CheckoutSessionItem) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCheckoutSessionItem = [24]string{
+var jsonFieldsNameOfCheckoutSessionItem = [25]string{
 	0:  "position",
 	1:  "subscription_item_id",
 	2:  "product_id",
@@ -6804,12 +6808,13 @@ var jsonFieldsNameOfCheckoutSessionItem = [24]string{
 	15: "recurring_amount",
 	16: "amount",
 	17: "discount_amount",
-	18: "tax_amount",
-	19: "tax_included_amount",
-	20: "total",
-	21: "remaining_amount",
-	22: "unused_amount",
-	23: "downgrade_refund",
+	18: "coupon",
+	19: "tax_amount",
+	20: "tax_included_amount",
+	21: "total",
+	22: "remaining_amount",
+	23: "unused_amount",
+	24: "downgrade_refund",
 }
 
 // Decode decodes CheckoutSessionItem from json.
@@ -6817,7 +6822,7 @@ func (s *CheckoutSessionItem) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode CheckoutSessionItem to nil")
 	}
-	var requiredBitSet [3]uint8
+	var requiredBitSet [4]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -7009,8 +7014,18 @@ func (s *CheckoutSessionItem) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"discount_amount\"")
 			}
-		case "tax_amount":
+		case "coupon":
 			requiredBitSet[2] |= 1 << 2
+			if err := func() error {
+				if err := s.Coupon.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"coupon\"")
+			}
+		case "tax_amount":
+			requiredBitSet[2] |= 1 << 3
 			if err := func() error {
 				if err := s.TaxAmount.Decode(d); err != nil {
 					return err
@@ -7020,7 +7035,7 @@ func (s *CheckoutSessionItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tax_amount\"")
 			}
 		case "tax_included_amount":
-			requiredBitSet[2] |= 1 << 3
+			requiredBitSet[2] |= 1 << 4
 			if err := func() error {
 				if err := s.TaxIncludedAmount.Decode(d); err != nil {
 					return err
@@ -7030,7 +7045,7 @@ func (s *CheckoutSessionItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tax_included_amount\"")
 			}
 		case "total":
-			requiredBitSet[2] |= 1 << 4
+			requiredBitSet[2] |= 1 << 5
 			if err := func() error {
 				if err := s.Total.Decode(d); err != nil {
 					return err
@@ -7040,7 +7055,7 @@ func (s *CheckoutSessionItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"total\"")
 			}
 		case "remaining_amount":
-			requiredBitSet[2] |= 1 << 5
+			requiredBitSet[2] |= 1 << 6
 			if err := func() error {
 				if err := s.RemainingAmount.Decode(d); err != nil {
 					return err
@@ -7050,7 +7065,7 @@ func (s *CheckoutSessionItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"remaining_amount\"")
 			}
 		case "unused_amount":
-			requiredBitSet[2] |= 1 << 6
+			requiredBitSet[2] |= 1 << 7
 			if err := func() error {
 				if err := s.UnusedAmount.Decode(d); err != nil {
 					return err
@@ -7060,7 +7075,7 @@ func (s *CheckoutSessionItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"unused_amount\"")
 			}
 		case "downgrade_refund":
-			requiredBitSet[2] |= 1 << 7
+			requiredBitSet[3] |= 1 << 0
 			if err := func() error {
 				if err := s.DowngradeRefund.Decode(d); err != nil {
 					return err
@@ -7078,10 +7093,11 @@ func (s *CheckoutSessionItem) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [3]uint8{
+	for i, mask := range [4]uint8{
 		0b11111111,
 		0b11111111,
 		0b11111111,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -16985,6 +17001,50 @@ func (s NilNamedIdentity) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NilNamedIdentity) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes ObjectIdentity as json.
+func (o NilObjectIdentity) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes ObjectIdentity from json.
+func (o *NilObjectIdentity) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilObjectIdentity to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v ObjectIdentity
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilObjectIdentity) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilObjectIdentity) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
