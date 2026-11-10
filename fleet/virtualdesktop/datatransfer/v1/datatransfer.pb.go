@@ -2223,9 +2223,9 @@ func (x *ClipboardSource) GetSequence() uint64 {
 	return 0
 }
 
-// Part of the data read, from the side that has it (MS-RDPECLIP Format Data
-// Response PDU). The data comes as the total size, the bytes in order, then
-// the end; a files read is answered by a file offer alone.
+// 一次数据读取的响应（MS-RDPECLIP Format Data Response PDU）：
+// 普通表示依次发送总长度、数据块和结束；文件读取返回文件 offer。
+// 两者均可先发送一次 preparing，不得为准备预读目标未选择的其它表示。
 type DataResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The part.
@@ -2237,6 +2237,7 @@ type DataResponse struct {
 	//	*DataResponse_End
 	//	*DataResponse_FileOffer
 	//	*DataResponse_Error
+	//	*DataResponse_Preparing
 	Part          isDataResponse_Part `protobuf_oneof:"part"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2324,13 +2325,22 @@ func (x *DataResponse) GetError() *status.Status {
 	return nil
 }
 
+func (x *DataResponse) GetPreparing() bool {
+	if x != nil {
+		if x, ok := x.Part.(*DataResponse_Preparing); ok {
+			return x.Preparing
+		}
+	}
+	return false
+}
+
 type isDataResponse_Part interface {
 	isDataResponse_Part()
 }
 
 type DataResponse_TotalSizeBytes struct {
-	// The size of the whole data. The first message; the session spools the
-	// whole data before sending it, so the size is known.
+	// 整份正文的实际长度；若有 preparing，则跟在它之后。
+	// 会话在发送正文前完成暂存，因此此时大小已经确定。
 	TotalSizeBytes uint64 `protobuf:"varint,1,opt,name=total_size_bytes,json=totalSizeBytes,proto3,oneof"`
 }
 
@@ -2345,8 +2355,8 @@ type DataResponse_End struct {
 }
 
 type DataResponse_FileOffer struct {
-	// The answer to a files read: the files, fetched as for any offer. The
-	// only message.
+	// 文件读取的最终响应；若有 preparing，则跟在它之后。
+	// 接收方按普通文件 offer 的权限、确认和流式正文协议取文件。
 	FileOffer *v1.FileTransferOffer `protobuf:"bytes,4,opt,name=file_offer,json=fileOffer,proto3,oneof"`
 }
 
@@ -2360,6 +2370,15 @@ type DataResponse_Error struct {
 	Error *status.Status `protobuf:"bytes,5,opt,name=error,proto3,oneof"`
 }
 
+type DataResponse_Preparing struct {
+	// 原生来源正在兑现本次选中的表示，例如真正 drop 后才生成的文件 promise。
+	// 必须为 true，且只能作为首条响应发送一次；不能伪造大小、空清单或完成。
+	// 准备期不设与数据量相关的总时限：等待真实结果、取消或通道断开，
+	// 不发送定时心跳重置时限。得到长度/文件 offer 后恢复正常的块间时限。
+	// 读取方丢弃本次读取即取消准备，不撤销仍有效的复制声明或其它读取。
+	Preparing bool `protobuf:"varint,6,opt,name=preparing,proto3,oneof"`
+}
+
 func (*DataResponse_TotalSizeBytes) isDataResponse_Part() {}
 
 func (*DataResponse_Data) isDataResponse_Part() {}
@@ -2369,6 +2388,8 @@ func (*DataResponse_End) isDataResponse_Part() {}
 func (*DataResponse_FileOffer) isDataResponse_Part() {}
 
 func (*DataResponse_Error) isDataResponse_Part() {}
+
+func (*DataResponse_Preparing) isDataResponse_Part() {}
 
 // The end of the data read.
 type DataEnd struct {
@@ -3203,14 +3224,15 @@ const file_leaflow_fleet_virtualdesktop_datatransfer_v1_datatransfer_proto_rawDe
 	"\x06format\"\x84\x01\n" +
 	"\x0fClipboardSource\x12U\n" +
 	"\tselection\x18\x01 \x01(\x0e27.leaflow.fleet.virtualdesktop.datatransfer.v1.SelectionR\tselection\x12\x1a\n" +
-	"\bsequence\x18\x02 \x01(\x04R\bsequence\"\xa2\x02\n" +
+	"\bsequence\x18\x02 \x01(\x04R\bsequence\"\xc2\x02\n" +
 	"\fDataResponse\x12*\n" +
 	"\x10total_size_bytes\x18\x01 \x01(\x04H\x00R\x0etotalSizeBytes\x12\x14\n" +
 	"\x04data\x18\x02 \x01(\fH\x00R\x04data\x12I\n" +
 	"\x03end\x18\x03 \x01(\v25.leaflow.fleet.virtualdesktop.datatransfer.v1.DataEndH\x00R\x03end\x12Q\n" +
 	"\n" +
 	"file_offer\x18\x04 \x01(\v20.leaflow.fleet.filetransfer.v1.FileTransferOfferH\x00R\tfileOffer\x12*\n" +
-	"\x05error\x18\x05 \x01(\v2\x12.google.rpc.StatusH\x00R\x05errorB\x06\n" +
+	"\x05error\x18\x05 \x01(\v2\x12.google.rpc.StatusH\x00R\x05error\x12\x1e\n" +
+	"\tpreparing\x18\x06 \x01(\bH\x00R\tpreparingB\x06\n" +
 	"\x04part\"!\n" +
 	"\aDataEnd\x12\x16\n" +
 	"\x06sha256\x18\x01 \x01(\fR\x06sha256\"\x8a\x01\n" +
@@ -3449,6 +3471,7 @@ func file_leaflow_fleet_virtualdesktop_datatransfer_v1_datatransfer_proto_init()
 		(*DataResponse_End)(nil),
 		(*DataResponse_FileOffer)(nil),
 		(*DataResponse_Error)(nil),
+		(*DataResponse_Preparing)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

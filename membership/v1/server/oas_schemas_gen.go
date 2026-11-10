@@ -269,8 +269,16 @@ type CheckoutOptions struct {
 	// target; each client validates its own.
 	ReturnURL OptURI `json:"return_url"`
 	// Turns on automatic renewal of every subscription with licensed items that the purchase opens. Off
-	// when omitted. It must be the customer's own choice.
+	// when omitted. It must be the customer's own choice. For a free trial, it converts the trial to paid
+	// when the trial ends.
 	AutoRenew OptBool `json:"auto_renew"`
+	// A free trial grant of the paying billing account that the customer chose to use. The first new
+	// subscription of the purchase whose lines the grant's offer all covers, and that has a licensed line
+	// and no trial of its own, opens with the offer's free trial. Accepted only in automatic mode; with
+	// deferred it is refused with HTTP 400, and the grant is chosen when completing the checkout through
+	// Billing. Refused with BILLING_TRIAL_GRANT_INAPPLICABLE when no subscription qualifies or the grant
+	// cannot be used now.
+	TrialGrantID OptUUID `json:"trial_grant_id"`
 }
 
 // GetMode returns the value of Mode.
@@ -293,6 +301,11 @@ func (s *CheckoutOptions) GetAutoRenew() OptBool {
 	return s.AutoRenew
 }
 
+// GetTrialGrantID returns the value of TrialGrantID.
+func (s *CheckoutOptions) GetTrialGrantID() OptUUID {
+	return s.TrialGrantID
+}
+
 // SetMode sets the value of Mode.
 func (s *CheckoutOptions) SetMode(val OptCheckoutOptionsMode) {
 	s.Mode = val
@@ -311,6 +324,11 @@ func (s *CheckoutOptions) SetReturnURL(val OptURI) {
 // SetAutoRenew sets the value of AutoRenew.
 func (s *CheckoutOptions) SetAutoRenew(val OptBool) {
 	s.AutoRenew = val
+}
+
+// SetTrialGrantID sets the value of TrialGrantID.
+func (s *CheckoutOptions) SetTrialGrantID(val OptUUID) {
+	s.TrialGrantID = val
 }
 
 // Merged schema.
@@ -2377,6 +2395,52 @@ func (o OptURI) Get() (v url.URL, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptURI) Or(d url.URL) url.URL {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptUUID returns new OptUUID with value set to v.
+func NewOptUUID(v uuid.UUID) OptUUID {
+	return OptUUID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptUUID is optional uuid.UUID.
+type OptUUID struct {
+	Value uuid.UUID
+	Set   bool
+}
+
+// IsSet returns true if OptUUID was set.
+func (o OptUUID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptUUID) Reset() {
+	var v uuid.UUID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptUUID) SetTo(v uuid.UUID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptUUID) Get() (v uuid.UUID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 	if v, ok := o.Get(); ok {
 		return v
 	}

@@ -58,12 +58,14 @@ type Handler interface {
 	CancelTopUp(ctx context.Context, params CancelTopUpParams) (CancelTopUpRes, error)
 	// ConfirmCheckoutSession implements confirm-checkout-session operation.
 	//
-	// Completes an open session: applies `promotion_code`, or otherwise the best applicable account
-	// discount, checks the total against `expected_amount` and creates the order with its invoice issued.
-	// A zero-total invoice is paid at once; otherwise pay the invoice next. A failed payment leaves the
-	// order and its terms as they are, and the invoice can be paid again until the order expires. Nothing
-	// is created when the code is invalid or inapplicable or the total differs, which fails with
-	// `BILLING_AMOUNT_CHANGED`.
+	// Completes an open session under the choices saved on it: its promotion code, or otherwise the best
+	// applicable account discount, and its free trial grant. Checks the total against `expected_amount`
+	// and creates the order with its invoice issued. A zero-total invoice is paid at once; otherwise pay
+	// the invoice next. A failed payment leaves the order and its terms as they are, and the invoice can
+	// be paid again until the order expires. Nothing is created when the total differs, which fails with
+	// `BILLING_AMOUNT_CHANGED`, or when a saved code or grant can no longer be applied, which fails with
+	// its error until the session is updated. A trial grant used by an order that is later canceled or
+	// fails can be used again.
 	//
 	// Confirming a complete session again with the same terms returns it with its order; different terms
 	// are refused with `BILLING_CHECKOUT_SESSION_COMPLETE`. An expired session is refused with
@@ -97,8 +99,9 @@ type Handler interface {
 	//
 	// `mode` must be allowed for every item. Metered and one-time items end only `immediate`. A licensed
 	// item ends `period_end` while its subscription's paid term lasts, and `immediate` unless its terms
-	// allow only the end of the paid term and that term has not ended. For `period_end` the paid terms of
-	// all items must end at the same time.
+	// allow only the end of the paid term and that term has not ended. During a free trial a licensed item
+	// ends either way whatever its terms, `period_end` meaning the end of the trial, and nothing is
+	// refunded. For `period_end` the paid terms of all items must end at the same time.
 	//
 	// Refused with:
 	//
@@ -129,10 +132,11 @@ type Handler interface {
 	// Opens a Checkout Session renewing one or more subscriptions in one order, such as a machine and the
 	// separately bought volumes and elastic IPs attached to it, with periods and price chosen as in
 	// renewing. Every subscription must be paid by the same billing account and belong to the same project
-	// and service. Nothing is charged until you complete it, when a promotion code can be applied; each
-	// subscription then renews from its current_term_end at that time. To renew one subscription at once
-	// from credit grants, balance or a payment method, renew the subscription instead. Purchases and
-	// changes of a service's resources are created through that service.
+	// and service. Nothing is charged until you complete it; save a promotion code on it first with
+	// `update-checkout-session`. Each subscription then renews from its current_term_end at that time. To
+	// renew one subscription at once from credit grants, balance or a payment method, renew the
+	// subscription instead. Purchases and changes of a service's resources are created through that
+	// service.
 	//
 	// Open to the owner of the subscriptions' current billing account and to members of their project with
 	// the project permission `billing:finance.manage`. Keep `checkout_session_id` and read the session
@@ -258,27 +262,15 @@ type Handler interface {
 	GetCancellation(ctx context.Context, params GetCancellationParams) (*Cancellation, error)
 	// GetCheckoutSession implements get-checkout-session operation.
 	//
-	// A Checkout Session of your billing account or of a project you are a member of. Poll it to follow
-	// checkout; once it is complete, read its order for payment and delivery. An unknown session returns
-	// 404; any other session returns 403.
+	// A Checkout Session of your billing account or of a project you are a member of, with what completing
+	// it now would invoice under the choices saved on it. A saved promotion code or trial grant that can
+	// no longer be applied is left out of the amounts; `discount` and the subscriptions' `trial_grant_id`
+	// show what applies, and confirming fails until the session is updated. Poll it to follow checkout;
+	// once it is complete, read its order for payment and delivery. An unknown session returns 404; any
+	// other session returns 403.
 	//
 	// GET /api/v1/checkout-sessions/{checkoutSessionId}
 	GetCheckoutSession(ctx context.Context, params GetCheckoutSessionParams) (*CheckoutSession, error)
-	// GetCheckoutSessionQuote implements get-checkout-session-quote operation.
-	//
-	// What completing this open session now would invoice, with `promotion_code` or otherwise the best
-	// applicable account discount, and the account funds available for it. Nothing is applied, reserved or
-	// redeemed. An invalid or inapplicable code fails the request without changing the session.
-	//
-	// Complete the session with the returned `total` as `expected_amount`, the same `promotion_code` and,
-	// for an immediate change, the returned `proration_date`. An expired session is refused with
-	// `BILLING_CHECKOUT_SESSION_EXPIRED`, and a complete one with `BILLING_CHECKOUT_SESSION_COMPLETE`;
-	// read its order instead.
-	//
-	// Open to the owner of the session's billing account and to members of its project.
-	//
-	// GET /api/v1/checkout-sessions/{checkoutSessionId}/quote
-	GetCheckoutSessionQuote(ctx context.Context, params GetCheckoutSessionQuoteParams) (*Quote, error)
 	// GetContact implements get-contact operation.
 	//
 	// A contact of this billing account. Returns 404 if it does not exist in the account.
@@ -333,29 +325,6 @@ type Handler interface {
 	//
 	// GET /api/v1/assignments/{projectId}
 	GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (*ProjectAssignment, error)
-	// GetQuote implements get-quote operation.
-	//
-	// Calculates what a proposed purchase, a change of your subscriptions or their renewal would invoice
-	// now, and what each purchased or changed line renews at. Nothing is saved, reserved or redeemed.
-	//
-	// With `billing_account_id`, the quote is for that billing account: its currency, account discounts,
-	// tax and funds apply, changes and renewals use the account currently paying for each subscription,
-	// and an access token is required. The account must be yours or currently pay for a project you are a
-	// member of. Without it, proposed items are priced in `currency` for anyone, signed in or not: no
-	// account discount or funds apply, and tax that would be added is included only for the customer's
-	// `address`.
-	//
-	// A change is priced as the service that owns the subscription would order it: pass the returned
-	// `total` as the expected amount and, for an immediate change, `proration_date` to that service when
-	// making the change.
-	//
-	// A promotion code is evaluated without being applied. It is applied only when a Checkout Session is
-	// completed with it; conditions that depend on the account, such as a first purchase, are checked only
-	// with an account and otherwise reported as `unverified`. Future usage of metered prices is estimated
-	// with `estimate-usage`.
-	//
-	// QUERY /api/v1/quotes
-	GetQuote(ctx context.Context, req *QuoteRequest) (*Quote, error)
 	// GetStatement implements get-statement operation.
 	//
 	// A statement of your billing account with its period, estimated or closed amounts and invoice.
@@ -388,6 +357,12 @@ type Handler interface {
 	//
 	// GET /api/v1/top-ups/{topUpId}
 	GetTopUp(ctx context.Context, params GetTopUpParams) (*TopUp, error)
+	// GetTrialGrant implements get-trial-grant operation.
+	//
+	// A free trial held by one of your billing accounts. Returns 404 if it does not exist or is not yours.
+	//
+	// GET /api/v1/trial-grants/{trialGrantId}
+	GetTrialGrant(ctx context.Context, params GetTrialGrantParams) (*TrialGrant, error)
 	// GetWithdrawal implements get-withdrawal operation.
 	//
 	// A withdrawal with its accepted amounts and overall outcome; list its items for each refund result.
@@ -434,13 +409,6 @@ type Handler interface {
 	//
 	// GET /api/v1/cancellations
 	ListCancellations(ctx context.Context, params ListCancellationsParams) (*CancellationList, error)
-	// ListCheckoutSessionItems implements list-checkout-session-items operation.
-	//
-	// What the session buys, by position. Prices and amounts are in its quote. Readable by whoever can
-	// read the session.
-	//
-	// GET /api/v1/checkout-sessions/{checkoutSessionId}/items
-	ListCheckoutSessionItems(ctx context.Context, params ListCheckoutSessionItemsParams) (*CheckoutSessionItemList, error)
 	// ListCheckoutSessions implements list-checkout-sessions operation.
 	//
 	// Checkout Sessions of your billing accounts, newest first; members of a project list its sessions
@@ -475,8 +443,8 @@ type Handler interface {
 	ListCreditNotes(ctx context.Context, params ListCreditNotesParams) (*CreditNoteList, error)
 	// ListCurrencies implements list-currencies operation.
 	//
-	// Currencies a new billing account can be opened in, and prices and quotes without an account can be
-	// given in, for anyone, signed in or not. Retired currencies are not listed.
+	// Currencies a new billing account can be opened in, and prices and checkout previews without an
+	// account can be given in, for anyone, signed in or not. Retired currencies are not listed.
 	//
 	// GET /api/v1/currencies
 	ListCurrencies(ctx context.Context, params ListCurrenciesParams) (*CurrencyList, error)
@@ -636,6 +604,14 @@ type Handler interface {
 	//
 	// GET /api/v1/transactions
 	ListTransactions(ctx context.Context, params ListTransactionsParams) (*TransactionList, error)
+	// ListTrialGrants implements list-trial-grants operation.
+	//
+	// Free trials held by your billing accounts. Choose an available grant when checking out a purchase
+	// its offer covers, by saving its ID as `trial_grant_id` on the Checkout Session; a session and its
+	// preview list the grants that can be used for it.
+	//
+	// GET /api/v1/trial-grants
+	ListTrialGrants(ctx context.Context, params ListTrialGrantsParams) (*TrialGrantList, error)
 	// ListUsageCharges implements list-usage-charges operation.
 	//
 	// Priced usage charges in the requested scope; members with the project permission
@@ -711,6 +687,28 @@ type Handler interface {
 	//
 	// QUERY /api/v1/cancellations:preview
 	PreviewCancellation(ctx context.Context, req *CancellationPreviewRequest) (*CancellationPreview, error)
+	// PreviewCheckoutSession implements preview-checkout-session operation.
+	//
+	// What a Checkout Session for a purchase, a change of your subscriptions or their renewal would
+	// invoice if it were completed now, returned as a session that is not saved: it has no `id`, and
+	// nothing is ordered, reserved or redeemed. Use it to show prices before buying; the service that
+	// sells a resource creates the session for its purchase or change, and you create renewal sessions
+	// here.
+	//
+	// With `billing_account_id` the preview is for that billing account: its currency, account discounts,
+	// tax, funds and free trial grants apply, changes and renewals use the account currently paying for
+	// each subscription, and an access token is required. The account must be yours or currently pay for a
+	// project you are a member of. Without it, a purchase is priced in `currency` for anyone, signed in or
+	// not: no account discount, funds or trial grant apply, and tax that would be added is included only
+	// for `address`.
+	//
+	// A promotion code is evaluated without being applied; conditions that depend on the account, such as
+	// a first purchase, are checked only with an account and otherwise reported as `unverified`. An
+	// invalid or inapplicable code or trial grant fails the request. Future usage of metered prices is
+	// estimated with `estimate-usage`.
+	//
+	// QUERY /api/v1/checkout-sessions:preview
+	PreviewCheckoutSession(ctx context.Context, req *CheckoutSessionPreviewRequest) (*CheckoutSession, error)
 	// PreviewInvoicePayment implements preview-invoice-payment operation.
 	//
 	// What paying this invoice now would take from credit grants, from the balance and, for the rest, from
@@ -835,6 +833,25 @@ type Handler interface {
 	//
 	// PATCH /api/v1/billing-accounts/{accountId}
 	UpdateBillingAccount(ctx context.Context, req *BillingAccountUpdate, params UpdateBillingAccountParams) (*BillingAccount, error)
+	// UpdateCheckoutSession implements update-checkout-session operation.
+	//
+	// Saves your checkout choices on an open session: a promotion code, a free trial grant and automatic
+	// renewal. Choices left out keep their values, and null removes a code or a grant. The session is
+	// returned with its amounts calculated under the new choices; nothing is redeemed until it is
+	// completed.
+	//
+	// A code that does not exist or cannot be applied is refused with its promotion error, and a grant
+	// that cannot be used with `BILLING_TRIAL_GRANT_INAPPLICABLE`; the session is then unchanged. A grant
+	// applies to the first new subscription of the session whose lines its offer all covers, and that has
+	// a licensed line and no trial of its own. `auto_renew` turns automatic renewal on or off for every
+	// subscription with licensed items the session opens; for a free trial, it decides whether the trial
+	// converts to paid when it ends. A session that is not open is refused with
+	// `BILLING_CHECKOUT_SESSION_COMPLETE` or `BILLING_CHECKOUT_SESSION_EXPIRED`.
+	//
+	// Open to the owner of the session's billing account and to members of its project.
+	//
+	// PATCH /api/v1/checkout-sessions/{checkoutSessionId}
+	UpdateCheckoutSession(ctx context.Context, req *CheckoutSessionUpdate, params UpdateCheckoutSessionParams) (*CheckoutSession, error)
 	// UpdateContact implements update-contact operation.
 	//
 	// Updates a contact of this billing account. Returns 404 if it does not exist in the account.
