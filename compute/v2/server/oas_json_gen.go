@@ -1999,13 +1999,20 @@ func (s *CheckoutOptions) encodeFields(e *jx.Encoder) {
 			s.AutoRenew.Encode(e)
 		}
 	}
+	{
+		if s.TrialGrantID.Set {
+			e.FieldStart("trial_grant_id")
+			s.TrialGrantID.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfCheckoutOptions = [4]string{
+var jsonFieldsNameOfCheckoutOptions = [5]string{
 	0: "mode",
 	1: "expected_amount",
 	2: "return_url",
 	3: "auto_renew",
+	4: "trial_grant_id",
 }
 
 // Decode decodes CheckoutOptions from json.
@@ -2056,6 +2063,16 @@ func (s *CheckoutOptions) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"auto_renew\"")
+			}
+		case "trial_grant_id":
+			if err := func() error {
+				s.TrialGrantID.Reset()
+				if err := s.TrialGrantID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"trial_grant_id\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -19638,6 +19655,41 @@ func (s OptURI) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptURI) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes uuid.UUID as json.
+func (o OptUUID) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	json.EncodeUUID(e, o.Value)
+}
+
+// Decode decodes uuid.UUID from json.
+func (o *OptUUID) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptUUID to nil")
+	}
+	o.Set = true
+	v, err := json.DecodeUUID(d)
+	if err != nil {
+		return err
+	}
+	o.Value = v
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptUUID) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptUUID) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

@@ -79,12 +79,14 @@ type Invoker interface {
 	CancelTopUp(ctx context.Context, params CancelTopUpParams) (CancelTopUpRes, error)
 	// ConfirmCheckoutSession invokes confirm-checkout-session operation.
 	//
-	// Completes an open session: applies `promotion_code`, or otherwise the best applicable account
-	// discount, checks the total against `expected_amount` and creates the order with its invoice issued.
-	// A zero-total invoice is paid at once; otherwise pay the invoice next. A failed payment leaves the
-	// order and its terms as they are, and the invoice can be paid again until the order expires. Nothing
-	// is created when the code is invalid or inapplicable or the total differs, which fails with
-	// `BILLING_AMOUNT_CHANGED`.
+	// Completes an open session under the choices saved on it: its promotion code, or otherwise the best
+	// applicable account discount, and its free trial grant. Checks the total against `expected_amount`
+	// and creates the order with its invoice issued. A zero-total invoice is paid at once; otherwise pay
+	// the invoice next. A failed payment leaves the order and its terms as they are, and the invoice can
+	// be paid again until the order expires. Nothing is created when the total differs, which fails with
+	// `BILLING_AMOUNT_CHANGED`, or when a saved code or grant can no longer be applied, which fails with
+	// its error until the session is updated. A trial grant used by an order that is later canceled or
+	// fails can be used again.
 	//
 	// Confirming a complete session again with the same terms returns it with its order; different terms
 	// are refused with `BILLING_CHECKOUT_SESSION_COMPLETE`. An expired session is refused with
@@ -118,8 +120,9 @@ type Invoker interface {
 	//
 	// `mode` must be allowed for every item. Metered and one-time items end only `immediate`. A licensed
 	// item ends `period_end` while its subscription's paid term lasts, and `immediate` unless its terms
-	// allow only the end of the paid term and that term has not ended. For `period_end` the paid terms of
-	// all items must end at the same time.
+	// allow only the end of the paid term and that term has not ended. During a free trial a licensed item
+	// ends either way whatever its terms, `period_end` meaning the end of the trial, and nothing is
+	// refunded. For `period_end` the paid terms of all items must end at the same time.
 	//
 	// Refused with:
 	//
@@ -150,10 +153,11 @@ type Invoker interface {
 	// Opens a Checkout Session renewing one or more subscriptions in one order, such as a machine and the
 	// separately bought volumes and elastic IPs attached to it, with periods and price chosen as in
 	// renewing. Every subscription must be paid by the same billing account and belong to the same project
-	// and service. Nothing is charged until you complete it, when a promotion code can be applied; each
-	// subscription then renews from its current_term_end at that time. To renew one subscription at once
-	// from credit grants, balance or a payment method, renew the subscription instead. Purchases and
-	// changes of a service's resources are created through that service.
+	// and service. Nothing is charged until you complete it; save a promotion code on it first with
+	// `update-checkout-session`. Each subscription then renews from its current_term_end at that time. To
+	// renew one subscription at once from credit grants, balance or a payment method, renew the
+	// subscription instead. Purchases and changes of a service's resources are created through that
+	// service.
 	//
 	// Open to the owner of the subscriptions' current billing account and to members of their project with
 	// the project permission `billing:finance.manage`. Keep `checkout_session_id` and read the session
@@ -279,27 +283,15 @@ type Invoker interface {
 	GetCancellation(ctx context.Context, params GetCancellationParams) (*Cancellation, error)
 	// GetCheckoutSession invokes get-checkout-session operation.
 	//
-	// A Checkout Session of your billing account or of a project you are a member of. Poll it to follow
-	// checkout; once it is complete, read its order for payment and delivery. An unknown session returns
-	// 404; any other session returns 403.
+	// A Checkout Session of your billing account or of a project you are a member of, with what completing
+	// it now would invoice under the choices saved on it. A saved promotion code or trial grant that can
+	// no longer be applied is left out of the amounts; `discount` and the subscriptions' `trial_grant_id`
+	// show what applies, and confirming fails until the session is updated. Poll it to follow checkout;
+	// once it is complete, read its order for payment and delivery. An unknown session returns 404; any
+	// other session returns 403.
 	//
 	// GET /api/v1/checkout-sessions/{checkoutSessionId}
 	GetCheckoutSession(ctx context.Context, params GetCheckoutSessionParams) (*CheckoutSession, error)
-	// GetCheckoutSessionQuote invokes get-checkout-session-quote operation.
-	//
-	// What completing this open session now would invoice, with `promotion_code` or otherwise the best
-	// applicable account discount, and the account funds available for it. Nothing is applied, reserved or
-	// redeemed. An invalid or inapplicable code fails the request without changing the session.
-	//
-	// Complete the session with the returned `total` as `expected_amount`, the same `promotion_code` and,
-	// for an immediate change, the returned `proration_date`. An expired session is refused with
-	// `BILLING_CHECKOUT_SESSION_EXPIRED`, and a complete one with `BILLING_CHECKOUT_SESSION_COMPLETE`;
-	// read its order instead.
-	//
-	// Open to the owner of the session's billing account and to members of its project.
-	//
-	// GET /api/v1/checkout-sessions/{checkoutSessionId}/quote
-	GetCheckoutSessionQuote(ctx context.Context, params GetCheckoutSessionQuoteParams) (*Quote, error)
 	// GetContact invokes get-contact operation.
 	//
 	// A contact of this billing account. Returns 404 if it does not exist in the account.
@@ -354,29 +346,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/assignments/{projectId}
 	GetProjectAssignment(ctx context.Context, params GetProjectAssignmentParams) (*ProjectAssignment, error)
-	// GetQuote invokes get-quote operation.
-	//
-	// Calculates what a proposed purchase, a change of your subscriptions or their renewal would invoice
-	// now, and what each purchased or changed line renews at. Nothing is saved, reserved or redeemed.
-	//
-	// With `billing_account_id`, the quote is for that billing account: its currency, account discounts,
-	// tax and funds apply, changes and renewals use the account currently paying for each subscription,
-	// and an access token is required. The account must be yours or currently pay for a project you are a
-	// member of. Without it, proposed items are priced in `currency` for anyone, signed in or not: no
-	// account discount or funds apply, and tax that would be added is included only for the customer's
-	// `address`.
-	//
-	// A change is priced as the service that owns the subscription would order it: pass the returned
-	// `total` as the expected amount and, for an immediate change, `proration_date` to that service when
-	// making the change.
-	//
-	// A promotion code is evaluated without being applied. It is applied only when a Checkout Session is
-	// completed with it; conditions that depend on the account, such as a first purchase, are checked only
-	// with an account and otherwise reported as `unverified`. Future usage of metered prices is estimated
-	// with `estimate-usage`.
-	//
-	// QUERY /api/v1/quotes
-	GetQuote(ctx context.Context, request *QuoteRequest) (*Quote, error)
 	// GetStatement invokes get-statement operation.
 	//
 	// A statement of your billing account with its period, estimated or closed amounts and invoice.
@@ -409,6 +378,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/top-ups/{topUpId}
 	GetTopUp(ctx context.Context, params GetTopUpParams) (*TopUp, error)
+	// GetTrialGrant invokes get-trial-grant operation.
+	//
+	// A free trial held by one of your billing accounts. Returns 404 if it does not exist or is not yours.
+	//
+	// GET /api/v1/trial-grants/{trialGrantId}
+	GetTrialGrant(ctx context.Context, params GetTrialGrantParams) (*TrialGrant, error)
 	// GetWithdrawal invokes get-withdrawal operation.
 	//
 	// A withdrawal with its accepted amounts and overall outcome; list its items for each refund result.
@@ -455,13 +430,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/cancellations
 	ListCancellations(ctx context.Context, params ListCancellationsParams) (*CancellationList, error)
-	// ListCheckoutSessionItems invokes list-checkout-session-items operation.
-	//
-	// What the session buys, by position. Prices and amounts are in its quote. Readable by whoever can
-	// read the session.
-	//
-	// GET /api/v1/checkout-sessions/{checkoutSessionId}/items
-	ListCheckoutSessionItems(ctx context.Context, params ListCheckoutSessionItemsParams) (*CheckoutSessionItemList, error)
 	// ListCheckoutSessions invokes list-checkout-sessions operation.
 	//
 	// Checkout Sessions of your billing accounts, newest first; members of a project list its sessions
@@ -496,8 +464,8 @@ type Invoker interface {
 	ListCreditNotes(ctx context.Context, params ListCreditNotesParams) (*CreditNoteList, error)
 	// ListCurrencies invokes list-currencies operation.
 	//
-	// Currencies a new billing account can be opened in, and prices and quotes without an account can be
-	// given in, for anyone, signed in or not. Retired currencies are not listed.
+	// Currencies a new billing account can be opened in, and prices and checkout previews without an
+	// account can be given in, for anyone, signed in or not. Retired currencies are not listed.
 	//
 	// GET /api/v1/currencies
 	ListCurrencies(ctx context.Context, params ListCurrenciesParams) (*CurrencyList, error)
@@ -657,6 +625,14 @@ type Invoker interface {
 	//
 	// GET /api/v1/transactions
 	ListTransactions(ctx context.Context, params ListTransactionsParams) (*TransactionList, error)
+	// ListTrialGrants invokes list-trial-grants operation.
+	//
+	// Free trials held by your billing accounts. Choose an available grant when checking out a purchase
+	// its offer covers, by saving its ID as `trial_grant_id` on the Checkout Session; a session and its
+	// preview list the grants that can be used for it.
+	//
+	// GET /api/v1/trial-grants
+	ListTrialGrants(ctx context.Context, params ListTrialGrantsParams) (*TrialGrantList, error)
 	// ListUsageCharges invokes list-usage-charges operation.
 	//
 	// Priced usage charges in the requested scope; members with the project permission
@@ -732,6 +708,28 @@ type Invoker interface {
 	//
 	// QUERY /api/v1/cancellations:preview
 	PreviewCancellation(ctx context.Context, request *CancellationPreviewRequest) (*CancellationPreview, error)
+	// PreviewCheckoutSession invokes preview-checkout-session operation.
+	//
+	// What a Checkout Session for a purchase, a change of your subscriptions or their renewal would
+	// invoice if it were completed now, returned as a session that is not saved: it has no `id`, and
+	// nothing is ordered, reserved or redeemed. Use it to show prices before buying; the service that
+	// sells a resource creates the session for its purchase or change, and you create renewal sessions
+	// here.
+	//
+	// With `billing_account_id` the preview is for that billing account: its currency, account discounts,
+	// tax, funds and free trial grants apply, changes and renewals use the account currently paying for
+	// each subscription, and an access token is required. The account must be yours or currently pay for a
+	// project you are a member of. Without it, a purchase is priced in `currency` for anyone, signed in or
+	// not: no account discount, funds or trial grant apply, and tax that would be added is included only
+	// for `address`.
+	//
+	// A promotion code is evaluated without being applied; conditions that depend on the account, such as
+	// a first purchase, are checked only with an account and otherwise reported as `unverified`. An
+	// invalid or inapplicable code or trial grant fails the request. Future usage of metered prices is
+	// estimated with `estimate-usage`.
+	//
+	// QUERY /api/v1/checkout-sessions:preview
+	PreviewCheckoutSession(ctx context.Context, request *CheckoutSessionPreviewRequest) (*CheckoutSession, error)
 	// PreviewInvoicePayment invokes preview-invoice-payment operation.
 	//
 	// What paying this invoice now would take from credit grants, from the balance and, for the rest, from
@@ -856,6 +854,25 @@ type Invoker interface {
 	//
 	// PATCH /api/v1/billing-accounts/{accountId}
 	UpdateBillingAccount(ctx context.Context, request *BillingAccountUpdate, params UpdateBillingAccountParams) (*BillingAccount, error)
+	// UpdateCheckoutSession invokes update-checkout-session operation.
+	//
+	// Saves your checkout choices on an open session: a promotion code, a free trial grant and automatic
+	// renewal. Choices left out keep their values, and null removes a code or a grant. The session is
+	// returned with its amounts calculated under the new choices; nothing is redeemed until it is
+	// completed.
+	//
+	// A code that does not exist or cannot be applied is refused with its promotion error, and a grant
+	// that cannot be used with `BILLING_TRIAL_GRANT_INAPPLICABLE`; the session is then unchanged. A grant
+	// applies to the first new subscription of the session whose lines its offer all covers, and that has
+	// a licensed line and no trial of its own. `auto_renew` turns automatic renewal on or off for every
+	// subscription with licensed items the session opens; for a free trial, it decides whether the trial
+	// converts to paid when it ends. A session that is not open is refused with
+	// `BILLING_CHECKOUT_SESSION_COMPLETE` or `BILLING_CHECKOUT_SESSION_EXPIRED`.
+	//
+	// Open to the owner of the session's billing account and to members of its project.
+	//
+	// PATCH /api/v1/checkout-sessions/{checkoutSessionId}
+	UpdateCheckoutSession(ctx context.Context, request *CheckoutSessionUpdate, params UpdateCheckoutSessionParams) (*CheckoutSession, error)
 	// UpdateContact invokes update-contact operation.
 	//
 	// Updates a contact of this billing account. Returns 404 if it does not exist in the account.
@@ -1381,12 +1398,14 @@ func (c *Client) sendCancelTopUp(ctx context.Context, params CancelTopUpParams) 
 
 // ConfirmCheckoutSession invokes confirm-checkout-session operation.
 //
-// Completes an open session: applies `promotion_code`, or otherwise the best applicable account
-// discount, checks the total against `expected_amount` and creates the order with its invoice issued.
-// A zero-total invoice is paid at once; otherwise pay the invoice next. A failed payment leaves the
-// order and its terms as they are, and the invoice can be paid again until the order expires. Nothing
-// is created when the code is invalid or inapplicable or the total differs, which fails with
-// `BILLING_AMOUNT_CHANGED`.
+// Completes an open session under the choices saved on it: its promotion code, or otherwise the best
+// applicable account discount, and its free trial grant. Checks the total against `expected_amount`
+// and creates the order with its invoice issued. A zero-total invoice is paid at once; otherwise pay
+// the invoice next. A failed payment leaves the order and its terms as they are, and the invoice can
+// be paid again until the order expires. Nothing is created when the total differs, which fails with
+// `BILLING_AMOUNT_CHANGED`, or when a saved code or grant can no longer be applied, which fails with
+// its error until the session is updated. A trial grant used by an order that is later canceled or
+// fails can be used again.
 //
 // Confirming a complete session again with the same terms returns it with its order; different terms
 // are refused with `BILLING_CHECKOUT_SESSION_COMPLETE`. An expired session is refused with
@@ -1677,8 +1696,9 @@ func (c *Client) sendCreateBillingAccount(ctx context.Context, request *BillingA
 //
 // `mode` must be allowed for every item. Metered and one-time items end only `immediate`. A licensed
 // item ends `period_end` while its subscription's paid term lasts, and `immediate` unless its terms
-// allow only the end of the paid term and that term has not ended. For `period_end` the paid terms of
-// all items must end at the same time.
+// allow only the end of the paid term and that term has not ended. During a free trial a licensed item
+// ends either way whatever its terms, `period_end` meaning the end of the trial, and nothing is
+// refunded. For `period_end` the paid terms of all items must end at the same time.
 //
 // Refused with:
 //
@@ -1828,10 +1848,11 @@ func (c *Client) sendCreateCancellation(ctx context.Context, request *Cancellati
 // Opens a Checkout Session renewing one or more subscriptions in one order, such as a machine and the
 // separately bought volumes and elastic IPs attached to it, with periods and price chosen as in
 // renewing. Every subscription must be paid by the same billing account and belong to the same project
-// and service. Nothing is charged until you complete it, when a promotion code can be applied; each
-// subscription then renews from its current_term_end at that time. To renew one subscription at once
-// from credit grants, balance or a payment method, renew the subscription instead. Purchases and
-// changes of a service's resources are created through that service.
+// and service. Nothing is charged until you complete it; save a promotion code on it first with
+// `update-checkout-session`. Each subscription then renews from its current_term_end at that time. To
+// renew one subscription at once from credit grants, balance or a payment method, renew the
+// subscription instead. Purchases and changes of a service's resources are created through that
+// service.
 //
 // Open to the owner of the subscriptions' current billing account and to members of their project with
 // the project permission `billing:finance.manage`. Keep `checkout_session_id` and read the session
@@ -3785,9 +3806,12 @@ func (c *Client) sendGetCancellation(ctx context.Context, params GetCancellation
 
 // GetCheckoutSession invokes get-checkout-session operation.
 //
-// A Checkout Session of your billing account or of a project you are a member of. Poll it to follow
-// checkout; once it is complete, read its order for payment and delivery. An unknown session returns
-// 404; any other session returns 403.
+// A Checkout Session of your billing account or of a project you are a member of, with what completing
+// it now would invoice under the choices saved on it. A saved promotion code or trial grant that can
+// no longer be applied is left out of the amounts; `discount` and the subscriptions' `trial_grant_id`
+// show what applies, and confirming fails until the session is updated. Poll it to follow checkout;
+// once it is complete, read its order for payment and delivery. An unknown session returns 404; any
+// other session returns 403.
 //
 // GET /api/v1/checkout-sessions/{checkoutSessionId}
 func (c *Client) GetCheckoutSession(ctx context.Context, params GetCheckoutSessionParams) (*CheckoutSession, error) {
@@ -3909,168 +3933,6 @@ func (c *Client) sendGetCheckoutSession(ctx context.Context, params GetCheckoutS
 
 	stage = "DecodeResponse"
 	result, err := decodeGetCheckoutSessionResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetCheckoutSessionQuote invokes get-checkout-session-quote operation.
-//
-// What completing this open session now would invoice, with `promotion_code` or otherwise the best
-// applicable account discount, and the account funds available for it. Nothing is applied, reserved or
-// redeemed. An invalid or inapplicable code fails the request without changing the session.
-//
-// Complete the session with the returned `total` as `expected_amount`, the same `promotion_code` and,
-// for an immediate change, the returned `proration_date`. An expired session is refused with
-// `BILLING_CHECKOUT_SESSION_EXPIRED`, and a complete one with `BILLING_CHECKOUT_SESSION_COMPLETE`;
-// read its order instead.
-//
-// Open to the owner of the session's billing account and to members of its project.
-//
-// GET /api/v1/checkout-sessions/{checkoutSessionId}/quote
-func (c *Client) GetCheckoutSessionQuote(ctx context.Context, params GetCheckoutSessionQuoteParams) (*Quote, error) {
-	res, err := c.sendGetCheckoutSessionQuote(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetCheckoutSessionQuote(ctx context.Context, params GetCheckoutSessionQuoteParams) (res *Quote, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-checkout-session-quote"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/checkout-sessions/{checkoutSessionId}/quote"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetCheckoutSessionQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/checkout-sessions/"
-	{
-		// Encode "checkoutSessionId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "checkoutSessionId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.CheckoutSessionId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/quote"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "promotion_code" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "promotion_code",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PromotionCode.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, GetCheckoutSessionQuoteOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetCheckoutSessionQuoteResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5106,149 +4968,6 @@ func (c *Client) sendGetProjectAssignment(ctx context.Context, params GetProject
 	return result, nil
 }
 
-// GetQuote invokes get-quote operation.
-//
-// Calculates what a proposed purchase, a change of your subscriptions or their renewal would invoice
-// now, and what each purchased or changed line renews at. Nothing is saved, reserved or redeemed.
-//
-// With `billing_account_id`, the quote is for that billing account: its currency, account discounts,
-// tax and funds apply, changes and renewals use the account currently paying for each subscription,
-// and an access token is required. The account must be yours or currently pay for a project you are a
-// member of. Without it, proposed items are priced in `currency` for anyone, signed in or not: no
-// account discount or funds apply, and tax that would be added is included only for the customer's
-// `address`.
-//
-// A change is priced as the service that owns the subscription would order it: pass the returned
-// `total` as the expected amount and, for an immediate change, `proration_date` to that service when
-// making the change.
-//
-// A promotion code is evaluated without being applied. It is applied only when a Checkout Session is
-// completed with it; conditions that depend on the account, such as a first purchase, are checked only
-// with an account and otherwise reported as `unverified`. Future usage of metered prices is estimated
-// with `estimate-usage`.
-//
-// QUERY /api/v1/quotes
-func (c *Client) GetQuote(ctx context.Context, request *QuoteRequest) (*Quote, error) {
-	res, err := c.sendGetQuote(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendGetQuote(ctx context.Context, request *QuoteRequest) (res *Quote, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-quote"),
-		semconv.HTTPRequestMethodKey.String("QUERY"),
-		semconv.URLTemplateKey.String("/api/v1/quotes"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetQuoteOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/quotes"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "QUERY", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeGetQuoteRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, GetQuoteOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{},
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetQuoteResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // GetStatement invokes get-statement operation.
 //
 // A statement of your billing account with its period, estimated or closed amounts and invoice.
@@ -5890,6 +5609,137 @@ func (c *Client) sendGetTopUp(ctx context.Context, params GetTopUpParams) (res *
 
 	stage = "DecodeResponse"
 	result, err := decodeGetTopUpResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetTrialGrant invokes get-trial-grant operation.
+//
+// A free trial held by one of your billing accounts. Returns 404 if it does not exist or is not yours.
+//
+// GET /api/v1/trial-grants/{trialGrantId}
+func (c *Client) GetTrialGrant(ctx context.Context, params GetTrialGrantParams) (*TrialGrant, error) {
+	res, err := c.sendGetTrialGrant(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetTrialGrant(ctx context.Context, params GetTrialGrantParams) (res *TrialGrant, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-trial-grant"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/trial-grants/{trialGrantId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetTrialGrantOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/trial-grants/"
+	{
+		// Encode "trialGrantId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "trialGrantId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.TrialGrantId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, GetTrialGrantOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetTrialGrantResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -7194,177 +7044,6 @@ func (c *Client) sendListCancellations(ctx context.Context, params ListCancellat
 	return result, nil
 }
 
-// ListCheckoutSessionItems invokes list-checkout-session-items operation.
-//
-// What the session buys, by position. Prices and amounts are in its quote. Readable by whoever can
-// read the session.
-//
-// GET /api/v1/checkout-sessions/{checkoutSessionId}/items
-func (c *Client) ListCheckoutSessionItems(ctx context.Context, params ListCheckoutSessionItemsParams) (*CheckoutSessionItemList, error) {
-	res, err := c.sendListCheckoutSessionItems(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListCheckoutSessionItems(ctx context.Context, params ListCheckoutSessionItemsParams) (res *CheckoutSessionItemList, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-checkout-session-items"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/checkout-sessions/{checkoutSessionId}/items"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListCheckoutSessionItemsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/checkout-sessions/"
-	{
-		// Encode "checkoutSessionId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "checkoutSessionId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.CheckoutSessionId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/items"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:AccessTokenAuth"
-			switch err := c.securityAccessTokenAuth(ctx, ListCheckoutSessionItemsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListCheckoutSessionItemsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // ListCheckoutSessions invokes list-checkout-sessions operation.
 //
 // Checkout Sessions of your billing accounts, newest first; members of a project list its sessions
@@ -8334,8 +8013,8 @@ func (c *Client) sendListCreditNotes(ctx context.Context, params ListCreditNotes
 
 // ListCurrencies invokes list-currencies operation.
 //
-// Currencies a new billing account can be opened in, and prices and quotes without an account can be
-// given in, for anyone, signed in or not. Retired currencies are not listed.
+// Currencies a new billing account can be opened in, and prices and checkout previews without an
+// account can be given in, for anyone, signed in or not. Retired currencies are not listed.
 //
 // GET /api/v1/currencies
 func (c *Client) ListCurrencies(ctx context.Context, params ListCurrenciesParams) (*CurrencyList, error) {
@@ -12796,6 +12475,202 @@ func (c *Client) sendListTransactions(ctx context.Context, params ListTransactio
 	return result, nil
 }
 
+// ListTrialGrants invokes list-trial-grants operation.
+//
+// Free trials held by your billing accounts. Choose an available grant when checking out a purchase
+// its offer covers, by saving its ID as `trial_grant_id` on the Checkout Session; a session and its
+// preview list the grants that can be used for it.
+//
+// GET /api/v1/trial-grants
+func (c *Client) ListTrialGrants(ctx context.Context, params ListTrialGrantsParams) (*TrialGrantList, error) {
+	res, err := c.sendListTrialGrants(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListTrialGrants(ctx context.Context, params ListTrialGrantsParams) (res *TrialGrantList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-trial-grants"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/trial-grants"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListTrialGrantsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/trial-grants"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "status" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if params.Status != nil {
+				return e.EncodeArray(func(e uri.Encoder) error {
+					for i, item := range params.Status {
+						if err := func() error {
+							return e.EncodeValue(conv.StringToString(string(item)))
+						}(); err != nil {
+							return errors.Wrapf(err, "[%d]", i)
+						}
+					}
+					return nil
+				})
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, ListTrialGrantsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListTrialGrantsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListUsageCharges invokes list-usage-charges operation.
 //
 // Priced usage charges in the requested scope; members with the project permission
@@ -13909,6 +13784,148 @@ func (c *Client) sendPreviewCancellation(ctx context.Context, request *Cancellat
 
 	stage = "DecodeResponse"
 	result, err := decodePreviewCancellationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// PreviewCheckoutSession invokes preview-checkout-session operation.
+//
+// What a Checkout Session for a purchase, a change of your subscriptions or their renewal would
+// invoice if it were completed now, returned as a session that is not saved: it has no `id`, and
+// nothing is ordered, reserved or redeemed. Use it to show prices before buying; the service that
+// sells a resource creates the session for its purchase or change, and you create renewal sessions
+// here.
+//
+// With `billing_account_id` the preview is for that billing account: its currency, account discounts,
+// tax, funds and free trial grants apply, changes and renewals use the account currently paying for
+// each subscription, and an access token is required. The account must be yours or currently pay for a
+// project you are a member of. Without it, a purchase is priced in `currency` for anyone, signed in or
+// not: no account discount, funds or trial grant apply, and tax that would be added is included only
+// for `address`.
+//
+// A promotion code is evaluated without being applied; conditions that depend on the account, such as
+// a first purchase, are checked only with an account and otherwise reported as `unverified`. An
+// invalid or inapplicable code or trial grant fails the request. Future usage of metered prices is
+// estimated with `estimate-usage`.
+//
+// QUERY /api/v1/checkout-sessions:preview
+func (c *Client) PreviewCheckoutSession(ctx context.Context, request *CheckoutSessionPreviewRequest) (*CheckoutSession, error) {
+	res, err := c.sendPreviewCheckoutSession(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendPreviewCheckoutSession(ctx context.Context, request *CheckoutSessionPreviewRequest) (res *CheckoutSession, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("preview-checkout-session"),
+		semconv.HTTPRequestMethodKey.String("QUERY"),
+		semconv.URLTemplateKey.String("/api/v1/checkout-sessions:preview"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, PreviewCheckoutSessionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/checkout-sessions:preview"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "QUERY", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodePreviewCheckoutSessionRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, PreviewCheckoutSessionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{},
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodePreviewCheckoutSessionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -15583,6 +15600,162 @@ func (c *Client) sendUpdateBillingAccount(ctx context.Context, request *BillingA
 
 	stage = "DecodeResponse"
 	result, err := decodeUpdateBillingAccountResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateCheckoutSession invokes update-checkout-session operation.
+//
+// Saves your checkout choices on an open session: a promotion code, a free trial grant and automatic
+// renewal. Choices left out keep their values, and null removes a code or a grant. The session is
+// returned with its amounts calculated under the new choices; nothing is redeemed until it is
+// completed.
+//
+// A code that does not exist or cannot be applied is refused with its promotion error, and a grant
+// that cannot be used with `BILLING_TRIAL_GRANT_INAPPLICABLE`; the session is then unchanged. A grant
+// applies to the first new subscription of the session whose lines its offer all covers, and that has
+// a licensed line and no trial of its own. `auto_renew` turns automatic renewal on or off for every
+// subscription with licensed items the session opens; for a free trial, it decides whether the trial
+// converts to paid when it ends. A session that is not open is refused with
+// `BILLING_CHECKOUT_SESSION_COMPLETE` or `BILLING_CHECKOUT_SESSION_EXPIRED`.
+//
+// Open to the owner of the session's billing account and to members of its project.
+//
+// PATCH /api/v1/checkout-sessions/{checkoutSessionId}
+func (c *Client) UpdateCheckoutSession(ctx context.Context, request *CheckoutSessionUpdate, params UpdateCheckoutSessionParams) (*CheckoutSession, error) {
+	res, err := c.sendUpdateCheckoutSession(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateCheckoutSession(ctx context.Context, request *CheckoutSessionUpdate, params UpdateCheckoutSessionParams) (res *CheckoutSession, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-checkout-session"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/checkout-sessions/{checkoutSessionId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateCheckoutSessionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/checkout-sessions/"
+	{
+		// Encode "checkoutSessionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "checkoutSessionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.CheckoutSessionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateCheckoutSessionRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, UpdateCheckoutSessionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateCheckoutSessionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

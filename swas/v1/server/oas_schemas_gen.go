@@ -734,7 +734,7 @@ func (s *InstanceObservation) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/InstancePrice
 type InstancePrice struct {
 	Currency string `json:"currency"`
-	// Historical display metadata only. Price-only purchases omit this field; use Billing for quotes.
+	// Historical display metadata only. Price-only purchases omit this field; use Billing for prices.
 	Amount       OptDecimalAmount          `json:"amount"`
 	PeriodMonths InstancePricePeriodMonths `json:"period_months"`
 }
@@ -1768,7 +1768,7 @@ type Price struct {
 	BillingPlanID  uuid.UUID `json:"billing_plan_id"`
 	BillingPriceID uuid.UUID `json:"billing_price_id"`
 	Currency       string    `json:"currency"`
-	// Historical display metadata only. New responses omit this field; use Billing for quotes.
+	// Historical display metadata only. New responses omit this field; use Billing for prices.
 	Amount       OptDecimalAmount     `json:"amount"`
 	PeriodMonths NilPricePeriodMonths `json:"period_months"`
 }
@@ -1826,14 +1826,14 @@ func (s *Price) SetPeriodMonths(val NilPricePeriodMonths) {
 // A verified price option for one billing period. Its Billing price must currently be available, use
 // period-end cancellation without an automatic refund, and match this provider plan and region.
 // Archived snapshots, unknown periods and unverified prices are excluded. Selection does not bypass
-// current permissions, Price validation or disabled purchase controls. Billing owns quotes and
+// current permissions, Price validation or disabled purchase controls. Billing owns prices and
 // checkout amounts.
 // Ref: #/components/schemas/PriceOption
 type PriceOption struct {
 	BillingPlanID  uuid.UUID `json:"billing_plan_id"`
 	BillingPriceID uuid.UUID `json:"billing_price_id"`
 	Currency       string    `json:"currency"`
-	// Historical display metadata only. New responses omit this field; use Billing for quotes.
+	// Historical display metadata only. New responses omit this field; use Billing for prices.
 	Amount       OptDecimalAmount        `json:"amount"`
 	PeriodMonths PriceOptionPeriodMonths `json:"period_months"`
 }
@@ -1934,8 +1934,8 @@ func (PricePeriodMonths) AllValues() []PricePeriodMonths {
 	}
 }
 
-// Durable purchase progress. The checkout_session_id identifies the Billing session for user quote,
-// confirmation and payment. It is not ready while checkout creation is pending. SWAS does not quote or
+// Durable purchase progress. The checkout_session_id identifies the Billing session for user pricing,
+// confirmation and payment. It is not ready while checkout creation is pending. SWAS does not price or
 // charge automatically. delivered and billing_settled describe different facts; acceptance is not
 // delivery.
 // Ref: #/components/schemas/Purchase
@@ -2006,7 +2006,7 @@ type PurchaseCreate struct {
 	ProviderPlanID  string `json:"provider_plan_id"`
 	// Selects a price from the requested plan and current catalog revision. The server resolves its
 	// immutable Billing terms, billing period and ownership; the client does not set the billing period.
-	// SWAS validates the Price selection only. Billing owns quotes, checkout confirmation and payment.
+	// SWAS validates the Price selection only. Billing owns pricing, checkout confirmation and payment.
 	BillingPriceID uuid.UUID `json:"billing_price_id"`
 	ImageID        string    `json:"image_id"`
 	Quantity       int       `json:"quantity"`

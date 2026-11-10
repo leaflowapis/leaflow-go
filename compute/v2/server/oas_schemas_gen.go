@@ -322,11 +322,11 @@ func (s *BillingChoiceUsageType) UnmarshalText(data []byte) error {
 }
 
 // How one order line of a catalog item is sold in Billing. Read its prices with Billing's
-// `search-prices` by `plan_id`, giving `dimensions` to narrow each price's `rates` to this line. Quote
-// a purchase with Billing's `get-quote`, giving the line `plan_id`, `dimensions` unchanged, and the
-// quantity `quantity` names for the usage type chosen; estimate a metered line with `estimate-usage`,
-// giving each of `meters` the same dimensions and the quantity it names. Prices and amounts are
-// Billing's alone.
+// `search-prices` by `plan_id`, giving `dimensions` to narrow each price's `rates` to this line.
+// Preview a purchase with Billing's `preview-checkout-session`, giving the line `plan_id`,
+// `dimensions` unchanged, and the quantity `quantity` names for the usage type chosen; estimate a
+// metered line with `estimate-usage`, giving each of `meters` the same dimensions and the quantity it
+// names. Prices and amounts are Billing's alone.
 // Ref: #/components/schemas/BillingComponent
 type BillingComponent struct {
 	// The Billing Plan the line is sold under.
@@ -771,11 +771,11 @@ func (s *CancellationMode) UnmarshalText(data []byte) error {
 type ChangeElasticIpBandwidthRequestBody struct {
 	// The new ceiling in Mbit/s, applied to both directions.
 	BandwidthMbps int64 `json:"bandwidth_mbps"`
-	// The `proration_date` of the Billing quote for this change, so that the order is priced from the same
-	// instant. Only on a prepaid network item, and only for automatic checkout; deferred checkout is
-	// priced when the customer completes it. Defaults to the time of the request; it must be a whole
-	// second, not in the future and at most 10 minutes old, otherwise the request is refused with
-	// `BILLING_CHANGE_INVALID`.
+	// The `proration_date` of the Billing Checkout Session preview for this change, so that the order is
+	// priced from the same instant. Only on a prepaid network item, and only for automatic checkout;
+	// deferred checkout is priced when the customer completes it. Defaults to the time of the request; it
+	// must be a whole second, not in the future and at most 10 minutes old, otherwise the request is
+	// refused with `BILLING_CHANGE_INVALID`.
 	ProrationDate OptDateTime `json:"proration_date"`
 	// How the purchase of the change is checked out. Only on a prepaid network item; a pay-as-you-go one
 	// has nothing to check out and refuses it with `ELASTIC_IP_CHECKOUT_UNUSED`.
@@ -845,8 +845,16 @@ type CheckoutOptions struct {
 	// target; each client validates its own.
 	ReturnURL OptURI `json:"return_url"`
 	// Turns on automatic renewal of every subscription with licensed items that the purchase opens. Off
-	// when omitted. It must be the customer's own choice.
+	// when omitted. It must be the customer's own choice. For a free trial, it converts the trial to paid
+	// when the trial ends.
 	AutoRenew OptBool `json:"auto_renew"`
+	// A free trial grant of the paying billing account that the customer chose to use. The first new
+	// subscription of the purchase whose lines the grant's offer all covers, and that has a licensed line
+	// and no trial of its own, opens with the offer's free trial. Accepted only in automatic mode; with
+	// deferred it is refused with HTTP 400, and the grant is chosen when completing the checkout through
+	// Billing. Refused with BILLING_TRIAL_GRANT_INAPPLICABLE when no subscription qualifies or the grant
+	// cannot be used now.
+	TrialGrantID OptUUID `json:"trial_grant_id"`
 }
 
 // GetMode returns the value of Mode.
@@ -869,6 +877,11 @@ func (s *CheckoutOptions) GetAutoRenew() OptBool {
 	return s.AutoRenew
 }
 
+// GetTrialGrantID returns the value of TrialGrantID.
+func (s *CheckoutOptions) GetTrialGrantID() OptUUID {
+	return s.TrialGrantID
+}
+
 // SetMode sets the value of Mode.
 func (s *CheckoutOptions) SetMode(val OptCheckoutOptionsMode) {
 	s.Mode = val
@@ -887,6 +900,11 @@ func (s *CheckoutOptions) SetReturnURL(val OptURI) {
 // SetAutoRenew sets the value of AutoRenew.
 func (s *CheckoutOptions) SetAutoRenew(val OptBool) {
 	s.AutoRenew = val
+}
+
+// SetTrialGrantID sets the value of TrialGrantID.
+func (s *CheckoutOptions) SetTrialGrantID(val OptUUID) {
+	s.TrialGrantID = val
 }
 
 // Merged schema.
@@ -11107,6 +11125,52 @@ func (o OptURI) Or(d url.URL) url.URL {
 	return d
 }
 
+// NewOptUUID returns new OptUUID with value set to v.
+func NewOptUUID(v uuid.UUID) OptUUID {
+	return OptUUID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptUUID is optional uuid.UUID.
+type OptUUID struct {
+	Value uuid.UUID
+	Set   bool
+}
+
+// IsSet returns true if OptUUID was set.
+func (o OptUUID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptUUID) Reset() {
+	var v uuid.UUID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptUUID) SetTo(v uuid.UUID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptUUID) Get() (v uuid.UUID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptUpdateInstanceRequestBodyLabels returns new OptUpdateInstanceRequestBodyLabels with value set to v.
 func NewOptUpdateInstanceRequestBodyLabels(v UpdateInstanceRequestBodyLabels) OptUpdateInstanceRequestBodyLabels {
 	return OptUpdateInstanceRequestBodyLabels{
@@ -13094,10 +13158,10 @@ type ResizeInstanceRequestBody struct {
 	// more machine of it (409 `INSTANCE_TYPE_SOLD_OUT`, `INSTANCE_TYPE_CAPACITY_REACHED` or
 	// `INSTANCE_TYPE_NO_HOST_ROOM`). The change is purchased through Billing.
 	InstanceTypeID InstanceTypeId `json:"instance_type_id"`
-	// The `proration_date` of the Billing quote for this change, so that the order is priced from the same
-	// instant. Only for automatic checkout; deferred checkout is priced when the customer completes it.
-	// Defaults to the time of the request; it must be a whole second, not in the future and at most 10
-	// minutes old, otherwise the request is refused with `BILLING_CHANGE_INVALID`.
+	// The `proration_date` of the Billing Checkout Session preview for this change, so that the order is
+	// priced from the same instant. Only for automatic checkout; deferred checkout is priced when the
+	// customer completes it. Defaults to the time of the request; it must be a whole second, not in the
+	// future and at most 10 minutes old, otherwise the request is refused with `BILLING_CHANGE_INVALID`.
 	ProrationDate OptDateTime `json:"proration_date"`
 	// How the purchase of the change is checked out.
 	Checkout OptCheckoutOptions `json:"checkout"`
@@ -13181,10 +13245,10 @@ func (*ResizeInstanceResponseBody) resizeInstanceRes() {}
 type ResizeVolumeRequestBody struct {
 	// The new capacity. Must be larger than the current capacity.
 	SizeGib int64 `json:"size_gib"`
-	// The `proration_date` of the Billing quote for this change, so that the order is priced from the same
-	// instant. Only for automatic checkout; deferred checkout is priced when the customer completes it.
-	// Defaults to the time of the request; it must be a whole second, not in the future and at most 10
-	// minutes old, otherwise the request is refused with `BILLING_CHANGE_INVALID`.
+	// The `proration_date` of the Billing Checkout Session preview for this change, so that the order is
+	// priced from the same instant. Only for automatic checkout; deferred checkout is priced when the
+	// customer completes it. Defaults to the time of the request; it must be a whole second, not in the
+	// future and at most 10 minutes old, otherwise the request is refused with `BILLING_CHANGE_INVALID`.
 	ProrationDate OptDateTime `json:"proration_date"`
 	// How the purchase of the change is checked out.
 	Checkout OptCheckoutOptions `json:"checkout"`
@@ -13224,10 +13288,10 @@ func (s *ResizeVolumeRequestBody) SetCheckout(val OptCheckoutOptions) {
 type RetypeVolumeRequestBody struct {
 	// The volume type to move the detached volume to, at its current capacity.
 	VolumeTypeID VolumeTypeId `json:"volume_type_id"`
-	// The `proration_date` of the Billing quote for this change, so that the order is priced from the same
-	// instant. Only for automatic checkout; deferred checkout is priced when the customer completes it.
-	// Defaults to the time of the request; it must be a whole second, not in the future and at most 10
-	// minutes old, otherwise the request is refused with `BILLING_CHANGE_INVALID`.
+	// The `proration_date` of the Billing Checkout Session preview for this change, so that the order is
+	// priced from the same instant. Only for automatic checkout; deferred checkout is priced when the
+	// customer completes it. Defaults to the time of the request; it must be a whole second, not in the
+	// future and at most 10 minutes old, otherwise the request is refused with `BILLING_CHANGE_INVALID`.
 	ProrationDate OptDateTime `json:"proration_date"`
 	// How the purchase of the change is checked out.
 	Checkout OptCheckoutOptions `json:"checkout"`
