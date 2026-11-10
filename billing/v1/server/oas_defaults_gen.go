@@ -23,6 +23,14 @@ func (s *CheckoutSessionCreate) setDefaults() {
 }
 
 // setDefaults set default value of fields.
+func (s *CheckoutSessionPreviewRequest) setDefaults() {
+	{
+		val := int(1)
+		s.Periods.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
 func (s *PayInvoiceRequest) setDefaults() {
 	{
 		val := bool(true)
@@ -31,14 +39,6 @@ func (s *PayInvoiceRequest) setDefaults() {
 	{
 		val := bool(true)
 		s.UseCredits.SetTo(val)
-	}
-}
-
-// setDefaults set default value of fields.
-func (s *QuoteRenewal) setDefaults() {
-	{
-		val := int(1)
-		s.Periods.SetTo(val)
 	}
 }
 
