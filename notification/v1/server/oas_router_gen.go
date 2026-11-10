@@ -11,13 +11,13 @@ import (
 )
 
 var (
-	rn18AllowedHeaders = map[string]string{
+	rn15AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn31AllowedHeaders = map[string]string{
+	rn28AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
-	rn28AllowedHeaders = map[string]string{
+	rn25AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
 	rn8AllowedHeaders = map[string]string{
@@ -28,16 +28,10 @@ var (
 		"DELETE": "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
-	rn34AllowedHeaders = map[string]string{
+	rn30AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
-	rn16AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn32AllowedHeaders = map[string]string{
-		"POST": "Authorization",
-	}
-	rn21AllowedHeaders = map[string]string{
+	rn18AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn7AllowedHeaders = map[string]string{
@@ -49,19 +43,19 @@ var (
 	rn3AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
+	rn21AllowedHeaders = map[string]string{
+		"POST": "Authorization",
+	}
+	rn23AllowedHeaders = map[string]string{
+		"POST": "Authorization",
+	}
+	rn29AllowedHeaders = map[string]string{
+		"POST": "Authorization",
+	}
 	rn24AllowedHeaders = map[string]string{
-		"POST": "Authorization",
-	}
-	rn26AllowedHeaders = map[string]string{
-		"POST": "Authorization",
-	}
-	rn33AllowedHeaders = map[string]string{
-		"POST": "Authorization",
-	}
-	rn27AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn17AllowedHeaders = map[string]string{
+	rn14AllowedHeaders = map[string]string{
 		"GET":   "Authorization",
 		"PATCH": "Authorization,Content-Type",
 	}
@@ -72,7 +66,7 @@ var (
 	rn6AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn22AllowedHeaders = map[string]string{
+	rn19AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn11AllowedHeaders = map[string]string{
@@ -147,7 +141,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn18AllowedHeaders,
+							allowedHeaders: rn15AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -195,7 +189,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "POST",
-									allowedHeaders: rn31AllowedHeaders,
+									allowedHeaders: rn28AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -222,7 +216,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "POST",
-								allowedHeaders: rn28AllowedHeaders,
+								allowedHeaders: rn25AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -233,123 +227,41 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 				}
 
-			case 'c': // Prefix: "c"
+			case 'c': // Prefix: "channels"
 
-				if l := len("c"); len(elem) >= l && elem[0:l] == "c" {
+				if l := len("channels"); len(elem) >= l && elem[0:l] == "channels" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
-					break
+					switch r.Method {
+					case "GET":
+						s.handleListUserChannelsRequest([0]string{}, elemIsEscaped, w, r)
+					case "POST":
+						s.handleCreateUserChannelRequest([0]string{}, elemIsEscaped, w, r)
+					default:
+						s.notAllowed(w, r, notAllowedParams{
+							allowedMethods: "GET,POST",
+							allowedHeaders: rn8AllowedHeaders,
+							acceptPost:     "application/json",
+							acceptPatch:    "",
+						})
+					}
+
+					return
 				}
 				switch elem[0] {
-				case 'h': // Prefix: "hannels"
+				case '/': // Prefix: "/"
 
-					if l := len("hannels"); len(elem) >= l && elem[0:l] == "hannels" {
+					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
-					if len(elem) == 0 {
-						switch r.Method {
-						case "GET":
-							s.handleListUserChannelsRequest([0]string{}, elemIsEscaped, w, r)
-						case "POST":
-							s.handleCreateUserChannelRequest([0]string{}, elemIsEscaped, w, r)
-						default:
-							s.notAllowed(w, r, notAllowedParams{
-								allowedMethods: "GET,POST",
-								allowedHeaders: rn8AllowedHeaders,
-								acceptPost:     "application/json",
-								acceptPatch:    "",
-							})
-						}
-
-						return
-					}
-					switch elem[0] {
-					case '/': // Prefix: "/"
-
-						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						// Param: "channelId"
-						// Match until ":"
-						idx := strings.IndexByte(elem, ':')
-						if idx < 0 {
-							idx = len(elem)
-						}
-						args[0] = elem[:idx]
-						elem = elem[idx:]
-
-						if len(elem) == 0 {
-							switch r.Method {
-							case "DELETE":
-								s.handleDeleteUserChannelRequest([1]string{
-									args[0],
-								}, elemIsEscaped, w, r)
-							case "PATCH":
-								s.handleUpdateUserChannelRequest([1]string{
-									args[0],
-								}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "DELETE,PATCH",
-									allowedHeaders: rn13AllowedHeaders,
-									acceptPost:     "",
-									acceptPatch:    "application/json",
-								})
-							}
-
-							return
-						}
-						switch elem[0] {
-						case ':': // Prefix: ":verify"
-
-							if l := len(":verify"); len(elem) >= l && elem[0:l] == ":verify" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "POST":
-									s.handleVerifyUserChannelRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "POST",
-										allowedHeaders: rn34AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
-						}
-
-					}
-
-				case 'r': // Prefix: "redentials/"
-
-					if l := len("redentials/"); len(elem) >= l && elem[0:l] == "redentials/" {
-						elem = elem[l:]
-					} else {
-						break
-					}
-
-					// Param: "ticketId"
+					// Param: "channelId"
 					// Match until ":"
 					idx := strings.IndexByte(elem, ':')
 					if idx < 0 {
@@ -360,25 +272,29 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 					if len(elem) == 0 {
 						switch r.Method {
-						case "GET":
-							s.handleDescribeCredentialTicketRequest([1]string{
+						case "DELETE":
+							s.handleDeleteUserChannelRequest([1]string{
+								args[0],
+							}, elemIsEscaped, w, r)
+						case "PATCH":
+							s.handleUpdateUserChannelRequest([1]string{
 								args[0],
 							}, elemIsEscaped, w, r)
 						default:
 							s.notAllowed(w, r, notAllowedParams{
-								allowedMethods: "GET",
-								allowedHeaders: rn16AllowedHeaders,
+								allowedMethods: "DELETE,PATCH",
+								allowedHeaders: rn13AllowedHeaders,
 								acceptPost:     "",
-								acceptPatch:    "",
+								acceptPatch:    "application/json",
 							})
 						}
 
 						return
 					}
 					switch elem[0] {
-					case ':': // Prefix: ":reveal"
+					case ':': // Prefix: ":verify"
 
-						if l := len(":reveal"); len(elem) >= l && elem[0:l] == ":reveal" {
+						if l := len(":verify"); len(elem) >= l && elem[0:l] == ":verify" {
 							elem = elem[l:]
 						} else {
 							break
@@ -388,13 +304,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							// Leaf node.
 							switch r.Method {
 							case "POST":
-								s.handleRevealCredentialRequest([1]string{
+								s.handleVerifyUserChannelRequest([1]string{
 									args[0],
 								}, elemIsEscaped, w, r)
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "POST",
-									allowedHeaders: rn32AllowedHeaders,
+									allowedHeaders: rn30AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -459,7 +375,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
-								allowedHeaders: rn21AllowedHeaders,
+								allowedHeaders: rn18AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -603,7 +519,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										default:
 											s.notAllowed(w, r, notAllowedParams{
 												allowedMethods: "POST",
-												allowedHeaders: rn24AllowedHeaders,
+												allowedHeaders: rn21AllowedHeaders,
 												acceptPost:     "",
 												acceptPatch:    "",
 											})
@@ -630,7 +546,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										default:
 											s.notAllowed(w, r, notAllowedParams{
 												allowedMethods: "POST",
-												allowedHeaders: rn26AllowedHeaders,
+												allowedHeaders: rn23AllowedHeaders,
 												acceptPost:     "",
 												acceptPatch:    "",
 											})
@@ -659,7 +575,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "POST",
-											allowedHeaders: rn33AllowedHeaders,
+											allowedHeaders: rn29AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -688,7 +604,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "POST",
-									allowedHeaders: rn27AllowedHeaders,
+									allowedHeaders: rn24AllowedHeaders,
 									acceptPost:     "application/json",
 									acceptPatch:    "",
 								})
@@ -718,7 +634,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET,PATCH",
-							allowedHeaders: rn17AllowedHeaders,
+							allowedHeaders: rn14AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "application/json",
 						})
@@ -807,7 +723,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "GET",
-									allowedHeaders: rn22AllowedHeaders,
+									allowedHeaders: rn19AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -1061,131 +977,48 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 				}
 
-			case 'c': // Prefix: "c"
+			case 'c': // Prefix: "channels"
 
-				if l := len("c"); len(elem) >= l && elem[0:l] == "c" {
+				if l := len("channels"); len(elem) >= l && elem[0:l] == "channels" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
-					break
+					switch method {
+					case "GET":
+						r.name = ListUserChannelsOperation
+						r.summary = "List outbound channels"
+						r.operationID = "list-user-channels"
+						r.operationGroup = ""
+						r.pathPattern = "/api/v1/channels"
+						r.args = args
+						r.count = 0
+						return r, true
+					case "POST":
+						r.name = CreateUserChannelOperation
+						r.summary = "Register an outbound channel"
+						r.operationID = "create-user-channel"
+						r.operationGroup = ""
+						r.pathPattern = "/api/v1/channels"
+						r.args = args
+						r.count = 0
+						return r, true
+					default:
+						return
+					}
 				}
 				switch elem[0] {
-				case 'h': // Prefix: "hannels"
+				case '/': // Prefix: "/"
 
-					if l := len("hannels"); len(elem) >= l && elem[0:l] == "hannels" {
+					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
-					if len(elem) == 0 {
-						switch method {
-						case "GET":
-							r.name = ListUserChannelsOperation
-							r.summary = "List outbound channels"
-							r.operationID = "list-user-channels"
-							r.operationGroup = ""
-							r.pathPattern = "/api/v1/channels"
-							r.args = args
-							r.count = 0
-							return r, true
-						case "POST":
-							r.name = CreateUserChannelOperation
-							r.summary = "Register an outbound channel"
-							r.operationID = "create-user-channel"
-							r.operationGroup = ""
-							r.pathPattern = "/api/v1/channels"
-							r.args = args
-							r.count = 0
-							return r, true
-						default:
-							return
-						}
-					}
-					switch elem[0] {
-					case '/': // Prefix: "/"
-
-						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						// Param: "channelId"
-						// Match until ":"
-						idx := strings.IndexByte(elem, ':')
-						if idx < 0 {
-							idx = len(elem)
-						}
-						args[0] = elem[:idx]
-						elem = elem[idx:]
-
-						if len(elem) == 0 {
-							switch method {
-							case "DELETE":
-								r.name = DeleteUserChannelOperation
-								r.summary = "Delete an outbound channel"
-								r.operationID = "delete-user-channel"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/channels/{channelId}"
-								r.args = args
-								r.count = 1
-								return r, true
-							case "PATCH":
-								r.name = UpdateUserChannelOperation
-								r.summary = "Rename or re-enable an outbound channel"
-								r.operationID = "update-user-channel"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/channels/{channelId}"
-								r.args = args
-								r.count = 1
-								return r, true
-							default:
-								return
-							}
-						}
-						switch elem[0] {
-						case ':': // Prefix: ":verify"
-
-							if l := len(":verify"); len(elem) >= l && elem[0:l] == ":verify" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "POST":
-									r.name = VerifyUserChannelOperation
-									r.summary = "Verify an outbound channel"
-									r.operationID = "verify-user-channel"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/channels/{channelId}:verify"
-									r.args = args
-									r.count = 1
-									return r, true
-								default:
-									return
-								}
-							}
-
-						}
-
-					}
-
-				case 'r': // Prefix: "redentials/"
-
-					if l := len("redentials/"); len(elem) >= l && elem[0:l] == "redentials/" {
-						elem = elem[l:]
-					} else {
-						break
-					}
-
-					// Param: "ticketId"
+					// Param: "channelId"
 					// Match until ":"
 					idx := strings.IndexByte(elem, ':')
 					if idx < 0 {
@@ -1196,12 +1029,21 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 					if len(elem) == 0 {
 						switch method {
-						case "GET":
-							r.name = DescribeCredentialTicketOperation
-							r.summary = "Describe a one-time credential"
-							r.operationID = "describe-credential-ticket"
+						case "DELETE":
+							r.name = DeleteUserChannelOperation
+							r.summary = "Delete an outbound channel"
+							r.operationID = "delete-user-channel"
 							r.operationGroup = ""
-							r.pathPattern = "/api/v1/credentials/{ticketId}"
+							r.pathPattern = "/api/v1/channels/{channelId}"
+							r.args = args
+							r.count = 1
+							return r, true
+						case "PATCH":
+							r.name = UpdateUserChannelOperation
+							r.summary = "Rename or re-enable an outbound channel"
+							r.operationID = "update-user-channel"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/channels/{channelId}"
 							r.args = args
 							r.count = 1
 							return r, true
@@ -1210,9 +1052,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						}
 					}
 					switch elem[0] {
-					case ':': // Prefix: ":reveal"
+					case ':': // Prefix: ":verify"
 
-						if l := len(":reveal"); len(elem) >= l && elem[0:l] == ":reveal" {
+						if l := len(":verify"); len(elem) >= l && elem[0:l] == ":verify" {
 							elem = elem[l:]
 						} else {
 							break
@@ -1222,11 +1064,11 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							// Leaf node.
 							switch method {
 							case "POST":
-								r.name = RevealCredentialOperation
-								r.summary = "Reveal a one-time credential"
-								r.operationID = "reveal-credential"
+								r.name = VerifyUserChannelOperation
+								r.summary = "Verify an outbound channel"
+								r.operationID = "verify-user-channel"
 								r.operationGroup = ""
-								r.pathPattern = "/api/v1/credentials/{ticketId}:reveal"
+								r.pathPattern = "/api/v1/channels/{channelId}:verify"
 								r.args = args
 								r.count = 1
 								return r, true

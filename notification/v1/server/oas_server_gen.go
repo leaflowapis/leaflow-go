@@ -77,16 +77,6 @@ type Handler interface {
 	//
 	// DELETE /api/v1/channels/{channelId}
 	DeleteUserChannel(ctx context.Context, params DeleteUserChannelParams) error
-	// DescribeCredentialTicket implements describe-credential-ticket operation.
-	//
-	// Reports whether the credential is still available without consuming it. It never contains the
-	// credential itself.
-	//
-	// A ticket addressed to someone else returns `CREDENTIAL_TICKET_NOT_FOUND`, the same answer as one
-	// that does not exist.
-	//
-	// GET /api/v1/credentials/{ticketId}
-	DescribeCredentialTicket(ctx context.Context, params DescribeCredentialTicketParams) (*CredentialTicketResource, error)
 	// GetNotification implements get-notification operation.
 	//
 	// A notification addressed to someone else returns `NOTIFICATION_NOT_FOUND`, the same answer as one
@@ -198,24 +188,6 @@ type Handler interface {
 	//
 	// POST /api/v1/announcements/{announcementId}:markRead
 	ReadAnnouncement(ctx context.Context, params ReadAnnouncementParams) error
-	// RevealCredential implements reveal-credential operation.
-	//
-	// Returns the credential and destroys it in the same step. This is the only operation that ever
-	// returns it, and it succeeds only once.
-	//
-	// Every subsequent request returns `CREDENTIAL_TICKET_CONSUMED`, including one issued concurrently
-	// with the first: exactly one caller receives the credential.
-	//
-	// A ticket that has expired returns `CREDENTIAL_TICKET_EXPIRED`, and one withdrawn by the service that
-	// created it returns `CREDENTIAL_TICKET_REVOKED`. In all three cases the credential is already gone
-	// and cannot be recovered; obtain a new one from the service that owns the resource.
-	//
-	// This operation is a POST rather than a GET because a GET would be followed by link scanners in mail
-	// clients and by browser prefetching, either of which would consume the credential before the
-	// recipient opened it.
-	//
-	// POST /api/v1/credentials/{ticketId}:reveal
-	RevealCredential(ctx context.Context, params RevealCredentialParams) (*RevealedCredentialResource, error)
 	// SendEmailOverrideCode implements send-email-override-code operation.
 	//
 	// Emails a short code to the address waiting to be confirmed. That address receives this and nothing
