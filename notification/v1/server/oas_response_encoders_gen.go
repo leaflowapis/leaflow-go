@@ -89,19 +89,6 @@ func encodeDeleteUserChannelResponse(response *DeleteUserChannelNoContent, w htt
 	return nil
 }
 
-func encodeDescribeCredentialTicketResponse(response *CredentialTicketResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeGetNotificationResponse(response *NotificationResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -247,19 +234,6 @@ func encodeReadAllAnnouncementsResponse(response *AnnouncementReadResultResource
 
 func encodeReadAnnouncementResponse(response *ReadAnnouncementNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
-
-	return nil
-}
-
-func encodeRevealCredentialResponse(response *RevealedCredentialResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
 
 	return nil
 }
