@@ -3621,6 +3621,10 @@ type CheckoutSessionItem struct {
 	// Periods per billing cycle of a recurring licensed price; null otherwise.
 	IntervalCount NilInt `json:"interval_count"`
 	Quantity      string `json:"quantity"`
+	// The plan's unit label, which a licensed line's quantity counts, such as GiB or Mbps. A completed
+	// session shows the label its order was placed with. Absent for a metered line and when the plan has
+	// none.
+	UnitLabel OptString `json:"unit_label"`
 	// The dimension values of what is bought, such as region and instance type.
 	Dimensions CheckoutSessionItemDimensions `json:"dimensions"`
 	// Renewals only; null otherwise. How many consecutive periods are renewed.
@@ -3712,6 +3716,11 @@ func (s *CheckoutSessionItem) GetIntervalCount() NilInt {
 // GetQuantity returns the value of Quantity.
 func (s *CheckoutSessionItem) GetQuantity() string {
 	return s.Quantity
+}
+
+// GetUnitLabel returns the value of UnitLabel.
+func (s *CheckoutSessionItem) GetUnitLabel() OptString {
+	return s.UnitLabel
 }
 
 // GetDimensions returns the value of Dimensions.
@@ -3837,6 +3846,11 @@ func (s *CheckoutSessionItem) SetIntervalCount(val NilInt) {
 // SetQuantity sets the value of Quantity.
 func (s *CheckoutSessionItem) SetQuantity(val string) {
 	s.Quantity = val
+}
+
+// SetUnitLabel sets the value of UnitLabel.
+func (s *CheckoutSessionItem) SetUnitLabel(val OptString) {
+	s.UnitLabel = val
 }
 
 // SetDimensions sets the value of Dimensions.
@@ -7805,9 +7819,11 @@ type InvoiceItem struct {
 	Project    OptNilNamedIdentity `json:"project"`
 	ResourceID OptString           `json:"resource_id"`
 	// The line's wording as recorded when the invoice was issued.
-	Description string    `json:"description"`
-	Unit        OptString `json:"unit"`
-	Quantity    OptString `json:"quantity"`
+	Description string `json:"description"`
+	// What `quantity` counts: the plan's unit label for a licensed purchase line, such as GiB, or the
+	// meter's unit for a usage line. Empty when there is none.
+	Unit     OptString `json:"unit"`
+	Quantity OptString `json:"quantity"`
 	// The part covered by an included allowance, and therefore not charged.
 	DeductedQuantity OptString `json:"deducted_quantity"`
 	UnitAmount       OptMoney  `json:"unit_amount"`
@@ -13094,6 +13110,9 @@ type OrderItem struct {
 	// The name when bought.
 	PlanName string `json:"plan_name"`
 	Quantity string `json:"quantity"`
+	// The plan's unit label when the line was placed, which a licensed line's quantity counts, such as GiB
+	// or Mbps. Absent for a metered line and when the plan had none.
+	UnitLabel OptString `json:"unit_label"`
 	// The unit amount of the price the line is charged under. Absent for a tiered price, and for an
 	// immediate change, which is charged as `gross_amount` describes.
 	UnitAmount OptMoney `json:"unit_amount"`
@@ -13260,6 +13279,11 @@ func (s *OrderItem) GetPlanName() string {
 // GetQuantity returns the value of Quantity.
 func (s *OrderItem) GetQuantity() string {
 	return s.Quantity
+}
+
+// GetUnitLabel returns the value of UnitLabel.
+func (s *OrderItem) GetUnitLabel() OptString {
+	return s.UnitLabel
 }
 
 // GetUnitAmount returns the value of UnitAmount.
@@ -13440,6 +13464,11 @@ func (s *OrderItem) SetPlanName(val string) {
 // SetQuantity sets the value of Quantity.
 func (s *OrderItem) SetQuantity(val string) {
 	s.Quantity = val
+}
+
+// SetUnitLabel sets the value of UnitLabel.
+func (s *OrderItem) SetUnitLabel(val OptString) {
+	s.UnitLabel = val
 }
 
 // SetUnitAmount sets the value of UnitAmount.
@@ -14983,6 +15012,9 @@ type Plan struct {
 	ProductID   ProductId     `json:"product_id"`
 	Name        string        `json:"name"`
 	Description OptString     `json:"description"`
+	// What a licensed quantity of the plan counts, as shown next to it, such as GiB or Mbps. Absent when
+	// the plan has none. Metered usage is measured in its meter's unit instead.
+	UnitLabel OptString `json:"unit_label"`
 }
 
 // GetActive returns the value of Active.
@@ -15025,6 +15057,11 @@ func (s *Plan) GetDescription() OptString {
 	return s.Description
 }
 
+// GetUnitLabel returns the value of UnitLabel.
+func (s *Plan) GetUnitLabel() OptString {
+	return s.UnitLabel
+}
+
 // SetActive sets the value of Active.
 func (s *Plan) SetActive(val bool) {
 	s.Active = val
@@ -15063,6 +15100,11 @@ func (s *Plan) SetName(val string) {
 // SetDescription sets the value of Description.
 func (s *Plan) SetDescription(val OptString) {
 	s.Description = val
+}
+
+// SetUnitLabel sets the value of UnitLabel.
+func (s *Plan) SetUnitLabel(val OptString) {
+	s.UnitLabel = val
 }
 
 // Ref: #/components/schemas/PlanFeature
@@ -17585,6 +17627,9 @@ type ScheduledChange struct {
 	PlanName    string    `json:"plan_name"`
 	PriceID     uuid.UUID `json:"price_id"`
 	Quantity    string    `json:"quantity"`
+	// The plan's unit label when the change was placed, which a licensed quantity counts, such as GiB or
+	// Mbps. Absent for a metered item and when the plan had none.
+	UnitLabel OptString `json:"unit_label"`
 	// The target licensed renewal amount before tax.
 	RecurringAmount string                  `json:"recurring_amount"`
 	Currency        string                  `json:"currency"`
@@ -17625,6 +17670,11 @@ func (s *ScheduledChange) GetPriceID() uuid.UUID {
 // GetQuantity returns the value of Quantity.
 func (s *ScheduledChange) GetQuantity() string {
 	return s.Quantity
+}
+
+// GetUnitLabel returns the value of UnitLabel.
+func (s *ScheduledChange) GetUnitLabel() OptString {
+	return s.UnitLabel
 }
 
 // GetRecurringAmount returns the value of RecurringAmount.
@@ -17680,6 +17730,11 @@ func (s *ScheduledChange) SetPriceID(val uuid.UUID) {
 // SetQuantity sets the value of Quantity.
 func (s *ScheduledChange) SetQuantity(val string) {
 	s.Quantity = val
+}
+
+// SetUnitLabel sets the value of UnitLabel.
+func (s *ScheduledChange) SetUnitLabel(val OptString) {
+	s.UnitLabel = val
 }
 
 // SetRecurringAmount sets the value of RecurringAmount.
@@ -19021,6 +19076,9 @@ type SubscriptionItem struct {
 	// gave none.
 	Dimensions SubscriptionItemDimensions `json:"dimensions"`
 	Quantity   string                     `json:"quantity"`
+	// The plan's current unit label, which a licensed item's quantity counts, such as GiB or Mbps. Absent
+	// for a metered item and when the plan has none.
+	UnitLabel OptString `json:"unit_label"`
 	// This item's renewal amount, after continuing discounts and before tax. A pending item shows base
 	// terms until paying the order fixes any new discount. Absent for metered and one-time items.
 	RecurringAmount OptString `json:"recurring_amount"`
@@ -19095,6 +19153,11 @@ func (s *SubscriptionItem) GetDimensions() SubscriptionItemDimensions {
 // GetQuantity returns the value of Quantity.
 func (s *SubscriptionItem) GetQuantity() string {
 	return s.Quantity
+}
+
+// GetUnitLabel returns the value of UnitLabel.
+func (s *SubscriptionItem) GetUnitLabel() OptString {
+	return s.UnitLabel
 }
 
 // GetRecurringAmount returns the value of RecurringAmount.
@@ -19220,6 +19283,11 @@ func (s *SubscriptionItem) SetDimensions(val SubscriptionItemDimensions) {
 // SetQuantity sets the value of Quantity.
 func (s *SubscriptionItem) SetQuantity(val string) {
 	s.Quantity = val
+}
+
+// SetUnitLabel sets the value of UnitLabel.
+func (s *SubscriptionItem) SetUnitLabel(val OptString) {
+	s.UnitLabel = val
 }
 
 // SetRecurringAmount sets the value of RecurringAmount.
@@ -21091,6 +21159,9 @@ type TrialOfferItem struct {
 	// unit, such as gibibytes of storage or megabits per second of bandwidth. Metered items of the plan
 	// are charged as usual and do not count towards it.
 	MaxQuantity string `json:"max_quantity"`
+	// The plan's unit label, which `max_quantity` counts, such as GiB or Mbps. Absent when the plan has
+	// none.
+	UnitLabel OptString `json:"unit_label"`
 }
 
 // GetPlan returns the value of Plan.
@@ -21103,6 +21174,11 @@ func (s *TrialOfferItem) GetMaxQuantity() string {
 	return s.MaxQuantity
 }
 
+// GetUnitLabel returns the value of UnitLabel.
+func (s *TrialOfferItem) GetUnitLabel() OptString {
+	return s.UnitLabel
+}
+
 // SetPlan sets the value of Plan.
 func (s *TrialOfferItem) SetPlan(val ObjectIdentity) {
 	s.Plan = val
@@ -21111,6 +21187,11 @@ func (s *TrialOfferItem) SetPlan(val ObjectIdentity) {
 // SetMaxQuantity sets the value of MaxQuantity.
 func (s *TrialOfferItem) SetMaxQuantity(val string) {
 	s.MaxQuantity = val
+}
+
+// SetUnitLabel sets the value of UnitLabel.
+func (s *TrialOfferItem) SetUnitLabel(val OptString) {
+	s.UnitLabel = val
 }
 
 // How a free trial ends, as Stripe's trial_settings.
