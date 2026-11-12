@@ -35076,8 +35076,12 @@ func (s *TrialOffer) encodeFields(e *jx.Encoder) {
 		s.TrialSettings.Encode(e)
 	}
 	{
-		e.FieldStart("applies_to")
-		s.AppliesTo.Encode(e)
+		e.FieldStart("items")
+		e.ArrStart()
+		for _, elem := range s.Items {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
 	}
 }
 
@@ -35087,7 +35091,7 @@ var jsonFieldsNameOfTrialOffer = [6]string{
 	2: "description",
 	3: "trial_period_days",
 	4: "trial_settings",
-	5: "applies_to",
+	5: "items",
 }
 
 // Decode decodes TrialOffer from json.
@@ -35157,15 +35161,23 @@ func (s *TrialOffer) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"trial_settings\"")
 			}
-		case "applies_to":
+		case "items":
 			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
-				if err := s.AppliesTo.Decode(d); err != nil {
+				s.Items = make([]TrialOfferItem, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem TrialOfferItem
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Items = append(s.Items, elem)
+					return nil
+				}); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"applies_to\"")
+				return errors.Wrap(err, "decode field \"items\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -35219,6 +35231,117 @@ func (s *TrialOffer) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *TrialOffer) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *TrialOfferItem) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *TrialOfferItem) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("plan")
+		s.Plan.Encode(e)
+	}
+	{
+		e.FieldStart("max_quantity")
+		e.Str(s.MaxQuantity)
+	}
+}
+
+var jsonFieldsNameOfTrialOfferItem = [2]string{
+	0: "plan",
+	1: "max_quantity",
+}
+
+// Decode decodes TrialOfferItem from json.
+func (s *TrialOfferItem) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode TrialOfferItem to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "plan":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Plan.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"plan\"")
+			}
+		case "max_quantity":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.MaxQuantity = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"max_quantity\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode TrialOfferItem")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfTrialOfferItem) {
+					name = jsonFieldsNameOfTrialOfferItem[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *TrialOfferItem) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *TrialOfferItem) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

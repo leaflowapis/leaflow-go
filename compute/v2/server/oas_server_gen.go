@@ -65,7 +65,9 @@ type Handler interface {
 	//  - Prepaid: the change goes through a Checkout Session that changes the network item, priced for the
 	//    rest of its period. It starts once Billing accepts the order; if checkout is not completed, the
 	//    order is not accepted or the change fails, `bandwidth_mbps` keeps its value and Billing shows the
-	//    outcome.
+	//    outcome. During a free trial that began with a trial grant, the subscription has to stay within
+	//    the plans and quantities of the trial offer, otherwise Billing refuses with 422
+	//    `BILLING_TRIAL_OFFER_EXCEEDED`.
 	//  - Pay-as-you-go: there is no checkout. The change starts at once, `checkout_session_id` and
 	//    `order_id` are null, and the new limit is metered from the instant it is applied; if it fails,
 	//    the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
@@ -131,7 +133,9 @@ type Handler interface {
 	// expires with the instance. `billing` may be omitted to take the instance's terms; given, its usage
 	// type and period must be the instance's (422 `ELASTIC_IP_BILLING_TERMS_MISMATCH`). An instance that
 	// cannot take another elastic IP, or whose type allows less bandwidth than `bandwidth_mbps`, is
-	// refused before anything is ordered, as associating would be.
+	// refused before anything is ordered, as associating would be. During a free trial that began with a
+	// trial grant, the subscription has to stay within the plans and quantities of the trial offer,
+	// otherwise Billing refuses with 422 `BILLING_TRIAL_OFFER_EXCEEDED`.
 	//
 	// The elastic IP is `pending` from the moment its Checkout Session is created until it is delivered or
 	// its checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
@@ -369,7 +373,9 @@ type Handler interface {
 	// instance's availability zone (422 `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`). `billing` may be omitted
 	// to take the instance's terms; given, its usage type and period must be the instance's (422
 	// `VOLUME_BILLING_TERMS_MISMATCH`), while its termination policy may differ. An instance with no room
-	// for another volume is refused before anything is ordered, as attaching would be.
+	// for another volume is refused before anything is ordered, as attaching would be. During a free trial
+	// that began with a trial grant, the subscription has to stay within the plans and quantities of the
+	// trial offer, otherwise Billing refuses with 422 `BILLING_TRIAL_OFFER_EXCEEDED`.
 	//
 	// The volume is `pending` from the moment its Checkout Session is created until it is delivered or its
 	// checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
@@ -1161,7 +1167,9 @@ type Handler interface {
 	// `meta.elastic_ip_id`. The request returns 202 with the instance and the Checkout Session for the
 	// change, including for metered terms. The instance keeps its usage type and period, priced with the
 	// target type's matching option; a target type without that option is refused with 409
-	// `BILLING_OPTION_UNAVAILABLE`. The resize starts once Billing accepts the order. Do not submit the
+	// `BILLING_OPTION_UNAVAILABLE`. During a free trial that began with a trial grant, the subscription
+	// has to stay within the plans and quantities of the trial offer, otherwise Billing refuses with 422
+	// `BILLING_TRIAL_OFFER_EXCEEDED`. The resize starts once Billing accepts the order. Do not submit the
 	// change again after paying. After an uncertain response, look the Checkout Session up in Billing
 	// before submitting again.
 	//
@@ -1185,7 +1193,9 @@ type Handler interface {
 	// second resize are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The volume keeps its current size
 	// until the resize is applied; once `size_gib` shows the new size, extend the file system inside the
 	// instance. If checkout is not completed, the order is not accepted or the resize fails, the volume
-	// keeps its size and Billing shows the outcome.
+	// keeps its size and Billing shows the outcome. During a free trial that began with a trial grant, the
+	// subscription has to stay within the plans and quantities of the trial offer, otherwise Billing
+	// refuses with 422 `BILLING_TRIAL_OFFER_EXCEEDED`.
 	//
 	// An attached volume, including a boot volume, can be resized. The capacity is usable at once, and the
 	// volume's `performance` shows what its type gives the new size. That performance applies from the
@@ -1209,7 +1219,9 @@ type Handler interface {
 	// effect at once; one on another backend copies the volume's data there first, which takes longer the
 	// larger the volume is. The volume keeps its type until `volume_type_id` shows the new one, and its
 	// `performance` follows from then on; a change that did not take effect leaves the volume as it was
-	// and is refunded.
+	// and is refunded. During a free trial that began with a trial grant, the subscription has to stay
+	// within the plans and quantities of the trial offer, otherwise Billing refuses with 422
+	// `BILLING_TRIAL_OFFER_EXCEEDED`.
 	//
 	// POST /api/v2/volumes/{volumeId}:retype
 	RetypeVolume(ctx context.Context, req *RetypeVolumeRequestBody, params RetypeVolumeParams) (RetypeVolumeRes, error)

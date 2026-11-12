@@ -2732,11 +2732,11 @@ type CheckoutOptions struct {
 	// when the trial ends.
 	AutoRenew OptBool `json:"auto_renew"`
 	// A free trial grant of the paying billing account that the customer chose to use. The first new
-	// subscription of the purchase whose lines the grant's offer all covers, and that has a licensed line
-	// and no trial of its own, opens with the offer's free trial. Accepted only in automatic mode; with
-	// deferred it is refused with HTTP 400, and the grant is chosen when completing the checkout through
-	// Billing. Refused with BILLING_TRIAL_GRANT_INAPPLICABLE when no subscription qualifies or the grant
-	// cannot be used now.
+	// subscription of the purchase whose lines are all of plans the grant's offer lists, within each
+	// plan's max_quantity, and that has a licensed line and no trial of its own, opens with the offer's
+	// free trial. Accepted only in automatic mode; with deferred it is refused with HTTP 400, and the
+	// grant is chosen when completing the checkout through Billing. Refused with
+	// BILLING_TRIAL_GRANT_INAPPLICABLE when no subscription qualifies or the grant cannot be used now.
 	TrialGrantID OptUUID `json:"trial_grant_id"`
 }
 
@@ -6358,7 +6358,7 @@ type Discount struct {
 	PercentOff OptString `json:"percent_off"`
 	// A fixed reduction or per-unit price override in this account currency.
 	Amount OptMoney `json:"amount"`
-	// Caps a percentage discount.
+	// The most one purchase is reduced by, for a percentage, price override or free-setup discount.
 	MaxDiscount OptMoney  `json:"max_discount"`
 	Currency    OptString `json:"currency"`
 	// What it may pay for. Absent means anything on the account, including setup fees and usage.
@@ -20718,7 +20718,8 @@ type TrialEndBehavior struct {
 	// payment. `create_invoice`: as `pause`, and an invoice for the first paid period is issued to pay.
 	MissingPaymentMethod TrialEndBehaviorMissingPaymentMethod `json:"missing_payment_method"`
 	// How long a subscription stopped at the end of its trial keeps its resources before they are
-	// reclaimed; null for the platform's retention period.
+	// reclaimed; null for the platform's retention period. Must be null with `cancel`, which releases the
+	// resources when the trial ends.
 	RetentionSeconds NilInt64 `json:"retention_seconds"`
 }
 
@@ -21006,8 +21007,10 @@ func (s *TrialGrantStatus) UnmarshalText(data []byte) error {
 }
 
 // The terms of a free trial. The licensed items of the subscription it is used for are free for
-// `trial_period_days`, while metered usage is charged as usual. When the trial ends it converts to
-// paid if automatic renewal is on; otherwise `trial_settings` applies.
+// `trial_period_days`, while metered usage is charged as usual. The subscription holds only the listed
+// plans and no more of each than its `max_quantity`, both when it is bought and while the trial lasts.
+// When the trial ends it converts to paid if automatic renewal is on; otherwise `trial_settings`
+// applies.
 // Ref: #/components/schemas/TrialOffer
 type TrialOffer struct {
 	ID              uuid.UUID     `json:"id"`
@@ -21015,8 +21018,8 @@ type TrialOffer struct {
 	Description     string        `json:"description"`
 	TrialPeriodDays int           `json:"trial_period_days"`
 	TrialSettings   TrialSettings `json:"trial_settings"`
-	// The purchases it can be used for. Every line of the subscription must be covered.
-	AppliesTo Applicability `json:"applies_to"`
+	// The plans a subscription on the trial may hold. An offer without items applies to no purchase.
+	Items []TrialOfferItem `json:"items"`
 }
 
 // GetID returns the value of ID.
@@ -21044,9 +21047,9 @@ func (s *TrialOffer) GetTrialSettings() TrialSettings {
 	return s.TrialSettings
 }
 
-// GetAppliesTo returns the value of AppliesTo.
-func (s *TrialOffer) GetAppliesTo() Applicability {
-	return s.AppliesTo
+// GetItems returns the value of Items.
+func (s *TrialOffer) GetItems() []TrialOfferItem {
+	return s.Items
 }
 
 // SetID sets the value of ID.
@@ -21074,9 +21077,40 @@ func (s *TrialOffer) SetTrialSettings(val TrialSettings) {
 	s.TrialSettings = val
 }
 
-// SetAppliesTo sets the value of AppliesTo.
-func (s *TrialOffer) SetAppliesTo(val Applicability) {
-	s.AppliesTo = val
+// SetItems sets the value of Items.
+func (s *TrialOffer) SetItems(val []TrialOfferItem) {
+	s.Items = val
+}
+
+// A plan a subscription on the trial may hold, and how much of it.
+// Ref: #/components/schemas/TrialOfferItem
+type TrialOfferItem struct {
+	// The plan, which may since have been archived.
+	Plan ObjectIdentity `json:"plan"`
+	// The most the subscription's licensed items of this plan may hold together, in the plan's quantity
+	// unit, such as gibibytes of storage or megabits per second of bandwidth. Metered items of the plan
+	// are charged as usual and do not count towards it.
+	MaxQuantity string `json:"max_quantity"`
+}
+
+// GetPlan returns the value of Plan.
+func (s *TrialOfferItem) GetPlan() ObjectIdentity {
+	return s.Plan
+}
+
+// GetMaxQuantity returns the value of MaxQuantity.
+func (s *TrialOfferItem) GetMaxQuantity() string {
+	return s.MaxQuantity
+}
+
+// SetPlan sets the value of Plan.
+func (s *TrialOfferItem) SetPlan(val ObjectIdentity) {
+	s.Plan = val
+}
+
+// SetMaxQuantity sets the value of MaxQuantity.
+func (s *TrialOfferItem) SetMaxQuantity(val string) {
+	s.MaxQuantity = val
 }
 
 // How a free trial ends, as Stripe's trial_settings.

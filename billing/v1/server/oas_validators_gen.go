@@ -9449,13 +9449,13 @@ func (s *TrialOffer) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.AppliesTo.Validate(); err != nil {
-			return err
+		if s.Items == nil {
+			return errors.New("nil is invalid value")
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "applies_to",
+			Name:  "items",
 			Error: err,
 		})
 	}
