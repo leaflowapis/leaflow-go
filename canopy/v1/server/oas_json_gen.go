@@ -68,6 +68,10 @@ func (s *APIKeyResource) encodeFields(e *jx.Encoder) {
 		e.Bool(s.RestrictModels)
 	}
 	{
+		e.FieldStart("model_aliases")
+		s.ModelAliases.Encode(e)
+	}
+	{
 		e.FieldStart("status")
 		s.Status.Encode(e)
 	}
@@ -77,7 +81,7 @@ func (s *APIKeyResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfAPIKeyResource = [12]string{
+var jsonFieldsNameOfAPIKeyResource = [13]string{
 	0:  "allowed_models",
 	1:  "created_at",
 	2:  "created_by",
@@ -88,8 +92,9 @@ var jsonFieldsNameOfAPIKeyResource = [12]string{
 	7:  "name",
 	8:  "prefix",
 	9:  "restrict_models",
-	10: "status",
-	11: "suspended",
+	10: "model_aliases",
+	11: "status",
+	12: "suspended",
 }
 
 // Decode decodes APIKeyResource from json.
@@ -225,8 +230,18 @@ func (s *APIKeyResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"restrict_models\"")
 			}
-		case "status":
+		case "model_aliases":
 			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				if err := s.ModelAliases.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"model_aliases\"")
+			}
+		case "status":
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -236,7 +251,7 @@ func (s *APIKeyResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "suspended":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				v, err := d.Bool()
 				s.Suspended = bool(v)
@@ -258,7 +273,7 @@ func (s *APIKeyResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00001111,
+		0b00011111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -1473,13 +1488,20 @@ func (s *CreateAPIKeyRequestBody) encodeFields(e *jx.Encoder) {
 			s.RestrictModels.Encode(e)
 		}
 	}
+	{
+		if s.ModelAliases.Set {
+			e.FieldStart("model_aliases")
+			s.ModelAliases.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfCreateAPIKeyRequestBody = [4]string{
+var jsonFieldsNameOfCreateAPIKeyRequestBody = [5]string{
 	0: "allowed_models",
 	1: "expires_at",
 	2: "name",
 	3: "restrict_models",
+	4: "model_aliases",
 }
 
 // Decode decodes CreateAPIKeyRequestBody from json.
@@ -1532,6 +1554,16 @@ func (s *CreateAPIKeyRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"restrict_models\"")
+			}
+		case "model_aliases":
+			if err := func() error {
+				s.ModelAliases.Reset()
+				if err := s.ModelAliases.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"model_aliases\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -3392,6 +3424,10 @@ func (s *IssuedAPIKeyResource) encodeFields(e *jx.Encoder) {
 		e.Bool(s.RestrictModels)
 	}
 	{
+		e.FieldStart("model_aliases")
+		s.ModelAliases.Encode(e)
+	}
+	{
 		e.FieldStart("secret")
 		e.Str(s.Secret)
 	}
@@ -3405,7 +3441,7 @@ func (s *IssuedAPIKeyResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfIssuedAPIKeyResource = [13]string{
+var jsonFieldsNameOfIssuedAPIKeyResource = [14]string{
 	0:  "allowed_models",
 	1:  "created_at",
 	2:  "created_by",
@@ -3416,9 +3452,10 @@ var jsonFieldsNameOfIssuedAPIKeyResource = [13]string{
 	7:  "name",
 	8:  "prefix",
 	9:  "restrict_models",
-	10: "secret",
-	11: "status",
-	12: "suspended",
+	10: "model_aliases",
+	11: "secret",
+	12: "status",
+	13: "suspended",
 }
 
 // Decode decodes IssuedAPIKeyResource from json.
@@ -3554,8 +3591,18 @@ func (s *IssuedAPIKeyResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"restrict_models\"")
 			}
-		case "secret":
+		case "model_aliases":
 			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				if err := s.ModelAliases.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"model_aliases\"")
+			}
+		case "secret":
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				v, err := d.Str()
 				s.Secret = string(v)
@@ -3567,7 +3614,7 @@ func (s *IssuedAPIKeyResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"secret\"")
 			}
 		case "status":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -3577,7 +3624,7 @@ func (s *IssuedAPIKeyResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "suspended":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				v, err := d.Bool()
 				s.Suspended = bool(v)
@@ -3599,7 +3646,7 @@ func (s *IssuedAPIKeyResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00011111,
+		0b00111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4642,6 +4689,73 @@ func (s *Model) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *Model) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s ModelAliases) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields implements json.Marshaler.
+func (s ModelAliases) encodeFields(e *jx.Encoder) {
+	for k, elem := range s {
+		e.FieldStart(k)
+
+		e.Str(elem)
+	}
+}
+
+// Decode decodes ModelAliases from json.
+func (s *ModelAliases) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ModelAliases to nil")
+	}
+	m := s.init()
+	var propertiesCount int
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		propertiesCount++
+		var elem string
+		if err := func() error {
+			v, err := d.Str()
+			elem = string(v)
+			if err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return errors.Wrapf(err, "decode field %q", k)
+		}
+		m[string(k)] = elem
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode ModelAliases")
+	}
+	// Validate properties count.
+	if err := (validate.Object{
+		MinProperties:    0,
+		MinPropertiesSet: false,
+		MaxProperties:    10,
+		MaxPropertiesSet: true,
+	}).ValidateProperties(propertiesCount); err != nil {
+		return errors.Wrap(err, "object")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s ModelAliases) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ModelAliases) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -5773,9 +5887,21 @@ func (s *ModelResource) encodeFields(e *jx.Encoder) {
 		e.FieldStart("capabilities")
 		s.Capabilities.Encode(e)
 	}
+	{
+		e.FieldStart("access")
+		s.Access.Encode(e)
+	}
+	{
+		e.FieldStart("access_granted")
+		e.Bool(s.AccessGranted)
+	}
+	{
+		e.FieldStart("moderation_disabled")
+		e.Bool(s.ModerationDisabled)
+	}
 }
 
-var jsonFieldsNameOfModelResource = [12]string{
+var jsonFieldsNameOfModelResource = [15]string{
 	0:  "context_length",
 	1:  "display_name",
 	2:  "family",
@@ -5788,6 +5914,9 @@ var jsonFieldsNameOfModelResource = [12]string{
 	9:  "input_modalities",
 	10: "output_modalities",
 	11: "capabilities",
+	12: "access",
+	13: "access_granted",
+	14: "moderation_disabled",
 }
 
 // Decode decodes ModelResource from json.
@@ -5963,6 +6092,40 @@ func (s *ModelResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"capabilities\"")
 			}
+		case "access":
+			requiredBitSet[1] |= 1 << 4
+			if err := func() error {
+				if err := s.Access.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"access\"")
+			}
+		case "access_granted":
+			requiredBitSet[1] |= 1 << 5
+			if err := func() error {
+				v, err := d.Bool()
+				s.AccessGranted = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"access_granted\"")
+			}
+		case "moderation_disabled":
+			requiredBitSet[1] |= 1 << 6
+			if err := func() error {
+				v, err := d.Bool()
+				s.ModerationDisabled = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"moderation_disabled\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -5974,7 +6137,7 @@ func (s *ModelResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00001111,
+		0b01111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -6016,6 +6179,46 @@ func (s *ModelResource) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *ModelResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes ModelResourceAccess as json.
+func (s ModelResourceAccess) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes ModelResourceAccess from json.
+func (s *ModelResourceAccess) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ModelResourceAccess to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch ModelResourceAccess(v) {
+	case ModelResourceAccessPublic:
+		*s = ModelResourceAccessPublic
+	case ModelResourceAccessRestricted:
+		*s = ModelResourceAccessRestricted
+	default:
+		*s = ModelResourceAccess(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s ModelResourceAccess) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ModelResourceAccess) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -7277,6 +7480,40 @@ func (s OptMediaUsageDetailsReferenceCounts) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptMediaUsageDetailsReferenceCounts) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes ModelAliases as json.
+func (o OptModelAliases) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes ModelAliases from json.
+func (o *OptModelAliases) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptModelAliases to nil")
+	}
+	o.Set = true
+	o.Value = make(ModelAliases)
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptModelAliases) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptModelAliases) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -10032,14 +10269,21 @@ func (s *UpdateAPIKeyRequestBody) encodeFields(e *jx.Encoder) {
 			s.RestrictModels.Encode(e)
 		}
 	}
+	{
+		if s.ModelAliases.Set {
+			e.FieldStart("model_aliases")
+			s.ModelAliases.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfUpdateAPIKeyRequestBody = [5]string{
+var jsonFieldsNameOfUpdateAPIKeyRequestBody = [6]string{
 	0: "allowed_models",
 	1: "clear_expiry",
 	2: "expires_at",
 	3: "name",
 	4: "restrict_models",
+	5: "model_aliases",
 }
 
 // Decode decodes UpdateAPIKeyRequestBody from json.
@@ -10099,6 +10343,16 @@ func (s *UpdateAPIKeyRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"restrict_models\"")
+			}
+		case "model_aliases":
+			if err := func() error {
+				s.ModelAliases.Reset()
+				if err := s.ModelAliases.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"model_aliases\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)

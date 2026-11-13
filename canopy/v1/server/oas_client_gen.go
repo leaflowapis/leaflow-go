@@ -37,6 +37,12 @@ type Invoker interface {
 	// Supply it wherever a value such as `OPENAI_API_KEY` is expected. The forwarding endpoints accept the
 	// OpenAI, Anthropic and Gemini request formats alike.
 	//
+	// `model_aliases` is refused with 400 `API_KEY_MODEL_ALIASES_TOO_MANY` beyond 10 entries, 400
+	// `API_KEY_MODEL_ALIAS_INVALID` for an empty, overlong or self-referencing entry, 422
+	// `API_KEY_MODEL_ALIAS_TARGET_UNKNOWN` for a model that does not exist, and 400
+	// `API_KEY_MODEL_ALIAS_TARGET_NOT_ALLOWED` for a model missing from `allowed_models` while
+	// `restrict_models` is true.
+	//
 	// POST /api/v1/keys
 	CreateAPIKey(ctx context.Context, request *CreateAPIKeyRequestBody) (CreateAPIKeyRes, error)
 	// CreateChatCompletion invokes create-chat-completion operation.
@@ -204,6 +210,9 @@ type Invoker interface {
 	//
 	// A model that has been retired does not appear here, while it remains readable individually.
 	//
+	// Restricted models are listed to every project. Calling one requires a grant for the project, and
+	// `access_granted` says whether the current project holds one.
+	//
 	// `context_length` and `max_output_tokens` are advisory. The server does not truncate on their basis,
 	// and the request body is forwarded upstream unchanged.
 	//
@@ -263,6 +272,11 @@ type Invoker interface {
 	// A field that is not supplied is left unchanged. To remove an expiry, send `clear_expiry` as true
 	// rather than a null `expires_at`.
 	//
+	// `model_aliases` replaces the aliases as a whole, and an empty object removes them. They are checked
+	// against the key as it stands after the update, so narrowing `allowed_models` below a model an alias
+	// points at fails with 400 `API_KEY_MODEL_ALIAS_TARGET_NOT_ALLOWED`. The other refusals are those of
+	// issuing a key.
+	//
 	// A revoked key accepts no modification.
 	//
 	// PATCH /api/v1/keys/{keyId}
@@ -317,6 +331,12 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 //
 // Supply it wherever a value such as `OPENAI_API_KEY` is expected. The forwarding endpoints accept the
 // OpenAI, Anthropic and Gemini request formats alike.
+//
+// `model_aliases` is refused with 400 `API_KEY_MODEL_ALIASES_TOO_MANY` beyond 10 entries, 400
+// `API_KEY_MODEL_ALIAS_INVALID` for an empty, overlong or self-referencing entry, 422
+// `API_KEY_MODEL_ALIAS_TARGET_UNKNOWN` for a model that does not exist, and 400
+// `API_KEY_MODEL_ALIAS_TARGET_NOT_ALLOWED` for a model missing from `allowed_models` while
+// `restrict_models` is true.
 //
 // POST /api/v1/keys
 func (c *Client) CreateAPIKey(ctx context.Context, request *CreateAPIKeyRequestBody) (CreateAPIKeyRes, error) {
@@ -3265,6 +3285,9 @@ func (c *Client) sendListInferenceModels(ctx context.Context) (res ListInference
 //
 // A model that has been retired does not appear here, while it remains readable individually.
 //
+// Restricted models are listed to every project. Calling one requires a grant for the project, and
+// `access_granted` says whether the current project holds one.
+//
 // `context_length` and `max_output_tokens` are advisory. The server does not truncate on their basis,
 // and the request body is forwarded upstream unchanged.
 //
@@ -4344,6 +4367,11 @@ func (c *Client) sendStreamGenerateContent(ctx context.Context, request NativeRe
 //
 // A field that is not supplied is left unchanged. To remove an expiry, send `clear_expiry` as true
 // rather than a null `expires_at`.
+//
+// `model_aliases` replaces the aliases as a whole, and an empty object removes them. They are checked
+// against the key as it stands after the update, so narrowing `allowed_models` below a model an alias
+// points at fails with 400 `API_KEY_MODEL_ALIAS_TARGET_NOT_ALLOWED`. The other refusals are those of
+// issuing a key.
 //
 // A revoked key accepts no modification.
 //

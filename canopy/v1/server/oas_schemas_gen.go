@@ -31,6 +31,7 @@ type APIKeyResource struct {
 	Prefix string `json:"prefix"`
 	// While true, only the models listed in `allowed_models` are permitted.
 	RestrictModels bool                 `json:"restrict_models"`
+	ModelAliases   ModelAliases         `json:"model_aliases"`
 	Status         APIKeyResourceStatus `json:"status"`
 	// True indicates that the key was disabled because its project is suspended, and that the project has
 	// to be restored before the key can be used again.
@@ -85,6 +86,11 @@ func (s *APIKeyResource) GetPrefix() string {
 // GetRestrictModels returns the value of RestrictModels.
 func (s *APIKeyResource) GetRestrictModels() bool {
 	return s.RestrictModels
+}
+
+// GetModelAliases returns the value of ModelAliases.
+func (s *APIKeyResource) GetModelAliases() ModelAliases {
+	return s.ModelAliases
 }
 
 // GetStatus returns the value of Status.
@@ -145,6 +151,11 @@ func (s *APIKeyResource) SetPrefix(val string) {
 // SetRestrictModels sets the value of RestrictModels.
 func (s *APIKeyResource) SetRestrictModels(val bool) {
 	s.RestrictModels = val
+}
+
+// SetModelAliases sets the value of ModelAliases.
+func (s *APIKeyResource) SetModelAliases(val ModelAliases) {
+	s.ModelAliases = val
 }
 
 // SetStatus sets the value of Status.
@@ -664,7 +675,8 @@ type CreateAPIKeyRequestBody struct {
 	// A name for the holder's own use, such as CI or Production.
 	Name string `json:"name"`
 	// While true, only the models listed in `allowed_models` are permitted.
-	RestrictModels OptBool `json:"restrict_models"`
+	RestrictModels OptBool         `json:"restrict_models"`
+	ModelAliases   OptModelAliases `json:"model_aliases"`
 }
 
 // GetAllowedModels returns the value of AllowedModels.
@@ -687,6 +699,11 @@ func (s *CreateAPIKeyRequestBody) GetRestrictModels() OptBool {
 	return s.RestrictModels
 }
 
+// GetModelAliases returns the value of ModelAliases.
+func (s *CreateAPIKeyRequestBody) GetModelAliases() OptModelAliases {
+	return s.ModelAliases
+}
+
 // SetAllowedModels sets the value of AllowedModels.
 func (s *CreateAPIKeyRequestBody) SetAllowedModels(val OptNilStringArray) {
 	s.AllowedModels = val
@@ -705,6 +722,11 @@ func (s *CreateAPIKeyRequestBody) SetName(val string) {
 // SetRestrictModels sets the value of RestrictModels.
 func (s *CreateAPIKeyRequestBody) SetRestrictModels(val OptBool) {
 	s.RestrictModels = val
+}
+
+// SetModelAliases sets the value of ModelAliases.
+func (s *CreateAPIKeyRequestBody) SetModelAliases(val OptModelAliases) {
+	s.ModelAliases = val
 }
 
 // OpenAI chat.completion.chunk SSE frames, ending with data: [DONE].
@@ -1621,7 +1643,8 @@ type IssuedAPIKeyResource struct {
 	// The leading characters of the plaintext, by which a key is recognised in a list.
 	Prefix string `json:"prefix"`
 	// While true, only the models listed in `allowed_models` are permitted.
-	RestrictModels bool `json:"restrict_models"`
+	RestrictModels bool         `json:"restrict_models"`
+	ModelAliases   ModelAliases `json:"model_aliases"`
 	// The complete key, returned in this response only. Store it immediately.
 	Secret string                     `json:"secret"`
 	Status IssuedAPIKeyResourceStatus `json:"status"`
@@ -1678,6 +1701,11 @@ func (s *IssuedAPIKeyResource) GetPrefix() string {
 // GetRestrictModels returns the value of RestrictModels.
 func (s *IssuedAPIKeyResource) GetRestrictModels() bool {
 	return s.RestrictModels
+}
+
+// GetModelAliases returns the value of ModelAliases.
+func (s *IssuedAPIKeyResource) GetModelAliases() ModelAliases {
+	return s.ModelAliases
 }
 
 // GetSecret returns the value of Secret.
@@ -1743,6 +1771,11 @@ func (s *IssuedAPIKeyResource) SetPrefix(val string) {
 // SetRestrictModels sets the value of RestrictModels.
 func (s *IssuedAPIKeyResource) SetRestrictModels(val bool) {
 	s.RestrictModels = val
+}
+
+// SetModelAliases sets the value of ModelAliases.
+func (s *IssuedAPIKeyResource) SetModelAliases(val ModelAliases) {
+	s.ModelAliases = val
 }
 
 // SetSecret sets the value of Secret.
@@ -2511,6 +2544,24 @@ func (s *Model) SetCapabilities(val ModelCapabilities) {
 
 func (*Model) getInferenceModelRes() {}
 
+// Model names the key rewrites. A request naming a key of this map is served by the model it maps to,
+// and is admitted, billed and recorded as that model; aliases are not followed in chains. At most 10
+// entries, each name and model at most 128 characters.
+//
+// The model must exist, and while `restrict_models` is true it must also be listed in
+// `allowed_models`. A restricted model is callable only while the project holds a grant for it.
+// Ref: #/components/schemas/ModelAliases
+type ModelAliases map[string]string
+
+func (s *ModelAliases) init() ModelAliases {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
 // How requests to a model are billed: under the service's subscription, on the Billing plan `plan_id`,
 // one rate for each billable kind. Read the rates from Billing with `search-prices` for the plan,
 // narrowing each price's `rates` with each meter's `dimensions`.
@@ -3033,6 +3084,16 @@ type ModelResource struct {
 	// Produced output modalities. Image input does not imply image generation.
 	OutputModalities []Modality        `json:"output_modalities"`
 	Capabilities     ModelCapabilities `json:"capabilities"`
+	// Who can call the model. Every model is listed to every project.
+	//
+	//  - `public`: callable by every project.
+	//  - `restricted`: callable only by projects holding a grant. A request from any other project fails
+	//    with 403 `MODEL_ACCESS_REQUIRED`.
+	Access ModelResourceAccess `json:"access"`
+	// Whether the current project can call the model. Always true for a public model.
+	AccessGranted bool `json:"access_granted"`
+	// True when the model is served without upstream content moderation.
+	ModerationDisabled bool `json:"moderation_disabled"`
 }
 
 // GetContextLength returns the value of ContextLength.
@@ -3095,6 +3156,21 @@ func (s *ModelResource) GetCapabilities() ModelCapabilities {
 	return s.Capabilities
 }
 
+// GetAccess returns the value of Access.
+func (s *ModelResource) GetAccess() ModelResourceAccess {
+	return s.Access
+}
+
+// GetAccessGranted returns the value of AccessGranted.
+func (s *ModelResource) GetAccessGranted() bool {
+	return s.AccessGranted
+}
+
+// GetModerationDisabled returns the value of ModerationDisabled.
+func (s *ModelResource) GetModerationDisabled() bool {
+	return s.ModerationDisabled
+}
+
 // SetContextLength sets the value of ContextLength.
 func (s *ModelResource) SetContextLength(val int64) {
 	s.ContextLength = val
@@ -3155,7 +3231,68 @@ func (s *ModelResource) SetCapabilities(val ModelCapabilities) {
 	s.Capabilities = val
 }
 
+// SetAccess sets the value of Access.
+func (s *ModelResource) SetAccess(val ModelResourceAccess) {
+	s.Access = val
+}
+
+// SetAccessGranted sets the value of AccessGranted.
+func (s *ModelResource) SetAccessGranted(val bool) {
+	s.AccessGranted = val
+}
+
+// SetModerationDisabled sets the value of ModerationDisabled.
+func (s *ModelResource) SetModerationDisabled(val bool) {
+	s.ModerationDisabled = val
+}
+
 func (*ModelResource) getModelRes() {}
+
+// Who can call the model. Every model is listed to every project.
+//
+//   - `public`: callable by every project.
+//   - `restricted`: callable only by projects holding a grant. A request from any other project fails
+//     with 403 `MODEL_ACCESS_REQUIRED`.
+type ModelResourceAccess string
+
+const (
+	ModelResourceAccessPublic     ModelResourceAccess = "public"
+	ModelResourceAccessRestricted ModelResourceAccess = "restricted"
+)
+
+// AllValues returns all ModelResourceAccess values.
+func (ModelResourceAccess) AllValues() []ModelResourceAccess {
+	return []ModelResourceAccess{
+		ModelResourceAccessPublic,
+		ModelResourceAccessRestricted,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ModelResourceAccess) MarshalText() ([]byte, error) {
+	switch s {
+	case ModelResourceAccessPublic:
+		return []byte(s), nil
+	case ModelResourceAccessRestricted:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ModelResourceAccess) UnmarshalText(data []byte) error {
+	switch ModelResourceAccess(data) {
+	case ModelResourceAccessPublic:
+		*s = ModelResourceAccessPublic
+		return nil
+	case ModelResourceAccessRestricted:
+		*s = ModelResourceAccessRestricted
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
 
 type ModelResourceStatus string
 
@@ -4529,6 +4666,52 @@ func (o OptMediaUsageDetailsReferenceCounts) Get() (v MediaUsageDetailsReference
 
 // Or returns value if set, or given parameter if does not.
 func (o OptMediaUsageDetailsReferenceCounts) Or(d MediaUsageDetailsReferenceCounts) MediaUsageDetailsReferenceCounts {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptModelAliases returns new OptModelAliases with value set to v.
+func NewOptModelAliases(v ModelAliases) OptModelAliases {
+	return OptModelAliases{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptModelAliases is optional ModelAliases.
+type OptModelAliases struct {
+	Value ModelAliases
+	Set   bool
+}
+
+// IsSet returns true if OptModelAliases was set.
+func (o OptModelAliases) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptModelAliases) Reset() {
+	var v ModelAliases
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptModelAliases) SetTo(v ModelAliases) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptModelAliases) Get() (v ModelAliases, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptModelAliases) Or(d ModelAliases) ModelAliases {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -6598,9 +6781,10 @@ type UpdateAPIKeyRequestBody struct {
 	// True removes the expiry.
 	ClearExpiry OptBool `json:"clear_expiry"`
 	// Sets the expiry. To remove it, use `clear_expiry`.
-	ExpiresAt      OptNilDateTime `json:"expires_at"`
-	Name           OptNilString   `json:"name"`
-	RestrictModels OptNilBool     `json:"restrict_models"`
+	ExpiresAt      OptNilDateTime  `json:"expires_at"`
+	Name           OptNilString    `json:"name"`
+	RestrictModels OptNilBool      `json:"restrict_models"`
+	ModelAliases   OptModelAliases `json:"model_aliases"`
 }
 
 // GetAllowedModels returns the value of AllowedModels.
@@ -6628,6 +6812,11 @@ func (s *UpdateAPIKeyRequestBody) GetRestrictModels() OptNilBool {
 	return s.RestrictModels
 }
 
+// GetModelAliases returns the value of ModelAliases.
+func (s *UpdateAPIKeyRequestBody) GetModelAliases() OptModelAliases {
+	return s.ModelAliases
+}
+
 // SetAllowedModels sets the value of AllowedModels.
 func (s *UpdateAPIKeyRequestBody) SetAllowedModels(val OptNilStringArray) {
 	s.AllowedModels = val
@@ -6651,6 +6840,11 @@ func (s *UpdateAPIKeyRequestBody) SetName(val OptNilString) {
 // SetRestrictModels sets the value of RestrictModels.
 func (s *UpdateAPIKeyRequestBody) SetRestrictModels(val OptNilBool) {
 	s.RestrictModels = val
+}
+
+// SetModelAliases sets the value of ModelAliases.
+func (s *UpdateAPIKeyRequestBody) SetModelAliases(val OptModelAliases) {
+	s.ModelAliases = val
 }
 
 // Ref: #/components/schemas/UsageBucketResource
