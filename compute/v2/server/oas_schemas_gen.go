@@ -15225,6 +15225,9 @@ func (s *UpdateVolumeSnapshotRequestBody) SetName(val OptString) {
 
 // Ref: #/components/schemas/VirtualPrivateCloud
 type VirtualPrivateCloud struct {
+	// Actual MTU observed on the Neutron network; null until provisioned and observed. This does not
+	// assert the MTU of existing guest interfaces.
+	Mtu      NilInt64              `json:"mtu"`
 	ID       VirtualPrivateCloudId `json:"id"`
 	RegionID RegionId              `json:"region_id"`
 	Name     string                `json:"name"`
@@ -15248,6 +15251,11 @@ type VirtualPrivateCloud struct {
 	UpdatedAt time.Time                 `json:"updated_at"`
 	// The most recent operation started on the virtual private cloud; null when none has been recorded.
 	LatestOperation NilLatestOperation `json:"latest_operation"`
+}
+
+// GetMtu returns the value of Mtu.
+func (s *VirtualPrivateCloud) GetMtu() NilInt64 {
+	return s.Mtu
 }
 
 // GetID returns the value of ID.
@@ -15298,6 +15306,11 @@ func (s *VirtualPrivateCloud) GetUpdatedAt() time.Time {
 // GetLatestOperation returns the value of LatestOperation.
 func (s *VirtualPrivateCloud) GetLatestOperation() NilLatestOperation {
 	return s.LatestOperation
+}
+
+// SetMtu sets the value of Mtu.
+func (s *VirtualPrivateCloud) SetMtu(val NilInt64) {
+	s.Mtu = val
 }
 
 // SetID sets the value of ID.

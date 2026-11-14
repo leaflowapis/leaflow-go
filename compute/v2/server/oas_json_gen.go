@@ -28167,6 +28167,10 @@ func (s *VirtualPrivateCloud) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *VirtualPrivateCloud) encodeFields(e *jx.Encoder) {
 	{
+		e.FieldStart("mtu")
+		s.Mtu.Encode(e)
+	}
+	{
 		e.FieldStart("id")
 		s.ID.Encode(e)
 	}
@@ -28210,17 +28214,18 @@ func (s *VirtualPrivateCloud) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfVirtualPrivateCloud = [10]string{
-	0: "id",
-	1: "region_id",
-	2: "name",
-	3: "ipv4_cidr",
-	4: "ipv6_internet_line_id",
-	5: "ipv6_cidr",
-	6: "status",
-	7: "created_at",
-	8: "updated_at",
-	9: "latest_operation",
+var jsonFieldsNameOfVirtualPrivateCloud = [11]string{
+	0:  "mtu",
+	1:  "id",
+	2:  "region_id",
+	3:  "name",
+	4:  "ipv4_cidr",
+	5:  "ipv6_internet_line_id",
+	6:  "ipv6_cidr",
+	7:  "status",
+	8:  "created_at",
+	9:  "updated_at",
+	10: "latest_operation",
 }
 
 // Decode decodes VirtualPrivateCloud from json.
@@ -28232,8 +28237,18 @@ func (s *VirtualPrivateCloud) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "id":
+		case "mtu":
 			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Mtu.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"mtu\"")
+			}
+		case "id":
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				if err := s.ID.Decode(d); err != nil {
 					return err
@@ -28243,7 +28258,7 @@ func (s *VirtualPrivateCloud) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "region_id":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				if err := s.RegionID.Decode(d); err != nil {
 					return err
@@ -28253,7 +28268,7 @@ func (s *VirtualPrivateCloud) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"region_id\"")
 			}
 		case "name":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -28265,7 +28280,7 @@ func (s *VirtualPrivateCloud) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "ipv4_cidr":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Str()
 				s.Ipv4Cidr = string(v)
@@ -28287,7 +28302,7 @@ func (s *VirtualPrivateCloud) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"ipv6_internet_line_id\"")
 			}
 		case "ipv6_cidr":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.Ipv6Cidr.Decode(d); err != nil {
 					return err
@@ -28297,7 +28312,7 @@ func (s *VirtualPrivateCloud) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"ipv6_cidr\"")
 			}
 		case "status":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -28307,7 +28322,7 @@ func (s *VirtualPrivateCloud) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "created_at":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -28319,7 +28334,7 @@ func (s *VirtualPrivateCloud) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "updated_at":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -28331,7 +28346,7 @@ func (s *VirtualPrivateCloud) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"updated_at\"")
 			}
 		case "latest_operation":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				if err := s.LatestOperation.Decode(d); err != nil {
 					return err
@@ -28350,8 +28365,8 @@ func (s *VirtualPrivateCloud) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b11101111,
-		0b00000011,
+		0b11011111,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
