@@ -250,7 +250,11 @@ func (s *Server) handleAcceptVirtualPrivateCloudPeeringRequest(args [1]string, a
 // `ELASTIC_IP_ALREADY_ASSOCIATED` (409), and is moved by disassociating it first, so that the moment
 // traffic stops reaching the old target is one the caller chose. The elastic IP is `associating` until
 // the association is confirmed, and with an instance as the target that instance is
-// `associating_elastic_ip` as well, so the instance must not have another operation in progress.
+// `associating_elastic_ip` as well, so the instance must not have another operation in progress. An
+// instance still being created after its order was accepted can be the target: the association is
+// accepted and made once the instance is created, and fails with `COMPUTE_RESOURCE_CREATION_FAILED` if
+// the instance's creation fails. An instance whose purchase still awaits checkout or payment is
+// refused with `COMPUTE_PURCHASE_PENDING`.
 //
 // The elastic IP must be in the same region as the target. With an instance as the target, the elastic
 // IP's `bandwidth_mbps` must not exceed the `max_bandwidth_mbps` of that instance's type; a higher
@@ -471,7 +475,11 @@ func (s *Server) handleAssociateElasticIPRequest(args [1]string, argsEscaped boo
 //
 // Returns the network interface; the instance is `attaching_network_interface` and the interface is
 // `attaching` until the attachment is confirmed. The instance has to be running or stopped; one
-// stopped by the legacy stop, which released its host, is refused with 409 `INSTANCE_SHELVED`.
+// stopped by the legacy stop, which released its host, is refused with 409 `INSTANCE_SHELVED`. A
+// network interface still being created can be attached right away, so an interface can be created and
+// attached in two consecutive requests. The attachment is accepted and goes ahead once the interface
+// is created, and fails with `NETWORK_INTERFACE_UNAVAILABLE` if the interface's creation fails. An
+// instance still being created is refused with `INSTANCE_STILL_PENDING`.
 //
 // POST /api/v2/instances/{instanceId}/network-interfaces
 func (s *Server) handleAttachInstanceNetworkInterfaceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -688,7 +696,11 @@ func (s *Server) handleAttachInstanceNetworkInterfaceRequest(args [1]string, arg
 //
 // The volume must be in the same region and availability zone as the instance. Returns the volume; the
 // instance is `attaching_volume` and the volume is `attaching` until the attachment is confirmed.
-// Partition the volume and mount the file system inside the instance once it is attached.
+// Partition the volume and mount the file system inside the instance once it is attached. A volume
+// still being created after its order was accepted can be attached right away; the attachment is
+// accepted and goes ahead once the volume is created, and fails with
+// `COMPUTE_RESOURCE_CREATION_FAILED` if the volume's creation fails. A volume whose purchase still
+// awaits checkout or payment is refused with `COMPUTE_PURCHASE_PENDING`.
 //
 // POST /api/v2/instances/{instanceId}/volumes
 func (s *Server) handleAttachInstanceVolumeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1394,12 +1406,14 @@ func (s *Server) handleChangeElasticIPChargeTypeRequest(args [1]string, argsEsca
 // interface of that instance of the project once created, and its two items join the instance's
 // Billing subscription: a prepaid network item is charged up to the instance's term end, the rest of
 // the current period in proportion to the time left, and from then on renews, renews automatically and
-// expires with the instance. `billing` may be omitted to take the instance's terms; given, its usage
-// type and period must be the instance's (422 `ELASTIC_IP_BILLING_TERMS_MISMATCH`). An instance that
-// cannot take another elastic IP, or whose type allows less bandwidth than `bandwidth_mbps`, is
-// refused before anything is ordered, as associating would be. During a free trial that began with a
-// trial grant, the subscription has to stay within the plans and quantities of the trial offer,
-// otherwise Billing refuses with 422 `BILLING_TRIAL_OFFER_EXCEEDED`.
+// expires with the instance. `billing.price_id` is required and identifies a price of this component's
+// plan. Billing checks that it can join the existing subscription. An instance that cannot take
+// another elastic IP, or whose type allows less bandwidth than `bandwidth_mbps`, is refused before
+// anything is ordered, as associating would be. During a free trial that began with a trial grant, the
+// subscription has to stay within the plans and quantities of the trial offer, otherwise Billing
+// refuses with 422 `BILLING_TRIAL_OFFER_EXCEEDED`. The instance may still be being created after its
+// order was accepted; the elastic IP is associated once the instance is created, and is refunded if
+// the instance's creation fails.
 //
 // The elastic IP is `pending` from the moment its Checkout Session is created until it is delivered or
 // its checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
@@ -1605,9 +1619,9 @@ func (s *Server) handleCreateElasticIPRequest(args [0]string, argsEscaped bool, 
 // handleCreateInstanceRequest handles create-instance operation.
 //
 // Creates a Billing Checkout Session, including for metered terms, and returns one `pending` instance
-// per requested instance with it. Each new component carries its own commercial terms; their usage
-// type and period must match. A pending instance has no server, boot volume or address, and is not
-// metered.
+// per requested instance with it. Each new component selects its own Billing price. Billing validates
+// prices and subscription compatibility. A pending instance has no server, boot volume or address, and
+// is not metered.
 //
 // Creation starts once Billing accepts the order: the instance stays `pending` while it is created,
 // then becomes `running`. With automatic checkout, insufficient funds refuse the request and nothing
@@ -1632,11 +1646,15 @@ func (s *Server) handleCreateElasticIPRequest(args [0]string, argsEscaped bool, 
 // Choose an image or existing volume through boot_volume, and exactly one of network_interface_id or
 // subnet_id. Existing network interfaces, boot volumes or elastic IPs require count=1. They are not
 // held while the instance is pending; if one is no longer usable when the order is accepted, the
-// instance ends `failed` with `provisioning_failed`. Image boots require boot_volume; existing volumes
-// retain their own subscription. Each instance gets its own Billing subscription, with the boot
-// volume, data volumes and elastic IP bought with it as items of it: they renew, renew automatically
-// and expire with the machine as a whole, while each can still be changed or released alone.
-// `checkout.auto_renew` turns automatic renewal on for each machine.
+// instance ends `failed` with `provisioning_failed`. Any of them, and a private image, may still be
+// being created after its own order was accepted: the instance is created once they exist, and if one
+// of them is not created, the instance ends `failed` with `provisioning_failed` and its part of the
+// order is refunded. One whose purchase still awaits checkout or payment is refused with
+// `COMPUTE_PURCHASE_PENDING`. Image boots require boot_volume; existing volumes retain their own
+// subscription. Each instance gets its own Billing subscription, with the boot volume, data volumes
+// and elastic IP bought with it as items of it: they renew, renew automatically and expire with the
+// machine as a whole, while each can still be changed or released alone. `checkout.auto_renew` turns
+// automatic renewal on for each machine.
 //
 // Instances of one request succeed or fail individually. Each instance, with its boot volume, network
 // interface and elastic IP, is created or fails as a whole. Instances that were created are kept; each
@@ -4402,7 +4420,10 @@ func (s *Server) handleCreateVirtualPrivateCloudSubnetRequest(args [1]string, ar
 //
 // The volume is empty, or is restored from exactly one source: `volume_snapshot_id` or
 // `volume_backup_id`. Giving both is refused with 422 `VOLUME_SOURCE_CONFLICT`. A restore is a
-// purchase of a new volume; the source volume is unaffected and need not still exist.
+// purchase of a new volume; the source volume is unaffected and need not still exist. The snapshot or
+// backup may still be being created after its order was accepted: the volume is created from it once
+// it is ready, and is refunded if its creation fails. One whose purchase still awaits checkout or
+// payment is refused with `COMPUTE_PURCHASE_PENDING`.
 //
 //   - From a snapshot, the volume type has to be of the snapshot's availability zone (422
 //     `VOLUME_SNAPSHOT_OTHER_AVAILABILITY_ZONE`), because a snapshot lives in the same storage pool as
@@ -4425,12 +4446,14 @@ func (s *Server) handleCreateVirtualPrivateCloudSubnetRequest(args [1]string, ar
 // once created, and becomes an item of the instance's Billing subscription: it is charged up to the
 // instance's term end, the rest of the current period in proportion to the time left, and from then on
 // renews, renews automatically and expires with the instance. Its volume type has to be of the
-// instance's availability zone (422 `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`). `billing` may be omitted
-// to take the instance's terms; given, its usage type and period must be the instance's (422
-// `VOLUME_BILLING_TERMS_MISMATCH`), while its termination policy may differ. An instance with no room
-// for another volume is refused before anything is ordered, as attaching would be. During a free trial
-// that began with a trial grant, the subscription has to stay within the plans and quantities of the
-// trial offer, otherwise Billing refuses with 422 `BILLING_TRIAL_OFFER_EXCEEDED`.
+// instance's availability zone (422 `VOLUME_TYPE_OTHER_AVAILABILITY_ZONE`). `billing.price_id` is
+// required and identifies a price of this component's plan. Billing checks that it can join the
+// existing subscription. An instance with no room for another volume is refused before anything is
+// ordered, as attaching would be. During a free trial that began with a trial grant, the subscription
+// has to stay within the plans and quantities of the trial offer, otherwise Billing refuses with 422
+// `BILLING_TRIAL_OFFER_EXCEEDED`. The instance may still be being created after its order was
+// accepted; the volume is attached once the instance is created, and is refunded if the instance's
+// creation fails.
 //
 // The volume is `pending` from the moment its Checkout Session is created until it is delivered or its
 // checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
@@ -4644,7 +4667,10 @@ func (s *Server) handleCreateVolumeRequest(args [0]string, argsEscaped bool, w h
 // through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
 // backup is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
 // the customer completes checkout in Billing. The source and project quotas are checked before the
-// Checkout Session is created, and a refused request creates nothing.
+// Checkout Session is created, and a refused request creates nothing. The volume may still be being
+// created after its order was accepted: the backup is taken once the volume is created, and is
+// refunded if the volume's creation fails. A volume whose purchase still awaits checkout or payment is
+// refused with `COMPUTE_PURCHASE_PENDING`.
 //
 // The backup is `pending` from the moment its Checkout Session is created until it is delivered or its
 // checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
@@ -4857,7 +4883,10 @@ func (s *Server) handleCreateVolumeBackupRequest(args [0]string, argsEscaped boo
 // through a Billing Checkout Session: automatic checkout completes at once for metered pricing and the
 // snapshot is taken as soon as the order is accepted; with deferred checkout it stays `pending` until
 // the customer completes checkout in Billing. The source and project quotas are checked before the
-// Checkout Session is created, and a refused request creates nothing.
+// Checkout Session is created, and a refused request creates nothing. The volume may still be being
+// created after its order was accepted: the snapshot is taken once the volume is created, and is
+// refunded if the volume's creation fails. A volume whose purchase still awaits checkout or payment is
+// refused with `COMPUTE_PURCHASE_PENDING`.
 //
 // The snapshot is `pending` from the moment its Checkout Session is created until it is delivered or
 // its checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
@@ -20619,6 +20648,10 @@ func (s *Server) handleRebootInstanceRequest(args [1]string, argsEscaped bool, w
 // rebuilding is the only way back into an instance broken from the inside. Any other withdrawn image
 // is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 //
+// A private image still being captured after its order was accepted can be named: the rebuild starts
+// once the image is ready, and fails with `COMPUTE_RESOURCE_CREATION_FAILED`, the instance unchanged,
+// if the capture fails.
+//
 // The instance is `rebuilding` until the rebuild has finished.
 //
 // POST /api/v2/instances/{instanceId}:rebuild
@@ -22404,6 +22437,9 @@ func (s *Server) handleRetypeVolumeRequest(args [1]string, argsEscaped bool, w h
 // must be detached from its instance first; and a volume resized since the snapshot was taken cannot
 // be reverted. To return to an earlier point in time, or to keep the existing volume, create a new
 // volume from the snapshot instead.
+//
+// A snapshot still being taken after its order was accepted can be named: the revert starts once the
+// snapshot is ready, and fails, the volume unchanged, if the snapshot's creation fails.
 //
 // The revert is a request of its own rather than a state of the volume: the response is the volume,
 // which is `reverting` until the revert is complete.

@@ -238,87 +238,23 @@ func (s *BillingCancellation) SetScheduledAt(val NilDateTime) {
 	s.ScheduledAt = val
 }
 
-// The commercial terms for one newly purchased component. Licensed requires period and
-// termination_policy; metered refuses both. Components in one instance purchase must use the same
-// usage type and period, while their termination policies may differ.
+// The Billing price selected for this component's plan. Billing validates the price, currency,
+// availability, cancellation terms and subscription period. Each newly purchased component selects its
+// own price; a price cannot be inherited from a different component's plan.
 // Ref: #/components/schemas/BillingChoice
 type BillingChoice struct {
-	// `licensed` pays for a period in advance; `metered` bills usage until canceled.
-	UsageType         BillingChoiceUsageType `json:"usage_type"`
-	Period            OptBillingPeriod       `json:"period"`
-	TerminationPolicy OptTerminationPolicy   `json:"termination_policy"`
+	// The ID of a recurring price returned by Billing for this component's plan.
+	PriceID uuid.UUID `json:"price_id"`
 }
 
-// GetUsageType returns the value of UsageType.
-func (s *BillingChoice) GetUsageType() BillingChoiceUsageType {
-	return s.UsageType
+// GetPriceID returns the value of PriceID.
+func (s *BillingChoice) GetPriceID() uuid.UUID {
+	return s.PriceID
 }
 
-// GetPeriod returns the value of Period.
-func (s *BillingChoice) GetPeriod() OptBillingPeriod {
-	return s.Period
-}
-
-// GetTerminationPolicy returns the value of TerminationPolicy.
-func (s *BillingChoice) GetTerminationPolicy() OptTerminationPolicy {
-	return s.TerminationPolicy
-}
-
-// SetUsageType sets the value of UsageType.
-func (s *BillingChoice) SetUsageType(val BillingChoiceUsageType) {
-	s.UsageType = val
-}
-
-// SetPeriod sets the value of Period.
-func (s *BillingChoice) SetPeriod(val OptBillingPeriod) {
-	s.Period = val
-}
-
-// SetTerminationPolicy sets the value of TerminationPolicy.
-func (s *BillingChoice) SetTerminationPolicy(val OptTerminationPolicy) {
-	s.TerminationPolicy = val
-}
-
-// `licensed` pays for a period in advance; `metered` bills usage until canceled.
-type BillingChoiceUsageType string
-
-const (
-	BillingChoiceUsageTypeLicensed BillingChoiceUsageType = "licensed"
-	BillingChoiceUsageTypeMetered  BillingChoiceUsageType = "metered"
-)
-
-// AllValues returns all BillingChoiceUsageType values.
-func (BillingChoiceUsageType) AllValues() []BillingChoiceUsageType {
-	return []BillingChoiceUsageType{
-		BillingChoiceUsageTypeLicensed,
-		BillingChoiceUsageTypeMetered,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s BillingChoiceUsageType) MarshalText() ([]byte, error) {
-	switch s {
-	case BillingChoiceUsageTypeLicensed:
-		return []byte(s), nil
-	case BillingChoiceUsageTypeMetered:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *BillingChoiceUsageType) UnmarshalText(data []byte) error {
-	switch BillingChoiceUsageType(data) {
-	case BillingChoiceUsageTypeLicensed:
-		*s = BillingChoiceUsageTypeLicensed
-		return nil
-	case BillingChoiceUsageTypeMetered:
-		*s = BillingChoiceUsageTypeMetered
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
+// SetPriceID sets the value of PriceID.
+func (s *BillingChoice) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
 }
 
 // How one order line of a catalog item is sold in Billing. Read its prices with Billing's
@@ -551,73 +487,6 @@ func (s *BillingMeterQuantity) UnmarshalText(data []byte) error {
 		return nil
 	case BillingMeterQuantityEgressBytes:
 		*s = BillingMeterQuantityEgressBytes
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/BillingPeriod
-type BillingPeriod struct {
-	Unit  BillingPeriodUnit `json:"unit"`
-	Count int32             `json:"count"`
-}
-
-// GetUnit returns the value of Unit.
-func (s *BillingPeriod) GetUnit() BillingPeriodUnit {
-	return s.Unit
-}
-
-// GetCount returns the value of Count.
-func (s *BillingPeriod) GetCount() int32 {
-	return s.Count
-}
-
-// SetUnit sets the value of Unit.
-func (s *BillingPeriod) SetUnit(val BillingPeriodUnit) {
-	s.Unit = val
-}
-
-// SetCount sets the value of Count.
-func (s *BillingPeriod) SetCount(val int32) {
-	s.Count = val
-}
-
-type BillingPeriodUnit string
-
-const (
-	BillingPeriodUnitMonth BillingPeriodUnit = "month"
-	BillingPeriodUnitYear  BillingPeriodUnit = "year"
-)
-
-// AllValues returns all BillingPeriodUnit values.
-func (BillingPeriodUnit) AllValues() []BillingPeriodUnit {
-	return []BillingPeriodUnit{
-		BillingPeriodUnitMonth,
-		BillingPeriodUnitYear,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s BillingPeriodUnit) MarshalText() ([]byte, error) {
-	switch s {
-	case BillingPeriodUnitMonth:
-		return []byte(s), nil
-	case BillingPeriodUnitYear:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *BillingPeriodUnit) UnmarshalText(data []byte) error {
-	switch BillingPeriodUnit(data) {
-	case BillingPeriodUnitMonth:
-		*s = BillingPeriodUnitMonth
-		return nil
-	case BillingPeriodUnitYear:
-		*s = BillingPeriodUnitYear
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -981,10 +850,9 @@ type CreateElasticIpRequestBody struct {
 	// IP through `change-elastic-ip-bandwidth`, not an independent bandwidth resource.
 	BandwidthMbps int64           `json:"bandwidth_mbps"`
 	LineID        ElasticIpLineId `json:"line_id"`
-	// The terms of the network item, which pays for the bandwidth or the traffic. The address item is
-	// always pay-as-you-go and takes no terms. Traffic is only sold pay-as-you-go. Required unless
-	// `instance_id` is given, which takes the instance's terms when this is omitted.
-	Billing  OptBillingChoice   `json:"billing"`
+	// The selected Billing price for this component. Required even when joining an existing subscription;
+	// Billing checks compatibility.
+	Billing  BillingChoice      `json:"billing"`
 	Checkout OptCheckoutOptions `json:"checkout"`
 	// Buy the elastic IP for this instance of the project; see the operation.
 	InstanceID OptInstanceId `json:"instance_id"`
@@ -1011,7 +879,7 @@ func (s *CreateElasticIpRequestBody) GetLineID() ElasticIpLineId {
 }
 
 // GetBilling returns the value of Billing.
-func (s *CreateElasticIpRequestBody) GetBilling() OptBillingChoice {
+func (s *CreateElasticIpRequestBody) GetBilling() BillingChoice {
 	return s.Billing
 }
 
@@ -1046,7 +914,7 @@ func (s *CreateElasticIpRequestBody) SetLineID(val ElasticIpLineId) {
 }
 
 // SetBilling sets the value of Billing.
-func (s *CreateElasticIpRequestBody) SetBilling(val OptBillingChoice) {
+func (s *CreateElasticIpRequestBody) SetBilling(val BillingChoice) {
 	s.Billing = val
 }
 
@@ -1109,9 +977,9 @@ func (*CreateElasticIpResponseBody) createElasticIPRes() {}
 // the instance type, the boot volume and the network interface are required, each refused with 422
 // `INSTANCE_CREATE_INVALID` naming the field when neither gives it.
 //
-// Every component bought with the instance (its boot volume, data volumes and elastic IP) shares the
-// usage type and period of `compute.billing`; a component's own `billing` exists to choose a different
-// termination policy, and when omitted it is `compute.billing`.
+// Every newly purchased component (compute capacity, boot volume, data volume and elastic IP network)
+// requires its own `billing.price_id` from that component's Billing plan. Billing checks subscription
+// compatibility; price IDs are never inherited between components.
 // Ref: #/components/schemas/CreateInstanceRequestBody
 type CreateInstanceRequestBody struct {
 	LaunchTemplate OptLaunchTemplateReference `json:"launch_template"`
@@ -1962,8 +1830,9 @@ type CreateVolumeRequestBody struct {
 	// any zone of the backup's region. Mutually exclusive with `volume_snapshot_id`, otherwise refused
 	// with 422 `VOLUME_SOURCE_CONFLICT`.
 	VolumeBackupID OptVolumeBackupId `json:"volume_backup_id"`
-	// Required unless `instance_id` is given, which takes the instance's terms when this is omitted.
-	Billing  OptBillingChoice   `json:"billing"`
+	// The selected Billing price for this component. Required even when joining an existing subscription;
+	// Billing checks compatibility.
+	Billing  BillingChoice      `json:"billing"`
 	Checkout OptCheckoutOptions `json:"checkout"`
 	// Buy the volume for this instance of the project; see the operation.
 	InstanceID OptInstanceId `json:"instance_id"`
@@ -1995,7 +1864,7 @@ func (s *CreateVolumeRequestBody) GetVolumeBackupID() OptVolumeBackupId {
 }
 
 // GetBilling returns the value of Billing.
-func (s *CreateVolumeRequestBody) GetBilling() OptBillingChoice {
+func (s *CreateVolumeRequestBody) GetBilling() BillingChoice {
 	return s.Billing
 }
 
@@ -2035,7 +1904,7 @@ func (s *CreateVolumeRequestBody) SetVolumeBackupID(val OptVolumeBackupId) {
 }
 
 // SetBilling sets the value of Billing.
-func (s *CreateVolumeRequestBody) SetBilling(val OptBillingChoice) {
+func (s *CreateVolumeRequestBody) SetBilling(val BillingChoice) {
 	s.Billing = val
 }
 
@@ -7097,8 +6966,9 @@ type NewBootVolume struct {
 	// What releasing the instance does to this volume. `delete` deletes it with the instance; `detach`
 	// keeps it, still billed on its own terms, for you to attach elsewhere or delete.
 	OnInstanceRelease OptNewBootVolumeOnInstanceRelease `json:"on_instance_release"`
-	// Its own terms, to choose a different termination policy; `compute.billing` when omitted.
-	Billing OptBillingChoice `json:"billing"`
+	// The selected Billing price for this component. Required even when joining an existing subscription;
+	// Billing checks compatibility.
+	Billing BillingChoice `json:"billing"`
 }
 
 // GetType returns the value of Type.
@@ -7127,7 +6997,7 @@ func (s *NewBootVolume) GetOnInstanceRelease() OptNewBootVolumeOnInstanceRelease
 }
 
 // GetBilling returns the value of Billing.
-func (s *NewBootVolume) GetBilling() OptBillingChoice {
+func (s *NewBootVolume) GetBilling() BillingChoice {
 	return s.Billing
 }
 
@@ -7157,7 +7027,7 @@ func (s *NewBootVolume) SetOnInstanceRelease(val OptNewBootVolumeOnInstanceRelea
 }
 
 // SetBilling sets the value of Billing.
-func (s *NewBootVolume) SetBilling(val OptBillingChoice) {
+func (s *NewBootVolume) SetBilling(val BillingChoice) {
 	s.Billing = val
 }
 
@@ -7243,7 +7113,8 @@ func (s *NewBootVolumeType) UnmarshalText(data []byte) error {
 type NewCompute struct {
 	// An instance type currently on sale. Required unless the launch template names one.
 	InstanceTypeID OptInstanceTypeId `json:"instance_type_id"`
-	// The terms of each instance, and the usage type and period every component bought with it shares.
+	// The selected Billing price for this component. Required even when joining an existing subscription;
+	// Billing checks compatibility.
 	Billing BillingChoice `json:"billing"`
 }
 
@@ -7279,8 +7150,9 @@ type NewDataVolume struct {
 	// What releasing the instance does to this volume. `delete` deletes it with the instance; `detach`
 	// keeps it, still billed on its own terms, for you to attach elsewhere or delete.
 	OnInstanceRelease OptNewDataVolumeOnInstanceRelease `json:"on_instance_release"`
-	// Its own terms, to choose a different termination policy; `compute.billing` when omitted.
-	Billing OptBillingChoice `json:"billing"`
+	// The selected Billing price for this component. Required even when joining an existing subscription;
+	// Billing checks compatibility.
+	Billing BillingChoice `json:"billing"`
 }
 
 // GetVolumeTypeID returns the value of VolumeTypeID.
@@ -7299,7 +7171,7 @@ func (s *NewDataVolume) GetOnInstanceRelease() OptNewDataVolumeOnInstanceRelease
 }
 
 // GetBilling returns the value of Billing.
-func (s *NewDataVolume) GetBilling() OptBillingChoice {
+func (s *NewDataVolume) GetBilling() BillingChoice {
 	return s.Billing
 }
 
@@ -7319,7 +7191,7 @@ func (s *NewDataVolume) SetOnInstanceRelease(val OptNewDataVolumeOnInstanceRelea
 }
 
 // SetBilling sets the value of Billing.
-func (s *NewDataVolume) SetBilling(val OptBillingChoice) {
+func (s *NewDataVolume) SetBilling(val BillingChoice) {
 	s.Billing = val
 }
 
@@ -7375,10 +7247,9 @@ type NewElasticIp struct {
 	// refused with `ELASTIC_IP_BANDWIDTH_RANGE`.
 	BandwidthMbps      int64                 `json:"bandwidth_mbps"`
 	InternetChargeType OptInternetChargeType `json:"internet_charge_type"`
-	// The terms of the elastic IP's network item, `compute.billing` when omitted; they follow the rule
-	// shared by every component of the purchase. Its address item is always pay-as-you-go and is exempt
-	// from that rule.
-	Billing OptBillingChoice `json:"billing"`
+	// The selected Billing price for this component. Required even when joining an existing subscription;
+	// Billing checks compatibility.
+	Billing BillingChoice `json:"billing"`
 }
 
 // GetType returns the value of Type.
@@ -7402,7 +7273,7 @@ func (s *NewElasticIp) GetInternetChargeType() OptInternetChargeType {
 }
 
 // GetBilling returns the value of Billing.
-func (s *NewElasticIp) GetBilling() OptBillingChoice {
+func (s *NewElasticIp) GetBilling() BillingChoice {
 	return s.Billing
 }
 
@@ -7427,7 +7298,7 @@ func (s *NewElasticIp) SetInternetChargeType(val OptInternetChargeType) {
 }
 
 // SetBilling sets the value of Billing.
-func (s *NewElasticIp) SetBilling(val OptBillingChoice) {
+func (s *NewElasticIp) SetBilling(val BillingChoice) {
 	s.Billing = val
 }
 
@@ -9561,52 +9432,6 @@ func (o OptAvailabilityZoneId) Or(d AvailabilityZoneId) AvailabilityZoneId {
 	return d
 }
 
-// NewOptBillingChoice returns new OptBillingChoice with value set to v.
-func NewOptBillingChoice(v BillingChoice) OptBillingChoice {
-	return OptBillingChoice{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptBillingChoice is optional BillingChoice.
-type OptBillingChoice struct {
-	Value BillingChoice
-	Set   bool
-}
-
-// IsSet returns true if OptBillingChoice was set.
-func (o OptBillingChoice) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptBillingChoice) Reset() {
-	var v BillingChoice
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptBillingChoice) SetTo(v BillingChoice) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptBillingChoice) Get() (v BillingChoice, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptBillingChoice) Or(d BillingChoice) BillingChoice {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptBillingLineQuantity returns new OptBillingLineQuantity with value set to v.
 func NewOptBillingLineQuantity(v BillingLineQuantity) OptBillingLineQuantity {
 	return OptBillingLineQuantity{
@@ -9647,52 +9472,6 @@ func (o OptBillingLineQuantity) Get() (v BillingLineQuantity, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptBillingLineQuantity) Or(d BillingLineQuantity) BillingLineQuantity {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptBillingPeriod returns new OptBillingPeriod with value set to v.
-func NewOptBillingPeriod(v BillingPeriod) OptBillingPeriod {
-	return OptBillingPeriod{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptBillingPeriod is optional BillingPeriod.
-type OptBillingPeriod struct {
-	Value BillingPeriod
-	Set   bool
-}
-
-// IsSet returns true if OptBillingPeriod was set.
-func (o OptBillingPeriod) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptBillingPeriod) Reset() {
-	var v BillingPeriod
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptBillingPeriod) SetTo(v BillingPeriod) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptBillingPeriod) Get() (v BillingPeriod, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptBillingPeriod) Or(d BillingPeriod) BillingPeriod {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -11027,52 +10806,6 @@ func (o OptString) Get() (v string, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptString) Or(d string) string {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptTerminationPolicy returns new OptTerminationPolicy with value set to v.
-func NewOptTerminationPolicy(v TerminationPolicy) OptTerminationPolicy {
-	return OptTerminationPolicy{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptTerminationPolicy is optional TerminationPolicy.
-type OptTerminationPolicy struct {
-	Value TerminationPolicy
-	Set   bool
-}
-
-// IsSet returns true if OptTerminationPolicy was set.
-func (o OptTerminationPolicy) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptTerminationPolicy) Reset() {
-	var v TerminationPolicy
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptTerminationPolicy) SetTo(v TerminationPolicy) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptTerminationPolicy) Get() (v TerminationPolicy, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptTerminationPolicy) Or(d TerminationPolicy) TerminationPolicy {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -13833,50 +13566,6 @@ func (s *SuppliedPasswordType) UnmarshalText(data []byte) error {
 	switch SuppliedPasswordType(data) {
 	case SuppliedPasswordTypeSupplied:
 		*s = SuppliedPasswordTypeSupplied
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Immediate ends service when cancellation takes effect, with refunds governed by the purchased terms.
-// Period-end keeps service until the paid period ends.
-// Ref: #/components/schemas/TerminationPolicy
-type TerminationPolicy string
-
-const (
-	TerminationPolicyImmediate TerminationPolicy = "immediate"
-	TerminationPolicyPeriodEnd TerminationPolicy = "period_end"
-)
-
-// AllValues returns all TerminationPolicy values.
-func (TerminationPolicy) AllValues() []TerminationPolicy {
-	return []TerminationPolicy{
-		TerminationPolicyImmediate,
-		TerminationPolicyPeriodEnd,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s TerminationPolicy) MarshalText() ([]byte, error) {
-	switch s {
-	case TerminationPolicyImmediate:
-		return []byte(s), nil
-	case TerminationPolicyPeriodEnd:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *TerminationPolicy) UnmarshalText(data []byte) error {
-	switch TerminationPolicy(data) {
-	case TerminationPolicyImmediate:
-		*s = TerminationPolicyImmediate
-		return nil
-	case TerminationPolicyPeriodEnd:
-		*s = TerminationPolicyPeriodEnd
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)

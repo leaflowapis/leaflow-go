@@ -11575,6 +11575,52 @@ func (o OptOrderItemConfiguration) Or(d OrderItemConfiguration) OrderItemConfigu
 	return d
 }
 
+// NewOptOrderItemListInterval returns new OptOrderItemListInterval with value set to v.
+func NewOptOrderItemListInterval(v OrderItemListInterval) OptOrderItemListInterval {
+	return OptOrderItemListInterval{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptOrderItemListInterval is optional OrderItemListInterval.
+type OptOrderItemListInterval struct {
+	Value OrderItemListInterval
+	Set   bool
+}
+
+// IsSet returns true if OptOrderItemListInterval was set.
+func (o OptOrderItemListInterval) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptOrderItemListInterval) Reset() {
+	var v OrderItemListInterval
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptOrderItemListInterval) SetTo(v OrderItemListInterval) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptOrderItemListInterval) Get() (v OrderItemListInterval, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptOrderItemListInterval) Or(d OrderItemListInterval) OrderItemListInterval {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptPaidWith returns new OptPaidWith with value set to v.
 func NewOptPaidWith(v PaidWith) OptPaidWith {
 	return OptPaidWith{
@@ -12357,6 +12403,52 @@ func (o OptSubscriptionItemCancellation) Or(d SubscriptionItemCancellation) Subs
 	return d
 }
 
+// NewOptSubscriptionItemListInterval returns new OptSubscriptionItemListInterval with value set to v.
+func NewOptSubscriptionItemListInterval(v SubscriptionItemListInterval) OptSubscriptionItemListInterval {
+	return OptSubscriptionItemListInterval{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSubscriptionItemListInterval is optional SubscriptionItemListInterval.
+type OptSubscriptionItemListInterval struct {
+	Value SubscriptionItemListInterval
+	Set   bool
+}
+
+// IsSet returns true if OptSubscriptionItemListInterval was set.
+func (o OptSubscriptionItemListInterval) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSubscriptionItemListInterval) Reset() {
+	var v SubscriptionItemListInterval
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSubscriptionItemListInterval) SetTo(v SubscriptionItemListInterval) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSubscriptionItemListInterval) Get() (v SubscriptionItemListInterval, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSubscriptionItemListInterval) Or(d SubscriptionItemListInterval) SubscriptionItemListInterval {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptTransactionRefundDestination returns new OptTransactionRefundDestination with value set to v.
 func NewOptTransactionRefundDestination(v TransactionRefundDestination) OptTransactionRefundDestination {
 	return OptTransactionRefundDestination{
@@ -13078,12 +13170,17 @@ type OrderItem struct {
 	IntervalCount      OptInt                `json:"interval_count"`
 	CancellationPolicy OptCancellationPolicy `json:"cancellation_policy"`
 	RefundPolicy       OptRefundPolicy       `json:"refund_policy"`
-	// Recurring licensed items only: a month at list price for this item's quantity, before tax and
-	// discounts, which values time under a refund or a downgrade. It is the monthly amount of the shortest
-	// period the plan sells, not longer than the one bought, at the item's dimensions, fixed at purchase;
-	// a renewal at the agreed amount keeps the previous value. Null when time used is valued at the amount
-	// paid, as for a daily period.
-	MonthlyListAmount OptNilString `json:"monthly_list_amount"`
+	// Recurring licensed items only: the reference list amount for one list_interval, for this item's
+	// quantity and dimensions, in the order currency before tax and discounts. For monthly or yearly
+	// purchases it is the monthly amount of the shortest eligible monthly or yearly price; for daily
+	// purchases it is the daily amount of the shortest eligible daily price. Eligible prices belong to the
+	// same plan, are sellable at purchase, and do not exceed the purchased period. The purchased price
+	// itself is a candidate. Frozen at purchase; renewal at the agreed amount preserves it. Absent or null
+	// when used time is valued proportionally at the amount paid.
+	ListAmount OptNilString `json:"list_amount"`
+	// Unit of the frozen list_amount. Present exactly when list_amount has a value; uses Billing's
+	// interval vocabulary. It is the reference price unit, not necessarily the purchased period unit.
+	ListInterval OptOrderItemListInterval `json:"list_interval"`
 	// Refund policy `short_rate` only, as on the price when bought.
 	ShortRateMultiplier OptNilString `json:"short_rate_multiplier"`
 	// Refund policy `short_rate` only, as on the price when bought.
@@ -13191,9 +13288,14 @@ func (s *OrderItem) GetRefundPolicy() OptRefundPolicy {
 	return s.RefundPolicy
 }
 
-// GetMonthlyListAmount returns the value of MonthlyListAmount.
-func (s *OrderItem) GetMonthlyListAmount() OptNilString {
-	return s.MonthlyListAmount
+// GetListAmount returns the value of ListAmount.
+func (s *OrderItem) GetListAmount() OptNilString {
+	return s.ListAmount
+}
+
+// GetListInterval returns the value of ListInterval.
+func (s *OrderItem) GetListInterval() OptOrderItemListInterval {
+	return s.ListInterval
 }
 
 // GetShortRateMultiplier returns the value of ShortRateMultiplier.
@@ -13376,9 +13478,14 @@ func (s *OrderItem) SetRefundPolicy(val OptRefundPolicy) {
 	s.RefundPolicy = val
 }
 
-// SetMonthlyListAmount sets the value of MonthlyListAmount.
-func (s *OrderItem) SetMonthlyListAmount(val OptNilString) {
-	s.MonthlyListAmount = val
+// SetListAmount sets the value of ListAmount.
+func (s *OrderItem) SetListAmount(val OptNilString) {
+	s.ListAmount = val
+}
+
+// SetListInterval sets the value of ListInterval.
+func (s *OrderItem) SetListInterval(val OptOrderItemListInterval) {
+	s.ListInterval = val
 }
 
 // SetShortRateMultiplier sets the value of ShortRateMultiplier.
@@ -13614,6 +13721,56 @@ func (s *OrderItemList) SetItems(val []OrderItem) {
 // SetPagination sets the value of Pagination.
 func (s *OrderItemList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
+}
+
+// Unit of the frozen list_amount. Present exactly when list_amount has a value; uses Billing's
+// interval vocabulary. It is the reference price unit, not necessarily the purchased period unit.
+type OrderItemListInterval string
+
+const (
+	OrderItemListIntervalDay   OrderItemListInterval = "day"
+	OrderItemListIntervalMonth OrderItemListInterval = "month"
+	OrderItemListIntervalYear  OrderItemListInterval = "year"
+)
+
+// AllValues returns all OrderItemListInterval values.
+func (OrderItemListInterval) AllValues() []OrderItemListInterval {
+	return []OrderItemListInterval{
+		OrderItemListIntervalDay,
+		OrderItemListIntervalMonth,
+		OrderItemListIntervalYear,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s OrderItemListInterval) MarshalText() ([]byte, error) {
+	switch s {
+	case OrderItemListIntervalDay:
+		return []byte(s), nil
+	case OrderItemListIntervalMonth:
+		return []byte(s), nil
+	case OrderItemListIntervalYear:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *OrderItemListInterval) UnmarshalText(data []byte) error {
+	switch OrderItemListInterval(data) {
+	case OrderItemListIntervalDay:
+		*s = OrderItemListIntervalDay
+		return nil
+	case OrderItemListIntervalMonth:
+		*s = OrderItemListIntervalMonth
+		return nil
+	case OrderItemListIntervalYear:
+		*s = OrderItemListIntervalYear
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // `pending`: waiting to be set up. `completed`: set up, as confirmed by the service. `failed`: not set
@@ -16958,18 +17115,18 @@ func (s *RefundList) SetPagination(val OffsetPagination) {
 // `none` refunds nothing.
 //
 // `prorated` refunds the amount paid for the current period minus the value of the time used, never
-// below zero or above what remains unrefunded. Time used runs from the period start to the effective
-// cancellation, by the second. Each whole month from the period start is valued at the order item's
-// `monthly_list_amount`, and the remainder at that amount in proportion to the length of the month it
-// falls in; without `monthly_list_amount`, time used is valued at the amount paid in proportion to the
-// length of the period. A renewal starts a new period, and an immediate change starts one at the
-// change. Discounts and setup fees are not refunded. Refunds return to the original payment sources,
-// with tax refunded in proportion.
+// below zero or above what remains unrefunded. Time used runs from the period start to effective
+// cancellation, by the second. The order item freezes `list_amount` for one `list_interval`: each
+// complete interval uses that amount, and the remainder is proportional to the actual length of its
+// interval. Calendar intervals are anchored at the service period start in UTC. Without a frozen
+// reference, time used is valued at the amount paid in proportion to the period length. A renewal
+// starts a new period; an immediate change starts one at the change. Discounts and setup fees are not
+// refunded. Refunds return to the original payment sources, with tax refunded in proportion.
 //
-// `short_rate` refunds as `prorated`, except that when the cancellation takes effect less than
-// `short_rate_threshold_seconds` after the period start, the value of the time used is multiplied by
-// `short_rate_multiplier`, up to `monthly_list_amount` for each month begun or, without
-// `monthly_list_amount`, up to the amount paid.
+// `short_rate` applies the same calculation, but when cancellation takes effect less than
+// `short_rate_threshold_seconds` after the period start, multiplies the used value by
+// `short_rate_multiplier`, capped at `list_amount` for each reference interval begun, or at the amount
+// paid when no reference was frozen.
 // Ref: #/components/schemas/RefundPolicy
 type RefundPolicy string
 
@@ -17031,9 +17188,9 @@ func (s *RefundPolicy) UnmarshalText(data []byte) error {
 //   - `future_period_canceled`: a renewal that had not started was withdrawn.
 //   - `downgrade_difference`: after a downgrade, the remaining paid value, valued under each paid
 //     period's refund policy and as `prorated` where that policy is `none`, minus the new
-//     configuration's value for the remaining time: each whole month at the change item's
-//     `monthly_list_amount` and the remainder in proportion to the length of the month it falls in, or
-//     without `monthly_list_amount`, the new period price in proportion to the remaining time.
+//     configuration's value for the remaining time: each complete `list_interval` at the change item's
+//     `list_amount` and the remainder in proportion to the length of the reference interval it falls
+//     in, or without `list_amount`, the new period price in proportion to the remaining time.
 //   - `usage_true_up`: usage priced over the whole month cost less than was charged.
 //   - `payment_not_applied`: a payment arrived after its invoice could no longer be paid.
 //   - `operator`: made by the platform operator.
@@ -19092,12 +19249,15 @@ type SubscriptionItem struct {
 	ShortRateMultiplier OptString `json:"short_rate_multiplier"`
 	// Refund policy `short_rate` only, as on the price bought.
 	ShortRateThresholdSeconds OptInt64 `json:"short_rate_threshold_seconds"`
-	// Licensed recurring only, the `monthly_list_amount` that a renewal at the agreed amount keeps; see
+	// Licensed recurring only, the frozen reference amount preserved by renewal at the agreed amount; see
 	// the order item.
-	MonthlyListAmount           OptString         `json:"monthly_list_amount"`
-	CouponID                    OptUUID           `json:"coupon_id"`
-	Coupon                      OptObjectIdentity `json:"coupon"`
-	DiscountedRenewalsRemaining OptInt            `json:"discounted_renewals_remaining"`
+	ListAmount OptString `json:"list_amount"`
+	// Unit of the frozen list_amount. Present exactly when list_amount has a value; uses Billing's
+	// interval vocabulary. It is the reference price unit, not necessarily the purchased period unit.
+	ListInterval                OptSubscriptionItemListInterval `json:"list_interval"`
+	CouponID                    OptUUID                         `json:"coupon_id"`
+	Coupon                      OptObjectIdentity               `json:"coupon"`
+	DiscountedRenewalsRemaining OptInt                          `json:"discounted_renewals_remaining"`
 	// The order item that created it.
 	OrderItemID  OptUUID                         `json:"order_item_id"`
 	Cancellation OptSubscriptionItemCancellation `json:"cancellation"`
@@ -19190,9 +19350,14 @@ func (s *SubscriptionItem) GetShortRateThresholdSeconds() OptInt64 {
 	return s.ShortRateThresholdSeconds
 }
 
-// GetMonthlyListAmount returns the value of MonthlyListAmount.
-func (s *SubscriptionItem) GetMonthlyListAmount() OptString {
-	return s.MonthlyListAmount
+// GetListAmount returns the value of ListAmount.
+func (s *SubscriptionItem) GetListAmount() OptString {
+	return s.ListAmount
+}
+
+// GetListInterval returns the value of ListInterval.
+func (s *SubscriptionItem) GetListInterval() OptSubscriptionItemListInterval {
+	return s.ListInterval
 }
 
 // GetCouponID returns the value of CouponID.
@@ -19320,9 +19485,14 @@ func (s *SubscriptionItem) SetShortRateThresholdSeconds(val OptInt64) {
 	s.ShortRateThresholdSeconds = val
 }
 
-// SetMonthlyListAmount sets the value of MonthlyListAmount.
-func (s *SubscriptionItem) SetMonthlyListAmount(val OptString) {
-	s.MonthlyListAmount = val
+// SetListAmount sets the value of ListAmount.
+func (s *SubscriptionItem) SetListAmount(val OptString) {
+	s.ListAmount = val
+}
+
+// SetListInterval sets the value of ListInterval.
+func (s *SubscriptionItem) SetListInterval(val OptSubscriptionItemListInterval) {
+	s.ListInterval = val
 }
 
 // SetCouponID sets the value of CouponID.
@@ -19623,6 +19793,56 @@ func (s *SubscriptionItemDimensions) init() SubscriptionItemDimensions {
 		*s = m
 	}
 	return m
+}
+
+// Unit of the frozen list_amount. Present exactly when list_amount has a value; uses Billing's
+// interval vocabulary. It is the reference price unit, not necessarily the purchased period unit.
+type SubscriptionItemListInterval string
+
+const (
+	SubscriptionItemListIntervalDay   SubscriptionItemListInterval = "day"
+	SubscriptionItemListIntervalMonth SubscriptionItemListInterval = "month"
+	SubscriptionItemListIntervalYear  SubscriptionItemListInterval = "year"
+)
+
+// AllValues returns all SubscriptionItemListInterval values.
+func (SubscriptionItemListInterval) AllValues() []SubscriptionItemListInterval {
+	return []SubscriptionItemListInterval{
+		SubscriptionItemListIntervalDay,
+		SubscriptionItemListIntervalMonth,
+		SubscriptionItemListIntervalYear,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SubscriptionItemListInterval) MarshalText() ([]byte, error) {
+	switch s {
+	case SubscriptionItemListIntervalDay:
+		return []byte(s), nil
+	case SubscriptionItemListIntervalMonth:
+		return []byte(s), nil
+	case SubscriptionItemListIntervalYear:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SubscriptionItemListInterval) UnmarshalText(data []byte) error {
+	switch SubscriptionItemListInterval(data) {
+	case SubscriptionItemListIntervalDay:
+		*s = SubscriptionItemListIntervalDay
+		return nil
+	case SubscriptionItemListIntervalMonth:
+		*s = SubscriptionItemListIntervalMonth
+		return nil
+	case SubscriptionItemListIntervalYear:
+		*s = SubscriptionItemListIntervalYear
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/SubscriptionList

@@ -3,7 +3,6 @@ package computev2server
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -13,7 +12,7 @@ import (
 
 // 通过真实 ogen 解码与校验检查批准的 oneOf，不将服务端所有权判断伪装成 SDK 校验。
 func TestNativeBootVolumeDecoder(t *testing.T) {
-	image := `{"type":"image","image_id":"image_00000000000000000000000001","volume_type_id":"voltype_00000000000000000000000001","size_gib":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":1},"termination_policy":"immediate"}}`
+	image := `{"type":"image","image_id":"image_00000000000000000000000001","volume_type_id":"voltype_00000000000000000000000001","size_gib":20,"billing":{"price_id":"11111111-1111-4111-8111-111111111111"}}`
 	volume := `{"type":"volume","volume_id":"vol_00000000000000000000000001","login_username":"ubuntu"}`
 	for _, row := range []struct {
 		name, body string
@@ -38,113 +37,31 @@ func TestNativeBootVolumeDecoder(t *testing.T) {
 	}
 }
 
-func TestNativeBillingPeriodInt32(t *testing.T) {
+func TestNativeBillingChoiceRequiresPriceIDAndRejectsOldTerms(t *testing.T) {
 	for _, row := range []struct {
-		count string
+		body  string
 		valid bool
 	}{
-		{"1", true}, {"2147483647", true}, {"2147483648", false}, {"0", false}, {"-1", false},
+		{`{"price_id":"11111111-1111-4111-8111-111111111111"}`, true},
+		{`{}`, false},
+		{`{"price_id":"bad"}`, false},
+		{`{"price_id":null}`, false},
+		{`{"price_id":"11111111-1111-4111-8111-111111111111","period":{"unit":"month","count":1}}`, false},
+		{`{"usage_type":"licensed","period":{"unit":"month","count":1}}`, false},
 	} {
-		t.Run(row.count, func(t *testing.T) {
-			var value BillingPeriod
-			body := fmt.Sprintf(`{"unit":"month","count":%s}`, row.count)
-			err := value.Decode(jx.DecodeBytes([]byte(body)))
-			if err == nil {
-				err = value.Validate()
-			}
-			if (err == nil) != row.valid {
-				t.Fatalf("valid=%v, decode/validate=%v", row.valid, err)
-			}
-			if row.valid && fmt.Sprint(value.Count) != row.count {
-				t.Fatalf("count truncated: %d", value.Count)
-			}
-		})
-	}
-}
-
-func TestNativeTerminationPolicyPresence(t *testing.T) {
-	prefix := `{"usage_type":"licensed","period":{"unit":"month","count":1}`
-	for _, row := range []struct {
-		name, suffix   string
-		valid, present bool
-	}{
-		{"omitted", `}`, true, false},
-		{"immediate", `,"termination_policy":"immediate"}`, true, true},
-		{"period end", `,"termination_policy":"period_end"}`, true, true},
-		{"null", `,"termination_policy":null}`, false, true},
-		{"unsupported", `,"termination_policy":"unknown"}`, false, true},
-		{"client bad enum", `,"termination_policy":"<nil>"}`, false, true},
-	} {
-		t.Run(row.name, func(t *testing.T) {
-			var value BillingChoice
-			err := value.Decode(jx.DecodeBytes([]byte(prefix + row.suffix)))
-			if err == nil {
-				err = value.Validate()
-			}
-			if (err == nil) != row.valid {
-				t.Fatalf("valid=%v, decode/validate=%v", row.valid, err)
-			}
-			if row.valid {
-				if _, present := value.TerminationPolicy.Get(); present != row.present {
-					t.Fatal("policy presence changed")
-				}
-				wire, err := json.Marshal(&value)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if strings.Contains(string(wire), `"termination_policy"`) != row.present {
-					t.Fatalf("policy presence not retained: %s", wire)
-				}
-			}
-		})
-	}
-}
-
-// 商业条件的文字描述不会自动成为 SDK 校验。
-func TestNativeDocumentsSDKValidationBoundaries(t *testing.T) {
-	for _, body := range []string{`{"usage_type":"metered","period":{"unit":"month","count":1}}`, `{"usage_type":"licensed"}`} {
 		var value BillingChoice
-		if err := value.Decode(jx.DecodeBytes([]byte(body))); err != nil {
-			t.Fatal(err)
+		err := value.Decode(jx.DecodeBytes([]byte(row.body)))
+		if (err == nil) != row.valid {
+			t.Fatalf("body=%s valid=%v error=%v", row.body, row.valid, err)
 		}
-		if err := value.Validate(); err != nil {
-			t.Fatalf("SDK added a conditional rule: %v", err)
-		}
-	}
-}
-
-// 创建卷请求的周期须完整校验，计数不得被截断。
-func TestNativeCreateVolumePreservesPeriod(t *testing.T) {
-	for _, row := range []struct {
-		count string
-		valid bool
-	}{{"1", true}, {"2147483647", true}, {"2147483648", false}, {"0", false}, {"-1", false}} {
-		t.Run("period "+row.count, func(t *testing.T) {
-			raw := `{"volume_type_id":"voltype_00000000000000000000000001","name":"volume","size_gib":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":` + row.count + `},"termination_policy":"immediate"}}`
-			var value CreateVolumeRequestBody
-			err := value.Decode(jx.DecodeBytes([]byte(raw)))
-			if err == nil {
-				err = value.Validate()
-			}
-			if (err == nil) != row.valid {
-				t.Fatalf("period inline=%v valid=%v", err, row.valid)
-			}
-			if row.valid {
-				billing, given := value.Billing.Get()
-				period, set := billing.Period.Get()
-				if !given || !set || fmt.Sprint(period.Count) != row.count {
-					t.Fatal("period count/presence changed")
-				}
-			}
-		})
 	}
 }
 
 // 对比 JSON 字段形状，防 nominal 类型变化引入 Value/Set 或额外包装层。
 func TestNativeRequestSerdePreservesWireFields(t *testing.T) {
 	for _, raw := range []string{
-		`{"volume_type_id":"voltype_00000000000000000000000001","name":"volume","size_gib":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":1}}}`,
-		`{"volume_type_id":"voltype_00000000000000000000000001","name":"volume","size_gib":20,"billing":{"usage_type":"licensed","period":{"unit":"month","count":1},"termination_policy":"period_end"},"checkout":{"mode":"deferred","auto_renew":false}}`,
+		`{"volume_type_id":"voltype_00000000000000000000000001","name":"volume","size_gib":20,"billing":{"price_id":"11111111-1111-4111-8111-111111111111"}}`,
+		`{"volume_type_id":"voltype_00000000000000000000000001","name":"volume","size_gib":20,"billing":{"price_id":"11111111-1111-4111-8111-111111111111"},"checkout":{"mode":"deferred","auto_renew":false}}`,
 	} {
 		var value CreateVolumeRequestBody
 		if err := value.Decode(jx.DecodeBytes([]byte(raw))); err != nil {

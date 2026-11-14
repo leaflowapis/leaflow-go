@@ -749,27 +749,13 @@ func (s *BillingChoice) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *BillingChoice) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("usage_type")
-		s.UsageType.Encode(e)
-	}
-	{
-		if s.Period.Set {
-			e.FieldStart("period")
-			s.Period.Encode(e)
-		}
-	}
-	{
-		if s.TerminationPolicy.Set {
-			e.FieldStart("termination_policy")
-			s.TerminationPolicy.Encode(e)
-		}
+		e.FieldStart("price_id")
+		json.EncodeUUID(e, s.PriceID)
 	}
 }
 
-var jsonFieldsNameOfBillingChoice = [3]string{
-	0: "usage_type",
-	1: "period",
-	2: "termination_policy",
+var jsonFieldsNameOfBillingChoice = [1]string{
+	0: "price_id",
 }
 
 // Decode decodes BillingChoice from json.
@@ -781,35 +767,17 @@ func (s *BillingChoice) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "usage_type":
+		case "price_id":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				if err := s.UsageType.Decode(d); err != nil {
+				v, err := json.DecodeUUID(d)
+				s.PriceID = v
+				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"usage_type\"")
-			}
-		case "period":
-			if err := func() error {
-				s.Period.Reset()
-				if err := s.Period.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"period\"")
-			}
-		case "termination_policy":
-			if err := func() error {
-				s.TerminationPolicy.Reset()
-				if err := s.TerminationPolicy.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"termination_policy\"")
+				return errors.Wrap(err, "decode field \"price_id\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -863,46 +831,6 @@ func (s *BillingChoice) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *BillingChoice) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes BillingChoiceUsageType as json.
-func (s BillingChoiceUsageType) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes BillingChoiceUsageType from json.
-func (s *BillingChoiceUsageType) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode BillingChoiceUsageType to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch BillingChoiceUsageType(v) {
-	case BillingChoiceUsageTypeLicensed:
-		*s = BillingChoiceUsageTypeLicensed
-	case BillingChoiceUsageTypeMetered:
-		*s = BillingChoiceUsageTypeMetered
-	default:
-		*s = BillingChoiceUsageType(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s BillingChoiceUsageType) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *BillingChoiceUsageType) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -1345,157 +1273,6 @@ func (s *BillingMeterQuantity) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
-func (s *BillingPeriod) Encode(e *jx.Encoder) {
-	e.ObjStart()
-	s.encodeFields(e)
-	e.ObjEnd()
-}
-
-// encodeFields encodes fields.
-func (s *BillingPeriod) encodeFields(e *jx.Encoder) {
-	{
-		e.FieldStart("unit")
-		s.Unit.Encode(e)
-	}
-	{
-		e.FieldStart("count")
-		e.Int32(s.Count)
-	}
-}
-
-var jsonFieldsNameOfBillingPeriod = [2]string{
-	0: "unit",
-	1: "count",
-}
-
-// Decode decodes BillingPeriod from json.
-func (s *BillingPeriod) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode BillingPeriod to nil")
-	}
-	var requiredBitSet [1]uint8
-
-	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
-		switch string(k) {
-		case "unit":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				if err := s.Unit.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"unit\"")
-			}
-		case "count":
-			requiredBitSet[0] |= 1 << 1
-			if err := func() error {
-				v, err := d.Int32()
-				s.Count = int32(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"count\"")
-			}
-		default:
-			return errors.Errorf("unexpected field %q", k)
-		}
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "decode BillingPeriod")
-	}
-	// Validate required fields.
-	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b00000011,
-	} {
-		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
-			// Mask only required fields and check equality to mask using XOR.
-			//
-			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
-			// Bits of fields which would be set are actually bits of missed fields.
-			missed := bits.OnesCount8(result)
-			for bitN := 0; bitN < missed; bitN++ {
-				bitIdx := bits.TrailingZeros8(result)
-				fieldIdx := i*8 + bitIdx
-				var name string
-				if fieldIdx < len(jsonFieldsNameOfBillingPeriod) {
-					name = jsonFieldsNameOfBillingPeriod[fieldIdx]
-				} else {
-					name = strconv.Itoa(fieldIdx)
-				}
-				failures = append(failures, validate.FieldError{
-					Name:  name,
-					Error: validate.ErrFieldRequired,
-				})
-				// Reset bit.
-				result &^= 1 << bitIdx
-			}
-		}
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s *BillingPeriod) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *BillingPeriod) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes BillingPeriodUnit as json.
-func (s BillingPeriodUnit) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes BillingPeriodUnit from json.
-func (s *BillingPeriodUnit) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode BillingPeriodUnit to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch BillingPeriodUnit(v) {
-	case BillingPeriodUnitMonth:
-		*s = BillingPeriodUnitMonth
-	case BillingPeriodUnitYear:
-		*s = BillingPeriodUnitYear
-	default:
-		*s = BillingPeriodUnit(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s BillingPeriodUnit) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *BillingPeriodUnit) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode implements json.Marshaler.
 func (s *BillingQuantity) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -1608,10 +1385,8 @@ func (s BootVolume) encodeFields(e *jx.Encoder) {
 				}
 			}
 			{
-				if s.Billing.Set {
-					e.FieldStart("billing")
-					s.Billing.Encode(e)
-				}
+				e.FieldStart("billing")
+				s.Billing.Encode(e)
 			}
 		}
 	case ExistingBootVolumeBootVolume:
@@ -2264,10 +2039,8 @@ func (s *CreateElasticIpRequestBody) encodeFields(e *jx.Encoder) {
 		s.LineID.Encode(e)
 	}
 	{
-		if s.Billing.Set {
-			e.FieldStart("billing")
-			s.Billing.Encode(e)
-		}
+		e.FieldStart("billing")
+		s.Billing.Encode(e)
 	}
 	{
 		if s.Checkout.Set {
@@ -2346,8 +2119,8 @@ func (s *CreateElasticIpRequestBody) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"line_id\"")
 			}
 		case "billing":
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
-				s.Billing.Reset()
 				if err := s.Billing.Decode(d); err != nil {
 					return err
 				}
@@ -2385,7 +2158,7 @@ func (s *CreateElasticIpRequestBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00001100,
+		0b00011100,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4981,10 +4754,8 @@ func (s *CreateVolumeRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.Billing.Set {
-			e.FieldStart("billing")
-			s.Billing.Encode(e)
-		}
+		e.FieldStart("billing")
+		s.Billing.Encode(e)
 	}
 	{
 		if s.Checkout.Set {
@@ -5073,8 +4844,8 @@ func (s *CreateVolumeRequestBody) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"volume_backup_id\"")
 			}
 		case "billing":
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
-				s.Billing.Reset()
 				if err := s.Billing.Decode(d); err != nil {
 					return err
 				}
@@ -5112,7 +4883,7 @@ func (s *CreateVolumeRequestBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00100011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -10106,10 +9877,8 @@ func (s InstanceElasticIp) encodeFields(e *jx.Encoder) {
 				}
 			}
 			{
-				if s.Billing.Set {
-					e.FieldStart("billing")
-					s.Billing.Encode(e)
-				}
+				e.FieldStart("billing")
+				s.Billing.Encode(e)
 			}
 		}
 	case ExistingElasticIpInstanceElasticIp:
@@ -15182,10 +14951,8 @@ func (s *NewBootVolume) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.Billing.Set {
-			e.FieldStart("billing")
-			s.Billing.Encode(e)
-		}
+		e.FieldStart("billing")
+		s.Billing.Encode(e)
 	}
 }
 
@@ -15261,8 +15028,8 @@ func (s *NewBootVolume) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"on_instance_release\"")
 			}
 		case "billing":
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
-				s.Billing.Reset()
 				if err := s.Billing.Decode(d); err != nil {
 					return err
 				}
@@ -15280,7 +15047,7 @@ func (s *NewBootVolume) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00001111,
+		0b00101111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -15539,10 +15306,8 @@ func (s *NewDataVolume) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.Billing.Set {
-			e.FieldStart("billing")
-			s.Billing.Encode(e)
-		}
+		e.FieldStart("billing")
+		s.Billing.Encode(e)
 	}
 }
 
@@ -15596,8 +15361,8 @@ func (s *NewDataVolume) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"on_instance_release\"")
 			}
 		case "billing":
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
-				s.Billing.Reset()
 				if err := s.Billing.Decode(d); err != nil {
 					return err
 				}
@@ -15615,7 +15380,7 @@ func (s *NewDataVolume) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00001011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -15729,10 +15494,8 @@ func (s *NewElasticIp) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.Billing.Set {
-			e.FieldStart("billing")
-			s.Billing.Encode(e)
-		}
+		e.FieldStart("billing")
+		s.Billing.Encode(e)
 	}
 }
 
@@ -15797,8 +15560,8 @@ func (s *NewElasticIp) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"internet_charge_type\"")
 			}
 		case "billing":
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
-				s.Billing.Reset()
 				if err := s.Billing.Decode(d); err != nil {
 					return err
 				}
@@ -15816,7 +15579,7 @@ func (s *NewElasticIp) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000111,
+		0b00010111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -18590,39 +18353,6 @@ func (s *OptAvailabilityZoneId) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes BillingChoice as json.
-func (o OptBillingChoice) Encode(e *jx.Encoder) {
-	if !o.Set {
-		return
-	}
-	o.Value.Encode(e)
-}
-
-// Decode decodes BillingChoice from json.
-func (o *OptBillingChoice) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode OptBillingChoice to nil")
-	}
-	o.Set = true
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s OptBillingChoice) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptBillingChoice) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
 // Encode encodes BillingLineQuantity as json.
 func (o OptBillingLineQuantity) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -18652,39 +18382,6 @@ func (s OptBillingLineQuantity) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptBillingLineQuantity) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes BillingPeriod as json.
-func (o OptBillingPeriod) Encode(e *jx.Encoder) {
-	if !o.Set {
-		return
-	}
-	o.Value.Encode(e)
-}
-
-// Decode decodes BillingPeriod from json.
-func (o *OptBillingPeriod) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode OptBillingPeriod to nil")
-	}
-	o.Set = true
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s OptBillingPeriod) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptBillingPeriod) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -19587,39 +19284,6 @@ func (s OptString) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptString) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes TerminationPolicy as json.
-func (o OptTerminationPolicy) Encode(e *jx.Encoder) {
-	if !o.Set {
-		return
-	}
-	e.Str(string(o.Value))
-}
-
-// Decode decodes TerminationPolicy from json.
-func (o *OptTerminationPolicy) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode OptTerminationPolicy to nil")
-	}
-	o.Set = true
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s OptTerminationPolicy) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptTerminationPolicy) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -25108,46 +24772,6 @@ func (s SuppliedPasswordType) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *SuppliedPasswordType) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes TerminationPolicy as json.
-func (s TerminationPolicy) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes TerminationPolicy from json.
-func (s *TerminationPolicy) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode TerminationPolicy to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch TerminationPolicy(v) {
-	case TerminationPolicyImmediate:
-		*s = TerminationPolicyImmediate
-	case TerminationPolicyPeriodEnd:
-		*s = TerminationPolicyPeriodEnd
-	default:
-		*s = TerminationPolicy(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s TerminationPolicy) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *TerminationPolicy) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

@@ -197,76 +197,6 @@ func (s *BillingCancellation) Validate() error {
 	return nil
 }
 
-func (s *BillingChoice) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.UsageType.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "usage_type",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.Period.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "period",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.TerminationPolicy.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "termination_policy",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s BillingChoiceUsageType) Validate() error {
-	switch s {
-	case "licensed":
-		return nil
-	case "metered":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
 func (s *BillingComponent) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -376,61 +306,6 @@ func (s BillingMeterQuantity) Validate() error {
 	case "bandwidth_mbps":
 		return nil
 	case "egress_bytes":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s *BillingPeriod) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Unit.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "unit",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := (validate.Int{
-			MinSet:        true,
-			Min:           1,
-			MaxSet:        true,
-			Max:           2147483647,
-			MinExclusive:  false,
-			MaxExclusive:  false,
-			MultipleOfSet: false,
-			MultipleOf:    0,
-			Pattern:       nil,
-		}).Validate(int64(s.Count)); err != nil {
-			return errors.Wrap(err, "int")
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "count",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s BillingPeriodUnit) Validate() error {
-	switch s {
-	case "month":
-		return nil
-	case "year":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -729,24 +604,6 @@ func (s *CreateElasticIpRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "line_id",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.Billing.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "billing",
 			Error: err,
 		})
 	}
@@ -2203,24 +2060,6 @@ func (s *CreateVolumeRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "volume_backup_id",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.Billing.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "billing",
 			Error: err,
 		})
 	}
@@ -5902,24 +5741,6 @@ func (s *NewBootVolume) Validate() error {
 			Error: err,
 		})
 	}
-	if err := func() error {
-		if value, ok := s.Billing.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "billing",
-			Error: err,
-		})
-	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -5967,17 +5788,6 @@ func (s *NewCompute) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "instance_type_id",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.Billing.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "billing",
 			Error: err,
 		})
 	}
@@ -6040,24 +5850,6 @@ func (s *NewDataVolume) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "on_instance_release",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.Billing.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "billing",
 			Error: err,
 		})
 	}
@@ -6142,24 +5934,6 @@ func (s *NewElasticIp) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "internet_charge_type",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.Billing.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "billing",
 			Error: err,
 		})
 	}
@@ -8237,17 +8011,6 @@ func (s *SuppliedPassword) Validate() error {
 func (s SuppliedPasswordType) Validate() error {
 	switch s {
 	case "supplied":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s TerminationPolicy) Validate() error {
-	switch s {
-	case "immediate":
-		return nil
-	case "period_end":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

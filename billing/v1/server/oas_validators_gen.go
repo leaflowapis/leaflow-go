@@ -5630,6 +5630,24 @@ func (s *OrderItem) Validate() error {
 		})
 	}
 	if err := func() error {
+		if value, ok := s.ListInterval.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "list_interval",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := s.Type.Validate(); err != nil {
 			return err
 		}
@@ -5768,6 +5786,19 @@ func (s *OrderItemList) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s OrderItemListInterval) Validate() error {
+	switch s {
+	case "day":
+		return nil
+	case "month":
+		return nil
+	case "year":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s OrderItemStatus) Validate() error {
@@ -8682,6 +8713,24 @@ func (s *SubscriptionItem) Validate() error {
 		})
 	}
 	if err := func() error {
+		if value, ok := s.ListInterval.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "list_interval",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if value, ok := s.DiscountedRenewalsRemaining.Get(); ok {
 			if err := func() error {
 				if err := (validate.Int{
@@ -8798,6 +8847,19 @@ func (s SubscriptionItemCancellationStatus) Validate() error {
 	case "completed":
 		return nil
 	case "canceled":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s SubscriptionItemListInterval) Validate() error {
+	switch s {
+	case "day":
+		return nil
+	case "month":
+		return nil
+	case "year":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

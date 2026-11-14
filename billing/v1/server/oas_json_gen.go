@@ -18895,6 +18895,39 @@ func (s *OptOrderItemConfiguration) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes OrderItemListInterval as json.
+func (o OptOrderItemListInterval) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes OrderItemListInterval from json.
+func (o *OptOrderItemListInterval) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptOrderItemListInterval to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptOrderItemListInterval) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptOrderItemListInterval) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes PaidWith as json.
 func (o OptPaidWith) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -19456,6 +19489,39 @@ func (s OptSubscriptionItemCancellation) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptSubscriptionItemCancellation) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes SubscriptionItemListInterval as json.
+func (o OptSubscriptionItemListInterval) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes SubscriptionItemListInterval from json.
+func (o *OptSubscriptionItemListInterval) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptSubscriptionItemListInterval to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptSubscriptionItemListInterval) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptSubscriptionItemListInterval) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -20362,9 +20428,15 @@ func (s *OrderItem) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.MonthlyListAmount.Set {
-			e.FieldStart("monthly_list_amount")
-			s.MonthlyListAmount.Encode(e)
+		if s.ListAmount.Set {
+			e.FieldStart("list_amount")
+			s.ListAmount.Encode(e)
+		}
+	}
+	{
+		if s.ListInterval.Set {
+			e.FieldStart("list_interval")
+			s.ListInterval.Encode(e)
 		}
 	}
 	{
@@ -20505,7 +20577,7 @@ func (s *OrderItem) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfOrderItem = [37]string{
+var jsonFieldsNameOfOrderItem = [38]string{
 	0:  "renewal_discounts_enabled",
 	1:  "invoice_item_ids",
 	2:  "position",
@@ -20516,33 +20588,34 @@ var jsonFieldsNameOfOrderItem = [37]string{
 	7:  "interval_count",
 	8:  "cancellation_policy",
 	9:  "refund_policy",
-	10: "monthly_list_amount",
-	11: "short_rate_multiplier",
-	12: "short_rate_threshold_seconds",
-	13: "recurring_amount",
-	14: "setup_amount",
-	15: "type",
-	16: "usage_type",
-	17: "dimensions",
-	18: "tax_amount",
-	19: "tax_included_amount",
-	20: "id",
-	21: "order_id",
-	22: "price_id",
-	23: "product_id",
-	24: "product",
-	25: "plan_id",
-	26: "plan_name",
-	27: "quantity",
-	28: "unit_label",
-	29: "unit_amount",
-	30: "gross_amount",
-	31: "discount_amount",
-	32: "amount",
-	33: "currency",
-	34: "period_start",
-	35: "period_end",
-	36: "status",
+	10: "list_amount",
+	11: "list_interval",
+	12: "short_rate_multiplier",
+	13: "short_rate_threshold_seconds",
+	14: "recurring_amount",
+	15: "setup_amount",
+	16: "type",
+	17: "usage_type",
+	18: "dimensions",
+	19: "tax_amount",
+	20: "tax_included_amount",
+	21: "id",
+	22: "order_id",
+	23: "price_id",
+	24: "product_id",
+	25: "product",
+	26: "plan_id",
+	27: "plan_name",
+	28: "quantity",
+	29: "unit_label",
+	30: "unit_amount",
+	31: "gross_amount",
+	32: "discount_amount",
+	33: "amount",
+	34: "currency",
+	35: "period_start",
+	36: "period_end",
+	37: "status",
 }
 
 // Decode decodes OrderItem from json.
@@ -20663,15 +20736,25 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"refund_policy\"")
 			}
-		case "monthly_list_amount":
+		case "list_amount":
 			if err := func() error {
-				s.MonthlyListAmount.Reset()
-				if err := s.MonthlyListAmount.Decode(d); err != nil {
+				s.ListAmount.Reset()
+				if err := s.ListAmount.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"monthly_list_amount\"")
+				return errors.Wrap(err, "decode field \"list_amount\"")
+			}
+		case "list_interval":
+			if err := func() error {
+				s.ListInterval.Reset()
+				if err := s.ListInterval.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"list_interval\"")
 			}
 		case "short_rate_multiplier":
 			if err := func() error {
@@ -20714,7 +20797,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"setup_amount\"")
 			}
 		case "type":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				if err := s.Type.Decode(d); err != nil {
 					return err
@@ -20724,7 +20807,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"type\"")
 			}
 		case "usage_type":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				if err := s.UsageType.Decode(d); err != nil {
 					return err
@@ -20734,7 +20817,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"usage_type\"")
 			}
 		case "dimensions":
-			requiredBitSet[2] |= 1 << 1
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				if err := s.Dimensions.Decode(d); err != nil {
 					return err
@@ -20764,7 +20847,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tax_included_amount\"")
 			}
 		case "id":
-			requiredBitSet[2] |= 1 << 4
+			requiredBitSet[2] |= 1 << 5
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.ID = v
@@ -20786,7 +20869,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"order_id\"")
 			}
 		case "price_id":
-			requiredBitSet[2] |= 1 << 6
+			requiredBitSet[2] |= 1 << 7
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.PriceID = v
@@ -20818,7 +20901,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"product\"")
 			}
 		case "plan_id":
-			requiredBitSet[3] |= 1 << 1
+			requiredBitSet[3] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.PlanID = v
@@ -20830,7 +20913,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"plan_id\"")
 			}
 		case "plan_name":
-			requiredBitSet[3] |= 1 << 2
+			requiredBitSet[3] |= 1 << 3
 			if err := func() error {
 				v, err := d.Str()
 				s.PlanName = string(v)
@@ -20842,7 +20925,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"plan_name\"")
 			}
 		case "quantity":
-			requiredBitSet[3] |= 1 << 3
+			requiredBitSet[3] |= 1 << 4
 			if err := func() error {
 				v, err := d.Str()
 				s.Quantity = string(v)
@@ -20904,7 +20987,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"amount\"")
 			}
 		case "currency":
-			requiredBitSet[4] |= 1 << 1
+			requiredBitSet[4] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.Currency = string(v)
@@ -20936,7 +21019,7 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"period_end\"")
 			}
 		case "status":
-			requiredBitSet[4] |= 1 << 4
+			requiredBitSet[4] |= 1 << 5
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -20956,10 +21039,10 @@ func (s *OrderItem) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [5]uint8{
 		0b01000000,
-		0b10000000,
-		0b01010011,
-		0b00001110,
-		0b00010010,
+		0b00000000,
+		0b10100111,
+		0b00011100,
+		0b00100100,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -21280,6 +21363,48 @@ func (s *OrderItemList) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OrderItemList) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes OrderItemListInterval as json.
+func (s OrderItemListInterval) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes OrderItemListInterval from json.
+func (s *OrderItemListInterval) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode OrderItemListInterval to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch OrderItemListInterval(v) {
+	case OrderItemListIntervalDay:
+		*s = OrderItemListIntervalDay
+	case OrderItemListIntervalMonth:
+		*s = OrderItemListIntervalMonth
+	case OrderItemListIntervalYear:
+		*s = OrderItemListIntervalYear
+	default:
+		*s = OrderItemListInterval(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OrderItemListInterval) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OrderItemListInterval) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -31684,9 +31809,15 @@ func (s *SubscriptionItem) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.MonthlyListAmount.Set {
-			e.FieldStart("monthly_list_amount")
-			s.MonthlyListAmount.Encode(e)
+		if s.ListAmount.Set {
+			e.FieldStart("list_amount")
+			s.ListAmount.Encode(e)
+		}
+	}
+	{
+		if s.ListInterval.Set {
+			e.FieldStart("list_interval")
+			s.ListInterval.Encode(e)
 		}
 	}
 	{
@@ -31745,7 +31876,7 @@ func (s *SubscriptionItem) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfSubscriptionItem = [26]string{
+var jsonFieldsNameOfSubscriptionItem = [27]string{
 	0:  "id",
 	1:  "subscription_id",
 	2:  "plan_id",
@@ -31762,16 +31893,17 @@ var jsonFieldsNameOfSubscriptionItem = [26]string{
 	13: "refund_policy",
 	14: "short_rate_multiplier",
 	15: "short_rate_threshold_seconds",
-	16: "monthly_list_amount",
-	17: "coupon_id",
-	18: "coupon",
-	19: "discounted_renewals_remaining",
-	20: "order_item_id",
-	21: "cancellation",
-	22: "scheduled_change",
-	23: "created_at",
-	24: "started_at",
-	25: "ended_at",
+	16: "list_amount",
+	17: "list_interval",
+	18: "coupon_id",
+	19: "coupon",
+	20: "discounted_renewals_remaining",
+	21: "order_item_id",
+	22: "cancellation",
+	23: "scheduled_change",
+	24: "created_at",
+	25: "started_at",
+	26: "ended_at",
 }
 
 // Decode decodes SubscriptionItem from json.
@@ -31955,15 +32087,25 @@ func (s *SubscriptionItem) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"short_rate_threshold_seconds\"")
 			}
-		case "monthly_list_amount":
+		case "list_amount":
 			if err := func() error {
-				s.MonthlyListAmount.Reset()
-				if err := s.MonthlyListAmount.Decode(d); err != nil {
+				s.ListAmount.Reset()
+				if err := s.ListAmount.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"monthly_list_amount\"")
+				return errors.Wrap(err, "decode field \"list_amount\"")
+			}
+		case "list_interval":
+			if err := func() error {
+				s.ListInterval.Reset()
+				if err := s.ListInterval.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"list_interval\"")
 			}
 		case "coupon_id":
 			if err := func() error {
@@ -32545,6 +32687,48 @@ func (s SubscriptionItemDimensions) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *SubscriptionItemDimensions) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes SubscriptionItemListInterval as json.
+func (s SubscriptionItemListInterval) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes SubscriptionItemListInterval from json.
+func (s *SubscriptionItemListInterval) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SubscriptionItemListInterval to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch SubscriptionItemListInterval(v) {
+	case SubscriptionItemListIntervalDay:
+		*s = SubscriptionItemListIntervalDay
+	case SubscriptionItemListIntervalMonth:
+		*s = SubscriptionItemListIntervalMonth
+	case SubscriptionItemListIntervalYear:
+		*s = SubscriptionItemListIntervalYear
+	default:
+		*s = SubscriptionItemListInterval(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s SubscriptionItemListInterval) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SubscriptionItemListInterval) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
