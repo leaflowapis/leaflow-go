@@ -67,94 +67,10 @@ type Handler interface {
 	//
 	// POST /api/v2/instances/{instanceId}/volumes
 	AttachInstanceVolume(ctx context.Context, req *AttachVolumeRequestBody, params AttachInstanceVolumeParams) (AttachInstanceVolumeRes, error)
-	// ChangeElasticIPBandwidth implements change-elastic-ip-bandwidth operation.
-	//
-	// Changes the bandwidth ceiling of this elastic IP. No separate bandwidth resource is created, and the
-	// limit applies to inbound and outbound traffic alike. The new value may be any whole number of Mbps
-	// within the line's bandwidth range, otherwise the request is refused with
-	// `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic IP's network item:
-	//
-	//  - Prepaid: the change goes through a Checkout Session that changes the network item, priced for the
-	//    rest of its period. It starts once Billing accepts the order; if checkout is not completed, the
-	//    order is not accepted or the change fails, `bandwidth_mbps` keeps its value and Billing shows the
-	//    outcome. During a free trial that began with a trial grant, the subscription has to stay within
-	//    the plans and quantities of the trial offer, otherwise Billing refuses with 422
-	//    `BILLING_TRIAL_OFFER_EXCEEDED`.
-	//  - Pay-as-you-go: there is no checkout. The change starts at once, `checkout_session_id` and
-	//    `order_id` are null, and the new limit is metered from the instant it is applied; if it fails,
-	//    the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
-	//    `ELASTIC_IP_CHECKOUT_UNUSED`.
-	//
-	// The elastic IP is `updating_bandwidth` until the change is applied or ends, so other operations and
-	// a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in
-	// effect until the change is applied.
-	//
-	// While the address is associated with an instance, the limit must not exceed the `max_bandwidth_mbps`
-	// of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of
-	// an address that is not associated is checked when the address is associated with an instance.
-	//
-	// POST /api/v2/elastic-ips/{elasticIpId}:changeBandwidth
-	ChangeElasticIPBandwidth(ctx context.Context, req *ChangeElasticIpBandwidthRequestBody, params ChangeElasticIPBandwidthParams) (ChangeElasticIPBandwidthRes, error)
-	// ChangeElasticIPChargeType implements change-elastic-ip-charge-type operation.
-	//
-	// Moves a pay-as-you-go elastic IP between charging for its bandwidth and charging for its traffic,
-	// within the same network item and without checkout. A prepaid network item has paid for its bandwidth
-	// and is refused with `ELASTIC_IP_CHARGE_TYPE_PREPAID`; `traffic` on a line whose
-	// `traffic_sale_status` is `off_sale` is refused with `ELASTIC_IP_TRAFFIC_UNAVAILABLE`, the type
-	// already in effect with `ELASTIC_IP_CHARGE_TYPE_UNCHANGED`, and a type the currency of the network
-	// item does not offer on the line with HTTP 403 `ELASTIC_IP_CHARGE_TYPE_NOT_OFFERED`: prices are set
-	// per currency, and a currency without one there does not sell that type.
-	//
-	// The change takes effect at the instant it is applied: bandwidth stops being metered then and traffic
-	// starts being, or the other way round. Traffic is counted in windows, and a window is charged the way
-	// the elastic IP was charged for most of it, so a report that arrives late is still charged as it was
-	// at the time and a window the change falls in is never charged both ways. `bandwidth_mbps` stays the
-	// ceiling either way. The elastic IP is `updating_internet_charge_type` until the change is applied.
-	//
-	// POST /api/v2/elastic-ips/{elasticIpId}:changeChargeType
-	ChangeElasticIPChargeType(ctx context.Context, req *ChangeElasticIpChargeTypeRequestBody, params ChangeElasticIPChargeTypeParams) (ChangeElasticIPChargeTypeRes, error)
 	// CreateElasticIP implements create-elastic-ip operation.
 	//
-	// Select an elastic IP line. The elastic IP is bought through a Billing Checkout Session, and no
-	// address is allocated before its order is accepted.
-	//
-	// The line has to have an address left, counted before anything is ordered: refused with 409
-	// `ELASTIC_IP_LINE_EXHAUSTED` when every address it sells is held or already promised to a purchase
-	// waiting for its order. Two purchases checked at the same moment can both pass on the last address;
-	// the later one ends `failed` with `provisioning_failed` and its charge is refunded.
-	//
-	// Returns the elastic IP as `pending` with its Checkout Session; `address` is null until the address
-	// is allocated after the order is accepted. A requested `address` is not held while pending; if it is
-	// no longer available then, the elastic IP ends `failed` with `provisioning_failed` and its charge is
-	// refunded.
-	//
-	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the virtual
-	// private cloud; enable IPv6 on that network instead.
-	//
-	// Allocation does not select or create a virtual private cloud. A later association selects an
-	// assigned network-interface address; Compute then establishes the required network connectivity.
-	//
-	// An elastic IP bought on its own has a Billing subscription of its own, with two items: the address,
-	// always pay-as-you-go and charged while the address is not associated with anything, and the network,
-	// on the chosen terms.
-	//
-	// Buying for an instance. With `instance_id`, the elastic IP is associated with the primary network
-	// interface of that instance of the project once created, and its two items join the instance's
-	// Billing subscription: a prepaid network item is charged up to the instance's term end, the rest of
-	// the current period in proportion to the time left, and from then on renews, renews automatically and
-	// expires with the instance. `billing.price_id` is required and identifies a price of this component's
-	// plan. Billing checks that it can join the existing subscription. An instance that cannot take
-	// another elastic IP, or whose type allows less bandwidth than `bandwidth_mbps`, is refused before
-	// anything is ordered, as associating would be. During a free trial that began with a trial grant, the
-	// subscription has to stay within the plans and quantities of the trial offer, otherwise Billing
-	// refuses with 422 `BILLING_TRIAL_OFFER_EXCEEDED`. The instance may still be being created after its
-	// order was accepted; the elastic IP is associated once the instance is created, and is refunded if
-	// the instance's creation fails.
-	//
-	// The elastic IP is `pending` from the moment its Checkout Session is created until it is delivered or
-	// its checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
-	// meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its purchase awaits checkout or
-	// payment.
+	// Creates an address and optionally an independent bandwidth service. Address holding is always
+	// metered; bandwidth uses its selected price.
 	//
 	// POST /api/v2/elastic-ips
 	CreateElasticIP(ctx context.Context, req *CreateElasticIpRequestBody) (CreateElasticIPRes, error)
@@ -180,7 +96,7 @@ type Handler interface {
 	// `INSTANCE_TYPE_CAPACITY_REACHED` or `VOLUME_TYPE_CAPACITY_REACHED` when what is sold of it is used
 	// up, `INSTANCE_TYPE_NO_HOST_ROOM` when no host of the zone can take the machine,
 	// `VOLUME_TYPE_NO_POOL_ROOM` when the storage of the zone cannot take the boot volume, and
-	// `ELASTIC_IP_LINE_EXHAUSTED` when the line of the new elastic IPs has fewer addresses left than
+	// `INTERNET_LINE_EXHAUSTED` when the line of the new elastic IPs has fewer addresses left than
 	// instances. Two orders placed at the same moment can both pass; an instance that finds a type full
 	// when its order is accepted is not created and is refunded, ending `failed` with
 	// `provisioning_failed`.
@@ -232,6 +148,21 @@ type Handler interface {
 	//
 	// POST /api/v2/instances/{instanceId}:createConsoleUrl
 	CreateInstanceConsoleURL(ctx context.Context, params CreateInstanceConsoleURLParams) (*ConsoleResponseBody, error)
+	// CreateInternetBandwidth implements create-internet-bandwidth operation.
+	//
+	// Mbps duration is charged from enablement until suspension or release, even when its EIP is
+	// unassociated. Traffic billing counts actual outbound bytes.
+	//
+	// POST /api/v2/internet-bandwidths
+	CreateInternetBandwidth(ctx context.Context, req *CreateInternetBandwidthRequestBody) (*InternetBandwidthMutation, error)
+	// CreateInternetGateway implements create-internet-gateway operation.
+	//
+	// Reserves an unbilled VPC connection through the selected line’s exit network. Compatible lines
+	// share this connection. It is attached when a bandwidth service needs it; creating it grants no
+	// public access.
+	//
+	// POST /api/v2/internet-gateways
+	CreateInternetGateway(ctx context.Context, req *CreateInternetGatewayRequestBody) (*InternetGateway, error)
 	// CreateLaunchTemplate implements create-launch-template operation.
 	//
 	// Creates a launch template with its first version, which becomes its default. A launch template
@@ -494,6 +425,18 @@ type Handler interface {
 	//
 	// DELETE /api/v2/instances/{instanceId}
 	DeleteInstance(ctx context.Context, params DeleteInstanceParams) (DeleteInstanceRes, error)
+	// DeleteInternetBandwidth implements delete-internet-bandwidth operation.
+	//
+	// Cancels only this service. Its EIP, association, IPv6 prefix and IGW are retained.
+	//
+	// DELETE /api/v2/internet-bandwidths/{internetBandwidthId}
+	DeleteInternetBandwidth(ctx context.Context, params DeleteInternetBandwidthParams) (*InternetBandwidthMutation, error)
+	// DeleteInternetGateway implements delete-internet-gateway operation.
+	//
+	// Refused while any EIP association or unreleased IPv6 bandwidth service uses this connection.
+	//
+	// DELETE /api/v2/internet-gateways/{internetGatewayId}
+	DeleteInternetGateway(ctx context.Context, params DeleteInternetGatewayParams) error
 	// DeleteLaunchTemplate implements delete-launch-template operation.
 	//
 	// Deletes the template with every version. Instances created from it are not affected and keep naming
@@ -712,7 +655,7 @@ type Handler interface {
 	GetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (*AvailabilityZoneResource, error)
 	// GetElasticIP implements get-elastic-ip operation.
 	//
-	// Retrieve an elastic IP.
+	// Returns the address holding, association intent and independent bandwidth service identity.
 	//
 	// GET /api/v2/elastic-ips/{elasticIpId}
 	GetElasticIP(ctx context.Context, params GetElasticIPParams) (*ElasticIp, error)
@@ -726,13 +669,6 @@ type Handler interface {
 	//
 	// GET /api/v2/elastic-ips/{elasticIpId}/association
 	GetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (*ElasticIpAssociation, error)
-	// GetElasticIPLine implements get-elastic-ip-line operation.
-	//
-	// Includes lines off sale that existing elastic IPs are on. No inventory or gateway facts are
-	// returned.
-	//
-	// GET /api/v2/elastic-ip-lines/{elasticIpLineId}
-	GetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (*ElasticIpLine, error)
 	// GetInstance implements get-instance operation.
 	//
 	// Returns the stored state of the instance; it does not query the cloud. Use it to poll creation
@@ -754,6 +690,25 @@ type Handler interface {
 	//
 	// GET /api/v2/instance-types/{instanceTypeId}
 	GetInstanceType(ctx context.Context, params GetInstanceTypeParams) (*InstanceType, error)
+	// GetInternetBandwidth implements get-internet-bandwidth operation.
+	//
+	// Get internet bandwidth.
+	//
+	// GET /api/v2/internet-bandwidths/{internetBandwidthId}
+	GetInternetBandwidth(ctx context.Context, params GetInternetBandwidthParams) (*InternetBandwidth, error)
+	// GetInternetGateway implements get-internet-gateway operation.
+	//
+	// Get an internet gateway.
+	//
+	// GET /api/v2/internet-gateways/{internetGatewayId}
+	GetInternetGateway(ctx context.Context, params GetInternetGatewayParams) (*InternetGateway, error)
+	// GetInternetLine implements get-internet-line operation.
+	//
+	// Returns a line currently on sale. Lines off sale are not exposed by this public catalog endpoint. No
+	// inventory or gateway facts are returned.
+	//
+	// GET /api/v2/internet-lines/{internetLineId}
+	GetInternetLine(ctx context.Context, params GetInternetLineParams) (*InternetLine, error)
 	// GetLaunchTemplate implements get-launch-template operation.
 	//
 	// Get a launch template.
@@ -886,28 +841,6 @@ type Handler interface {
 	//
 	// GET /api/v2/availability-zones
 	ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*AvailabilityZoneListResponseBody, error)
-	// ListElasticIPLines implements list-elastic-ip-lines operation.
-	//
-	// Lists the lines on sale. A line is the network an elastic IP is bought on, with the bandwidth that
-	// can be chosen and the two Billing Plans its elastic IPs are paid under. Region is optional. Prices,
-	// commercial terms and checkout are read directly from Billing. `q` searches the names and
-	// descriptions of the lines on sale; filters combine with AND, and pagination is independent of them.
-	//
-	// GET /api/v2/elastic-ip-lines
-	ListElasticIPLines(ctx context.Context, params ListElasticIPLinesParams) (*ElasticIpLineListResponseBody, error)
-	// ListElasticIPTrafficUsage implements list-elastic-ip-traffic-usage operation.
-	//
-	// The bytes and packets the elastic IP's address sent upstream while the elastic IP held it, summed by
-	// hour or by day in UTC over `[start_time, end_time)`. Only intervals with traffic are listed. Inbound
-	// traffic is not measured.
-	//
-	// Traffic is reported by the region's collectors and appears some minutes after it is sent. Every
-	// elastic IP's traffic is shown, whatever it is billed by; only one billed by traffic is charged for
-	// it. A span longer than 31 days by hour, or 366 days by day, is refused with
-	// `TRAFFIC_USAGE_QUERY_INVALID`.
-	//
-	// GET /api/v2/elastic-ips/{elasticIpId}/traffic-usage
-	ListElasticIPTrafficUsage(ctx context.Context, params ListElasticIPTrafficUsageParams) (*TrafficUsageListResponseBody, error)
 	// ListElasticIps implements list-elastic-ips operation.
 	//
 	// List elastic IPs.
@@ -948,6 +881,33 @@ type Handler interface {
 	//
 	// GET /api/v2/instances
 	ListInstances(ctx context.Context, params ListInstancesParams) (*InstanceListResponseBody, error)
+	// ListInternetBandwidthTrafficUsage implements list-internet-bandwidth-traffic-usage operation.
+	//
+	// List outbound traffic usage.
+	//
+	// GET /api/v2/internet-bandwidths/{internetBandwidthId}/traffic-usage
+	ListInternetBandwidthTrafficUsage(ctx context.Context, params ListInternetBandwidthTrafficUsageParams) (*InternetBandwidthTrafficUsageListResponseBody, error)
+	// ListInternetBandwidths implements list-internet-bandwidths operation.
+	//
+	// List internet bandwidth services.
+	//
+	// GET /api/v2/internet-bandwidths
+	ListInternetBandwidths(ctx context.Context, params ListInternetBandwidthsParams) (*InternetBandwidthListResponseBody, error)
+	// ListInternetGateways implements list-internet-gateways operation.
+	//
+	// List internet gateways.
+	//
+	// GET /api/v2/internet-gateways
+	ListInternetGateways(ctx context.Context, params ListInternetGatewaysParams) (*InternetGatewayListResponseBody, error)
+	// ListInternetLines implements list-internet-lines operation.
+	//
+	// Lists the commercial internet lines on sale. A line can supply IPv4 and IPv6, with selectable
+	// bandwidth ceilings and separate address and bandwidth Billing Plans. Region is optional. Prices,
+	// commercial terms and checkout are read directly from Billing. `q` searches the names and
+	// descriptions of the lines on sale; filters combine with AND, and pagination is independent of them.
+	//
+	// GET /api/v2/internet-lines
+	ListInternetLines(ctx context.Context, params ListInternetLinesParams) (*InternetLineListResponseBody, error)
 	// ListLaunchTemplateVersions implements list-launch-template-versions operation.
 	//
 	// Newest first.
@@ -1360,6 +1320,18 @@ type Handler interface {
 	//
 	// PATCH /api/v2/instances/{instanceId}
 	UpdateInstance(ctx context.Context, req *UpdateInstanceRequestBody, params UpdateInstanceParams) (*Instance, error)
+	// UpdateInternetBandwidth implements update-internet-bandwidth operation.
+	//
+	// Change bandwidth configuration.
+	//
+	// PATCH /api/v2/internet-bandwidths/{internetBandwidthId}
+	UpdateInternetBandwidth(ctx context.Context, req *UpdateInternetBandwidthRequestBody, params UpdateInternetBandwidthParams) (*InternetBandwidthMutation, error)
+	// UpdateInternetGateway implements update-internet-gateway operation.
+	//
+	// Update an internet gateway.
+	//
+	// PATCH /api/v2/internet-gateways/{internetGatewayId}
+	UpdateInternetGateway(ctx context.Context, req *UpdateInternetGatewayRequestBody, params UpdateInternetGatewayParams) (*InternetGateway, error)
 	// UpdateLaunchTemplate implements update-launch-template operation.
 	//
 	// Changes the name or description, or makes another live version the default, the one a creation

@@ -88,94 +88,10 @@ type Invoker interface {
 	//
 	// POST /api/v2/instances/{instanceId}/volumes
 	AttachInstanceVolume(ctx context.Context, request *AttachVolumeRequestBody, params AttachInstanceVolumeParams) (AttachInstanceVolumeRes, error)
-	// ChangeElasticIPBandwidth invokes change-elastic-ip-bandwidth operation.
-	//
-	// Changes the bandwidth ceiling of this elastic IP. No separate bandwidth resource is created, and the
-	// limit applies to inbound and outbound traffic alike. The new value may be any whole number of Mbps
-	// within the line's bandwidth range, otherwise the request is refused with
-	// `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic IP's network item:
-	//
-	//  - Prepaid: the change goes through a Checkout Session that changes the network item, priced for the
-	//    rest of its period. It starts once Billing accepts the order; if checkout is not completed, the
-	//    order is not accepted or the change fails, `bandwidth_mbps` keeps its value and Billing shows the
-	//    outcome. During a free trial that began with a trial grant, the subscription has to stay within
-	//    the plans and quantities of the trial offer, otherwise Billing refuses with 422
-	//    `BILLING_TRIAL_OFFER_EXCEEDED`.
-	//  - Pay-as-you-go: there is no checkout. The change starts at once, `checkout_session_id` and
-	//    `order_id` are null, and the new limit is metered from the instant it is applied; if it fails,
-	//    the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
-	//    `ELASTIC_IP_CHECKOUT_UNUSED`.
-	//
-	// The elastic IP is `updating_bandwidth` until the change is applied or ends, so other operations and
-	// a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in
-	// effect until the change is applied.
-	//
-	// While the address is associated with an instance, the limit must not exceed the `max_bandwidth_mbps`
-	// of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of
-	// an address that is not associated is checked when the address is associated with an instance.
-	//
-	// POST /api/v2/elastic-ips/{elasticIpId}:changeBandwidth
-	ChangeElasticIPBandwidth(ctx context.Context, request *ChangeElasticIpBandwidthRequestBody, params ChangeElasticIPBandwidthParams) (ChangeElasticIPBandwidthRes, error)
-	// ChangeElasticIPChargeType invokes change-elastic-ip-charge-type operation.
-	//
-	// Moves a pay-as-you-go elastic IP between charging for its bandwidth and charging for its traffic,
-	// within the same network item and without checkout. A prepaid network item has paid for its bandwidth
-	// and is refused with `ELASTIC_IP_CHARGE_TYPE_PREPAID`; `traffic` on a line whose
-	// `traffic_sale_status` is `off_sale` is refused with `ELASTIC_IP_TRAFFIC_UNAVAILABLE`, the type
-	// already in effect with `ELASTIC_IP_CHARGE_TYPE_UNCHANGED`, and a type the currency of the network
-	// item does not offer on the line with HTTP 403 `ELASTIC_IP_CHARGE_TYPE_NOT_OFFERED`: prices are set
-	// per currency, and a currency without one there does not sell that type.
-	//
-	// The change takes effect at the instant it is applied: bandwidth stops being metered then and traffic
-	// starts being, or the other way round. Traffic is counted in windows, and a window is charged the way
-	// the elastic IP was charged for most of it, so a report that arrives late is still charged as it was
-	// at the time and a window the change falls in is never charged both ways. `bandwidth_mbps` stays the
-	// ceiling either way. The elastic IP is `updating_internet_charge_type` until the change is applied.
-	//
-	// POST /api/v2/elastic-ips/{elasticIpId}:changeChargeType
-	ChangeElasticIPChargeType(ctx context.Context, request *ChangeElasticIpChargeTypeRequestBody, params ChangeElasticIPChargeTypeParams) (ChangeElasticIPChargeTypeRes, error)
 	// CreateElasticIP invokes create-elastic-ip operation.
 	//
-	// Select an elastic IP line. The elastic IP is bought through a Billing Checkout Session, and no
-	// address is allocated before its order is accepted.
-	//
-	// The line has to have an address left, counted before anything is ordered: refused with 409
-	// `ELASTIC_IP_LINE_EXHAUSTED` when every address it sells is held or already promised to a purchase
-	// waiting for its order. Two purchases checked at the same moment can both pass on the last address;
-	// the later one ends `failed` with `provisioning_failed` and its charge is refunded.
-	//
-	// Returns the elastic IP as `pending` with its Checkout Session; `address` is null until the address
-	// is allocated after the order is accepted. A requested `address` is not held while pending; if it is
-	// no longer available then, the elastic IP ends `failed` with `provisioning_failed` and its charge is
-	// refunded.
-	//
-	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the virtual
-	// private cloud; enable IPv6 on that network instead.
-	//
-	// Allocation does not select or create a virtual private cloud. A later association selects an
-	// assigned network-interface address; Compute then establishes the required network connectivity.
-	//
-	// An elastic IP bought on its own has a Billing subscription of its own, with two items: the address,
-	// always pay-as-you-go and charged while the address is not associated with anything, and the network,
-	// on the chosen terms.
-	//
-	// Buying for an instance. With `instance_id`, the elastic IP is associated with the primary network
-	// interface of that instance of the project once created, and its two items join the instance's
-	// Billing subscription: a prepaid network item is charged up to the instance's term end, the rest of
-	// the current period in proportion to the time left, and from then on renews, renews automatically and
-	// expires with the instance. `billing.price_id` is required and identifies a price of this component's
-	// plan. Billing checks that it can join the existing subscription. An instance that cannot take
-	// another elastic IP, or whose type allows less bandwidth than `bandwidth_mbps`, is refused before
-	// anything is ordered, as associating would be. During a free trial that began with a trial grant, the
-	// subscription has to stay within the plans and quantities of the trial offer, otherwise Billing
-	// refuses with 422 `BILLING_TRIAL_OFFER_EXCEEDED`. The instance may still be being created after its
-	// order was accepted; the elastic IP is associated once the instance is created, and is refunded if
-	// the instance's creation fails.
-	//
-	// The elastic IP is `pending` from the moment its Checkout Session is created until it is delivered or
-	// its checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
-	// meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its purchase awaits checkout or
-	// payment.
+	// Creates an address and optionally an independent bandwidth service. Address holding is always
+	// metered; bandwidth uses its selected price.
 	//
 	// POST /api/v2/elastic-ips
 	CreateElasticIP(ctx context.Context, request *CreateElasticIpRequestBody) (CreateElasticIPRes, error)
@@ -201,7 +117,7 @@ type Invoker interface {
 	// `INSTANCE_TYPE_CAPACITY_REACHED` or `VOLUME_TYPE_CAPACITY_REACHED` when what is sold of it is used
 	// up, `INSTANCE_TYPE_NO_HOST_ROOM` when no host of the zone can take the machine,
 	// `VOLUME_TYPE_NO_POOL_ROOM` when the storage of the zone cannot take the boot volume, and
-	// `ELASTIC_IP_LINE_EXHAUSTED` when the line of the new elastic IPs has fewer addresses left than
+	// `INTERNET_LINE_EXHAUSTED` when the line of the new elastic IPs has fewer addresses left than
 	// instances. Two orders placed at the same moment can both pass; an instance that finds a type full
 	// when its order is accepted is not created and is refunded, ending `failed` with
 	// `provisioning_failed`.
@@ -253,6 +169,21 @@ type Invoker interface {
 	//
 	// POST /api/v2/instances/{instanceId}:createConsoleUrl
 	CreateInstanceConsoleURL(ctx context.Context, params CreateInstanceConsoleURLParams) (*ConsoleResponseBody, error)
+	// CreateInternetBandwidth invokes create-internet-bandwidth operation.
+	//
+	// Mbps duration is charged from enablement until suspension or release, even when its EIP is
+	// unassociated. Traffic billing counts actual outbound bytes.
+	//
+	// POST /api/v2/internet-bandwidths
+	CreateInternetBandwidth(ctx context.Context, request *CreateInternetBandwidthRequestBody) (*InternetBandwidthMutation, error)
+	// CreateInternetGateway invokes create-internet-gateway operation.
+	//
+	// Reserves an unbilled VPC connection through the selected line’s exit network. Compatible lines
+	// share this connection. It is attached when a bandwidth service needs it; creating it grants no
+	// public access.
+	//
+	// POST /api/v2/internet-gateways
+	CreateInternetGateway(ctx context.Context, request *CreateInternetGatewayRequestBody) (*InternetGateway, error)
 	// CreateLaunchTemplate invokes create-launch-template operation.
 	//
 	// Creates a launch template with its first version, which becomes its default. A launch template
@@ -515,6 +446,18 @@ type Invoker interface {
 	//
 	// DELETE /api/v2/instances/{instanceId}
 	DeleteInstance(ctx context.Context, params DeleteInstanceParams) (DeleteInstanceRes, error)
+	// DeleteInternetBandwidth invokes delete-internet-bandwidth operation.
+	//
+	// Cancels only this service. Its EIP, association, IPv6 prefix and IGW are retained.
+	//
+	// DELETE /api/v2/internet-bandwidths/{internetBandwidthId}
+	DeleteInternetBandwidth(ctx context.Context, params DeleteInternetBandwidthParams) (*InternetBandwidthMutation, error)
+	// DeleteInternetGateway invokes delete-internet-gateway operation.
+	//
+	// Refused while any EIP association or unreleased IPv6 bandwidth service uses this connection.
+	//
+	// DELETE /api/v2/internet-gateways/{internetGatewayId}
+	DeleteInternetGateway(ctx context.Context, params DeleteInternetGatewayParams) error
 	// DeleteLaunchTemplate invokes delete-launch-template operation.
 	//
 	// Deletes the template with every version. Instances created from it are not affected and keep naming
@@ -733,7 +676,7 @@ type Invoker interface {
 	GetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (*AvailabilityZoneResource, error)
 	// GetElasticIP invokes get-elastic-ip operation.
 	//
-	// Retrieve an elastic IP.
+	// Returns the address holding, association intent and independent bandwidth service identity.
 	//
 	// GET /api/v2/elastic-ips/{elasticIpId}
 	GetElasticIP(ctx context.Context, params GetElasticIPParams) (*ElasticIp, error)
@@ -747,13 +690,6 @@ type Invoker interface {
 	//
 	// GET /api/v2/elastic-ips/{elasticIpId}/association
 	GetElasticIPAssociation(ctx context.Context, params GetElasticIPAssociationParams) (*ElasticIpAssociation, error)
-	// GetElasticIPLine invokes get-elastic-ip-line operation.
-	//
-	// Includes lines off sale that existing elastic IPs are on. No inventory or gateway facts are
-	// returned.
-	//
-	// GET /api/v2/elastic-ip-lines/{elasticIpLineId}
-	GetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (*ElasticIpLine, error)
 	// GetInstance invokes get-instance operation.
 	//
 	// Returns the stored state of the instance; it does not query the cloud. Use it to poll creation
@@ -775,6 +711,25 @@ type Invoker interface {
 	//
 	// GET /api/v2/instance-types/{instanceTypeId}
 	GetInstanceType(ctx context.Context, params GetInstanceTypeParams) (*InstanceType, error)
+	// GetInternetBandwidth invokes get-internet-bandwidth operation.
+	//
+	// Get internet bandwidth.
+	//
+	// GET /api/v2/internet-bandwidths/{internetBandwidthId}
+	GetInternetBandwidth(ctx context.Context, params GetInternetBandwidthParams) (*InternetBandwidth, error)
+	// GetInternetGateway invokes get-internet-gateway operation.
+	//
+	// Get an internet gateway.
+	//
+	// GET /api/v2/internet-gateways/{internetGatewayId}
+	GetInternetGateway(ctx context.Context, params GetInternetGatewayParams) (*InternetGateway, error)
+	// GetInternetLine invokes get-internet-line operation.
+	//
+	// Returns a line currently on sale. Lines off sale are not exposed by this public catalog endpoint. No
+	// inventory or gateway facts are returned.
+	//
+	// GET /api/v2/internet-lines/{internetLineId}
+	GetInternetLine(ctx context.Context, params GetInternetLineParams) (*InternetLine, error)
 	// GetLaunchTemplate invokes get-launch-template operation.
 	//
 	// Get a launch template.
@@ -907,28 +862,6 @@ type Invoker interface {
 	//
 	// GET /api/v2/availability-zones
 	ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*AvailabilityZoneListResponseBody, error)
-	// ListElasticIPLines invokes list-elastic-ip-lines operation.
-	//
-	// Lists the lines on sale. A line is the network an elastic IP is bought on, with the bandwidth that
-	// can be chosen and the two Billing Plans its elastic IPs are paid under. Region is optional. Prices,
-	// commercial terms and checkout are read directly from Billing. `q` searches the names and
-	// descriptions of the lines on sale; filters combine with AND, and pagination is independent of them.
-	//
-	// GET /api/v2/elastic-ip-lines
-	ListElasticIPLines(ctx context.Context, params ListElasticIPLinesParams) (*ElasticIpLineListResponseBody, error)
-	// ListElasticIPTrafficUsage invokes list-elastic-ip-traffic-usage operation.
-	//
-	// The bytes and packets the elastic IP's address sent upstream while the elastic IP held it, summed by
-	// hour or by day in UTC over `[start_time, end_time)`. Only intervals with traffic are listed. Inbound
-	// traffic is not measured.
-	//
-	// Traffic is reported by the region's collectors and appears some minutes after it is sent. Every
-	// elastic IP's traffic is shown, whatever it is billed by; only one billed by traffic is charged for
-	// it. A span longer than 31 days by hour, or 366 days by day, is refused with
-	// `TRAFFIC_USAGE_QUERY_INVALID`.
-	//
-	// GET /api/v2/elastic-ips/{elasticIpId}/traffic-usage
-	ListElasticIPTrafficUsage(ctx context.Context, params ListElasticIPTrafficUsageParams) (*TrafficUsageListResponseBody, error)
 	// ListElasticIps invokes list-elastic-ips operation.
 	//
 	// List elastic IPs.
@@ -969,6 +902,33 @@ type Invoker interface {
 	//
 	// GET /api/v2/instances
 	ListInstances(ctx context.Context, params ListInstancesParams) (*InstanceListResponseBody, error)
+	// ListInternetBandwidthTrafficUsage invokes list-internet-bandwidth-traffic-usage operation.
+	//
+	// List outbound traffic usage.
+	//
+	// GET /api/v2/internet-bandwidths/{internetBandwidthId}/traffic-usage
+	ListInternetBandwidthTrafficUsage(ctx context.Context, params ListInternetBandwidthTrafficUsageParams) (*InternetBandwidthTrafficUsageListResponseBody, error)
+	// ListInternetBandwidths invokes list-internet-bandwidths operation.
+	//
+	// List internet bandwidth services.
+	//
+	// GET /api/v2/internet-bandwidths
+	ListInternetBandwidths(ctx context.Context, params ListInternetBandwidthsParams) (*InternetBandwidthListResponseBody, error)
+	// ListInternetGateways invokes list-internet-gateways operation.
+	//
+	// List internet gateways.
+	//
+	// GET /api/v2/internet-gateways
+	ListInternetGateways(ctx context.Context, params ListInternetGatewaysParams) (*InternetGatewayListResponseBody, error)
+	// ListInternetLines invokes list-internet-lines operation.
+	//
+	// Lists the commercial internet lines on sale. A line can supply IPv4 and IPv6, with selectable
+	// bandwidth ceilings and separate address and bandwidth Billing Plans. Region is optional. Prices,
+	// commercial terms and checkout are read directly from Billing. `q` searches the names and
+	// descriptions of the lines on sale; filters combine with AND, and pagination is independent of them.
+	//
+	// GET /api/v2/internet-lines
+	ListInternetLines(ctx context.Context, params ListInternetLinesParams) (*InternetLineListResponseBody, error)
 	// ListLaunchTemplateVersions invokes list-launch-template-versions operation.
 	//
 	// Newest first.
@@ -1381,6 +1341,18 @@ type Invoker interface {
 	//
 	// PATCH /api/v2/instances/{instanceId}
 	UpdateInstance(ctx context.Context, request *UpdateInstanceRequestBody, params UpdateInstanceParams) (*Instance, error)
+	// UpdateInternetBandwidth invokes update-internet-bandwidth operation.
+	//
+	// Change bandwidth configuration.
+	//
+	// PATCH /api/v2/internet-bandwidths/{internetBandwidthId}
+	UpdateInternetBandwidth(ctx context.Context, request *UpdateInternetBandwidthRequestBody, params UpdateInternetBandwidthParams) (*InternetBandwidthMutation, error)
+	// UpdateInternetGateway invokes update-internet-gateway operation.
+	//
+	// Update an internet gateway.
+	//
+	// PATCH /api/v2/internet-gateways/{internetGatewayId}
+	UpdateInternetGateway(ctx context.Context, request *UpdateInternetGatewayRequestBody, params UpdateInternetGatewayParams) (*InternetGateway, error)
 	// UpdateLaunchTemplate invokes update-launch-template operation.
 	//
 	// Changes the name or description, or makes another live version the default, the one a creation
@@ -2100,376 +2072,10 @@ func (c *Client) sendAttachInstanceVolume(ctx context.Context, request *AttachVo
 	return result, nil
 }
 
-// ChangeElasticIPBandwidth invokes change-elastic-ip-bandwidth operation.
-//
-// Changes the bandwidth ceiling of this elastic IP. No separate bandwidth resource is created, and the
-// limit applies to inbound and outbound traffic alike. The new value may be any whole number of Mbps
-// within the line's bandwidth range, otherwise the request is refused with
-// `ELASTIC_IP_BANDWIDTH_RANGE`. How the change is paid follows the elastic IP's network item:
-//
-//   - Prepaid: the change goes through a Checkout Session that changes the network item, priced for the
-//     rest of its period. It starts once Billing accepts the order; if checkout is not completed, the
-//     order is not accepted or the change fails, `bandwidth_mbps` keeps its value and Billing shows the
-//     outcome. During a free trial that began with a trial grant, the subscription has to stay within
-//     the plans and quantities of the trial offer, otherwise Billing refuses with 422
-//     `BILLING_TRIAL_OFFER_EXCEEDED`.
-//   - Pay-as-you-go: there is no checkout. The change starts at once, `checkout_session_id` and
-//     `order_id` are null, and the new limit is metered from the instant it is applied; if it fails,
-//     the old limit stays in effect and metered. `checkout` and `proration_date` are refused with
-//     `ELASTIC_IP_CHECKOUT_UNUSED`.
-//
-// The elastic IP is `updating_bandwidth` until the change is applied or ends, so other operations and
-// a second change are refused with `COMPUTE_RESOURCE_BUSY` meanwhile. The current limit stays in
-// effect until the change is applied.
-//
-// While the address is associated with an instance, the limit must not exceed the `max_bandwidth_mbps`
-// of that instance's type; a higher limit is refused with `INSTANCE_BANDWIDTH_CEILING`. The limit of
-// an address that is not associated is checked when the address is associated with an instance.
-//
-// POST /api/v2/elastic-ips/{elasticIpId}:changeBandwidth
-func (c *Client) ChangeElasticIPBandwidth(ctx context.Context, request *ChangeElasticIpBandwidthRequestBody, params ChangeElasticIPBandwidthParams) (ChangeElasticIPBandwidthRes, error) {
-	res, err := c.sendChangeElasticIPBandwidth(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendChangeElasticIPBandwidth(ctx context.Context, request *ChangeElasticIpBandwidthRequestBody, params ChangeElasticIPBandwidthParams) (res ChangeElasticIPBandwidthRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("change-elastic-ip-bandwidth"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v2/elastic-ips/{elasticIpId}:changeBandwidth"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ChangeElasticIPBandwidthOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v2/elastic-ips/"
-	{
-		// Encode "elasticIpId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "elasticIpId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.ElasticIpId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = ":changeBandwidth"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeChangeElasticIPBandwidthRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ChangeElasticIPBandwidthOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeChangeElasticIPBandwidthResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ChangeElasticIPChargeType invokes change-elastic-ip-charge-type operation.
-//
-// Moves a pay-as-you-go elastic IP between charging for its bandwidth and charging for its traffic,
-// within the same network item and without checkout. A prepaid network item has paid for its bandwidth
-// and is refused with `ELASTIC_IP_CHARGE_TYPE_PREPAID`; `traffic` on a line whose
-// `traffic_sale_status` is `off_sale` is refused with `ELASTIC_IP_TRAFFIC_UNAVAILABLE`, the type
-// already in effect with `ELASTIC_IP_CHARGE_TYPE_UNCHANGED`, and a type the currency of the network
-// item does not offer on the line with HTTP 403 `ELASTIC_IP_CHARGE_TYPE_NOT_OFFERED`: prices are set
-// per currency, and a currency without one there does not sell that type.
-//
-// The change takes effect at the instant it is applied: bandwidth stops being metered then and traffic
-// starts being, or the other way round. Traffic is counted in windows, and a window is charged the way
-// the elastic IP was charged for most of it, so a report that arrives late is still charged as it was
-// at the time and a window the change falls in is never charged both ways. `bandwidth_mbps` stays the
-// ceiling either way. The elastic IP is `updating_internet_charge_type` until the change is applied.
-//
-// POST /api/v2/elastic-ips/{elasticIpId}:changeChargeType
-func (c *Client) ChangeElasticIPChargeType(ctx context.Context, request *ChangeElasticIpChargeTypeRequestBody, params ChangeElasticIPChargeTypeParams) (ChangeElasticIPChargeTypeRes, error) {
-	res, err := c.sendChangeElasticIPChargeType(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendChangeElasticIPChargeType(ctx context.Context, request *ChangeElasticIpChargeTypeRequestBody, params ChangeElasticIPChargeTypeParams) (res ChangeElasticIPChargeTypeRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("change-elastic-ip-charge-type"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v2/elastic-ips/{elasticIpId}:changeChargeType"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ChangeElasticIPChargeTypeOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v2/elastic-ips/"
-	{
-		// Encode "elasticIpId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "elasticIpId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.ElasticIpId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = ":changeChargeType"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeChangeElasticIPChargeTypeRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ChangeElasticIPChargeTypeOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeChangeElasticIPChargeTypeResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // CreateElasticIP invokes create-elastic-ip operation.
 //
-// Select an elastic IP line. The elastic IP is bought through a Billing Checkout Session, and no
-// address is allocated before its order is accepted.
-//
-// The line has to have an address left, counted before anything is ordered: refused with 409
-// `ELASTIC_IP_LINE_EXHAUSTED` when every address it sells is held or already promised to a purchase
-// waiting for its order. Two purchases checked at the same moment can both pass on the last address;
-// the later one ends `failed` with `provisioning_failed` and its charge is refunded.
-//
-// Returns the elastic IP as `pending` with its Checkout Session; `address` is null until the address
-// is allocated after the order is accepted. A requested `address` is not held while pending; if it is
-// no longer available then, the elastic IP ends `failed` with `provisioning_failed` and its charge is
-// refunded.
-//
-// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the virtual
-// private cloud; enable IPv6 on that network instead.
-//
-// Allocation does not select or create a virtual private cloud. A later association selects an
-// assigned network-interface address; Compute then establishes the required network connectivity.
-//
-// An elastic IP bought on its own has a Billing subscription of its own, with two items: the address,
-// always pay-as-you-go and charged while the address is not associated with anything, and the network,
-// on the chosen terms.
-//
-// Buying for an instance. With `instance_id`, the elastic IP is associated with the primary network
-// interface of that instance of the project once created, and its two items join the instance's
-// Billing subscription: a prepaid network item is charged up to the instance's term end, the rest of
-// the current period in proportion to the time left, and from then on renews, renews automatically and
-// expires with the instance. `billing.price_id` is required and identifies a price of this component's
-// plan. Billing checks that it can join the existing subscription. An instance that cannot take
-// another elastic IP, or whose type allows less bandwidth than `bandwidth_mbps`, is refused before
-// anything is ordered, as associating would be. During a free trial that began with a trial grant, the
-// subscription has to stay within the plans and quantities of the trial offer, otherwise Billing
-// refuses with 422 `BILLING_TRIAL_OFFER_EXCEEDED`. The instance may still be being created after its
-// order was accepted; the elastic IP is associated once the instance is created, and is refunded if
-// the instance's creation fails.
-//
-// The elastic IP is `pending` from the moment its Checkout Session is created until it is delivered or
-// its checkout or order ends. Every other operation on it is refused with `COMPUTE_RESOURCE_BUSY`
-// meanwhile, and its deletion with `COMPUTE_PURCHASE_PENDING` while its purchase awaits checkout or
-// payment.
+// Creates an address and optionally an independent bandwidth service. Address holding is always
+// metered; bandwidth uses its selected price.
 //
 // POST /api/v2/elastic-ips
 func (c *Client) CreateElasticIP(ctx context.Context, request *CreateElasticIpRequestBody) (CreateElasticIPRes, error) {
@@ -2614,7 +2220,7 @@ func (c *Client) sendCreateElasticIP(ctx context.Context, request *CreateElastic
 // `INSTANCE_TYPE_CAPACITY_REACHED` or `VOLUME_TYPE_CAPACITY_REACHED` when what is sold of it is used
 // up, `INSTANCE_TYPE_NO_HOST_ROOM` when no host of the zone can take the machine,
 // `VOLUME_TYPE_NO_POOL_ROOM` when the storage of the zone cannot take the boot volume, and
-// `ELASTIC_IP_LINE_EXHAUSTED` when the line of the new elastic IPs has fewer addresses left than
+// `INTERNET_LINE_EXHAUSTED` when the line of the new elastic IPs has fewer addresses left than
 // instances. Two orders placed at the same moment can both pass; an instance that finds a type full
 // when its order is accepted is not created and is refunded, ending `failed` with
 // `provisioning_failed`.
@@ -2907,6 +2513,259 @@ func (c *Client) sendCreateInstanceConsoleURL(ctx context.Context, params Create
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateInstanceConsoleURLResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateInternetBandwidth invokes create-internet-bandwidth operation.
+//
+// Mbps duration is charged from enablement until suspension or release, even when its EIP is
+// unassociated. Traffic billing counts actual outbound bytes.
+//
+// POST /api/v2/internet-bandwidths
+func (c *Client) CreateInternetBandwidth(ctx context.Context, request *CreateInternetBandwidthRequestBody) (*InternetBandwidthMutation, error) {
+	res, err := c.sendCreateInternetBandwidth(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateInternetBandwidth(ctx context.Context, request *CreateInternetBandwidthRequestBody) (res *InternetBandwidthMutation, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-internet-bandwidth"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v2/internet-bandwidths"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateInternetBandwidthOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v2/internet-bandwidths"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateInternetBandwidthRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateInternetBandwidthOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateInternetBandwidthResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateInternetGateway invokes create-internet-gateway operation.
+//
+// Reserves an unbilled VPC connection through the selected line’s exit network. Compatible lines
+// share this connection. It is attached when a bandwidth service needs it; creating it grants no
+// public access.
+//
+// POST /api/v2/internet-gateways
+func (c *Client) CreateInternetGateway(ctx context.Context, request *CreateInternetGatewayRequestBody) (*InternetGateway, error) {
+	res, err := c.sendCreateInternetGateway(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateInternetGateway(ctx context.Context, request *CreateInternetGatewayRequestBody) (res *InternetGateway, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-internet-gateway"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v2/internet-gateways"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateInternetGatewayOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v2/internet-gateways"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateInternetGatewayRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, CreateInternetGatewayOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateInternetGatewayResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5243,6 +5102,295 @@ func (c *Client) sendDeleteInstance(ctx context.Context, params DeleteInstancePa
 
 	stage = "DecodeResponse"
 	result, err := decodeDeleteInstanceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeleteInternetBandwidth invokes delete-internet-bandwidth operation.
+//
+// Cancels only this service. Its EIP, association, IPv6 prefix and IGW are retained.
+//
+// DELETE /api/v2/internet-bandwidths/{internetBandwidthId}
+func (c *Client) DeleteInternetBandwidth(ctx context.Context, params DeleteInternetBandwidthParams) (*InternetBandwidthMutation, error) {
+	res, err := c.sendDeleteInternetBandwidth(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendDeleteInternetBandwidth(ctx context.Context, params DeleteInternetBandwidthParams) (res *InternetBandwidthMutation, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-internet-bandwidth"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v2/internet-bandwidths/{internetBandwidthId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteInternetBandwidthOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/internet-bandwidths/"
+	{
+		// Encode "internetBandwidthId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "internetBandwidthId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InternetBandwidthId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "cancellation_mode" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "cancellation_mode",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.CancellationMode.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteInternetBandwidthOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteInternetBandwidthResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeleteInternetGateway invokes delete-internet-gateway operation.
+//
+// Refused while any EIP association or unreleased IPv6 bandwidth service uses this connection.
+//
+// DELETE /api/v2/internet-gateways/{internetGatewayId}
+func (c *Client) DeleteInternetGateway(ctx context.Context, params DeleteInternetGatewayParams) error {
+	_, err := c.sendDeleteInternetGateway(ctx, params)
+	return err
+}
+
+func (c *Client) sendDeleteInternetGateway(ctx context.Context, params DeleteInternetGatewayParams) (res *DeleteInternetGatewayNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-internet-gateway"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v2/internet-gateways/{internetGatewayId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteInternetGatewayOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/internet-gateways/"
+	{
+		// Encode "internetGatewayId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "internetGatewayId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InternetGatewayId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, DeleteInternetGatewayOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteInternetGatewayResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -8267,7 +8415,7 @@ func (c *Client) sendGetAvailabilityZone(ctx context.Context, params GetAvailabi
 
 // GetElasticIP invokes get-elastic-ip operation.
 //
-// Retrieve an elastic IP.
+// Returns the address holding, association intent and independent bandwidth service identity.
 //
 // GET /api/v2/elastic-ips/{elasticIpId}
 func (c *Client) GetElasticIP(ctx context.Context, params GetElasticIPParams) (*ElasticIp, error) {
@@ -8531,142 +8679,6 @@ func (c *Client) sendGetElasticIPAssociation(ctx context.Context, params GetElas
 
 	stage = "DecodeResponse"
 	result, err := decodeGetElasticIPAssociationResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetElasticIPLine invokes get-elastic-ip-line operation.
-//
-// Includes lines off sale that existing elastic IPs are on. No inventory or gateway facts are
-// returned.
-//
-// GET /api/v2/elastic-ip-lines/{elasticIpLineId}
-func (c *Client) GetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (*ElasticIpLine, error) {
-	res, err := c.sendGetElasticIPLine(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetElasticIPLine(ctx context.Context, params GetElasticIPLineParams) (res *ElasticIpLine, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-elastic-ip-line"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/elastic-ip-lines/{elasticIpLineId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetElasticIPLineOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v2/elastic-ip-lines/"
-	{
-		// Encode "elasticIpLineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "elasticIpLineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.ElasticIpLineId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, GetElasticIPLineOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{},
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetElasticIPLineResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -9074,6 +9086,410 @@ func (c *Client) sendGetInstanceType(ctx context.Context, params GetInstanceType
 
 	stage = "DecodeResponse"
 	result, err := decodeGetInstanceTypeResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetInternetBandwidth invokes get-internet-bandwidth operation.
+//
+// Get internet bandwidth.
+//
+// GET /api/v2/internet-bandwidths/{internetBandwidthId}
+func (c *Client) GetInternetBandwidth(ctx context.Context, params GetInternetBandwidthParams) (*InternetBandwidth, error) {
+	res, err := c.sendGetInternetBandwidth(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetInternetBandwidth(ctx context.Context, params GetInternetBandwidthParams) (res *InternetBandwidth, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-internet-bandwidth"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/internet-bandwidths/{internetBandwidthId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetInternetBandwidthOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/internet-bandwidths/"
+	{
+		// Encode "internetBandwidthId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "internetBandwidthId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InternetBandwidthId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetInternetBandwidthOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetInternetBandwidthResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetInternetGateway invokes get-internet-gateway operation.
+//
+// Get an internet gateway.
+//
+// GET /api/v2/internet-gateways/{internetGatewayId}
+func (c *Client) GetInternetGateway(ctx context.Context, params GetInternetGatewayParams) (*InternetGateway, error) {
+	res, err := c.sendGetInternetGateway(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetInternetGateway(ctx context.Context, params GetInternetGatewayParams) (res *InternetGateway, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-internet-gateway"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/internet-gateways/{internetGatewayId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetInternetGatewayOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/internet-gateways/"
+	{
+		// Encode "internetGatewayId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "internetGatewayId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InternetGatewayId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetInternetGatewayOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetInternetGatewayResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetInternetLine invokes get-internet-line operation.
+//
+// Returns a line currently on sale. Lines off sale are not exposed by this public catalog endpoint. No
+// inventory or gateway facts are returned.
+//
+// GET /api/v2/internet-lines/{internetLineId}
+func (c *Client) GetInternetLine(ctx context.Context, params GetInternetLineParams) (*InternetLine, error) {
+	res, err := c.sendGetInternetLine(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetInternetLine(ctx context.Context, params GetInternetLineParams) (res *InternetLine, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-internet-line"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/internet-lines/{internetLineId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetInternetLineOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/internet-lines/"
+	{
+		// Encode "internetLineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "internetLineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InternetLineId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, GetInternetLineOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{},
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetInternetLineResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -11940,423 +12356,6 @@ func (c *Client) sendListAvailabilityZones(ctx context.Context, params ListAvail
 	return result, nil
 }
 
-// ListElasticIPLines invokes list-elastic-ip-lines operation.
-//
-// Lists the lines on sale. A line is the network an elastic IP is bought on, with the bandwidth that
-// can be chosen and the two Billing Plans its elastic IPs are paid under. Region is optional. Prices,
-// commercial terms and checkout are read directly from Billing. `q` searches the names and
-// descriptions of the lines on sale; filters combine with AND, and pagination is independent of them.
-//
-// GET /api/v2/elastic-ip-lines
-func (c *Client) ListElasticIPLines(ctx context.Context, params ListElasticIPLinesParams) (*ElasticIpLineListResponseBody, error) {
-	res, err := c.sendListElasticIPLines(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListElasticIPLines(ctx context.Context, params ListElasticIPLinesParams) (res *ElasticIpLineListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-elastic-ip-lines"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/elastic-ip-lines"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListElasticIPLinesOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v2/elastic-ip-lines"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "region_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "region_id",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.RegionID.Get(); ok {
-				if unwrapped := string(val); true {
-					return e.EncodeValue(conv.StringToString(unwrapped))
-				}
-				return nil
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "q" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "q",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Q.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListElasticIPLinesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{},
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListElasticIPLinesResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListElasticIPTrafficUsage invokes list-elastic-ip-traffic-usage operation.
-//
-// The bytes and packets the elastic IP's address sent upstream while the elastic IP held it, summed by
-// hour or by day in UTC over `[start_time, end_time)`. Only intervals with traffic are listed. Inbound
-// traffic is not measured.
-//
-// Traffic is reported by the region's collectors and appears some minutes after it is sent. Every
-// elastic IP's traffic is shown, whatever it is billed by; only one billed by traffic is charged for
-// it. A span longer than 31 days by hour, or 366 days by day, is refused with
-// `TRAFFIC_USAGE_QUERY_INVALID`.
-//
-// GET /api/v2/elastic-ips/{elasticIpId}/traffic-usage
-func (c *Client) ListElasticIPTrafficUsage(ctx context.Context, params ListElasticIPTrafficUsageParams) (*TrafficUsageListResponseBody, error) {
-	res, err := c.sendListElasticIPTrafficUsage(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListElasticIPTrafficUsage(ctx context.Context, params ListElasticIPTrafficUsageParams) (res *TrafficUsageListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-elastic-ip-traffic-usage"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v2/elastic-ips/{elasticIpId}/traffic-usage"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListElasticIPTrafficUsageOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v2/elastic-ips/"
-	{
-		// Encode "elasticIpId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "elasticIpId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			if unwrapped := string(params.ElasticIpId); true {
-				return e.EncodeValue(conv.StringToString(unwrapped))
-			}
-			return nil
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/traffic-usage"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "interval" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "interval",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Interval.Get(); ok {
-				return e.EncodeValue(conv.StringToString(string(val)))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "start_time" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "start_time",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.DateTimeToString(params.StartTime))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "end_time" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "end_time",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.DateTimeToString(params.EndTime))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:ScopedTokenAuth"
-			switch err := c.securityScopedTokenAuth(ctx, ListElasticIPTrafficUsageOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListElasticIPTrafficUsageResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // ListElasticIps invokes list-elastic-ips operation.
 //
 // List elastic IPs.
@@ -13403,6 +13402,795 @@ func (c *Client) sendListInstances(ctx context.Context, params ListInstancesPara
 
 	stage = "DecodeResponse"
 	result, err := decodeListInstancesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListInternetBandwidthTrafficUsage invokes list-internet-bandwidth-traffic-usage operation.
+//
+// List outbound traffic usage.
+//
+// GET /api/v2/internet-bandwidths/{internetBandwidthId}/traffic-usage
+func (c *Client) ListInternetBandwidthTrafficUsage(ctx context.Context, params ListInternetBandwidthTrafficUsageParams) (*InternetBandwidthTrafficUsageListResponseBody, error) {
+	res, err := c.sendListInternetBandwidthTrafficUsage(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListInternetBandwidthTrafficUsage(ctx context.Context, params ListInternetBandwidthTrafficUsageParams) (res *InternetBandwidthTrafficUsageListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-internet-bandwidth-traffic-usage"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/internet-bandwidths/{internetBandwidthId}/traffic-usage"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListInternetBandwidthTrafficUsageOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v2/internet-bandwidths/"
+	{
+		// Encode "internetBandwidthId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "internetBandwidthId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InternetBandwidthId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/traffic-usage"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "interval" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "interval",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Interval.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "start_time" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "start_time",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.DateTimeToString(params.StartTime))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "end_time" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "end_time",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.DateTimeToString(params.EndTime))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListInternetBandwidthTrafficUsageOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListInternetBandwidthTrafficUsageResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListInternetBandwidths invokes list-internet-bandwidths operation.
+//
+// List internet bandwidth services.
+//
+// GET /api/v2/internet-bandwidths
+func (c *Client) ListInternetBandwidths(ctx context.Context, params ListInternetBandwidthsParams) (*InternetBandwidthListResponseBody, error) {
+	res, err := c.sendListInternetBandwidths(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListInternetBandwidths(ctx context.Context, params ListInternetBandwidthsParams) (res *InternetBandwidthListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-internet-bandwidths"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/internet-bandwidths"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListInternetBandwidthsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v2/internet-bandwidths"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "scope" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "scope",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Scope.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "elastic_ip_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "elastic_ip_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ElasticIPID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "virtual_private_cloud_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "virtual_private_cloud_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.VirtualPrivateCloudID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListInternetBandwidthsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListInternetBandwidthsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListInternetGateways invokes list-internet-gateways operation.
+//
+// List internet gateways.
+//
+// GET /api/v2/internet-gateways
+func (c *Client) ListInternetGateways(ctx context.Context, params ListInternetGatewaysParams) (*InternetGatewayListResponseBody, error) {
+	res, err := c.sendListInternetGateways(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListInternetGateways(ctx context.Context, params ListInternetGatewaysParams) (res *InternetGatewayListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-internet-gateways"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/internet-gateways"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListInternetGatewaysOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v2/internet-gateways"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "virtual_private_cloud_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "virtual_private_cloud_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.VirtualPrivateCloudID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListInternetGatewaysOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListInternetGatewaysResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListInternetLines invokes list-internet-lines operation.
+//
+// Lists the commercial internet lines on sale. A line can supply IPv4 and IPv6, with selectable
+// bandwidth ceilings and separate address and bandwidth Billing Plans. Region is optional. Prices,
+// commercial terms and checkout are read directly from Billing. `q` searches the names and
+// descriptions of the lines on sale; filters combine with AND, and pagination is independent of them.
+//
+// GET /api/v2/internet-lines
+func (c *Client) ListInternetLines(ctx context.Context, params ListInternetLinesParams) (*InternetLineListResponseBody, error) {
+	res, err := c.sendListInternetLines(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListInternetLines(ctx context.Context, params ListInternetLinesParams) (res *InternetLineListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-internet-lines"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v2/internet-lines"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListInternetLinesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v2/internet-lines"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "region_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "region_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.RegionID.Get(); ok {
+				if unwrapped := string(val); true {
+					return e.EncodeValue(conv.StringToString(unwrapped))
+				}
+				return nil
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "q" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "q",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Q.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, ListInternetLinesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{},
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListInternetLinesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -18840,6 +19628,298 @@ func (c *Client) sendUpdateInstance(ctx context.Context, request *UpdateInstance
 
 	stage = "DecodeResponse"
 	result, err := decodeUpdateInstanceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateInternetBandwidth invokes update-internet-bandwidth operation.
+//
+// Change bandwidth configuration.
+//
+// PATCH /api/v2/internet-bandwidths/{internetBandwidthId}
+func (c *Client) UpdateInternetBandwidth(ctx context.Context, request *UpdateInternetBandwidthRequestBody, params UpdateInternetBandwidthParams) (*InternetBandwidthMutation, error) {
+	res, err := c.sendUpdateInternetBandwidth(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateInternetBandwidth(ctx context.Context, request *UpdateInternetBandwidthRequestBody, params UpdateInternetBandwidthParams) (res *InternetBandwidthMutation, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-internet-bandwidth"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v2/internet-bandwidths/{internetBandwidthId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateInternetBandwidthOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/internet-bandwidths/"
+	{
+		// Encode "internetBandwidthId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "internetBandwidthId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InternetBandwidthId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateInternetBandwidthRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, UpdateInternetBandwidthOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateInternetBandwidthResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateInternetGateway invokes update-internet-gateway operation.
+//
+// Update an internet gateway.
+//
+// PATCH /api/v2/internet-gateways/{internetGatewayId}
+func (c *Client) UpdateInternetGateway(ctx context.Context, request *UpdateInternetGatewayRequestBody, params UpdateInternetGatewayParams) (*InternetGateway, error) {
+	res, err := c.sendUpdateInternetGateway(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateInternetGateway(ctx context.Context, request *UpdateInternetGatewayRequestBody, params UpdateInternetGatewayParams) (res *InternetGateway, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-internet-gateway"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v2/internet-gateways/{internetGatewayId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateInternetGatewayOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v2/internet-gateways/"
+	{
+		// Encode "internetGatewayId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "internetGatewayId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			if unwrapped := string(params.InternetGatewayId); true {
+				return e.EncodeValue(conv.StringToString(unwrapped))
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateInternetGatewayRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ScopedTokenAuth"
+			switch err := c.securityScopedTokenAuth(ctx, UpdateInternetGatewayOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ScopedTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateInternetGatewayResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

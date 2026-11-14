@@ -1689,6 +1689,128 @@ func (x *SendTrayMenuEventResponse) GetRevision() uint64 {
 	return 0
 }
 
+// The request of SetTrayIconPointer. Like other tray actions this requires the
+// input lease. Pointer motion is ordered with window input by the X11 backend.
+type SetTrayIconPointerRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The XEmbed icon.
+	TrayIconId uint64 `protobuf:"varint,1,opt,name=tray_icon_id,json=trayIconId,proto3" json:"tray_icon_id,omitempty"`
+	// True on entry; false on departure. Entry moves to the icon's center.
+	Entered bool `protobuf:"varint,2,opt,name=entered,proto3" json:"entered,omitempty"`
+	// The icon's area in session canvas coordinates. Required, with x and y in
+	// 0..32743 and width and height in 1..256. The XEmbed host uses a 24px icon.
+	IconArea *v1.Rectangle `protobuf:"bytes,3,opt,name=icon_area,json=iconArea,proto3" json:"icon_area,omitempty"`
+	// Pointer position after departure, in session canvas coordinates, 0..32767.
+	// An old departure is ignored if newer window input already left the icon.
+	X int32 `protobuf:"zigzag32,4,opt,name=x,proto3" json:"x,omitempty"`
+	// Vertical pointer position, in the same coordinates and range as x.
+	Y             int32 `protobuf:"zigzag32,5,opt,name=y,proto3" json:"y,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetTrayIconPointerRequest) Reset() {
+	*x = SetTrayIconPointerRequest{}
+	mi := &file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetTrayIconPointerRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetTrayIconPointerRequest) ProtoMessage() {}
+
+func (x *SetTrayIconPointerRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetTrayIconPointerRequest.ProtoReflect.Descriptor instead.
+func (*SetTrayIconPointerRequest) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *SetTrayIconPointerRequest) GetTrayIconId() uint64 {
+	if x != nil {
+		return x.TrayIconId
+	}
+	return 0
+}
+
+func (x *SetTrayIconPointerRequest) GetEntered() bool {
+	if x != nil {
+		return x.Entered
+	}
+	return false
+}
+
+func (x *SetTrayIconPointerRequest) GetIconArea() *v1.Rectangle {
+	if x != nil {
+		return x.IconArea
+	}
+	return nil
+}
+
+func (x *SetTrayIconPointerRequest) GetX() int32 {
+	if x != nil {
+		return x.X
+	}
+	return 0
+}
+
+func (x *SetTrayIconPointerRequest) GetY() int32 {
+	if x != nil {
+		return x.Y
+	}
+	return 0
+}
+
+// The pointer request was accepted; no application button event is generated.
+type SetTrayIconPointerResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetTrayIconPointerResponse) Reset() {
+	*x = SetTrayIconPointerResponse{}
+	mi := &file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetTrayIconPointerResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetTrayIconPointerResponse) ProtoMessage() {}
+
+func (x *SetTrayIconPointerResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetTrayIconPointerResponse.ProtoReflect.Descriptor instead.
+func (*SetTrayIconPointerResponse) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_rawDescGZIP(), []int{17}
+}
+
 var File_leaflow_fleet_virtualdesktop_tray_v1_tray_proto protoreflect.FileDescriptor
 
 const file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_rawDesc = "" +
@@ -1779,7 +1901,15 @@ const file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_rawDesc = "" +
 	"menuItemId\x12G\n" +
 	"\x04type\x18\x03 \x01(\x0e23.leaflow.fleet.virtualdesktop.tray.v1.MenuEventTypeR\x04type\"7\n" +
 	"\x19SendTrayMenuEventResponse\x12\x1a\n" +
-	"\brevision\x18\x01 \x01(\x04R\brevision*\x82\x01\n" +
+	"\brevision\x18\x01 \x01(\x04R\brevision\"\xc4\x01\n" +
+	"\x19SetTrayIconPointerRequest\x12 \n" +
+	"\ftray_icon_id\x18\x01 \x01(\x04R\n" +
+	"trayIconId\x12\x18\n" +
+	"\aentered\x18\x02 \x01(\bR\aentered\x12O\n" +
+	"\ticon_area\x18\x03 \x01(\v22.leaflow.fleet.virtualdesktop.display.v1.RectangleR\biconArea\x12\f\n" +
+	"\x01x\x18\x04 \x01(\x11R\x01x\x12\f\n" +
+	"\x01y\x18\x05 \x01(\x11R\x01y\"\x1c\n" +
+	"\x1aSetTrayIconPointerResponse*\x82\x01\n" +
 	"\x10TrayIconProtocol\x12\"\n" +
 	"\x1eTRAY_ICON_PROTOCOL_UNSPECIFIED\x10\x00\x12+\n" +
 	"'TRAY_ICON_PROTOCOL_STATUS_NOTIFIER_ITEM\x10\x01\x12\x1d\n" +
@@ -1825,10 +1955,11 @@ const file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_rawDesc = "" +
 	"\x17MENU_EVENT_TYPE_CLICKED\x10\x01\x12\x1a\n" +
 	"\x16MENU_EVENT_TYPE_OPENED\x10\x02\x12\x1a\n" +
 	"\x16MENU_EVENT_TYPE_CLOSED\x10\x03\x12\x1b\n" +
-	"\x17MENU_EVENT_TYPE_HOVERED\x10\x042\xc2\x04\n" +
+	"\x17MENU_EVENT_TYPE_HOVERED\x10\x042\xdc\x05\n" +
 	"\vTrayService\x12\x88\x01\n" +
 	"\rClickTrayIcon\x12:.leaflow.fleet.virtualdesktop.tray.v1.ClickTrayIconRequest\x1a;.leaflow.fleet.virtualdesktop.tray.v1.ClickTrayIconResponse\x12\x8b\x01\n" +
-	"\x0eScrollTrayIcon\x12;.leaflow.fleet.virtualdesktop.tray.v1.ScrollTrayIconRequest\x1a<.leaflow.fleet.virtualdesktop.tray.v1.ScrollTrayIconResponse\x12\x82\x01\n" +
+	"\x0eScrollTrayIcon\x12;.leaflow.fleet.virtualdesktop.tray.v1.ScrollTrayIconRequest\x1a<.leaflow.fleet.virtualdesktop.tray.v1.ScrollTrayIconResponse\x12\x97\x01\n" +
+	"\x12SetTrayIconPointer\x12?.leaflow.fleet.virtualdesktop.tray.v1.SetTrayIconPointerRequest\x1a@.leaflow.fleet.virtualdesktop.tray.v1.SetTrayIconPointerResponse\x12\x82\x01\n" +
 	"\vGetTrayMenu\x128.leaflow.fleet.virtualdesktop.tray.v1.GetTrayMenuRequest\x1a9.leaflow.fleet.virtualdesktop.tray.v1.GetTrayMenuResponse\x12\x94\x01\n" +
 	"\x11SendTrayMenuEvent\x12>.leaflow.fleet.virtualdesktop.tray.v1.SendTrayMenuEventRequest\x1a?.leaflow.fleet.virtualdesktop.tray.v1.SendTrayMenuEventResponseBGZEgithub.com/leaflowapis/leaflow-go/fleet/virtualdesktop/tray/v1;trayv1b\x06proto3"
 
@@ -1845,35 +1976,37 @@ func file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_rawDescGZIP() []byte {
 }
 
 var file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_enumTypes = make([]protoimpl.EnumInfo, 9)
-var file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_goTypes = []any{
-	(TrayIconProtocol)(0),             // 0: leaflow.fleet.virtualdesktop.tray.v1.TrayIconProtocol
-	(TrayIconCategory)(0),             // 1: leaflow.fleet.virtualdesktop.tray.v1.TrayIconCategory
-	(TrayIconStatus)(0),               // 2: leaflow.fleet.virtualdesktop.tray.v1.TrayIconStatus
-	(TrayIconClick)(0),                // 3: leaflow.fleet.virtualdesktop.tray.v1.TrayIconClick
-	(MenuItemType)(0),                 // 4: leaflow.fleet.virtualdesktop.tray.v1.MenuItemType
-	(MenuItemToggleType)(0),           // 5: leaflow.fleet.virtualdesktop.tray.v1.MenuItemToggleType
-	(MenuItemToggleState)(0),          // 6: leaflow.fleet.virtualdesktop.tray.v1.MenuItemToggleState
-	(MenuItemDisposition)(0),          // 7: leaflow.fleet.virtualdesktop.tray.v1.MenuItemDisposition
-	(MenuEventType)(0),                // 8: leaflow.fleet.virtualdesktop.tray.v1.MenuEventType
-	(*ServerMessage)(nil),             // 9: leaflow.fleet.virtualdesktop.tray.v1.ServerMessage
-	(*TrayIcon)(nil),                  // 10: leaflow.fleet.virtualdesktop.tray.v1.TrayIcon
-	(*Tooltip)(nil),                   // 11: leaflow.fleet.virtualdesktop.tray.v1.Tooltip
-	(*TrayIconRemoved)(nil),           // 12: leaflow.fleet.virtualdesktop.tray.v1.TrayIconRemoved
-	(*TrayMenuUpdated)(nil),           // 13: leaflow.fleet.virtualdesktop.tray.v1.TrayMenuUpdated
-	(*SnapshotEnd)(nil),               // 14: leaflow.fleet.virtualdesktop.tray.v1.SnapshotEnd
-	(*ClickTrayIconRequest)(nil),      // 15: leaflow.fleet.virtualdesktop.tray.v1.ClickTrayIconRequest
-	(*ClickTrayIconResponse)(nil),     // 16: leaflow.fleet.virtualdesktop.tray.v1.ClickTrayIconResponse
-	(*ScrollTrayIconRequest)(nil),     // 17: leaflow.fleet.virtualdesktop.tray.v1.ScrollTrayIconRequest
-	(*ScrollTrayIconResponse)(nil),    // 18: leaflow.fleet.virtualdesktop.tray.v1.ScrollTrayIconResponse
-	(*GetTrayMenuRequest)(nil),        // 19: leaflow.fleet.virtualdesktop.tray.v1.GetTrayMenuRequest
-	(*GetTrayMenuResponse)(nil),       // 20: leaflow.fleet.virtualdesktop.tray.v1.GetTrayMenuResponse
-	(*MenuItem)(nil),                  // 21: leaflow.fleet.virtualdesktop.tray.v1.MenuItem
-	(*KeyChord)(nil),                  // 22: leaflow.fleet.virtualdesktop.tray.v1.KeyChord
-	(*SendTrayMenuEventRequest)(nil),  // 23: leaflow.fleet.virtualdesktop.tray.v1.SendTrayMenuEventRequest
-	(*SendTrayMenuEventResponse)(nil), // 24: leaflow.fleet.virtualdesktop.tray.v1.SendTrayMenuEventResponse
-	(*v1.Icon)(nil),                   // 25: leaflow.fleet.virtualdesktop.display.v1.Icon
-	(*v1.Rectangle)(nil),              // 26: leaflow.fleet.virtualdesktop.display.v1.Rectangle
+	(TrayIconProtocol)(0),              // 0: leaflow.fleet.virtualdesktop.tray.v1.TrayIconProtocol
+	(TrayIconCategory)(0),              // 1: leaflow.fleet.virtualdesktop.tray.v1.TrayIconCategory
+	(TrayIconStatus)(0),                // 2: leaflow.fleet.virtualdesktop.tray.v1.TrayIconStatus
+	(TrayIconClick)(0),                 // 3: leaflow.fleet.virtualdesktop.tray.v1.TrayIconClick
+	(MenuItemType)(0),                  // 4: leaflow.fleet.virtualdesktop.tray.v1.MenuItemType
+	(MenuItemToggleType)(0),            // 5: leaflow.fleet.virtualdesktop.tray.v1.MenuItemToggleType
+	(MenuItemToggleState)(0),           // 6: leaflow.fleet.virtualdesktop.tray.v1.MenuItemToggleState
+	(MenuItemDisposition)(0),           // 7: leaflow.fleet.virtualdesktop.tray.v1.MenuItemDisposition
+	(MenuEventType)(0),                 // 8: leaflow.fleet.virtualdesktop.tray.v1.MenuEventType
+	(*ServerMessage)(nil),              // 9: leaflow.fleet.virtualdesktop.tray.v1.ServerMessage
+	(*TrayIcon)(nil),                   // 10: leaflow.fleet.virtualdesktop.tray.v1.TrayIcon
+	(*Tooltip)(nil),                    // 11: leaflow.fleet.virtualdesktop.tray.v1.Tooltip
+	(*TrayIconRemoved)(nil),            // 12: leaflow.fleet.virtualdesktop.tray.v1.TrayIconRemoved
+	(*TrayMenuUpdated)(nil),            // 13: leaflow.fleet.virtualdesktop.tray.v1.TrayMenuUpdated
+	(*SnapshotEnd)(nil),                // 14: leaflow.fleet.virtualdesktop.tray.v1.SnapshotEnd
+	(*ClickTrayIconRequest)(nil),       // 15: leaflow.fleet.virtualdesktop.tray.v1.ClickTrayIconRequest
+	(*ClickTrayIconResponse)(nil),      // 16: leaflow.fleet.virtualdesktop.tray.v1.ClickTrayIconResponse
+	(*ScrollTrayIconRequest)(nil),      // 17: leaflow.fleet.virtualdesktop.tray.v1.ScrollTrayIconRequest
+	(*ScrollTrayIconResponse)(nil),     // 18: leaflow.fleet.virtualdesktop.tray.v1.ScrollTrayIconResponse
+	(*GetTrayMenuRequest)(nil),         // 19: leaflow.fleet.virtualdesktop.tray.v1.GetTrayMenuRequest
+	(*GetTrayMenuResponse)(nil),        // 20: leaflow.fleet.virtualdesktop.tray.v1.GetTrayMenuResponse
+	(*MenuItem)(nil),                   // 21: leaflow.fleet.virtualdesktop.tray.v1.MenuItem
+	(*KeyChord)(nil),                   // 22: leaflow.fleet.virtualdesktop.tray.v1.KeyChord
+	(*SendTrayMenuEventRequest)(nil),   // 23: leaflow.fleet.virtualdesktop.tray.v1.SendTrayMenuEventRequest
+	(*SendTrayMenuEventResponse)(nil),  // 24: leaflow.fleet.virtualdesktop.tray.v1.SendTrayMenuEventResponse
+	(*SetTrayIconPointerRequest)(nil),  // 25: leaflow.fleet.virtualdesktop.tray.v1.SetTrayIconPointerRequest
+	(*SetTrayIconPointerResponse)(nil), // 26: leaflow.fleet.virtualdesktop.tray.v1.SetTrayIconPointerResponse
+	(*v1.Icon)(nil),                    // 27: leaflow.fleet.virtualdesktop.display.v1.Icon
+	(*v1.Rectangle)(nil),               // 28: leaflow.fleet.virtualdesktop.display.v1.Rectangle
 }
 var file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_depIdxs = []int32{
 	10, // 0: leaflow.fleet.virtualdesktop.tray.v1.ServerMessage.tray_icon:type_name -> leaflow.fleet.virtualdesktop.tray.v1.TrayIcon
@@ -1884,34 +2017,37 @@ var file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_depIdxs = []int32{
 	1,  // 5: leaflow.fleet.virtualdesktop.tray.v1.TrayIcon.category:type_name -> leaflow.fleet.virtualdesktop.tray.v1.TrayIconCategory
 	2,  // 6: leaflow.fleet.virtualdesktop.tray.v1.TrayIcon.status:type_name -> leaflow.fleet.virtualdesktop.tray.v1.TrayIconStatus
 	11, // 7: leaflow.fleet.virtualdesktop.tray.v1.TrayIcon.tooltip:type_name -> leaflow.fleet.virtualdesktop.tray.v1.Tooltip
-	25, // 8: leaflow.fleet.virtualdesktop.tray.v1.TrayIcon.icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
-	25, // 9: leaflow.fleet.virtualdesktop.tray.v1.TrayIcon.overlay_icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
-	25, // 10: leaflow.fleet.virtualdesktop.tray.v1.TrayIcon.attention_icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
-	25, // 11: leaflow.fleet.virtualdesktop.tray.v1.Tooltip.icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
+	27, // 8: leaflow.fleet.virtualdesktop.tray.v1.TrayIcon.icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
+	27, // 9: leaflow.fleet.virtualdesktop.tray.v1.TrayIcon.overlay_icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
+	27, // 10: leaflow.fleet.virtualdesktop.tray.v1.TrayIcon.attention_icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
+	27, // 11: leaflow.fleet.virtualdesktop.tray.v1.Tooltip.icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
 	3,  // 12: leaflow.fleet.virtualdesktop.tray.v1.ClickTrayIconRequest.click:type_name -> leaflow.fleet.virtualdesktop.tray.v1.TrayIconClick
-	26, // 13: leaflow.fleet.virtualdesktop.tray.v1.ClickTrayIconRequest.icon_area:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
+	28, // 13: leaflow.fleet.virtualdesktop.tray.v1.ClickTrayIconRequest.icon_area:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
 	21, // 14: leaflow.fleet.virtualdesktop.tray.v1.GetTrayMenuResponse.layout:type_name -> leaflow.fleet.virtualdesktop.tray.v1.MenuItem
 	4,  // 15: leaflow.fleet.virtualdesktop.tray.v1.MenuItem.type:type_name -> leaflow.fleet.virtualdesktop.tray.v1.MenuItemType
-	25, // 16: leaflow.fleet.virtualdesktop.tray.v1.MenuItem.icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
+	27, // 16: leaflow.fleet.virtualdesktop.tray.v1.MenuItem.icon:type_name -> leaflow.fleet.virtualdesktop.display.v1.Icon
 	22, // 17: leaflow.fleet.virtualdesktop.tray.v1.MenuItem.shortcut:type_name -> leaflow.fleet.virtualdesktop.tray.v1.KeyChord
 	5,  // 18: leaflow.fleet.virtualdesktop.tray.v1.MenuItem.toggle_type:type_name -> leaflow.fleet.virtualdesktop.tray.v1.MenuItemToggleType
 	6,  // 19: leaflow.fleet.virtualdesktop.tray.v1.MenuItem.toggle_state:type_name -> leaflow.fleet.virtualdesktop.tray.v1.MenuItemToggleState
 	7,  // 20: leaflow.fleet.virtualdesktop.tray.v1.MenuItem.disposition:type_name -> leaflow.fleet.virtualdesktop.tray.v1.MenuItemDisposition
 	21, // 21: leaflow.fleet.virtualdesktop.tray.v1.MenuItem.children:type_name -> leaflow.fleet.virtualdesktop.tray.v1.MenuItem
 	8,  // 22: leaflow.fleet.virtualdesktop.tray.v1.SendTrayMenuEventRequest.type:type_name -> leaflow.fleet.virtualdesktop.tray.v1.MenuEventType
-	15, // 23: leaflow.fleet.virtualdesktop.tray.v1.TrayService.ClickTrayIcon:input_type -> leaflow.fleet.virtualdesktop.tray.v1.ClickTrayIconRequest
-	17, // 24: leaflow.fleet.virtualdesktop.tray.v1.TrayService.ScrollTrayIcon:input_type -> leaflow.fleet.virtualdesktop.tray.v1.ScrollTrayIconRequest
-	19, // 25: leaflow.fleet.virtualdesktop.tray.v1.TrayService.GetTrayMenu:input_type -> leaflow.fleet.virtualdesktop.tray.v1.GetTrayMenuRequest
-	23, // 26: leaflow.fleet.virtualdesktop.tray.v1.TrayService.SendTrayMenuEvent:input_type -> leaflow.fleet.virtualdesktop.tray.v1.SendTrayMenuEventRequest
-	16, // 27: leaflow.fleet.virtualdesktop.tray.v1.TrayService.ClickTrayIcon:output_type -> leaflow.fleet.virtualdesktop.tray.v1.ClickTrayIconResponse
-	18, // 28: leaflow.fleet.virtualdesktop.tray.v1.TrayService.ScrollTrayIcon:output_type -> leaflow.fleet.virtualdesktop.tray.v1.ScrollTrayIconResponse
-	20, // 29: leaflow.fleet.virtualdesktop.tray.v1.TrayService.GetTrayMenu:output_type -> leaflow.fleet.virtualdesktop.tray.v1.GetTrayMenuResponse
-	24, // 30: leaflow.fleet.virtualdesktop.tray.v1.TrayService.SendTrayMenuEvent:output_type -> leaflow.fleet.virtualdesktop.tray.v1.SendTrayMenuEventResponse
-	27, // [27:31] is the sub-list for method output_type
-	23, // [23:27] is the sub-list for method input_type
-	23, // [23:23] is the sub-list for extension type_name
-	23, // [23:23] is the sub-list for extension extendee
-	0,  // [0:23] is the sub-list for field type_name
+	28, // 23: leaflow.fleet.virtualdesktop.tray.v1.SetTrayIconPointerRequest.icon_area:type_name -> leaflow.fleet.virtualdesktop.display.v1.Rectangle
+	15, // 24: leaflow.fleet.virtualdesktop.tray.v1.TrayService.ClickTrayIcon:input_type -> leaflow.fleet.virtualdesktop.tray.v1.ClickTrayIconRequest
+	17, // 25: leaflow.fleet.virtualdesktop.tray.v1.TrayService.ScrollTrayIcon:input_type -> leaflow.fleet.virtualdesktop.tray.v1.ScrollTrayIconRequest
+	25, // 26: leaflow.fleet.virtualdesktop.tray.v1.TrayService.SetTrayIconPointer:input_type -> leaflow.fleet.virtualdesktop.tray.v1.SetTrayIconPointerRequest
+	19, // 27: leaflow.fleet.virtualdesktop.tray.v1.TrayService.GetTrayMenu:input_type -> leaflow.fleet.virtualdesktop.tray.v1.GetTrayMenuRequest
+	23, // 28: leaflow.fleet.virtualdesktop.tray.v1.TrayService.SendTrayMenuEvent:input_type -> leaflow.fleet.virtualdesktop.tray.v1.SendTrayMenuEventRequest
+	16, // 29: leaflow.fleet.virtualdesktop.tray.v1.TrayService.ClickTrayIcon:output_type -> leaflow.fleet.virtualdesktop.tray.v1.ClickTrayIconResponse
+	18, // 30: leaflow.fleet.virtualdesktop.tray.v1.TrayService.ScrollTrayIcon:output_type -> leaflow.fleet.virtualdesktop.tray.v1.ScrollTrayIconResponse
+	26, // 31: leaflow.fleet.virtualdesktop.tray.v1.TrayService.SetTrayIconPointer:output_type -> leaflow.fleet.virtualdesktop.tray.v1.SetTrayIconPointerResponse
+	20, // 32: leaflow.fleet.virtualdesktop.tray.v1.TrayService.GetTrayMenu:output_type -> leaflow.fleet.virtualdesktop.tray.v1.GetTrayMenuResponse
+	24, // 33: leaflow.fleet.virtualdesktop.tray.v1.TrayService.SendTrayMenuEvent:output_type -> leaflow.fleet.virtualdesktop.tray.v1.SendTrayMenuEventResponse
+	29, // [29:34] is the sub-list for method output_type
+	24, // [24:29] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_init() }
@@ -1931,7 +2067,7 @@ func file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_rawDesc), len(file_leaflow_fleet_virtualdesktop_tray_v1_tray_proto_rawDesc)),
 			NumEnums:      9,
-			NumMessages:   16,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

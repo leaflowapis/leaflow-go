@@ -636,66 +636,6 @@ func (s *CancellationMode) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/ChangeElasticIpBandwidthRequestBody
-type ChangeElasticIpBandwidthRequestBody struct {
-	// The new ceiling in Mbit/s, applied to both directions.
-	BandwidthMbps int64 `json:"bandwidth_mbps"`
-	// The `proration_date` of the Billing Checkout Session preview for this change, so that the order is
-	// priced from the same instant. Only on a prepaid network item, and only for automatic checkout;
-	// deferred checkout is priced when the customer completes it. Defaults to the time of the request; it
-	// must be a whole second, not in the future and at most 10 minutes old, otherwise the request is
-	// refused with `BILLING_CHANGE_INVALID`.
-	ProrationDate OptDateTime `json:"proration_date"`
-	// How the purchase of the change is checked out. Only on a prepaid network item; a pay-as-you-go one
-	// has nothing to check out and refuses it with `ELASTIC_IP_CHECKOUT_UNUSED`.
-	Checkout OptCheckoutOptions `json:"checkout"`
-}
-
-// GetBandwidthMbps returns the value of BandwidthMbps.
-func (s *ChangeElasticIpBandwidthRequestBody) GetBandwidthMbps() int64 {
-	return s.BandwidthMbps
-}
-
-// GetProrationDate returns the value of ProrationDate.
-func (s *ChangeElasticIpBandwidthRequestBody) GetProrationDate() OptDateTime {
-	return s.ProrationDate
-}
-
-// GetCheckout returns the value of Checkout.
-func (s *ChangeElasticIpBandwidthRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
-}
-
-// SetBandwidthMbps sets the value of BandwidthMbps.
-func (s *ChangeElasticIpBandwidthRequestBody) SetBandwidthMbps(val int64) {
-	s.BandwidthMbps = val
-}
-
-// SetProrationDate sets the value of ProrationDate.
-func (s *ChangeElasticIpBandwidthRequestBody) SetProrationDate(val OptDateTime) {
-	s.ProrationDate = val
-}
-
-// SetCheckout sets the value of Checkout.
-func (s *ChangeElasticIpBandwidthRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
-}
-
-// Ref: #/components/schemas/ChangeElasticIpChargeTypeRequestBody
-type ChangeElasticIpChargeTypeRequestBody struct {
-	InternetChargeType InternetChargeType `json:"internet_charge_type"`
-}
-
-// GetInternetChargeType returns the value of InternetChargeType.
-func (s *ChangeElasticIpChargeTypeRequestBody) GetInternetChargeType() InternetChargeType {
-	return s.InternetChargeType
-}
-
-// SetInternetChargeType sets the value of InternetChargeType.
-func (s *ChangeElasticIpChargeTypeRequestBody) SetInternetChargeType(val InternetChargeType) {
-	s.InternetChargeType = val
-}
-
 // Shared checkout choices for a product purchase. The service may set them or forward its client's
 // choices unchanged; it does not need to read them, and Billing validates them. Omitting this object
 // or mode selects automatic checkout. Each purchase creates its own Checkout Session. Promotion codes
@@ -834,33 +774,17 @@ func (s *ConsoleResponseBody) SetConsoleURL(val string) {
 	s.ConsoleURL = val
 }
 
+// Buy an address holding, optionally with a separately subscribed bandwidth service in the same
+// checkout.
 // Ref: #/components/schemas/CreateElasticIpRequestBody
 type CreateElasticIpRequestBody struct {
-	InternetChargeType OptInternetChargeType `json:"internet_charge_type"`
 	// The IPv4 address to allocate. Selected by the platform when omitted.
-	Address OptIpv4HostAddress `json:"address"`
-	// The bandwidth ceiling of this address, in Mbit/s, applied to both directions.
-	//
-	// Required, and there is no "unlimited": an address with no ceiling runs at line rate and is charged
-	// nothing for the traffic, while the address itself bills normally — so the invoice looks correct
-	// and nothing anywhere reports it.
-	//
-	// Any whole number of Mbps within the line's `min_bandwidth_mbps` and `max_bandwidth_mbps`, otherwise
-	// the request is refused with `ELASTIC_IP_BANDWIDTH_RANGE`. Changing it later updates the same elastic
-	// IP through `change-elastic-ip-bandwidth`, not an independent bandwidth resource.
-	BandwidthMbps int64           `json:"bandwidth_mbps"`
-	LineID        ElasticIpLineId `json:"line_id"`
-	// The selected Billing price for this component. Required even when joining an existing subscription;
-	// Billing checks compatibility.
-	Billing  BillingChoice      `json:"billing"`
+	Address  OptIpv4HostAddress `json:"address"`
+	LineID   InternetLineId     `json:"line_id"`
 	Checkout OptCheckoutOptions `json:"checkout"`
 	// Buy the elastic IP for this instance of the project; see the operation.
-	InstanceID OptInstanceId `json:"instance_id"`
-}
-
-// GetInternetChargeType returns the value of InternetChargeType.
-func (s *CreateElasticIpRequestBody) GetInternetChargeType() OptInternetChargeType {
-	return s.InternetChargeType
+	InstanceID OptInstanceId                `json:"instance_id"`
+	Bandwidth  OptInternetBandwidthPurchase `json:"bandwidth"`
 }
 
 // GetAddress returns the value of Address.
@@ -868,19 +792,9 @@ func (s *CreateElasticIpRequestBody) GetAddress() OptIpv4HostAddress {
 	return s.Address
 }
 
-// GetBandwidthMbps returns the value of BandwidthMbps.
-func (s *CreateElasticIpRequestBody) GetBandwidthMbps() int64 {
-	return s.BandwidthMbps
-}
-
 // GetLineID returns the value of LineID.
-func (s *CreateElasticIpRequestBody) GetLineID() ElasticIpLineId {
+func (s *CreateElasticIpRequestBody) GetLineID() InternetLineId {
 	return s.LineID
-}
-
-// GetBilling returns the value of Billing.
-func (s *CreateElasticIpRequestBody) GetBilling() BillingChoice {
-	return s.Billing
 }
 
 // GetCheckout returns the value of Checkout.
@@ -893,9 +807,9 @@ func (s *CreateElasticIpRequestBody) GetInstanceID() OptInstanceId {
 	return s.InstanceID
 }
 
-// SetInternetChargeType sets the value of InternetChargeType.
-func (s *CreateElasticIpRequestBody) SetInternetChargeType(val OptInternetChargeType) {
-	s.InternetChargeType = val
+// GetBandwidth returns the value of Bandwidth.
+func (s *CreateElasticIpRequestBody) GetBandwidth() OptInternetBandwidthPurchase {
+	return s.Bandwidth
 }
 
 // SetAddress sets the value of Address.
@@ -903,19 +817,9 @@ func (s *CreateElasticIpRequestBody) SetAddress(val OptIpv4HostAddress) {
 	s.Address = val
 }
 
-// SetBandwidthMbps sets the value of BandwidthMbps.
-func (s *CreateElasticIpRequestBody) SetBandwidthMbps(val int64) {
-	s.BandwidthMbps = val
-}
-
 // SetLineID sets the value of LineID.
-func (s *CreateElasticIpRequestBody) SetLineID(val ElasticIpLineId) {
+func (s *CreateElasticIpRequestBody) SetLineID(val InternetLineId) {
 	s.LineID = val
-}
-
-// SetBilling sets the value of Billing.
-func (s *CreateElasticIpRequestBody) SetBilling(val BillingChoice) {
-	s.Billing = val
 }
 
 // SetCheckout sets the value of Checkout.
@@ -926,6 +830,11 @@ func (s *CreateElasticIpRequestBody) SetCheckout(val OptCheckoutOptions) {
 // SetInstanceID sets the value of InstanceID.
 func (s *CreateElasticIpRequestBody) SetInstanceID(val OptInstanceId) {
 	s.InstanceID = val
+}
+
+// SetBandwidth sets the value of Bandwidth.
+func (s *CreateElasticIpRequestBody) SetBandwidth(val OptInternetBandwidthPurchase) {
+	s.Bandwidth = val
 }
 
 // The new elastic IP, `pending` until its order is accepted, and its Checkout Session. `address` is
@@ -1217,6 +1126,138 @@ func (s *CreateInstanceResponseBody) SetPassword(val NilString) {
 }
 
 func (*CreateInstanceResponseBody) createInstanceRes() {}
+
+// The scope must match exactly one target. Each service purchases its own Billing price independently
+// of the address or instance.
+// Ref: #/components/schemas/CreateInternetBandwidthRequestBody
+type CreateInternetBandwidthRequestBody struct {
+	Scope                 InternetBandwidthScope      `json:"scope"`
+	ElasticIPID           OptElasticIpId              `json:"elastic_ip_id"`
+	VirtualPrivateCloudID OptVirtualPrivateCloudId    `json:"virtual_private_cloud_id"`
+	BandwidthMbps         int64                       `json:"bandwidth_mbps"`
+	InternetChargeType    InternetBandwidthChargeType `json:"internet_charge_type"`
+	Billing               InternetBandwidthBilling    `json:"billing"`
+	Checkout              OptCheckoutOptions          `json:"checkout"`
+}
+
+// GetScope returns the value of Scope.
+func (s *CreateInternetBandwidthRequestBody) GetScope() InternetBandwidthScope {
+	return s.Scope
+}
+
+// GetElasticIPID returns the value of ElasticIPID.
+func (s *CreateInternetBandwidthRequestBody) GetElasticIPID() OptElasticIpId {
+	return s.ElasticIPID
+}
+
+// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
+func (s *CreateInternetBandwidthRequestBody) GetVirtualPrivateCloudID() OptVirtualPrivateCloudId {
+	return s.VirtualPrivateCloudID
+}
+
+// GetBandwidthMbps returns the value of BandwidthMbps.
+func (s *CreateInternetBandwidthRequestBody) GetBandwidthMbps() int64 {
+	return s.BandwidthMbps
+}
+
+// GetInternetChargeType returns the value of InternetChargeType.
+func (s *CreateInternetBandwidthRequestBody) GetInternetChargeType() InternetBandwidthChargeType {
+	return s.InternetChargeType
+}
+
+// GetBilling returns the value of Billing.
+func (s *CreateInternetBandwidthRequestBody) GetBilling() InternetBandwidthBilling {
+	return s.Billing
+}
+
+// GetCheckout returns the value of Checkout.
+func (s *CreateInternetBandwidthRequestBody) GetCheckout() OptCheckoutOptions {
+	return s.Checkout
+}
+
+// SetScope sets the value of Scope.
+func (s *CreateInternetBandwidthRequestBody) SetScope(val InternetBandwidthScope) {
+	s.Scope = val
+}
+
+// SetElasticIPID sets the value of ElasticIPID.
+func (s *CreateInternetBandwidthRequestBody) SetElasticIPID(val OptElasticIpId) {
+	s.ElasticIPID = val
+}
+
+// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
+func (s *CreateInternetBandwidthRequestBody) SetVirtualPrivateCloudID(val OptVirtualPrivateCloudId) {
+	s.VirtualPrivateCloudID = val
+}
+
+// SetBandwidthMbps sets the value of BandwidthMbps.
+func (s *CreateInternetBandwidthRequestBody) SetBandwidthMbps(val int64) {
+	s.BandwidthMbps = val
+}
+
+// SetInternetChargeType sets the value of InternetChargeType.
+func (s *CreateInternetBandwidthRequestBody) SetInternetChargeType(val InternetBandwidthChargeType) {
+	s.InternetChargeType = val
+}
+
+// SetBilling sets the value of Billing.
+func (s *CreateInternetBandwidthRequestBody) SetBilling(val InternetBandwidthBilling) {
+	s.Billing = val
+}
+
+// SetCheckout sets the value of Checkout.
+func (s *CreateInternetBandwidthRequestBody) SetCheckout(val OptCheckoutOptions) {
+	s.Checkout = val
+}
+
+// Ref: #/components/schemas/CreateInternetGatewayRequestBody
+type CreateInternetGatewayRequestBody struct {
+	VirtualPrivateCloudID VirtualPrivateCloudId `json:"virtual_private_cloud_id"`
+	// Selects the exit network. Other lines using that exit may share this gateway.
+	LineID      InternetLineId `json:"line_id"`
+	Name        string         `json:"name"`
+	Description OptString      `json:"description"`
+}
+
+// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
+func (s *CreateInternetGatewayRequestBody) GetVirtualPrivateCloudID() VirtualPrivateCloudId {
+	return s.VirtualPrivateCloudID
+}
+
+// GetLineID returns the value of LineID.
+func (s *CreateInternetGatewayRequestBody) GetLineID() InternetLineId {
+	return s.LineID
+}
+
+// GetName returns the value of Name.
+func (s *CreateInternetGatewayRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *CreateInternetGatewayRequestBody) GetDescription() OptString {
+	return s.Description
+}
+
+// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
+func (s *CreateInternetGatewayRequestBody) SetVirtualPrivateCloudID(val VirtualPrivateCloudId) {
+	s.VirtualPrivateCloudID = val
+}
+
+// SetLineID sets the value of LineID.
+func (s *CreateInternetGatewayRequestBody) SetLineID(val InternetLineId) {
+	s.LineID = val
+}
+
+// SetName sets the value of Name.
+func (s *CreateInternetGatewayRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *CreateInternetGatewayRequestBody) SetDescription(val OptString) {
+	s.Description = val
+}
 
 // Ref: #/components/schemas/CreateLaunchTemplateRequestBody
 type CreateLaunchTemplateRequestBody struct {
@@ -2107,6 +2148,50 @@ func (s *DeleteInstanceResponseBody) SetCancellation(val NilBillingCancellation)
 
 func (*DeleteInstanceResponseBody) deleteInstanceRes() {}
 
+type DeleteInternetBandwidthCancellationMode string
+
+const (
+	DeleteInternetBandwidthCancellationModeImmediate DeleteInternetBandwidthCancellationMode = "immediate"
+	DeleteInternetBandwidthCancellationModePeriodEnd DeleteInternetBandwidthCancellationMode = "period_end"
+)
+
+// AllValues returns all DeleteInternetBandwidthCancellationMode values.
+func (DeleteInternetBandwidthCancellationMode) AllValues() []DeleteInternetBandwidthCancellationMode {
+	return []DeleteInternetBandwidthCancellationMode{
+		DeleteInternetBandwidthCancellationModeImmediate,
+		DeleteInternetBandwidthCancellationModePeriodEnd,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s DeleteInternetBandwidthCancellationMode) MarshalText() ([]byte, error) {
+	switch s {
+	case DeleteInternetBandwidthCancellationModeImmediate:
+		return []byte(s), nil
+	case DeleteInternetBandwidthCancellationModePeriodEnd:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *DeleteInternetBandwidthCancellationMode) UnmarshalText(data []byte) error {
+	switch DeleteInternetBandwidthCancellationMode(data) {
+	case DeleteInternetBandwidthCancellationModeImmediate:
+		*s = DeleteInternetBandwidthCancellationModeImmediate
+		return nil
+	case DeleteInternetBandwidthCancellationModePeriodEnd:
+		*s = DeleteInternetBandwidthCancellationModePeriodEnd
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// DeleteInternetGatewayNoContent is response for DeleteInternetGateway operation.
+type DeleteInternetGatewayNoContent struct{}
+
 // DeleteLaunchTemplateNoContent is response for DeleteLaunchTemplate operation.
 type DeleteLaunchTemplateNoContent struct{}
 
@@ -2251,31 +2336,22 @@ func (s *DeleteVolumeSnapshotResponseBody) SetCancellation(val NilBillingCancell
 
 func (*DeleteVolumeSnapshotResponseBody) deleteVolumeSnapshotRes() {}
 
-// One public IP resource, including its bandwidth configuration. Bandwidth has no separate Compute
-// resource ID. Two items of one Billing subscription pay for it: the address item, always
-// pay-as-you-go, charges for the address while it is not associated with anything, and the network
-// item, on the terms chosen at purchase, charges for the bandwidth or the traffic. The subscription is
-// the elastic IP's own, or the instance's when it was bought with or for one. Changing bandwidth
-// updates this same resource, not another allocation.
+// An IPv4 address holding and association intent. Address holding is billed independently of
+// association and bandwidth. Public forwarding requires an enabled InternetBandwidth service.
 // Ref: #/components/schemas/ElasticIp
 type ElasticIp struct {
-	InternetChargeType InternetChargeType `json:"internet_charge_type"`
 	// The held IPv4 address; null before actual claim. Holding identity is not exposed.
 	Address NilIpv4HostAddress `json:"address"`
 	// The actual address holding start time; null before actual claim.
 	AllocatedAt NilDateTime `json:"allocated_at"`
 	// The confirmed holding release time; null while held or before actual claim.
-	ReleasedAt    NilDateTime     `json:"released_at"`
-	BandwidthMbps NilInt64        `json:"bandwidth_mbps"`
-	CreatedAt     time.Time       `json:"created_at"`
-	ID            ElasticIpId     `json:"id"`
-	LineID        ElasticIpLineId `json:"line_id"`
-	RegionID      RegionId        `json:"region_id"`
-	// `pending` until the address is created, with no address allocated before the order is accepted; then
-	// `available`. `failed` means no address was allocated; `failure_reason` states why. A value naming an
-	// operation in progress (`associating`, `disassociating`, `updating_bandwidth`,
-	// `updating_internet_charge_type`, `suspending`, `resuming`, `deleting`) is shown while that operation
-	// runs; the elastic IP refuses another operation until it ends.
+	ReleasedAt NilDateTime    `json:"released_at"`
+	CreatedAt  time.Time      `json:"created_at"`
+	ID         ElasticIpId    `json:"id"`
+	LineID     InternetLineId `json:"line_id"`
+	RegionID   RegionId       `json:"region_id"`
+	// Pending until allocated, then available; operation states describe association or release in
+	// progress.
 	Status ElasticIpStatus `json:"status"`
 	// The Billing Checkout Session that bought this resource; `order_id` and the order items stay null
 	// until its checkout completes. Null when the resource was not bought through one.
@@ -2283,19 +2359,11 @@ type ElasticIp struct {
 	OrderID           NilUUID `json:"order_id"`
 	// The Billing order item of the address, always pay-as-you-go.
 	AddressOrderItemID NilUUID `json:"address_order_item_id"`
-	// The Billing subscription the elastic IP renews under. Read it in Billing for the term end, automatic
-	// renewal and renewal. It may still be pending; its presence does not imply delivery or metering.
+	// The independent address subscription, billed for the full holding duration.
 	SubscriptionID NilUUID `json:"subscription_id"`
 	// The subscription item of the address, always pay-as-you-go.
 	AddressSubscriptionItemID NilUUID `json:"address_subscription_item_id"`
-	// The Billing order item of the bandwidth or traffic.
-	InternetOrderItemID NilUUID `json:"internet_order_item_id"`
-	// The subscription item of the bandwidth or traffic.
-	InternetSubscriptionItemID NilUUID `json:"internet_subscription_item_id"`
-	// The subscription items a cancellation through Billing has to cover to release this elastic IP, both
-	// the address's and the network's, each with the resource it pays for, so that each line of a
-	// cancellation can name what it releases. An item that has ended is not listed, and the set is empty
-	// when no item pays for the elastic IP.
+	// The subscription items required to release this address and its dependent bandwidth service.
 	ReleaseSet  []ReleaseSetItem        `json:"release_set"`
 	AccessState NilElasticIpAccessState `json:"access_state"`
 	// Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
@@ -2304,12 +2372,8 @@ type ElasticIp struct {
 	FailureReason NilElasticIpFailureReason `json:"failure_reason"`
 	Association   NilElasticIpAssociation   `json:"association"`
 	// The most recent operation started on the elastic IP; null when none has been recorded.
-	LatestOperation NilLatestOperation `json:"latest_operation"`
-}
-
-// GetInternetChargeType returns the value of InternetChargeType.
-func (s *ElasticIp) GetInternetChargeType() InternetChargeType {
-	return s.InternetChargeType
+	LatestOperation     NilLatestOperation     `json:"latest_operation"`
+	InternetBandwidthID NilInternetBandwidthId `json:"internet_bandwidth_id"`
 }
 
 // GetAddress returns the value of Address.
@@ -2327,11 +2391,6 @@ func (s *ElasticIp) GetReleasedAt() NilDateTime {
 	return s.ReleasedAt
 }
 
-// GetBandwidthMbps returns the value of BandwidthMbps.
-func (s *ElasticIp) GetBandwidthMbps() NilInt64 {
-	return s.BandwidthMbps
-}
-
 // GetCreatedAt returns the value of CreatedAt.
 func (s *ElasticIp) GetCreatedAt() time.Time {
 	return s.CreatedAt
@@ -2343,7 +2402,7 @@ func (s *ElasticIp) GetID() ElasticIpId {
 }
 
 // GetLineID returns the value of LineID.
-func (s *ElasticIp) GetLineID() ElasticIpLineId {
+func (s *ElasticIp) GetLineID() InternetLineId {
 	return s.LineID
 }
 
@@ -2382,16 +2441,6 @@ func (s *ElasticIp) GetAddressSubscriptionItemID() NilUUID {
 	return s.AddressSubscriptionItemID
 }
 
-// GetInternetOrderItemID returns the value of InternetOrderItemID.
-func (s *ElasticIp) GetInternetOrderItemID() NilUUID {
-	return s.InternetOrderItemID
-}
-
-// GetInternetSubscriptionItemID returns the value of InternetSubscriptionItemID.
-func (s *ElasticIp) GetInternetSubscriptionItemID() NilUUID {
-	return s.InternetSubscriptionItemID
-}
-
 // GetReleaseSet returns the value of ReleaseSet.
 func (s *ElasticIp) GetReleaseSet() []ReleaseSetItem {
 	return s.ReleaseSet
@@ -2417,9 +2466,9 @@ func (s *ElasticIp) GetLatestOperation() NilLatestOperation {
 	return s.LatestOperation
 }
 
-// SetInternetChargeType sets the value of InternetChargeType.
-func (s *ElasticIp) SetInternetChargeType(val InternetChargeType) {
-	s.InternetChargeType = val
+// GetInternetBandwidthID returns the value of InternetBandwidthID.
+func (s *ElasticIp) GetInternetBandwidthID() NilInternetBandwidthId {
+	return s.InternetBandwidthID
 }
 
 // SetAddress sets the value of Address.
@@ -2437,11 +2486,6 @@ func (s *ElasticIp) SetReleasedAt(val NilDateTime) {
 	s.ReleasedAt = val
 }
 
-// SetBandwidthMbps sets the value of BandwidthMbps.
-func (s *ElasticIp) SetBandwidthMbps(val NilInt64) {
-	s.BandwidthMbps = val
-}
-
 // SetCreatedAt sets the value of CreatedAt.
 func (s *ElasticIp) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
@@ -2453,7 +2497,7 @@ func (s *ElasticIp) SetID(val ElasticIpId) {
 }
 
 // SetLineID sets the value of LineID.
-func (s *ElasticIp) SetLineID(val ElasticIpLineId) {
+func (s *ElasticIp) SetLineID(val InternetLineId) {
 	s.LineID = val
 }
 
@@ -2492,16 +2536,6 @@ func (s *ElasticIp) SetAddressSubscriptionItemID(val NilUUID) {
 	s.AddressSubscriptionItemID = val
 }
 
-// SetInternetOrderItemID sets the value of InternetOrderItemID.
-func (s *ElasticIp) SetInternetOrderItemID(val NilUUID) {
-	s.InternetOrderItemID = val
-}
-
-// SetInternetSubscriptionItemID sets the value of InternetSubscriptionItemID.
-func (s *ElasticIp) SetInternetSubscriptionItemID(val NilUUID) {
-	s.InternetSubscriptionItemID = val
-}
-
 // SetReleaseSet sets the value of ReleaseSet.
 func (s *ElasticIp) SetReleaseSet(val []ReleaseSetItem) {
 	s.ReleaseSet = val
@@ -2527,9 +2561,13 @@ func (s *ElasticIp) SetLatestOperation(val NilLatestOperation) {
 	s.LatestOperation = val
 }
 
-func (*ElasticIp) associateElasticIPRes()        {}
-func (*ElasticIp) changeElasticIPChargeTypeRes() {}
-func (*ElasticIp) disassociateElasticIPRes()     {}
+// SetInternetBandwidthID sets the value of InternetBandwidthID.
+func (s *ElasticIp) SetInternetBandwidthID(val NilInternetBandwidthId) {
+	s.InternetBandwidthID = val
+}
+
+func (*ElasticIp) associateElasticIPRes()    {}
+func (*ElasticIp) disassociateElasticIPRes() {}
 
 type ElasticIpAccessState string
 
@@ -2695,14 +2733,18 @@ type ElasticIpAssociationId string
 type ElasticIpAssociationState string
 
 const (
-	ElasticIpAssociationStateAssociated ElasticIpAssociationState = "associated"
-	ElasticIpAssociationStateReleased   ElasticIpAssociationState = "released"
+	ElasticIpAssociationStateReserved       ElasticIpAssociationState = "reserved"
+	ElasticIpAssociationStateAssociated     ElasticIpAssociationState = "associated"
+	ElasticIpAssociationStateDisassociating ElasticIpAssociationState = "disassociating"
+	ElasticIpAssociationStateReleased       ElasticIpAssociationState = "released"
 )
 
 // AllValues returns all ElasticIpAssociationState values.
 func (ElasticIpAssociationState) AllValues() []ElasticIpAssociationState {
 	return []ElasticIpAssociationState{
+		ElasticIpAssociationStateReserved,
 		ElasticIpAssociationStateAssociated,
+		ElasticIpAssociationStateDisassociating,
 		ElasticIpAssociationStateReleased,
 	}
 }
@@ -2710,7 +2752,11 @@ func (ElasticIpAssociationState) AllValues() []ElasticIpAssociationState {
 // MarshalText implements encoding.TextMarshaler.
 func (s ElasticIpAssociationState) MarshalText() ([]byte, error) {
 	switch s {
+	case ElasticIpAssociationStateReserved:
+		return []byte(s), nil
 	case ElasticIpAssociationStateAssociated:
+		return []byte(s), nil
+	case ElasticIpAssociationStateDisassociating:
 		return []byte(s), nil
 	case ElasticIpAssociationStateReleased:
 		return []byte(s), nil
@@ -2722,8 +2768,14 @@ func (s ElasticIpAssociationState) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *ElasticIpAssociationState) UnmarshalText(data []byte) error {
 	switch ElasticIpAssociationState(data) {
+	case ElasticIpAssociationStateReserved:
+		*s = ElasticIpAssociationStateReserved
+		return nil
 	case ElasticIpAssociationStateAssociated:
 		*s = ElasticIpAssociationStateAssociated
+		return nil
+	case ElasticIpAssociationStateDisassociating:
+		*s = ElasticIpAssociationStateDisassociating
 		return nil
 	case ElasticIpAssociationStateReleased:
 		*s = ElasticIpAssociationStateReleased
@@ -2732,51 +2784,6 @@ func (s *ElasticIpAssociationState) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
-
-// The elastic IP and, for a prepaid network item, the Checkout Session for its bandwidth change. The
-// elastic IP is still at its current bandwidth until the change is applied.
-// Ref: #/components/schemas/ElasticIpChangeResponseBody
-type ElasticIpChangeResponseBody struct {
-	ElasticIP ElasticIp `json:"elastic_ip"`
-	// The Billing Checkout Session of the purchase; null for a pay-as-you-go network item, which changes
-	// without checkout. With deferred checkout, the customer completes it in Billing.
-	CheckoutSessionID NilUUID `json:"checkout_session_id"`
-	// The order created when checkout completes, at once for automatic checkout; null until then and
-	// without checkout.
-	OrderID NilUUID `json:"order_id"`
-}
-
-// GetElasticIP returns the value of ElasticIP.
-func (s *ElasticIpChangeResponseBody) GetElasticIP() ElasticIp {
-	return s.ElasticIP
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *ElasticIpChangeResponseBody) GetCheckoutSessionID() NilUUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *ElasticIpChangeResponseBody) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// SetElasticIP sets the value of ElasticIP.
-func (s *ElasticIpChangeResponseBody) SetElasticIP(val ElasticIp) {
-	s.ElasticIP = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *ElasticIpChangeResponseBody) SetCheckoutSessionID(val NilUUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *ElasticIpChangeResponseBody) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-func (*ElasticIpChangeResponseBody) changeElasticIPBandwidthRes() {}
 
 // Why creation failed; null unless `status` is `failed`. `checkout_expired` means checkout was not
 // completed before its Checkout Session expired. `provisioning_failed` means creation failed after the
@@ -2844,273 +2851,6 @@ func (s *ElasticIpFailureReason) UnmarshalText(data []byte) error {
 }
 
 type ElasticIpId string
-
-// The network an elastic IP is bought on: the bandwidth that can be chosen, and the two Billing Plans
-// every elastic IP of the line is paid under in one order. The address item is always used and meters
-// the address while it is held idle, associated with nothing; the network item pays the bandwidth,
-// prepaid or used while associated, or the traffic sent. Contains no supply ranges, gateways or
-// backend execution state.
-// Ref: #/components/schemas/ElasticIpLine
-type ElasticIpLine struct {
-	ID          ElasticIpLineId `json:"id"`
-	RegionID    RegionId        `json:"region_id"`
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	// The address line every elastic IP of this line has. It is always metered, and meters the address
-	// while no network interface holds it.
-	AddressBilling BillingComponent `json:"address_billing"`
-	// The network line every elastic IP of this line has, which pays its bandwidth, prepaid or used while
-	// associated, or its traffic. Metered, the line's quantity is 1 and the bandwidth or the traffic is
-	// what its meters read, by the elastic IP's `internet_charge_type`.
-	InternetBilling BillingComponent `json:"internet_billing"`
-	// The least bandwidth an elastic IP of this line can be bought with, in Mbps.
-	MinBandwidthMbps int64 `json:"min_bandwidth_mbps"`
-	// The most bandwidth an elastic IP of this line can be bought with, in Mbps, at most 1000. An elastic
-	// IP associated with an instance is also held to the instance type's `max_bandwidth_mbps`.
-	MaxBandwidthMbps int64 `json:"max_bandwidth_mbps"`
-	// `on_sale` is offered for new elastic IPs; `off_sale` takes none, while the elastic IPs already on it
-	// keep working.
-	SaleStatus ElasticIpLineSaleStatus `json:"sale_status"`
-	// Whether an elastic IP of this line can be bought with `internet_charge_type` `traffic`, billed by
-	// the bytes it sends. `off_sale` refuses that with `ELASTIC_IP_TRAFFIC_UNAVAILABLE`.
-	TrafficSaleStatus ElasticIpLineTrafficSaleStatus `json:"traffic_sale_status"`
-	CreatedAt         time.Time                      `json:"created_at"`
-	UpdatedAt         time.Time                      `json:"updated_at"`
-}
-
-// GetID returns the value of ID.
-func (s *ElasticIpLine) GetID() ElasticIpLineId {
-	return s.ID
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *ElasticIpLine) GetRegionID() RegionId {
-	return s.RegionID
-}
-
-// GetName returns the value of Name.
-func (s *ElasticIpLine) GetName() string {
-	return s.Name
-}
-
-// GetDescription returns the value of Description.
-func (s *ElasticIpLine) GetDescription() string {
-	return s.Description
-}
-
-// GetAddressBilling returns the value of AddressBilling.
-func (s *ElasticIpLine) GetAddressBilling() BillingComponent {
-	return s.AddressBilling
-}
-
-// GetInternetBilling returns the value of InternetBilling.
-func (s *ElasticIpLine) GetInternetBilling() BillingComponent {
-	return s.InternetBilling
-}
-
-// GetMinBandwidthMbps returns the value of MinBandwidthMbps.
-func (s *ElasticIpLine) GetMinBandwidthMbps() int64 {
-	return s.MinBandwidthMbps
-}
-
-// GetMaxBandwidthMbps returns the value of MaxBandwidthMbps.
-func (s *ElasticIpLine) GetMaxBandwidthMbps() int64 {
-	return s.MaxBandwidthMbps
-}
-
-// GetSaleStatus returns the value of SaleStatus.
-func (s *ElasticIpLine) GetSaleStatus() ElasticIpLineSaleStatus {
-	return s.SaleStatus
-}
-
-// GetTrafficSaleStatus returns the value of TrafficSaleStatus.
-func (s *ElasticIpLine) GetTrafficSaleStatus() ElasticIpLineTrafficSaleStatus {
-	return s.TrafficSaleStatus
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *ElasticIpLine) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetUpdatedAt returns the value of UpdatedAt.
-func (s *ElasticIpLine) GetUpdatedAt() time.Time {
-	return s.UpdatedAt
-}
-
-// SetID sets the value of ID.
-func (s *ElasticIpLine) SetID(val ElasticIpLineId) {
-	s.ID = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *ElasticIpLine) SetRegionID(val RegionId) {
-	s.RegionID = val
-}
-
-// SetName sets the value of Name.
-func (s *ElasticIpLine) SetName(val string) {
-	s.Name = val
-}
-
-// SetDescription sets the value of Description.
-func (s *ElasticIpLine) SetDescription(val string) {
-	s.Description = val
-}
-
-// SetAddressBilling sets the value of AddressBilling.
-func (s *ElasticIpLine) SetAddressBilling(val BillingComponent) {
-	s.AddressBilling = val
-}
-
-// SetInternetBilling sets the value of InternetBilling.
-func (s *ElasticIpLine) SetInternetBilling(val BillingComponent) {
-	s.InternetBilling = val
-}
-
-// SetMinBandwidthMbps sets the value of MinBandwidthMbps.
-func (s *ElasticIpLine) SetMinBandwidthMbps(val int64) {
-	s.MinBandwidthMbps = val
-}
-
-// SetMaxBandwidthMbps sets the value of MaxBandwidthMbps.
-func (s *ElasticIpLine) SetMaxBandwidthMbps(val int64) {
-	s.MaxBandwidthMbps = val
-}
-
-// SetSaleStatus sets the value of SaleStatus.
-func (s *ElasticIpLine) SetSaleStatus(val ElasticIpLineSaleStatus) {
-	s.SaleStatus = val
-}
-
-// SetTrafficSaleStatus sets the value of TrafficSaleStatus.
-func (s *ElasticIpLine) SetTrafficSaleStatus(val ElasticIpLineTrafficSaleStatus) {
-	s.TrafficSaleStatus = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *ElasticIpLine) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetUpdatedAt sets the value of UpdatedAt.
-func (s *ElasticIpLine) SetUpdatedAt(val time.Time) {
-	s.UpdatedAt = val
-}
-
-type ElasticIpLineId string
-
-// Ref: #/components/schemas/ElasticIpLineListResponseBody
-type ElasticIpLineListResponseBody struct {
-	Items      []ElasticIpLine  `json:"items"`
-	Pagination OffsetPagination `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *ElasticIpLineListResponseBody) GetItems() []ElasticIpLine {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *ElasticIpLineListResponseBody) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *ElasticIpLineListResponseBody) SetItems(val []ElasticIpLine) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *ElasticIpLineListResponseBody) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
-// `on_sale` is offered for new elastic IPs; `off_sale` takes none, while the elastic IPs already on it
-// keep working.
-type ElasticIpLineSaleStatus string
-
-const (
-	ElasticIpLineSaleStatusOnSale  ElasticIpLineSaleStatus = "on_sale"
-	ElasticIpLineSaleStatusOffSale ElasticIpLineSaleStatus = "off_sale"
-)
-
-// AllValues returns all ElasticIpLineSaleStatus values.
-func (ElasticIpLineSaleStatus) AllValues() []ElasticIpLineSaleStatus {
-	return []ElasticIpLineSaleStatus{
-		ElasticIpLineSaleStatusOnSale,
-		ElasticIpLineSaleStatusOffSale,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ElasticIpLineSaleStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case ElasticIpLineSaleStatusOnSale:
-		return []byte(s), nil
-	case ElasticIpLineSaleStatusOffSale:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ElasticIpLineSaleStatus) UnmarshalText(data []byte) error {
-	switch ElasticIpLineSaleStatus(data) {
-	case ElasticIpLineSaleStatusOnSale:
-		*s = ElasticIpLineSaleStatusOnSale
-		return nil
-	case ElasticIpLineSaleStatusOffSale:
-		*s = ElasticIpLineSaleStatusOffSale
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Whether an elastic IP of this line can be bought with `internet_charge_type` `traffic`, billed by
-// the bytes it sends. `off_sale` refuses that with `ELASTIC_IP_TRAFFIC_UNAVAILABLE`.
-type ElasticIpLineTrafficSaleStatus string
-
-const (
-	ElasticIpLineTrafficSaleStatusOnSale  ElasticIpLineTrafficSaleStatus = "on_sale"
-	ElasticIpLineTrafficSaleStatusOffSale ElasticIpLineTrafficSaleStatus = "off_sale"
-)
-
-// AllValues returns all ElasticIpLineTrafficSaleStatus values.
-func (ElasticIpLineTrafficSaleStatus) AllValues() []ElasticIpLineTrafficSaleStatus {
-	return []ElasticIpLineTrafficSaleStatus{
-		ElasticIpLineTrafficSaleStatusOnSale,
-		ElasticIpLineTrafficSaleStatusOffSale,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ElasticIpLineTrafficSaleStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case ElasticIpLineTrafficSaleStatusOnSale:
-		return []byte(s), nil
-	case ElasticIpLineTrafficSaleStatusOffSale:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ElasticIpLineTrafficSaleStatus) UnmarshalText(data []byte) error {
-	switch ElasticIpLineTrafficSaleStatus(data) {
-	case ElasticIpLineTrafficSaleStatusOnSale:
-		*s = ElasticIpLineTrafficSaleStatusOnSale
-		return nil
-	case ElasticIpLineTrafficSaleStatusOffSale:
-		*s = ElasticIpLineTrafficSaleStatusOffSale
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
 
 // Ref: #/components/schemas/ElasticIpListResponseBody
 type ElasticIpListResponseBody struct {
@@ -3212,26 +2952,21 @@ func (s *ElasticIpReleaseResourceType) UnmarshalText(data []byte) error {
 	}
 }
 
-// `pending` until the address is created, with no address allocated before the order is accepted; then
-// `available`. `failed` means no address was allocated; `failure_reason` states why. A value naming an
-// operation in progress (`associating`, `disassociating`, `updating_bandwidth`,
-// `updating_internet_charge_type`, `suspending`, `resuming`, `deleting`) is shown while that operation
-// runs; the elastic IP refuses another operation until it ends.
+// Pending until allocated, then available; operation states describe association or release in
+// progress.
 type ElasticIpStatus string
 
 const (
-	ElasticIpStatusPending                    ElasticIpStatus = "pending"
-	ElasticIpStatusAvailable                  ElasticIpStatus = "available"
-	ElasticIpStatusDeleted                    ElasticIpStatus = "deleted"
-	ElasticIpStatusFailed                     ElasticIpStatus = "failed"
-	ElasticIpStatusError                      ElasticIpStatus = "error"
-	ElasticIpStatusAssociating                ElasticIpStatus = "associating"
-	ElasticIpStatusDisassociating             ElasticIpStatus = "disassociating"
-	ElasticIpStatusUpdatingBandwidth          ElasticIpStatus = "updating_bandwidth"
-	ElasticIpStatusUpdatingInternetChargeType ElasticIpStatus = "updating_internet_charge_type"
-	ElasticIpStatusSuspending                 ElasticIpStatus = "suspending"
-	ElasticIpStatusResuming                   ElasticIpStatus = "resuming"
-	ElasticIpStatusDeleting                   ElasticIpStatus = "deleting"
+	ElasticIpStatusPending        ElasticIpStatus = "pending"
+	ElasticIpStatusAvailable      ElasticIpStatus = "available"
+	ElasticIpStatusDeleted        ElasticIpStatus = "deleted"
+	ElasticIpStatusFailed         ElasticIpStatus = "failed"
+	ElasticIpStatusError          ElasticIpStatus = "error"
+	ElasticIpStatusAssociating    ElasticIpStatus = "associating"
+	ElasticIpStatusDisassociating ElasticIpStatus = "disassociating"
+	ElasticIpStatusSuspending     ElasticIpStatus = "suspending"
+	ElasticIpStatusResuming       ElasticIpStatus = "resuming"
+	ElasticIpStatusDeleting       ElasticIpStatus = "deleting"
 )
 
 // AllValues returns all ElasticIpStatus values.
@@ -3244,8 +2979,6 @@ func (ElasticIpStatus) AllValues() []ElasticIpStatus {
 		ElasticIpStatusError,
 		ElasticIpStatusAssociating,
 		ElasticIpStatusDisassociating,
-		ElasticIpStatusUpdatingBandwidth,
-		ElasticIpStatusUpdatingInternetChargeType,
 		ElasticIpStatusSuspending,
 		ElasticIpStatusResuming,
 		ElasticIpStatusDeleting,
@@ -3268,10 +3001,6 @@ func (s ElasticIpStatus) MarshalText() ([]byte, error) {
 	case ElasticIpStatusAssociating:
 		return []byte(s), nil
 	case ElasticIpStatusDisassociating:
-		return []byte(s), nil
-	case ElasticIpStatusUpdatingBandwidth:
-		return []byte(s), nil
-	case ElasticIpStatusUpdatingInternetChargeType:
 		return []byte(s), nil
 	case ElasticIpStatusSuspending:
 		return []byte(s), nil
@@ -3307,12 +3036,6 @@ func (s *ElasticIpStatus) UnmarshalText(data []byte) error {
 		return nil
 	case ElasticIpStatusDisassociating:
 		*s = ElasticIpStatusDisassociating
-		return nil
-	case ElasticIpStatusUpdatingBandwidth:
-		*s = ElasticIpStatusUpdatingBandwidth
-		return nil
-	case ElasticIpStatusUpdatingInternetChargeType:
-		*s = ElasticIpStatusUpdatingInternetChargeType
 		return nil
 	case ElasticIpStatusSuspending:
 		*s = ElasticIpStatusSuspending
@@ -3350,8 +3073,6 @@ func (*Error) acceptVirtualPrivateCloudPeeringRes()      {}
 func (*Error) associateElasticIPRes()                    {}
 func (*Error) attachInstanceNetworkInterfaceRes()        {}
 func (*Error) attachInstanceVolumeRes()                  {}
-func (*Error) changeElasticIPBandwidthRes()              {}
-func (*Error) changeElasticIPChargeTypeRes()             {}
 func (*Error) createElasticIPRes()                       {}
 func (*Error) createInstanceRes()                        {}
 func (*Error) createPrivateImageRes()                    {}
@@ -5287,8 +5008,9 @@ type InstanceType struct {
 	MemoryMib            int64    `json:"memory_mib"`
 	RegionID             RegionId `json:"region_id"`
 	Vcpus                int64    `json:"vcpus"`
-	// The line an instance of this type is. The boot volume and data volumes bought with it are lines of
-	// their volume types, and a new elastic IP the two lines of its elastic IP line.
+	// The instance billing component. Boot and data volumes use their volume type components. An optional
+	// EIP uses the internet line address component and, when requested, a separately subscribed bandwidth
+	// component.
 	Billing BillingComponent `json:"billing"`
 }
 
@@ -5485,36 +5207,259 @@ func (s *InstanceTypeSaleStatus) UnmarshalText(data []byte) error {
 
 type InstanceVolumeId string
 
-// What the network item of an elastic IP charges for. `bandwidth` charges for the bandwidth ceiling,
-// prepaid for a period or by the Mbit/s-second while the address is associated. `traffic` charges for
-// the bytes the address sends upstream, pay-as-you-go only, while the bandwidth is only a ceiling; it
-// is refused with `ELASTIC_IP_TRAFFIC_UNAVAILABLE` on a line whose `traffic_sale_status` is
-// `off_sale`. Inbound traffic is never charged. Prices are set per currency, so a pay-as-you-go
-// purchase whose account currency has no rate on the line for the chosen type is refused before any
-// order with HTTP 403 `ELASTIC_IP_CHARGE_TYPE_NOT_OFFERED`, whether the elastic IP is bought alone or
-// with an instance. A pay-as-you-go elastic IP can move between the two with `update-elastic-ip`.
-// Ref: #/components/schemas/InternetChargeType
-type InternetChargeType string
+// Ref: #/components/schemas/InternetBandwidth
+type InternetBandwidth struct {
+	ID                    InternetBandwidthId             `json:"id"`
+	ProjectID             uuid.UUID                       `json:"project_id"`
+	RegionID              RegionId                        `json:"region_id"`
+	LineID                InternetLineId                  `json:"line_id"`
+	Scope                 InternetBandwidthScope          `json:"scope"`
+	ElasticIPID           OptElasticIpId                  `json:"elastic_ip_id"`
+	VirtualPrivateCloudID OptVirtualPrivateCloudId        `json:"virtual_private_cloud_id"`
+	IPPrefixAllocationID  OptIpPrefixAllocationId         `json:"ip_prefix_allocation_id"`
+	BandwidthMbps         int64                           `json:"bandwidth_mbps"`
+	InternetChargeType    InternetBandwidthChargeType     `json:"internet_charge_type"`
+	Status                InternetBandwidthStatus         `json:"status"`
+	AccessState           OptInternetBandwidthAccessState `json:"access_state"`
+	CheckoutSessionID     OptUUID                         `json:"checkout_session_id"`
+	OrderID               OptUUID                         `json:"order_id"`
+	SubscriptionID        OptUUID                         `json:"subscription_id"`
+	SubscriptionItemID    OptUUID                         `json:"subscription_item_id"`
+	FailureReason         OptString                       `json:"failure_reason"`
+	CreatedAt             time.Time                       `json:"created_at"`
+	ReleasedAt            OptDateTime                     `json:"released_at"`
+	ReleaseSet            []ReleaseSetItem                `json:"release_set"`
+}
+
+// GetID returns the value of ID.
+func (s *InternetBandwidth) GetID() InternetBandwidthId {
+	return s.ID
+}
+
+// GetProjectID returns the value of ProjectID.
+func (s *InternetBandwidth) GetProjectID() uuid.UUID {
+	return s.ProjectID
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *InternetBandwidth) GetRegionID() RegionId {
+	return s.RegionID
+}
+
+// GetLineID returns the value of LineID.
+func (s *InternetBandwidth) GetLineID() InternetLineId {
+	return s.LineID
+}
+
+// GetScope returns the value of Scope.
+func (s *InternetBandwidth) GetScope() InternetBandwidthScope {
+	return s.Scope
+}
+
+// GetElasticIPID returns the value of ElasticIPID.
+func (s *InternetBandwidth) GetElasticIPID() OptElasticIpId {
+	return s.ElasticIPID
+}
+
+// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
+func (s *InternetBandwidth) GetVirtualPrivateCloudID() OptVirtualPrivateCloudId {
+	return s.VirtualPrivateCloudID
+}
+
+// GetIPPrefixAllocationID returns the value of IPPrefixAllocationID.
+func (s *InternetBandwidth) GetIPPrefixAllocationID() OptIpPrefixAllocationId {
+	return s.IPPrefixAllocationID
+}
+
+// GetBandwidthMbps returns the value of BandwidthMbps.
+func (s *InternetBandwidth) GetBandwidthMbps() int64 {
+	return s.BandwidthMbps
+}
+
+// GetInternetChargeType returns the value of InternetChargeType.
+func (s *InternetBandwidth) GetInternetChargeType() InternetBandwidthChargeType {
+	return s.InternetChargeType
+}
+
+// GetStatus returns the value of Status.
+func (s *InternetBandwidth) GetStatus() InternetBandwidthStatus {
+	return s.Status
+}
+
+// GetAccessState returns the value of AccessState.
+func (s *InternetBandwidth) GetAccessState() OptInternetBandwidthAccessState {
+	return s.AccessState
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *InternetBandwidth) GetCheckoutSessionID() OptUUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *InternetBandwidth) GetOrderID() OptUUID {
+	return s.OrderID
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *InternetBandwidth) GetSubscriptionID() OptUUID {
+	return s.SubscriptionID
+}
+
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *InternetBandwidth) GetSubscriptionItemID() OptUUID {
+	return s.SubscriptionItemID
+}
+
+// GetFailureReason returns the value of FailureReason.
+func (s *InternetBandwidth) GetFailureReason() OptString {
+	return s.FailureReason
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *InternetBandwidth) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetReleasedAt returns the value of ReleasedAt.
+func (s *InternetBandwidth) GetReleasedAt() OptDateTime {
+	return s.ReleasedAt
+}
+
+// GetReleaseSet returns the value of ReleaseSet.
+func (s *InternetBandwidth) GetReleaseSet() []ReleaseSetItem {
+	return s.ReleaseSet
+}
+
+// SetID sets the value of ID.
+func (s *InternetBandwidth) SetID(val InternetBandwidthId) {
+	s.ID = val
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *InternetBandwidth) SetProjectID(val uuid.UUID) {
+	s.ProjectID = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *InternetBandwidth) SetRegionID(val RegionId) {
+	s.RegionID = val
+}
+
+// SetLineID sets the value of LineID.
+func (s *InternetBandwidth) SetLineID(val InternetLineId) {
+	s.LineID = val
+}
+
+// SetScope sets the value of Scope.
+func (s *InternetBandwidth) SetScope(val InternetBandwidthScope) {
+	s.Scope = val
+}
+
+// SetElasticIPID sets the value of ElasticIPID.
+func (s *InternetBandwidth) SetElasticIPID(val OptElasticIpId) {
+	s.ElasticIPID = val
+}
+
+// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
+func (s *InternetBandwidth) SetVirtualPrivateCloudID(val OptVirtualPrivateCloudId) {
+	s.VirtualPrivateCloudID = val
+}
+
+// SetIPPrefixAllocationID sets the value of IPPrefixAllocationID.
+func (s *InternetBandwidth) SetIPPrefixAllocationID(val OptIpPrefixAllocationId) {
+	s.IPPrefixAllocationID = val
+}
+
+// SetBandwidthMbps sets the value of BandwidthMbps.
+func (s *InternetBandwidth) SetBandwidthMbps(val int64) {
+	s.BandwidthMbps = val
+}
+
+// SetInternetChargeType sets the value of InternetChargeType.
+func (s *InternetBandwidth) SetInternetChargeType(val InternetBandwidthChargeType) {
+	s.InternetChargeType = val
+}
+
+// SetStatus sets the value of Status.
+func (s *InternetBandwidth) SetStatus(val InternetBandwidthStatus) {
+	s.Status = val
+}
+
+// SetAccessState sets the value of AccessState.
+func (s *InternetBandwidth) SetAccessState(val OptInternetBandwidthAccessState) {
+	s.AccessState = val
+}
+
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *InternetBandwidth) SetCheckoutSessionID(val OptUUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *InternetBandwidth) SetOrderID(val OptUUID) {
+	s.OrderID = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *InternetBandwidth) SetSubscriptionID(val OptUUID) {
+	s.SubscriptionID = val
+}
+
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *InternetBandwidth) SetSubscriptionItemID(val OptUUID) {
+	s.SubscriptionItemID = val
+}
+
+// SetFailureReason sets the value of FailureReason.
+func (s *InternetBandwidth) SetFailureReason(val OptString) {
+	s.FailureReason = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *InternetBandwidth) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetReleasedAt sets the value of ReleasedAt.
+func (s *InternetBandwidth) SetReleasedAt(val OptDateTime) {
+	s.ReleasedAt = val
+}
+
+// SetReleaseSet sets the value of ReleaseSet.
+func (s *InternetBandwidth) SetReleaseSet(val []ReleaseSetItem) {
+	s.ReleaseSet = val
+}
+
+type InternetBandwidthAccessState string
 
 const (
-	InternetChargeTypeBandwidth InternetChargeType = "bandwidth"
-	InternetChargeTypeTraffic   InternetChargeType = "traffic"
+	InternetBandwidthAccessStatePending   InternetBandwidthAccessState = "pending"
+	InternetBandwidthAccessStateEnabled   InternetBandwidthAccessState = "enabled"
+	InternetBandwidthAccessStateSuspended InternetBandwidthAccessState = "suspended"
+	InternetBandwidthAccessStateReclaimed InternetBandwidthAccessState = "reclaimed"
 )
 
-// AllValues returns all InternetChargeType values.
-func (InternetChargeType) AllValues() []InternetChargeType {
-	return []InternetChargeType{
-		InternetChargeTypeBandwidth,
-		InternetChargeTypeTraffic,
+// AllValues returns all InternetBandwidthAccessState values.
+func (InternetBandwidthAccessState) AllValues() []InternetBandwidthAccessState {
+	return []InternetBandwidthAccessState{
+		InternetBandwidthAccessStatePending,
+		InternetBandwidthAccessStateEnabled,
+		InternetBandwidthAccessStateSuspended,
+		InternetBandwidthAccessStateReclaimed,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s InternetChargeType) MarshalText() ([]byte, error) {
+func (s InternetBandwidthAccessState) MarshalText() ([]byte, error) {
 	switch s {
-	case InternetChargeTypeBandwidth:
+	case InternetBandwidthAccessStatePending:
 		return []byte(s), nil
-	case InternetChargeTypeTraffic:
+	case InternetBandwidthAccessStateEnabled:
+		return []byte(s), nil
+	case InternetBandwidthAccessStateSuspended:
+		return []byte(s), nil
+	case InternetBandwidthAccessStateReclaimed:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -5522,18 +5467,1021 @@ func (s InternetChargeType) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *InternetChargeType) UnmarshalText(data []byte) error {
-	switch InternetChargeType(data) {
-	case InternetChargeTypeBandwidth:
-		*s = InternetChargeTypeBandwidth
+func (s *InternetBandwidthAccessState) UnmarshalText(data []byte) error {
+	switch InternetBandwidthAccessState(data) {
+	case InternetBandwidthAccessStatePending:
+		*s = InternetBandwidthAccessStatePending
 		return nil
-	case InternetChargeTypeTraffic:
-		*s = InternetChargeTypeTraffic
+	case InternetBandwidthAccessStateEnabled:
+		*s = InternetBandwidthAccessStateEnabled
+		return nil
+	case InternetBandwidthAccessStateSuspended:
+		*s = InternetBandwidthAccessStateSuspended
+		return nil
+	case InternetBandwidthAccessStateReclaimed:
+		*s = InternetBandwidthAccessStateReclaimed
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
+
+// Ref: #/components/schemas/InternetBandwidthBilling
+type InternetBandwidthBilling struct {
+	PriceID uuid.UUID `json:"price_id"`
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *InternetBandwidthBilling) GetPriceID() uuid.UUID {
+	return s.PriceID
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *InternetBandwidthBilling) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
+}
+
+// Ref: #/components/schemas/InternetBandwidthCancellation
+type InternetBandwidthCancellation struct {
+	ID          uuid.UUID                         `json:"id"`
+	Mode        InternetBandwidthCancellationMode `json:"mode"`
+	ScheduledAt OptDateTime                       `json:"scheduled_at"`
+}
+
+// GetID returns the value of ID.
+func (s *InternetBandwidthCancellation) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetMode returns the value of Mode.
+func (s *InternetBandwidthCancellation) GetMode() InternetBandwidthCancellationMode {
+	return s.Mode
+}
+
+// GetScheduledAt returns the value of ScheduledAt.
+func (s *InternetBandwidthCancellation) GetScheduledAt() OptDateTime {
+	return s.ScheduledAt
+}
+
+// SetID sets the value of ID.
+func (s *InternetBandwidthCancellation) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetMode sets the value of Mode.
+func (s *InternetBandwidthCancellation) SetMode(val InternetBandwidthCancellationMode) {
+	s.Mode = val
+}
+
+// SetScheduledAt sets the value of ScheduledAt.
+func (s *InternetBandwidthCancellation) SetScheduledAt(val OptDateTime) {
+	s.ScheduledAt = val
+}
+
+type InternetBandwidthCancellationMode string
+
+const (
+	InternetBandwidthCancellationModeImmediate InternetBandwidthCancellationMode = "immediate"
+	InternetBandwidthCancellationModePeriodEnd InternetBandwidthCancellationMode = "period_end"
+)
+
+// AllValues returns all InternetBandwidthCancellationMode values.
+func (InternetBandwidthCancellationMode) AllValues() []InternetBandwidthCancellationMode {
+	return []InternetBandwidthCancellationMode{
+		InternetBandwidthCancellationModeImmediate,
+		InternetBandwidthCancellationModePeriodEnd,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InternetBandwidthCancellationMode) MarshalText() ([]byte, error) {
+	switch s {
+	case InternetBandwidthCancellationModeImmediate:
+		return []byte(s), nil
+	case InternetBandwidthCancellationModePeriodEnd:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InternetBandwidthCancellationMode) UnmarshalText(data []byte) error {
+	switch InternetBandwidthCancellationMode(data) {
+	case InternetBandwidthCancellationModeImmediate:
+		*s = InternetBandwidthCancellationModeImmediate
+		return nil
+	case InternetBandwidthCancellationModePeriodEnd:
+		*s = InternetBandwidthCancellationModePeriodEnd
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/InternetBandwidthChargeType
+type InternetBandwidthChargeType string
+
+const (
+	InternetBandwidthChargeTypeBandwidth InternetBandwidthChargeType = "bandwidth"
+	InternetBandwidthChargeTypeTraffic   InternetBandwidthChargeType = "traffic"
+)
+
+// AllValues returns all InternetBandwidthChargeType values.
+func (InternetBandwidthChargeType) AllValues() []InternetBandwidthChargeType {
+	return []InternetBandwidthChargeType{
+		InternetBandwidthChargeTypeBandwidth,
+		InternetBandwidthChargeTypeTraffic,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InternetBandwidthChargeType) MarshalText() ([]byte, error) {
+	switch s {
+	case InternetBandwidthChargeTypeBandwidth:
+		return []byte(s), nil
+	case InternetBandwidthChargeTypeTraffic:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InternetBandwidthChargeType) UnmarshalText(data []byte) error {
+	switch InternetBandwidthChargeType(data) {
+	case InternetBandwidthChargeTypeBandwidth:
+		*s = InternetBandwidthChargeTypeBandwidth
+		return nil
+	case InternetBandwidthChargeTypeTraffic:
+		*s = InternetBandwidthChargeTypeTraffic
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type InternetBandwidthId string
+
+// Ref: #/components/schemas/InternetBandwidthListResponseBody
+type InternetBandwidthListResponseBody struct {
+	Items      []InternetBandwidth `json:"items"`
+	Pagination OffsetPagination    `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *InternetBandwidthListResponseBody) GetItems() []InternetBandwidth {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *InternetBandwidthListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *InternetBandwidthListResponseBody) SetItems(val []InternetBandwidth) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *InternetBandwidthListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// Ref: #/components/schemas/InternetBandwidthMutation
+type InternetBandwidthMutation struct {
+	InternetBandwidth InternetBandwidth                `json:"internet_bandwidth"`
+	CheckoutSessionID OptUUID                          `json:"checkout_session_id"`
+	OrderID           OptUUID                          `json:"order_id"`
+	Cancellation      OptInternetBandwidthCancellation `json:"cancellation"`
+}
+
+// GetInternetBandwidth returns the value of InternetBandwidth.
+func (s *InternetBandwidthMutation) GetInternetBandwidth() InternetBandwidth {
+	return s.InternetBandwidth
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *InternetBandwidthMutation) GetCheckoutSessionID() OptUUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *InternetBandwidthMutation) GetOrderID() OptUUID {
+	return s.OrderID
+}
+
+// GetCancellation returns the value of Cancellation.
+func (s *InternetBandwidthMutation) GetCancellation() OptInternetBandwidthCancellation {
+	return s.Cancellation
+}
+
+// SetInternetBandwidth sets the value of InternetBandwidth.
+func (s *InternetBandwidthMutation) SetInternetBandwidth(val InternetBandwidth) {
+	s.InternetBandwidth = val
+}
+
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *InternetBandwidthMutation) SetCheckoutSessionID(val OptUUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *InternetBandwidthMutation) SetOrderID(val OptUUID) {
+	s.OrderID = val
+}
+
+// SetCancellation sets the value of Cancellation.
+func (s *InternetBandwidthMutation) SetCancellation(val OptInternetBandwidthCancellation) {
+	s.Cancellation = val
+}
+
+// Independent bandwidth purchased with an address. Omit this component to hold an address without
+// public forwarding.
+// Ref: #/components/schemas/InternetBandwidthPurchase
+type InternetBandwidthPurchase struct {
+	BandwidthMbps      int64                       `json:"bandwidth_mbps"`
+	InternetChargeType InternetBandwidthChargeType `json:"internet_charge_type"`
+	Billing            InternetBandwidthBilling    `json:"billing"`
+}
+
+// GetBandwidthMbps returns the value of BandwidthMbps.
+func (s *InternetBandwidthPurchase) GetBandwidthMbps() int64 {
+	return s.BandwidthMbps
+}
+
+// GetInternetChargeType returns the value of InternetChargeType.
+func (s *InternetBandwidthPurchase) GetInternetChargeType() InternetBandwidthChargeType {
+	return s.InternetChargeType
+}
+
+// GetBilling returns the value of Billing.
+func (s *InternetBandwidthPurchase) GetBilling() InternetBandwidthBilling {
+	return s.Billing
+}
+
+// SetBandwidthMbps sets the value of BandwidthMbps.
+func (s *InternetBandwidthPurchase) SetBandwidthMbps(val int64) {
+	s.BandwidthMbps = val
+}
+
+// SetInternetChargeType sets the value of InternetChargeType.
+func (s *InternetBandwidthPurchase) SetInternetChargeType(val InternetBandwidthChargeType) {
+	s.InternetChargeType = val
+}
+
+// SetBilling sets the value of Billing.
+func (s *InternetBandwidthPurchase) SetBilling(val InternetBandwidthBilling) {
+	s.Billing = val
+}
+
+// An independent bandwidth service; its target address is retained.
+// Ref: #/components/schemas/InternetBandwidthReleaseResource
+type InternetBandwidthReleaseResource struct {
+	Type InternetBandwidthReleaseResourceType `json:"type"`
+	ID   InternetBandwidthId                  `json:"id"`
+	Name string                               `json:"name"`
+}
+
+// GetType returns the value of Type.
+func (s *InternetBandwidthReleaseResource) GetType() InternetBandwidthReleaseResourceType {
+	return s.Type
+}
+
+// GetID returns the value of ID.
+func (s *InternetBandwidthReleaseResource) GetID() InternetBandwidthId {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *InternetBandwidthReleaseResource) GetName() string {
+	return s.Name
+}
+
+// SetType sets the value of Type.
+func (s *InternetBandwidthReleaseResource) SetType(val InternetBandwidthReleaseResourceType) {
+	s.Type = val
+}
+
+// SetID sets the value of ID.
+func (s *InternetBandwidthReleaseResource) SetID(val InternetBandwidthId) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *InternetBandwidthReleaseResource) SetName(val string) {
+	s.Name = val
+}
+
+type InternetBandwidthReleaseResourceType string
+
+const (
+	InternetBandwidthReleaseResourceTypeInternetBandwidth InternetBandwidthReleaseResourceType = "internet_bandwidth"
+)
+
+// AllValues returns all InternetBandwidthReleaseResourceType values.
+func (InternetBandwidthReleaseResourceType) AllValues() []InternetBandwidthReleaseResourceType {
+	return []InternetBandwidthReleaseResourceType{
+		InternetBandwidthReleaseResourceTypeInternetBandwidth,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InternetBandwidthReleaseResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case InternetBandwidthReleaseResourceTypeInternetBandwidth:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InternetBandwidthReleaseResourceType) UnmarshalText(data []byte) error {
+	switch InternetBandwidthReleaseResourceType(data) {
+	case InternetBandwidthReleaseResourceTypeInternetBandwidth:
+		*s = InternetBandwidthReleaseResourceTypeInternetBandwidth
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/InternetBandwidthScope
+type InternetBandwidthScope string
+
+const (
+	InternetBandwidthScopeElasticIP InternetBandwidthScope = "elastic_ip"
+	InternetBandwidthScopeVpcIpv6   InternetBandwidthScope = "vpc_ipv6"
+)
+
+// AllValues returns all InternetBandwidthScope values.
+func (InternetBandwidthScope) AllValues() []InternetBandwidthScope {
+	return []InternetBandwidthScope{
+		InternetBandwidthScopeElasticIP,
+		InternetBandwidthScopeVpcIpv6,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InternetBandwidthScope) MarshalText() ([]byte, error) {
+	switch s {
+	case InternetBandwidthScopeElasticIP:
+		return []byte(s), nil
+	case InternetBandwidthScopeVpcIpv6:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InternetBandwidthScope) UnmarshalText(data []byte) error {
+	switch InternetBandwidthScope(data) {
+	case InternetBandwidthScopeElasticIP:
+		*s = InternetBandwidthScopeElasticIP
+		return nil
+	case InternetBandwidthScopeVpcIpv6:
+		*s = InternetBandwidthScopeVpcIpv6
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/InternetBandwidthStatus
+type InternetBandwidthStatus string
+
+const (
+	InternetBandwidthStatusPending    InternetBandwidthStatus = "pending"
+	InternetBandwidthStatusAvailable  InternetBandwidthStatus = "available"
+	InternetBandwidthStatusDeleted    InternetBandwidthStatus = "deleted"
+	InternetBandwidthStatusFailed     InternetBandwidthStatus = "failed"
+	InternetBandwidthStatusError      InternetBandwidthStatus = "error"
+	InternetBandwidthStatusUpdating   InternetBandwidthStatus = "updating"
+	InternetBandwidthStatusSuspending InternetBandwidthStatus = "suspending"
+	InternetBandwidthStatusResuming   InternetBandwidthStatus = "resuming"
+	InternetBandwidthStatusDeleting   InternetBandwidthStatus = "deleting"
+)
+
+// AllValues returns all InternetBandwidthStatus values.
+func (InternetBandwidthStatus) AllValues() []InternetBandwidthStatus {
+	return []InternetBandwidthStatus{
+		InternetBandwidthStatusPending,
+		InternetBandwidthStatusAvailable,
+		InternetBandwidthStatusDeleted,
+		InternetBandwidthStatusFailed,
+		InternetBandwidthStatusError,
+		InternetBandwidthStatusUpdating,
+		InternetBandwidthStatusSuspending,
+		InternetBandwidthStatusResuming,
+		InternetBandwidthStatusDeleting,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InternetBandwidthStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case InternetBandwidthStatusPending:
+		return []byte(s), nil
+	case InternetBandwidthStatusAvailable:
+		return []byte(s), nil
+	case InternetBandwidthStatusDeleted:
+		return []byte(s), nil
+	case InternetBandwidthStatusFailed:
+		return []byte(s), nil
+	case InternetBandwidthStatusError:
+		return []byte(s), nil
+	case InternetBandwidthStatusUpdating:
+		return []byte(s), nil
+	case InternetBandwidthStatusSuspending:
+		return []byte(s), nil
+	case InternetBandwidthStatusResuming:
+		return []byte(s), nil
+	case InternetBandwidthStatusDeleting:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InternetBandwidthStatus) UnmarshalText(data []byte) error {
+	switch InternetBandwidthStatus(data) {
+	case InternetBandwidthStatusPending:
+		*s = InternetBandwidthStatusPending
+		return nil
+	case InternetBandwidthStatusAvailable:
+		*s = InternetBandwidthStatusAvailable
+		return nil
+	case InternetBandwidthStatusDeleted:
+		*s = InternetBandwidthStatusDeleted
+		return nil
+	case InternetBandwidthStatusFailed:
+		*s = InternetBandwidthStatusFailed
+		return nil
+	case InternetBandwidthStatusError:
+		*s = InternetBandwidthStatusError
+		return nil
+	case InternetBandwidthStatusUpdating:
+		*s = InternetBandwidthStatusUpdating
+		return nil
+	case InternetBandwidthStatusSuspending:
+		*s = InternetBandwidthStatusSuspending
+		return nil
+	case InternetBandwidthStatusResuming:
+		*s = InternetBandwidthStatusResuming
+		return nil
+	case InternetBandwidthStatusDeleting:
+		*s = InternetBandwidthStatusDeleting
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/InternetBandwidthTrafficInterval
+type InternetBandwidthTrafficInterval string
+
+const (
+	InternetBandwidthTrafficIntervalHour InternetBandwidthTrafficInterval = "hour"
+	InternetBandwidthTrafficIntervalDay  InternetBandwidthTrafficInterval = "day"
+)
+
+// AllValues returns all InternetBandwidthTrafficInterval values.
+func (InternetBandwidthTrafficInterval) AllValues() []InternetBandwidthTrafficInterval {
+	return []InternetBandwidthTrafficInterval{
+		InternetBandwidthTrafficIntervalHour,
+		InternetBandwidthTrafficIntervalDay,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InternetBandwidthTrafficInterval) MarshalText() ([]byte, error) {
+	switch s {
+	case InternetBandwidthTrafficIntervalHour:
+		return []byte(s), nil
+	case InternetBandwidthTrafficIntervalDay:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InternetBandwidthTrafficInterval) UnmarshalText(data []byte) error {
+	switch InternetBandwidthTrafficInterval(data) {
+	case InternetBandwidthTrafficIntervalHour:
+		*s = InternetBandwidthTrafficIntervalHour
+		return nil
+	case InternetBandwidthTrafficIntervalDay:
+		*s = InternetBandwidthTrafficIntervalDay
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/InternetBandwidthTrafficUsage
+type InternetBandwidthTrafficUsage struct {
+	StartTime     time.Time `json:"start_time"`
+	EgressBytes   int64     `json:"egress_bytes"`
+	EgressPackets int64     `json:"egress_packets"`
+}
+
+// GetStartTime returns the value of StartTime.
+func (s *InternetBandwidthTrafficUsage) GetStartTime() time.Time {
+	return s.StartTime
+}
+
+// GetEgressBytes returns the value of EgressBytes.
+func (s *InternetBandwidthTrafficUsage) GetEgressBytes() int64 {
+	return s.EgressBytes
+}
+
+// GetEgressPackets returns the value of EgressPackets.
+func (s *InternetBandwidthTrafficUsage) GetEgressPackets() int64 {
+	return s.EgressPackets
+}
+
+// SetStartTime sets the value of StartTime.
+func (s *InternetBandwidthTrafficUsage) SetStartTime(val time.Time) {
+	s.StartTime = val
+}
+
+// SetEgressBytes sets the value of EgressBytes.
+func (s *InternetBandwidthTrafficUsage) SetEgressBytes(val int64) {
+	s.EgressBytes = val
+}
+
+// SetEgressPackets sets the value of EgressPackets.
+func (s *InternetBandwidthTrafficUsage) SetEgressPackets(val int64) {
+	s.EgressPackets = val
+}
+
+// Ref: #/components/schemas/InternetBandwidthTrafficUsageListResponseBody
+type InternetBandwidthTrafficUsageListResponseBody struct {
+	Items      []InternetBandwidthTrafficUsage `json:"items"`
+	Pagination OffsetPagination                `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *InternetBandwidthTrafficUsageListResponseBody) GetItems() []InternetBandwidthTrafficUsage {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *InternetBandwidthTrafficUsageListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *InternetBandwidthTrafficUsageListResponseBody) SetItems(val []InternetBandwidthTrafficUsage) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *InternetBandwidthTrafficUsageListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// An unbilled dual-stack VPC connection. Addresses and bandwidth retain separate lifecycles.
+// Ref: #/components/schemas/InternetGateway
+type InternetGateway struct {
+	ID                    InternetGatewayId     `json:"id"`
+	ProjectID             uuid.UUID             `json:"project_id"`
+	RegionID              RegionId              `json:"region_id"`
+	VirtualPrivateCloudID VirtualPrivateCloudId `json:"virtual_private_cloud_id"`
+	Name                  string                `json:"name"`
+	Description           string                `json:"description"`
+	Status                InternetGatewayStatus `json:"status"`
+	CreatedAt             time.Time             `json:"created_at"`
+}
+
+// GetID returns the value of ID.
+func (s *InternetGateway) GetID() InternetGatewayId {
+	return s.ID
+}
+
+// GetProjectID returns the value of ProjectID.
+func (s *InternetGateway) GetProjectID() uuid.UUID {
+	return s.ProjectID
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *InternetGateway) GetRegionID() RegionId {
+	return s.RegionID
+}
+
+// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
+func (s *InternetGateway) GetVirtualPrivateCloudID() VirtualPrivateCloudId {
+	return s.VirtualPrivateCloudID
+}
+
+// GetName returns the value of Name.
+func (s *InternetGateway) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *InternetGateway) GetDescription() string {
+	return s.Description
+}
+
+// GetStatus returns the value of Status.
+func (s *InternetGateway) GetStatus() InternetGatewayStatus {
+	return s.Status
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *InternetGateway) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetID sets the value of ID.
+func (s *InternetGateway) SetID(val InternetGatewayId) {
+	s.ID = val
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *InternetGateway) SetProjectID(val uuid.UUID) {
+	s.ProjectID = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *InternetGateway) SetRegionID(val RegionId) {
+	s.RegionID = val
+}
+
+// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
+func (s *InternetGateway) SetVirtualPrivateCloudID(val VirtualPrivateCloudId) {
+	s.VirtualPrivateCloudID = val
+}
+
+// SetName sets the value of Name.
+func (s *InternetGateway) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *InternetGateway) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetStatus sets the value of Status.
+func (s *InternetGateway) SetStatus(val InternetGatewayStatus) {
+	s.Status = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *InternetGateway) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+type InternetGatewayId string
+
+// Ref: #/components/schemas/InternetGatewayListResponseBody
+type InternetGatewayListResponseBody struct {
+	Items      []InternetGateway `json:"items"`
+	Pagination OffsetPagination  `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *InternetGatewayListResponseBody) GetItems() []InternetGateway {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *InternetGatewayListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *InternetGatewayListResponseBody) SetItems(val []InternetGateway) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *InternetGatewayListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+type InternetGatewayStatus string
+
+const (
+	InternetGatewayStatusPending   InternetGatewayStatus = "pending"
+	InternetGatewayStatusAvailable InternetGatewayStatus = "available"
+	InternetGatewayStatusDeleted   InternetGatewayStatus = "deleted"
+)
+
+// AllValues returns all InternetGatewayStatus values.
+func (InternetGatewayStatus) AllValues() []InternetGatewayStatus {
+	return []InternetGatewayStatus{
+		InternetGatewayStatusPending,
+		InternetGatewayStatusAvailable,
+		InternetGatewayStatusDeleted,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InternetGatewayStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case InternetGatewayStatusPending:
+		return []byte(s), nil
+	case InternetGatewayStatusAvailable:
+		return []byte(s), nil
+	case InternetGatewayStatusDeleted:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InternetGatewayStatus) UnmarshalText(data []byte) error {
+	switch InternetGatewayStatus(data) {
+	case InternetGatewayStatusPending:
+		*s = InternetGatewayStatusPending
+		return nil
+	case InternetGatewayStatusAvailable:
+		*s = InternetGatewayStatusAvailable
+		return nil
+	case InternetGatewayStatusDeleted:
+		*s = InternetGatewayStatusDeleted
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A regional commercial internet offering that can supply both IPv4 addresses and IPv6 prefixes.
+// Address and bandwidth services have independent subscriptions. IPv4 addresses are billed for their
+// full holding duration. Mbps duration is billed while bandwidth service is enabled, regardless of
+// address association; traffic billing measures actual outbound bytes. Billing owns prices and
+// checkout.
+// Ref: #/components/schemas/InternetLine
+type InternetLine struct {
+	ID          InternetLineId `json:"id"`
+	RegionID    RegionId       `json:"region_id"`
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	// The address product, metered for the full holding duration regardless of association or bandwidth
+	// purchase.
+	AddressBilling BillingComponent `json:"address_billing"`
+	// The independent bandwidth product. Duration billing runs while enabled regardless of address
+	// association; traffic billing measures actual outbound bytes only.
+	BandwidthBilling BillingComponent `json:"bandwidth_billing"`
+	// The least bandwidth a service on this line can be bought with, in Mbps.
+	MinBandwidthMbps int64 `json:"min_bandwidth_mbps"`
+	// The most bandwidth a service on this line can be bought with, in Mbps, at most 1000. An elastic IP
+	// associated with an instance is also held to the instance type's `max_bandwidth_mbps`.
+	MaxBandwidthMbps int64 `json:"max_bandwidth_mbps"`
+	// `on_sale` accepts new address and bandwidth purchases; `off_sale` refuses new purchases while
+	// existing services continue.
+	SaleStatus InternetLineSaleStatus `json:"sale_status"`
+	// Whether bandwidth services on this line can use `internet_charge_type: traffic`, billed by actual
+	// outbound bytes. `off_sale` refuses new traffic-billed bandwidth purchases.
+	TrafficSaleStatus InternetLineTrafficSaleStatus `json:"traffic_sale_status"`
+	CreatedAt         time.Time                     `json:"created_at"`
+	UpdatedAt         time.Time                     `json:"updated_at"`
+}
+
+// GetID returns the value of ID.
+func (s *InternetLine) GetID() InternetLineId {
+	return s.ID
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *InternetLine) GetRegionID() RegionId {
+	return s.RegionID
+}
+
+// GetName returns the value of Name.
+func (s *InternetLine) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *InternetLine) GetDescription() string {
+	return s.Description
+}
+
+// GetAddressBilling returns the value of AddressBilling.
+func (s *InternetLine) GetAddressBilling() BillingComponent {
+	return s.AddressBilling
+}
+
+// GetBandwidthBilling returns the value of BandwidthBilling.
+func (s *InternetLine) GetBandwidthBilling() BillingComponent {
+	return s.BandwidthBilling
+}
+
+// GetMinBandwidthMbps returns the value of MinBandwidthMbps.
+func (s *InternetLine) GetMinBandwidthMbps() int64 {
+	return s.MinBandwidthMbps
+}
+
+// GetMaxBandwidthMbps returns the value of MaxBandwidthMbps.
+func (s *InternetLine) GetMaxBandwidthMbps() int64 {
+	return s.MaxBandwidthMbps
+}
+
+// GetSaleStatus returns the value of SaleStatus.
+func (s *InternetLine) GetSaleStatus() InternetLineSaleStatus {
+	return s.SaleStatus
+}
+
+// GetTrafficSaleStatus returns the value of TrafficSaleStatus.
+func (s *InternetLine) GetTrafficSaleStatus() InternetLineTrafficSaleStatus {
+	return s.TrafficSaleStatus
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *InternetLine) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *InternetLine) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetID sets the value of ID.
+func (s *InternetLine) SetID(val InternetLineId) {
+	s.ID = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *InternetLine) SetRegionID(val RegionId) {
+	s.RegionID = val
+}
+
+// SetName sets the value of Name.
+func (s *InternetLine) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *InternetLine) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetAddressBilling sets the value of AddressBilling.
+func (s *InternetLine) SetAddressBilling(val BillingComponent) {
+	s.AddressBilling = val
+}
+
+// SetBandwidthBilling sets the value of BandwidthBilling.
+func (s *InternetLine) SetBandwidthBilling(val BillingComponent) {
+	s.BandwidthBilling = val
+}
+
+// SetMinBandwidthMbps sets the value of MinBandwidthMbps.
+func (s *InternetLine) SetMinBandwidthMbps(val int64) {
+	s.MinBandwidthMbps = val
+}
+
+// SetMaxBandwidthMbps sets the value of MaxBandwidthMbps.
+func (s *InternetLine) SetMaxBandwidthMbps(val int64) {
+	s.MaxBandwidthMbps = val
+}
+
+// SetSaleStatus sets the value of SaleStatus.
+func (s *InternetLine) SetSaleStatus(val InternetLineSaleStatus) {
+	s.SaleStatus = val
+}
+
+// SetTrafficSaleStatus sets the value of TrafficSaleStatus.
+func (s *InternetLine) SetTrafficSaleStatus(val InternetLineTrafficSaleStatus) {
+	s.TrafficSaleStatus = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *InternetLine) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *InternetLine) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+type InternetLineId string
+
+// Ref: #/components/schemas/InternetLineListResponseBody
+type InternetLineListResponseBody struct {
+	Items      []InternetLine   `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *InternetLineListResponseBody) GetItems() []InternetLine {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *InternetLineListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *InternetLineListResponseBody) SetItems(val []InternetLine) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *InternetLineListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// `on_sale` accepts new address and bandwidth purchases; `off_sale` refuses new purchases while
+// existing services continue.
+type InternetLineSaleStatus string
+
+const (
+	InternetLineSaleStatusOnSale  InternetLineSaleStatus = "on_sale"
+	InternetLineSaleStatusOffSale InternetLineSaleStatus = "off_sale"
+)
+
+// AllValues returns all InternetLineSaleStatus values.
+func (InternetLineSaleStatus) AllValues() []InternetLineSaleStatus {
+	return []InternetLineSaleStatus{
+		InternetLineSaleStatusOnSale,
+		InternetLineSaleStatusOffSale,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InternetLineSaleStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case InternetLineSaleStatusOnSale:
+		return []byte(s), nil
+	case InternetLineSaleStatusOffSale:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InternetLineSaleStatus) UnmarshalText(data []byte) error {
+	switch InternetLineSaleStatus(data) {
+	case InternetLineSaleStatusOnSale:
+		*s = InternetLineSaleStatusOnSale
+		return nil
+	case InternetLineSaleStatusOffSale:
+		*s = InternetLineSaleStatusOffSale
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Whether bandwidth services on this line can use `internet_charge_type: traffic`, billed by actual
+// outbound bytes. `off_sale` refuses new traffic-billed bandwidth purchases.
+type InternetLineTrafficSaleStatus string
+
+const (
+	InternetLineTrafficSaleStatusOnSale  InternetLineTrafficSaleStatus = "on_sale"
+	InternetLineTrafficSaleStatusOffSale InternetLineTrafficSaleStatus = "off_sale"
+)
+
+// AllValues returns all InternetLineTrafficSaleStatus values.
+func (InternetLineTrafficSaleStatus) AllValues() []InternetLineTrafficSaleStatus {
+	return []InternetLineTrafficSaleStatus{
+		InternetLineTrafficSaleStatusOnSale,
+		InternetLineTrafficSaleStatusOffSale,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InternetLineTrafficSaleStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case InternetLineTrafficSaleStatusOnSale:
+		return []byte(s), nil
+	case InternetLineTrafficSaleStatusOffSale:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InternetLineTrafficSaleStatus) UnmarshalText(data []byte) error {
+	switch InternetLineTrafficSaleStatus(data) {
+	case InternetLineTrafficSaleStatusOnSale:
+		*s = InternetLineTrafficSaleStatusOnSale
+		return nil
+	case InternetLineTrafficSaleStatusOffSale:
+		*s = InternetLineTrafficSaleStatusOffSale
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type IpPrefixAllocationId string
 
 type Ipv4HostAddress string
 
@@ -5895,13 +6843,14 @@ func (s *LaunchTemplateDataVolumeOnInstanceRelease) UnmarshalText(data []byte) e
 // template cannot name one.
 // Ref: #/components/schemas/LaunchTemplateElasticIp
 type LaunchTemplateElasticIp struct {
-	LineID             ElasticIpLineId       `json:"line_id"`
-	BandwidthMbps      int64                 `json:"bandwidth_mbps"`
-	InternetChargeType OptInternetChargeType `json:"internet_charge_type"`
+	LineID        InternetLineId `json:"line_id"`
+	BandwidthMbps int64          `json:"bandwidth_mbps"`
+	// Omitted values use bandwidth charging.
+	InternetChargeType OptInternetBandwidthChargeType `json:"internet_charge_type"`
 }
 
 // GetLineID returns the value of LineID.
-func (s *LaunchTemplateElasticIp) GetLineID() ElasticIpLineId {
+func (s *LaunchTemplateElasticIp) GetLineID() InternetLineId {
 	return s.LineID
 }
 
@@ -5911,12 +6860,12 @@ func (s *LaunchTemplateElasticIp) GetBandwidthMbps() int64 {
 }
 
 // GetInternetChargeType returns the value of InternetChargeType.
-func (s *LaunchTemplateElasticIp) GetInternetChargeType() OptInternetChargeType {
+func (s *LaunchTemplateElasticIp) GetInternetChargeType() OptInternetBandwidthChargeType {
 	return s.InternetChargeType
 }
 
 // SetLineID sets the value of LineID.
-func (s *LaunchTemplateElasticIp) SetLineID(val ElasticIpLineId) {
+func (s *LaunchTemplateElasticIp) SetLineID(val InternetLineId) {
 	s.LineID = val
 }
 
@@ -5926,7 +6875,7 @@ func (s *LaunchTemplateElasticIp) SetBandwidthMbps(val int64) {
 }
 
 // SetInternetChargeType sets the value of InternetChargeType.
-func (s *LaunchTemplateElasticIp) SetInternetChargeType(val OptInternetChargeType) {
+func (s *LaunchTemplateElasticIp) SetInternetChargeType(val OptInternetBandwidthChargeType) {
 	s.InternetChargeType = val
 }
 
@@ -6190,47 +7139,6 @@ func (s *LaunchTemplateVersionListResponseBody) SetItems(val []LaunchTemplateVer
 // SetPagination sets the value of Pagination.
 func (s *LaunchTemplateVersionListResponseBody) SetPagination(val OffsetPagination) {
 	s.Pagination = val
-}
-
-type ListElasticIPTrafficUsageInterval string
-
-const (
-	ListElasticIPTrafficUsageIntervalHour ListElasticIPTrafficUsageInterval = "hour"
-	ListElasticIPTrafficUsageIntervalDay  ListElasticIPTrafficUsageInterval = "day"
-)
-
-// AllValues returns all ListElasticIPTrafficUsageInterval values.
-func (ListElasticIPTrafficUsageInterval) AllValues() []ListElasticIPTrafficUsageInterval {
-	return []ListElasticIPTrafficUsageInterval{
-		ListElasticIPTrafficUsageIntervalHour,
-		ListElasticIPTrafficUsageIntervalDay,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ListElasticIPTrafficUsageInterval) MarshalText() ([]byte, error) {
-	switch s {
-	case ListElasticIPTrafficUsageIntervalHour:
-		return []byte(s), nil
-	case ListElasticIPTrafficUsageIntervalDay:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ListElasticIPTrafficUsageInterval) UnmarshalText(data []byte) error {
-	switch ListElasticIPTrafficUsageInterval(data) {
-	case ListElasticIPTrafficUsageIntervalHour:
-		*s = ListElasticIPTrafficUsageIntervalHour
-		return nil
-	case ListElasticIPTrafficUsageIntervalDay:
-		*s = ListElasticIPTrafficUsageIntervalDay
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Ref: #/components/schemas/NetworkInterface
@@ -7238,18 +8146,12 @@ func (s *NewDataVolumeOnInstanceRelease) UnmarshalText(data []byte) error {
 	}
 }
 
-// One IPv4 elastic IP created with this bandwidth configuration in the instance's order.
+// An independently subscribed IPv4 address, optionally with bandwidth, created with each instance.
 // Ref: #/components/schemas/NewElasticIp
 type NewElasticIp struct {
-	Type   NewElasticIpType `json:"type"`
-	LineID ElasticIpLineId  `json:"line_id"`
-	// Any whole number of Mbps within the line's `min_bandwidth_mbps` and `max_bandwidth_mbps`, otherwise
-	// refused with `ELASTIC_IP_BANDWIDTH_RANGE`.
-	BandwidthMbps      int64                 `json:"bandwidth_mbps"`
-	InternetChargeType OptInternetChargeType `json:"internet_charge_type"`
-	// The selected Billing price for this component. Required even when joining an existing subscription;
-	// Billing checks compatibility.
-	Billing BillingChoice `json:"billing"`
+	Type      NewElasticIpType             `json:"type"`
+	LineID    InternetLineId               `json:"line_id"`
+	Bandwidth OptInternetBandwidthPurchase `json:"bandwidth"`
 }
 
 // GetType returns the value of Type.
@@ -7258,23 +8160,13 @@ func (s *NewElasticIp) GetType() NewElasticIpType {
 }
 
 // GetLineID returns the value of LineID.
-func (s *NewElasticIp) GetLineID() ElasticIpLineId {
+func (s *NewElasticIp) GetLineID() InternetLineId {
 	return s.LineID
 }
 
-// GetBandwidthMbps returns the value of BandwidthMbps.
-func (s *NewElasticIp) GetBandwidthMbps() int64 {
-	return s.BandwidthMbps
-}
-
-// GetInternetChargeType returns the value of InternetChargeType.
-func (s *NewElasticIp) GetInternetChargeType() OptInternetChargeType {
-	return s.InternetChargeType
-}
-
-// GetBilling returns the value of Billing.
-func (s *NewElasticIp) GetBilling() BillingChoice {
-	return s.Billing
+// GetBandwidth returns the value of Bandwidth.
+func (s *NewElasticIp) GetBandwidth() OptInternetBandwidthPurchase {
+	return s.Bandwidth
 }
 
 // SetType sets the value of Type.
@@ -7283,23 +8175,13 @@ func (s *NewElasticIp) SetType(val NewElasticIpType) {
 }
 
 // SetLineID sets the value of LineID.
-func (s *NewElasticIp) SetLineID(val ElasticIpLineId) {
+func (s *NewElasticIp) SetLineID(val InternetLineId) {
 	s.LineID = val
 }
 
-// SetBandwidthMbps sets the value of BandwidthMbps.
-func (s *NewElasticIp) SetBandwidthMbps(val int64) {
-	s.BandwidthMbps = val
-}
-
-// SetInternetChargeType sets the value of InternetChargeType.
-func (s *NewElasticIp) SetInternetChargeType(val OptInternetChargeType) {
-	s.InternetChargeType = val
-}
-
-// SetBilling sets the value of Billing.
-func (s *NewElasticIp) SetBilling(val BillingChoice) {
-	s.Billing = val
+// SetBandwidth sets the value of Bandwidth.
+func (s *NewElasticIp) SetBandwidth(val OptInternetBandwidthPurchase) {
+	s.Bandwidth = val
 }
 
 type NewElasticIpType string
@@ -8065,6 +8947,51 @@ func (o NilInt64) Get() (v int64, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilInt64) Or(d int64) int64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilInternetBandwidthId returns new NilInternetBandwidthId with value set to v.
+func NewNilInternetBandwidthId(v InternetBandwidthId) NilInternetBandwidthId {
+	return NilInternetBandwidthId{
+		Value: v,
+	}
+}
+
+// NilInternetBandwidthId is nullable InternetBandwidthId.
+type NilInternetBandwidthId struct {
+	Value InternetBandwidthId
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilInternetBandwidthId) SetTo(v InternetBandwidthId) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilInternetBandwidthId) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilInternetBandwidthId) SetToNull() {
+	o.Null = true
+	var v InternetBandwidthId
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilInternetBandwidthId) Get() (v InternetBandwidthId, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilInternetBandwidthId) Or(d InternetBandwidthId) InternetBandwidthId {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9800,6 +10727,98 @@ func (o OptDateTime) Or(d time.Time) time.Time {
 	return d
 }
 
+// NewOptDeleteInternetBandwidthCancellationMode returns new OptDeleteInternetBandwidthCancellationMode with value set to v.
+func NewOptDeleteInternetBandwidthCancellationMode(v DeleteInternetBandwidthCancellationMode) OptDeleteInternetBandwidthCancellationMode {
+	return OptDeleteInternetBandwidthCancellationMode{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptDeleteInternetBandwidthCancellationMode is optional DeleteInternetBandwidthCancellationMode.
+type OptDeleteInternetBandwidthCancellationMode struct {
+	Value DeleteInternetBandwidthCancellationMode
+	Set   bool
+}
+
+// IsSet returns true if OptDeleteInternetBandwidthCancellationMode was set.
+func (o OptDeleteInternetBandwidthCancellationMode) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptDeleteInternetBandwidthCancellationMode) Reset() {
+	var v DeleteInternetBandwidthCancellationMode
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptDeleteInternetBandwidthCancellationMode) SetTo(v DeleteInternetBandwidthCancellationMode) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptDeleteInternetBandwidthCancellationMode) Get() (v DeleteInternetBandwidthCancellationMode, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptDeleteInternetBandwidthCancellationMode) Or(d DeleteInternetBandwidthCancellationMode) DeleteInternetBandwidthCancellationMode {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptElasticIpId returns new OptElasticIpId with value set to v.
+func NewOptElasticIpId(v ElasticIpId) OptElasticIpId {
+	return OptElasticIpId{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptElasticIpId is optional ElasticIpId.
+type OptElasticIpId struct {
+	Value ElasticIpId
+	Set   bool
+}
+
+// IsSet returns true if OptElasticIpId was set.
+func (o OptElasticIpId) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptElasticIpId) Reset() {
+	var v ElasticIpId
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptElasticIpId) SetTo(v ElasticIpId) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptElasticIpId) Get() (v ElasticIpId, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptElasticIpId) Or(d ElasticIpId) ElasticIpId {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptErrorStatusMetadata returns new OptErrorStatusMetadata with value set to v.
 func NewOptErrorStatusMetadata(v ErrorStatusMetadata) OptErrorStatusMetadata {
 	return OptErrorStatusMetadata{
@@ -10076,38 +11095,38 @@ func (o OptInt64) Or(d int64) int64 {
 	return d
 }
 
-// NewOptInternetChargeType returns new OptInternetChargeType with value set to v.
-func NewOptInternetChargeType(v InternetChargeType) OptInternetChargeType {
-	return OptInternetChargeType{
+// NewOptInternetBandwidthAccessState returns new OptInternetBandwidthAccessState with value set to v.
+func NewOptInternetBandwidthAccessState(v InternetBandwidthAccessState) OptInternetBandwidthAccessState {
+	return OptInternetBandwidthAccessState{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptInternetChargeType is optional InternetChargeType.
-type OptInternetChargeType struct {
-	Value InternetChargeType
+// OptInternetBandwidthAccessState is optional InternetBandwidthAccessState.
+type OptInternetBandwidthAccessState struct {
+	Value InternetBandwidthAccessState
 	Set   bool
 }
 
-// IsSet returns true if OptInternetChargeType was set.
-func (o OptInternetChargeType) IsSet() bool { return o.Set }
+// IsSet returns true if OptInternetBandwidthAccessState was set.
+func (o OptInternetBandwidthAccessState) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptInternetChargeType) Reset() {
-	var v InternetChargeType
+func (o *OptInternetBandwidthAccessState) Reset() {
+	var v InternetBandwidthAccessState
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptInternetChargeType) SetTo(v InternetChargeType) {
+func (o *OptInternetBandwidthAccessState) SetTo(v InternetBandwidthAccessState) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptInternetChargeType) Get() (v InternetChargeType, ok bool) {
+func (o OptInternetBandwidthAccessState) Get() (v InternetBandwidthAccessState, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -10115,7 +11134,283 @@ func (o OptInternetChargeType) Get() (v InternetChargeType, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptInternetChargeType) Or(d InternetChargeType) InternetChargeType {
+func (o OptInternetBandwidthAccessState) Or(d InternetBandwidthAccessState) InternetBandwidthAccessState {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptInternetBandwidthCancellation returns new OptInternetBandwidthCancellation with value set to v.
+func NewOptInternetBandwidthCancellation(v InternetBandwidthCancellation) OptInternetBandwidthCancellation {
+	return OptInternetBandwidthCancellation{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInternetBandwidthCancellation is optional InternetBandwidthCancellation.
+type OptInternetBandwidthCancellation struct {
+	Value InternetBandwidthCancellation
+	Set   bool
+}
+
+// IsSet returns true if OptInternetBandwidthCancellation was set.
+func (o OptInternetBandwidthCancellation) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInternetBandwidthCancellation) Reset() {
+	var v InternetBandwidthCancellation
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInternetBandwidthCancellation) SetTo(v InternetBandwidthCancellation) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInternetBandwidthCancellation) Get() (v InternetBandwidthCancellation, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInternetBandwidthCancellation) Or(d InternetBandwidthCancellation) InternetBandwidthCancellation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptInternetBandwidthChargeType returns new OptInternetBandwidthChargeType with value set to v.
+func NewOptInternetBandwidthChargeType(v InternetBandwidthChargeType) OptInternetBandwidthChargeType {
+	return OptInternetBandwidthChargeType{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInternetBandwidthChargeType is optional InternetBandwidthChargeType.
+type OptInternetBandwidthChargeType struct {
+	Value InternetBandwidthChargeType
+	Set   bool
+}
+
+// IsSet returns true if OptInternetBandwidthChargeType was set.
+func (o OptInternetBandwidthChargeType) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInternetBandwidthChargeType) Reset() {
+	var v InternetBandwidthChargeType
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInternetBandwidthChargeType) SetTo(v InternetBandwidthChargeType) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInternetBandwidthChargeType) Get() (v InternetBandwidthChargeType, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInternetBandwidthChargeType) Or(d InternetBandwidthChargeType) InternetBandwidthChargeType {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptInternetBandwidthPurchase returns new OptInternetBandwidthPurchase with value set to v.
+func NewOptInternetBandwidthPurchase(v InternetBandwidthPurchase) OptInternetBandwidthPurchase {
+	return OptInternetBandwidthPurchase{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInternetBandwidthPurchase is optional InternetBandwidthPurchase.
+type OptInternetBandwidthPurchase struct {
+	Value InternetBandwidthPurchase
+	Set   bool
+}
+
+// IsSet returns true if OptInternetBandwidthPurchase was set.
+func (o OptInternetBandwidthPurchase) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInternetBandwidthPurchase) Reset() {
+	var v InternetBandwidthPurchase
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInternetBandwidthPurchase) SetTo(v InternetBandwidthPurchase) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInternetBandwidthPurchase) Get() (v InternetBandwidthPurchase, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInternetBandwidthPurchase) Or(d InternetBandwidthPurchase) InternetBandwidthPurchase {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptInternetBandwidthScope returns new OptInternetBandwidthScope with value set to v.
+func NewOptInternetBandwidthScope(v InternetBandwidthScope) OptInternetBandwidthScope {
+	return OptInternetBandwidthScope{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInternetBandwidthScope is optional InternetBandwidthScope.
+type OptInternetBandwidthScope struct {
+	Value InternetBandwidthScope
+	Set   bool
+}
+
+// IsSet returns true if OptInternetBandwidthScope was set.
+func (o OptInternetBandwidthScope) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInternetBandwidthScope) Reset() {
+	var v InternetBandwidthScope
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInternetBandwidthScope) SetTo(v InternetBandwidthScope) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInternetBandwidthScope) Get() (v InternetBandwidthScope, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInternetBandwidthScope) Or(d InternetBandwidthScope) InternetBandwidthScope {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptInternetBandwidthTrafficInterval returns new OptInternetBandwidthTrafficInterval with value set to v.
+func NewOptInternetBandwidthTrafficInterval(v InternetBandwidthTrafficInterval) OptInternetBandwidthTrafficInterval {
+	return OptInternetBandwidthTrafficInterval{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInternetBandwidthTrafficInterval is optional InternetBandwidthTrafficInterval.
+type OptInternetBandwidthTrafficInterval struct {
+	Value InternetBandwidthTrafficInterval
+	Set   bool
+}
+
+// IsSet returns true if OptInternetBandwidthTrafficInterval was set.
+func (o OptInternetBandwidthTrafficInterval) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInternetBandwidthTrafficInterval) Reset() {
+	var v InternetBandwidthTrafficInterval
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInternetBandwidthTrafficInterval) SetTo(v InternetBandwidthTrafficInterval) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInternetBandwidthTrafficInterval) Get() (v InternetBandwidthTrafficInterval, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInternetBandwidthTrafficInterval) Or(d InternetBandwidthTrafficInterval) InternetBandwidthTrafficInterval {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptIpPrefixAllocationId returns new OptIpPrefixAllocationId with value set to v.
+func NewOptIpPrefixAllocationId(v IpPrefixAllocationId) OptIpPrefixAllocationId {
+	return OptIpPrefixAllocationId{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptIpPrefixAllocationId is optional IpPrefixAllocationId.
+type OptIpPrefixAllocationId struct {
+	Value IpPrefixAllocationId
+	Set   bool
+}
+
+// IsSet returns true if OptIpPrefixAllocationId was set.
+func (o OptIpPrefixAllocationId) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptIpPrefixAllocationId) Reset() {
+	var v IpPrefixAllocationId
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptIpPrefixAllocationId) SetTo(v IpPrefixAllocationId) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptIpPrefixAllocationId) Get() (v IpPrefixAllocationId, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptIpPrefixAllocationId) Or(d IpPrefixAllocationId) IpPrefixAllocationId {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -10444,52 +11739,6 @@ func (o OptLaunchTemplateReference) Or(d LaunchTemplateReference) LaunchTemplate
 	return d
 }
 
-// NewOptListElasticIPTrafficUsageInterval returns new OptListElasticIPTrafficUsageInterval with value set to v.
-func NewOptListElasticIPTrafficUsageInterval(v ListElasticIPTrafficUsageInterval) OptListElasticIPTrafficUsageInterval {
-	return OptListElasticIPTrafficUsageInterval{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptListElasticIPTrafficUsageInterval is optional ListElasticIPTrafficUsageInterval.
-type OptListElasticIPTrafficUsageInterval struct {
-	Value ListElasticIPTrafficUsageInterval
-	Set   bool
-}
-
-// IsSet returns true if OptListElasticIPTrafficUsageInterval was set.
-func (o OptListElasticIPTrafficUsageInterval) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptListElasticIPTrafficUsageInterval) Reset() {
-	var v ListElasticIPTrafficUsageInterval
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptListElasticIPTrafficUsageInterval) SetTo(v ListElasticIPTrafficUsageInterval) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptListElasticIPTrafficUsageInterval) Get() (v ListElasticIPTrafficUsageInterval, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptListElasticIPTrafficUsageInterval) Or(d ListElasticIPTrafficUsageInterval) ListElasticIPTrafficUsageInterval {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptNewBootVolumeOnInstanceRelease returns new OptNewBootVolumeOnInstanceRelease with value set to v.
 func NewOptNewBootVolumeOnInstanceRelease(v NewBootVolumeOnInstanceRelease) OptNewBootVolumeOnInstanceRelease {
 	return OptNewBootVolumeOnInstanceRelease{
@@ -10622,6 +11871,74 @@ func (o OptNewLaunchTemplateVersionLabels) Get() (v NewLaunchTemplateVersionLabe
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNewLaunchTemplateVersionLabels) Or(d NewLaunchTemplateVersionLabels) NewLaunchTemplateVersionLabels {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilInternetLineId returns new OptNilInternetLineId with value set to v.
+func NewOptNilInternetLineId(v InternetLineId) OptNilInternetLineId {
+	return OptNilInternetLineId{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilInternetLineId is optional nullable InternetLineId.
+type OptNilInternetLineId struct {
+	Value InternetLineId
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilInternetLineId was set.
+func (o OptNilInternetLineId) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilInternetLineId) Reset() {
+	var v InternetLineId
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilInternetLineId) SetTo(v InternetLineId) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilInternetLineId) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilInternetLineId) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v InternetLineId
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilInternetLineId) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilInternetLineId) Get() (v InternetLineId, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilInternetLineId) Or(d InternetLineId) InternetLineId {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -12603,13 +13920,14 @@ func (s *RegionResource) SetPrivateImageBilling(val BillingComponent) {
 // ReleaseResource represents sum type.
 type ReleaseResource struct {
 	// Type selects the active sum variant, switch on this field.
-	Type                          ReleaseResourceType
-	InstanceReleaseResource       InstanceReleaseResource
-	VolumeReleaseResource         VolumeReleaseResource
-	ElasticIpReleaseResource      ElasticIpReleaseResource
-	VolumeSnapshotReleaseResource VolumeSnapshotReleaseResource
-	VolumeBackupReleaseResource   VolumeBackupReleaseResource
-	PrivateImageReleaseResource   PrivateImageReleaseResource
+	Type                             ReleaseResourceType
+	InternetBandwidthReleaseResource InternetBandwidthReleaseResource
+	InstanceReleaseResource          InstanceReleaseResource
+	VolumeReleaseResource            VolumeReleaseResource
+	ElasticIpReleaseResource         ElasticIpReleaseResource
+	VolumeSnapshotReleaseResource    VolumeSnapshotReleaseResource
+	VolumeBackupReleaseResource      VolumeBackupReleaseResource
+	PrivateImageReleaseResource      PrivateImageReleaseResource
 }
 
 // ReleaseResourceType is oneOf type of ReleaseResource.
@@ -12617,13 +13935,19 @@ type ReleaseResourceType string
 
 // Possible values for ReleaseResourceType.
 const (
-	InstanceReleaseResourceReleaseResource       ReleaseResourceType = "instance"
-	VolumeReleaseResourceReleaseResource         ReleaseResourceType = "volume"
-	ElasticIpReleaseResourceReleaseResource      ReleaseResourceType = "elastic_ip"
-	VolumeSnapshotReleaseResourceReleaseResource ReleaseResourceType = "volume_snapshot"
-	VolumeBackupReleaseResourceReleaseResource   ReleaseResourceType = "volume_backup"
-	PrivateImageReleaseResourceReleaseResource   ReleaseResourceType = "private_image"
+	InternetBandwidthReleaseResourceReleaseResource ReleaseResourceType = "internet_bandwidth"
+	InstanceReleaseResourceReleaseResource          ReleaseResourceType = "instance"
+	VolumeReleaseResourceReleaseResource            ReleaseResourceType = "volume"
+	ElasticIpReleaseResourceReleaseResource         ReleaseResourceType = "elastic_ip"
+	VolumeSnapshotReleaseResourceReleaseResource    ReleaseResourceType = "volume_snapshot"
+	VolumeBackupReleaseResourceReleaseResource      ReleaseResourceType = "volume_backup"
+	PrivateImageReleaseResourceReleaseResource      ReleaseResourceType = "private_image"
 )
+
+// IsInternetBandwidthReleaseResource reports whether ReleaseResource is InternetBandwidthReleaseResource.
+func (s ReleaseResource) IsInternetBandwidthReleaseResource() bool {
+	return s.Type == InternetBandwidthReleaseResourceReleaseResource
+}
 
 // IsInstanceReleaseResource reports whether ReleaseResource is InstanceReleaseResource.
 func (s ReleaseResource) IsInstanceReleaseResource() bool {
@@ -12653,6 +13977,27 @@ func (s ReleaseResource) IsVolumeBackupReleaseResource() bool {
 // IsPrivateImageReleaseResource reports whether ReleaseResource is PrivateImageReleaseResource.
 func (s ReleaseResource) IsPrivateImageReleaseResource() bool {
 	return s.Type == PrivateImageReleaseResourceReleaseResource
+}
+
+// SetInternetBandwidthReleaseResource sets ReleaseResource to InternetBandwidthReleaseResource.
+func (s *ReleaseResource) SetInternetBandwidthReleaseResource(v InternetBandwidthReleaseResource) {
+	s.Type = InternetBandwidthReleaseResourceReleaseResource
+	s.InternetBandwidthReleaseResource = v
+}
+
+// GetInternetBandwidthReleaseResource returns InternetBandwidthReleaseResource and true boolean if ReleaseResource is InternetBandwidthReleaseResource.
+func (s ReleaseResource) GetInternetBandwidthReleaseResource() (v InternetBandwidthReleaseResource, ok bool) {
+	if !s.IsInternetBandwidthReleaseResource() {
+		return v, false
+	}
+	return s.InternetBandwidthReleaseResource, true
+}
+
+// NewInternetBandwidthReleaseResourceReleaseResource returns new ReleaseResource from InternetBandwidthReleaseResource.
+func NewInternetBandwidthReleaseResourceReleaseResource(v InternetBandwidthReleaseResource) ReleaseResource {
+	var s ReleaseResource
+	s.SetInternetBandwidthReleaseResource(v)
+	return s
 }
 
 // SetInstanceReleaseResource sets ReleaseResource to InstanceReleaseResource.
@@ -13572,71 +14917,6 @@ func (s *SuppliedPasswordType) UnmarshalText(data []byte) error {
 	}
 }
 
-// The traffic an elastic IP sent in one interval.
-// Ref: #/components/schemas/TrafficUsage
-type TrafficUsage struct {
-	// The start of the interval, in UTC.
-	StartTime     time.Time `json:"start_time"`
-	EgressBytes   int64     `json:"egress_bytes"`
-	EgressPackets int64     `json:"egress_packets"`
-}
-
-// GetStartTime returns the value of StartTime.
-func (s *TrafficUsage) GetStartTime() time.Time {
-	return s.StartTime
-}
-
-// GetEgressBytes returns the value of EgressBytes.
-func (s *TrafficUsage) GetEgressBytes() int64 {
-	return s.EgressBytes
-}
-
-// GetEgressPackets returns the value of EgressPackets.
-func (s *TrafficUsage) GetEgressPackets() int64 {
-	return s.EgressPackets
-}
-
-// SetStartTime sets the value of StartTime.
-func (s *TrafficUsage) SetStartTime(val time.Time) {
-	s.StartTime = val
-}
-
-// SetEgressBytes sets the value of EgressBytes.
-func (s *TrafficUsage) SetEgressBytes(val int64) {
-	s.EgressBytes = val
-}
-
-// SetEgressPackets sets the value of EgressPackets.
-func (s *TrafficUsage) SetEgressPackets(val int64) {
-	s.EgressPackets = val
-}
-
-// Ref: #/components/schemas/TrafficUsageListResponseBody
-type TrafficUsageListResponseBody struct {
-	Items      []TrafficUsage   `json:"items"`
-	Pagination OffsetPagination `json:"pagination"`
-}
-
-// GetItems returns the value of Items.
-func (s *TrafficUsageListResponseBody) GetItems() []TrafficUsage {
-	return s.Items
-}
-
-// GetPagination returns the value of Pagination.
-func (s *TrafficUsageListResponseBody) GetPagination() OffsetPagination {
-	return s.Pagination
-}
-
-// SetItems sets the value of Items.
-func (s *TrafficUsageListResponseBody) SetItems(val []TrafficUsage) {
-	s.Items = val
-}
-
-// SetPagination sets the value of Pagination.
-func (s *TrafficUsageListResponseBody) SetPagination(val OffsetPagination) {
-	s.Pagination = val
-}
-
 // The descriptive fields of an instance, all optional, at least one required.
 // Ref: #/components/schemas/UpdateInstanceRequestBody
 type UpdateInstanceRequestBody struct {
@@ -13689,6 +14969,84 @@ func (s *UpdateInstanceRequestBodyLabels) init() UpdateInstanceRequestBodyLabels
 		*s = m
 	}
 	return m
+}
+
+// Specify exactly one of bandwidth_mbps and internet_charge_type. Prepaid ceiling changes use the
+// existing subscription price through checkout; metered changes do not accept checkout options.
+// Ref: #/components/schemas/UpdateInternetBandwidthRequestBody
+type UpdateInternetBandwidthRequestBody struct {
+	BandwidthMbps      OptInt64                       `json:"bandwidth_mbps"`
+	InternetChargeType OptInternetBandwidthChargeType `json:"internet_charge_type"`
+	// The quote's proration instant, forwarded unchanged for an automatic prepaid ceiling change. Deferred
+	// checkout is repriced when completed. Refused for metered or charge-type changes.
+	ProrationDate OptDateTime        `json:"proration_date"`
+	Checkout      OptCheckoutOptions `json:"checkout"`
+}
+
+// GetBandwidthMbps returns the value of BandwidthMbps.
+func (s *UpdateInternetBandwidthRequestBody) GetBandwidthMbps() OptInt64 {
+	return s.BandwidthMbps
+}
+
+// GetInternetChargeType returns the value of InternetChargeType.
+func (s *UpdateInternetBandwidthRequestBody) GetInternetChargeType() OptInternetBandwidthChargeType {
+	return s.InternetChargeType
+}
+
+// GetProrationDate returns the value of ProrationDate.
+func (s *UpdateInternetBandwidthRequestBody) GetProrationDate() OptDateTime {
+	return s.ProrationDate
+}
+
+// GetCheckout returns the value of Checkout.
+func (s *UpdateInternetBandwidthRequestBody) GetCheckout() OptCheckoutOptions {
+	return s.Checkout
+}
+
+// SetBandwidthMbps sets the value of BandwidthMbps.
+func (s *UpdateInternetBandwidthRequestBody) SetBandwidthMbps(val OptInt64) {
+	s.BandwidthMbps = val
+}
+
+// SetInternetChargeType sets the value of InternetChargeType.
+func (s *UpdateInternetBandwidthRequestBody) SetInternetChargeType(val OptInternetBandwidthChargeType) {
+	s.InternetChargeType = val
+}
+
+// SetProrationDate sets the value of ProrationDate.
+func (s *UpdateInternetBandwidthRequestBody) SetProrationDate(val OptDateTime) {
+	s.ProrationDate = val
+}
+
+// SetCheckout sets the value of Checkout.
+func (s *UpdateInternetBandwidthRequestBody) SetCheckout(val OptCheckoutOptions) {
+	s.Checkout = val
+}
+
+// Ref: #/components/schemas/UpdateInternetGatewayRequestBody
+type UpdateInternetGatewayRequestBody struct {
+	Name        OptString `json:"name"`
+	Description OptString `json:"description"`
+}
+
+// GetName returns the value of Name.
+func (s *UpdateInternetGatewayRequestBody) GetName() OptString {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *UpdateInternetGatewayRequestBody) GetDescription() OptString {
+	return s.Description
+}
+
+// SetName sets the value of Name.
+func (s *UpdateInternetGatewayRequestBody) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *UpdateInternetGatewayRequestBody) SetDescription(val OptString) {
+	s.Description = val
 }
 
 // The fields to change, at least one.
@@ -13871,6 +15229,9 @@ type VirtualPrivateCloud struct {
 	RegionID RegionId              `json:"region_id"`
 	Name     string                `json:"name"`
 	Ipv4Cidr string                `json:"ipv4_cidr"`
+	// The internet line supplying this VPC's IPv6 prefix; null when IPv6 has no commercial line. Use its
+	// bandwidth product when purchasing VPC IPv6 bandwidth.
+	Ipv6InternetLineID OptNilInternetLineId `json:"ipv6_internet_line_id"`
 	// The /56 routed to the virtual private cloud, from which each of its subnets takes a /64; null while
 	// IPv6 is not enabled.
 	Ipv6Cidr NilString `json:"ipv6_cidr"`
@@ -13907,6 +15268,11 @@ func (s *VirtualPrivateCloud) GetName() string {
 // GetIpv4Cidr returns the value of Ipv4Cidr.
 func (s *VirtualPrivateCloud) GetIpv4Cidr() string {
 	return s.Ipv4Cidr
+}
+
+// GetIpv6InternetLineID returns the value of Ipv6InternetLineID.
+func (s *VirtualPrivateCloud) GetIpv6InternetLineID() OptNilInternetLineId {
+	return s.Ipv6InternetLineID
 }
 
 // GetIpv6Cidr returns the value of Ipv6Cidr.
@@ -13952,6 +15318,11 @@ func (s *VirtualPrivateCloud) SetName(val string) {
 // SetIpv4Cidr sets the value of Ipv4Cidr.
 func (s *VirtualPrivateCloud) SetIpv4Cidr(val string) {
 	s.Ipv4Cidr = val
+}
+
+// SetIpv6InternetLineID sets the value of Ipv6InternetLineID.
+func (s *VirtualPrivateCloud) SetIpv6InternetLineID(val OptNilInternetLineId) {
+	s.Ipv6InternetLineID = val
 }
 
 // SetIpv6Cidr sets the value of Ipv6Cidr.

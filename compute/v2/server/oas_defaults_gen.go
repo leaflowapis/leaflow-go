@@ -3,14 +3,6 @@
 package computev2server
 
 // setDefaults set default value of fields.
-func (s *ChangeElasticIpChargeTypeRequestBody) setDefaults() {
-	{
-		val := InternetChargeType("bandwidth")
-		s.InternetChargeType = val
-	}
-}
-
-// setDefaults set default value of fields.
 func (s *CheckoutOptions) setDefaults() {
 	{
 		val := CheckoutOptionsMode("automatic")
@@ -23,26 +15,10 @@ func (s *CheckoutOptions) setDefaults() {
 }
 
 // setDefaults set default value of fields.
-func (s *CreateElasticIpRequestBody) setDefaults() {
-	{
-		val := InternetChargeType("bandwidth")
-		s.InternetChargeType.SetTo(val)
-	}
-}
-
-// setDefaults set default value of fields.
 func (s *CreateInstanceRequestBody) setDefaults() {
 	{
 		val := int64(1)
 		s.Count.SetTo(val)
-	}
-}
-
-// setDefaults set default value of fields.
-func (s *ElasticIp) setDefaults() {
-	{
-		val := InternetChargeType("bandwidth")
-		s.InternetChargeType = val
 	}
 }
 
@@ -63,14 +39,6 @@ func (s *LaunchTemplateDataVolume) setDefaults() {
 }
 
 // setDefaults set default value of fields.
-func (s *LaunchTemplateElasticIp) setDefaults() {
-	{
-		val := InternetChargeType("bandwidth")
-		s.InternetChargeType.SetTo(val)
-	}
-}
-
-// setDefaults set default value of fields.
 func (s *NewBootVolume) setDefaults() {
 	{
 		val := NewBootVolumeOnInstanceRelease("delete")
@@ -83,13 +51,5 @@ func (s *NewDataVolume) setDefaults() {
 	{
 		val := NewDataVolumeOnInstanceRelease("delete")
 		s.OnInstanceRelease.SetTo(val)
-	}
-}
-
-// setDefaults set default value of fields.
-func (s *NewElasticIp) setDefaults() {
-	{
-		val := InternetChargeType("bandwidth")
-		s.InternetChargeType.SetTo(val)
 	}
 }

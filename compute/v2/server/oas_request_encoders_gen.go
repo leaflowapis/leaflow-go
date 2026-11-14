@@ -52,34 +52,6 @@ func encodeAttachInstanceVolumeRequest(
 	return nil
 }
 
-func encodeChangeElasticIPBandwidthRequest(
-	req *ChangeElasticIpBandwidthRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeChangeElasticIPChargeTypeRequest(
-	req *ChangeElasticIpChargeTypeRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
 func encodeCreateElasticIPRequest(
 	req *CreateElasticIpRequestBody,
 	r *http.Request,
@@ -96,6 +68,34 @@ func encodeCreateElasticIPRequest(
 
 func encodeCreateInstanceRequest(
 	req *CreateInstanceRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateInternetBandwidthRequest(
+	req *CreateInternetBandwidthRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateInternetGatewayRequest(
+	req *CreateInternetGatewayRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -432,6 +432,34 @@ func encodeRunInstanceCommandRequest(
 
 func encodeUpdateInstanceRequest(
 	req *UpdateInstanceRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateInternetBandwidthRequest(
+	req *UpdateInternetBandwidthRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateInternetGatewayRequest(
+	req *UpdateInternetGatewayRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

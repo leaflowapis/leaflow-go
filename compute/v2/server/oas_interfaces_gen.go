@@ -17,14 +17,6 @@ type AttachInstanceVolumeRes interface {
 	attachInstanceVolumeRes()
 }
 
-type ChangeElasticIPBandwidthRes interface {
-	changeElasticIPBandwidthRes()
-}
-
-type ChangeElasticIPChargeTypeRes interface {
-	changeElasticIPChargeTypeRes()
-}
-
 type CreateElasticIPRes interface {
 	createElasticIPRes()
 }
