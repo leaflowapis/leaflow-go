@@ -78,6 +78,19 @@ type Invoker interface {
 	//
 	// POST /v1/embeddings
 	CreateEmbeddings(ctx context.Context, request *EmbeddingRequest) (CreateEmbeddingsRes, error)
+	// CreateEnablement invokes create-enablement operation.
+	//
+	// Purchases the model platform enablement for this project. The enablement itself has no charge;
+	// requests are metered under it by the tokens they use. It takes no billing choice. Returns the
+	// enablement as `pending` with its Checkout Session; it becomes `active` once the order is accepted,
+	// which with automatic checkout and nothing to pay happens without further action.
+	//
+	// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or active. A refusal of
+	// the order by Billing is returned with Billing's code, such as `BILLING_PRICE_UNAVAILABLE` when the
+	// service has no price in the currency of the project's billing account.
+	//
+	// POST /api/v1/enablement
+	CreateEnablement(ctx context.Context, request *CreateEnablementRequestBody) (CreateEnablementRes, error)
 	// CreateImage invokes create-image operation.
 	//
 	// Generates one or more images from a text prompt. Unified multimodal image models (such as Qwen-Image
@@ -118,20 +131,6 @@ type Invoker interface {
 	//
 	// POST /v1/responses
 	CreateResponse(ctx context.Context, request *ResponseCreate) (CreateResponseRes, error)
-	// CreateService invokes create-service operation.
-	//
-	// Purchases the model platform service for this project. The service itself has no charge; requests
-	// are metered under it by the tokens they use. It takes no billing choice. Returns the service as
-	// `pending` with its Checkout Session; it becomes `active` once the order is accepted, which with
-	// automatic checkout and nothing to pay happens without further action.
-	//
-	// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or the service is active.
-	// A refusal of the order by Billing is returned with Billing's code, such as
-	// `BILLING_PRICE_UNAVAILABLE` when the service has no price in the currency of the project's billing
-	// account.
-	//
-	// POST /api/v1/service
-	CreateService(ctx context.Context, request *CreateServiceRequestBody) (CreateServiceRes, error)
 	// CreateSpeech invokes create-speech operation.
 	//
 	// Generates audio from text. Read the selected model's capabilities.audio.voices and
@@ -197,6 +196,17 @@ type Invoker interface {
 	//
 	// GET /api/v1/keys/{keyId}
 	GetAPIKey(ctx context.Context, params GetAPIKeyParams) (GetAPIKeyRes, error)
+	// GetEnablement invokes get-enablement operation.
+	//
+	// The model platform enablement of the authenticated project. The forwarding endpoints accept its
+	// requests only while `status` is `active`; each request is then billed under `subscription_id`, per
+	// token, at the rates Billing holds for each model's `billing`.
+	//
+	// When the project is deleted, its API keys are revoked and the subscription is canceled; the
+	// enablement then reads `inactive` with `ended_at` set.
+	//
+	// GET /api/v1/enablement
+	GetEnablement(ctx context.Context) (GetEnablementRes, error)
 	// GetInferenceModel invokes get-inference-model operation.
 	//
 	// Get a callable model with capabilities and parameter limits.
@@ -250,17 +260,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/requests/{requestId}
 	GetRequest(ctx context.Context, params GetRequestParams) (GetRequestRes, error)
-	// GetService invokes get-service operation.
-	//
-	// The model platform service of the authenticated project. The forwarding endpoints accept its
-	// requests only while `status` is `active`; each request is then billed under `subscription_id`, per
-	// token, at the rates Billing holds for each model's `billing`.
-	//
-	// When the project is deleted, its API keys are revoked and the subscription is canceled; the service
-	// then reads `inactive` with `ended_at` set.
-	//
-	// GET /api/v1/service
-	GetService(ctx context.Context) (GetServiceRes, error)
 	// GetUsageSummary invokes get-usage-summary operation.
 	//
 	// `from` and `to` are required and may span no more than 400 days. Both carry a timezone offset, so
@@ -1098,6 +1097,138 @@ func (c *Client) sendCreateEmbeddings(ctx context.Context, request *EmbeddingReq
 	return result, nil
 }
 
+// CreateEnablement invokes create-enablement operation.
+//
+// Purchases the model platform enablement for this project. The enablement itself has no charge;
+// requests are metered under it by the tokens they use. It takes no billing choice. Returns the
+// enablement as `pending` with its Checkout Session; it becomes `active` once the order is accepted,
+// which with automatic checkout and nothing to pay happens without further action.
+//
+// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or active. A refusal of
+// the order by Billing is returned with Billing's code, such as `BILLING_PRICE_UNAVAILABLE` when the
+// service has no price in the currency of the project's billing account.
+//
+// POST /api/v1/enablement
+func (c *Client) CreateEnablement(ctx context.Context, request *CreateEnablementRequestBody) (CreateEnablementRes, error) {
+	res, err := c.sendCreateEnablement(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateEnablement(ctx context.Context, request *CreateEnablementRequestBody) (res CreateEnablementRes, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-enablement"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/enablement"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateEnablementOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/enablement"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateEnablementRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreateEnablementOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateEnablementResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // CreateImage invokes create-image operation.
 //
 // Generates one or more images from a text prompt. Unified multimodal image models (such as Qwen-Image
@@ -1598,139 +1729,6 @@ func (c *Client) sendCreateResponse(ctx context.Context, request *ResponseCreate
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateResponseResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CreateService invokes create-service operation.
-//
-// Purchases the model platform service for this project. The service itself has no charge; requests
-// are metered under it by the tokens they use. It takes no billing choice. Returns the service as
-// `pending` with its Checkout Session; it becomes `active` once the order is accepted, which with
-// automatic checkout and nothing to pay happens without further action.
-//
-// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or the service is active.
-// A refusal of the order by Billing is returned with Billing's code, such as
-// `BILLING_PRICE_UNAVAILABLE` when the service has no price in the currency of the project's billing
-// account.
-//
-// POST /api/v1/service
-func (c *Client) CreateService(ctx context.Context, request *CreateServiceRequestBody) (CreateServiceRes, error) {
-	res, err := c.sendCreateService(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendCreateService(ctx context.Context, request *CreateServiceRequestBody) (res CreateServiceRes, err error) {
-	// Validate request before sending.
-	if err := func() error {
-		if err := request.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return res, errors.Wrap(err, "validate")
-	}
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-service"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/service"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateServiceOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/service"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateServiceRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateServiceOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateServiceResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2816,6 +2814,124 @@ func (c *Client) sendGetAPIKey(ctx context.Context, params GetAPIKeyParams) (res
 	return result, nil
 }
 
+// GetEnablement invokes get-enablement operation.
+//
+// The model platform enablement of the authenticated project. The forwarding endpoints accept its
+// requests only while `status` is `active`; each request is then billed under `subscription_id`, per
+// token, at the rates Billing holds for each model's `billing`.
+//
+// When the project is deleted, its API keys are revoked and the subscription is canceled; the
+// enablement then reads `inactive` with `ended_at` set.
+//
+// GET /api/v1/enablement
+func (c *Client) GetEnablement(ctx context.Context) (GetEnablementRes, error) {
+	res, err := c.sendGetEnablement(ctx)
+	return res, err
+}
+
+func (c *Client) sendGetEnablement(ctx context.Context) (res GetEnablementRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-enablement"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/enablement"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetEnablementOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/enablement"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetEnablementOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetEnablementResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetInferenceModel invokes get-inference-model operation.
 //
 // Get a callable model with capabilities and parameter limits.
@@ -3344,124 +3460,6 @@ func (c *Client) sendGetRequest(ctx context.Context, params GetRequestParams) (r
 
 	stage = "DecodeResponse"
 	result, err := decodeGetRequestResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// GetService invokes get-service operation.
-//
-// The model platform service of the authenticated project. The forwarding endpoints accept its
-// requests only while `status` is `active`; each request is then billed under `subscription_id`, per
-// token, at the rates Billing holds for each model's `billing`.
-//
-// When the project is deleted, its API keys are revoked and the subscription is canceled; the service
-// then reads `inactive` with `ended_at` set.
-//
-// GET /api/v1/service
-func (c *Client) GetService(ctx context.Context) (GetServiceRes, error) {
-	res, err := c.sendGetService(ctx)
-	return res, err
-}
-
-func (c *Client) sendGetService(ctx context.Context) (res GetServiceRes, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-service"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/service"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetServiceOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/service"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetServiceOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetServiceResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

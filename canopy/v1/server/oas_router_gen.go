@@ -11,6 +11,10 @@ import (
 )
 
 var (
+	rn9AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
+		"POST": "Authorization,Content-Type",
+	}
 	rn1AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
@@ -45,10 +49,6 @@ var (
 	}
 	rn38AllowedHeaders = map[string]string{
 		"GET": "Authorization",
-	}
-	rn14AllowedHeaders = map[string]string{
-		"GET":  "Authorization",
-		"POST": "Authorization,Content-Type",
 	}
 	rn48AllowedHeaders = map[string]string{
 		"GET": "Authorization",
@@ -89,13 +89,13 @@ var (
 	rn7AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
+	rn12AllowedHeaders = map[string]string{
+		"POST": "Authorization,Content-Type",
+	}
 	rn10AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn8AllowedHeaders = map[string]string{
-		"POST": "Authorization,Content-Type",
-	}
-	rn11AllowedHeaders = map[string]string{
+	rn13AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
 	rn45AllowedHeaders = map[string]string{
@@ -104,7 +104,7 @@ var (
 	rn32AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn12AllowedHeaders = map[string]string{
+	rn14AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
 	rn17AllowedHeaders = map[string]string{
@@ -190,6 +190,33 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 				switch elem[0] {
+				case 'e': // Prefix: "enablement"
+
+					if l := len("enablement"); len(elem) >= l && elem[0:l] == "enablement" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch r.Method {
+						case "GET":
+							s.handleGetEnablementRequest([0]string{}, elemIsEscaped, w, r)
+						case "POST":
+							s.handleCreateEnablementRequest([0]string{}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "GET,POST",
+								allowedHeaders: rn9AllowedHeaders,
+								acceptPost:     "application/json",
+								acceptPatch:    "",
+							})
+						}
+
+						return
+					}
+
 				case 'k': // Prefix: "keys"
 
 					if l := len("keys"); len(elem) >= l && elem[0:l] == "keys" {
@@ -540,33 +567,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 						}
 
-					}
-
-				case 's': // Prefix: "service"
-
-					if l := len("service"); len(elem) >= l && elem[0:l] == "service" {
-						elem = elem[l:]
-					} else {
-						break
-					}
-
-					if len(elem) == 0 {
-						// Leaf node.
-						switch r.Method {
-						case "GET":
-							s.handleGetServiceRequest([0]string{}, elemIsEscaped, w, r)
-						case "POST":
-							s.handleCreateServiceRequest([0]string{}, elemIsEscaped, w, r)
-						default:
-							s.notAllowed(w, r, notAllowedParams{
-								allowedMethods: "GET,POST",
-								allowedHeaders: rn14AllowedHeaders,
-								acceptPost:     "application/json",
-								acceptPatch:    "",
-							})
-						}
-
-						return
 					}
 
 				case 'u': // Prefix: "usage/"
@@ -1006,7 +1006,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn10AllowedHeaders,
+										allowedHeaders: rn12AllowedHeaders,
 										acceptPost:     "multipart/form-data",
 										acceptPatch:    "",
 									})
@@ -1031,7 +1031,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn8AllowedHeaders,
+										allowedHeaders: rn10AllowedHeaders,
 										acceptPost:     "application/json",
 										acceptPatch:    "",
 									})
@@ -1070,7 +1070,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn11AllowedHeaders,
+										allowedHeaders: rn13AllowedHeaders,
 										acceptPost:     "application/json",
 										acceptPatch:    "",
 									})
@@ -1159,7 +1159,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "POST",
-									allowedHeaders: rn12AllowedHeaders,
+									allowedHeaders: rn14AllowedHeaders,
 									acceptPost:     "application/json",
 									acceptPatch:    "",
 								})
@@ -1490,6 +1490,40 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					break
 				}
 				switch elem[0] {
+				case 'e': // Prefix: "enablement"
+
+					if l := len("enablement"); len(elem) >= l && elem[0:l] == "enablement" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch method {
+						case "GET":
+							r.name = GetEnablementOperation
+							r.summary = "Get the model platform enablement"
+							r.operationID = "get-enablement"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/enablement"
+							r.args = args
+							r.count = 0
+							return r, true
+						case "POST":
+							r.name = CreateEnablementOperation
+							r.summary = "Enable the model platform service"
+							r.operationID = "create-enablement"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/enablement"
+							r.args = args
+							r.count = 0
+							return r, true
+						default:
+							return
+						}
+					}
+
 				case 'k': // Prefix: "keys"
 
 					if l := len("keys"); len(elem) >= l && elem[0:l] == "keys" {
@@ -1840,40 +1874,6 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 						}
 
-					}
-
-				case 's': // Prefix: "service"
-
-					if l := len("service"); len(elem) >= l && elem[0:l] == "service" {
-						elem = elem[l:]
-					} else {
-						break
-					}
-
-					if len(elem) == 0 {
-						// Leaf node.
-						switch method {
-						case "GET":
-							r.name = GetServiceOperation
-							r.summary = "Get the model platform service"
-							r.operationID = "get-service"
-							r.operationGroup = ""
-							r.pathPattern = "/api/v1/service"
-							r.args = args
-							r.count = 0
-							return r, true
-						case "POST":
-							r.name = CreateServiceOperation
-							r.summary = "Enable the model platform service"
-							r.operationID = "create-service"
-							r.operationGroup = ""
-							r.pathPattern = "/api/v1/service"
-							r.args = args
-							r.count = 0
-							return r, true
-						default:
-							return
-						}
 					}
 
 				case 'u': // Prefix: "usage/"

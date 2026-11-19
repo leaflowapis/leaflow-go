@@ -279,6 +279,60 @@ func encodeCreateEmbeddingsResponse(response CreateEmbeddingsRes, w http.Respons
 	}
 }
 
+func encodeCreateEnablementResponse(response CreateEnablementRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *CreateEnablementResponseBody:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(202)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *Error:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(409)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *ErrorStatusCode:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
 func encodeCreateImageResponse(response CreateImageRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *ImagesResponse:
@@ -448,60 +502,6 @@ func encodeCreateResponseResponse(response CreateResponseRes, w http.ResponseWri
 		return nil
 
 	case *InferenceErrorStatusCode:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		code := response.StatusCode
-		if code == 0 {
-			// Set default status code.
-			code = http.StatusOK
-		}
-		w.WriteHeader(code)
-		if code >= http.StatusInternalServerError {
-			span.SetStatus(codes.Error, http.StatusText(code))
-		}
-
-		e := new(jx.Encoder)
-		response.Response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		if code >= http.StatusInternalServerError {
-			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
-		}
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
-	}
-}
-
-func encodeCreateServiceResponse(response CreateServiceRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *CreateServiceResponseBody:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(202)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *Error:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(409)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *ErrorStatusCode:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		code := response.StatusCode
 		if code == 0 {
@@ -993,6 +993,48 @@ func encodeGetAPIKeyResponse(response GetAPIKeyRes, w http.ResponseWriter, span 
 	}
 }
 
+func encodeGetEnablementResponse(response GetEnablementRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *EnablementResource:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(200)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *ErrorStatusCode:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		code := response.StatusCode
+		if code == 0 {
+			// Set default status code.
+			code = http.StatusOK
+		}
+		w.WriteHeader(code)
+		if code >= http.StatusInternalServerError {
+			span.SetStatus(codes.Error, http.StatusText(code))
+		}
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		if code >= http.StatusInternalServerError {
+			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
+		}
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
 func encodeGetInferenceModelResponse(response GetInferenceModelRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *Model:
@@ -1122,48 +1164,6 @@ func encodeGetRateLimitResponse(response GetRateLimitRes, w http.ResponseWriter,
 func encodeGetRequestResponse(response GetRequestRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *RequestResource:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(200)
-
-		e := new(jx.Encoder)
-		response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		return nil
-
-	case *ErrorStatusCode:
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		code := response.StatusCode
-		if code == 0 {
-			// Set default status code.
-			code = http.StatusOK
-		}
-		w.WriteHeader(code)
-		if code >= http.StatusInternalServerError {
-			span.SetStatus(codes.Error, http.StatusText(code))
-		}
-
-		e := new(jx.Encoder)
-		response.Response.Encode(e)
-		if _, err := e.WriteTo(w); err != nil {
-			return errors.Wrap(err, "write")
-		}
-
-		if code >= http.StatusInternalServerError {
-			return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
-		}
-		return nil
-
-	default:
-		return errors.Errorf("unexpected response type: %T", response)
-	}
-}
-
-func encodeGetServiceResponse(response GetServiceRes, w http.ResponseWriter, span trace.Span) error {
-	switch response := response.(type) {
-	case *ServiceResource:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(200)
 

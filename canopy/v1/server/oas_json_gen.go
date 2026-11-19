@@ -2120,14 +2120,14 @@ func (s *CreateAPIKeyRequestBody) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
-func (s *CreateServiceRequestBody) Encode(e *jx.Encoder) {
+func (s *CreateEnablementRequestBody) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
 	e.ObjEnd()
 }
 
 // encodeFields encodes fields.
-func (s *CreateServiceRequestBody) encodeFields(e *jx.Encoder) {
+func (s *CreateEnablementRequestBody) encodeFields(e *jx.Encoder) {
 	{
 		if s.Checkout.Set {
 			e.FieldStart("checkout")
@@ -2136,14 +2136,14 @@ func (s *CreateServiceRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateServiceRequestBody = [1]string{
+var jsonFieldsNameOfCreateEnablementRequestBody = [1]string{
 	0: "checkout",
 }
 
-// Decode decodes CreateServiceRequestBody from json.
-func (s *CreateServiceRequestBody) Decode(d *jx.Decoder) error {
+// Decode decodes CreateEnablementRequestBody from json.
+func (s *CreateEnablementRequestBody) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode CreateServiceRequestBody to nil")
+		return errors.New("invalid: unable to decode CreateEnablementRequestBody to nil")
 	}
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
@@ -2163,37 +2163,37 @@ func (s *CreateServiceRequestBody) Decode(d *jx.Decoder) error {
 		}
 		return nil
 	}); err != nil {
-		return errors.Wrap(err, "decode CreateServiceRequestBody")
+		return errors.Wrap(err, "decode CreateEnablementRequestBody")
 	}
 
 	return nil
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s *CreateServiceRequestBody) MarshalJSON() ([]byte, error) {
+func (s *CreateEnablementRequestBody) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *CreateServiceRequestBody) UnmarshalJSON(data []byte) error {
+func (s *CreateEnablementRequestBody) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
 
 // Encode implements json.Marshaler.
-func (s *CreateServiceResponseBody) Encode(e *jx.Encoder) {
+func (s *CreateEnablementResponseBody) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
 	e.ObjEnd()
 }
 
 // encodeFields encodes fields.
-func (s *CreateServiceResponseBody) encodeFields(e *jx.Encoder) {
+func (s *CreateEnablementResponseBody) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("service")
-		s.Service.Encode(e)
+		e.FieldStart("enablement")
+		s.Enablement.Encode(e)
 	}
 	{
 		e.FieldStart("checkout_session_id")
@@ -2205,30 +2205,30 @@ func (s *CreateServiceResponseBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateServiceResponseBody = [3]string{
-	0: "service",
+var jsonFieldsNameOfCreateEnablementResponseBody = [3]string{
+	0: "enablement",
 	1: "checkout_session_id",
 	2: "order_id",
 }
 
-// Decode decodes CreateServiceResponseBody from json.
-func (s *CreateServiceResponseBody) Decode(d *jx.Decoder) error {
+// Decode decodes CreateEnablementResponseBody from json.
+func (s *CreateEnablementResponseBody) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode CreateServiceResponseBody to nil")
+		return errors.New("invalid: unable to decode CreateEnablementResponseBody to nil")
 	}
 	var requiredBitSet [1]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "service":
+		case "enablement":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				if err := s.Service.Decode(d); err != nil {
+				if err := s.Enablement.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"service\"")
+				return errors.Wrap(err, "decode field \"enablement\"")
 			}
 		case "checkout_session_id":
 			requiredBitSet[0] |= 1 << 1
@@ -2257,7 +2257,7 @@ func (s *CreateServiceResponseBody) Decode(d *jx.Decoder) error {
 		}
 		return nil
 	}); err != nil {
-		return errors.Wrap(err, "decode CreateServiceResponseBody")
+		return errors.Wrap(err, "decode CreateEnablementResponseBody")
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
@@ -2274,8 +2274,8 @@ func (s *CreateServiceResponseBody) Decode(d *jx.Decoder) error {
 				bitIdx := bits.TrailingZeros8(result)
 				fieldIdx := i*8 + bitIdx
 				var name string
-				if fieldIdx < len(jsonFieldsNameOfCreateServiceResponseBody) {
-					name = jsonFieldsNameOfCreateServiceResponseBody[fieldIdx]
+				if fieldIdx < len(jsonFieldsNameOfCreateEnablementResponseBody) {
+					name = jsonFieldsNameOfCreateEnablementResponseBody[fieldIdx]
 				} else {
 					name = strconv.Itoa(fieldIdx)
 				}
@@ -2296,14 +2296,14 @@ func (s *CreateServiceResponseBody) Decode(d *jx.Decoder) error {
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s *CreateServiceResponseBody) MarshalJSON() ([]byte, error) {
+func (s *CreateEnablementResponseBody) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *CreateServiceResponseBody) UnmarshalJSON(data []byte) error {
+func (s *CreateEnablementResponseBody) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -5190,6 +5190,293 @@ func (s EmbeddingResponse) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *EmbeddingResponse) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *EnablementResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *EnablementResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("status")
+		s.Status.Encode(e)
+	}
+	{
+		e.FieldStart("failure_reason")
+		s.FailureReason.Encode(e)
+	}
+	{
+		e.FieldStart("checkout_session_id")
+		s.CheckoutSessionID.Encode(e)
+	}
+	{
+		e.FieldStart("order_id")
+		s.OrderID.Encode(e)
+	}
+	{
+		e.FieldStart("plan_id")
+		s.PlanID.Encode(e)
+	}
+	{
+		e.FieldStart("subscription_id")
+		s.SubscriptionID.Encode(e)
+	}
+	{
+		e.FieldStart("activated_at")
+		s.ActivatedAt.Encode(e, json.EncodeDateTime)
+	}
+	{
+		e.FieldStart("ended_at")
+		s.EndedAt.Encode(e, json.EncodeDateTime)
+	}
+}
+
+var jsonFieldsNameOfEnablementResource = [8]string{
+	0: "status",
+	1: "failure_reason",
+	2: "checkout_session_id",
+	3: "order_id",
+	4: "plan_id",
+	5: "subscription_id",
+	6: "activated_at",
+	7: "ended_at",
+}
+
+// Decode decodes EnablementResource from json.
+func (s *EnablementResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode EnablementResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "status":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Status.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"status\"")
+			}
+		case "failure_reason":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.FailureReason.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"failure_reason\"")
+			}
+		case "checkout_session_id":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.CheckoutSessionID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"checkout_session_id\"")
+			}
+		case "order_id":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.OrderID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"order_id\"")
+			}
+		case "plan_id":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.PlanID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"plan_id\"")
+			}
+		case "subscription_id":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.SubscriptionID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"subscription_id\"")
+			}
+		case "activated_at":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				if err := s.ActivatedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"activated_at\"")
+			}
+		case "ended_at":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				if err := s.EndedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"ended_at\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode EnablementResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b11111111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfEnablementResource) {
+					name = jsonFieldsNameOfEnablementResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *EnablementResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *EnablementResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes EnablementResourceFailureReason as json.
+func (s EnablementResourceFailureReason) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes EnablementResourceFailureReason from json.
+func (s *EnablementResourceFailureReason) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode EnablementResourceFailureReason to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch EnablementResourceFailureReason(v) {
+	case EnablementResourceFailureReasonCheckoutExpired:
+		*s = EnablementResourceFailureReasonCheckoutExpired
+	case EnablementResourceFailureReasonOrderDeclined:
+		*s = EnablementResourceFailureReasonOrderDeclined
+	case EnablementResourceFailureReasonOrderCanceled:
+		*s = EnablementResourceFailureReasonOrderCanceled
+	case EnablementResourceFailureReasonOrderExpired:
+		*s = EnablementResourceFailureReasonOrderExpired
+	default:
+		*s = EnablementResourceFailureReason(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s EnablementResourceFailureReason) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *EnablementResourceFailureReason) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes EnablementResourceStatus as json.
+func (s EnablementResourceStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes EnablementResourceStatus from json.
+func (s *EnablementResourceStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode EnablementResourceStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch EnablementResourceStatus(v) {
+	case EnablementResourceStatusInactive:
+		*s = EnablementResourceStatusInactive
+	case EnablementResourceStatusPending:
+		*s = EnablementResourceStatusPending
+	case EnablementResourceStatusActive:
+		*s = EnablementResourceStatusActive
+	case EnablementResourceStatusFailed:
+		*s = EnablementResourceStatusFailed
+	default:
+		*s = EnablementResourceStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s EnablementResourceStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *EnablementResourceStatus) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -10721,6 +11008,50 @@ func (s *NilDateTime) UnmarshalJSON(data []byte) error {
 	return s.Decode(d, json.DecodeDateTime)
 }
 
+// Encode encodes EnablementResourceFailureReason as json.
+func (o NilEnablementResourceFailureReason) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes EnablementResourceFailureReason from json.
+func (o *NilEnablementResourceFailureReason) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilEnablementResourceFailureReason to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v EnablementResourceFailureReason
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilEnablementResourceFailureReason) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilEnablementResourceFailureReason) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes float64 as json.
 func (o NilFloat64) Encode(e *jx.Encoder) {
 	if o.Null {
@@ -11031,50 +11362,6 @@ func (s NilRequestTaskResource) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NilRequestTaskResource) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes ServiceResourceFailureReason as json.
-func (o NilServiceResourceFailureReason) Encode(e *jx.Encoder) {
-	if o.Null {
-		e.Null()
-		return
-	}
-	e.Str(string(o.Value))
-}
-
-// Decode decodes ServiceResourceFailureReason from json.
-func (o *NilServiceResourceFailureReason) Decode(d *jx.Decoder) error {
-	if o == nil {
-		return errors.New("invalid: unable to decode NilServiceResourceFailureReason to nil")
-	}
-	if d.Next() == jx.Null {
-		if err := d.Null(); err != nil {
-			return err
-		}
-
-		var v ServiceResourceFailureReason
-		o.Value = v
-		o.Null = true
-		return nil
-	}
-	o.Null = false
-	if err := o.Value.Decode(d); err != nil {
-		return err
-	}
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s NilServiceResourceFailureReason) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *NilServiceResourceFailureReason) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -14935,293 +15222,6 @@ func (s ResponseResource) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *ResponseResource) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode implements json.Marshaler.
-func (s *ServiceResource) Encode(e *jx.Encoder) {
-	e.ObjStart()
-	s.encodeFields(e)
-	e.ObjEnd()
-}
-
-// encodeFields encodes fields.
-func (s *ServiceResource) encodeFields(e *jx.Encoder) {
-	{
-		e.FieldStart("status")
-		s.Status.Encode(e)
-	}
-	{
-		e.FieldStart("failure_reason")
-		s.FailureReason.Encode(e)
-	}
-	{
-		e.FieldStart("checkout_session_id")
-		s.CheckoutSessionID.Encode(e)
-	}
-	{
-		e.FieldStart("order_id")
-		s.OrderID.Encode(e)
-	}
-	{
-		e.FieldStart("plan_id")
-		s.PlanID.Encode(e)
-	}
-	{
-		e.FieldStart("subscription_id")
-		s.SubscriptionID.Encode(e)
-	}
-	{
-		e.FieldStart("activated_at")
-		s.ActivatedAt.Encode(e, json.EncodeDateTime)
-	}
-	{
-		e.FieldStart("ended_at")
-		s.EndedAt.Encode(e, json.EncodeDateTime)
-	}
-}
-
-var jsonFieldsNameOfServiceResource = [8]string{
-	0: "status",
-	1: "failure_reason",
-	2: "checkout_session_id",
-	3: "order_id",
-	4: "plan_id",
-	5: "subscription_id",
-	6: "activated_at",
-	7: "ended_at",
-}
-
-// Decode decodes ServiceResource from json.
-func (s *ServiceResource) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode ServiceResource to nil")
-	}
-	var requiredBitSet [1]uint8
-
-	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
-		switch string(k) {
-		case "status":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				if err := s.Status.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"status\"")
-			}
-		case "failure_reason":
-			requiredBitSet[0] |= 1 << 1
-			if err := func() error {
-				if err := s.FailureReason.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"failure_reason\"")
-			}
-		case "checkout_session_id":
-			requiredBitSet[0] |= 1 << 2
-			if err := func() error {
-				if err := s.CheckoutSessionID.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"checkout_session_id\"")
-			}
-		case "order_id":
-			requiredBitSet[0] |= 1 << 3
-			if err := func() error {
-				if err := s.OrderID.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"order_id\"")
-			}
-		case "plan_id":
-			requiredBitSet[0] |= 1 << 4
-			if err := func() error {
-				if err := s.PlanID.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"plan_id\"")
-			}
-		case "subscription_id":
-			requiredBitSet[0] |= 1 << 5
-			if err := func() error {
-				if err := s.SubscriptionID.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"subscription_id\"")
-			}
-		case "activated_at":
-			requiredBitSet[0] |= 1 << 6
-			if err := func() error {
-				if err := s.ActivatedAt.Decode(d, json.DecodeDateTime); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"activated_at\"")
-			}
-		case "ended_at":
-			requiredBitSet[0] |= 1 << 7
-			if err := func() error {
-				if err := s.EndedAt.Decode(d, json.DecodeDateTime); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"ended_at\"")
-			}
-		default:
-			return errors.Errorf("unexpected field %q", k)
-		}
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "decode ServiceResource")
-	}
-	// Validate required fields.
-	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b11111111,
-	} {
-		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
-			// Mask only required fields and check equality to mask using XOR.
-			//
-			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
-			// Bits of fields which would be set are actually bits of missed fields.
-			missed := bits.OnesCount8(result)
-			for bitN := 0; bitN < missed; bitN++ {
-				bitIdx := bits.TrailingZeros8(result)
-				fieldIdx := i*8 + bitIdx
-				var name string
-				if fieldIdx < len(jsonFieldsNameOfServiceResource) {
-					name = jsonFieldsNameOfServiceResource[fieldIdx]
-				} else {
-					name = strconv.Itoa(fieldIdx)
-				}
-				failures = append(failures, validate.FieldError{
-					Name:  name,
-					Error: validate.ErrFieldRequired,
-				})
-				// Reset bit.
-				result &^= 1 << bitIdx
-			}
-		}
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s *ServiceResource) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *ServiceResource) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes ServiceResourceFailureReason as json.
-func (s ServiceResourceFailureReason) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes ServiceResourceFailureReason from json.
-func (s *ServiceResourceFailureReason) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode ServiceResourceFailureReason to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch ServiceResourceFailureReason(v) {
-	case ServiceResourceFailureReasonCheckoutExpired:
-		*s = ServiceResourceFailureReasonCheckoutExpired
-	case ServiceResourceFailureReasonOrderDeclined:
-		*s = ServiceResourceFailureReasonOrderDeclined
-	case ServiceResourceFailureReasonOrderCanceled:
-		*s = ServiceResourceFailureReasonOrderCanceled
-	case ServiceResourceFailureReasonOrderExpired:
-		*s = ServiceResourceFailureReasonOrderExpired
-	default:
-		*s = ServiceResourceFailureReason(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s ServiceResourceFailureReason) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *ServiceResourceFailureReason) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes ServiceResourceStatus as json.
-func (s ServiceResourceStatus) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes ServiceResourceStatus from json.
-func (s *ServiceResourceStatus) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode ServiceResourceStatus to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch ServiceResourceStatus(v) {
-	case ServiceResourceStatusInactive:
-		*s = ServiceResourceStatusInactive
-	case ServiceResourceStatusPending:
-		*s = ServiceResourceStatusPending
-	case ServiceResourceStatusActive:
-		*s = ServiceResourceStatusActive
-	case ServiceResourceStatusFailed:
-		*s = ServiceResourceStatusFailed
-	default:
-		*s = ServiceResourceStatus(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s ServiceResourceStatus) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *ServiceResourceStatus) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

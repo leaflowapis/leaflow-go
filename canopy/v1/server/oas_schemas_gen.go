@@ -1041,6 +1041,64 @@ func (s CreateChatCompletionOKTextEventStream) Read(p []byte) (n int, err error)
 
 func (*CreateChatCompletionOKTextEventStream) createChatCompletionRes() {}
 
+// Ref: #/components/schemas/CreateEnablementRequestBody
+type CreateEnablementRequestBody struct {
+	Checkout OptCheckoutOptions `json:"checkout"`
+}
+
+// GetCheckout returns the value of Checkout.
+func (s *CreateEnablementRequestBody) GetCheckout() OptCheckoutOptions {
+	return s.Checkout
+}
+
+// SetCheckout sets the value of Checkout.
+func (s *CreateEnablementRequestBody) SetCheckout(val OptCheckoutOptions) {
+	s.Checkout = val
+}
+
+// The enablement, `pending` until its order is accepted, and its Checkout Session.
+// Ref: #/components/schemas/CreateEnablementResponseBody
+type CreateEnablementResponseBody struct {
+	Enablement EnablementResource `json:"enablement"`
+	// The Billing Checkout Session of this enablement. With deferred checkout, the customer completes it
+	// in Billing.
+	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
+	// The order created when checkout completes, at once for automatic checkout; null until then.
+	OrderID NilUUID `json:"order_id"`
+}
+
+// GetEnablement returns the value of Enablement.
+func (s *CreateEnablementResponseBody) GetEnablement() EnablementResource {
+	return s.Enablement
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *CreateEnablementResponseBody) GetCheckoutSessionID() uuid.UUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *CreateEnablementResponseBody) GetOrderID() NilUUID {
+	return s.OrderID
+}
+
+// SetEnablement sets the value of Enablement.
+func (s *CreateEnablementResponseBody) SetEnablement(val EnablementResource) {
+	s.Enablement = val
+}
+
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *CreateEnablementResponseBody) SetCheckoutSessionID(val uuid.UUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *CreateEnablementResponseBody) SetOrderID(val NilUUID) {
+	s.OrderID = val
+}
+
+func (*CreateEnablementResponseBody) createEnablementRes() {}
+
 // Anthropic message stream events.
 type CreateMessageOKTextEventStream struct {
 	Data io.Reader
@@ -1073,64 +1131,6 @@ func (s CreateResponseOKTextEventStream) Read(p []byte) (n int, err error) {
 }
 
 func (*CreateResponseOKTextEventStream) createResponseRes() {}
-
-// Ref: #/components/schemas/CreateServiceRequestBody
-type CreateServiceRequestBody struct {
-	Checkout OptCheckoutOptions `json:"checkout"`
-}
-
-// GetCheckout returns the value of Checkout.
-func (s *CreateServiceRequestBody) GetCheckout() OptCheckoutOptions {
-	return s.Checkout
-}
-
-// SetCheckout sets the value of Checkout.
-func (s *CreateServiceRequestBody) SetCheckout(val OptCheckoutOptions) {
-	s.Checkout = val
-}
-
-// The service, `pending` until its order is accepted, and its Checkout Session.
-// Ref: #/components/schemas/CreateServiceResponseBody
-type CreateServiceResponseBody struct {
-	Service ServiceResource `json:"service"`
-	// The Billing Checkout Session of this enablement. With deferred checkout, the customer completes it
-	// in Billing.
-	CheckoutSessionID uuid.UUID `json:"checkout_session_id"`
-	// The order created when checkout completes, at once for automatic checkout; null until then.
-	OrderID NilUUID `json:"order_id"`
-}
-
-// GetService returns the value of Service.
-func (s *CreateServiceResponseBody) GetService() ServiceResource {
-	return s.Service
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *CreateServiceResponseBody) GetCheckoutSessionID() uuid.UUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *CreateServiceResponseBody) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// SetService sets the value of Service.
-func (s *CreateServiceResponseBody) SetService(val ServiceResource) {
-	s.Service = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *CreateServiceResponseBody) SetCheckoutSessionID(val uuid.UUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *CreateServiceResponseBody) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-func (*CreateServiceResponseBody) createServiceRes() {}
 
 type CreateSpeechOKApplicationOctetStream struct {
 	Data io.Reader
@@ -2300,6 +2300,238 @@ func (s *EmbeddingResponse) init() EmbeddingResponse {
 
 func (*EmbeddingResponse) createEmbeddingsRes() {}
 
+// The model platform enablement of a project.
+// Ref: #/components/schemas/EnablementResource
+type EnablementResource struct {
+	// `inactive` has never been enabled or its subscription has ended; `pending` awaits completion of its
+	// checkout and acceptance of its order; `active` accepts requests on the forwarding endpoints;
+	// `failed` means the enablement failed, as `failure_reason` states. An `inactive` or `failed`
+	// enablement can be enabled again.
+	Status EnablementResourceStatus `json:"status"`
+	// Why the enablement failed; null unless `status` is `failed`. `checkout_expired` means checkout was
+	// not completed before its Checkout Session expired; `order_declined` means Billing did not accept the
+	// order, for example because the billing account is suspended; `order_canceled` means the order was
+	// withdrawn; `order_expired` means it was not paid in time.
+	FailureReason NilEnablementResourceFailureReason `json:"failure_reason"`
+	// The Checkout Session of the latest enablement; null before any enablement.
+	CheckoutSessionID NilUUID `json:"checkout_session_id"`
+	// The order that enabled the service, or that the latest enablement's checkout created; null before
+	// checkout completes.
+	OrderID NilUUID `json:"order_id"`
+	// The Billing plan the service is sold under; null where the service is not sold. Price enabling it
+	// with Billing's `preview-checkout-session`, giving this plan with the `recurring` price type, the
+	// `metered` usage type and a quantity of 1; token usage is priced per model, at the rates Billing
+	// holds for each model's `billing`.
+	PlanID NilUUID `json:"plan_id"`
+	// The Billing subscription that requests are billed under; null until an enablement's checkout
+	// completes.
+	SubscriptionID NilUUID `json:"subscription_id"`
+	// When the enablement became active and billing began; null until then.
+	ActivatedAt NilDateTime `json:"activated_at"`
+	// When the subscription ended; null unless it has.
+	EndedAt NilDateTime `json:"ended_at"`
+}
+
+// GetStatus returns the value of Status.
+func (s *EnablementResource) GetStatus() EnablementResourceStatus {
+	return s.Status
+}
+
+// GetFailureReason returns the value of FailureReason.
+func (s *EnablementResource) GetFailureReason() NilEnablementResourceFailureReason {
+	return s.FailureReason
+}
+
+// GetCheckoutSessionID returns the value of CheckoutSessionID.
+func (s *EnablementResource) GetCheckoutSessionID() NilUUID {
+	return s.CheckoutSessionID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *EnablementResource) GetOrderID() NilUUID {
+	return s.OrderID
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *EnablementResource) GetPlanID() NilUUID {
+	return s.PlanID
+}
+
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *EnablementResource) GetSubscriptionID() NilUUID {
+	return s.SubscriptionID
+}
+
+// GetActivatedAt returns the value of ActivatedAt.
+func (s *EnablementResource) GetActivatedAt() NilDateTime {
+	return s.ActivatedAt
+}
+
+// GetEndedAt returns the value of EndedAt.
+func (s *EnablementResource) GetEndedAt() NilDateTime {
+	return s.EndedAt
+}
+
+// SetStatus sets the value of Status.
+func (s *EnablementResource) SetStatus(val EnablementResourceStatus) {
+	s.Status = val
+}
+
+// SetFailureReason sets the value of FailureReason.
+func (s *EnablementResource) SetFailureReason(val NilEnablementResourceFailureReason) {
+	s.FailureReason = val
+}
+
+// SetCheckoutSessionID sets the value of CheckoutSessionID.
+func (s *EnablementResource) SetCheckoutSessionID(val NilUUID) {
+	s.CheckoutSessionID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *EnablementResource) SetOrderID(val NilUUID) {
+	s.OrderID = val
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *EnablementResource) SetPlanID(val NilUUID) {
+	s.PlanID = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *EnablementResource) SetSubscriptionID(val NilUUID) {
+	s.SubscriptionID = val
+}
+
+// SetActivatedAt sets the value of ActivatedAt.
+func (s *EnablementResource) SetActivatedAt(val NilDateTime) {
+	s.ActivatedAt = val
+}
+
+// SetEndedAt sets the value of EndedAt.
+func (s *EnablementResource) SetEndedAt(val NilDateTime) {
+	s.EndedAt = val
+}
+
+func (*EnablementResource) getEnablementRes() {}
+
+// Why the enablement failed; null unless `status` is `failed`. `checkout_expired` means checkout was
+// not completed before its Checkout Session expired; `order_declined` means Billing did not accept the
+// order, for example because the billing account is suspended; `order_canceled` means the order was
+// withdrawn; `order_expired` means it was not paid in time.
+type EnablementResourceFailureReason string
+
+const (
+	EnablementResourceFailureReasonCheckoutExpired EnablementResourceFailureReason = "checkout_expired"
+	EnablementResourceFailureReasonOrderDeclined   EnablementResourceFailureReason = "order_declined"
+	EnablementResourceFailureReasonOrderCanceled   EnablementResourceFailureReason = "order_canceled"
+	EnablementResourceFailureReasonOrderExpired    EnablementResourceFailureReason = "order_expired"
+)
+
+// AllValues returns all EnablementResourceFailureReason values.
+func (EnablementResourceFailureReason) AllValues() []EnablementResourceFailureReason {
+	return []EnablementResourceFailureReason{
+		EnablementResourceFailureReasonCheckoutExpired,
+		EnablementResourceFailureReasonOrderDeclined,
+		EnablementResourceFailureReasonOrderCanceled,
+		EnablementResourceFailureReasonOrderExpired,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s EnablementResourceFailureReason) MarshalText() ([]byte, error) {
+	switch s {
+	case EnablementResourceFailureReasonCheckoutExpired:
+		return []byte(s), nil
+	case EnablementResourceFailureReasonOrderDeclined:
+		return []byte(s), nil
+	case EnablementResourceFailureReasonOrderCanceled:
+		return []byte(s), nil
+	case EnablementResourceFailureReasonOrderExpired:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *EnablementResourceFailureReason) UnmarshalText(data []byte) error {
+	switch EnablementResourceFailureReason(data) {
+	case EnablementResourceFailureReasonCheckoutExpired:
+		*s = EnablementResourceFailureReasonCheckoutExpired
+		return nil
+	case EnablementResourceFailureReasonOrderDeclined:
+		*s = EnablementResourceFailureReasonOrderDeclined
+		return nil
+	case EnablementResourceFailureReasonOrderCanceled:
+		*s = EnablementResourceFailureReasonOrderCanceled
+		return nil
+	case EnablementResourceFailureReasonOrderExpired:
+		*s = EnablementResourceFailureReasonOrderExpired
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `inactive` has never been enabled or its subscription has ended; `pending` awaits completion of its
+// checkout and acceptance of its order; `active` accepts requests on the forwarding endpoints;
+// `failed` means the enablement failed, as `failure_reason` states. An `inactive` or `failed`
+// enablement can be enabled again.
+type EnablementResourceStatus string
+
+const (
+	EnablementResourceStatusInactive EnablementResourceStatus = "inactive"
+	EnablementResourceStatusPending  EnablementResourceStatus = "pending"
+	EnablementResourceStatusActive   EnablementResourceStatus = "active"
+	EnablementResourceStatusFailed   EnablementResourceStatus = "failed"
+)
+
+// AllValues returns all EnablementResourceStatus values.
+func (EnablementResourceStatus) AllValues() []EnablementResourceStatus {
+	return []EnablementResourceStatus{
+		EnablementResourceStatusInactive,
+		EnablementResourceStatusPending,
+		EnablementResourceStatusActive,
+		EnablementResourceStatusFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s EnablementResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case EnablementResourceStatusInactive:
+		return []byte(s), nil
+	case EnablementResourceStatusPending:
+		return []byte(s), nil
+	case EnablementResourceStatusActive:
+		return []byte(s), nil
+	case EnablementResourceStatusFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *EnablementResourceStatus) UnmarshalText(data []byte) error {
+	switch EnablementResourceStatus(data) {
+	case EnablementResourceStatusInactive:
+		*s = EnablementResourceStatusInactive
+		return nil
+	case EnablementResourceStatusPending:
+		*s = EnablementResourceStatusPending
+		return nil
+	case EnablementResourceStatusActive:
+		*s = EnablementResourceStatusActive
+		return nil
+	case EnablementResourceStatusFailed:
+		*s = EnablementResourceStatusFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // A failed request. The envelope follows the Google REST error format: `code` is the HTTP status,
 // `status` is its canonical name, and `reason` is the stable machine-readable code that identifies the
 // failure.
@@ -2318,7 +2550,7 @@ func (s *Error) SetError(val ErrorStatus) {
 	s.Error = val
 }
 
-func (*Error) createServiceRes() {}
+func (*Error) createEnablementRes() {}
 
 // Ref: #/components/schemas/ErrorStatus
 type ErrorStatus struct {
@@ -2453,14 +2685,14 @@ func (s *ErrorStatusCode) SetResponse(val Error) {
 }
 
 func (*ErrorStatusCode) createAPIKeyRes()              {}
-func (*ErrorStatusCode) createServiceRes()             {}
+func (*ErrorStatusCode) createEnablementRes()          {}
 func (*ErrorStatusCode) disableAPIKeyRes()             {}
 func (*ErrorStatusCode) enableAPIKeyRes()              {}
 func (*ErrorStatusCode) getAPIKeyRes()                 {}
+func (*ErrorStatusCode) getEnablementRes()             {}
 func (*ErrorStatusCode) getModelRes()                  {}
 func (*ErrorStatusCode) getRateLimitRes()              {}
 func (*ErrorStatusCode) getRequestRes()                {}
-func (*ErrorStatusCode) getServiceRes()                {}
 func (*ErrorStatusCode) getUsageSummaryRes()           {}
 func (*ErrorStatusCode) getUsageTimelineRes()          {}
 func (*ErrorStatusCode) listAPIKeysRes()               {}
@@ -5242,6 +5474,51 @@ func (o NilDateTime) Or(d time.Time) time.Time {
 	return d
 }
 
+// NewNilEnablementResourceFailureReason returns new NilEnablementResourceFailureReason with value set to v.
+func NewNilEnablementResourceFailureReason(v EnablementResourceFailureReason) NilEnablementResourceFailureReason {
+	return NilEnablementResourceFailureReason{
+		Value: v,
+	}
+}
+
+// NilEnablementResourceFailureReason is nullable EnablementResourceFailureReason.
+type NilEnablementResourceFailureReason struct {
+	Value EnablementResourceFailureReason
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilEnablementResourceFailureReason) SetTo(v EnablementResourceFailureReason) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilEnablementResourceFailureReason) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilEnablementResourceFailureReason) SetToNull() {
+	o.Null = true
+	var v EnablementResourceFailureReason
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilEnablementResourceFailureReason) Get() (v EnablementResourceFailureReason, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilEnablementResourceFailureReason) Or(d EnablementResourceFailureReason) EnablementResourceFailureReason {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilFloat64 returns new NilFloat64 with value set to v.
 func NewNilFloat64(v float64) NilFloat64 {
 	return NilFloat64{
@@ -5551,51 +5828,6 @@ func (o NilRequestTaskResource) Get() (v RequestTaskResource, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilRequestTaskResource) Or(d RequestTaskResource) RequestTaskResource {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilServiceResourceFailureReason returns new NilServiceResourceFailureReason with value set to v.
-func NewNilServiceResourceFailureReason(v ServiceResourceFailureReason) NilServiceResourceFailureReason {
-	return NilServiceResourceFailureReason{
-		Value: v,
-	}
-}
-
-// NilServiceResourceFailureReason is nullable ServiceResourceFailureReason.
-type NilServiceResourceFailureReason struct {
-	Value ServiceResourceFailureReason
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilServiceResourceFailureReason) SetTo(v ServiceResourceFailureReason) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilServiceResourceFailureReason) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilServiceResourceFailureReason) SetToNull() {
-	o.Null = true
-	var v ServiceResourceFailureReason
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilServiceResourceFailureReason) Get() (v ServiceResourceFailureReason, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilServiceResourceFailureReason) Or(d ServiceResourceFailureReason) ServiceResourceFailureReason {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9047,238 +9279,6 @@ func (s *ResponseResource) init() ResponseResource {
 }
 
 func (*ResponseResource) createResponseRes() {}
-
-// The model platform service of a project.
-// Ref: #/components/schemas/ServiceResource
-type ServiceResource struct {
-	// `inactive` has never been enabled or its subscription has ended; `pending` awaits completion of its
-	// checkout and acceptance of its order; `active` accepts requests on the forwarding endpoints;
-	// `failed` means the enablement failed, as `failure_reason` states. An `inactive` or `failed` service
-	// can be enabled again.
-	Status ServiceResourceStatus `json:"status"`
-	// Why the enablement failed; null unless `status` is `failed`. `checkout_expired` means checkout was
-	// not completed before its Checkout Session expired; `order_declined` means Billing did not accept the
-	// order, for example because the billing account is suspended; `order_canceled` means the order was
-	// withdrawn; `order_expired` means it was not paid in time.
-	FailureReason NilServiceResourceFailureReason `json:"failure_reason"`
-	// The Checkout Session of the latest enablement; null before any enablement.
-	CheckoutSessionID NilUUID `json:"checkout_session_id"`
-	// The order that enabled the service, or that the latest enablement's checkout created; null before
-	// checkout completes.
-	OrderID NilUUID `json:"order_id"`
-	// The Billing plan the service is sold under; null where the service is not sold. Price enabling it
-	// with Billing's `preview-checkout-session`, giving this plan with the `recurring` price type, the
-	// `metered` usage type and a quantity of 1; token usage is priced per model, at the rates Billing
-	// holds for each model's `billing`.
-	PlanID NilUUID `json:"plan_id"`
-	// The Billing subscription that requests are billed under; null until an enablement's checkout
-	// completes.
-	SubscriptionID NilUUID `json:"subscription_id"`
-	// When the service became active and billing began; null until then.
-	ActivatedAt NilDateTime `json:"activated_at"`
-	// When the subscription ended; null unless it has.
-	EndedAt NilDateTime `json:"ended_at"`
-}
-
-// GetStatus returns the value of Status.
-func (s *ServiceResource) GetStatus() ServiceResourceStatus {
-	return s.Status
-}
-
-// GetFailureReason returns the value of FailureReason.
-func (s *ServiceResource) GetFailureReason() NilServiceResourceFailureReason {
-	return s.FailureReason
-}
-
-// GetCheckoutSessionID returns the value of CheckoutSessionID.
-func (s *ServiceResource) GetCheckoutSessionID() NilUUID {
-	return s.CheckoutSessionID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *ServiceResource) GetOrderID() NilUUID {
-	return s.OrderID
-}
-
-// GetPlanID returns the value of PlanID.
-func (s *ServiceResource) GetPlanID() NilUUID {
-	return s.PlanID
-}
-
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *ServiceResource) GetSubscriptionID() NilUUID {
-	return s.SubscriptionID
-}
-
-// GetActivatedAt returns the value of ActivatedAt.
-func (s *ServiceResource) GetActivatedAt() NilDateTime {
-	return s.ActivatedAt
-}
-
-// GetEndedAt returns the value of EndedAt.
-func (s *ServiceResource) GetEndedAt() NilDateTime {
-	return s.EndedAt
-}
-
-// SetStatus sets the value of Status.
-func (s *ServiceResource) SetStatus(val ServiceResourceStatus) {
-	s.Status = val
-}
-
-// SetFailureReason sets the value of FailureReason.
-func (s *ServiceResource) SetFailureReason(val NilServiceResourceFailureReason) {
-	s.FailureReason = val
-}
-
-// SetCheckoutSessionID sets the value of CheckoutSessionID.
-func (s *ServiceResource) SetCheckoutSessionID(val NilUUID) {
-	s.CheckoutSessionID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *ServiceResource) SetOrderID(val NilUUID) {
-	s.OrderID = val
-}
-
-// SetPlanID sets the value of PlanID.
-func (s *ServiceResource) SetPlanID(val NilUUID) {
-	s.PlanID = val
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *ServiceResource) SetSubscriptionID(val NilUUID) {
-	s.SubscriptionID = val
-}
-
-// SetActivatedAt sets the value of ActivatedAt.
-func (s *ServiceResource) SetActivatedAt(val NilDateTime) {
-	s.ActivatedAt = val
-}
-
-// SetEndedAt sets the value of EndedAt.
-func (s *ServiceResource) SetEndedAt(val NilDateTime) {
-	s.EndedAt = val
-}
-
-func (*ServiceResource) getServiceRes() {}
-
-// Why the enablement failed; null unless `status` is `failed`. `checkout_expired` means checkout was
-// not completed before its Checkout Session expired; `order_declined` means Billing did not accept the
-// order, for example because the billing account is suspended; `order_canceled` means the order was
-// withdrawn; `order_expired` means it was not paid in time.
-type ServiceResourceFailureReason string
-
-const (
-	ServiceResourceFailureReasonCheckoutExpired ServiceResourceFailureReason = "checkout_expired"
-	ServiceResourceFailureReasonOrderDeclined   ServiceResourceFailureReason = "order_declined"
-	ServiceResourceFailureReasonOrderCanceled   ServiceResourceFailureReason = "order_canceled"
-	ServiceResourceFailureReasonOrderExpired    ServiceResourceFailureReason = "order_expired"
-)
-
-// AllValues returns all ServiceResourceFailureReason values.
-func (ServiceResourceFailureReason) AllValues() []ServiceResourceFailureReason {
-	return []ServiceResourceFailureReason{
-		ServiceResourceFailureReasonCheckoutExpired,
-		ServiceResourceFailureReasonOrderDeclined,
-		ServiceResourceFailureReasonOrderCanceled,
-		ServiceResourceFailureReasonOrderExpired,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ServiceResourceFailureReason) MarshalText() ([]byte, error) {
-	switch s {
-	case ServiceResourceFailureReasonCheckoutExpired:
-		return []byte(s), nil
-	case ServiceResourceFailureReasonOrderDeclined:
-		return []byte(s), nil
-	case ServiceResourceFailureReasonOrderCanceled:
-		return []byte(s), nil
-	case ServiceResourceFailureReasonOrderExpired:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ServiceResourceFailureReason) UnmarshalText(data []byte) error {
-	switch ServiceResourceFailureReason(data) {
-	case ServiceResourceFailureReasonCheckoutExpired:
-		*s = ServiceResourceFailureReasonCheckoutExpired
-		return nil
-	case ServiceResourceFailureReasonOrderDeclined:
-		*s = ServiceResourceFailureReasonOrderDeclined
-		return nil
-	case ServiceResourceFailureReasonOrderCanceled:
-		*s = ServiceResourceFailureReasonOrderCanceled
-		return nil
-	case ServiceResourceFailureReasonOrderExpired:
-		*s = ServiceResourceFailureReasonOrderExpired
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// `inactive` has never been enabled or its subscription has ended; `pending` awaits completion of its
-// checkout and acceptance of its order; `active` accepts requests on the forwarding endpoints;
-// `failed` means the enablement failed, as `failure_reason` states. An `inactive` or `failed` service
-// can be enabled again.
-type ServiceResourceStatus string
-
-const (
-	ServiceResourceStatusInactive ServiceResourceStatus = "inactive"
-	ServiceResourceStatusPending  ServiceResourceStatus = "pending"
-	ServiceResourceStatusActive   ServiceResourceStatus = "active"
-	ServiceResourceStatusFailed   ServiceResourceStatus = "failed"
-)
-
-// AllValues returns all ServiceResourceStatus values.
-func (ServiceResourceStatus) AllValues() []ServiceResourceStatus {
-	return []ServiceResourceStatus{
-		ServiceResourceStatusInactive,
-		ServiceResourceStatusPending,
-		ServiceResourceStatusActive,
-		ServiceResourceStatusFailed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ServiceResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case ServiceResourceStatusInactive:
-		return []byte(s), nil
-	case ServiceResourceStatusPending:
-		return []byte(s), nil
-	case ServiceResourceStatusActive:
-		return []byte(s), nil
-	case ServiceResourceStatusFailed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ServiceResourceStatus) UnmarshalText(data []byte) error {
-	switch ServiceResourceStatus(data) {
-	case ServiceResourceStatusInactive:
-		*s = ServiceResourceStatusInactive
-		return nil
-	case ServiceResourceStatusPending:
-		*s = ServiceResourceStatusPending
-		return nil
-	case ServiceResourceStatusActive:
-		*s = ServiceResourceStatusActive
-		return nil
-	case ServiceResourceStatusFailed:
-		*s = ServiceResourceStatusFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
 
 // Ref: #/components/schemas/SourceUsageBucketResource
 type SourceUsageBucketResource struct {

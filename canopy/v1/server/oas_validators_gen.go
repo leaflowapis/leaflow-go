@@ -509,7 +509,7 @@ func (s *CreateAPIKeyRequestBody) Validate() error {
 	return nil
 }
 
-func (s *CreateServiceRequestBody) Validate() error {
+func (s *CreateEnablementRequestBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
@@ -539,20 +539,20 @@ func (s *CreateServiceRequestBody) Validate() error {
 	return nil
 }
 
-func (s *CreateServiceResponseBody) Validate() error {
+func (s *CreateEnablementResponseBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if err := s.Service.Validate(); err != nil {
+		if err := s.Enablement.Validate(); err != nil {
 			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "service",
+			Name:  "enablement",
 			Error: err,
 		})
 	}
@@ -1057,6 +1057,77 @@ func (s EmbeddingRequestInput) Validate() error {
 		return nil
 	default:
 		return errors.Errorf("invalid type %q", s.Type)
+	}
+}
+
+func (s *EnablementResource) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Status.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "status",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.FailureReason.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "failure_reason",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s EnablementResourceFailureReason) Validate() error {
+	switch s {
+	case "checkout_expired":
+		return nil
+	case "order_declined":
+		return nil
+	case "order_canceled":
+		return nil
+	case "order_expired":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s EnablementResourceStatus) Validate() error {
+	switch s {
+	case "inactive":
+		return nil
+	case "pending":
+		return nil
+	case "active":
+		return nil
+	case "failed":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
 	}
 }
 
@@ -3069,77 +3140,6 @@ func (s *ResponseCreate) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
-}
-
-func (s *ServiceResource) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Status.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "status",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if value, ok := s.FailureReason.Get(); ok {
-			if err := func() error {
-				if err := value.Validate(); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "failure_reason",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
-func (s ServiceResourceFailureReason) Validate() error {
-	switch s {
-	case "checkout_expired":
-		return nil
-	case "order_declined":
-		return nil
-	case "order_canceled":
-		return nil
-	case "order_expired":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
-}
-
-func (s ServiceResourceStatus) Validate() error {
-	switch s {
-	case "inactive":
-		return nil
-	case "pending":
-		return nil
-	case "active":
-		return nil
-	case "failed":
-		return nil
-	default:
-		return errors.Errorf("invalid value: %v", s)
-	}
 }
 
 func (s *SourceUsageBucketResource) Validate() error {

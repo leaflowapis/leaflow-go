@@ -77,6 +77,22 @@ func (UnimplementedHandler) CreateEmbeddings(ctx context.Context, req *Embedding
 	return r, ht.ErrNotImplemented
 }
 
+// CreateEnablement implements create-enablement operation.
+//
+// Purchases the model platform enablement for this project. The enablement itself has no charge;
+// requests are metered under it by the tokens they use. It takes no billing choice. Returns the
+// enablement as `pending` with its Checkout Session; it becomes `active` once the order is accepted,
+// which with automatic checkout and nothing to pay happens without further action.
+//
+// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or active. A refusal of
+// the order by Billing is returned with Billing's code, such as `BILLING_PRICE_UNAVAILABLE` when the
+// service has no price in the currency of the project's billing account.
+//
+// POST /api/v1/enablement
+func (UnimplementedHandler) CreateEnablement(ctx context.Context, req *CreateEnablementRequestBody) (r CreateEnablementRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CreateImage implements create-image operation.
 //
 // Generates one or more images from a text prompt. Unified multimodal image models (such as Qwen-Image
@@ -126,23 +142,6 @@ func (UnimplementedHandler) CreateMessage(ctx context.Context, req NativeRequest
 //
 // POST /v1/responses
 func (UnimplementedHandler) CreateResponse(ctx context.Context, req *ResponseCreate) (r CreateResponseRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateService implements create-service operation.
-//
-// Purchases the model platform service for this project. The service itself has no charge; requests
-// are metered under it by the tokens they use. It takes no billing choice. Returns the service as
-// `pending` with its Checkout Session; it becomes `active` once the order is accepted, which with
-// automatic checkout and nothing to pay happens without further action.
-//
-// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or the service is active.
-// A refusal of the order by Billing is returned with Billing's code, such as
-// `BILLING_PRICE_UNAVAILABLE` when the service has no price in the currency of the project's billing
-// account.
-//
-// POST /api/v1/service
-func (UnimplementedHandler) CreateService(ctx context.Context, req *CreateServiceRequestBody) (r CreateServiceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -235,6 +234,20 @@ func (UnimplementedHandler) GetAPIKey(ctx context.Context, params GetAPIKeyParam
 	return r, ht.ErrNotImplemented
 }
 
+// GetEnablement implements get-enablement operation.
+//
+// The model platform enablement of the authenticated project. The forwarding endpoints accept its
+// requests only while `status` is `active`; each request is then billed under `subscription_id`, per
+// token, at the rates Billing holds for each model's `billing`.
+//
+// When the project is deleted, its API keys are revoked and the subscription is canceled; the
+// enablement then reads `inactive` with `ended_at` set.
+//
+// GET /api/v1/enablement
+func (UnimplementedHandler) GetEnablement(ctx context.Context) (r GetEnablementRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetInferenceModel implements get-inference-model operation.
 //
 // Get a callable model with capabilities and parameter limits.
@@ -297,20 +310,6 @@ func (UnimplementedHandler) GetRateLimit(ctx context.Context) (r GetRateLimitRes
 //
 // GET /api/v1/requests/{requestId}
 func (UnimplementedHandler) GetRequest(ctx context.Context, params GetRequestParams) (r GetRequestRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetService implements get-service operation.
-//
-// The model platform service of the authenticated project. The forwarding endpoints accept its
-// requests only while `status` is `active`; each request is then billed under `subscription_id`, per
-// token, at the rates Billing holds for each model's `billing`.
-//
-// When the project is deleted, its API keys are revoked and the subscription is canceled; the service
-// then reads `inactive` with `ended_at` set.
-//
-// GET /api/v1/service
-func (UnimplementedHandler) GetService(ctx context.Context) (r GetServiceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

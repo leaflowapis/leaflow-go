@@ -57,6 +57,19 @@ type Handler interface {
 	//
 	// POST /v1/embeddings
 	CreateEmbeddings(ctx context.Context, req *EmbeddingRequest) (CreateEmbeddingsRes, error)
+	// CreateEnablement implements create-enablement operation.
+	//
+	// Purchases the model platform enablement for this project. The enablement itself has no charge;
+	// requests are metered under it by the tokens they use. It takes no billing choice. Returns the
+	// enablement as `pending` with its Checkout Session; it becomes `active` once the order is accepted,
+	// which with automatic checkout and nothing to pay happens without further action.
+	//
+	// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or active. A refusal of
+	// the order by Billing is returned with Billing's code, such as `BILLING_PRICE_UNAVAILABLE` when the
+	// service has no price in the currency of the project's billing account.
+	//
+	// POST /api/v1/enablement
+	CreateEnablement(ctx context.Context, req *CreateEnablementRequestBody) (CreateEnablementRes, error)
 	// CreateImage implements create-image operation.
 	//
 	// Generates one or more images from a text prompt. Unified multimodal image models (such as Qwen-Image
@@ -97,20 +110,6 @@ type Handler interface {
 	//
 	// POST /v1/responses
 	CreateResponse(ctx context.Context, req *ResponseCreate) (CreateResponseRes, error)
-	// CreateService implements create-service operation.
-	//
-	// Purchases the model platform service for this project. The service itself has no charge; requests
-	// are metered under it by the tokens they use. It takes no billing choice. Returns the service as
-	// `pending` with its Checkout Session; it becomes `active` once the order is accepted, which with
-	// automatic checkout and nothing to pay happens without further action.
-	//
-	// Refused with 409 `SERVICE_ALREADY_ENABLED` while an enablement is pending or the service is active.
-	// A refusal of the order by Billing is returned with Billing's code, such as
-	// `BILLING_PRICE_UNAVAILABLE` when the service has no price in the currency of the project's billing
-	// account.
-	//
-	// POST /api/v1/service
-	CreateService(ctx context.Context, req *CreateServiceRequestBody) (CreateServiceRes, error)
 	// CreateSpeech implements create-speech operation.
 	//
 	// Generates audio from text. Read the selected model's capabilities.audio.voices and
@@ -176,6 +175,17 @@ type Handler interface {
 	//
 	// GET /api/v1/keys/{keyId}
 	GetAPIKey(ctx context.Context, params GetAPIKeyParams) (GetAPIKeyRes, error)
+	// GetEnablement implements get-enablement operation.
+	//
+	// The model platform enablement of the authenticated project. The forwarding endpoints accept its
+	// requests only while `status` is `active`; each request is then billed under `subscription_id`, per
+	// token, at the rates Billing holds for each model's `billing`.
+	//
+	// When the project is deleted, its API keys are revoked and the subscription is canceled; the
+	// enablement then reads `inactive` with `ended_at` set.
+	//
+	// GET /api/v1/enablement
+	GetEnablement(ctx context.Context) (GetEnablementRes, error)
 	// GetInferenceModel implements get-inference-model operation.
 	//
 	// Get a callable model with capabilities and parameter limits.
@@ -229,17 +239,6 @@ type Handler interface {
 	//
 	// GET /api/v1/requests/{requestId}
 	GetRequest(ctx context.Context, params GetRequestParams) (GetRequestRes, error)
-	// GetService implements get-service operation.
-	//
-	// The model platform service of the authenticated project. The forwarding endpoints accept its
-	// requests only while `status` is `active`; each request is then billed under `subscription_id`, per
-	// token, at the rates Billing holds for each model's `billing`.
-	//
-	// When the project is deleted, its API keys are revoked and the subscription is canceled; the service
-	// then reads `inactive` with `ended_at` set.
-	//
-	// GET /api/v1/service
-	GetService(ctx context.Context) (GetServiceRes, error)
 	// GetUsageSummary implements get-usage-summary operation.
 	//
 	// `from` and `to` are required and may span no more than 400 days. Both carry a timezone offset, so

@@ -21,6 +21,10 @@ type CreateEmbeddingsRes interface {
 	createEmbeddingsRes()
 }
 
+type CreateEnablementRes interface {
+	createEnablementRes()
+}
+
 type CreateImageEditRes interface {
 	createImageEditRes()
 }
@@ -35,10 +39,6 @@ type CreateMessageRes interface {
 
 type CreateResponseRes interface {
 	createResponseRes()
-}
-
-type CreateServiceRes interface {
-	createServiceRes()
 }
 
 type CreateSpeechRes interface {
@@ -73,6 +73,10 @@ type GetAPIKeyRes interface {
 	getAPIKeyRes()
 }
 
+type GetEnablementRes interface {
+	getEnablementRes()
+}
+
 type GetInferenceModelRes interface {
 	getInferenceModelRes()
 }
@@ -87,10 +91,6 @@ type GetRateLimitRes interface {
 
 type GetRequestRes interface {
 	getRequestRes()
-}
-
-type GetServiceRes interface {
-	getServiceRes()
 }
 
 type GetUsageSummaryRes interface {
