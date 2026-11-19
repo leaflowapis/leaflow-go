@@ -5242,6 +5242,51 @@ func (o NilDateTime) Or(d time.Time) time.Time {
 	return d
 }
 
+// NewNilFloat64 returns new NilFloat64 with value set to v.
+func NewNilFloat64(v float64) NilFloat64 {
+	return NilFloat64{
+		Value: v,
+	}
+}
+
+// NilFloat64 is nullable float64.
+type NilFloat64 struct {
+	Value float64
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilFloat64) SetTo(v float64) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilFloat64) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilFloat64) SetToNull() {
+	o.Null = true
+	var v float64
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilFloat64) Get() (v float64, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilFloat64) Or(d float64) float64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilInt returns new NilInt with value set to v.
 func NewNilInt(v int) NilInt {
 	return NilInt{
@@ -7982,9 +8027,11 @@ type RateLimitResource struct {
 	// Exact API-key arrivals passing the project rate limiter in the last 60 seconds, including pre-model
 	// rejections. Null when the live store is unavailable.
 	Rpm NilInt64 `json:"rpm"`
-	// Normalized API-key token-usage deltas observed in the last 60 one-second buckets, including delayed
-	// streaming usage and estimates. Not a limit. Null when the live store is unavailable.
-	Tpm NilInt64 `json:"tpm"`
+	// Output throughput in tokens per second across completed requests with reported output or reasoning
+	// tokens in the last 60 seconds (total output tokens divided by total end-to-end request duration).
+	// Observational only, not a limit. Returns 0 when no eligible output requests completed in the window,
+	// or null when the live store is unavailable.
+	Tps NilFloat64 `json:"tps"`
 	// Length of the observation window in seconds.
 	WindowSeconds RateLimitResourceWindowSeconds `json:"window_seconds"`
 	// UTC RFC 3339 snapshot time, with one-second precision.
@@ -8001,9 +8048,9 @@ func (s *RateLimitResource) GetRpm() NilInt64 {
 	return s.Rpm
 }
 
-// GetTpm returns the value of Tpm.
-func (s *RateLimitResource) GetTpm() NilInt64 {
-	return s.Tpm
+// GetTps returns the value of Tps.
+func (s *RateLimitResource) GetTps() NilFloat64 {
+	return s.Tps
 }
 
 // GetWindowSeconds returns the value of WindowSeconds.
@@ -8026,9 +8073,9 @@ func (s *RateLimitResource) SetRpm(val NilInt64) {
 	s.Rpm = val
 }
 
-// SetTpm sets the value of Tpm.
-func (s *RateLimitResource) SetTpm(val NilInt64) {
-	s.Tpm = val
+// SetTps sets the value of Tps.
+func (s *RateLimitResource) SetTps(val NilFloat64) {
+	s.Tps = val
 }
 
 // SetWindowSeconds sets the value of WindowSeconds.

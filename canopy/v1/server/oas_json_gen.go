@@ -10721,6 +10721,52 @@ func (s *NilDateTime) UnmarshalJSON(data []byte) error {
 	return s.Decode(d, json.DecodeDateTime)
 }
 
+// Encode encodes float64 as json.
+func (o NilFloat64) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	e.Float64(float64(o.Value))
+}
+
+// Decode decodes float64 from json.
+func (o *NilFloat64) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilFloat64 to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v float64
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	v, err := d.Float64()
+	if err != nil {
+		return err
+	}
+	o.Value = float64(v)
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilFloat64) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilFloat64) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes int as json.
 func (o NilInt) Encode(e *jx.Encoder) {
 	if o.Null {
@@ -12808,8 +12854,8 @@ func (s *RateLimitResource) encodeFields(e *jx.Encoder) {
 		s.Rpm.Encode(e)
 	}
 	{
-		e.FieldStart("tpm")
-		s.Tpm.Encode(e)
+		e.FieldStart("tps")
+		s.Tps.Encode(e)
 	}
 	{
 		e.FieldStart("window_seconds")
@@ -12824,7 +12870,7 @@ func (s *RateLimitResource) encodeFields(e *jx.Encoder) {
 var jsonFieldsNameOfRateLimitResource = [5]string{
 	0: "rpm_limit",
 	1: "rpm",
-	2: "tpm",
+	2: "tps",
 	3: "window_seconds",
 	4: "observed_at",
 }
@@ -12860,15 +12906,15 @@ func (s *RateLimitResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"rpm\"")
 			}
-		case "tpm":
+		case "tps":
 			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				if err := s.Tpm.Decode(d); err != nil {
+				if err := s.Tps.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"tpm\"")
+				return errors.Wrap(err, "decode field \"tps\"")
 			}
 		case "window_seconds":
 			requiredBitSet[0] |= 1 << 3

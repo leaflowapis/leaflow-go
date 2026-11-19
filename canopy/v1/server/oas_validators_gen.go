@@ -2654,9 +2654,9 @@ func (s *RateLimitResource) Validate() error {
 		})
 	}
 	if err := func() error {
-		if value, ok := s.Tpm.Get(); ok {
+		if value, ok := s.Tps.Get(); ok {
 			if err := func() error {
-				if err := (validate.Int{
+				if err := (validate.Float{
 					MinSet:        true,
 					Min:           0,
 					MaxSet:        false,
@@ -2664,10 +2664,10 @@ func (s *RateLimitResource) Validate() error {
 					MinExclusive:  false,
 					MaxExclusive:  false,
 					MultipleOfSet: false,
-					MultipleOf:    0,
+					MultipleOf:    nil,
 					Pattern:       nil,
-				}).Validate(int64(value)); err != nil {
-					return errors.Wrap(err, "int")
+				}).Validate(float64(value)); err != nil {
+					return errors.Wrap(err, "float")
 				}
 				return nil
 			}(); err != nil {
@@ -2677,7 +2677,7 @@ func (s *RateLimitResource) Validate() error {
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "tpm",
+			Name:  "tps",
 			Error: err,
 		})
 	}
