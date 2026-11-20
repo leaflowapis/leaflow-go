@@ -303,7 +303,7 @@ type Invoker interface {
 	// List callable models with capabilities and parameter limits.
 	//
 	// GET /v1/models
-	ListInferenceModels(ctx context.Context) (ListInferenceModelsRes, error)
+	ListInferenceModels(ctx context.Context, params ListInferenceModelsParams) (ListInferenceModelsRes, error)
 	// ListModels invokes list-models operation.
 	//
 	// A model that has been retired does not appear here, while it remains readable individually.
@@ -319,7 +319,7 @@ type Invoker interface {
 	// `search-prices`.
 	//
 	// GET /api/v1/models
-	ListModels(ctx context.Context) (ListModelsRes, error)
+	ListModels(ctx context.Context, params ListModelsParams) (ListModelsRes, error)
 	// ListRequests invokes list-requests operation.
 	//
 	// Cursor-paged, most recent first. An empty `next_cursor` indicates the last page.
@@ -4371,12 +4371,12 @@ func (c *Client) sendListAPIKeys(ctx context.Context, params ListAPIKeysParams) 
 // List callable models with capabilities and parameter limits.
 //
 // GET /v1/models
-func (c *Client) ListInferenceModels(ctx context.Context) (ListInferenceModelsRes, error) {
-	res, err := c.sendListInferenceModels(ctx)
+func (c *Client) ListInferenceModels(ctx context.Context, params ListInferenceModelsParams) (ListInferenceModelsRes, error) {
+	res, err := c.sendListInferenceModels(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListInferenceModels(ctx context.Context) (res ListInferenceModelsRes, err error) {
+func (c *Client) sendListInferenceModels(ctx context.Context, params ListInferenceModelsParams) (res ListInferenceModelsRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-inference-models"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -4416,6 +4416,78 @@ func (c *Client) sendListInferenceModels(ctx context.Context) (res ListInference
 	var pathParts [1]string
 	pathParts[0] = "/v1/models"
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "category" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "category",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Category.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "endpoint" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "endpoint",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Endpoint.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "input_modality" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "input_modality",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.InputModality.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "output_modality" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "output_modality",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.OutputModality.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "GET", u)
@@ -4494,12 +4566,12 @@ func (c *Client) sendListInferenceModels(ctx context.Context) (res ListInference
 // `search-prices`.
 //
 // GET /api/v1/models
-func (c *Client) ListModels(ctx context.Context) (ListModelsRes, error) {
-	res, err := c.sendListModels(ctx)
+func (c *Client) ListModels(ctx context.Context, params ListModelsParams) (ListModelsRes, error) {
+	res, err := c.sendListModels(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListModels(ctx context.Context) (res ListModelsRes, err error) {
+func (c *Client) sendListModels(ctx context.Context, params ListModelsParams) (res ListModelsRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-models"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -4539,6 +4611,78 @@ func (c *Client) sendListModels(ctx context.Context) (res ListModelsRes, err err
 	var pathParts [1]string
 	pathParts[0] = "/api/v1/models"
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "category" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "category",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Category.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "endpoint" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "endpoint",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Endpoint.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "input_modality" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "input_modality",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.InputModality.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "output_modality" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "output_modality",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.OutputModality.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "GET", u)

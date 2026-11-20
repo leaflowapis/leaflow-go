@@ -5550,6 +5550,16 @@ func (s *Server) handleListInferenceModelsRequest(args [0]string, argsEscaped bo
 			return
 		}
 	}
+	params, err := decodeListInferenceModelsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
 
 	var rawBody []byte
 
@@ -5562,13 +5572,30 @@ func (s *Server) handleListInferenceModelsRequest(args [0]string, argsEscaped bo
 			OperationID:      "list-inference-models",
 			Body:             nil,
 			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
+			Params: middleware.Parameters{
+				{
+					Name: "category",
+					In:   "query",
+				}: params.Category,
+				{
+					Name: "endpoint",
+					In:   "query",
+				}: params.Endpoint,
+				{
+					Name: "input_modality",
+					In:   "query",
+				}: params.InputModality,
+				{
+					Name: "output_modality",
+					In:   "query",
+				}: params.OutputModality,
+			},
+			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = struct{}
+			Params   = ListInferenceModelsParams
 			Response = ListInferenceModelsRes
 		)
 		response, err = middleware.HookMiddleware[
@@ -5578,14 +5605,14 @@ func (s *Server) handleListInferenceModelsRequest(args [0]string, argsEscaped bo
 		](
 			m,
 			mreq,
-			nil,
+			unpackListInferenceModelsParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListInferenceModels(ctx)
+				response, err = s.h.ListInferenceModels(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListInferenceModels(ctx)
+		response, err = s.h.ListInferenceModels(ctx, params)
 	}
 	if err != nil {
 		defer recordError("Internal", err)
@@ -5732,6 +5759,16 @@ func (s *Server) handleListModelsRequest(args [0]string, argsEscaped bool, w htt
 			return
 		}
 	}
+	params, err := decodeListModelsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
 
 	var rawBody []byte
 
@@ -5744,13 +5781,30 @@ func (s *Server) handleListModelsRequest(args [0]string, argsEscaped bool, w htt
 			OperationID:      "list-models",
 			Body:             nil,
 			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
+			Params: middleware.Parameters{
+				{
+					Name: "category",
+					In:   "query",
+				}: params.Category,
+				{
+					Name: "endpoint",
+					In:   "query",
+				}: params.Endpoint,
+				{
+					Name: "input_modality",
+					In:   "query",
+				}: params.InputModality,
+				{
+					Name: "output_modality",
+					In:   "query",
+				}: params.OutputModality,
+			},
+			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = struct{}
+			Params   = ListModelsParams
 			Response = ListModelsRes
 		)
 		response, err = middleware.HookMiddleware[
@@ -5760,14 +5814,14 @@ func (s *Server) handleListModelsRequest(args [0]string, argsEscaped bool, w htt
 		](
 			m,
 			mreq,
-			nil,
+			unpackListModelsParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListModels(ctx)
+				response, err = s.h.ListModels(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListModels(ctx)
+		response, err = s.h.ListModels(ctx, params)
 	}
 	if err != nil {
 		defer recordError("Internal", err)

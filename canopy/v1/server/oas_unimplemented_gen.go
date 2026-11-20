@@ -371,7 +371,7 @@ func (UnimplementedHandler) ListAPIKeys(ctx context.Context, params ListAPIKeysP
 // List callable models with capabilities and parameter limits.
 //
 // GET /v1/models
-func (UnimplementedHandler) ListInferenceModels(ctx context.Context) (r ListInferenceModelsRes, _ error) {
+func (UnimplementedHandler) ListInferenceModels(ctx context.Context, params ListInferenceModelsParams) (r ListInferenceModelsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -390,7 +390,7 @@ func (UnimplementedHandler) ListInferenceModels(ctx context.Context) (r ListInfe
 // `search-prices`.
 //
 // GET /api/v1/models
-func (UnimplementedHandler) ListModels(ctx context.Context) (r ListModelsRes, _ error) {
+func (UnimplementedHandler) ListModels(ctx context.Context, params ListModelsParams) (r ListModelsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

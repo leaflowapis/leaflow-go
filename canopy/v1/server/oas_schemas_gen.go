@@ -4655,6 +4655,98 @@ func (s *ModelCapabilities) SetParameters(val OptNilModelParameterArray) {
 	s.Parameters = val
 }
 
+// High-level capability category derived from a model's reachable inference endpoints.
+// Ref: #/components/schemas/ModelCategory
+type ModelCategory string
+
+const (
+	ModelCategoryChat          ModelCategory = "chat"
+	ModelCategoryImage         ModelCategory = "image"
+	ModelCategoryVideo         ModelCategory = "video"
+	ModelCategorySpeech        ModelCategory = "speech"
+	ModelCategoryTranscription ModelCategory = "transcription"
+	ModelCategoryRealtime      ModelCategory = "realtime"
+	ModelCategoryEmbedding     ModelCategory = "embedding"
+	ModelCategoryRerank        ModelCategory = "rerank"
+	ModelCategoryDecision      ModelCategory = "decision"
+)
+
+// AllValues returns all ModelCategory values.
+func (ModelCategory) AllValues() []ModelCategory {
+	return []ModelCategory{
+		ModelCategoryChat,
+		ModelCategoryImage,
+		ModelCategoryVideo,
+		ModelCategorySpeech,
+		ModelCategoryTranscription,
+		ModelCategoryRealtime,
+		ModelCategoryEmbedding,
+		ModelCategoryRerank,
+		ModelCategoryDecision,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ModelCategory) MarshalText() ([]byte, error) {
+	switch s {
+	case ModelCategoryChat:
+		return []byte(s), nil
+	case ModelCategoryImage:
+		return []byte(s), nil
+	case ModelCategoryVideo:
+		return []byte(s), nil
+	case ModelCategorySpeech:
+		return []byte(s), nil
+	case ModelCategoryTranscription:
+		return []byte(s), nil
+	case ModelCategoryRealtime:
+		return []byte(s), nil
+	case ModelCategoryEmbedding:
+		return []byte(s), nil
+	case ModelCategoryRerank:
+		return []byte(s), nil
+	case ModelCategoryDecision:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ModelCategory) UnmarshalText(data []byte) error {
+	switch ModelCategory(data) {
+	case ModelCategoryChat:
+		*s = ModelCategoryChat
+		return nil
+	case ModelCategoryImage:
+		*s = ModelCategoryImage
+		return nil
+	case ModelCategoryVideo:
+		*s = ModelCategoryVideo
+		return nil
+	case ModelCategorySpeech:
+		*s = ModelCategorySpeech
+		return nil
+	case ModelCategoryTranscription:
+		*s = ModelCategoryTranscription
+		return nil
+	case ModelCategoryRealtime:
+		*s = ModelCategoryRealtime
+		return nil
+	case ModelCategoryEmbedding:
+		*s = ModelCategoryEmbedding
+		return nil
+	case ModelCategoryRerank:
+		*s = ModelCategoryRerank
+		return nil
+	case ModelCategoryDecision:
+		*s = ModelCategoryDecision
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/ModelList
 type ModelList struct {
 	Object string  `json:"object"`
@@ -5065,6 +5157,8 @@ type ModelResource struct {
 	// Produced output modalities. Image input does not imply image generation.
 	OutputModalities []Modality        `json:"output_modalities"`
 	Capabilities     ModelCapabilities `json:"capabilities"`
+	// Inference endpoints reachable on Canopy for this model, derived from its provider mappings.
+	SupportedEndpoints []string `json:"supported_endpoints"`
 	// Who can call the model. Every model is listed to every project.
 	//
 	//  - `public`: callable by every project.
@@ -5135,6 +5229,11 @@ func (s *ModelResource) GetOutputModalities() []Modality {
 // GetCapabilities returns the value of Capabilities.
 func (s *ModelResource) GetCapabilities() ModelCapabilities {
 	return s.Capabilities
+}
+
+// GetSupportedEndpoints returns the value of SupportedEndpoints.
+func (s *ModelResource) GetSupportedEndpoints() []string {
+	return s.SupportedEndpoints
 }
 
 // GetAccess returns the value of Access.
@@ -5210,6 +5309,11 @@ func (s *ModelResource) SetOutputModalities(val []Modality) {
 // SetCapabilities sets the value of Capabilities.
 func (s *ModelResource) SetCapabilities(val ModelCapabilities) {
 	s.Capabilities = val
+}
+
+// SetSupportedEndpoints sets the value of SupportedEndpoints.
+func (s *ModelResource) SetSupportedEndpoints(val []string) {
+	s.SupportedEndpoints = val
 }
 
 // SetAccess sets the value of Access.
@@ -6832,6 +6936,52 @@ func (o OptMediaUsageDetailsReferenceCounts) Or(d MediaUsageDetailsReferenceCoun
 	return d
 }
 
+// NewOptModality returns new OptModality with value set to v.
+func NewOptModality(v Modality) OptModality {
+	return OptModality{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptModality is optional Modality.
+type OptModality struct {
+	Value Modality
+	Set   bool
+}
+
+// IsSet returns true if OptModality was set.
+func (o OptModality) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptModality) Reset() {
+	var v Modality
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptModality) SetTo(v Modality) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptModality) Get() (v Modality, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptModality) Or(d Modality) Modality {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptModelAliases returns new OptModelAliases with value set to v.
 func NewOptModelAliases(v ModelAliases) OptModelAliases {
 	return OptModelAliases{
@@ -6872,6 +7022,52 @@ func (o OptModelAliases) Get() (v ModelAliases, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptModelAliases) Or(d ModelAliases) ModelAliases {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptModelCategory returns new OptModelCategory with value set to v.
+func NewOptModelCategory(v ModelCategory) OptModelCategory {
+	return OptModelCategory{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptModelCategory is optional ModelCategory.
+type OptModelCategory struct {
+	Value ModelCategory
+	Set   bool
+}
+
+// IsSet returns true if OptModelCategory was set.
+func (o OptModelCategory) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptModelCategory) Reset() {
+	var v ModelCategory
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptModelCategory) SetTo(v ModelCategory) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptModelCategory) Get() (v ModelCategory, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptModelCategory) Or(d ModelCategory) ModelCategory {
 	if v, ok := o.Get(); ok {
 		return v
 	}

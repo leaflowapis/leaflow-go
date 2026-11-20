@@ -2233,6 +2233,31 @@ func (s *ModelCapabilities) Validate() error {
 	return nil
 }
 
+func (s ModelCategory) Validate() error {
+	switch s {
+	case "chat":
+		return nil
+	case "image":
+		return nil
+	case "video":
+		return nil
+	case "speech":
+		return nil
+	case "transcription":
+		return nil
+	case "realtime":
+		return nil
+	case "embedding":
+		return nil
+	case "rerank":
+		return nil
+	case "decision":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s *ModelList) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer

@@ -1916,6 +1916,597 @@ func decodeListAPIKeysParams(args [0]string, argsEscaped bool, r *http.Request) 
 	return params, nil
 }
 
+// ListInferenceModelsParams is parameters of list-inference-models operation.
+type ListInferenceModelsParams struct {
+	// Restricts the result to models serving the specified high-level category (`chat`, `image`, `video`,
+	// `speech`, `transcription`, `realtime`, `embedding`, `rerank`, `decision`).
+	Category OptModelCategory `json:",omitempty,omitzero"`
+	// Restricts the result to models reachable on the specified inference endpoint path (for example
+	// `/v1/chat/completions` or `/v1/audio/speech`).
+	Endpoint OptString `json:",omitempty,omitzero"`
+	// Restricts the result to models declaring the specified input modality.
+	InputModality OptModality `json:",omitempty,omitzero"`
+	// Restricts the result to models declaring the specified output modality.
+	OutputModality OptModality `json:",omitempty,omitzero"`
+}
+
+func unpackListInferenceModelsParams(packed middleware.Parameters) (params ListInferenceModelsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "category",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Category = v.(OptModelCategory)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "endpoint",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Endpoint = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "input_modality",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.InputModality = v.(OptModality)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "output_modality",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.OutputModality = v.(OptModality)
+		}
+	}
+	return params
+}
+
+func decodeListInferenceModelsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListInferenceModelsParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: category.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "category",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotCategoryVal ModelCategory
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCategoryVal = ModelCategory(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Category.SetTo(paramsDotCategoryVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Category.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "category",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: endpoint.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "endpoint",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotEndpointVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotEndpointVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Endpoint.SetTo(paramsDotEndpointVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Endpoint.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     128,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "endpoint",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: input_modality.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "input_modality",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotInputModalityVal Modality
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotInputModalityVal = Modality(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.InputModality.SetTo(paramsDotInputModalityVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.InputModality.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "input_modality",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: output_modality.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "output_modality",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotOutputModalityVal Modality
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotOutputModalityVal = Modality(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.OutputModality.SetTo(paramsDotOutputModalityVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.OutputModality.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "output_modality",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListModelsParams is parameters of list-models operation.
+type ListModelsParams struct {
+	// Restricts the result to models serving the specified high-level category (`chat`, `image`, `video`,
+	// `speech`, `transcription`, `realtime`, `embedding`, `rerank`, `decision`), derived from reachable
+	// inference endpoints.
+	Category OptModelCategory `json:",omitempty,omitzero"`
+	// Restricts the result to models reachable on the specified inference endpoint path (for example
+	// `/v1/chat/completions`, `/v1/audio/speech`, or `/v1/realtime`).
+	Endpoint OptString `json:",omitempty,omitzero"`
+	// Restricts the result to models declaring the specified input modality.
+	InputModality OptModality `json:",omitempty,omitzero"`
+	// Restricts the result to models declaring the specified output modality.
+	OutputModality OptModality `json:",omitempty,omitzero"`
+}
+
+func unpackListModelsParams(packed middleware.Parameters) (params ListModelsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "category",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Category = v.(OptModelCategory)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "endpoint",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Endpoint = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "input_modality",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.InputModality = v.(OptModality)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "output_modality",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.OutputModality = v.(OptModality)
+		}
+	}
+	return params
+}
+
+func decodeListModelsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListModelsParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: category.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "category",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotCategoryVal ModelCategory
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCategoryVal = ModelCategory(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Category.SetTo(paramsDotCategoryVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Category.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "category",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: endpoint.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "endpoint",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotEndpointVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotEndpointVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Endpoint.SetTo(paramsDotEndpointVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Endpoint.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     1,
+							MinLengthSet:  true,
+							MaxLength:     128,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "endpoint",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: input_modality.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "input_modality",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotInputModalityVal Modality
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotInputModalityVal = Modality(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.InputModality.SetTo(paramsDotInputModalityVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.InputModality.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "input_modality",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: output_modality.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "output_modality",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotOutputModalityVal Modality
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotOutputModalityVal = Modality(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.OutputModality.SetTo(paramsDotOutputModalityVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.OutputModality.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "output_modality",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // ListRequestsParams is parameters of list-requests operation.
 type ListRequestsParams struct {
 	// Start of the range, inclusive. RFC 3339, carrying a timezone offset.

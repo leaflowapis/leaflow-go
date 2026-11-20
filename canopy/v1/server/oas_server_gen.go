@@ -282,7 +282,7 @@ type Handler interface {
 	// List callable models with capabilities and parameter limits.
 	//
 	// GET /v1/models
-	ListInferenceModels(ctx context.Context) (ListInferenceModelsRes, error)
+	ListInferenceModels(ctx context.Context, params ListInferenceModelsParams) (ListInferenceModelsRes, error)
 	// ListModels implements list-models operation.
 	//
 	// A model that has been retired does not appear here, while it remains readable individually.
@@ -298,7 +298,7 @@ type Handler interface {
 	// `search-prices`.
 	//
 	// GET /api/v1/models
-	ListModels(ctx context.Context) (ListModelsRes, error)
+	ListModels(ctx context.Context, params ListModelsParams) (ListModelsRes, error)
 	// ListRequests implements list-requests operation.
 	//
 	// Cursor-paged, most recent first. An empty `next_cursor` indicates the last page.

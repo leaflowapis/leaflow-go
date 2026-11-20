@@ -10204,6 +10204,16 @@ func (s *ModelResource) encodeFields(e *jx.Encoder) {
 		s.Capabilities.Encode(e)
 	}
 	{
+		if s.SupportedEndpoints != nil {
+			e.FieldStart("supported_endpoints")
+			e.ArrStart()
+			for _, elem := range s.SupportedEndpoints {
+				e.Str(elem)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
 		e.FieldStart("access")
 		s.Access.Encode(e)
 	}
@@ -10217,7 +10227,7 @@ func (s *ModelResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfModelResource = [15]string{
+var jsonFieldsNameOfModelResource = [16]string{
 	0:  "context_length",
 	1:  "display_name",
 	2:  "family",
@@ -10230,9 +10240,10 @@ var jsonFieldsNameOfModelResource = [15]string{
 	9:  "input_modalities",
 	10: "output_modalities",
 	11: "capabilities",
-	12: "access",
-	13: "access_granted",
-	14: "moderation_disabled",
+	12: "supported_endpoints",
+	13: "access",
+	14: "access_granted",
+	15: "moderation_disabled",
 }
 
 // Decode decodes ModelResource from json.
@@ -10408,8 +10419,27 @@ func (s *ModelResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"capabilities\"")
 			}
+		case "supported_endpoints":
+			if err := func() error {
+				s.SupportedEndpoints = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.SupportedEndpoints = append(s.SupportedEndpoints, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"supported_endpoints\"")
+			}
 		case "access":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				if err := s.Access.Decode(d); err != nil {
 					return err
@@ -10419,7 +10449,7 @@ func (s *ModelResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"access\"")
 			}
 		case "access_granted":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				v, err := d.Bool()
 				s.AccessGranted = bool(v)
@@ -10431,7 +10461,7 @@ func (s *ModelResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"access_granted\"")
 			}
 		case "moderation_disabled":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				v, err := d.Bool()
 				s.ModerationDisabled = bool(v)
@@ -10453,7 +10483,7 @@ func (s *ModelResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b01111111,
+		0b11101111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -12215,6 +12245,39 @@ func (s OptMediaUsageDetailsReferenceCounts) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptMediaUsageDetailsReferenceCounts) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes Modality as json.
+func (o OptModality) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes Modality from json.
+func (o *OptModality) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptModality to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptModality) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptModality) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
