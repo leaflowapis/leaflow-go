@@ -2359,6 +2359,12 @@ func (s ModelMeterKind) Validate() error {
 		return nil
 	case "reasoning":
 		return nil
+	case "audio_input":
+		return nil
+	case "audio_output":
+		return nil
+	case "audio_cache_read":
+		return nil
 	case "images":
 		return nil
 	case "audio_characters":

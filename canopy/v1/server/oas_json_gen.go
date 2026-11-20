@@ -532,6 +532,24 @@ func (s *APIKeyUsageBucketResource) encodeFields(e *jx.Encoder) {
 		s.ReasoningTokens.Encode(e)
 	}
 	{
+		if s.AudioInputTokens.Set {
+			e.FieldStart("audio_input_tokens")
+			s.AudioInputTokens.Encode(e)
+		}
+	}
+	{
+		if s.AudioOutputTokens.Set {
+			e.FieldStart("audio_output_tokens")
+			s.AudioOutputTokens.Encode(e)
+		}
+	}
+	{
+		if s.AudioCacheReadTokens.Set {
+			e.FieldStart("audio_cache_read_tokens")
+			s.AudioCacheReadTokens.Encode(e)
+		}
+	}
+	{
 		if s.Media.Set {
 			e.FieldStart("media")
 			s.Media.Encode(e)
@@ -539,7 +557,7 @@ func (s *APIKeyUsageBucketResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfAPIKeyUsageBucketResource = [11]string{
+var jsonFieldsNameOfAPIKeyUsageBucketResource = [14]string{
 	0:  "from",
 	1:  "to",
 	2:  "api_key_id",
@@ -550,7 +568,10 @@ var jsonFieldsNameOfAPIKeyUsageBucketResource = [11]string{
 	7:  "cache_read_tokens",
 	8:  "cache_write_tokens",
 	9:  "reasoning_tokens",
-	10: "media",
+	10: "audio_input_tokens",
+	11: "audio_output_tokens",
+	12: "audio_cache_read_tokens",
+	13: "media",
 }
 
 // Decode decodes APIKeyUsageBucketResource from json.
@@ -669,6 +690,36 @@ func (s *APIKeyUsageBucketResource) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"reasoning_tokens\"")
+			}
+		case "audio_input_tokens":
+			if err := func() error {
+				s.AudioInputTokens.Reset()
+				if err := s.AudioInputTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_input_tokens\"")
+			}
+		case "audio_output_tokens":
+			if err := func() error {
+				s.AudioOutputTokens.Reset()
+				if err := s.AudioOutputTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_output_tokens\"")
+			}
+		case "audio_cache_read_tokens":
+			if err := func() error {
+				s.AudioCacheReadTokens.Reset()
+				if err := s.AudioCacheReadTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_cache_read_tokens\"")
 			}
 		case "media":
 			if err := func() error {
@@ -877,6 +928,24 @@ func (s *APIKeyUsageResource) encodeFields(e *jx.Encoder) {
 		s.ReasoningTokens.Encode(e)
 	}
 	{
+		if s.AudioInputTokens.Set {
+			e.FieldStart("audio_input_tokens")
+			s.AudioInputTokens.Encode(e)
+		}
+	}
+	{
+		if s.AudioOutputTokens.Set {
+			e.FieldStart("audio_output_tokens")
+			s.AudioOutputTokens.Encode(e)
+		}
+	}
+	{
+		if s.AudioCacheReadTokens.Set {
+			e.FieldStart("audio_cache_read_tokens")
+			s.AudioCacheReadTokens.Encode(e)
+		}
+	}
+	{
 		if s.Media.Set {
 			e.FieldStart("media")
 			s.Media.Encode(e)
@@ -892,16 +961,19 @@ func (s *APIKeyUsageResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfAPIKeyUsageResource = [9]string{
-	0: "api_key_id",
-	1: "cache_read_tokens",
-	2: "cache_write_tokens",
-	3: "input_tokens",
-	4: "output_tokens",
-	5: "reasoning_tokens",
-	6: "media",
-	7: "requests",
-	8: "total_tokens",
+var jsonFieldsNameOfAPIKeyUsageResource = [12]string{
+	0:  "api_key_id",
+	1:  "cache_read_tokens",
+	2:  "cache_write_tokens",
+	3:  "input_tokens",
+	4:  "output_tokens",
+	5:  "reasoning_tokens",
+	6:  "audio_input_tokens",
+	7:  "audio_output_tokens",
+	8:  "audio_cache_read_tokens",
+	9:  "media",
+	10: "requests",
+	11: "total_tokens",
 }
 
 // Decode decodes APIKeyUsageResource from json.
@@ -975,6 +1047,36 @@ func (s *APIKeyUsageResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"reasoning_tokens\"")
 			}
+		case "audio_input_tokens":
+			if err := func() error {
+				s.AudioInputTokens.Reset()
+				if err := s.AudioInputTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_input_tokens\"")
+			}
+		case "audio_output_tokens":
+			if err := func() error {
+				s.AudioOutputTokens.Reset()
+				if err := s.AudioOutputTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_output_tokens\"")
+			}
+		case "audio_cache_read_tokens":
+			if err := func() error {
+				s.AudioCacheReadTokens.Reset()
+				if err := s.AudioCacheReadTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_cache_read_tokens\"")
+			}
 		case "media":
 			if err := func() error {
 				s.Media.Reset()
@@ -986,7 +1088,7 @@ func (s *APIKeyUsageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"media\"")
 			}
 		case "requests":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := d.Int64()
 				s.Requests = int64(v)
@@ -998,7 +1100,7 @@ func (s *APIKeyUsageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"requests\"")
 			}
 		case "total_tokens":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.TotalTokens.Decode(d); err != nil {
 					return err
@@ -1017,8 +1119,8 @@ func (s *APIKeyUsageResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b10111111,
-		0b00000001,
+		0b00111111,
+		0b00001100,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -9764,6 +9866,12 @@ func (s *ModelMeterKind) Decode(d *jx.Decoder) error {
 		*s = ModelMeterKindCacheWrite
 	case ModelMeterKindReasoning:
 		*s = ModelMeterKindReasoning
+	case ModelMeterKindAudioInput:
+		*s = ModelMeterKindAudioInput
+	case ModelMeterKindAudioOutput:
+		*s = ModelMeterKindAudioOutput
+	case ModelMeterKindAudioCacheRead:
+		*s = ModelMeterKindAudioCacheRead
 	case ModelMeterKindImages:
 		*s = ModelMeterKindImages
 	case ModelMeterKindAudioCharacters:
@@ -10613,6 +10721,24 @@ func (s *ModelUsageResource) encodeFields(e *jx.Encoder) {
 		s.ReasoningTokens.Encode(e)
 	}
 	{
+		if s.AudioInputTokens.Set {
+			e.FieldStart("audio_input_tokens")
+			s.AudioInputTokens.Encode(e)
+		}
+	}
+	{
+		if s.AudioOutputTokens.Set {
+			e.FieldStart("audio_output_tokens")
+			s.AudioOutputTokens.Encode(e)
+		}
+	}
+	{
+		if s.AudioCacheReadTokens.Set {
+			e.FieldStart("audio_cache_read_tokens")
+			s.AudioCacheReadTokens.Encode(e)
+		}
+	}
+	{
 		if s.Media.Set {
 			e.FieldStart("media")
 			s.Media.Encode(e)
@@ -10628,16 +10754,19 @@ func (s *ModelUsageResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfModelUsageResource = [9]string{
-	0: "cache_read_tokens",
-	1: "cache_write_tokens",
-	2: "input_tokens",
-	3: "model_id",
-	4: "output_tokens",
-	5: "reasoning_tokens",
-	6: "media",
-	7: "requests",
-	8: "total_tokens",
+var jsonFieldsNameOfModelUsageResource = [12]string{
+	0:  "cache_read_tokens",
+	1:  "cache_write_tokens",
+	2:  "input_tokens",
+	3:  "model_id",
+	4:  "output_tokens",
+	5:  "reasoning_tokens",
+	6:  "audio_input_tokens",
+	7:  "audio_output_tokens",
+	8:  "audio_cache_read_tokens",
+	9:  "media",
+	10: "requests",
+	11: "total_tokens",
 }
 
 // Decode decodes ModelUsageResource from json.
@@ -10711,6 +10840,36 @@ func (s *ModelUsageResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"reasoning_tokens\"")
 			}
+		case "audio_input_tokens":
+			if err := func() error {
+				s.AudioInputTokens.Reset()
+				if err := s.AudioInputTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_input_tokens\"")
+			}
+		case "audio_output_tokens":
+			if err := func() error {
+				s.AudioOutputTokens.Reset()
+				if err := s.AudioOutputTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_output_tokens\"")
+			}
+		case "audio_cache_read_tokens":
+			if err := func() error {
+				s.AudioCacheReadTokens.Reset()
+				if err := s.AudioCacheReadTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_cache_read_tokens\"")
+			}
 		case "media":
 			if err := func() error {
 				s.Media.Reset()
@@ -10722,7 +10881,7 @@ func (s *ModelUsageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"media\"")
 			}
 		case "requests":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := d.Int64()
 				s.Requests = int64(v)
@@ -10734,7 +10893,7 @@ func (s *ModelUsageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"requests\"")
 			}
 		case "total_tokens":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.TotalTokens.Decode(d); err != nil {
 					return err
@@ -10753,8 +10912,8 @@ func (s *ModelUsageResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b10111111,
-		0b00000001,
+		0b00111111,
+		0b00001100,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -12395,6 +12554,57 @@ func (s *OptNilImageCapabilities) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes int64 as json.
+func (o OptNilInt64) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	if o.Null {
+		e.Null()
+		return
+	}
+	e.Int64(int64(o.Value))
+}
+
+// Decode decodes int64 from json.
+func (o *OptNilInt64) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptNilInt64 to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v int64
+		o.Value = v
+		o.Set = true
+		o.Null = true
+		return nil
+	}
+	o.Set = true
+	o.Null = false
+	v, err := d.Int64()
+	if err != nil {
+		return err
+	}
+	o.Value = int64(v)
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptNilInt64) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptNilInt64) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes MediaUsage as json.
 func (o OptNilMediaUsage) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -14021,6 +14231,24 @@ func (s *RequestResource) encodeFields(e *jx.Encoder) {
 		s.ReasoningTokens.Encode(e)
 	}
 	{
+		if s.AudioInputTokens.Set {
+			e.FieldStart("audio_input_tokens")
+			s.AudioInputTokens.Encode(e)
+		}
+	}
+	{
+		if s.AudioOutputTokens.Set {
+			e.FieldStart("audio_output_tokens")
+			s.AudioOutputTokens.Encode(e)
+		}
+	}
+	{
+		if s.AudioCacheReadTokens.Set {
+			e.FieldStart("audio_cache_read_tokens")
+			s.AudioCacheReadTokens.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("retries")
 		e.Int64(s.Retries)
 	}
@@ -14070,7 +14298,7 @@ func (s *RequestResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfRequestResource = [27]string{
+var jsonFieldsNameOfRequestResource = [30]string{
 	0:  "api_key_id",
 	1:  "cache_read_tokens",
 	2:  "cache_write_tokens",
@@ -14087,17 +14315,20 @@ var jsonFieldsNameOfRequestResource = [27]string{
 	13: "operation",
 	14: "output_tokens",
 	15: "reasoning_tokens",
-	16: "retries",
-	17: "source",
-	18: "started_at",
-	19: "status",
-	20: "stream",
-	21: "upstream_status",
-	22: "total_tokens",
-	23: "usage_source",
-	24: "reasoning",
-	25: "media",
-	26: "media_details",
+	16: "audio_input_tokens",
+	17: "audio_output_tokens",
+	18: "audio_cache_read_tokens",
+	19: "retries",
+	20: "source",
+	21: "started_at",
+	22: "status",
+	23: "stream",
+	24: "upstream_status",
+	25: "total_tokens",
+	26: "usage_source",
+	27: "reasoning",
+	28: "media",
+	29: "media_details",
 }
 
 // Decode decodes RequestResource from json.
@@ -14275,8 +14506,38 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"reasoning_tokens\"")
 			}
+		case "audio_input_tokens":
+			if err := func() error {
+				s.AudioInputTokens.Reset()
+				if err := s.AudioInputTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_input_tokens\"")
+			}
+		case "audio_output_tokens":
+			if err := func() error {
+				s.AudioOutputTokens.Reset()
+				if err := s.AudioOutputTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_output_tokens\"")
+			}
+		case "audio_cache_read_tokens":
+			if err := func() error {
+				s.AudioCacheReadTokens.Reset()
+				if err := s.AudioCacheReadTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_cache_read_tokens\"")
+			}
 		case "retries":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 3
 			if err := func() error {
 				v, err := d.Int64()
 				s.Retries = int64(v)
@@ -14288,7 +14549,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"retries\"")
 			}
 		case "source":
-			requiredBitSet[2] |= 1 << 1
+			requiredBitSet[2] |= 1 << 4
 			if err := func() error {
 				if err := s.Source.Decode(d); err != nil {
 					return err
@@ -14298,7 +14559,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"source\"")
 			}
 		case "started_at":
-			requiredBitSet[2] |= 1 << 2
+			requiredBitSet[2] |= 1 << 5
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.StartedAt = v
@@ -14310,7 +14571,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"started_at\"")
 			}
 		case "status":
-			requiredBitSet[2] |= 1 << 3
+			requiredBitSet[2] |= 1 << 6
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -14320,7 +14581,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "stream":
-			requiredBitSet[2] |= 1 << 4
+			requiredBitSet[2] |= 1 << 7
 			if err := func() error {
 				v, err := d.Bool()
 				s.Stream = bool(v)
@@ -14332,7 +14593,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"stream\"")
 			}
 		case "upstream_status":
-			requiredBitSet[2] |= 1 << 5
+			requiredBitSet[3] |= 1 << 0
 			if err := func() error {
 				v, err := d.Int64()
 				s.UpstreamStatus = int64(v)
@@ -14344,7 +14605,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"upstream_status\"")
 			}
 		case "total_tokens":
-			requiredBitSet[2] |= 1 << 6
+			requiredBitSet[3] |= 1 << 1
 			if err := func() error {
 				if err := s.TotalTokens.Decode(d); err != nil {
 					return err
@@ -14354,7 +14615,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"total_tokens\"")
 			}
 		case "usage_source":
-			requiredBitSet[2] |= 1 << 7
+			requiredBitSet[3] |= 1 << 2
 			if err := func() error {
 				if err := s.UsageSource.Decode(d); err != nil {
 					return err
@@ -14364,7 +14625,7 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"usage_source\"")
 			}
 		case "reasoning":
-			requiredBitSet[3] |= 1 << 0
+			requiredBitSet[3] |= 1 << 3
 			if err := func() error {
 				if err := s.Reasoning.Decode(d); err != nil {
 					return err
@@ -14405,8 +14666,8 @@ func (s *RequestResource) Decode(d *jx.Decoder) error {
 	for i, mask := range [4]uint8{
 		0b11111111,
 		0b11011111,
-		0b11111111,
-		0b00000001,
+		0b11111000,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -15276,6 +15537,24 @@ func (s *SourceUsageBucketResource) encodeFields(e *jx.Encoder) {
 		s.ReasoningTokens.Encode(e)
 	}
 	{
+		if s.AudioInputTokens.Set {
+			e.FieldStart("audio_input_tokens")
+			s.AudioInputTokens.Encode(e)
+		}
+	}
+	{
+		if s.AudioOutputTokens.Set {
+			e.FieldStart("audio_output_tokens")
+			s.AudioOutputTokens.Encode(e)
+		}
+	}
+	{
+		if s.AudioCacheReadTokens.Set {
+			e.FieldStart("audio_cache_read_tokens")
+			s.AudioCacheReadTokens.Encode(e)
+		}
+	}
+	{
 		if s.Media.Set {
 			e.FieldStart("media")
 			s.Media.Encode(e)
@@ -15283,7 +15562,7 @@ func (s *SourceUsageBucketResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfSourceUsageBucketResource = [11]string{
+var jsonFieldsNameOfSourceUsageBucketResource = [14]string{
 	0:  "from",
 	1:  "to",
 	2:  "source",
@@ -15294,7 +15573,10 @@ var jsonFieldsNameOfSourceUsageBucketResource = [11]string{
 	7:  "cache_read_tokens",
 	8:  "cache_write_tokens",
 	9:  "reasoning_tokens",
-	10: "media",
+	10: "audio_input_tokens",
+	11: "audio_output_tokens",
+	12: "audio_cache_read_tokens",
+	13: "media",
 }
 
 // Decode decodes SourceUsageBucketResource from json.
@@ -15411,6 +15693,36 @@ func (s *SourceUsageBucketResource) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"reasoning_tokens\"")
+			}
+		case "audio_input_tokens":
+			if err := func() error {
+				s.AudioInputTokens.Reset()
+				if err := s.AudioInputTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_input_tokens\"")
+			}
+		case "audio_output_tokens":
+			if err := func() error {
+				s.AudioOutputTokens.Reset()
+				if err := s.AudioOutputTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_output_tokens\"")
+			}
+		case "audio_cache_read_tokens":
+			if err := func() error {
+				s.AudioCacheReadTokens.Reset()
+				if err := s.AudioCacheReadTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_cache_read_tokens\"")
 			}
 		case "media":
 			if err := func() error {
@@ -15619,6 +15931,24 @@ func (s *SourceUsageResource) encodeFields(e *jx.Encoder) {
 		s.ReasoningTokens.Encode(e)
 	}
 	{
+		if s.AudioInputTokens.Set {
+			e.FieldStart("audio_input_tokens")
+			s.AudioInputTokens.Encode(e)
+		}
+	}
+	{
+		if s.AudioOutputTokens.Set {
+			e.FieldStart("audio_output_tokens")
+			s.AudioOutputTokens.Encode(e)
+		}
+	}
+	{
+		if s.AudioCacheReadTokens.Set {
+			e.FieldStart("audio_cache_read_tokens")
+			s.AudioCacheReadTokens.Encode(e)
+		}
+	}
+	{
 		if s.Media.Set {
 			e.FieldStart("media")
 			s.Media.Encode(e)
@@ -15634,16 +15964,19 @@ func (s *SourceUsageResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfSourceUsageResource = [9]string{
-	0: "source",
-	1: "cache_read_tokens",
-	2: "cache_write_tokens",
-	3: "input_tokens",
-	4: "output_tokens",
-	5: "reasoning_tokens",
-	6: "media",
-	7: "requests",
-	8: "total_tokens",
+var jsonFieldsNameOfSourceUsageResource = [12]string{
+	0:  "source",
+	1:  "cache_read_tokens",
+	2:  "cache_write_tokens",
+	3:  "input_tokens",
+	4:  "output_tokens",
+	5:  "reasoning_tokens",
+	6:  "audio_input_tokens",
+	7:  "audio_output_tokens",
+	8:  "audio_cache_read_tokens",
+	9:  "media",
+	10: "requests",
+	11: "total_tokens",
 }
 
 // Decode decodes SourceUsageResource from json.
@@ -15715,6 +16048,36 @@ func (s *SourceUsageResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"reasoning_tokens\"")
 			}
+		case "audio_input_tokens":
+			if err := func() error {
+				s.AudioInputTokens.Reset()
+				if err := s.AudioInputTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_input_tokens\"")
+			}
+		case "audio_output_tokens":
+			if err := func() error {
+				s.AudioOutputTokens.Reset()
+				if err := s.AudioOutputTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_output_tokens\"")
+			}
+		case "audio_cache_read_tokens":
+			if err := func() error {
+				s.AudioCacheReadTokens.Reset()
+				if err := s.AudioCacheReadTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_cache_read_tokens\"")
+			}
 		case "media":
 			if err := func() error {
 				s.Media.Reset()
@@ -15726,7 +16089,7 @@ func (s *SourceUsageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"media\"")
 			}
 		case "requests":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := d.Int64()
 				s.Requests = int64(v)
@@ -15738,7 +16101,7 @@ func (s *SourceUsageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"requests\"")
 			}
 		case "total_tokens":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.TotalTokens.Decode(d); err != nil {
 					return err
@@ -15757,8 +16120,8 @@ func (s *SourceUsageResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b10111111,
-		0b00000001,
+		0b00111111,
+		0b00001100,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -18210,6 +18573,24 @@ func (s *TotalsResource) encodeFields(e *jx.Encoder) {
 		s.ReasoningTokens.Encode(e)
 	}
 	{
+		if s.AudioInputTokens.Set {
+			e.FieldStart("audio_input_tokens")
+			s.AudioInputTokens.Encode(e)
+		}
+	}
+	{
+		if s.AudioOutputTokens.Set {
+			e.FieldStart("audio_output_tokens")
+			s.AudioOutputTokens.Encode(e)
+		}
+	}
+	{
+		if s.AudioCacheReadTokens.Set {
+			e.FieldStart("audio_cache_read_tokens")
+			s.AudioCacheReadTokens.Encode(e)
+		}
+	}
+	{
 		if s.Media.Set {
 			e.FieldStart("media")
 			s.Media.Encode(e)
@@ -18225,15 +18606,18 @@ func (s *TotalsResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTotalsResource = [8]string{
-	0: "cache_read_tokens",
-	1: "cache_write_tokens",
-	2: "input_tokens",
-	3: "output_tokens",
-	4: "reasoning_tokens",
-	5: "media",
-	6: "requests",
-	7: "total_tokens",
+var jsonFieldsNameOfTotalsResource = [11]string{
+	0:  "cache_read_tokens",
+	1:  "cache_write_tokens",
+	2:  "input_tokens",
+	3:  "output_tokens",
+	4:  "reasoning_tokens",
+	5:  "audio_input_tokens",
+	6:  "audio_output_tokens",
+	7:  "audio_cache_read_tokens",
+	8:  "media",
+	9:  "requests",
+	10: "total_tokens",
 }
 
 // Decode decodes TotalsResource from json.
@@ -18241,7 +18625,7 @@ func (s *TotalsResource) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode TotalsResource to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -18295,6 +18679,36 @@ func (s *TotalsResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"reasoning_tokens\"")
 			}
+		case "audio_input_tokens":
+			if err := func() error {
+				s.AudioInputTokens.Reset()
+				if err := s.AudioInputTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_input_tokens\"")
+			}
+		case "audio_output_tokens":
+			if err := func() error {
+				s.AudioOutputTokens.Reset()
+				if err := s.AudioOutputTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_output_tokens\"")
+			}
+		case "audio_cache_read_tokens":
+			if err := func() error {
+				s.AudioCacheReadTokens.Reset()
+				if err := s.AudioCacheReadTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_cache_read_tokens\"")
+			}
 		case "media":
 			if err := func() error {
 				s.Media.Reset()
@@ -18306,7 +18720,7 @@ func (s *TotalsResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"media\"")
 			}
 		case "requests":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Int64()
 				s.Requests = int64(v)
@@ -18318,7 +18732,7 @@ func (s *TotalsResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"requests\"")
 			}
 		case "total_tokens":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				if err := s.TotalTokens.Decode(d); err != nil {
 					return err
@@ -18336,8 +18750,9 @@ func (s *TotalsResource) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b11011111,
+	for i, mask := range [2]uint8{
+		0b00011111,
+		0b00000110,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -18738,6 +19153,24 @@ func (s *UsageBucketResource) encodeFields(e *jx.Encoder) {
 		s.ReasoningTokens.Encode(e)
 	}
 	{
+		if s.AudioInputTokens.Set {
+			e.FieldStart("audio_input_tokens")
+			s.AudioInputTokens.Encode(e)
+		}
+	}
+	{
+		if s.AudioOutputTokens.Set {
+			e.FieldStart("audio_output_tokens")
+			s.AudioOutputTokens.Encode(e)
+		}
+	}
+	{
+		if s.AudioCacheReadTokens.Set {
+			e.FieldStart("audio_cache_read_tokens")
+			s.AudioCacheReadTokens.Encode(e)
+		}
+	}
+	{
 		if s.Media.Set {
 			e.FieldStart("media")
 			s.Media.Encode(e)
@@ -18757,17 +19190,20 @@ func (s *UsageBucketResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfUsageBucketResource = [10]string{
-	0: "cache_read_tokens",
-	1: "cache_write_tokens",
-	2: "from",
-	3: "input_tokens",
-	4: "output_tokens",
-	5: "reasoning_tokens",
-	6: "media",
-	7: "requests",
-	8: "total_tokens",
-	9: "to",
+var jsonFieldsNameOfUsageBucketResource = [13]string{
+	0:  "cache_read_tokens",
+	1:  "cache_write_tokens",
+	2:  "from",
+	3:  "input_tokens",
+	4:  "output_tokens",
+	5:  "reasoning_tokens",
+	6:  "audio_input_tokens",
+	7:  "audio_output_tokens",
+	8:  "audio_cache_read_tokens",
+	9:  "media",
+	10: "requests",
+	11: "total_tokens",
+	12: "to",
 }
 
 // Decode decodes UsageBucketResource from json.
@@ -18841,6 +19277,36 @@ func (s *UsageBucketResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"reasoning_tokens\"")
 			}
+		case "audio_input_tokens":
+			if err := func() error {
+				s.AudioInputTokens.Reset()
+				if err := s.AudioInputTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_input_tokens\"")
+			}
+		case "audio_output_tokens":
+			if err := func() error {
+				s.AudioOutputTokens.Reset()
+				if err := s.AudioOutputTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_output_tokens\"")
+			}
+		case "audio_cache_read_tokens":
+			if err := func() error {
+				s.AudioCacheReadTokens.Reset()
+				if err := s.AudioCacheReadTokens.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"audio_cache_read_tokens\"")
+			}
 		case "media":
 			if err := func() error {
 				s.Media.Reset()
@@ -18852,7 +19318,7 @@ func (s *UsageBucketResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"media\"")
 			}
 		case "requests":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := d.Int64()
 				s.Requests = int64(v)
@@ -18864,7 +19330,7 @@ func (s *UsageBucketResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"requests\"")
 			}
 		case "total_tokens":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.TotalTokens.Decode(d); err != nil {
 					return err
@@ -18874,7 +19340,7 @@ func (s *UsageBucketResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"total_tokens\"")
 			}
 		case "to":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.To = v
@@ -18895,8 +19361,8 @@ func (s *UsageBucketResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b10111111,
-		0b00000011,
+		0b00111111,
+		0b00011100,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

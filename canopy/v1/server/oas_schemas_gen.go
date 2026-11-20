@@ -254,17 +254,24 @@ func (s *APIKeyResourceStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/APIKeyUsageBucketResource
 type APIKeyUsageBucketResource struct {
-	From             time.Time        `json:"from"`
-	To               time.Time        `json:"to"`
-	APIKeyID         uuid.UUID        `json:"api_key_id"`
-	Requests         int64            `json:"requests"`
-	TotalTokens      NilInt64         `json:"total_tokens"`
-	InputTokens      NilInt64         `json:"input_tokens"`
-	OutputTokens     NilInt64         `json:"output_tokens"`
-	CacheReadTokens  NilInt64         `json:"cache_read_tokens"`
-	CacheWriteTokens NilInt64         `json:"cache_write_tokens"`
-	ReasoningTokens  NilInt64         `json:"reasoning_tokens"`
-	Media            OptNilMediaUsage `json:"media"`
+	From             time.Time `json:"from"`
+	To               time.Time `json:"to"`
+	APIKeyID         uuid.UUID `json:"api_key_id"`
+	Requests         int64     `json:"requests"`
+	TotalTokens      NilInt64  `json:"total_tokens"`
+	InputTokens      NilInt64  `json:"input_tokens"`
+	OutputTokens     NilInt64  `json:"output_tokens"`
+	CacheReadTokens  NilInt64  `json:"cache_read_tokens"`
+	CacheWriteTokens NilInt64  `json:"cache_write_tokens"`
+	ReasoningTokens  NilInt64  `json:"reasoning_tokens"`
+	// Uncached audio input tokens consumed in realtime sessions. Omitted or null when unused.
+	AudioInputTokens OptNilInt64 `json:"audio_input_tokens"`
+	// Audio output tokens synthesized in realtime sessions. Omitted or null when unused.
+	AudioOutputTokens OptNilInt64 `json:"audio_output_tokens"`
+	// Cached audio input tokens served from upstream cache in realtime sessions. Omitted or null when
+	// unused.
+	AudioCacheReadTokens OptNilInt64      `json:"audio_cache_read_tokens"`
+	Media                OptNilMediaUsage `json:"media"`
 }
 
 // GetFrom returns the value of From.
@@ -315,6 +322,21 @@ func (s *APIKeyUsageBucketResource) GetCacheWriteTokens() NilInt64 {
 // GetReasoningTokens returns the value of ReasoningTokens.
 func (s *APIKeyUsageBucketResource) GetReasoningTokens() NilInt64 {
 	return s.ReasoningTokens
+}
+
+// GetAudioInputTokens returns the value of AudioInputTokens.
+func (s *APIKeyUsageBucketResource) GetAudioInputTokens() OptNilInt64 {
+	return s.AudioInputTokens
+}
+
+// GetAudioOutputTokens returns the value of AudioOutputTokens.
+func (s *APIKeyUsageBucketResource) GetAudioOutputTokens() OptNilInt64 {
+	return s.AudioOutputTokens
+}
+
+// GetAudioCacheReadTokens returns the value of AudioCacheReadTokens.
+func (s *APIKeyUsageBucketResource) GetAudioCacheReadTokens() OptNilInt64 {
+	return s.AudioCacheReadTokens
 }
 
 // GetMedia returns the value of Media.
@@ -372,6 +394,21 @@ func (s *APIKeyUsageBucketResource) SetReasoningTokens(val NilInt64) {
 	s.ReasoningTokens = val
 }
 
+// SetAudioInputTokens sets the value of AudioInputTokens.
+func (s *APIKeyUsageBucketResource) SetAudioInputTokens(val OptNilInt64) {
+	s.AudioInputTokens = val
+}
+
+// SetAudioOutputTokens sets the value of AudioOutputTokens.
+func (s *APIKeyUsageBucketResource) SetAudioOutputTokens(val OptNilInt64) {
+	s.AudioOutputTokens = val
+}
+
+// SetAudioCacheReadTokens sets the value of AudioCacheReadTokens.
+func (s *APIKeyUsageBucketResource) SetAudioCacheReadTokens(val OptNilInt64) {
+	s.AudioCacheReadTokens = val
+}
+
 // SetMedia sets the value of Media.
 func (s *APIKeyUsageBucketResource) SetMedia(val OptNilMediaUsage) {
 	s.Media = val
@@ -407,6 +444,13 @@ type APIKeyUsageResource struct {
 	OutputTokens NilInt64 `json:"output_tokens"`
 	// Null when this range has no token usage.
 	ReasoningTokens NilInt64 `json:"reasoning_tokens"`
+	// Uncached audio input tokens consumed in realtime sessions. Omitted or null when unused.
+	AudioInputTokens OptNilInt64 `json:"audio_input_tokens"`
+	// Audio output tokens synthesized in realtime sessions. Omitted or null when unused.
+	AudioOutputTokens OptNilInt64 `json:"audio_output_tokens"`
+	// Cached audio input tokens served from upstream cache in realtime sessions. Omitted or null when
+	// unused.
+	AudioCacheReadTokens OptNilInt64 `json:"audio_cache_read_tokens"`
 	// Media quantities and their rate dimensions. Null when this range has no media usage.
 	Media    OptNilMediaUsage `json:"media"`
 	Requests int64            `json:"requests"`
@@ -442,6 +486,21 @@ func (s *APIKeyUsageResource) GetOutputTokens() NilInt64 {
 // GetReasoningTokens returns the value of ReasoningTokens.
 func (s *APIKeyUsageResource) GetReasoningTokens() NilInt64 {
 	return s.ReasoningTokens
+}
+
+// GetAudioInputTokens returns the value of AudioInputTokens.
+func (s *APIKeyUsageResource) GetAudioInputTokens() OptNilInt64 {
+	return s.AudioInputTokens
+}
+
+// GetAudioOutputTokens returns the value of AudioOutputTokens.
+func (s *APIKeyUsageResource) GetAudioOutputTokens() OptNilInt64 {
+	return s.AudioOutputTokens
+}
+
+// GetAudioCacheReadTokens returns the value of AudioCacheReadTokens.
+func (s *APIKeyUsageResource) GetAudioCacheReadTokens() OptNilInt64 {
+	return s.AudioCacheReadTokens
 }
 
 // GetMedia returns the value of Media.
@@ -487,6 +546,21 @@ func (s *APIKeyUsageResource) SetOutputTokens(val NilInt64) {
 // SetReasoningTokens sets the value of ReasoningTokens.
 func (s *APIKeyUsageResource) SetReasoningTokens(val NilInt64) {
 	s.ReasoningTokens = val
+}
+
+// SetAudioInputTokens sets the value of AudioInputTokens.
+func (s *APIKeyUsageResource) SetAudioInputTokens(val OptNilInt64) {
+	s.AudioInputTokens = val
+}
+
+// SetAudioOutputTokens sets the value of AudioOutputTokens.
+func (s *APIKeyUsageResource) SetAudioOutputTokens(val OptNilInt64) {
+	s.AudioOutputTokens = val
+}
+
+// SetAudioCacheReadTokens sets the value of AudioCacheReadTokens.
+func (s *APIKeyUsageResource) SetAudioCacheReadTokens(val OptNilInt64) {
+	s.AudioCacheReadTokens = val
 }
 
 // SetMedia sets the value of Media.
@@ -4452,11 +4526,12 @@ func (s *ModelAliases) init() ModelAliases {
 // narrowing each price's `rates` with each meter's `dimensions`.
 //
 // Text is billed on the five token kinds. `input` excludes cached input, which is `cache_read`;
-// `output` excludes reasoning the provider reports separately, which is `reasoning`. Media is billed
-// on its own unit and never converted to tokens: `images` counts generated images, `audio_characters`
-// counts the input characters of speech synthesis, `audio_seconds` counts the duration of a
-// transcription, and `video_seconds` counts the duration of a generated video. A request is billed for
-// each kind it used.
+// `output` excludes reasoning the provider reports separately, which is `reasoning`. Realtime sessions
+// also bill audio tokens on the `tokens` meter via `audio_input`, `audio_output`, and
+// `audio_cache_read`. Media is billed on its own unit and never converted to tokens: `images` counts
+// generated images, `audio_characters` counts the input characters of speech synthesis,
+// `audio_seconds` counts the duration of a transcription, and `video_seconds` counts the duration of a
+// generated video. A request is billed for each kind it used.
 //
 // Rates are set per currency, and a currency may not offer a model at all. A model is offered in the
 // currency of the project's billing account when at least one of its billable kinds has a rate there;
@@ -4628,8 +4703,8 @@ func (*ModelListResponseBody) listModelsRes() {}
 // Ref: #/components/schemas/ModelMeter
 type ModelMeter struct {
 	// The billable quantity this entry prices. Token kinds are `input`, `output`, `cache_read`,
-	// `cache_write` and `reasoning`; media kinds are `images`, `audio_characters`, `audio_seconds` and
-	// `video_seconds`.
+	// `cache_write`, `reasoning`, `audio_input`, `audio_output` and `audio_cache_read`; media kinds are
+	// `images`, `audio_characters`, `audio_seconds`, `video_seconds` and `rerank_units`.
 	Kind           ModelMeterKind `json:"kind"`
 	MeterLookupKey string         `json:"meter_lookup_key"`
 	// The unit the meter counts in, such as token, image, character or second.
@@ -4705,8 +4780,8 @@ func (s *ModelMeterDimensions) init() ModelMeterDimensions {
 }
 
 // The billable quantity this entry prices. Token kinds are `input`, `output`, `cache_read`,
-// `cache_write` and `reasoning`; media kinds are `images`, `audio_characters`, `audio_seconds` and
-// `video_seconds`.
+// `cache_write`, `reasoning`, `audio_input`, `audio_output` and `audio_cache_read`; media kinds are
+// `images`, `audio_characters`, `audio_seconds`, `video_seconds` and `rerank_units`.
 type ModelMeterKind string
 
 const (
@@ -4715,6 +4790,9 @@ const (
 	ModelMeterKindCacheRead       ModelMeterKind = "cache_read"
 	ModelMeterKindCacheWrite      ModelMeterKind = "cache_write"
 	ModelMeterKindReasoning       ModelMeterKind = "reasoning"
+	ModelMeterKindAudioInput      ModelMeterKind = "audio_input"
+	ModelMeterKindAudioOutput     ModelMeterKind = "audio_output"
+	ModelMeterKindAudioCacheRead  ModelMeterKind = "audio_cache_read"
 	ModelMeterKindImages          ModelMeterKind = "images"
 	ModelMeterKindAudioCharacters ModelMeterKind = "audio_characters"
 	ModelMeterKindAudioSeconds    ModelMeterKind = "audio_seconds"
@@ -4730,6 +4808,9 @@ func (ModelMeterKind) AllValues() []ModelMeterKind {
 		ModelMeterKindCacheRead,
 		ModelMeterKindCacheWrite,
 		ModelMeterKindReasoning,
+		ModelMeterKindAudioInput,
+		ModelMeterKindAudioOutput,
+		ModelMeterKindAudioCacheRead,
 		ModelMeterKindImages,
 		ModelMeterKindAudioCharacters,
 		ModelMeterKindAudioSeconds,
@@ -4750,6 +4831,12 @@ func (s ModelMeterKind) MarshalText() ([]byte, error) {
 	case ModelMeterKindCacheWrite:
 		return []byte(s), nil
 	case ModelMeterKindReasoning:
+		return []byte(s), nil
+	case ModelMeterKindAudioInput:
+		return []byte(s), nil
+	case ModelMeterKindAudioOutput:
+		return []byte(s), nil
+	case ModelMeterKindAudioCacheRead:
 		return []byte(s), nil
 	case ModelMeterKindImages:
 		return []byte(s), nil
@@ -4783,6 +4870,15 @@ func (s *ModelMeterKind) UnmarshalText(data []byte) error {
 		return nil
 	case ModelMeterKindReasoning:
 		*s = ModelMeterKindReasoning
+		return nil
+	case ModelMeterKindAudioInput:
+		*s = ModelMeterKindAudioInput
+		return nil
+	case ModelMeterKindAudioOutput:
+		*s = ModelMeterKindAudioOutput
+		return nil
+	case ModelMeterKindAudioCacheRead:
+		*s = ModelMeterKindAudioCacheRead
 		return nil
 	case ModelMeterKindImages:
 		*s = ModelMeterKindImages
@@ -5258,6 +5354,13 @@ type ModelUsageResource struct {
 	OutputTokens NilInt64 `json:"output_tokens"`
 	// Null when this range has no token usage.
 	ReasoningTokens NilInt64 `json:"reasoning_tokens"`
+	// Uncached audio input tokens consumed in realtime sessions. Omitted or null when unused.
+	AudioInputTokens OptNilInt64 `json:"audio_input_tokens"`
+	// Audio output tokens synthesized in realtime sessions. Omitted or null when unused.
+	AudioOutputTokens OptNilInt64 `json:"audio_output_tokens"`
+	// Cached audio input tokens served from upstream cache in realtime sessions. Omitted or null when
+	// unused.
+	AudioCacheReadTokens OptNilInt64 `json:"audio_cache_read_tokens"`
 	// Media quantities and their rate dimensions. Null when this range has no media usage.
 	Media    OptNilMediaUsage `json:"media"`
 	Requests int64            `json:"requests"`
@@ -5293,6 +5396,21 @@ func (s *ModelUsageResource) GetOutputTokens() NilInt64 {
 // GetReasoningTokens returns the value of ReasoningTokens.
 func (s *ModelUsageResource) GetReasoningTokens() NilInt64 {
 	return s.ReasoningTokens
+}
+
+// GetAudioInputTokens returns the value of AudioInputTokens.
+func (s *ModelUsageResource) GetAudioInputTokens() OptNilInt64 {
+	return s.AudioInputTokens
+}
+
+// GetAudioOutputTokens returns the value of AudioOutputTokens.
+func (s *ModelUsageResource) GetAudioOutputTokens() OptNilInt64 {
+	return s.AudioOutputTokens
+}
+
+// GetAudioCacheReadTokens returns the value of AudioCacheReadTokens.
+func (s *ModelUsageResource) GetAudioCacheReadTokens() OptNilInt64 {
+	return s.AudioCacheReadTokens
 }
 
 // GetMedia returns the value of Media.
@@ -5338,6 +5456,21 @@ func (s *ModelUsageResource) SetOutputTokens(val NilInt64) {
 // SetReasoningTokens sets the value of ReasoningTokens.
 func (s *ModelUsageResource) SetReasoningTokens(val NilInt64) {
 	s.ReasoningTokens = val
+}
+
+// SetAudioInputTokens sets the value of AudioInputTokens.
+func (s *ModelUsageResource) SetAudioInputTokens(val OptNilInt64) {
+	s.AudioInputTokens = val
+}
+
+// SetAudioOutputTokens sets the value of AudioOutputTokens.
+func (s *ModelUsageResource) SetAudioOutputTokens(val OptNilInt64) {
+	s.AudioOutputTokens = val
+}
+
+// SetAudioCacheReadTokens sets the value of AudioCacheReadTokens.
+func (s *ModelUsageResource) SetAudioCacheReadTokens(val OptNilInt64) {
+	s.AudioCacheReadTokens = val
 }
 
 // SetMedia sets the value of Media.
@@ -7199,6 +7332,74 @@ func (o OptNilImageCapabilities) Or(d ImageCapabilities) ImageCapabilities {
 	return d
 }
 
+// NewOptNilInt64 returns new OptNilInt64 with value set to v.
+func NewOptNilInt64(v int64) OptNilInt64 {
+	return OptNilInt64{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilInt64 is optional nullable int64.
+type OptNilInt64 struct {
+	Value int64
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilInt64 was set.
+func (o OptNilInt64) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilInt64) Reset() {
+	var v int64
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilInt64) SetTo(v int64) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilInt64) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilInt64) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v int64
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilInt64) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilInt64) Get() (v int64, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilInt64) Or(d int64) int64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilMediaUsage returns new OptNilMediaUsage with value set to v.
 func NewOptNilMediaUsage(v MediaUsage) OptNilMediaUsage {
 	return OptNilMediaUsage{
@@ -8528,7 +8729,14 @@ type RequestResource struct {
 	OutputTokens NilInt64 `json:"output_tokens"`
 	// Reasoning tokens the provider reports separately. Null on a request billed on a non-token meter.
 	ReasoningTokens NilInt64 `json:"reasoning_tokens"`
-	Retries         int64    `json:"retries"`
+	// Uncached audio input tokens consumed in realtime sessions. Omitted or null when unused.
+	AudioInputTokens OptNilInt64 `json:"audio_input_tokens"`
+	// Audio output tokens synthesized in realtime sessions. Omitted or null when unused.
+	AudioOutputTokens OptNilInt64 `json:"audio_output_tokens"`
+	// Cached audio input tokens served from upstream cache in realtime sessions. Omitted or null when
+	// unused.
+	AudioCacheReadTokens OptNilInt64 `json:"audio_cache_read_tokens"`
+	Retries              int64       `json:"retries"`
 	// Who made the request. `api_key` means one of the project's API keys and `project_token` a project
 	// access token on the OpenAI-compatible endpoints; any other value names the Leaflow service that made
 	// it on the project's behalf, such as `assistant`, and more services may appear. Null for requests
@@ -8628,6 +8836,21 @@ func (s *RequestResource) GetOutputTokens() NilInt64 {
 // GetReasoningTokens returns the value of ReasoningTokens.
 func (s *RequestResource) GetReasoningTokens() NilInt64 {
 	return s.ReasoningTokens
+}
+
+// GetAudioInputTokens returns the value of AudioInputTokens.
+func (s *RequestResource) GetAudioInputTokens() OptNilInt64 {
+	return s.AudioInputTokens
+}
+
+// GetAudioOutputTokens returns the value of AudioOutputTokens.
+func (s *RequestResource) GetAudioOutputTokens() OptNilInt64 {
+	return s.AudioOutputTokens
+}
+
+// GetAudioCacheReadTokens returns the value of AudioCacheReadTokens.
+func (s *RequestResource) GetAudioCacheReadTokens() OptNilInt64 {
+	return s.AudioCacheReadTokens
 }
 
 // GetRetries returns the value of Retries.
@@ -8763,6 +8986,21 @@ func (s *RequestResource) SetOutputTokens(val NilInt64) {
 // SetReasoningTokens sets the value of ReasoningTokens.
 func (s *RequestResource) SetReasoningTokens(val NilInt64) {
 	s.ReasoningTokens = val
+}
+
+// SetAudioInputTokens sets the value of AudioInputTokens.
+func (s *RequestResource) SetAudioInputTokens(val OptNilInt64) {
+	s.AudioInputTokens = val
+}
+
+// SetAudioOutputTokens sets the value of AudioOutputTokens.
+func (s *RequestResource) SetAudioOutputTokens(val OptNilInt64) {
+	s.AudioOutputTokens = val
+}
+
+// SetAudioCacheReadTokens sets the value of AudioCacheReadTokens.
+func (s *RequestResource) SetAudioCacheReadTokens(val OptNilInt64) {
+	s.AudioCacheReadTokens = val
 }
 
 // SetRetries sets the value of Retries.
@@ -9282,17 +9520,24 @@ func (*ResponseResource) createResponseRes() {}
 
 // Ref: #/components/schemas/SourceUsageBucketResource
 type SourceUsageBucketResource struct {
-	From             time.Time        `json:"from"`
-	To               time.Time        `json:"to"`
-	Source           NilString        `json:"source"`
-	Requests         int64            `json:"requests"`
-	TotalTokens      NilInt64         `json:"total_tokens"`
-	InputTokens      NilInt64         `json:"input_tokens"`
-	OutputTokens     NilInt64         `json:"output_tokens"`
-	CacheReadTokens  NilInt64         `json:"cache_read_tokens"`
-	CacheWriteTokens NilInt64         `json:"cache_write_tokens"`
-	ReasoningTokens  NilInt64         `json:"reasoning_tokens"`
-	Media            OptNilMediaUsage `json:"media"`
+	From             time.Time `json:"from"`
+	To               time.Time `json:"to"`
+	Source           NilString `json:"source"`
+	Requests         int64     `json:"requests"`
+	TotalTokens      NilInt64  `json:"total_tokens"`
+	InputTokens      NilInt64  `json:"input_tokens"`
+	OutputTokens     NilInt64  `json:"output_tokens"`
+	CacheReadTokens  NilInt64  `json:"cache_read_tokens"`
+	CacheWriteTokens NilInt64  `json:"cache_write_tokens"`
+	ReasoningTokens  NilInt64  `json:"reasoning_tokens"`
+	// Uncached audio input tokens consumed in realtime sessions. Omitted or null when unused.
+	AudioInputTokens OptNilInt64 `json:"audio_input_tokens"`
+	// Audio output tokens synthesized in realtime sessions. Omitted or null when unused.
+	AudioOutputTokens OptNilInt64 `json:"audio_output_tokens"`
+	// Cached audio input tokens served from upstream cache in realtime sessions. Omitted or null when
+	// unused.
+	AudioCacheReadTokens OptNilInt64      `json:"audio_cache_read_tokens"`
+	Media                OptNilMediaUsage `json:"media"`
 }
 
 // GetFrom returns the value of From.
@@ -9343,6 +9588,21 @@ func (s *SourceUsageBucketResource) GetCacheWriteTokens() NilInt64 {
 // GetReasoningTokens returns the value of ReasoningTokens.
 func (s *SourceUsageBucketResource) GetReasoningTokens() NilInt64 {
 	return s.ReasoningTokens
+}
+
+// GetAudioInputTokens returns the value of AudioInputTokens.
+func (s *SourceUsageBucketResource) GetAudioInputTokens() OptNilInt64 {
+	return s.AudioInputTokens
+}
+
+// GetAudioOutputTokens returns the value of AudioOutputTokens.
+func (s *SourceUsageBucketResource) GetAudioOutputTokens() OptNilInt64 {
+	return s.AudioOutputTokens
+}
+
+// GetAudioCacheReadTokens returns the value of AudioCacheReadTokens.
+func (s *SourceUsageBucketResource) GetAudioCacheReadTokens() OptNilInt64 {
+	return s.AudioCacheReadTokens
 }
 
 // GetMedia returns the value of Media.
@@ -9400,6 +9660,21 @@ func (s *SourceUsageBucketResource) SetReasoningTokens(val NilInt64) {
 	s.ReasoningTokens = val
 }
 
+// SetAudioInputTokens sets the value of AudioInputTokens.
+func (s *SourceUsageBucketResource) SetAudioInputTokens(val OptNilInt64) {
+	s.AudioInputTokens = val
+}
+
+// SetAudioOutputTokens sets the value of AudioOutputTokens.
+func (s *SourceUsageBucketResource) SetAudioOutputTokens(val OptNilInt64) {
+	s.AudioOutputTokens = val
+}
+
+// SetAudioCacheReadTokens sets the value of AudioCacheReadTokens.
+func (s *SourceUsageBucketResource) SetAudioCacheReadTokens(val OptNilInt64) {
+	s.AudioCacheReadTokens = val
+}
+
 // SetMedia sets the value of Media.
 func (s *SourceUsageBucketResource) SetMedia(val OptNilMediaUsage) {
 	s.Media = val
@@ -9437,6 +9712,13 @@ type SourceUsageResource struct {
 	OutputTokens NilInt64 `json:"output_tokens"`
 	// Null when this range has no token usage.
 	ReasoningTokens NilInt64 `json:"reasoning_tokens"`
+	// Uncached audio input tokens consumed in realtime sessions. Omitted or null when unused.
+	AudioInputTokens OptNilInt64 `json:"audio_input_tokens"`
+	// Audio output tokens synthesized in realtime sessions. Omitted or null when unused.
+	AudioOutputTokens OptNilInt64 `json:"audio_output_tokens"`
+	// Cached audio input tokens served from upstream cache in realtime sessions. Omitted or null when
+	// unused.
+	AudioCacheReadTokens OptNilInt64 `json:"audio_cache_read_tokens"`
 	// Media quantities and their rate dimensions. Null when this range has no media usage.
 	Media    OptNilMediaUsage `json:"media"`
 	Requests int64            `json:"requests"`
@@ -9472,6 +9754,21 @@ func (s *SourceUsageResource) GetOutputTokens() NilInt64 {
 // GetReasoningTokens returns the value of ReasoningTokens.
 func (s *SourceUsageResource) GetReasoningTokens() NilInt64 {
 	return s.ReasoningTokens
+}
+
+// GetAudioInputTokens returns the value of AudioInputTokens.
+func (s *SourceUsageResource) GetAudioInputTokens() OptNilInt64 {
+	return s.AudioInputTokens
+}
+
+// GetAudioOutputTokens returns the value of AudioOutputTokens.
+func (s *SourceUsageResource) GetAudioOutputTokens() OptNilInt64 {
+	return s.AudioOutputTokens
+}
+
+// GetAudioCacheReadTokens returns the value of AudioCacheReadTokens.
+func (s *SourceUsageResource) GetAudioCacheReadTokens() OptNilInt64 {
+	return s.AudioCacheReadTokens
 }
 
 // GetMedia returns the value of Media.
@@ -9517,6 +9814,21 @@ func (s *SourceUsageResource) SetOutputTokens(val NilInt64) {
 // SetReasoningTokens sets the value of ReasoningTokens.
 func (s *SourceUsageResource) SetReasoningTokens(val NilInt64) {
 	s.ReasoningTokens = val
+}
+
+// SetAudioInputTokens sets the value of AudioInputTokens.
+func (s *SourceUsageResource) SetAudioInputTokens(val OptNilInt64) {
+	s.AudioInputTokens = val
+}
+
+// SetAudioOutputTokens sets the value of AudioOutputTokens.
+func (s *SourceUsageResource) SetAudioOutputTokens(val OptNilInt64) {
+	s.AudioOutputTokens = val
+}
+
+// SetAudioCacheReadTokens sets the value of AudioCacheReadTokens.
+func (s *SourceUsageResource) SetAudioCacheReadTokens(val OptNilInt64) {
+	s.AudioCacheReadTokens = val
 }
 
 // SetMedia sets the value of Media.
@@ -10496,6 +10808,13 @@ type TotalsResource struct {
 	OutputTokens NilInt64 `json:"output_tokens"`
 	// Null when this range has no token usage.
 	ReasoningTokens NilInt64 `json:"reasoning_tokens"`
+	// Uncached audio input tokens consumed in realtime sessions. Omitted or null when unused.
+	AudioInputTokens OptNilInt64 `json:"audio_input_tokens"`
+	// Audio output tokens synthesized in realtime sessions. Omitted or null when unused.
+	AudioOutputTokens OptNilInt64 `json:"audio_output_tokens"`
+	// Cached audio input tokens served from upstream cache in realtime sessions. Omitted or null when
+	// unused.
+	AudioCacheReadTokens OptNilInt64 `json:"audio_cache_read_tokens"`
 	// Media quantities and their rate dimensions. Null when this range has no media usage.
 	Media    OptNilMediaUsage `json:"media"`
 	Requests int64            `json:"requests"`
@@ -10526,6 +10845,21 @@ func (s *TotalsResource) GetOutputTokens() NilInt64 {
 // GetReasoningTokens returns the value of ReasoningTokens.
 func (s *TotalsResource) GetReasoningTokens() NilInt64 {
 	return s.ReasoningTokens
+}
+
+// GetAudioInputTokens returns the value of AudioInputTokens.
+func (s *TotalsResource) GetAudioInputTokens() OptNilInt64 {
+	return s.AudioInputTokens
+}
+
+// GetAudioOutputTokens returns the value of AudioOutputTokens.
+func (s *TotalsResource) GetAudioOutputTokens() OptNilInt64 {
+	return s.AudioOutputTokens
+}
+
+// GetAudioCacheReadTokens returns the value of AudioCacheReadTokens.
+func (s *TotalsResource) GetAudioCacheReadTokens() OptNilInt64 {
+	return s.AudioCacheReadTokens
 }
 
 // GetMedia returns the value of Media.
@@ -10566,6 +10900,21 @@ func (s *TotalsResource) SetOutputTokens(val NilInt64) {
 // SetReasoningTokens sets the value of ReasoningTokens.
 func (s *TotalsResource) SetReasoningTokens(val NilInt64) {
 	s.ReasoningTokens = val
+}
+
+// SetAudioInputTokens sets the value of AudioInputTokens.
+func (s *TotalsResource) SetAudioInputTokens(val OptNilInt64) {
+	s.AudioInputTokens = val
+}
+
+// SetAudioOutputTokens sets the value of AudioOutputTokens.
+func (s *TotalsResource) SetAudioOutputTokens(val OptNilInt64) {
+	s.AudioOutputTokens = val
+}
+
+// SetAudioCacheReadTokens sets the value of AudioCacheReadTokens.
+func (s *TotalsResource) SetAudioCacheReadTokens(val OptNilInt64) {
+	s.AudioCacheReadTokens = val
 }
 
 // SetMedia sets the value of Media.
@@ -10839,6 +11188,13 @@ type UsageBucketResource struct {
 	OutputTokens NilInt64 `json:"output_tokens"`
 	// Null when this range has no token usage.
 	ReasoningTokens NilInt64 `json:"reasoning_tokens"`
+	// Uncached audio input tokens consumed in realtime sessions. Omitted or null when unused.
+	AudioInputTokens OptNilInt64 `json:"audio_input_tokens"`
+	// Audio output tokens synthesized in realtime sessions. Omitted or null when unused.
+	AudioOutputTokens OptNilInt64 `json:"audio_output_tokens"`
+	// Cached audio input tokens served from upstream cache in realtime sessions. Omitted or null when
+	// unused.
+	AudioCacheReadTokens OptNilInt64 `json:"audio_cache_read_tokens"`
 	// Media quantities and their rate dimensions. Null when this range has no media usage.
 	Media    OptNilMediaUsage `json:"media"`
 	Requests int64            `json:"requests"`
@@ -10876,6 +11232,21 @@ func (s *UsageBucketResource) GetOutputTokens() NilInt64 {
 // GetReasoningTokens returns the value of ReasoningTokens.
 func (s *UsageBucketResource) GetReasoningTokens() NilInt64 {
 	return s.ReasoningTokens
+}
+
+// GetAudioInputTokens returns the value of AudioInputTokens.
+func (s *UsageBucketResource) GetAudioInputTokens() OptNilInt64 {
+	return s.AudioInputTokens
+}
+
+// GetAudioOutputTokens returns the value of AudioOutputTokens.
+func (s *UsageBucketResource) GetAudioOutputTokens() OptNilInt64 {
+	return s.AudioOutputTokens
+}
+
+// GetAudioCacheReadTokens returns the value of AudioCacheReadTokens.
+func (s *UsageBucketResource) GetAudioCacheReadTokens() OptNilInt64 {
+	return s.AudioCacheReadTokens
 }
 
 // GetMedia returns the value of Media.
@@ -10926,6 +11297,21 @@ func (s *UsageBucketResource) SetOutputTokens(val NilInt64) {
 // SetReasoningTokens sets the value of ReasoningTokens.
 func (s *UsageBucketResource) SetReasoningTokens(val NilInt64) {
 	s.ReasoningTokens = val
+}
+
+// SetAudioInputTokens sets the value of AudioInputTokens.
+func (s *UsageBucketResource) SetAudioInputTokens(val OptNilInt64) {
+	s.AudioInputTokens = val
+}
+
+// SetAudioOutputTokens sets the value of AudioOutputTokens.
+func (s *UsageBucketResource) SetAudioOutputTokens(val OptNilInt64) {
+	s.AudioOutputTokens = val
+}
+
+// SetAudioCacheReadTokens sets the value of AudioCacheReadTokens.
+func (s *UsageBucketResource) SetAudioCacheReadTokens(val OptNilInt64) {
+	s.AudioCacheReadTokens = val
 }
 
 // SetMedia sets the value of Media.
