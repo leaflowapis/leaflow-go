@@ -26393,9 +26393,15 @@ func (s *Price) encodeFields(e *jx.Encoder) {
 			s.SetupFee.Encode(e)
 		}
 	}
+	{
+		if s.MinimumFunds.Set {
+			e.FieldStart("minimum_funds")
+			s.MinimumFunds.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfPrice = [28]string{
+var jsonFieldsNameOfPrice = [29]string{
 	0:  "rates",
 	1:  "lookup_key",
 	2:  "product",
@@ -26424,6 +26430,7 @@ var jsonFieldsNameOfPrice = [28]string{
 	25: "interval_count",
 	26: "interval",
 	27: "setup_fee",
+	28: "minimum_funds",
 }
 
 // Decode decodes Price from json.
@@ -26731,6 +26738,16 @@ func (s *Price) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"setup_fee\"")
+			}
+		case "minimum_funds":
+			if err := func() error {
+				s.MinimumFunds.Reset()
+				if err := s.MinimumFunds.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"minimum_funds\"")
 			}
 		default:
 			return d.Skip()

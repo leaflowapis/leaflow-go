@@ -16581,6 +16581,10 @@ type Price struct {
 	IntervalCount OptInt        `json:"interval_count"`
 	Interval      PriceInterval `json:"interval"`
 	SetupFee      OptMoney      `json:"setup_fee"`
+	// Metered prices only. Minimum available funds (balance plus applicable credits) required to open a
+	// metered-only subscription at this price. Absent uses the currency's minimum_top_up; `0` disables the
+	// requirement.
+	MinimumFunds OptMoney `json:"minimum_funds"`
 }
 
 // GetRates returns the value of Rates.
@@ -16723,6 +16727,11 @@ func (s *Price) GetSetupFee() OptMoney {
 	return s.SetupFee
 }
 
+// GetMinimumFunds returns the value of MinimumFunds.
+func (s *Price) GetMinimumFunds() OptMoney {
+	return s.MinimumFunds
+}
+
 // SetRates sets the value of Rates.
 func (s *Price) SetRates(val OptNilRateArray) {
 	s.Rates = val
@@ -16861,6 +16870,11 @@ func (s *Price) SetInterval(val PriceInterval) {
 // SetSetupFee sets the value of SetupFee.
 func (s *Price) SetSetupFee(val OptMoney) {
 	s.SetupFee = val
+}
+
+// SetMinimumFunds sets the value of MinimumFunds.
+func (s *Price) SetMinimumFunds(val OptMoney) {
+	s.MinimumFunds = val
 }
 
 // PriceHeaders wraps Price with response headers.
