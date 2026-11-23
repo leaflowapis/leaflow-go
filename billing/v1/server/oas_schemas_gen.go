@@ -1623,10 +1623,12 @@ func (s *CancelSubscriptionRequest) SetReason(val OptString) {
 //
 // Ref: #/components/schemas/Cancellation
 type Cancellation struct {
-	ID          uuid.UUID          `json:"id"`
-	Status      CancellationStatus `json:"status"`
-	Mode        CancellationMode   `json:"mode"`
-	ScheduledAt OptDateTime        `json:"scheduled_at"`
+	ID     uuid.UUID          `json:"id"`
+	Status CancellationStatus `json:"status"`
+	Mode   CancellationMode   `json:"mode"`
+	// The release time fixed when this cancellation was created. Later changes to subscription terms do
+	// not move it.
+	ScheduledAt OptDateTime `json:"scheduled_at"`
 	// For `immediate`, the second the refund is computed as of.
 	ProrationDate OptDateTime `json:"proration_date"`
 	// Who requested it; `project_deletion` means the project was deleted.
@@ -2302,7 +2304,8 @@ func (s *CancellationPolicy) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/CancellationPreview
 type CancellationPreview struct {
 	Mode CancellationMode `json:"mode"`
-	// For `period_end`, when release begins, the end of the subscriptions' current terms.
+	// For `period_end`, the release time if created now, resolved from the current terms. Creating the
+	// cancellation fixes its release time; later term changes do not move it.
 	ScheduledAt OptDateTime `json:"scheduled_at"`
 	// For `immediate`, the second the refund is computed as of. Give it when creating the cancellation.
 	ProrationDate            OptDateTime               `json:"proration_date"`
@@ -20792,14 +20795,16 @@ type SubscriptionItemCancellation struct {
 	Status             SubscriptionItemCancellationStatus `json:"status"`
 	Mode               CancellationMode                   `json:"mode"`
 	RequestedAt        time.Time                          `json:"requested_at"`
-	ScheduledAt        OptDateTime                        `json:"scheduled_at"`
-	EffectiveAt        OptDateTime                        `json:"effective_at"`
-	CompletedAt        OptDateTime                        `json:"completed_at"`
-	ReleaseStartedAt   OptDateTime                        `json:"release_started_at"`
-	CanceledAt         OptDateTime                        `json:"canceled_at"`
-	RefundPolicy       OptCancellationRefundPolicy        `json:"refund_policy"`
-	FailureCode        OptString                          `json:"failure_code"`
-	FailureReason      OptString                          `json:"failure_reason"`
+	// The release time fixed when this cancellation was created. Later changes to subscription terms do
+	// not move it.
+	ScheduledAt      OptDateTime                 `json:"scheduled_at"`
+	EffectiveAt      OptDateTime                 `json:"effective_at"`
+	CompletedAt      OptDateTime                 `json:"completed_at"`
+	ReleaseStartedAt OptDateTime                 `json:"release_started_at"`
+	CanceledAt       OptDateTime                 `json:"canceled_at"`
+	RefundPolicy     OptCancellationRefundPolicy `json:"refund_policy"`
+	FailureCode      OptString                   `json:"failure_code"`
+	FailureReason    OptString                   `json:"failure_reason"`
 }
 
 // GetReason returns the value of Reason.
