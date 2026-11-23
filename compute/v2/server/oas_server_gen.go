@@ -736,6 +736,12 @@ type Handler interface {
 	//
 	// POST /api/v2/virtual-private-clouds/{virtualPrivateCloudId}:disassociateIpv6CidrBlock
 	DisassociateVirtualPrivateCloudIpv6CidrBlock(ctx context.Context, req *DisassociateIpv6CidrBlockRequestBody, params DisassociateVirtualPrivateCloudIpv6CidrBlockParams) (DisassociateVirtualPrivateCloudIpv6CidrBlockRes, error)
+	// GetAttackIncident implements get-attack-incident operation.
+	//
+	// Get an attack incident.
+	//
+	// GET /api/v2/attack-incidents/{attackIncidentId}
+	GetAttackIncident(ctx context.Context, params GetAttackIncidentParams) (*AttackIncident, error)
 	// GetAvailabilityZone implements get-availability-zone operation.
 	//
 	// A volume and an instance must reside in the same availability zone to be attached.
@@ -906,6 +912,13 @@ type Handler interface {
 	//
 	// GET /api/v2/volume-types/{volumeTypeId}
 	GetVolumeType(ctx context.Context, params GetVolumeTypeParams) (*VolumeTypeResource, error)
+	// ListAttackIncidents implements list-attack-incidents operation.
+	//
+	// Lists DDoS attack and blackhole incidents recorded for public addresses held by this project, newest
+	// first. Filters are combined with AND. Results are paginated.
+	//
+	// GET /api/v2/attack-incidents
+	ListAttackIncidents(ctx context.Context, params ListAttackIncidentsParams) (*AttackIncidentListResponseBody, error)
 	// ListAvailabilityZones implements list-availability-zones operation.
 	//
 	// A volume and an instance must reside in the same availability zone to be attached. Confirm the zone
@@ -913,6 +926,13 @@ type Handler interface {
 	//
 	// GET /api/v2/availability-zones
 	ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*AvailabilityZoneListResponseBody, error)
+	// ListElasticIPAttackIncidents implements list-elastic-ip-attack-incidents operation.
+	//
+	// Lists DDoS attack and blackhole incidents recorded for this elastic IP while held by this project,
+	// newest first. Results are paginated.
+	//
+	// GET /api/v2/elastic-ips/{elasticIpId}/attack-incidents
+	ListElasticIPAttackIncidents(ctx context.Context, params ListElasticIPAttackIncidentsParams) (*AttackIncidentListResponseBody, error)
 	// ListElasticIPTrafficUsage implements list-elastic-ip-traffic-usage operation.
 	//
 	// The bytes and packets the elastic IP's address sent to the internet while the elastic IP held it,

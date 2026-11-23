@@ -22,6 +22,7 @@ var regexMap = map[string]ogenregex.Regexp{
 	"^(?:-|vpc_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25})$":                                                ogenregex.MustCompile("^(?:-|vpc_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25})$"),
 	"^(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}$": ogenregex.MustCompile("^(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}$"),
 	"^[0-9]{1,15}([.][0-9]{1,10})?$":                                                                         ogenregex.MustCompile("^[0-9]{1,15}([.][0-9]{1,10})?$"),
+	"^attackincident_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                           ogenregex.MustCompile("^attackincident_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^eip_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                      ogenregex.MustCompile("^eip_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^eipassociation_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                           ogenregex.MustCompile("^eipassociation_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),
 	"^eni_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$":                                                      ogenregex.MustCompile("^eni_[0-7][0123456789abcdefghjkmnpqrstvwxyz]{25}$"),

@@ -16,6 +16,88 @@ func (s *ErrorStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
+// The active attack or blackhole mitigation currently affecting this elastic IP.
+// Ref: #/components/schemas/ActiveAttackSummary
+type ActiveAttackSummary struct {
+	IncidentID       AttackIncidentId       `json:"incident_id"`
+	MitigationAction AttackMitigationAction `json:"mitigation_action"`
+	StartedAt        time.Time              `json:"started_at"`
+	BlackholedAt     NilDateTime            `json:"blackholed_at"`
+	ExpectedEndAt    NilDateTime            `json:"expected_end_at"`
+	PeakAttackBps    NilInt64               `json:"peak_attack_bps"`
+	PeakAttackPps    NilInt64               `json:"peak_attack_pps"`
+}
+
+// GetIncidentID returns the value of IncidentID.
+func (s *ActiveAttackSummary) GetIncidentID() AttackIncidentId {
+	return s.IncidentID
+}
+
+// GetMitigationAction returns the value of MitigationAction.
+func (s *ActiveAttackSummary) GetMitigationAction() AttackMitigationAction {
+	return s.MitigationAction
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *ActiveAttackSummary) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// GetBlackholedAt returns the value of BlackholedAt.
+func (s *ActiveAttackSummary) GetBlackholedAt() NilDateTime {
+	return s.BlackholedAt
+}
+
+// GetExpectedEndAt returns the value of ExpectedEndAt.
+func (s *ActiveAttackSummary) GetExpectedEndAt() NilDateTime {
+	return s.ExpectedEndAt
+}
+
+// GetPeakAttackBps returns the value of PeakAttackBps.
+func (s *ActiveAttackSummary) GetPeakAttackBps() NilInt64 {
+	return s.PeakAttackBps
+}
+
+// GetPeakAttackPps returns the value of PeakAttackPps.
+func (s *ActiveAttackSummary) GetPeakAttackPps() NilInt64 {
+	return s.PeakAttackPps
+}
+
+// SetIncidentID sets the value of IncidentID.
+func (s *ActiveAttackSummary) SetIncidentID(val AttackIncidentId) {
+	s.IncidentID = val
+}
+
+// SetMitigationAction sets the value of MitigationAction.
+func (s *ActiveAttackSummary) SetMitigationAction(val AttackMitigationAction) {
+	s.MitigationAction = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *ActiveAttackSummary) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// SetBlackholedAt sets the value of BlackholedAt.
+func (s *ActiveAttackSummary) SetBlackholedAt(val NilDateTime) {
+	s.BlackholedAt = val
+}
+
+// SetExpectedEndAt sets the value of ExpectedEndAt.
+func (s *ActiveAttackSummary) SetExpectedEndAt(val NilDateTime) {
+	s.ExpectedEndAt = val
+}
+
+// SetPeakAttackBps sets the value of PeakAttackBps.
+func (s *ActiveAttackSummary) SetPeakAttackBps(val NilInt64) {
+	s.PeakAttackBps = val
+}
+
+// SetPeakAttackPps sets the value of PeakAttackPps.
+func (s *ActiveAttackSummary) SetPeakAttackPps(val NilInt64) {
+	s.PeakAttackPps = val
+}
+
 // The target an elastic IP points at. Exactly one of the two forms.
 // Ref: #/components/schemas/AssociateElasticIpRequestBody
 // AssociateElasticIpRequestBody represents sum type.
@@ -208,6 +290,477 @@ func (s *AttachVolumeRequestBody) GetVolumeID() VolumeId {
 // SetVolumeID sets the value of VolumeID.
 func (s *AttachVolumeRequestBody) SetVolumeID(val VolumeId) {
 	s.VolumeID = val
+}
+
+// Ref: #/components/schemas/AttackDirection
+type AttackDirection string
+
+const (
+	AttackDirectionInbound  AttackDirection = "inbound"
+	AttackDirectionOutbound AttackDirection = "outbound"
+)
+
+// AllValues returns all AttackDirection values.
+func (AttackDirection) AllValues() []AttackDirection {
+	return []AttackDirection{
+		AttackDirectionInbound,
+		AttackDirectionOutbound,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AttackDirection) MarshalText() ([]byte, error) {
+	switch s {
+	case AttackDirectionInbound:
+		return []byte(s), nil
+	case AttackDirectionOutbound:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AttackDirection) UnmarshalText(data []byte) error {
+	switch AttackDirection(data) {
+	case AttackDirectionInbound:
+		*s = AttackDirectionInbound
+		return nil
+	case AttackDirectionOutbound:
+		*s = AttackDirectionOutbound
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// One DDoS attack or blackhole incident recorded for an address held by this project.
+// Ref: #/components/schemas/AttackIncident
+type AttackIncident struct {
+	ID                    AttackIncidentId         `json:"id"`
+	RegionID              RegionId                 `json:"region_id"`
+	ElasticIPID           NilElasticIpId           `json:"elastic_ip_id"`
+	VirtualPrivateCloudID NilVirtualPrivateCloudId `json:"virtual_private_cloud_id"`
+	// Target IP address or CIDR.
+	TargetAddress    string                     `json:"target_address"`
+	Direction        AttackDirection            `json:"direction"`
+	Status           AttackIncidentStatus       `json:"status"`
+	MitigationAction AttackMitigationAction     `json:"mitigation_action"`
+	EndSource        NilAttackIncidentEndSource `json:"end_source"`
+	StartedAt        time.Time                  `json:"started_at"`
+	LastEventAt      time.Time                  `json:"last_event_at"`
+	BlackholedAt     NilDateTime                `json:"blackholed_at"`
+	ExpectedEndAt    NilDateTime                `json:"expected_end_at"`
+	EndedAt          NilDateTime                `json:"ended_at"`
+	PeakAttackBps    NilInt64                   `json:"peak_attack_bps"`
+	PeakAttackPps    NilInt64                   `json:"peak_attack_pps"`
+	ThresholdBps     NilInt64                   `json:"threshold_bps"`
+	ThresholdPps     NilInt64                   `json:"threshold_pps"`
+	AttackTypes      []string                   `json:"attack_types"`
+	TargetPorts      []int64                    `json:"target_ports"`
+	CreatedAt        time.Time                  `json:"created_at"`
+	UpdatedAt        time.Time                  `json:"updated_at"`
+}
+
+// GetID returns the value of ID.
+func (s *AttackIncident) GetID() AttackIncidentId {
+	return s.ID
+}
+
+// GetRegionID returns the value of RegionID.
+func (s *AttackIncident) GetRegionID() RegionId {
+	return s.RegionID
+}
+
+// GetElasticIPID returns the value of ElasticIPID.
+func (s *AttackIncident) GetElasticIPID() NilElasticIpId {
+	return s.ElasticIPID
+}
+
+// GetVirtualPrivateCloudID returns the value of VirtualPrivateCloudID.
+func (s *AttackIncident) GetVirtualPrivateCloudID() NilVirtualPrivateCloudId {
+	return s.VirtualPrivateCloudID
+}
+
+// GetTargetAddress returns the value of TargetAddress.
+func (s *AttackIncident) GetTargetAddress() string {
+	return s.TargetAddress
+}
+
+// GetDirection returns the value of Direction.
+func (s *AttackIncident) GetDirection() AttackDirection {
+	return s.Direction
+}
+
+// GetStatus returns the value of Status.
+func (s *AttackIncident) GetStatus() AttackIncidentStatus {
+	return s.Status
+}
+
+// GetMitigationAction returns the value of MitigationAction.
+func (s *AttackIncident) GetMitigationAction() AttackMitigationAction {
+	return s.MitigationAction
+}
+
+// GetEndSource returns the value of EndSource.
+func (s *AttackIncident) GetEndSource() NilAttackIncidentEndSource {
+	return s.EndSource
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *AttackIncident) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// GetLastEventAt returns the value of LastEventAt.
+func (s *AttackIncident) GetLastEventAt() time.Time {
+	return s.LastEventAt
+}
+
+// GetBlackholedAt returns the value of BlackholedAt.
+func (s *AttackIncident) GetBlackholedAt() NilDateTime {
+	return s.BlackholedAt
+}
+
+// GetExpectedEndAt returns the value of ExpectedEndAt.
+func (s *AttackIncident) GetExpectedEndAt() NilDateTime {
+	return s.ExpectedEndAt
+}
+
+// GetEndedAt returns the value of EndedAt.
+func (s *AttackIncident) GetEndedAt() NilDateTime {
+	return s.EndedAt
+}
+
+// GetPeakAttackBps returns the value of PeakAttackBps.
+func (s *AttackIncident) GetPeakAttackBps() NilInt64 {
+	return s.PeakAttackBps
+}
+
+// GetPeakAttackPps returns the value of PeakAttackPps.
+func (s *AttackIncident) GetPeakAttackPps() NilInt64 {
+	return s.PeakAttackPps
+}
+
+// GetThresholdBps returns the value of ThresholdBps.
+func (s *AttackIncident) GetThresholdBps() NilInt64 {
+	return s.ThresholdBps
+}
+
+// GetThresholdPps returns the value of ThresholdPps.
+func (s *AttackIncident) GetThresholdPps() NilInt64 {
+	return s.ThresholdPps
+}
+
+// GetAttackTypes returns the value of AttackTypes.
+func (s *AttackIncident) GetAttackTypes() []string {
+	return s.AttackTypes
+}
+
+// GetTargetPorts returns the value of TargetPorts.
+func (s *AttackIncident) GetTargetPorts() []int64 {
+	return s.TargetPorts
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *AttackIncident) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *AttackIncident) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetID sets the value of ID.
+func (s *AttackIncident) SetID(val AttackIncidentId) {
+	s.ID = val
+}
+
+// SetRegionID sets the value of RegionID.
+func (s *AttackIncident) SetRegionID(val RegionId) {
+	s.RegionID = val
+}
+
+// SetElasticIPID sets the value of ElasticIPID.
+func (s *AttackIncident) SetElasticIPID(val NilElasticIpId) {
+	s.ElasticIPID = val
+}
+
+// SetVirtualPrivateCloudID sets the value of VirtualPrivateCloudID.
+func (s *AttackIncident) SetVirtualPrivateCloudID(val NilVirtualPrivateCloudId) {
+	s.VirtualPrivateCloudID = val
+}
+
+// SetTargetAddress sets the value of TargetAddress.
+func (s *AttackIncident) SetTargetAddress(val string) {
+	s.TargetAddress = val
+}
+
+// SetDirection sets the value of Direction.
+func (s *AttackIncident) SetDirection(val AttackDirection) {
+	s.Direction = val
+}
+
+// SetStatus sets the value of Status.
+func (s *AttackIncident) SetStatus(val AttackIncidentStatus) {
+	s.Status = val
+}
+
+// SetMitigationAction sets the value of MitigationAction.
+func (s *AttackIncident) SetMitigationAction(val AttackMitigationAction) {
+	s.MitigationAction = val
+}
+
+// SetEndSource sets the value of EndSource.
+func (s *AttackIncident) SetEndSource(val NilAttackIncidentEndSource) {
+	s.EndSource = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *AttackIncident) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// SetLastEventAt sets the value of LastEventAt.
+func (s *AttackIncident) SetLastEventAt(val time.Time) {
+	s.LastEventAt = val
+}
+
+// SetBlackholedAt sets the value of BlackholedAt.
+func (s *AttackIncident) SetBlackholedAt(val NilDateTime) {
+	s.BlackholedAt = val
+}
+
+// SetExpectedEndAt sets the value of ExpectedEndAt.
+func (s *AttackIncident) SetExpectedEndAt(val NilDateTime) {
+	s.ExpectedEndAt = val
+}
+
+// SetEndedAt sets the value of EndedAt.
+func (s *AttackIncident) SetEndedAt(val NilDateTime) {
+	s.EndedAt = val
+}
+
+// SetPeakAttackBps sets the value of PeakAttackBps.
+func (s *AttackIncident) SetPeakAttackBps(val NilInt64) {
+	s.PeakAttackBps = val
+}
+
+// SetPeakAttackPps sets the value of PeakAttackPps.
+func (s *AttackIncident) SetPeakAttackPps(val NilInt64) {
+	s.PeakAttackPps = val
+}
+
+// SetThresholdBps sets the value of ThresholdBps.
+func (s *AttackIncident) SetThresholdBps(val NilInt64) {
+	s.ThresholdBps = val
+}
+
+// SetThresholdPps sets the value of ThresholdPps.
+func (s *AttackIncident) SetThresholdPps(val NilInt64) {
+	s.ThresholdPps = val
+}
+
+// SetAttackTypes sets the value of AttackTypes.
+func (s *AttackIncident) SetAttackTypes(val []string) {
+	s.AttackTypes = val
+}
+
+// SetTargetPorts sets the value of TargetPorts.
+func (s *AttackIncident) SetTargetPorts(val []int64) {
+	s.TargetPorts = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *AttackIncident) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *AttackIncident) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+type AttackIncidentEndSource string
+
+const (
+	AttackIncidentEndSourceReported    AttackIncidentEndSource = "reported"
+	AttackIncidentEndSourceAutoExpired AttackIncidentEndSource = "auto_expired"
+	AttackIncidentEndSourceTimedOut    AttackIncidentEndSource = "timed_out"
+	AttackIncidentEndSourceOperator    AttackIncidentEndSource = "operator"
+)
+
+// AllValues returns all AttackIncidentEndSource values.
+func (AttackIncidentEndSource) AllValues() []AttackIncidentEndSource {
+	return []AttackIncidentEndSource{
+		AttackIncidentEndSourceReported,
+		AttackIncidentEndSourceAutoExpired,
+		AttackIncidentEndSourceTimedOut,
+		AttackIncidentEndSourceOperator,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AttackIncidentEndSource) MarshalText() ([]byte, error) {
+	switch s {
+	case AttackIncidentEndSourceReported:
+		return []byte(s), nil
+	case AttackIncidentEndSourceAutoExpired:
+		return []byte(s), nil
+	case AttackIncidentEndSourceTimedOut:
+		return []byte(s), nil
+	case AttackIncidentEndSourceOperator:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AttackIncidentEndSource) UnmarshalText(data []byte) error {
+	switch AttackIncidentEndSource(data) {
+	case AttackIncidentEndSourceReported:
+		*s = AttackIncidentEndSourceReported
+		return nil
+	case AttackIncidentEndSourceAutoExpired:
+		*s = AttackIncidentEndSourceAutoExpired
+		return nil
+	case AttackIncidentEndSourceTimedOut:
+		*s = AttackIncidentEndSourceTimedOut
+		return nil
+	case AttackIncidentEndSourceOperator:
+		*s = AttackIncidentEndSourceOperator
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type AttackIncidentId string
+
+// Ref: #/components/schemas/AttackIncidentListResponseBody
+type AttackIncidentListResponseBody struct {
+	Items      []AttackIncident `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *AttackIncidentListResponseBody) GetItems() []AttackIncident {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *AttackIncidentListResponseBody) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *AttackIncidentListResponseBody) SetItems(val []AttackIncident) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *AttackIncidentListResponseBody) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+// Ref: #/components/schemas/AttackIncidentStatus
+type AttackIncidentStatus string
+
+const (
+	AttackIncidentStatusActive AttackIncidentStatus = "active"
+	AttackIncidentStatusEnded  AttackIncidentStatus = "ended"
+)
+
+// AllValues returns all AttackIncidentStatus values.
+func (AttackIncidentStatus) AllValues() []AttackIncidentStatus {
+	return []AttackIncidentStatus{
+		AttackIncidentStatusActive,
+		AttackIncidentStatusEnded,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AttackIncidentStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case AttackIncidentStatusActive:
+		return []byte(s), nil
+	case AttackIncidentStatusEnded:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AttackIncidentStatus) UnmarshalText(data []byte) error {
+	switch AttackIncidentStatus(data) {
+	case AttackIncidentStatusActive:
+		*s = AttackIncidentStatusActive
+		return nil
+	case AttackIncidentStatusEnded:
+		*s = AttackIncidentStatusEnded
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/AttackMitigationAction
+type AttackMitigationAction string
+
+const (
+	AttackMitigationActionNone      AttackMitigationAction = "none"
+	AttackMitigationActionScrubbing AttackMitigationAction = "scrubbing"
+	AttackMitigationActionRateLimit AttackMitigationAction = "rate_limit"
+	AttackMitigationActionBlackhole AttackMitigationAction = "blackhole"
+)
+
+// AllValues returns all AttackMitigationAction values.
+func (AttackMitigationAction) AllValues() []AttackMitigationAction {
+	return []AttackMitigationAction{
+		AttackMitigationActionNone,
+		AttackMitigationActionScrubbing,
+		AttackMitigationActionRateLimit,
+		AttackMitigationActionBlackhole,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AttackMitigationAction) MarshalText() ([]byte, error) {
+	switch s {
+	case AttackMitigationActionNone:
+		return []byte(s), nil
+	case AttackMitigationActionScrubbing:
+		return []byte(s), nil
+	case AttackMitigationActionRateLimit:
+		return []byte(s), nil
+	case AttackMitigationActionBlackhole:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AttackMitigationAction) UnmarshalText(data []byte) error {
+	switch AttackMitigationAction(data) {
+	case AttackMitigationActionNone:
+		*s = AttackMitigationActionNone
+		return nil
+	case AttackMitigationActionScrubbing:
+		*s = AttackMitigationActionScrubbing
+		return nil
+	case AttackMitigationActionRateLimit:
+		*s = AttackMitigationActionRateLimit
+		return nil
+	case AttackMitigationActionBlackhole:
+		*s = AttackMitigationActionBlackhole
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 type AvailabilityZoneId string
@@ -2437,6 +2990,8 @@ type ElasticIp struct {
 	Association   NilElasticIpAssociation   `json:"association"`
 	// The most recent operation started on the elastic IP; null when none has been recorded.
 	LatestOperation NilLatestOperation `json:"latest_operation"`
+	// The active attack or blackhole mitigation affecting this address; null when no attack is active.
+	ActiveAttack NilActiveAttackSummary `json:"active_attack"`
 }
 
 // GetInternetChargeType returns the value of InternetChargeType.
@@ -2549,6 +3104,11 @@ func (s *ElasticIp) GetLatestOperation() NilLatestOperation {
 	return s.LatestOperation
 }
 
+// GetActiveAttack returns the value of ActiveAttack.
+func (s *ElasticIp) GetActiveAttack() NilActiveAttackSummary {
+	return s.ActiveAttack
+}
+
 // SetInternetChargeType sets the value of InternetChargeType.
 func (s *ElasticIp) SetInternetChargeType(val InternetChargeType) {
 	s.InternetChargeType = val
@@ -2657,6 +3217,11 @@ func (s *ElasticIp) SetAssociation(val NilElasticIpAssociation) {
 // SetLatestOperation sets the value of LatestOperation.
 func (s *ElasticIp) SetLatestOperation(val NilLatestOperation) {
 	s.LatestOperation = val
+}
+
+// SetActiveAttack sets the value of ActiveAttack.
+func (s *ElasticIp) SetActiveAttack(val NilActiveAttackSummary) {
+	s.ActiveAttack = val
 }
 
 func (*ElasticIp) associateElasticIPRes()        {}
@@ -7791,6 +8356,96 @@ func (s *NewPrimaryNetworkInterfaceType) UnmarshalText(data []byte) error {
 	}
 }
 
+// NewNilActiveAttackSummary returns new NilActiveAttackSummary with value set to v.
+func NewNilActiveAttackSummary(v ActiveAttackSummary) NilActiveAttackSummary {
+	return NilActiveAttackSummary{
+		Value: v,
+	}
+}
+
+// NilActiveAttackSummary is nullable ActiveAttackSummary.
+type NilActiveAttackSummary struct {
+	Value ActiveAttackSummary
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilActiveAttackSummary) SetTo(v ActiveAttackSummary) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilActiveAttackSummary) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilActiveAttackSummary) SetToNull() {
+	o.Null = true
+	var v ActiveAttackSummary
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilActiveAttackSummary) Get() (v ActiveAttackSummary, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilActiveAttackSummary) Or(d ActiveAttackSummary) ActiveAttackSummary {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilAttackIncidentEndSource returns new NilAttackIncidentEndSource with value set to v.
+func NewNilAttackIncidentEndSource(v AttackIncidentEndSource) NilAttackIncidentEndSource {
+	return NilAttackIncidentEndSource{
+		Value: v,
+	}
+}
+
+// NilAttackIncidentEndSource is nullable AttackIncidentEndSource.
+type NilAttackIncidentEndSource struct {
+	Value AttackIncidentEndSource
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilAttackIncidentEndSource) SetTo(v AttackIncidentEndSource) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilAttackIncidentEndSource) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilAttackIncidentEndSource) SetToNull() {
+	o.Null = true
+	var v AttackIncidentEndSource
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilAttackIncidentEndSource) Get() (v AttackIncidentEndSource, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilAttackIncidentEndSource) Or(d AttackIncidentEndSource) AttackIncidentEndSource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilBillingCancellation returns new NilBillingCancellation with value set to v.
 func NewNilBillingCancellation(v BillingCancellation) NilBillingCancellation {
 	return NilBillingCancellation{
@@ -8100,6 +8755,51 @@ func (o NilElasticIpFailureReason) Get() (v ElasticIpFailureReason, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilElasticIpFailureReason) Or(d ElasticIpFailureReason) ElasticIpFailureReason {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilElasticIpId returns new NilElasticIpId with value set to v.
+func NewNilElasticIpId(v ElasticIpId) NilElasticIpId {
+	return NilElasticIpId{
+		Value: v,
+	}
+}
+
+// NilElasticIpId is nullable ElasticIpId.
+type NilElasticIpId struct {
+	Value ElasticIpId
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilElasticIpId) SetTo(v ElasticIpId) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilElasticIpId) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilElasticIpId) SetToNull() {
+	o.Null = true
+	var v ElasticIpId
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilElasticIpId) Get() (v ElasticIpId, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilElasticIpId) Or(d ElasticIpId) ElasticIpId {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9777,6 +10477,98 @@ func (s *OperationLogResourcePayload) init() OperationLogResourcePayload {
 	return m
 }
 
+// NewOptAttackIncidentStatus returns new OptAttackIncidentStatus with value set to v.
+func NewOptAttackIncidentStatus(v AttackIncidentStatus) OptAttackIncidentStatus {
+	return OptAttackIncidentStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptAttackIncidentStatus is optional AttackIncidentStatus.
+type OptAttackIncidentStatus struct {
+	Value AttackIncidentStatus
+	Set   bool
+}
+
+// IsSet returns true if OptAttackIncidentStatus was set.
+func (o OptAttackIncidentStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptAttackIncidentStatus) Reset() {
+	var v AttackIncidentStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptAttackIncidentStatus) SetTo(v AttackIncidentStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptAttackIncidentStatus) Get() (v AttackIncidentStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptAttackIncidentStatus) Or(d AttackIncidentStatus) AttackIncidentStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptAttackMitigationAction returns new OptAttackMitigationAction with value set to v.
+func NewOptAttackMitigationAction(v AttackMitigationAction) OptAttackMitigationAction {
+	return OptAttackMitigationAction{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptAttackMitigationAction is optional AttackMitigationAction.
+type OptAttackMitigationAction struct {
+	Value AttackMitigationAction
+	Set   bool
+}
+
+// IsSet returns true if OptAttackMitigationAction was set.
+func (o OptAttackMitigationAction) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptAttackMitigationAction) Reset() {
+	var v AttackMitigationAction
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptAttackMitigationAction) SetTo(v AttackMitigationAction) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptAttackMitigationAction) Get() (v AttackMitigationAction, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptAttackMitigationAction) Or(d AttackMitigationAction) AttackMitigationAction {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptAvailabilityZoneId returns new OptAvailabilityZoneId with value set to v.
 func NewOptAvailabilityZoneId(v AvailabilityZoneId) OptAvailabilityZoneId {
 	return OptAvailabilityZoneId{
@@ -10231,6 +11023,52 @@ func (o OptDateTime) Get() (v time.Time, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptElasticIpId returns new OptElasticIpId with value set to v.
+func NewOptElasticIpId(v ElasticIpId) OptElasticIpId {
+	return OptElasticIpId{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptElasticIpId is optional ElasticIpId.
+type OptElasticIpId struct {
+	Value ElasticIpId
+	Set   bool
+}
+
+// IsSet returns true if OptElasticIpId was set.
+func (o OptElasticIpId) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptElasticIpId) Reset() {
+	var v ElasticIpId
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptElasticIpId) SetTo(v ElasticIpId) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptElasticIpId) Get() (v ElasticIpId, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptElasticIpId) Or(d ElasticIpId) ElasticIpId {
 	if v, ok := o.Get(); ok {
 		return v
 	}

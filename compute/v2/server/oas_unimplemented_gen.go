@@ -873,6 +873,15 @@ func (UnimplementedHandler) DisassociateVirtualPrivateCloudIpv6CidrBlock(ctx con
 	return r, ht.ErrNotImplemented
 }
 
+// GetAttackIncident implements get-attack-incident operation.
+//
+// Get an attack incident.
+//
+// GET /api/v2/attack-incidents/{attackIncidentId}
+func (UnimplementedHandler) GetAttackIncident(ctx context.Context, params GetAttackIncidentParams) (r *AttackIncident, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetAvailabilityZone implements get-availability-zone operation.
 //
 // A volume and an instance must reside in the same availability zone to be attached.
@@ -1121,6 +1130,16 @@ func (UnimplementedHandler) GetVolumeType(ctx context.Context, params GetVolumeT
 	return r, ht.ErrNotImplemented
 }
 
+// ListAttackIncidents implements list-attack-incidents operation.
+//
+// Lists DDoS attack and blackhole incidents recorded for public addresses held by this project, newest
+// first. Filters are combined with AND. Results are paginated.
+//
+// GET /api/v2/attack-incidents
+func (UnimplementedHandler) ListAttackIncidents(ctx context.Context, params ListAttackIncidentsParams) (r *AttackIncidentListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListAvailabilityZones implements list-availability-zones operation.
 //
 // A volume and an instance must reside in the same availability zone to be attached. Confirm the zone
@@ -1128,6 +1147,16 @@ func (UnimplementedHandler) GetVolumeType(ctx context.Context, params GetVolumeT
 //
 // GET /api/v2/availability-zones
 func (UnimplementedHandler) ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (r *AvailabilityZoneListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListElasticIPAttackIncidents implements list-elastic-ip-attack-incidents operation.
+//
+// Lists DDoS attack and blackhole incidents recorded for this elastic IP while held by this project,
+// newest first. Results are paginated.
+//
+// GET /api/v2/elastic-ips/{elasticIpId}/attack-incidents
+func (UnimplementedHandler) ListElasticIPAttackIncidents(ctx context.Context, params ListElasticIPAttackIncidentsParams) (r *AttackIncidentListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
