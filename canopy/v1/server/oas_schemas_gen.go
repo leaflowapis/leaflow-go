@@ -4347,7 +4347,10 @@ type Model struct {
 	Capabilities     ModelCapabilities `json:"capabilities"`
 	// Inference endpoints reachable on Canopy for this model, derived from its provider mappings.
 	SupportedEndpoints []string `json:"supported_endpoints"`
-	AdditionalProps    ModelAdditional
+	// Public limits for keyless free inference when enabled on this model. Null when the model requires an
+	// API key or project token.
+	FreeAccess      OptNilModelFreeAccess `json:"free_access"`
+	AdditionalProps ModelAdditional
 }
 
 // GetID returns the value of ID.
@@ -4413,6 +4416,11 @@ func (s *Model) GetCapabilities() ModelCapabilities {
 // GetSupportedEndpoints returns the value of SupportedEndpoints.
 func (s *Model) GetSupportedEndpoints() []string {
 	return s.SupportedEndpoints
+}
+
+// GetFreeAccess returns the value of FreeAccess.
+func (s *Model) GetFreeAccess() OptNilModelFreeAccess {
+	return s.FreeAccess
 }
 
 // GetAdditionalProps returns the value of AdditionalProps.
@@ -4483,6 +4491,11 @@ func (s *Model) SetCapabilities(val ModelCapabilities) {
 // SetSupportedEndpoints sets the value of SupportedEndpoints.
 func (s *Model) SetSupportedEndpoints(val []string) {
 	s.SupportedEndpoints = val
+}
+
+// SetFreeAccess sets the value of FreeAccess.
+func (s *Model) SetFreeAccess(val OptNilModelFreeAccess) {
+	s.FreeAccess = val
 }
 
 // SetAdditionalProps sets the value of AdditionalProps.
@@ -4745,6 +4758,35 @@ func (s *ModelCategory) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Public limits for keyless free inference on a model.
+// Ref: #/components/schemas/ModelFreeAccess
+type ModelFreeAccess struct {
+	// Maximum input context tokens accepted for keyless free requests.
+	ContextLength int64 `json:"context_length"`
+	// Maximum keyless free requests per minute per client IP.
+	IPRpmLimit int32 `json:"ip_rpm_limit"`
+}
+
+// GetContextLength returns the value of ContextLength.
+func (s *ModelFreeAccess) GetContextLength() int64 {
+	return s.ContextLength
+}
+
+// GetIPRpmLimit returns the value of IPRpmLimit.
+func (s *ModelFreeAccess) GetIPRpmLimit() int32 {
+	return s.IPRpmLimit
+}
+
+// SetContextLength sets the value of ContextLength.
+func (s *ModelFreeAccess) SetContextLength(val int64) {
+	s.ContextLength = val
+}
+
+// SetIPRpmLimit sets the value of IPRpmLimit.
+func (s *ModelFreeAccess) SetIPRpmLimit(val int32) {
+	s.IPRpmLimit = val
 }
 
 // Ref: #/components/schemas/ModelList
@@ -5159,16 +5201,20 @@ type ModelResource struct {
 	Capabilities     ModelCapabilities `json:"capabilities"`
 	// Inference endpoints reachable on Canopy for this model, derived from its provider mappings.
 	SupportedEndpoints []string `json:"supported_endpoints"`
-	// Who can call the model. Every model is listed to every project.
+	// Who can call the model. Every model is listed to every caller.
 	//
 	//  - `public`: callable by every project.
 	//  - `restricted`: callable only by projects holding a grant. A request from any other project fails
 	//    with 403 `MODEL_ACCESS_REQUIRED`.
 	Access ModelResourceAccess `json:"access"`
-	// Whether the current project can call the model. Always true for a public model.
+	// Whether the caller can call the model. Always true for a public model; false for a restricted model
+	// when unauthenticated or when the project holds no grant.
 	AccessGranted bool `json:"access_granted"`
 	// True when the model is served without upstream content moderation.
 	ModerationDisabled bool `json:"moderation_disabled"`
+	// Public limits for keyless free inference when enabled on this model. Null when the model requires an
+	// API key or project token.
+	FreeAccess OptNilModelFreeAccess `json:"free_access"`
 }
 
 // GetContextLength returns the value of ContextLength.
@@ -5251,6 +5297,11 @@ func (s *ModelResource) GetModerationDisabled() bool {
 	return s.ModerationDisabled
 }
 
+// GetFreeAccess returns the value of FreeAccess.
+func (s *ModelResource) GetFreeAccess() OptNilModelFreeAccess {
+	return s.FreeAccess
+}
+
 // SetContextLength sets the value of ContextLength.
 func (s *ModelResource) SetContextLength(val int64) {
 	s.ContextLength = val
@@ -5331,10 +5382,15 @@ func (s *ModelResource) SetModerationDisabled(val bool) {
 	s.ModerationDisabled = val
 }
 
+// SetFreeAccess sets the value of FreeAccess.
+func (s *ModelResource) SetFreeAccess(val OptNilModelFreeAccess) {
+	s.FreeAccess = val
+}
+
 func (*ModelResource) getModelRes()    {}
 func (*ModelResource) lookupModelRes() {}
 
-// Who can call the model. Every model is listed to every project.
+// Who can call the model. Every model is listed to every caller.
 //
 //   - `public`: callable by every project.
 //   - `restricted`: callable only by projects holding a grant. A request from any other project fails
@@ -7658,6 +7714,74 @@ func (o OptNilMediaUsage) Get() (v MediaUsage, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilMediaUsage) Or(d MediaUsage) MediaUsage {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilModelFreeAccess returns new OptNilModelFreeAccess with value set to v.
+func NewOptNilModelFreeAccess(v ModelFreeAccess) OptNilModelFreeAccess {
+	return OptNilModelFreeAccess{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilModelFreeAccess is optional nullable ModelFreeAccess.
+type OptNilModelFreeAccess struct {
+	Value ModelFreeAccess
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilModelFreeAccess was set.
+func (o OptNilModelFreeAccess) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilModelFreeAccess) Reset() {
+	var v ModelFreeAccess
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilModelFreeAccess) SetTo(v ModelFreeAccess) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilModelFreeAccess) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilModelFreeAccess) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v ModelFreeAccess
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilModelFreeAccess) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilModelFreeAccess) Get() (v ModelFreeAccess, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilModelFreeAccess) Or(d ModelFreeAccess) ModelFreeAccess {
 	if v, ok := o.Get(); ok {
 		return v
 	}

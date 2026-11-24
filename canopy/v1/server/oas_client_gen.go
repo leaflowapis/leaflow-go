@@ -216,7 +216,8 @@ type Invoker interface {
 	// GetModel invokes get-model operation.
 	//
 	// A model that has been retired remains readable here, while forwarding to it is refused with
-	// `MODEL_RETIRED`. That is distinct from a model that does not exist.
+	// `MODEL_RETIRED`. That is distinct from a model that does not exist. Authentication is optional;
+	// without a token, `access_granted` is `true` for `public` models and `false` for `restricted` models.
 	//
 	// GET /api/v1/models/{modelId}
 	GetModel(ctx context.Context, params GetModelParams) (GetModelRes, error)
@@ -308,11 +309,17 @@ type Invoker interface {
 	//
 	// A model that has been retired does not appear here, while it remains readable individually.
 	//
-	// Restricted models are listed to every project. Calling one requires a grant for the project, and
+	// Authentication is optional. Without a token, all non-retired models are listed with `access_granted`
+	// set to `true` for `public` models and `false` for `restricted` models. When a valid scoped token is
+	// sent, `access_granted` reflects the project's grants for restricted models; an invalid or expired
+	// token is still refused with 401.
+	//
+	// Restricted models are listed to every caller. Calling one requires a grant for the project, and
 	// `access_granted` says whether the current project holds one.
 	//
-	// `context_length` and `max_output_tokens` are advisory. The server does not truncate on their basis,
-	// and the request body is forwarded upstream unchanged.
+	// `context_length` and `max_output_tokens` are advisory for paid calls. When `free_access` is
+	// non-null, keyless free inference is enabled for the model within `free_access.context_length` input
+	// tokens and `free_access.ip_rpm_limit` requests per minute per IP.
 	//
 	// Canopy returns no amounts: each model's `billing` names the Billing plan and the rate dimensions its
 	// token usage is priced at. Read the rates from the `rates` of the plan's prices in Billing's
@@ -374,7 +381,8 @@ type Invoker interface {
 	//
 	// Reads a model by query parameter rather than URL path segment, safely supporting slash-prefixed
 	// model names such as `cyber/deepseek-v4.1-flash` as well as internal model identifiers. Retired
-	// models remain readable here.
+	// models remain readable here. Authentication is optional; without a token, `access_granted` is `true`
+	// for `public` models and `false` for `restricted` models.
 	//
 	// GET /api/v1/models:lookup
 	LookupModel(ctx context.Context, params LookupModelParams) (LookupModelRes, error)
@@ -3025,6 +3033,7 @@ func (c *Client) sendGetInferenceModel(ctx context.Context, params GetInferenceM
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -3066,7 +3075,8 @@ func (c *Client) sendGetInferenceModel(ctx context.Context, params GetInferenceM
 // GetModel invokes get-model operation.
 //
 // A model that has been retired remains readable here, while forwarding to it is refused with
-// `MODEL_RETIRED`. That is distinct from a model that does not exist.
+// `MODEL_RETIRED`. That is distinct from a model that does not exist. Authentication is optional;
+// without a token, `access_granted` is `true` for `public` models and `false` for `restricted` models.
 //
 // GET /api/v1/models/{modelId}
 func (c *Client) GetModel(ctx context.Context, params GetModelParams) (GetModelRes, error) {
@@ -3157,6 +3167,7 @@ func (c *Client) sendGetModel(ctx context.Context, params GetModelParams) (res G
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -4513,6 +4524,7 @@ func (c *Client) sendListInferenceModels(ctx context.Context, params ListInferen
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -4555,11 +4567,17 @@ func (c *Client) sendListInferenceModels(ctx context.Context, params ListInferen
 //
 // A model that has been retired does not appear here, while it remains readable individually.
 //
-// Restricted models are listed to every project. Calling one requires a grant for the project, and
+// Authentication is optional. Without a token, all non-retired models are listed with `access_granted`
+// set to `true` for `public` models and `false` for `restricted` models. When a valid scoped token is
+// sent, `access_granted` reflects the project's grants for restricted models; an invalid or expired
+// token is still refused with 401.
+//
+// Restricted models are listed to every caller. Calling one requires a grant for the project, and
 // `access_granted` says whether the current project holds one.
 //
-// `context_length` and `max_output_tokens` are advisory. The server does not truncate on their basis,
-// and the request body is forwarded upstream unchanged.
+// `context_length` and `max_output_tokens` are advisory for paid calls. When `free_access` is
+// non-null, keyless free inference is enabled for the model within `free_access.context_length` input
+// tokens and `free_access.ip_rpm_limit` requests per minute per IP.
 //
 // Canopy returns no amounts: each model's `billing` names the Billing plan and the rate dimensions its
 // token usage is priced at. Read the rates from the `rates` of the plan's prices in Billing's
@@ -4708,6 +4726,7 @@ func (c *Client) sendListModels(ctx context.Context, params ListModelsParams) (r
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
@@ -6127,7 +6146,8 @@ func (c *Client) sendListUsageBySourceTimeline(ctx context.Context, params ListU
 //
 // Reads a model by query parameter rather than URL path segment, safely supporting slash-prefixed
 // model names such as `cyber/deepseek-v4.1-flash` as well as internal model identifiers. Retired
-// models remain readable here.
+// models remain readable here. Authentication is optional; without a token, `access_granted` is `true`
+// for `public` models and `false` for `restricted` models.
 //
 // GET /api/v1/models:lookup
 func (c *Client) LookupModel(ctx context.Context, params LookupModelParams) (LookupModelRes, error) {
@@ -6218,6 +6238,7 @@ func (c *Client) sendLookupModel(ctx context.Context, params LookupModelParams) 
 		if ok := func() bool {
 		nextRequirement:
 			for _, requirement := range []bitset{
+				{},
 				{0b00000001},
 			} {
 				for i, mask := range requirement {
