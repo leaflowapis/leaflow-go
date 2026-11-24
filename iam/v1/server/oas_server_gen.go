@@ -72,6 +72,36 @@ type Handler interface {
 	//
 	// POST /api/v1/ssh-keys
 	CreateSSHKey(ctx context.Context, req *CreateSSHKeyRequestBody) (*SSHKeyResource, error)
+	// CreateServiceAccount implements create-service-account operation.
+	//
+	// Creates a project-owned service account and joins it to the current project as a member. Its `id` is
+	// also its member `user_id`; manage roles and direct permissions through
+	// `/api/v1/members/{userId}/roles` and `/api/v1/members/{userId}/permissions`.
+	//
+	// Requires `iam:service_accounts.manage`. When initial `roles` are supplied, `iam:members.manage` is
+	// also required, and granting `ADMIN` requires the caller to be a project owner or administrator.
+	//
+	// POST /api/v1/service-accounts
+	CreateServiceAccount(ctx context.Context, req *CreateServiceAccountRequestBody) (*ServiceAccountResource, error)
+	// CreateServiceAccountKey implements create-service-account-key operation.
+	//
+	// Adds an Ed25519 signing key for RFC 7523 token exchange. A service account may hold at most 5 active
+	// unexpired keys at a time.
+	//
+	// With `origin` `GENERATED`, the platform generates an Ed25519 key pair, stores only the public key,
+	// and returns the private key once inside `credentials`. With `origin` `UPLOADED`, `public_key`
+	// carries a PKIX PEM Ed25519 public key and `credentials` is omitted.
+	//
+	// Requires `iam:service_accounts.manage`.
+	//
+	// POST /api/v1/service-accounts/{serviceAccountId}/keys
+	CreateServiceAccountKey(ctx context.Context, req *CreateServiceAccountKeyRequestBody, params CreateServiceAccountKeyParams) (*CreateServiceAccountKeyResponseBody, error)
+	// CreateServiceAccountSSHKey implements create-service-account-ssh-key operation.
+	//
+	// Registers an OpenSSH public key on the service account. Requires `iam:service_accounts.manage`.
+	//
+	// POST /api/v1/service-accounts/{serviceAccountId}/ssh-keys
+	CreateServiceAccountSSHKey(ctx context.Context, req *CreateServiceAccountSSHKeyRequestBody, params CreateServiceAccountSSHKeyParams) (*ServiceAccountSSHKeyResource, error)
 	// DeleteApplication implements delete-application operation.
 	//
 	// The application is removed from the identity provider and its row is retained with `status`
@@ -99,6 +129,30 @@ type Handler interface {
 	//
 	// DELETE /api/v1/roles/{code}
 	DeleteRole(ctx context.Context, params DeleteRoleParams) error
+	// DeleteServiceAccount implements delete-service-account operation.
+	//
+	// Immediately retires the service account's membership, revokes all signing keys and SSH keys, clears
+	// its profile fields and records its deletion timestamp. Deleted service accounts cannot be restored,
+	// and their names may be reused.
+	//
+	// Requires `iam:service_accounts.manage`. Repeating the call on an already deleted service account
+	// returns it unchanged.
+	//
+	// DELETE /api/v1/service-accounts/{serviceAccountId}
+	DeleteServiceAccount(ctx context.Context, params DeleteServiceAccountParams) (*ServiceAccountResource, error)
+	// DisableServiceAccount implements disable-service-account operation.
+	//
+	// Suspends the service account, preventing token exchanges and project writes while preserving its
+	// identity and resources for later reuse. Requires `iam:service_accounts.manage`.
+	//
+	// POST /api/v1/service-accounts/{serviceAccountId}:disable
+	DisableServiceAccount(ctx context.Context, params DisableServiceAccountParams) (*ServiceAccountResource, error)
+	// EnableServiceAccount implements enable-service-account operation.
+	//
+	// Returns a suspended service account to `ACTIVE`. Requires `iam:service_accounts.manage`.
+	//
+	// POST /api/v1/service-accounts/{serviceAccountId}:enable
+	EnableServiceAccount(ctx context.Context, params EnableServiceAccountParams) (*ServiceAccountResource, error)
 	// GetApplication implements get-application operation.
 	//
 	// An application that has been deleted is still returned, with `status` `ARCHIVED`.
@@ -130,6 +184,12 @@ type Handler interface {
 	//
 	// GET /api/v1/ssh-keys/{keyId}
 	GetSSHKey(ctx context.Context, params GetSSHKeyParams) (*SSHKeyResource, error)
+	// GetServiceAccount implements get-service-account operation.
+	//
+	// A deleted service account remains readable with `status` `DELETED`. Visible to any project member.
+	//
+	// GET /api/v1/service-accounts/{serviceAccountId}
+	GetServiceAccount(ctx context.Context, params GetServiceAccountParams) (*ServiceAccountResource, error)
 	// IssueInvitation implements issue-invitation operation.
 	//
 	// An invitation stands for 14 days. The roles it carries are validated against the project as it stood
@@ -198,6 +258,26 @@ type Handler interface {
 	//
 	// GET /api/v1/ssh-keys
 	ListSSHKeys(ctx context.Context, params ListSSHKeysParams) (*LengthAwarePageSSHKeyResource, error)
+	// ListServiceAccountKeys implements list-service-account-keys operation.
+	//
+	// Never returns private keys. Revoked keys are omitted unless `include_revoked` is true. Visible to
+	// any project member.
+	//
+	// GET /api/v1/service-accounts/{serviceAccountId}/keys
+	ListServiceAccountKeys(ctx context.Context, params ListServiceAccountKeysParams) (*LengthAwarePageServiceAccountKeyResource, error)
+	// ListServiceAccountSSHKeys implements list-service-account-ssh-keys operation.
+	//
+	// Most recent first. Visible to any project member.
+	//
+	// GET /api/v1/service-accounts/{serviceAccountId}/ssh-keys
+	ListServiceAccountSSHKeys(ctx context.Context, params ListServiceAccountSSHKeysParams) (*LengthAwarePageServiceAccountSSHKeyResource, error)
+	// ListServiceAccounts implements list-service-accounts operation.
+	//
+	// Suspended service accounts are included. Deleted service accounts are omitted unless
+	// `include_deleted` is true. Visible to any project member.
+	//
+	// GET /api/v1/service-accounts
+	ListServiceAccounts(ctx context.Context, params ListServiceAccountsParams) (*LengthAwarePageServiceAccountResource, error)
 	// RemoveMember implements remove-member operation.
 	//
 	// Removing someone else requires `iam:members.manage`; leaving requires only membership of the
@@ -226,6 +306,19 @@ type Handler interface {
 	//
 	// DELETE /api/v1/ssh-keys/{keyId}
 	RevokeSSHKey(ctx context.Context, params RevokeSSHKeyParams) (*SSHKeyResource, error)
+	// RevokeServiceAccountKey implements revoke-service-account-key operation.
+	//
+	// Marks the key `REVOKED` and retains the row for audit. Repeating the call returns the revoked key.
+	// Requires `iam:service_accounts.manage`.
+	//
+	// DELETE /api/v1/service-accounts/{serviceAccountId}/keys/{keyId}
+	RevokeServiceAccountKey(ctx context.Context, params RevokeServiceAccountKeyParams) (*ServiceAccountKeyResource, error)
+	// RevokeServiceAccountSSHKey implements revoke-service-account-ssh-key operation.
+	//
+	// Marks the key `REVOKED` and retains the row for audit. Requires `iam:service_accounts.manage`.
+	//
+	// DELETE /api/v1/service-accounts/{serviceAccountId}/ssh-keys/{keyId}
+	RevokeServiceAccountSSHKey(ctx context.Context, params RevokeServiceAccountSSHKeyParams) (*ServiceAccountSSHKeyResource, error)
 	// RotateApplicationSecret implements rotate-application-secret operation.
 	//
 	// Returns a new secret and invalidates the previous one immediately. Only an active confidential
@@ -286,6 +379,13 @@ type Handler interface {
 	//
 	// PUT /api/v1/roles/{code}
 	UpdateRole(ctx context.Context, req *UpdateRoleRequestBody, params UpdateRoleParams) (*RoleResource, error)
+	// UpdateServiceAccount implements update-service-account operation.
+	//
+	// Updates the display name, description or optional email address of an active or suspended service
+	// account. Requires `iam:service_accounts.manage`.
+	//
+	// PATCH /api/v1/service-accounts/{serviceAccountId}
+	UpdateServiceAccount(ctx context.Context, req *UpdateServiceAccountRequestBody, params UpdateServiceAccountParams) (*ServiceAccountResource, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.

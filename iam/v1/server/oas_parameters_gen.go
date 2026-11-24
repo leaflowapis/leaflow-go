@@ -100,6 +100,136 @@ func decodeCreateMemberPermissionParams(args [1]string, argsEscaped bool, r *htt
 	return params, nil
 }
 
+// CreateServiceAccountKeyParams is parameters of create-service-account-key operation.
+type CreateServiceAccountKeyParams struct {
+	ServiceAccountId uuid.UUID
+}
+
+func unpackCreateServiceAccountKeyParams(packed middleware.Parameters) (params CreateServiceAccountKeyParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "serviceAccountId",
+			In:   "path",
+		}
+		params.ServiceAccountId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCreateServiceAccountKeyParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateServiceAccountKeyParams, _ error) {
+	// Decode path: serviceAccountId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "serviceAccountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ServiceAccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "serviceAccountId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// CreateServiceAccountSSHKeyParams is parameters of create-service-account-ssh-key operation.
+type CreateServiceAccountSSHKeyParams struct {
+	ServiceAccountId uuid.UUID
+}
+
+func unpackCreateServiceAccountSSHKeyParams(packed middleware.Parameters) (params CreateServiceAccountSSHKeyParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "serviceAccountId",
+			In:   "path",
+		}
+		params.ServiceAccountId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCreateServiceAccountSSHKeyParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateServiceAccountSSHKeyParams, _ error) {
+	// Decode path: serviceAccountId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "serviceAccountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ServiceAccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "serviceAccountId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // DeleteApplicationParams is parameters of delete-application operation.
 type DeleteApplicationParams struct {
 	ApplicationId uuid.UUID
@@ -388,6 +518,201 @@ func decodeDeleteRoleParams(args [1]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
+// DeleteServiceAccountParams is parameters of delete-service-account operation.
+type DeleteServiceAccountParams struct {
+	ServiceAccountId uuid.UUID
+}
+
+func unpackDeleteServiceAccountParams(packed middleware.Parameters) (params DeleteServiceAccountParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "serviceAccountId",
+			In:   "path",
+		}
+		params.ServiceAccountId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeDeleteServiceAccountParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteServiceAccountParams, _ error) {
+	// Decode path: serviceAccountId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "serviceAccountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ServiceAccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "serviceAccountId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// DisableServiceAccountParams is parameters of disable-service-account operation.
+type DisableServiceAccountParams struct {
+	ServiceAccountId uuid.UUID
+}
+
+func unpackDisableServiceAccountParams(packed middleware.Parameters) (params DisableServiceAccountParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "serviceAccountId",
+			In:   "path",
+		}
+		params.ServiceAccountId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeDisableServiceAccountParams(args [1]string, argsEscaped bool, r *http.Request) (params DisableServiceAccountParams, _ error) {
+	// Decode path: serviceAccountId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "serviceAccountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ServiceAccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "serviceAccountId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// EnableServiceAccountParams is parameters of enable-service-account operation.
+type EnableServiceAccountParams struct {
+	ServiceAccountId uuid.UUID
+}
+
+func unpackEnableServiceAccountParams(packed middleware.Parameters) (params EnableServiceAccountParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "serviceAccountId",
+			In:   "path",
+		}
+		params.ServiceAccountId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeEnableServiceAccountParams(args [1]string, argsEscaped bool, r *http.Request) (params EnableServiceAccountParams, _ error) {
+	// Decode path: serviceAccountId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "serviceAccountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ServiceAccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "serviceAccountId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetApplicationParams is parameters of get-application operation.
 type GetApplicationParams struct {
 	ApplicationId uuid.UUID
@@ -596,6 +921,71 @@ func decodeGetSSHKeyParams(args [1]string, argsEscaped bool, r *http.Request) (p
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "keyId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetServiceAccountParams is parameters of get-service-account operation.
+type GetServiceAccountParams struct {
+	ServiceAccountId uuid.UUID
+}
+
+func unpackGetServiceAccountParams(packed middleware.Parameters) (params GetServiceAccountParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "serviceAccountId",
+			In:   "path",
+		}
+		params.ServiceAccountId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeGetServiceAccountParams(args [1]string, argsEscaped bool, r *http.Request) (params GetServiceAccountParams, _ error) {
+	// Decode path: serviceAccountId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "serviceAccountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ServiceAccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "serviceAccountId",
 			In:   "path",
 			Err:  err,
 		}
@@ -1107,6 +1497,9 @@ type ListMembersParams struct {
 	Offset OptInt64 `json:",omitempty,omitzero"`
 	// Matches against user id, email address or name.
 	Keyword OptString `json:",omitempty,omitzero"`
+	// When true, returns only service accounts; when false, excludes service accounts; omitted returns all
+	// members.
+	ServiceAccount OptBool `json:",omitempty,omitzero"`
 }
 
 func unpackListMembersParams(packed middleware.Parameters) (params ListMembersParams) {
@@ -1135,6 +1528,15 @@ func unpackListMembersParams(packed middleware.Parameters) (params ListMembersPa
 		}
 		if v, ok := packed[key]; ok {
 			params.Keyword = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "service_account",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.ServiceAccount = v.(OptBool)
 		}
 	}
 	return params
@@ -1348,6 +1750,47 @@ func decodeListMembersParams(args [0]string, argsEscaped bool, r *http.Request) 
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "keyword",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: service_account.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "service_account",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotServiceAccountVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotServiceAccountVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ServiceAccount.SetTo(paramsDotServiceAccountVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "service_account",
 			In:   "query",
 			Err:  err,
 		}
@@ -1678,6 +2121,903 @@ func decodeListSSHKeysParams(args [0]string, argsEscaped bool, r *http.Request) 
 	return params, nil
 }
 
+// ListServiceAccountKeysParams is parameters of list-service-account-keys operation.
+type ListServiceAccountKeysParams struct {
+	ServiceAccountId uuid.UUID
+	// Items returned in this page. Defaults to 50; at most 200.
+	Limit OptInt64 `json:",omitempty,omitzero"`
+	// Items to skip. Defaults to 0; at most 10000.
+	Offset OptInt64 `json:",omitempty,omitzero"`
+	// Include revoked keys.
+	IncludeRevoked OptBool `json:",omitempty,omitzero"`
+}
+
+func unpackListServiceAccountKeysParams(packed middleware.Parameters) (params ListServiceAccountKeysParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "serviceAccountId",
+			In:   "path",
+		}
+		params.ServiceAccountId = packed[key].(uuid.UUID)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "limit",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Limit = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "offset",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Offset = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "include_revoked",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.IncludeRevoked = v.(OptBool)
+		}
+	}
+	return params
+}
+
+func decodeListServiceAccountKeysParams(args [1]string, argsEscaped bool, r *http.Request) (params ListServiceAccountKeysParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode path: serviceAccountId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "serviceAccountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ServiceAccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "serviceAccountId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Set default value for query: limit.
+	{
+		val := int64(50)
+		params.Limit.SetTo(val)
+	}
+	// Decode query: limit.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotLimitVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotLimitVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Limit.SetTo(paramsDotLimitVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Limit.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           200,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "limit",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
+	// Decode query: offset.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "offset",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotOffsetVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotOffsetVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Offset.SetTo(paramsDotOffsetVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Offset.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           0,
+							MaxSet:        true,
+							Max:           10000,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "offset",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: include_revoked.
+	{
+		val := bool(false)
+		params.IncludeRevoked.SetTo(val)
+	}
+	// Decode query: include_revoked.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "include_revoked",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotIncludeRevokedVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotIncludeRevokedVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.IncludeRevoked.SetTo(paramsDotIncludeRevokedVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "include_revoked",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListServiceAccountSSHKeysParams is parameters of list-service-account-ssh-keys operation.
+type ListServiceAccountSSHKeysParams struct {
+	ServiceAccountId uuid.UUID
+	// Items returned in this page. Defaults to 50; at most 200.
+	Limit OptInt64 `json:",omitempty,omitzero"`
+	// Items to skip. Defaults to 0; at most 10000.
+	Offset OptInt64 `json:",omitempty,omitzero"`
+	// Both kinds are returned while this is absent.
+	Status OptListServiceAccountSSHKeysStatus `json:",omitempty,omitzero"`
+}
+
+func unpackListServiceAccountSSHKeysParams(packed middleware.Parameters) (params ListServiceAccountSSHKeysParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "serviceAccountId",
+			In:   "path",
+		}
+		params.ServiceAccountId = packed[key].(uuid.UUID)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "limit",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Limit = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "offset",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Offset = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "status",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Status = v.(OptListServiceAccountSSHKeysStatus)
+		}
+	}
+	return params
+}
+
+func decodeListServiceAccountSSHKeysParams(args [1]string, argsEscaped bool, r *http.Request) (params ListServiceAccountSSHKeysParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode path: serviceAccountId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "serviceAccountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ServiceAccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "serviceAccountId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Set default value for query: limit.
+	{
+		val := int64(50)
+		params.Limit.SetTo(val)
+	}
+	// Decode query: limit.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotLimitVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotLimitVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Limit.SetTo(paramsDotLimitVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Limit.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           200,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "limit",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
+	// Decode query: offset.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "offset",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotOffsetVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotOffsetVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Offset.SetTo(paramsDotOffsetVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Offset.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           0,
+							MaxSet:        true,
+							Max:           10000,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "offset",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: status.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotStatusVal ListServiceAccountSSHKeysStatus
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotStatusVal = ListServiceAccountSSHKeysStatus(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Status.SetTo(paramsDotStatusVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Status.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "status",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListServiceAccountsParams is parameters of list-service-accounts operation.
+type ListServiceAccountsParams struct {
+	// Items returned in this page. Defaults to 50; at most 200.
+	Limit OptInt64 `json:",omitempty,omitzero"`
+	// Items to skip. Defaults to 0; at most 10000.
+	Offset OptInt64 `json:",omitempty,omitzero"`
+	// Matches against service account id, name, email or description.
+	Keyword OptString `json:",omitempty,omitzero"`
+	// Include service accounts that have been deleted.
+	IncludeDeleted OptBool `json:",omitempty,omitzero"`
+}
+
+func unpackListServiceAccountsParams(packed middleware.Parameters) (params ListServiceAccountsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "limit",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Limit = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "offset",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Offset = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "keyword",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Keyword = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "include_deleted",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.IncludeDeleted = v.(OptBool)
+		}
+	}
+	return params
+}
+
+func decodeListServiceAccountsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListServiceAccountsParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Set default value for query: limit.
+	{
+		val := int64(50)
+		params.Limit.SetTo(val)
+	}
+	// Decode query: limit.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotLimitVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotLimitVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Limit.SetTo(paramsDotLimitVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Limit.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           200,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "limit",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: offset.
+	{
+		val := int64(0)
+		params.Offset.SetTo(val)
+	}
+	// Decode query: offset.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "offset",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotOffsetVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotOffsetVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Offset.SetTo(paramsDotOffsetVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Offset.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           0,
+							MaxSet:        true,
+							Max:           10000,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "offset",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: keyword.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "keyword",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotKeywordVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotKeywordVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Keyword.SetTo(paramsDotKeywordVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Keyword.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     0,
+							MinLengthSet:  false,
+							MaxLength:     255,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "keyword",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Set default value for query: include_deleted.
+	{
+		val := bool(false)
+		params.IncludeDeleted.SetTo(val)
+	}
+	// Decode query: include_deleted.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "include_deleted",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotIncludeDeletedVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotIncludeDeletedVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.IncludeDeleted.SetTo(paramsDotIncludeDeletedVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "include_deleted",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // RemoveMemberParams is parameters of remove-member operation.
 type RemoveMemberParams struct {
 	UserId string
@@ -1915,6 +3255,242 @@ func decodeRevokeSSHKeyParams(args [1]string, argsEscaped bool, r *http.Request)
 		param := args[0]
 		if argsEscaped {
 			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "keyId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.KeyId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "keyId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// RevokeServiceAccountKeyParams is parameters of revoke-service-account-key operation.
+type RevokeServiceAccountKeyParams struct {
+	ServiceAccountId uuid.UUID
+	KeyId            uuid.UUID
+}
+
+func unpackRevokeServiceAccountKeyParams(packed middleware.Parameters) (params RevokeServiceAccountKeyParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "serviceAccountId",
+			In:   "path",
+		}
+		params.ServiceAccountId = packed[key].(uuid.UUID)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "keyId",
+			In:   "path",
+		}
+		params.KeyId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeRevokeServiceAccountKeyParams(args [2]string, argsEscaped bool, r *http.Request) (params RevokeServiceAccountKeyParams, _ error) {
+	// Decode path: serviceAccountId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "serviceAccountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ServiceAccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "serviceAccountId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: keyId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "keyId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.KeyId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "keyId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// RevokeServiceAccountSSHKeyParams is parameters of revoke-service-account-ssh-key operation.
+type RevokeServiceAccountSSHKeyParams struct {
+	ServiceAccountId uuid.UUID
+	KeyId            uuid.UUID
+}
+
+func unpackRevokeServiceAccountSSHKeyParams(packed middleware.Parameters) (params RevokeServiceAccountSSHKeyParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "serviceAccountId",
+			In:   "path",
+		}
+		params.ServiceAccountId = packed[key].(uuid.UUID)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "keyId",
+			In:   "path",
+		}
+		params.KeyId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeRevokeServiceAccountSSHKeyParams(args [2]string, argsEscaped bool, r *http.Request) (params RevokeServiceAccountSSHKeyParams, _ error) {
+	// Decode path: serviceAccountId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "serviceAccountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ServiceAccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "serviceAccountId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: keyId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
 			if err != nil {
 				return errors.Wrap(err, "unescape path")
 			}
@@ -2251,6 +3827,71 @@ func decodeUpdateRoleParams(args [1]string, argsEscaped bool, r *http.Request) (
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "code",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UpdateServiceAccountParams is parameters of update-service-account operation.
+type UpdateServiceAccountParams struct {
+	ServiceAccountId uuid.UUID
+}
+
+func unpackUpdateServiceAccountParams(packed middleware.Parameters) (params UpdateServiceAccountParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "serviceAccountId",
+			In:   "path",
+		}
+		params.ServiceAccountId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeUpdateServiceAccountParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateServiceAccountParams, _ error) {
+	// Decode path: serviceAccountId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "serviceAccountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ServiceAccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "serviceAccountId",
 			In:   "path",
 			Err:  err,
 		}

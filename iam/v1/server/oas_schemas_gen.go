@@ -592,6 +592,201 @@ func (s *CreateSSHKeyRequestBody) SetPurposes(val OptNilStringArray) {
 	s.Purposes = val
 }
 
+// Ref: #/components/schemas/CreateServiceAccountKeyRequestBody
+type CreateServiceAccountKeyRequestBody struct {
+	Name   string                                   `json:"name"`
+	Origin CreateServiceAccountKeyRequestBodyOrigin `json:"origin"`
+	// Required for `UPLOADED` keys; must be a PKIX PEM Ed25519 public key. Must be omitted for `GENERATED`
+	// keys.
+	PublicKey OptString `json:"public_key"`
+	// Optional expiry timestamp; cannot be extended after creation.
+	ExpiresAt OptDateTime `json:"expires_at"`
+}
+
+// GetName returns the value of Name.
+func (s *CreateServiceAccountKeyRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetOrigin returns the value of Origin.
+func (s *CreateServiceAccountKeyRequestBody) GetOrigin() CreateServiceAccountKeyRequestBodyOrigin {
+	return s.Origin
+}
+
+// GetPublicKey returns the value of PublicKey.
+func (s *CreateServiceAccountKeyRequestBody) GetPublicKey() OptString {
+	return s.PublicKey
+}
+
+// GetExpiresAt returns the value of ExpiresAt.
+func (s *CreateServiceAccountKeyRequestBody) GetExpiresAt() OptDateTime {
+	return s.ExpiresAt
+}
+
+// SetName sets the value of Name.
+func (s *CreateServiceAccountKeyRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetOrigin sets the value of Origin.
+func (s *CreateServiceAccountKeyRequestBody) SetOrigin(val CreateServiceAccountKeyRequestBodyOrigin) {
+	s.Origin = val
+}
+
+// SetPublicKey sets the value of PublicKey.
+func (s *CreateServiceAccountKeyRequestBody) SetPublicKey(val OptString) {
+	s.PublicKey = val
+}
+
+// SetExpiresAt sets the value of ExpiresAt.
+func (s *CreateServiceAccountKeyRequestBody) SetExpiresAt(val OptDateTime) {
+	s.ExpiresAt = val
+}
+
+type CreateServiceAccountKeyRequestBodyOrigin string
+
+const (
+	CreateServiceAccountKeyRequestBodyOriginGENERATED CreateServiceAccountKeyRequestBodyOrigin = "GENERATED"
+	CreateServiceAccountKeyRequestBodyOriginUPLOADED  CreateServiceAccountKeyRequestBodyOrigin = "UPLOADED"
+)
+
+// AllValues returns all CreateServiceAccountKeyRequestBodyOrigin values.
+func (CreateServiceAccountKeyRequestBodyOrigin) AllValues() []CreateServiceAccountKeyRequestBodyOrigin {
+	return []CreateServiceAccountKeyRequestBodyOrigin{
+		CreateServiceAccountKeyRequestBodyOriginGENERATED,
+		CreateServiceAccountKeyRequestBodyOriginUPLOADED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CreateServiceAccountKeyRequestBodyOrigin) MarshalText() ([]byte, error) {
+	switch s {
+	case CreateServiceAccountKeyRequestBodyOriginGENERATED:
+		return []byte(s), nil
+	case CreateServiceAccountKeyRequestBodyOriginUPLOADED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CreateServiceAccountKeyRequestBodyOrigin) UnmarshalText(data []byte) error {
+	switch CreateServiceAccountKeyRequestBodyOrigin(data) {
+	case CreateServiceAccountKeyRequestBodyOriginGENERATED:
+		*s = CreateServiceAccountKeyRequestBodyOriginGENERATED
+		return nil
+	case CreateServiceAccountKeyRequestBodyOriginUPLOADED:
+		*s = CreateServiceAccountKeyRequestBodyOriginUPLOADED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/CreateServiceAccountKeyResponseBody
+type CreateServiceAccountKeyResponseBody struct {
+	Key         ServiceAccountKeyResource            `json:"key"`
+	Credentials OptServiceAccountCredentialsResource `json:"credentials"`
+}
+
+// GetKey returns the value of Key.
+func (s *CreateServiceAccountKeyResponseBody) GetKey() ServiceAccountKeyResource {
+	return s.Key
+}
+
+// GetCredentials returns the value of Credentials.
+func (s *CreateServiceAccountKeyResponseBody) GetCredentials() OptServiceAccountCredentialsResource {
+	return s.Credentials
+}
+
+// SetKey sets the value of Key.
+func (s *CreateServiceAccountKeyResponseBody) SetKey(val ServiceAccountKeyResource) {
+	s.Key = val
+}
+
+// SetCredentials sets the value of Credentials.
+func (s *CreateServiceAccountKeyResponseBody) SetCredentials(val OptServiceAccountCredentialsResource) {
+	s.Credentials = val
+}
+
+// Ref: #/components/schemas/CreateServiceAccountRequestBody
+type CreateServiceAccountRequestBody struct {
+	Name        string    `json:"name"`
+	Description OptString `json:"description"`
+	// Optional email address; omit or leave empty unless using an allowed domain.
+	Email OptString `json:"email"`
+	// Optional initial role codes to assign at creation; `OWNER` is not accepted.
+	Roles []string `json:"roles"`
+}
+
+// GetName returns the value of Name.
+func (s *CreateServiceAccountRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *CreateServiceAccountRequestBody) GetDescription() OptString {
+	return s.Description
+}
+
+// GetEmail returns the value of Email.
+func (s *CreateServiceAccountRequestBody) GetEmail() OptString {
+	return s.Email
+}
+
+// GetRoles returns the value of Roles.
+func (s *CreateServiceAccountRequestBody) GetRoles() []string {
+	return s.Roles
+}
+
+// SetName sets the value of Name.
+func (s *CreateServiceAccountRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *CreateServiceAccountRequestBody) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetEmail sets the value of Email.
+func (s *CreateServiceAccountRequestBody) SetEmail(val OptString) {
+	s.Email = val
+}
+
+// SetRoles sets the value of Roles.
+func (s *CreateServiceAccountRequestBody) SetRoles(val []string) {
+	s.Roles = val
+}
+
+// Ref: #/components/schemas/CreateServiceAccountSSHKeyRequestBody
+type CreateServiceAccountSSHKeyRequestBody struct {
+	Name string `json:"name"`
+	// The public key in OpenSSH format. A certificate is refused.
+	PublicKey string `json:"public_key"`
+}
+
+// GetName returns the value of Name.
+func (s *CreateServiceAccountSSHKeyRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetPublicKey returns the value of PublicKey.
+func (s *CreateServiceAccountSSHKeyRequestBody) GetPublicKey() string {
+	return s.PublicKey
+}
+
+// SetName sets the value of Name.
+func (s *CreateServiceAccountSSHKeyRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetPublicKey sets the value of PublicKey.
+func (s *CreateServiceAccountSSHKeyRequestBody) SetPublicKey(val string) {
+	s.PublicKey = val
+}
+
 // DeleteMemberPermissionNoContent is response for DeleteMemberPermission operation.
 type DeleteMemberPermissionNoContent struct{}
 
@@ -1183,6 +1378,150 @@ func (s *LengthAwarePageSSHKeyResource) SetTotal(val int64) {
 	s.Total = val
 }
 
+// Ref: #/components/schemas/LengthAwarePageServiceAccountKeyResource
+type LengthAwarePageServiceAccountKeyResource struct {
+	Items  []ServiceAccountKeyResource `json:"items"`
+	Limit  int64                       `json:"limit"`
+	Offset int64                       `json:"offset"`
+	Total  int64                       `json:"total"`
+}
+
+// GetItems returns the value of Items.
+func (s *LengthAwarePageServiceAccountKeyResource) GetItems() []ServiceAccountKeyResource {
+	return s.Items
+}
+
+// GetLimit returns the value of Limit.
+func (s *LengthAwarePageServiceAccountKeyResource) GetLimit() int64 {
+	return s.Limit
+}
+
+// GetOffset returns the value of Offset.
+func (s *LengthAwarePageServiceAccountKeyResource) GetOffset() int64 {
+	return s.Offset
+}
+
+// GetTotal returns the value of Total.
+func (s *LengthAwarePageServiceAccountKeyResource) GetTotal() int64 {
+	return s.Total
+}
+
+// SetItems sets the value of Items.
+func (s *LengthAwarePageServiceAccountKeyResource) SetItems(val []ServiceAccountKeyResource) {
+	s.Items = val
+}
+
+// SetLimit sets the value of Limit.
+func (s *LengthAwarePageServiceAccountKeyResource) SetLimit(val int64) {
+	s.Limit = val
+}
+
+// SetOffset sets the value of Offset.
+func (s *LengthAwarePageServiceAccountKeyResource) SetOffset(val int64) {
+	s.Offset = val
+}
+
+// SetTotal sets the value of Total.
+func (s *LengthAwarePageServiceAccountKeyResource) SetTotal(val int64) {
+	s.Total = val
+}
+
+// Ref: #/components/schemas/LengthAwarePageServiceAccountResource
+type LengthAwarePageServiceAccountResource struct {
+	Items  []ServiceAccountResource `json:"items"`
+	Limit  int64                    `json:"limit"`
+	Offset int64                    `json:"offset"`
+	Total  int64                    `json:"total"`
+}
+
+// GetItems returns the value of Items.
+func (s *LengthAwarePageServiceAccountResource) GetItems() []ServiceAccountResource {
+	return s.Items
+}
+
+// GetLimit returns the value of Limit.
+func (s *LengthAwarePageServiceAccountResource) GetLimit() int64 {
+	return s.Limit
+}
+
+// GetOffset returns the value of Offset.
+func (s *LengthAwarePageServiceAccountResource) GetOffset() int64 {
+	return s.Offset
+}
+
+// GetTotal returns the value of Total.
+func (s *LengthAwarePageServiceAccountResource) GetTotal() int64 {
+	return s.Total
+}
+
+// SetItems sets the value of Items.
+func (s *LengthAwarePageServiceAccountResource) SetItems(val []ServiceAccountResource) {
+	s.Items = val
+}
+
+// SetLimit sets the value of Limit.
+func (s *LengthAwarePageServiceAccountResource) SetLimit(val int64) {
+	s.Limit = val
+}
+
+// SetOffset sets the value of Offset.
+func (s *LengthAwarePageServiceAccountResource) SetOffset(val int64) {
+	s.Offset = val
+}
+
+// SetTotal sets the value of Total.
+func (s *LengthAwarePageServiceAccountResource) SetTotal(val int64) {
+	s.Total = val
+}
+
+// Ref: #/components/schemas/LengthAwarePageServiceAccountSSHKeyResource
+type LengthAwarePageServiceAccountSSHKeyResource struct {
+	Items  []ServiceAccountSSHKeyResource `json:"items"`
+	Limit  int64                          `json:"limit"`
+	Offset int64                          `json:"offset"`
+	Total  int64                          `json:"total"`
+}
+
+// GetItems returns the value of Items.
+func (s *LengthAwarePageServiceAccountSSHKeyResource) GetItems() []ServiceAccountSSHKeyResource {
+	return s.Items
+}
+
+// GetLimit returns the value of Limit.
+func (s *LengthAwarePageServiceAccountSSHKeyResource) GetLimit() int64 {
+	return s.Limit
+}
+
+// GetOffset returns the value of Offset.
+func (s *LengthAwarePageServiceAccountSSHKeyResource) GetOffset() int64 {
+	return s.Offset
+}
+
+// GetTotal returns the value of Total.
+func (s *LengthAwarePageServiceAccountSSHKeyResource) GetTotal() int64 {
+	return s.Total
+}
+
+// SetItems sets the value of Items.
+func (s *LengthAwarePageServiceAccountSSHKeyResource) SetItems(val []ServiceAccountSSHKeyResource) {
+	s.Items = val
+}
+
+// SetLimit sets the value of Limit.
+func (s *LengthAwarePageServiceAccountSSHKeyResource) SetLimit(val int64) {
+	s.Limit = val
+}
+
+// SetOffset sets the value of Offset.
+func (s *LengthAwarePageServiceAccountSSHKeyResource) SetOffset(val int64) {
+	s.Offset = val
+}
+
+// SetTotal sets the value of Total.
+func (s *LengthAwarePageServiceAccountSSHKeyResource) SetTotal(val int64) {
+	s.Total = val
+}
+
 // Both kinds are returned while this is absent.
 type ListSSHKeysStatus string
 
@@ -1219,6 +1558,48 @@ func (s *ListSSHKeysStatus) UnmarshalText(data []byte) error {
 		return nil
 	case ListSSHKeysStatusREVOKED:
 		*s = ListSSHKeysStatusREVOKED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Both kinds are returned while this is absent.
+type ListServiceAccountSSHKeysStatus string
+
+const (
+	ListServiceAccountSSHKeysStatusACTIVE  ListServiceAccountSSHKeysStatus = "ACTIVE"
+	ListServiceAccountSSHKeysStatusREVOKED ListServiceAccountSSHKeysStatus = "REVOKED"
+)
+
+// AllValues returns all ListServiceAccountSSHKeysStatus values.
+func (ListServiceAccountSSHKeysStatus) AllValues() []ListServiceAccountSSHKeysStatus {
+	return []ListServiceAccountSSHKeysStatus{
+		ListServiceAccountSSHKeysStatusACTIVE,
+		ListServiceAccountSSHKeysStatusREVOKED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ListServiceAccountSSHKeysStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ListServiceAccountSSHKeysStatusACTIVE:
+		return []byte(s), nil
+	case ListServiceAccountSSHKeysStatusREVOKED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ListServiceAccountSSHKeysStatus) UnmarshalText(data []byte) error {
+	switch ListServiceAccountSSHKeysStatus(data) {
+	case ListServiceAccountSSHKeysStatusACTIVE:
+		*s = ListServiceAccountSSHKeysStatusACTIVE
+		return nil
+	case ListServiceAccountSSHKeysStatusREVOKED:
+		*s = ListServiceAccountSSHKeysStatusREVOKED
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -1381,7 +1762,9 @@ type MemberResource struct {
 	LastName   string        `json:"last_name"`
 	// The permissions granted to this person directly, apart from their roles.
 	Permissions []MemberPermissionResource `json:"permissions"`
-	UserID      string                     `json:"user_id"`
+	// True when this member is a project-owned service account.
+	ServiceAccount bool   `json:"service_account"`
+	UserID         string `json:"user_id"`
 }
 
 // GetAvatarHash returns the value of AvatarHash.
@@ -1422,6 +1805,11 @@ func (s *MemberResource) GetLastName() string {
 // GetPermissions returns the value of Permissions.
 func (s *MemberResource) GetPermissions() []MemberPermissionResource {
 	return s.Permissions
+}
+
+// GetServiceAccount returns the value of ServiceAccount.
+func (s *MemberResource) GetServiceAccount() bool {
+	return s.ServiceAccount
 }
 
 // GetUserID returns the value of UserID.
@@ -1467,6 +1855,11 @@ func (s *MemberResource) SetLastName(val string) {
 // SetPermissions sets the value of Permissions.
 func (s *MemberResource) SetPermissions(val []MemberPermissionResource) {
 	s.Permissions = val
+}
+
+// SetServiceAccount sets the value of ServiceAccount.
+func (s *MemberResource) SetServiceAccount(val bool) {
+	s.ServiceAccount = val
 }
 
 // SetUserID sets the value of UserID.
@@ -1680,6 +2073,52 @@ func (o OptBool) Or(d bool) bool {
 	return d
 }
 
+// NewOptDateTime returns new OptDateTime with value set to v.
+func NewOptDateTime(v time.Time) OptDateTime {
+	return OptDateTime{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptDateTime is optional time.Time.
+type OptDateTime struct {
+	Value time.Time
+	Set   bool
+}
+
+// IsSet returns true if OptDateTime was set.
+func (o OptDateTime) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptDateTime) Reset() {
+	var v time.Time
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptDateTime) SetTo(v time.Time) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptDateTime) Get() (v time.Time, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptErrorStatusMetadata returns new OptErrorStatusMetadata with value set to v.
 func NewOptErrorStatusMetadata(v ErrorStatusMetadata) OptErrorStatusMetadata {
 	return OptErrorStatusMetadata{
@@ -1818,6 +2257,52 @@ func (o OptListSSHKeysStatus) Or(d ListSSHKeysStatus) ListSSHKeysStatus {
 	return d
 }
 
+// NewOptListServiceAccountSSHKeysStatus returns new OptListServiceAccountSSHKeysStatus with value set to v.
+func NewOptListServiceAccountSSHKeysStatus(v ListServiceAccountSSHKeysStatus) OptListServiceAccountSSHKeysStatus {
+	return OptListServiceAccountSSHKeysStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptListServiceAccountSSHKeysStatus is optional ListServiceAccountSSHKeysStatus.
+type OptListServiceAccountSSHKeysStatus struct {
+	Value ListServiceAccountSSHKeysStatus
+	Set   bool
+}
+
+// IsSet returns true if OptListServiceAccountSSHKeysStatus was set.
+func (o OptListServiceAccountSSHKeysStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptListServiceAccountSSHKeysStatus) Reset() {
+	var v ListServiceAccountSSHKeysStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptListServiceAccountSSHKeysStatus) SetTo(v ListServiceAccountSSHKeysStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptListServiceAccountSSHKeysStatus) Get() (v ListServiceAccountSSHKeysStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptListServiceAccountSSHKeysStatus) Or(d ListServiceAccountSSHKeysStatus) ListServiceAccountSSHKeysStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilStringArray returns new OptNilStringArray with value set to v.
 func NewOptNilStringArray(v []string) OptNilStringArray {
 	return OptNilStringArray{
@@ -1880,6 +2365,52 @@ func (o OptNilStringArray) Get() (v []string, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilStringArray) Or(d []string) []string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptServiceAccountCredentialsResource returns new OptServiceAccountCredentialsResource with value set to v.
+func NewOptServiceAccountCredentialsResource(v ServiceAccountCredentialsResource) OptServiceAccountCredentialsResource {
+	return OptServiceAccountCredentialsResource{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptServiceAccountCredentialsResource is optional ServiceAccountCredentialsResource.
+type OptServiceAccountCredentialsResource struct {
+	Value ServiceAccountCredentialsResource
+	Set   bool
+}
+
+// IsSet returns true if OptServiceAccountCredentialsResource was set.
+func (o OptServiceAccountCredentialsResource) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptServiceAccountCredentialsResource) Reset() {
+	var v ServiceAccountCredentialsResource
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptServiceAccountCredentialsResource) SetTo(v ServiceAccountCredentialsResource) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptServiceAccountCredentialsResource) Get() (v ServiceAccountCredentialsResource, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptServiceAccountCredentialsResource) Or(d ServiceAccountCredentialsResource) ServiceAccountCredentialsResource {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -2412,8 +2943,10 @@ type ResolvedMemberResource struct {
 	FirstName  string `json:"first_name"`
 	LastName   string `json:"last_name"`
 	// True when this person is no longer a member of the project.
-	Left   bool   `json:"left"`
-	UserID string `json:"user_id"`
+	Left bool `json:"left"`
+	// True when this member is a project-owned service account rather than a personal account.
+	ServiceAccount bool   `json:"service_account"`
+	UserID         string `json:"user_id"`
 }
 
 // GetAvatarHash returns the value of AvatarHash.
@@ -2439,6 +2972,11 @@ func (s *ResolvedMemberResource) GetLastName() string {
 // GetLeft returns the value of Left.
 func (s *ResolvedMemberResource) GetLeft() bool {
 	return s.Left
+}
+
+// GetServiceAccount returns the value of ServiceAccount.
+func (s *ResolvedMemberResource) GetServiceAccount() bool {
+	return s.ServiceAccount
 }
 
 // GetUserID returns the value of UserID.
@@ -2469,6 +3007,11 @@ func (s *ResolvedMemberResource) SetLastName(val string) {
 // SetLeft sets the value of Left.
 func (s *ResolvedMemberResource) SetLeft(val bool) {
 	s.Left = val
+}
+
+// SetServiceAccount sets the value of ServiceAccount.
+func (s *ResolvedMemberResource) SetServiceAccount(val bool) {
+	s.ServiceAccount = val
 }
 
 // SetUserID sets the value of UserID.
@@ -2860,6 +3403,652 @@ func (s *SSHKeyResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// One-time credentials document returned only when creating a `GENERATED` key.
+// Ref: #/components/schemas/ServiceAccountCredentialsResource
+type ServiceAccountCredentialsResource struct {
+	Type             string    `json:"type"`
+	ProjectID        uuid.UUID `json:"project_id"`
+	ServiceAccountID uuid.UUID `json:"service_account_id"`
+	Name             string    `json:"name"`
+	Email            string    `json:"email"`
+	KeyID            uuid.UUID `json:"key_id"`
+	Algorithm        string    `json:"algorithm"`
+	// PKCS#8 PEM Ed25519 private key, returned once and never stored.
+	PrivateKey string `json:"private_key"`
+	// Token exchange endpoint URL and expected JWT `aud` claim.
+	TokenURI string `json:"token_uri"`
+}
+
+// GetType returns the value of Type.
+func (s *ServiceAccountCredentialsResource) GetType() string {
+	return s.Type
+}
+
+// GetProjectID returns the value of ProjectID.
+func (s *ServiceAccountCredentialsResource) GetProjectID() uuid.UUID {
+	return s.ProjectID
+}
+
+// GetServiceAccountID returns the value of ServiceAccountID.
+func (s *ServiceAccountCredentialsResource) GetServiceAccountID() uuid.UUID {
+	return s.ServiceAccountID
+}
+
+// GetName returns the value of Name.
+func (s *ServiceAccountCredentialsResource) GetName() string {
+	return s.Name
+}
+
+// GetEmail returns the value of Email.
+func (s *ServiceAccountCredentialsResource) GetEmail() string {
+	return s.Email
+}
+
+// GetKeyID returns the value of KeyID.
+func (s *ServiceAccountCredentialsResource) GetKeyID() uuid.UUID {
+	return s.KeyID
+}
+
+// GetAlgorithm returns the value of Algorithm.
+func (s *ServiceAccountCredentialsResource) GetAlgorithm() string {
+	return s.Algorithm
+}
+
+// GetPrivateKey returns the value of PrivateKey.
+func (s *ServiceAccountCredentialsResource) GetPrivateKey() string {
+	return s.PrivateKey
+}
+
+// GetTokenURI returns the value of TokenURI.
+func (s *ServiceAccountCredentialsResource) GetTokenURI() string {
+	return s.TokenURI
+}
+
+// SetType sets the value of Type.
+func (s *ServiceAccountCredentialsResource) SetType(val string) {
+	s.Type = val
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *ServiceAccountCredentialsResource) SetProjectID(val uuid.UUID) {
+	s.ProjectID = val
+}
+
+// SetServiceAccountID sets the value of ServiceAccountID.
+func (s *ServiceAccountCredentialsResource) SetServiceAccountID(val uuid.UUID) {
+	s.ServiceAccountID = val
+}
+
+// SetName sets the value of Name.
+func (s *ServiceAccountCredentialsResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetEmail sets the value of Email.
+func (s *ServiceAccountCredentialsResource) SetEmail(val string) {
+	s.Email = val
+}
+
+// SetKeyID sets the value of KeyID.
+func (s *ServiceAccountCredentialsResource) SetKeyID(val uuid.UUID) {
+	s.KeyID = val
+}
+
+// SetAlgorithm sets the value of Algorithm.
+func (s *ServiceAccountCredentialsResource) SetAlgorithm(val string) {
+	s.Algorithm = val
+}
+
+// SetPrivateKey sets the value of PrivateKey.
+func (s *ServiceAccountCredentialsResource) SetPrivateKey(val string) {
+	s.PrivateKey = val
+}
+
+// SetTokenURI sets the value of TokenURI.
+func (s *ServiceAccountCredentialsResource) SetTokenURI(val string) {
+	s.TokenURI = val
+}
+
+// Ref: #/components/schemas/ServiceAccountKeyResource
+type ServiceAccountKeyResource struct {
+	// Key identifier, also used as the JWT `kid` header.
+	ID               uuid.UUID                       `json:"id"`
+	ServiceAccountID uuid.UUID                       `json:"service_account_id"`
+	Name             string                          `json:"name"`
+	Origin           ServiceAccountKeyResourceOrigin `json:"origin"`
+	// Ed25519 public key in PKIX PEM format.
+	PublicKey string `json:"public_key"`
+	// SHA-256 fingerprint of the public key (`SHA256:...`).
+	Fingerprint string                          `json:"fingerprint"`
+	Status      ServiceAccountKeyResourceStatus `json:"status"`
+	ExpiresAt   NilDateTime                     `json:"expires_at"`
+	LastUsedAt  NilDateTime                     `json:"last_used_at"`
+	CreatedBy   NilString                       `json:"created_by"`
+	CreatedAt   time.Time                       `json:"created_at"`
+	RevokedAt   NilDateTime                     `json:"revoked_at"`
+	RevokedBy   NilString                       `json:"revoked_by"`
+}
+
+// GetID returns the value of ID.
+func (s *ServiceAccountKeyResource) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetServiceAccountID returns the value of ServiceAccountID.
+func (s *ServiceAccountKeyResource) GetServiceAccountID() uuid.UUID {
+	return s.ServiceAccountID
+}
+
+// GetName returns the value of Name.
+func (s *ServiceAccountKeyResource) GetName() string {
+	return s.Name
+}
+
+// GetOrigin returns the value of Origin.
+func (s *ServiceAccountKeyResource) GetOrigin() ServiceAccountKeyResourceOrigin {
+	return s.Origin
+}
+
+// GetPublicKey returns the value of PublicKey.
+func (s *ServiceAccountKeyResource) GetPublicKey() string {
+	return s.PublicKey
+}
+
+// GetFingerprint returns the value of Fingerprint.
+func (s *ServiceAccountKeyResource) GetFingerprint() string {
+	return s.Fingerprint
+}
+
+// GetStatus returns the value of Status.
+func (s *ServiceAccountKeyResource) GetStatus() ServiceAccountKeyResourceStatus {
+	return s.Status
+}
+
+// GetExpiresAt returns the value of ExpiresAt.
+func (s *ServiceAccountKeyResource) GetExpiresAt() NilDateTime {
+	return s.ExpiresAt
+}
+
+// GetLastUsedAt returns the value of LastUsedAt.
+func (s *ServiceAccountKeyResource) GetLastUsedAt() NilDateTime {
+	return s.LastUsedAt
+}
+
+// GetCreatedBy returns the value of CreatedBy.
+func (s *ServiceAccountKeyResource) GetCreatedBy() NilString {
+	return s.CreatedBy
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *ServiceAccountKeyResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetRevokedAt returns the value of RevokedAt.
+func (s *ServiceAccountKeyResource) GetRevokedAt() NilDateTime {
+	return s.RevokedAt
+}
+
+// GetRevokedBy returns the value of RevokedBy.
+func (s *ServiceAccountKeyResource) GetRevokedBy() NilString {
+	return s.RevokedBy
+}
+
+// SetID sets the value of ID.
+func (s *ServiceAccountKeyResource) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetServiceAccountID sets the value of ServiceAccountID.
+func (s *ServiceAccountKeyResource) SetServiceAccountID(val uuid.UUID) {
+	s.ServiceAccountID = val
+}
+
+// SetName sets the value of Name.
+func (s *ServiceAccountKeyResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetOrigin sets the value of Origin.
+func (s *ServiceAccountKeyResource) SetOrigin(val ServiceAccountKeyResourceOrigin) {
+	s.Origin = val
+}
+
+// SetPublicKey sets the value of PublicKey.
+func (s *ServiceAccountKeyResource) SetPublicKey(val string) {
+	s.PublicKey = val
+}
+
+// SetFingerprint sets the value of Fingerprint.
+func (s *ServiceAccountKeyResource) SetFingerprint(val string) {
+	s.Fingerprint = val
+}
+
+// SetStatus sets the value of Status.
+func (s *ServiceAccountKeyResource) SetStatus(val ServiceAccountKeyResourceStatus) {
+	s.Status = val
+}
+
+// SetExpiresAt sets the value of ExpiresAt.
+func (s *ServiceAccountKeyResource) SetExpiresAt(val NilDateTime) {
+	s.ExpiresAt = val
+}
+
+// SetLastUsedAt sets the value of LastUsedAt.
+func (s *ServiceAccountKeyResource) SetLastUsedAt(val NilDateTime) {
+	s.LastUsedAt = val
+}
+
+// SetCreatedBy sets the value of CreatedBy.
+func (s *ServiceAccountKeyResource) SetCreatedBy(val NilString) {
+	s.CreatedBy = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *ServiceAccountKeyResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetRevokedAt sets the value of RevokedAt.
+func (s *ServiceAccountKeyResource) SetRevokedAt(val NilDateTime) {
+	s.RevokedAt = val
+}
+
+// SetRevokedBy sets the value of RevokedBy.
+func (s *ServiceAccountKeyResource) SetRevokedBy(val NilString) {
+	s.RevokedBy = val
+}
+
+type ServiceAccountKeyResourceOrigin string
+
+const (
+	ServiceAccountKeyResourceOriginGENERATED ServiceAccountKeyResourceOrigin = "GENERATED"
+	ServiceAccountKeyResourceOriginUPLOADED  ServiceAccountKeyResourceOrigin = "UPLOADED"
+)
+
+// AllValues returns all ServiceAccountKeyResourceOrigin values.
+func (ServiceAccountKeyResourceOrigin) AllValues() []ServiceAccountKeyResourceOrigin {
+	return []ServiceAccountKeyResourceOrigin{
+		ServiceAccountKeyResourceOriginGENERATED,
+		ServiceAccountKeyResourceOriginUPLOADED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ServiceAccountKeyResourceOrigin) MarshalText() ([]byte, error) {
+	switch s {
+	case ServiceAccountKeyResourceOriginGENERATED:
+		return []byte(s), nil
+	case ServiceAccountKeyResourceOriginUPLOADED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ServiceAccountKeyResourceOrigin) UnmarshalText(data []byte) error {
+	switch ServiceAccountKeyResourceOrigin(data) {
+	case ServiceAccountKeyResourceOriginGENERATED:
+		*s = ServiceAccountKeyResourceOriginGENERATED
+		return nil
+	case ServiceAccountKeyResourceOriginUPLOADED:
+		*s = ServiceAccountKeyResourceOriginUPLOADED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type ServiceAccountKeyResourceStatus string
+
+const (
+	ServiceAccountKeyResourceStatusACTIVE  ServiceAccountKeyResourceStatus = "ACTIVE"
+	ServiceAccountKeyResourceStatusREVOKED ServiceAccountKeyResourceStatus = "REVOKED"
+)
+
+// AllValues returns all ServiceAccountKeyResourceStatus values.
+func (ServiceAccountKeyResourceStatus) AllValues() []ServiceAccountKeyResourceStatus {
+	return []ServiceAccountKeyResourceStatus{
+		ServiceAccountKeyResourceStatusACTIVE,
+		ServiceAccountKeyResourceStatusREVOKED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ServiceAccountKeyResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ServiceAccountKeyResourceStatusACTIVE:
+		return []byte(s), nil
+	case ServiceAccountKeyResourceStatusREVOKED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ServiceAccountKeyResourceStatus) UnmarshalText(data []byte) error {
+	switch ServiceAccountKeyResourceStatus(data) {
+	case ServiceAccountKeyResourceStatusACTIVE:
+		*s = ServiceAccountKeyResourceStatusACTIVE
+		return nil
+	case ServiceAccountKeyResourceStatusREVOKED:
+		*s = ServiceAccountKeyResourceStatusREVOKED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/ServiceAccountResource
+type ServiceAccountResource struct {
+	// Platform user id of this service account.
+	ID          uuid.UUID `json:"id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	// Optional email address; empty when not configured.
+	Email  string                       `json:"email"`
+	Status ServiceAccountResourceStatus `json:"status"`
+	// Role codes currently assigned to this service account in the project.
+	Roles     []string    `json:"roles"`
+	CreatedBy NilString   `json:"created_by"`
+	CreatedAt time.Time   `json:"created_at"`
+	UpdatedAt time.Time   `json:"updated_at"`
+	DeletedAt NilDateTime `json:"deleted_at"`
+}
+
+// GetID returns the value of ID.
+func (s *ServiceAccountResource) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetProjectID returns the value of ProjectID.
+func (s *ServiceAccountResource) GetProjectID() uuid.UUID {
+	return s.ProjectID
+}
+
+// GetName returns the value of Name.
+func (s *ServiceAccountResource) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *ServiceAccountResource) GetDescription() string {
+	return s.Description
+}
+
+// GetEmail returns the value of Email.
+func (s *ServiceAccountResource) GetEmail() string {
+	return s.Email
+}
+
+// GetStatus returns the value of Status.
+func (s *ServiceAccountResource) GetStatus() ServiceAccountResourceStatus {
+	return s.Status
+}
+
+// GetRoles returns the value of Roles.
+func (s *ServiceAccountResource) GetRoles() []string {
+	return s.Roles
+}
+
+// GetCreatedBy returns the value of CreatedBy.
+func (s *ServiceAccountResource) GetCreatedBy() NilString {
+	return s.CreatedBy
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *ServiceAccountResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *ServiceAccountResource) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// GetDeletedAt returns the value of DeletedAt.
+func (s *ServiceAccountResource) GetDeletedAt() NilDateTime {
+	return s.DeletedAt
+}
+
+// SetID sets the value of ID.
+func (s *ServiceAccountResource) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *ServiceAccountResource) SetProjectID(val uuid.UUID) {
+	s.ProjectID = val
+}
+
+// SetName sets the value of Name.
+func (s *ServiceAccountResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *ServiceAccountResource) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetEmail sets the value of Email.
+func (s *ServiceAccountResource) SetEmail(val string) {
+	s.Email = val
+}
+
+// SetStatus sets the value of Status.
+func (s *ServiceAccountResource) SetStatus(val ServiceAccountResourceStatus) {
+	s.Status = val
+}
+
+// SetRoles sets the value of Roles.
+func (s *ServiceAccountResource) SetRoles(val []string) {
+	s.Roles = val
+}
+
+// SetCreatedBy sets the value of CreatedBy.
+func (s *ServiceAccountResource) SetCreatedBy(val NilString) {
+	s.CreatedBy = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *ServiceAccountResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *ServiceAccountResource) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+// SetDeletedAt sets the value of DeletedAt.
+func (s *ServiceAccountResource) SetDeletedAt(val NilDateTime) {
+	s.DeletedAt = val
+}
+
+type ServiceAccountResourceStatus string
+
+const (
+	ServiceAccountResourceStatusACTIVE    ServiceAccountResourceStatus = "ACTIVE"
+	ServiceAccountResourceStatusSUSPENDED ServiceAccountResourceStatus = "SUSPENDED"
+	ServiceAccountResourceStatusBANNED    ServiceAccountResourceStatus = "BANNED"
+	ServiceAccountResourceStatusDELETED   ServiceAccountResourceStatus = "DELETED"
+)
+
+// AllValues returns all ServiceAccountResourceStatus values.
+func (ServiceAccountResourceStatus) AllValues() []ServiceAccountResourceStatus {
+	return []ServiceAccountResourceStatus{
+		ServiceAccountResourceStatusACTIVE,
+		ServiceAccountResourceStatusSUSPENDED,
+		ServiceAccountResourceStatusBANNED,
+		ServiceAccountResourceStatusDELETED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ServiceAccountResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ServiceAccountResourceStatusACTIVE:
+		return []byte(s), nil
+	case ServiceAccountResourceStatusSUSPENDED:
+		return []byte(s), nil
+	case ServiceAccountResourceStatusBANNED:
+		return []byte(s), nil
+	case ServiceAccountResourceStatusDELETED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ServiceAccountResourceStatus) UnmarshalText(data []byte) error {
+	switch ServiceAccountResourceStatus(data) {
+	case ServiceAccountResourceStatusACTIVE:
+		*s = ServiceAccountResourceStatusACTIVE
+		return nil
+	case ServiceAccountResourceStatusSUSPENDED:
+		*s = ServiceAccountResourceStatusSUSPENDED
+		return nil
+	case ServiceAccountResourceStatusBANNED:
+		*s = ServiceAccountResourceStatusBANNED
+		return nil
+	case ServiceAccountResourceStatusDELETED:
+		*s = ServiceAccountResourceStatusDELETED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/ServiceAccountSSHKeyResource
+type ServiceAccountSSHKeyResource struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+	// The key in OpenSSH format, without the comment it was added with.
+	PublicKey string `json:"public_key"`
+	// The SHA-256 fingerprint, as `ssh-keygen -l` prints it.
+	Fingerprint string `json:"fingerprint"`
+	// The algorithm, such as `ssh-ed25519`.
+	KeyType   string                             `json:"key_type"`
+	Status    ServiceAccountSSHKeyResourceStatus `json:"status"`
+	CreatedAt time.Time                          `json:"created_at"`
+}
+
+// GetID returns the value of ID.
+func (s *ServiceAccountSSHKeyResource) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *ServiceAccountSSHKeyResource) GetName() string {
+	return s.Name
+}
+
+// GetPublicKey returns the value of PublicKey.
+func (s *ServiceAccountSSHKeyResource) GetPublicKey() string {
+	return s.PublicKey
+}
+
+// GetFingerprint returns the value of Fingerprint.
+func (s *ServiceAccountSSHKeyResource) GetFingerprint() string {
+	return s.Fingerprint
+}
+
+// GetKeyType returns the value of KeyType.
+func (s *ServiceAccountSSHKeyResource) GetKeyType() string {
+	return s.KeyType
+}
+
+// GetStatus returns the value of Status.
+func (s *ServiceAccountSSHKeyResource) GetStatus() ServiceAccountSSHKeyResourceStatus {
+	return s.Status
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *ServiceAccountSSHKeyResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetID sets the value of ID.
+func (s *ServiceAccountSSHKeyResource) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *ServiceAccountSSHKeyResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetPublicKey sets the value of PublicKey.
+func (s *ServiceAccountSSHKeyResource) SetPublicKey(val string) {
+	s.PublicKey = val
+}
+
+// SetFingerprint sets the value of Fingerprint.
+func (s *ServiceAccountSSHKeyResource) SetFingerprint(val string) {
+	s.Fingerprint = val
+}
+
+// SetKeyType sets the value of KeyType.
+func (s *ServiceAccountSSHKeyResource) SetKeyType(val string) {
+	s.KeyType = val
+}
+
+// SetStatus sets the value of Status.
+func (s *ServiceAccountSSHKeyResource) SetStatus(val ServiceAccountSSHKeyResourceStatus) {
+	s.Status = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *ServiceAccountSSHKeyResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+type ServiceAccountSSHKeyResourceStatus string
+
+const (
+	ServiceAccountSSHKeyResourceStatusACTIVE  ServiceAccountSSHKeyResourceStatus = "ACTIVE"
+	ServiceAccountSSHKeyResourceStatusREVOKED ServiceAccountSSHKeyResourceStatus = "REVOKED"
+)
+
+// AllValues returns all ServiceAccountSSHKeyResourceStatus values.
+func (ServiceAccountSSHKeyResourceStatus) AllValues() []ServiceAccountSSHKeyResourceStatus {
+	return []ServiceAccountSSHKeyResourceStatus{
+		ServiceAccountSSHKeyResourceStatusACTIVE,
+		ServiceAccountSSHKeyResourceStatusREVOKED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ServiceAccountSSHKeyResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ServiceAccountSSHKeyResourceStatusACTIVE:
+		return []byte(s), nil
+	case ServiceAccountSSHKeyResourceStatusREVOKED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ServiceAccountSSHKeyResourceStatus) UnmarshalText(data []byte) error {
+	switch ServiceAccountSSHKeyResourceStatus(data) {
+	case ServiceAccountSSHKeyResourceStatusACTIVE:
+		*s = ServiceAccountSSHKeyResourceStatusACTIVE
+		return nil
+	case ServiceAccountSSHKeyResourceStatusREVOKED:
+		*s = ServiceAccountSSHKeyResourceStatusREVOKED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/SetMemberRolesRequestBody
 type SetMemberRolesRequestBody struct {
 	// Every role code this person is to hold. `OWNER` cannot appear here.
@@ -3008,4 +4197,42 @@ func (s *UpdateRoleRequestBody) SetName(val string) {
 // SetPermissions sets the value of Permissions.
 func (s *UpdateRoleRequestBody) SetPermissions(val OptNilStringArray) {
 	s.Permissions = val
+}
+
+// Ref: #/components/schemas/UpdateServiceAccountRequestBody
+type UpdateServiceAccountRequestBody struct {
+	Name        OptString `json:"name"`
+	Description OptString `json:"description"`
+	// Optional email address; pass an empty string to clear it.
+	Email OptString `json:"email"`
+}
+
+// GetName returns the value of Name.
+func (s *UpdateServiceAccountRequestBody) GetName() OptString {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *UpdateServiceAccountRequestBody) GetDescription() OptString {
+	return s.Description
+}
+
+// GetEmail returns the value of Email.
+func (s *UpdateServiceAccountRequestBody) GetEmail() OptString {
+	return s.Email
+}
+
+// SetName sets the value of Name.
+func (s *UpdateServiceAccountRequestBody) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *UpdateServiceAccountRequestBody) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetEmail sets the value of Email.
+func (s *UpdateServiceAccountRequestBody) SetEmail(val OptString) {
+	s.Email = val
 }

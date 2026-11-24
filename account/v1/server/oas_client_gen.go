@@ -122,6 +122,22 @@ type Invoker interface {
 	//
 	// POST /account/v1/projects/{projectId}/scoped-tokens
 	CreateScopedToken(ctx context.Context, params CreateScopedTokenParams) (*ScopedTokenResponseBody, error)
+	// ExchangeServiceAccountToken invokes exchange-service-account-token operation.
+	//
+	// No bearer token required. Authenticates a service account using an RFC 7523 JWT bearer assertion
+	// signed with an active Ed25519 key registered on that service account, and returns a standard scoped
+	// token for the owning project.
+	//
+	// Accepts either `application/json` or `application/x-www-form-urlencoded`. The assertion must be a
+	// compact `EdDSA` JWS whose `kid` header names an active, unexpired key of the service account, whose
+	// `iss` and `sub` equal the service account id, whose `aud` exactly matches this token endpoint URL,
+	// and whose lifetime (`exp - iat`) does not exceed 300 seconds.
+	//
+	// Any verification or account-state failure answers 401 `INVALID_GRANT`. Excess requests per key or
+	// service account answer 429.
+	//
+	// POST /account/v1/oauth/token
+	ExchangeServiceAccountToken(ctx context.Context, request ExchangeServiceAccountTokenReq) (*OAuthTokenResponseBody, error)
 	// GetAccount invokes get-account operation.
 	//
 	// `pending_agreements` holds the agreements not yet consented to. While it is not empty, obtain
@@ -1464,6 +1480,122 @@ func (c *Client) sendCreateScopedToken(ctx context.Context, params CreateScopedT
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateScopedTokenResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ExchangeServiceAccountToken invokes exchange-service-account-token operation.
+//
+// No bearer token required. Authenticates a service account using an RFC 7523 JWT bearer assertion
+// signed with an active Ed25519 key registered on that service account, and returns a standard scoped
+// token for the owning project.
+//
+// Accepts either `application/json` or `application/x-www-form-urlencoded`. The assertion must be a
+// compact `EdDSA` JWS whose `kid` header names an active, unexpired key of the service account, whose
+// `iss` and `sub` equal the service account id, whose `aud` exactly matches this token endpoint URL,
+// and whose lifetime (`exp - iat`) does not exceed 300 seconds.
+//
+// Any verification or account-state failure answers 401 `INVALID_GRANT`. Excess requests per key or
+// service account answer 429.
+//
+// POST /account/v1/oauth/token
+func (c *Client) ExchangeServiceAccountToken(ctx context.Context, request ExchangeServiceAccountTokenReq) (*OAuthTokenResponseBody, error) {
+	res, err := c.sendExchangeServiceAccountToken(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendExchangeServiceAccountToken(ctx context.Context, request ExchangeServiceAccountTokenReq) (res *OAuthTokenResponseBody, err error) {
+	// Validate request before sending.
+	switch request := request.(type) {
+	case *ExchangeServiceAccountTokenApplicationJSON:
+		if err := func() error {
+			if err := request.Validate(); err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "validate")
+		}
+	case *ExchangeServiceAccountTokenApplicationXWwwFormUrlencoded:
+		if err := func() error {
+			if err := request.Validate(); err != nil {
+				return err
+			}
+			return nil
+		}(); err != nil {
+			return res, errors.Wrap(err, "validate")
+		}
+	default:
+		return res, errors.Errorf("unexpected request type: %T", request)
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("exchange-service-account-token"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/oauth/token"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ExchangeServiceAccountTokenOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/oauth/token"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeExchangeServiceAccountTokenRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeExchangeServiceAccountTokenResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

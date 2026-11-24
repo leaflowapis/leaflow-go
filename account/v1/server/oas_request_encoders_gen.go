@@ -5,9 +5,13 @@ package accountv1server
 import (
 	"bytes"
 	"net/http"
+	"strings"
 
+	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
+	"github.com/ogen-go/ogen/conv"
 	ht "github.com/ogen-go/ogen/http"
+	"github.com/ogen-go/ogen/uri"
 )
 
 func encodeAcceptAgreementsRequest(
@@ -78,6 +82,59 @@ func encodeCreateSSHKeyRequest(
 	encoded := e.Bytes()
 	ht.SetBody(r, bytes.NewReader(encoded), contentType)
 	return nil
+}
+
+func encodeExchangeServiceAccountTokenRequest(
+	req ExchangeServiceAccountTokenReq,
+	r *http.Request,
+) error {
+	switch req := req.(type) {
+	case *ExchangeServiceAccountTokenApplicationJSON:
+		const contentType = "application/json"
+		e := new(jx.Encoder)
+		{
+			req.Encode(e)
+		}
+		encoded := e.Bytes()
+		ht.SetBody(r, bytes.NewReader(encoded), contentType)
+		return nil
+	case *ExchangeServiceAccountTokenApplicationXWwwFormUrlencoded:
+		const contentType = "application/x-www-form-urlencoded"
+		request := req
+
+		q := uri.NewFormEncoder(map[string]string{})
+		{
+			// Encode "grant_type" form field.
+			cfg := uri.QueryParameterEncodingConfig{
+				Name:    "grant_type",
+				Style:   uri.QueryStyleForm,
+				Explode: true,
+			}
+			if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+				return e.EncodeValue(conv.StringToString(request.GrantType))
+			}); err != nil {
+				return errors.Wrap(err, "encode query")
+			}
+		}
+		{
+			// Encode "assertion" form field.
+			cfg := uri.QueryParameterEncodingConfig{
+				Name:    "assertion",
+				Style:   uri.QueryStyleForm,
+				Explode: true,
+			}
+			if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+				return e.EncodeValue(conv.StringToString(request.Assertion))
+			}); err != nil {
+				return errors.Wrap(err, "encode query")
+			}
+		}
+		encoded := q.Values().Encode()
+		ht.SetBody(r, strings.NewReader(encoded), contentType)
+		return nil
+	default:
+		return errors.Errorf("unexpected request type: %T", req)
+	}
 }
 
 func encodeRegisterRequest(

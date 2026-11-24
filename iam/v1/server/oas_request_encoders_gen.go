@@ -80,6 +80,48 @@ func encodeCreateSSHKeyRequest(
 	return nil
 }
 
+func encodeCreateServiceAccountRequest(
+	req *CreateServiceAccountRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateServiceAccountKeyRequest(
+	req *CreateServiceAccountKeyRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateServiceAccountSSHKeyRequest(
+	req *CreateServiceAccountSSHKeyRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeIssueInvitationRequest(
 	req *IssueInvitationRequestBody,
 	r *http.Request,
@@ -180,6 +222,20 @@ func encodeUpdateProjectRequest(
 
 func encodeUpdateRoleRequest(
 	req *UpdateRoleRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateServiceAccountRequest(
+	req *UpdateServiceAccountRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

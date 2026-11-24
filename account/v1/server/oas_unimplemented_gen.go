@@ -130,6 +130,25 @@ func (UnimplementedHandler) CreateScopedToken(ctx context.Context, params Create
 	return r, ht.ErrNotImplemented
 }
 
+// ExchangeServiceAccountToken implements exchange-service-account-token operation.
+//
+// No bearer token required. Authenticates a service account using an RFC 7523 JWT bearer assertion
+// signed with an active Ed25519 key registered on that service account, and returns a standard scoped
+// token for the owning project.
+//
+// Accepts either `application/json` or `application/x-www-form-urlencoded`. The assertion must be a
+// compact `EdDSA` JWS whose `kid` header names an active, unexpired key of the service account, whose
+// `iss` and `sub` equal the service account id, whose `aud` exactly matches this token endpoint URL,
+// and whose lifetime (`exp - iat`) does not exceed 300 seconds.
+//
+// Any verification or account-state failure answers 401 `INVALID_GRANT`. Excess requests per key or
+// service account answer 429.
+//
+// POST /account/v1/oauth/token
+func (UnimplementedHandler) ExchangeServiceAccountToken(ctx context.Context, req ExchangeServiceAccountTokenReq) (r *OAuthTokenResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetAccount implements get-account operation.
 //
 // `pending_agreements` holds the agreements not yet consented to. While it is not empty, obtain

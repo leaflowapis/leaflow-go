@@ -92,6 +92,45 @@ func (UnimplementedHandler) CreateSSHKey(ctx context.Context, req *CreateSSHKeyR
 	return r, ht.ErrNotImplemented
 }
 
+// CreateServiceAccount implements create-service-account operation.
+//
+// Creates a project-owned service account and joins it to the current project as a member. Its `id` is
+// also its member `user_id`; manage roles and direct permissions through
+// `/api/v1/members/{userId}/roles` and `/api/v1/members/{userId}/permissions`.
+//
+// Requires `iam:service_accounts.manage`. When initial `roles` are supplied, `iam:members.manage` is
+// also required, and granting `ADMIN` requires the caller to be a project owner or administrator.
+//
+// POST /api/v1/service-accounts
+func (UnimplementedHandler) CreateServiceAccount(ctx context.Context, req *CreateServiceAccountRequestBody) (r *ServiceAccountResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateServiceAccountKey implements create-service-account-key operation.
+//
+// Adds an Ed25519 signing key for RFC 7523 token exchange. A service account may hold at most 5 active
+// unexpired keys at a time.
+//
+// With `origin` `GENERATED`, the platform generates an Ed25519 key pair, stores only the public key,
+// and returns the private key once inside `credentials`. With `origin` `UPLOADED`, `public_key`
+// carries a PKIX PEM Ed25519 public key and `credentials` is omitted.
+//
+// Requires `iam:service_accounts.manage`.
+//
+// POST /api/v1/service-accounts/{serviceAccountId}/keys
+func (UnimplementedHandler) CreateServiceAccountKey(ctx context.Context, req *CreateServiceAccountKeyRequestBody, params CreateServiceAccountKeyParams) (r *CreateServiceAccountKeyResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateServiceAccountSSHKey implements create-service-account-ssh-key operation.
+//
+// Registers an OpenSSH public key on the service account. Requires `iam:service_accounts.manage`.
+//
+// POST /api/v1/service-accounts/{serviceAccountId}/ssh-keys
+func (UnimplementedHandler) CreateServiceAccountSSHKey(ctx context.Context, req *CreateServiceAccountSSHKeyRequestBody, params CreateServiceAccountSSHKeyParams) (r *ServiceAccountSSHKeyResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // DeleteApplication implements delete-application operation.
 //
 // The application is removed from the identity provider and its row is retained with `status`
@@ -129,6 +168,39 @@ func (UnimplementedHandler) DeleteProject(ctx context.Context) (r *ProjectAccess
 // DELETE /api/v1/roles/{code}
 func (UnimplementedHandler) DeleteRole(ctx context.Context, params DeleteRoleParams) error {
 	return ht.ErrNotImplemented
+}
+
+// DeleteServiceAccount implements delete-service-account operation.
+//
+// Immediately retires the service account's membership, revokes all signing keys and SSH keys, clears
+// its profile fields and records its deletion timestamp. Deleted service accounts cannot be restored,
+// and their names may be reused.
+//
+// Requires `iam:service_accounts.manage`. Repeating the call on an already deleted service account
+// returns it unchanged.
+//
+// DELETE /api/v1/service-accounts/{serviceAccountId}
+func (UnimplementedHandler) DeleteServiceAccount(ctx context.Context, params DeleteServiceAccountParams) (r *ServiceAccountResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// DisableServiceAccount implements disable-service-account operation.
+//
+// Suspends the service account, preventing token exchanges and project writes while preserving its
+// identity and resources for later reuse. Requires `iam:service_accounts.manage`.
+//
+// POST /api/v1/service-accounts/{serviceAccountId}:disable
+func (UnimplementedHandler) DisableServiceAccount(ctx context.Context, params DisableServiceAccountParams) (r *ServiceAccountResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// EnableServiceAccount implements enable-service-account operation.
+//
+// Returns a suspended service account to `ACTIVE`. Requires `iam:service_accounts.manage`.
+//
+// POST /api/v1/service-accounts/{serviceAccountId}:enable
+func (UnimplementedHandler) EnableServiceAccount(ctx context.Context, params EnableServiceAccountParams) (r *ServiceAccountResource, _ error) {
+	return r, ht.ErrNotImplemented
 }
 
 // GetApplication implements get-application operation.
@@ -174,6 +246,15 @@ func (UnimplementedHandler) GetRole(ctx context.Context, params GetRoleParams) (
 //
 // GET /api/v1/ssh-keys/{keyId}
 func (UnimplementedHandler) GetSSHKey(ctx context.Context, params GetSSHKeyParams) (r *SSHKeyResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetServiceAccount implements get-service-account operation.
+//
+// A deleted service account remains readable with `status` `DELETED`. Visible to any project member.
+//
+// GET /api/v1/service-accounts/{serviceAccountId}
+func (UnimplementedHandler) GetServiceAccount(ctx context.Context, params GetServiceAccountParams) (r *ServiceAccountResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -272,6 +353,35 @@ func (UnimplementedHandler) ListSSHKeys(ctx context.Context, params ListSSHKeysP
 	return r, ht.ErrNotImplemented
 }
 
+// ListServiceAccountKeys implements list-service-account-keys operation.
+//
+// Never returns private keys. Revoked keys are omitted unless `include_revoked` is true. Visible to
+// any project member.
+//
+// GET /api/v1/service-accounts/{serviceAccountId}/keys
+func (UnimplementedHandler) ListServiceAccountKeys(ctx context.Context, params ListServiceAccountKeysParams) (r *LengthAwarePageServiceAccountKeyResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListServiceAccountSSHKeys implements list-service-account-ssh-keys operation.
+//
+// Most recent first. Visible to any project member.
+//
+// GET /api/v1/service-accounts/{serviceAccountId}/ssh-keys
+func (UnimplementedHandler) ListServiceAccountSSHKeys(ctx context.Context, params ListServiceAccountSSHKeysParams) (r *LengthAwarePageServiceAccountSSHKeyResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListServiceAccounts implements list-service-accounts operation.
+//
+// Suspended service accounts are included. Deleted service accounts are omitted unless
+// `include_deleted` is true. Visible to any project member.
+//
+// GET /api/v1/service-accounts
+func (UnimplementedHandler) ListServiceAccounts(ctx context.Context, params ListServiceAccountsParams) (r *LengthAwarePageServiceAccountResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // RemoveMember implements remove-member operation.
 //
 // Removing someone else requires `iam:members.manage`; leaving requires only membership of the
@@ -309,6 +419,25 @@ func (UnimplementedHandler) RevokeInvitation(ctx context.Context, params RevokeI
 //
 // DELETE /api/v1/ssh-keys/{keyId}
 func (UnimplementedHandler) RevokeSSHKey(ctx context.Context, params RevokeSSHKeyParams) (r *SSHKeyResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RevokeServiceAccountKey implements revoke-service-account-key operation.
+//
+// Marks the key `REVOKED` and retains the row for audit. Repeating the call returns the revoked key.
+// Requires `iam:service_accounts.manage`.
+//
+// DELETE /api/v1/service-accounts/{serviceAccountId}/keys/{keyId}
+func (UnimplementedHandler) RevokeServiceAccountKey(ctx context.Context, params RevokeServiceAccountKeyParams) (r *ServiceAccountKeyResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RevokeServiceAccountSSHKey implements revoke-service-account-ssh-key operation.
+//
+// Marks the key `REVOKED` and retains the row for audit. Requires `iam:service_accounts.manage`.
+//
+// DELETE /api/v1/service-accounts/{serviceAccountId}/ssh-keys/{keyId}
+func (UnimplementedHandler) RevokeServiceAccountSSHKey(ctx context.Context, params RevokeServiceAccountSSHKeyParams) (r *ServiceAccountSSHKeyResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -390,6 +519,16 @@ func (UnimplementedHandler) UpdateProject(ctx context.Context, req *UpdateProjec
 //
 // PUT /api/v1/roles/{code}
 func (UnimplementedHandler) UpdateRole(ctx context.Context, req *UpdateRoleRequestBody, params UpdateRoleParams) (r *RoleResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateServiceAccount implements update-service-account operation.
+//
+// Updates the display name, description or optional email address of an active or suspended service
+// account. Requires `iam:service_accounts.manage`.
+//
+// PATCH /api/v1/service-accounts/{serviceAccountId}
+func (UnimplementedHandler) UpdateServiceAccount(ctx context.Context, req *UpdateServiceAccountRequestBody, params UpdateServiceAccountParams) (r *ServiceAccountResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

@@ -1268,6 +1268,42 @@ func (s *ErrorStatusMetadata) init() ErrorStatusMetadata {
 	return m
 }
 
+type ExchangeServiceAccountTokenApplicationJSON ExchangeServiceAccountTokenRequestBody
+
+func (*ExchangeServiceAccountTokenApplicationJSON) exchangeServiceAccountTokenReq() {}
+
+type ExchangeServiceAccountTokenApplicationXWwwFormUrlencoded ExchangeServiceAccountTokenRequestBody
+
+func (*ExchangeServiceAccountTokenApplicationXWwwFormUrlencoded) exchangeServiceAccountTokenReq() {}
+
+// Ref: #/components/schemas/ExchangeServiceAccountTokenRequestBody
+type ExchangeServiceAccountTokenRequestBody struct {
+	// Must be `urn:ietf:params:oauth:grant-type:jwt-bearer`.
+	GrantType string `json:"grant_type"`
+	// Compact EdDSA JWS signed with an active key of the service account.
+	Assertion string `json:"assertion"`
+}
+
+// GetGrantType returns the value of GrantType.
+func (s *ExchangeServiceAccountTokenRequestBody) GetGrantType() string {
+	return s.GrantType
+}
+
+// GetAssertion returns the value of Assertion.
+func (s *ExchangeServiceAccountTokenRequestBody) GetAssertion() string {
+	return s.Assertion
+}
+
+// SetGrantType sets the value of GrantType.
+func (s *ExchangeServiceAccountTokenRequestBody) SetGrantType(val string) {
+	s.GrantType = val
+}
+
+// SetAssertion sets the value of Assertion.
+func (s *ExchangeServiceAccountTokenRequestBody) SetAssertion(val string) {
+	s.Assertion = val
+}
+
 // Ref: #/components/schemas/FieldViolation
 type FieldViolation struct {
 	// The path to the rejected field in the request body, such as `items[2].price_id`.
@@ -2041,6 +2077,58 @@ func (o NilDateTime) Or(d time.Time) time.Time {
 		return v
 	}
 	return d
+}
+
+// Ref: #/components/schemas/OAuthTokenResponseBody
+type OAuthTokenResponseBody struct {
+	// The scoped token, to be sent as `Authorization: Bearer`.
+	AccessToken string `json:"access_token"`
+	// Always `Bearer`.
+	TokenType string `json:"token_type"`
+	// Seconds remaining before expiry.
+	ExpiresIn int64 `json:"expires_in"`
+	// When the token expires.
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+// GetAccessToken returns the value of AccessToken.
+func (s *OAuthTokenResponseBody) GetAccessToken() string {
+	return s.AccessToken
+}
+
+// GetTokenType returns the value of TokenType.
+func (s *OAuthTokenResponseBody) GetTokenType() string {
+	return s.TokenType
+}
+
+// GetExpiresIn returns the value of ExpiresIn.
+func (s *OAuthTokenResponseBody) GetExpiresIn() int64 {
+	return s.ExpiresIn
+}
+
+// GetExpiresAt returns the value of ExpiresAt.
+func (s *OAuthTokenResponseBody) GetExpiresAt() time.Time {
+	return s.ExpiresAt
+}
+
+// SetAccessToken sets the value of AccessToken.
+func (s *OAuthTokenResponseBody) SetAccessToken(val string) {
+	s.AccessToken = val
+}
+
+// SetTokenType sets the value of TokenType.
+func (s *OAuthTokenResponseBody) SetTokenType(val string) {
+	s.TokenType = val
+}
+
+// SetExpiresIn sets the value of ExpiresIn.
+func (s *OAuthTokenResponseBody) SetExpiresIn(val int64) {
+	s.ExpiresIn = val
+}
+
+// SetExpiresAt sets the value of ExpiresAt.
+func (s *OAuthTokenResponseBody) SetExpiresAt(val time.Time) {
+	s.ExpiresAt = val
 }
 
 // Pagination metadata for stable numbered pages. total_count is returned only when the operation can

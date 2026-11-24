@@ -14,6 +14,7 @@ const (
 	CreateProjectOperation               OperationName = "CreateProject"
 	CreateSSHKeyOperation                OperationName = "CreateSSHKey"
 	CreateScopedTokenOperation           OperationName = "CreateScopedToken"
+	ExchangeServiceAccountTokenOperation OperationName = "ExchangeServiceAccountToken"
 	GetAccountOperation                  OperationName = "GetAccount"
 	GetAccountDeletionOperation          OperationName = "GetAccountDeletion"
 	GetApplicationOperation              OperationName = "GetApplication"
