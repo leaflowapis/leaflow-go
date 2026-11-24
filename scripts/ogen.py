@@ -54,7 +54,7 @@ func (c queryClient) Do(req *http.Request) (*http.Response, error) {
 \t}
 
 \tkeys := req.Header.Values("Idempotency-Key")
-\tif len(keys) != 1 || !validQueryKey(keys[0]) {
+\tif len(keys) > 1 || (len(keys) == 1 && !validQueryKey(keys[0])) {
 \t\treturn nil, errors.New("Idempotency-Key must contain 1 to 255 visible ASCII characters")
 \t}
 
