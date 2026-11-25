@@ -709,7 +709,8 @@ func (s *Server) handleCancelTopUpRequest(args [1]string, argsEscaped bool, w ht
 // Confirming a complete session again with the same terms returns it with its order; different terms
 // are refused with `BILLING_CHECKOUT_SESSION_COMPLETE`. An expired session is refused with
 // `BILLING_CHECKOUT_SESSION_EXPIRED`. The order is delivered by the service that owns it once paid;
-// confirmation alone does not mean delivery.
+// confirmation alone does not mean delivery. When supplied, `expected_revision` is checked before
+// creating an order or invoice.
 //
 // Open to the owner of the session's billing account and to members of its project.
 //
@@ -20119,7 +20120,8 @@ func (s *Server) handleUpdateBillingAccountRequest(args [1]string, argsEscaped b
 // `auto_renew` turns automatic renewal on or off for every subscription with licensed items the
 // session opens; for a free trial, it decides whether the trial converts to paid when it ends. A
 // session that is not open is refused with `BILLING_CHECKOUT_SESSION_COMPLETE` or
-// `BILLING_CHECKOUT_SESSION_EXPIRED`.
+// `BILLING_CHECKOUT_SESSION_EXPIRED`. When supplied, `expected_revision` enables optimistic
+// concurrency and stale values are refused with `BILLING_CHECKOUT_SESSION_REVISION_CHANGED`.
 //
 // Open to the owner of the session's billing account and to members of its project.
 //

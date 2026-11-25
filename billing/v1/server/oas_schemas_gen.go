@@ -45,14 +45,13 @@ func (s *AccessTokenAuth) SetRoles(val []string) {
 // Balance, credits and unpaid charges, each reported separately.
 // Ref: #/components/schemas/AccountBalance
 type AccountBalance struct {
-	// Balance minus pending balance returns and the part of unbilled_amount and due that
-	// estimated_credit_applied does not cover. Open usage therefore reduces available_credit before a
-	// usage invoice exists. Negative only when the balance and applicable credit fall short of what the
-	// account owes.
-	AvailableCredit Money `json:"available_credit"`
-	// Credit expected to pay unbilled_amount and due, matching each charge to the grants whose scope,
-	// validity and conditions it meets, in the order credit is applied at payment. Nothing is deducted
-	// until an invoice is paid, so credits still includes this amount.
+	// Total funds available for current charges. It is the account balance plus remaining credits, minus
+	// pending balance returns, unbilled usage and the amount due on issued invoices. Credits with
+	// restrictions remain included and are detailed in credit_groups.
+	AvailableBalance Money `json:"available_balance"`
+	// Credit expected to pay unbilled_amount and amount_due, matching each charge to the grants whose
+	// scope, validity and conditions it meets, in the order credit is applied at payment. Nothing is
+	// deducted until an invoice is paid, so credits still includes this amount.
 	EstimatedCreditApplied Money `json:"estimated_credit_applied"`
 	// Current estimate of priced usage that has not been invoiced. Final pricing and tax are fixed at
 	// issuance.
@@ -60,29 +59,29 @@ type AccountBalance struct {
 	BillingAccountID int64  `json:"billing_account_id"`
 	Currency         string `json:"currency"`
 	// Topped-up funds in the account's currency, excluding credits. May be negative after a payment
-	// dispute. Amounts owed are reported in due; this is not a withdrawable amount.
+	// dispute. Amounts owed are reported in amount_due; this is not a withdrawable amount.
 	Balance Money `json:"balance"`
 	// Remaining credit, including restricted grants; not withdrawable and not part of balance.
 	// credit_groups shows currently valid credit by permitted use; positive credits do not mean due is
 	// zero.
 	Credits Money `json:"credits"`
-	// Currently valid credit restricted to certain products, operations or conditions; part of credits,
-	// not of balance.
+	// Currently valid credit restricted to certain products, operations or conditions; part of
+	// credit_balance, not of balance.
 	RestrictedCredits Money `json:"restricted_credits"`
 	// Currently valid unspent credit grouped by permitted use. Each group covers only the charges its
 	// restrictions and validity allow, and the groups may differ from the recorded credits total.
 	CreditGroups []CreditGroup `json:"credit_groups"`
 	// Amount still payable on issued invoices. The invoice of an order not yet accepted is excluded, here
-	// and from available_credit. Usage not yet invoiced is reported separately.
-	Due Money `json:"due"`
+	// and from available_balance. Usage not yet invoiced is reported separately.
+	AmountDue Money `json:"amount_due"`
 	// Balance held for pending top-up refunds and not spendable. Unbilled usage is reported separately and
-	// reduces available_credit.
-	PendingReturnsAmount Money `json:"pending_returns_amount"`
+	// reduces available_balance.
+	PendingRefundAmount Money `json:"pending_refund_amount"`
 }
 
-// GetAvailableCredit returns the value of AvailableCredit.
-func (s *AccountBalance) GetAvailableCredit() Money {
-	return s.AvailableCredit
+// GetAvailableBalance returns the value of AvailableBalance.
+func (s *AccountBalance) GetAvailableBalance() Money {
+	return s.AvailableBalance
 }
 
 // GetEstimatedCreditApplied returns the value of EstimatedCreditApplied.
@@ -125,19 +124,19 @@ func (s *AccountBalance) GetCreditGroups() []CreditGroup {
 	return s.CreditGroups
 }
 
-// GetDue returns the value of Due.
-func (s *AccountBalance) GetDue() Money {
-	return s.Due
+// GetAmountDue returns the value of AmountDue.
+func (s *AccountBalance) GetAmountDue() Money {
+	return s.AmountDue
 }
 
-// GetPendingReturnsAmount returns the value of PendingReturnsAmount.
-func (s *AccountBalance) GetPendingReturnsAmount() Money {
-	return s.PendingReturnsAmount
+// GetPendingRefundAmount returns the value of PendingRefundAmount.
+func (s *AccountBalance) GetPendingRefundAmount() Money {
+	return s.PendingRefundAmount
 }
 
-// SetAvailableCredit sets the value of AvailableCredit.
-func (s *AccountBalance) SetAvailableCredit(val Money) {
-	s.AvailableCredit = val
+// SetAvailableBalance sets the value of AvailableBalance.
+func (s *AccountBalance) SetAvailableBalance(val Money) {
+	s.AvailableBalance = val
 }
 
 // SetEstimatedCreditApplied sets the value of EstimatedCreditApplied.
@@ -180,14 +179,14 @@ func (s *AccountBalance) SetCreditGroups(val []CreditGroup) {
 	s.CreditGroups = val
 }
 
-// SetDue sets the value of Due.
-func (s *AccountBalance) SetDue(val Money) {
-	s.Due = val
+// SetAmountDue sets the value of AmountDue.
+func (s *AccountBalance) SetAmountDue(val Money) {
+	s.AmountDue = val
 }
 
-// SetPendingReturnsAmount sets the value of PendingReturnsAmount.
-func (s *AccountBalance) SetPendingReturnsAmount(val Money) {
-	s.PendingReturnsAmount = val
+// SetPendingRefundAmount sets the value of PendingRefundAmount.
+func (s *AccountBalance) SetPendingRefundAmount(val Money) {
+	s.PendingRefundAmount = val
 }
 
 // `ARREARS`: the balance is negative. `PROJECTS_ASSIGNED`: the account still pays for a project, yours
@@ -2929,8 +2928,10 @@ type CheckoutSession struct {
 	// When a change takes effect, as on the order it creates; `none` for anything that is not a change.
 	ChangeEffective CheckoutSessionChangeEffective `json:"change_effective"`
 	// `open` in a preview.
-	Status   CheckoutSessionStatus `json:"status"`
-	Currency string                `json:"currency"`
+	Status CheckoutSessionStatus `json:"status"`
+	// Incremented on every persisted session change and used for optimistic concurrency.
+	Revision int64  `json:"revision"`
+	Currency string `json:"currency"`
 	// The checkout choices, as the purchase gave them and as you saved them since. Billing does not check
 	// `return_url`; validate it before navigating.
 	Checkout CheckoutOptions `json:"checkout"`
@@ -3017,6 +3018,11 @@ func (s *CheckoutSession) GetChangeEffective() CheckoutSessionChangeEffective {
 // GetStatus returns the value of Status.
 func (s *CheckoutSession) GetStatus() CheckoutSessionStatus {
 	return s.Status
+}
+
+// GetRevision returns the value of Revision.
+func (s *CheckoutSession) GetRevision() int64 {
+	return s.Revision
 }
 
 // GetCurrency returns the value of Currency.
@@ -3152,6 +3158,11 @@ func (s *CheckoutSession) SetChangeEffective(val CheckoutSessionChangeEffective)
 // SetStatus sets the value of Status.
 func (s *CheckoutSession) SetStatus(val CheckoutSessionStatus) {
 	s.Status = val
+}
+
+// SetRevision sets the value of Revision.
+func (s *CheckoutSession) SetRevision(val int64) {
+	s.Revision = val
 }
 
 // SetCurrency sets the value of Currency.
@@ -3298,12 +3309,19 @@ func (s *CheckoutSessionChangeEffective) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/CheckoutSessionConfirm
 type CheckoutSessionConfirm struct {
+	// The revision returned with the session being confirmed.
+	ExpectedRevision OptInt64 `json:"expected_revision"`
 	// The session's `total` as read, after discounts and tax and before credit grants or balance.
 	ExpectedAmount string `json:"expected_amount"`
 	// Immediate changes and items added to an existing subscription only. The session's `proration_date`
 	// as read; it must be a whole second, not in the future and at most 10 minutes old, otherwise the
 	// request is refused with `BILLING_CHANGE_INVALID`. Defaults to the time of the request.
 	ProrationDate OptDateTime `json:"proration_date"`
+}
+
+// GetExpectedRevision returns the value of ExpectedRevision.
+func (s *CheckoutSessionConfirm) GetExpectedRevision() OptInt64 {
+	return s.ExpectedRevision
 }
 
 // GetExpectedAmount returns the value of ExpectedAmount.
@@ -3314,6 +3332,11 @@ func (s *CheckoutSessionConfirm) GetExpectedAmount() string {
 // GetProrationDate returns the value of ProrationDate.
 func (s *CheckoutSessionConfirm) GetProrationDate() OptDateTime {
 	return s.ProrationDate
+}
+
+// SetExpectedRevision sets the value of ExpectedRevision.
+func (s *CheckoutSessionConfirm) SetExpectedRevision(val OptInt64) {
+	s.ExpectedRevision = val
 }
 
 // SetExpectedAmount sets the value of ExpectedAmount.
@@ -5142,6 +5165,8 @@ func (s *CheckoutSessionType) UnmarshalText(data []byte) error {
 // Give at least one choice. Saving a choice equal to the current one changes nothing.
 // Ref: #/components/schemas/CheckoutSessionUpdate
 type CheckoutSessionUpdate struct {
+	// The revision returned with the session being updated.
+	ExpectedRevision OptInt64 `json:"expected_revision"`
 	// The promotion code to complete the session with; null removes it, and the best applicable account
 	// discount applies instead.
 	PromotionCode OptNilString `json:"promotion_code"`
@@ -5150,6 +5175,11 @@ type CheckoutSessionUpdate struct {
 	// Turns on or off automatic renewal of every subscription with licensed items the session opens. It
 	// must be your own choice.
 	AutoRenew OptBool `json:"auto_renew"`
+}
+
+// GetExpectedRevision returns the value of ExpectedRevision.
+func (s *CheckoutSessionUpdate) GetExpectedRevision() OptInt64 {
+	return s.ExpectedRevision
 }
 
 // GetPromotionCode returns the value of PromotionCode.
@@ -5165,6 +5195,11 @@ func (s *CheckoutSessionUpdate) GetTrialGrantID() OptNilUUID {
 // GetAutoRenew returns the value of AutoRenew.
 func (s *CheckoutSessionUpdate) GetAutoRenew() OptBool {
 	return s.AutoRenew
+}
+
+// SetExpectedRevision sets the value of ExpectedRevision.
+func (s *CheckoutSessionUpdate) SetExpectedRevision(val OptInt64) {
+	s.ExpectedRevision = val
 }
 
 // SetPromotionCode sets the value of PromotionCode.
@@ -15637,15 +15672,18 @@ func (s *PaymentCancellationReason) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/PaymentMethod
 type PaymentMethod struct {
-	ID               uuid.UUID           `json:"id"`
-	BillingAccountID int64               `json:"billing_account_id"`
-	PaymentGateway   string              `json:"payment_gateway"`
-	Brand            OptString           `json:"brand"`
-	Last4            OptString           `json:"last4"`
-	ExpMonth         OptNilInt           `json:"exp_month"`
-	ExpYear          OptNilInt           `json:"exp_year"`
-	IsDefault        bool                `json:"is_default"`
-	Status           PaymentMethodStatus `json:"status"`
+	ID                            uuid.UUID           `json:"id"`
+	BillingAccountID              int64               `json:"billing_account_id"`
+	PaymentGateway                string              `json:"payment_gateway"`
+	Brand                         OptString           `json:"brand"`
+	Last4                         OptString           `json:"last4"`
+	ExpMonth                      OptNilInt           `json:"exp_month"`
+	ExpYear                       OptNilInt           `json:"exp_year"`
+	IsDefault                     bool                `json:"is_default"`
+	Fingerprint                   OptNilString        `json:"fingerprint"`
+	InvoiceCollectionAuthorizedAt OptNilDateTime      `json:"invoice_collection_authorized_at"`
+	CreatedAt                     time.Time           `json:"created_at"`
+	Status                        PaymentMethodStatus `json:"status"`
 }
 
 // GetID returns the value of ID.
@@ -15686,6 +15724,21 @@ func (s *PaymentMethod) GetExpYear() OptNilInt {
 // GetIsDefault returns the value of IsDefault.
 func (s *PaymentMethod) GetIsDefault() bool {
 	return s.IsDefault
+}
+
+// GetFingerprint returns the value of Fingerprint.
+func (s *PaymentMethod) GetFingerprint() OptNilString {
+	return s.Fingerprint
+}
+
+// GetInvoiceCollectionAuthorizedAt returns the value of InvoiceCollectionAuthorizedAt.
+func (s *PaymentMethod) GetInvoiceCollectionAuthorizedAt() OptNilDateTime {
+	return s.InvoiceCollectionAuthorizedAt
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *PaymentMethod) GetCreatedAt() time.Time {
+	return s.CreatedAt
 }
 
 // GetStatus returns the value of Status.
@@ -15731,6 +15784,21 @@ func (s *PaymentMethod) SetExpYear(val OptNilInt) {
 // SetIsDefault sets the value of IsDefault.
 func (s *PaymentMethod) SetIsDefault(val bool) {
 	s.IsDefault = val
+}
+
+// SetFingerprint sets the value of Fingerprint.
+func (s *PaymentMethod) SetFingerprint(val OptNilString) {
+	s.Fingerprint = val
+}
+
+// SetInvoiceCollectionAuthorizedAt sets the value of InvoiceCollectionAuthorizedAt.
+func (s *PaymentMethod) SetInvoiceCollectionAuthorizedAt(val OptNilDateTime) {
+	s.InvoiceCollectionAuthorizedAt = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *PaymentMethod) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
 }
 
 // SetStatus sets the value of Status.
