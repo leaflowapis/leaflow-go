@@ -15857,6 +15857,157 @@ func (s *Invoice) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode implements json.Marshaler.
+func (s *InvoiceCollection) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *InvoiceCollection) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("collection_method")
+		s.CollectionMethod.Encode(e)
+	}
+	{
+		if s.PaymentMethodID.Set {
+			e.FieldStart("payment_method_id")
+			s.PaymentMethodID.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfInvoiceCollection = [2]string{
+	0: "collection_method",
+	1: "payment_method_id",
+}
+
+// Decode decodes InvoiceCollection from json.
+func (s *InvoiceCollection) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode InvoiceCollection to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "collection_method":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.CollectionMethod.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"collection_method\"")
+			}
+		case "payment_method_id":
+			if err := func() error {
+				s.PaymentMethodID.Reset()
+				if err := s.PaymentMethodID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"payment_method_id\"")
+			}
+		default:
+			return d.Skip()
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode InvoiceCollection")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfInvoiceCollection) {
+					name = jsonFieldsNameOfInvoiceCollection[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *InvoiceCollection) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *InvoiceCollection) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes InvoiceCollectionCollectionMethod as json.
+func (s InvoiceCollectionCollectionMethod) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes InvoiceCollectionCollectionMethod from json.
+func (s *InvoiceCollectionCollectionMethod) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode InvoiceCollectionCollectionMethod to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch InvoiceCollectionCollectionMethod(v) {
+	case InvoiceCollectionCollectionMethodSendInvoice:
+		*s = InvoiceCollectionCollectionMethodSendInvoice
+	case InvoiceCollectionCollectionMethodChargeAutomatically:
+		*s = InvoiceCollectionCollectionMethodChargeAutomatically
+	default:
+		*s = InvoiceCollectionCollectionMethod(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s InvoiceCollectionCollectionMethod) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *InvoiceCollectionCollectionMethod) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes InvoiceCustomerTaxExempt as json.
 func (s InvoiceCustomerTaxExempt) Encode(e *jx.Encoder) {
 	e.Str(string(s))

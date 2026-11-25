@@ -46,8 +46,9 @@ func (s *AccessTokenAuth) SetRoles(val []string) {
 // Ref: #/components/schemas/AccountBalance
 type AccountBalance struct {
 	// Balance minus pending balance returns and the part of unbilled_amount and due that
-	// estimated_credit_applied does not cover. Negative only when the balance and applicable credit fall
-	// short of what the account owes.
+	// estimated_credit_applied does not cover. Open usage therefore reduces available_credit before a
+	// usage invoice exists. Negative only when the balance and applicable credit fall short of what the
+	// account owes.
 	AvailableCredit Money `json:"available_credit"`
 	// Credit expected to pay unbilled_amount and due, matching each charge to the grants whose scope,
 	// validity and conditions it meets, in the order credit is applied at payment. Nothing is deducted
@@ -74,7 +75,8 @@ type AccountBalance struct {
 	// Amount still payable on issued invoices. The invoice of an order not yet accepted is excluded, here
 	// and from available_credit. Usage not yet invoiced is reported separately.
 	Due Money `json:"due"`
-	// Balance held for pending top-up refunds and not spendable. Unbilled usage does not hold balance.
+	// Balance held for pending top-up refunds and not spendable. Unbilled usage is reported separately and
+	// reduces available_credit.
 	PendingReturnsAmount Money `json:"pending_returns_amount"`
 }
 
@@ -8596,6 +8598,73 @@ func (s *Invoice) SetPaidAt(val OptNilDateTime) {
 	s.PaidAt = val
 }
 
+// Ref: #/components/schemas/InvoiceCollection
+type InvoiceCollection struct {
+	CollectionMethod InvoiceCollectionCollectionMethod `json:"collection_method"`
+	PaymentMethodID  OptUUID                           `json:"payment_method_id"`
+}
+
+// GetCollectionMethod returns the value of CollectionMethod.
+func (s *InvoiceCollection) GetCollectionMethod() InvoiceCollectionCollectionMethod {
+	return s.CollectionMethod
+}
+
+// GetPaymentMethodID returns the value of PaymentMethodID.
+func (s *InvoiceCollection) GetPaymentMethodID() OptUUID {
+	return s.PaymentMethodID
+}
+
+// SetCollectionMethod sets the value of CollectionMethod.
+func (s *InvoiceCollection) SetCollectionMethod(val InvoiceCollectionCollectionMethod) {
+	s.CollectionMethod = val
+}
+
+// SetPaymentMethodID sets the value of PaymentMethodID.
+func (s *InvoiceCollection) SetPaymentMethodID(val OptUUID) {
+	s.PaymentMethodID = val
+}
+
+type InvoiceCollectionCollectionMethod string
+
+const (
+	InvoiceCollectionCollectionMethodSendInvoice         InvoiceCollectionCollectionMethod = "send_invoice"
+	InvoiceCollectionCollectionMethodChargeAutomatically InvoiceCollectionCollectionMethod = "charge_automatically"
+)
+
+// AllValues returns all InvoiceCollectionCollectionMethod values.
+func (InvoiceCollectionCollectionMethod) AllValues() []InvoiceCollectionCollectionMethod {
+	return []InvoiceCollectionCollectionMethod{
+		InvoiceCollectionCollectionMethodSendInvoice,
+		InvoiceCollectionCollectionMethodChargeAutomatically,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InvoiceCollectionCollectionMethod) MarshalText() ([]byte, error) {
+	switch s {
+	case InvoiceCollectionCollectionMethodSendInvoice:
+		return []byte(s), nil
+	case InvoiceCollectionCollectionMethodChargeAutomatically:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InvoiceCollectionCollectionMethod) UnmarshalText(data []byte) error {
+	switch InvoiceCollectionCollectionMethod(data) {
+	case InvoiceCollectionCollectionMethodSendInvoice:
+		*s = InvoiceCollectionCollectionMethodSendInvoice
+		return nil
+	case InvoiceCollectionCollectionMethodChargeAutomatically:
+		*s = InvoiceCollectionCollectionMethodChargeAutomatically
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // How tax applied to the customer when the invoice was issued; `reverse` means no tax was charged
 // under the reverse-charge mechanism.
 type InvoiceCustomerTaxExempt string
@@ -9123,7 +9192,8 @@ func (s *InvoiceSource) UnmarshalText(data []byte) error {
 
 // `open`: issued and not yet settled; a zero-total invoice is paid at once. `paid` stays paid after a
 // refund, with the refunded part in amount_refunded. `void`: collection has stopped and any funds
-// received have been returned. Usage not yet invoiced is not on any invoice.
+// received have been returned. Usage remains in the open Statement until the normal month-end closing
+// and is not on an invoice before then.
 // Ref: #/components/schemas/InvoiceStatus
 type InvoiceStatus string
 
@@ -19399,11 +19469,10 @@ func (s *SpendRowList) SetPagination(val OffsetPagination) {
 	s.Pagination = val
 }
 
-// An account's consumption for one billing period up to one closing. Usage is invoiced after every
-// settlement run, about hourly: each closing issues an invoice for the usage priced since the previous
-// one and collects it from credits and balance, and later usage goes into the next statement of the
-// same period. A closed statement does not change. The period's consumption is the sum of its
-// statements.
+// An account's consumption for one UTC calendar month up to one closing. Usage remains in the open
+// statement while it is being priced, so its estimate participates in balance and arrears checks. The
+// normal closing is after month end and the late-usage window, when one usage invoice is issued for
+// the month and collected from credits and balance. A closed statement does not change.
 // Ref: #/components/schemas/Statement
 type Statement struct {
 	ID               uuid.UUID `json:"id"`
@@ -19950,10 +20019,10 @@ func (s *StatementSummaryGroupBy) UnmarshalText(data []byte) error {
 	}
 }
 
-// `interim`: a closing before the period's usage is final, without minimum charges. `final`: the first
-// closing after the period ended and its late usage was settled, applying the period's minimum
-// charges. `supplement`: a closing after the final one, for usage priced late. An open statement is
-// interim.
+// `interim`: a closing before the period's usage is final, currently operator-triggered and also used
+// by historical hourly billing, without minimum charges. `final`: the normal first closing after the
+// period ended and its late usage was settled, applying the period's minimum charges. `supplement`: a
+// closing after the final one, for usage priced late. An open statement is still being accumulated.
 // Ref: #/components/schemas/StatementType
 type StatementType string
 

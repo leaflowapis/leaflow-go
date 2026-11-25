@@ -277,9 +277,9 @@ type Invoker interface {
 	// DownloadMonthlyStatementPdf invokes download-monthly-statement-pdf operation.
 	//
 	// Renders the statement of account of one finalized UTC calendar month from invoices, usage
-	// statements, credit notes and payments read at download time. Supplement statements, later credit
-	// notes and later payments are reflected in later downloads. Not a tax invoice or a demand for
-	// payment. A month that is not finalized returns 409 with `BILLING_STATEMENT_NOT_FINALIZED`.
+	// statements, credit notes and payments read at download time. Later supplement statements, credit
+	// notes and payments are reflected in later downloads. Not a tax invoice or a demand for payment. A
+	// month that is not finalized returns 409 with `BILLING_STATEMENT_NOT_FINALIZED`.
 	//
 	// GET /api/v1/monthly-statements/pdf
 	DownloadMonthlyStatementPdf(ctx context.Context, params DownloadMonthlyStatementPdfParams) (*DownloadMonthlyStatementPdfOKHeaders, error)
@@ -373,6 +373,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/invoices/{invoiceId}
 	GetInvoice(ctx context.Context, params GetInvoiceParams) (*Invoice, error)
+	// GetInvoiceCollection invokes get-invoice-collection operation.
+	//
+	// Get monthly invoice collection settings.
+	//
+	// GET /api/v1/billing-accounts/{accountId}/invoice-collection
+	GetInvoiceCollection(ctx context.Context, params GetInvoiceCollectionParams) (*InvoiceCollection, error)
 	// GetOrder invokes get-order operation.
 	//
 	// An order of your billing account or of a project you are a member of, with its status and invoice.
@@ -568,7 +574,7 @@ type Invoker interface {
 	// ListMonthlyStatements invokes list-monthly-statements operation.
 	//
 	// Monthly statements of account per UTC calendar month for your billing accounts, newest first. Each
-	// month summarizes order invoices issued in the month, closed usage statements of the month, credit
+	// month summarizes order invoices issued in the month, usage invoices issued for the month, credit
 	// notes issued in the month and payments recorded on those invoices.
 	//
 	// GET /api/v1/monthly-statements
@@ -875,11 +881,20 @@ type Invoker interface {
 	SearchPrices(ctx context.Context, request *PriceSearch) (*PriceList, error)
 	// SetDefaultPaymentMethod invokes set-default-payment-method operation.
 	//
-	// Makes an active saved payment method the default for its billing account and returns it. Expired or
-	// removed methods cannot be selected; selecting the current default changes nothing.
+	// Makes an active saved payment method the default for its billing account and returns it. The default
+	// is used as the fallback for authorized subscription renewals. Month-end usage collection requires a
+	// separate authorization.
 	//
 	// PUT /api/v1/payment-methods/{paymentMethodId}/default
 	SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (*PaymentMethod, error)
+	// SetInvoiceCollection invokes set-invoice-collection operation.
+	//
+	// Selects how future month-end usage invoices are collected. charge_automatically authorizes
+	// off-session payment of the amount remaining after eligible credits and account balance and requires
+	// an active saved card. send_invoice disables that authorization and must omit payment_method_id.
+	//
+	// PUT /api/v1/billing-accounts/{accountId}/invoice-collection
+	SetInvoiceCollection(ctx context.Context, request *InvoiceCollection, params SetInvoiceCollectionParams) (*InvoiceCollection, error)
 	// SetProjectAssignment invokes set-project-assignment operation.
 	//
 	// Links the project to a billing account you own; you need the project permission
@@ -3748,9 +3763,9 @@ func (c *Client) sendDownloadInvoicePdf(ctx context.Context, params DownloadInvo
 // DownloadMonthlyStatementPdf invokes download-monthly-statement-pdf operation.
 //
 // Renders the statement of account of one finalized UTC calendar month from invoices, usage
-// statements, credit notes and payments read at download time. Supplement statements, later credit
-// notes and later payments are reflected in later downloads. Not a tax invoice or a demand for
-// payment. A month that is not finalized returns 409 with `BILLING_STATEMENT_NOT_FINALIZED`.
+// statements, credit notes and payments read at download time. Later supplement statements, credit
+// notes and payments are reflected in later downloads. Not a tax invoice or a demand for payment. A
+// month that is not finalized returns 409 with `BILLING_STATEMENT_NOT_FINALIZED`.
 //
 // GET /api/v1/monthly-statements/pdf
 func (c *Client) DownloadMonthlyStatementPdf(ctx context.Context, params DownloadMonthlyStatementPdfParams) (*DownloadMonthlyStatementPdfOKHeaders, error) {
@@ -5349,6 +5364,138 @@ func (c *Client) sendGetInvoice(ctx context.Context, params GetInvoiceParams) (r
 
 	stage = "DecodeResponse"
 	result, err := decodeGetInvoiceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetInvoiceCollection invokes get-invoice-collection operation.
+//
+// Get monthly invoice collection settings.
+//
+// GET /api/v1/billing-accounts/{accountId}/invoice-collection
+func (c *Client) GetInvoiceCollection(ctx context.Context, params GetInvoiceCollectionParams) (*InvoiceCollection, error) {
+	res, err := c.sendGetInvoiceCollection(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetInvoiceCollection(ctx context.Context, params GetInvoiceCollectionParams) (res *InvoiceCollection, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-invoice-collection"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/billing-accounts/{accountId}/invoice-collection"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetInvoiceCollectionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/billing-accounts/"
+	{
+		// Encode "accountId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.AccountId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/invoice-collection"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, GetInvoiceCollectionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetInvoiceCollectionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -10211,7 +10358,7 @@ func (c *Client) sendListInvoices(ctx context.Context, params ListInvoicesParams
 // ListMonthlyStatements invokes list-monthly-statements operation.
 //
 // Monthly statements of account per UTC calendar month for your billing accounts, newest first. Each
-// month summarizes order invoices issued in the month, closed usage statements of the month, credit
+// month summarizes order invoices issued in the month, usage invoices issued for the month, credit
 // notes issued in the month and payments recorded on those invoices.
 //
 // GET /api/v1/monthly-statements
@@ -16149,8 +16296,9 @@ func (c *Client) sendSearchPrices(ctx context.Context, request *PriceSearch) (re
 
 // SetDefaultPaymentMethod invokes set-default-payment-method operation.
 //
-// Makes an active saved payment method the default for its billing account and returns it. Expired or
-// removed methods cannot be selected; selecting the current default changes nothing.
+// Makes an active saved payment method the default for its billing account and returns it. The default
+// is used as the fallback for authorized subscription renewals. Month-end usage collection requires a
+// separate authorization.
 //
 // PUT /api/v1/payment-methods/{paymentMethodId}/default
 func (c *Client) SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (*PaymentMethod, error) {
@@ -16273,6 +16421,152 @@ func (c *Client) sendSetDefaultPaymentMethod(ctx context.Context, params SetDefa
 
 	stage = "DecodeResponse"
 	result, err := decodeSetDefaultPaymentMethodResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// SetInvoiceCollection invokes set-invoice-collection operation.
+//
+// Selects how future month-end usage invoices are collected. charge_automatically authorizes
+// off-session payment of the amount remaining after eligible credits and account balance and requires
+// an active saved card. send_invoice disables that authorization and must omit payment_method_id.
+//
+// PUT /api/v1/billing-accounts/{accountId}/invoice-collection
+func (c *Client) SetInvoiceCollection(ctx context.Context, request *InvoiceCollection, params SetInvoiceCollectionParams) (*InvoiceCollection, error) {
+	res, err := c.sendSetInvoiceCollection(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendSetInvoiceCollection(ctx context.Context, request *InvoiceCollection, params SetInvoiceCollectionParams) (res *InvoiceCollection, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("set-invoice-collection"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/api/v1/billing-accounts/{accountId}/invoice-collection"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SetInvoiceCollectionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/billing-accounts/"
+	{
+		// Encode "accountId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.AccountId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/invoice-collection"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSetInvoiceCollectionRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, SetInvoiceCollectionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSetInvoiceCollectionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

@@ -318,9 +318,9 @@ func (UnimplementedHandler) DownloadInvoicePdf(ctx context.Context, params Downl
 // DownloadMonthlyStatementPdf implements download-monthly-statement-pdf operation.
 //
 // Renders the statement of account of one finalized UTC calendar month from invoices, usage
-// statements, credit notes and payments read at download time. Supplement statements, later credit
-// notes and later payments are reflected in later downloads. Not a tax invoice or a demand for
-// payment. A month that is not finalized returns 409 with `BILLING_STATEMENT_NOT_FINALIZED`.
+// statements, credit notes and payments read at download time. Later supplement statements, credit
+// notes and payments are reflected in later downloads. Not a tax invoice or a demand for payment. A
+// month that is not finalized returns 409 with `BILLING_STATEMENT_NOT_FINALIZED`.
 //
 // GET /api/v1/monthly-statements/pdf
 func (UnimplementedHandler) DownloadMonthlyStatementPdf(ctx context.Context, params DownloadMonthlyStatementPdfParams) (r *DownloadMonthlyStatementPdfOKHeaders, _ error) {
@@ -447,6 +447,15 @@ func (UnimplementedHandler) GetExport(ctx context.Context, params GetExportParam
 //
 // GET /api/v1/invoices/{invoiceId}
 func (UnimplementedHandler) GetInvoice(ctx context.Context, params GetInvoiceParams) (r *Invoice, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetInvoiceCollection implements get-invoice-collection operation.
+//
+// Get monthly invoice collection settings.
+//
+// GET /api/v1/billing-accounts/{accountId}/invoice-collection
+func (UnimplementedHandler) GetInvoiceCollection(ctx context.Context, params GetInvoiceCollectionParams) (r *InvoiceCollection, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -726,7 +735,7 @@ func (UnimplementedHandler) ListInvoices(ctx context.Context, params ListInvoice
 // ListMonthlyStatements implements list-monthly-statements operation.
 //
 // Monthly statements of account per UTC calendar month for your billing accounts, newest first. Each
-// month summarizes order invoices issued in the month, closed usage statements of the month, credit
+// month summarizes order invoices issued in the month, usage invoices issued for the month, credit
 // notes issued in the month and payments recorded on those invoices.
 //
 // GET /api/v1/monthly-statements
@@ -1129,11 +1138,23 @@ func (UnimplementedHandler) SearchPrices(ctx context.Context, req *PriceSearch) 
 
 // SetDefaultPaymentMethod implements set-default-payment-method operation.
 //
-// Makes an active saved payment method the default for its billing account and returns it. Expired or
-// removed methods cannot be selected; selecting the current default changes nothing.
+// Makes an active saved payment method the default for its billing account and returns it. The default
+// is used as the fallback for authorized subscription renewals. Month-end usage collection requires a
+// separate authorization.
 //
 // PUT /api/v1/payment-methods/{paymentMethodId}/default
 func (UnimplementedHandler) SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (r *PaymentMethod, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SetInvoiceCollection implements set-invoice-collection operation.
+//
+// Selects how future month-end usage invoices are collected. charge_automatically authorizes
+// off-session payment of the amount remaining after eligible credits and account balance and requires
+// an active saved card. send_invoice disables that authorization and must omit payment_method_id.
+//
+// PUT /api/v1/billing-accounts/{accountId}/invoice-collection
+func (UnimplementedHandler) SetInvoiceCollection(ctx context.Context, req *InvoiceCollection, params SetInvoiceCollectionParams) (r *InvoiceCollection, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

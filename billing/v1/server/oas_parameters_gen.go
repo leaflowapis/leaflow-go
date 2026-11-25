@@ -1949,6 +1949,71 @@ func decodeGetInvoiceParams(args [1]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
+// GetInvoiceCollectionParams is parameters of get-invoice-collection operation.
+type GetInvoiceCollectionParams struct {
+	AccountId int64
+}
+
+func unpackGetInvoiceCollectionParams(packed middleware.Parameters) (params GetInvoiceCollectionParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountId",
+			In:   "path",
+		}
+		params.AccountId = packed[key].(int64)
+	}
+	return params
+}
+
+func decodeGetInvoiceCollectionParams(args [1]string, argsEscaped bool, r *http.Request) (params GetInvoiceCollectionParams, _ error) {
+	// Decode path: accountId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToInt64(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetOrderParams is parameters of get-order operation.
 type GetOrderParams struct {
 	OrderId uuid.UUID
@@ -17640,6 +17705,71 @@ func decodeSetDefaultPaymentMethodParams(args [1]string, argsEscaped bool, r *ht
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "paymentMethodId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// SetInvoiceCollectionParams is parameters of set-invoice-collection operation.
+type SetInvoiceCollectionParams struct {
+	AccountId int64
+}
+
+func unpackSetInvoiceCollectionParams(packed middleware.Parameters) (params SetInvoiceCollectionParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountId",
+			In:   "path",
+		}
+		params.AccountId = packed[key].(int64)
+	}
+	return params
+}
+
+func decodeSetInvoiceCollectionParams(args [1]string, argsEscaped bool, r *http.Request) (params SetInvoiceCollectionParams, _ error) {
+	// Decode path: accountId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToInt64(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountId",
 			In:   "path",
 			Err:  err,
 		}
