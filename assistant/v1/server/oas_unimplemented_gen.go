@@ -89,6 +89,17 @@ func (UnimplementedHandler) CompleteUpload(ctx context.Context, req *CompleteUpl
 	return r, ht.ErrNotImplemented
 }
 
+// CreateAgent implements create-agent operation.
+//
+// Creates a resident agent visible to the whole project, provisions its dedicated IAM service account,
+// grants machine login (and optional sudo) when `machineId` is bound, and creates its single
+// conversation thread.
+//
+// POST /api/v1/agents
+func (UnimplementedHandler) CreateAgent(ctx context.Context, req *CreateAgentRequestBody) (r *AgentResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CreateArtifact implements create-artifact operation.
 //
 // Makes a file the first version of a new artifact. The file must belong to the caller in this
@@ -205,6 +216,16 @@ func (UnimplementedHandler) DecideToolCalls(ctx context.Context, req *DecideTool
 	return ht.ErrNotImplemented
 }
 
+// DeleteAgent implements delete-agent operation.
+//
+// Removes the agent and its conversation when idle. Fails with 409 and code THREAD_RUNNING while its
+// conversation is running.
+//
+// DELETE /api/v1/agents/{agent}
+func (UnimplementedHandler) DeleteAgent(ctx context.Context, params DeleteAgentParams) error {
+	return ht.ErrNotImplemented
+}
+
 // DeleteArtifact implements delete-artifact operation.
 //
 // Removes the artifact and its versions from lists, and the assistant can no longer add versions to
@@ -259,8 +280,8 @@ func (UnimplementedHandler) DeleteFolder(ctx context.Context, params DeleteFolde
 
 // DeleteMemory implements delete-memory operation.
 //
-// The assistant stops remembering this. It takes effect at once, so the next conversation will not
-// carry it. The assistant may well learn the same thing again.
+// Removes a stored memory immediately. Pass `agentId` when deleting a memory belonging to a project
+// agent.
 //
 // DELETE /api/v1/memories/{memory}
 func (UnimplementedHandler) DeleteMemory(ctx context.Context, params DeleteMemoryParams) error {
@@ -321,6 +342,15 @@ func (UnimplementedHandler) DeleteUpload(ctx context.Context, params DeleteUploa
 //
 // GET /api/v1/files/{file}:download
 func (UnimplementedHandler) DownloadFile(ctx context.Context, params DownloadFileParams) (r *DownloadFileOKHeaders, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetAgent implements get-agent operation.
+//
+// Get a project agent.
+//
+// GET /api/v1/agents/{agent}
+func (UnimplementedHandler) GetAgent(ctx context.Context, params GetAgentParams) (r *AgentResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -481,6 +511,17 @@ func (UnimplementedHandler) InterruptThread(ctx context.Context, params Interrup
 	return ht.ErrNotImplemented
 }
 
+// ListAgents implements list-agents operation.
+//
+// Lists the resident agents in this project, ordered by name. Each agent has a single living
+// conversation (`threadId`), an isolated service account (`serviceAccountId`), and an optional Fleet
+// machine binding (`machineId`).
+//
+// GET /api/v1/agents
+func (UnimplementedHandler) ListAgents(ctx context.Context) (r *AgentListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListArtifactVersions implements list-artifact-versions operation.
 //
 // The versions of an artifact, newest first.
@@ -545,13 +586,11 @@ func (UnimplementedHandler) ListFolders(ctx context.Context) (r *FolderListRespo
 
 // ListMemories implements list-memories operation.
 //
-// Facts the assistant has written down for the current account in this project. They appear at the
-// start of every later conversation. Members of the same project each have their own, and this returns
-// only the current account's. Not paginated: there is a cap on how many there can be, and all of them
-// come back at once.
+// Facts the assistant has written down in this project. Without `agentId`, returns the current
+// account's private memories; with `agentId`, returns that project agent's memories.
 //
 // GET /api/v1/memories
-func (UnimplementedHandler) ListMemories(ctx context.Context) (r *MemoryListResponseBody, _ error) {
+func (UnimplementedHandler) ListMemories(ctx context.Context, params ListMemoriesParams) (r *MemoryListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -871,6 +910,16 @@ func (UnimplementedHandler) SubmitToolResult(ctx context.Context, req *ToolResul
 //
 // POST /api/v1/weixin-logins/{login}:verifyCode
 func (UnimplementedHandler) SubmitWeixinVerifyCode(ctx context.Context, req *VerifyCodeRequestBody, params SubmitWeixinVerifyCodeParams) (r *LoginResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateAgent implements update-agent operation.
+//
+// Updates the agent's profile, instructions, machine binding, or conversation model settings. Omitted
+// fields stay as they are; setting `machineId` to null unbinds the Fleet machine.
+//
+// PATCH /api/v1/agents/{agent}
+func (UnimplementedHandler) UpdateAgent(ctx context.Context, req *UpdateAgentRequestBody, params UpdateAgentParams) (r *AgentResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

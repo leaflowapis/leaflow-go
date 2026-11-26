@@ -16,6 +16,494 @@ func (s *ErrorStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
+// Provenance of who created this resident project agent and how. When created via a member's personal
+// companion AI (`type: companion`), `accessible` is true only for that member; private conversation
+// coordinates remain null for other project members.
+// Ref: #/components/schemas/AgentCreatorResource
+type AgentCreatorResource struct {
+	UserId      NilString                 `json:"userId"`
+	Type        AgentCreatorResourceType  `json:"type"`
+	Accessible  bool                      `json:"accessible"`
+	ThreadId    NilString                 `json:"threadId"`
+	TurnId      NilString                 `json:"turnId"`
+	TurnNumber  NilInt64                  `json:"turnNumber"`
+	ItemId      NilString                 `json:"itemId"`
+	ItemOrdinal NilInt64                  `json:"itemOrdinal"`
+	ToolCall    NilOriginToolCallResource `json:"toolCall"`
+}
+
+// GetUserId returns the value of UserId.
+func (s *AgentCreatorResource) GetUserId() NilString {
+	return s.UserId
+}
+
+// GetType returns the value of Type.
+func (s *AgentCreatorResource) GetType() AgentCreatorResourceType {
+	return s.Type
+}
+
+// GetAccessible returns the value of Accessible.
+func (s *AgentCreatorResource) GetAccessible() bool {
+	return s.Accessible
+}
+
+// GetThreadId returns the value of ThreadId.
+func (s *AgentCreatorResource) GetThreadId() NilString {
+	return s.ThreadId
+}
+
+// GetTurnId returns the value of TurnId.
+func (s *AgentCreatorResource) GetTurnId() NilString {
+	return s.TurnId
+}
+
+// GetTurnNumber returns the value of TurnNumber.
+func (s *AgentCreatorResource) GetTurnNumber() NilInt64 {
+	return s.TurnNumber
+}
+
+// GetItemId returns the value of ItemId.
+func (s *AgentCreatorResource) GetItemId() NilString {
+	return s.ItemId
+}
+
+// GetItemOrdinal returns the value of ItemOrdinal.
+func (s *AgentCreatorResource) GetItemOrdinal() NilInt64 {
+	return s.ItemOrdinal
+}
+
+// GetToolCall returns the value of ToolCall.
+func (s *AgentCreatorResource) GetToolCall() NilOriginToolCallResource {
+	return s.ToolCall
+}
+
+// SetUserId sets the value of UserId.
+func (s *AgentCreatorResource) SetUserId(val NilString) {
+	s.UserId = val
+}
+
+// SetType sets the value of Type.
+func (s *AgentCreatorResource) SetType(val AgentCreatorResourceType) {
+	s.Type = val
+}
+
+// SetAccessible sets the value of Accessible.
+func (s *AgentCreatorResource) SetAccessible(val bool) {
+	s.Accessible = val
+}
+
+// SetThreadId sets the value of ThreadId.
+func (s *AgentCreatorResource) SetThreadId(val NilString) {
+	s.ThreadId = val
+}
+
+// SetTurnId sets the value of TurnId.
+func (s *AgentCreatorResource) SetTurnId(val NilString) {
+	s.TurnId = val
+}
+
+// SetTurnNumber sets the value of TurnNumber.
+func (s *AgentCreatorResource) SetTurnNumber(val NilInt64) {
+	s.TurnNumber = val
+}
+
+// SetItemId sets the value of ItemId.
+func (s *AgentCreatorResource) SetItemId(val NilString) {
+	s.ItemId = val
+}
+
+// SetItemOrdinal sets the value of ItemOrdinal.
+func (s *AgentCreatorResource) SetItemOrdinal(val NilInt64) {
+	s.ItemOrdinal = val
+}
+
+// SetToolCall sets the value of ToolCall.
+func (s *AgentCreatorResource) SetToolCall(val NilOriginToolCallResource) {
+	s.ToolCall = val
+}
+
+type AgentCreatorResourceType string
+
+const (
+	AgentCreatorResourceTypeConsole   AgentCreatorResourceType = "console"
+	AgentCreatorResourceTypeCompanion AgentCreatorResourceType = "companion"
+	AgentCreatorResourceTypePlan      AgentCreatorResourceType = "plan"
+)
+
+// AllValues returns all AgentCreatorResourceType values.
+func (AgentCreatorResourceType) AllValues() []AgentCreatorResourceType {
+	return []AgentCreatorResourceType{
+		AgentCreatorResourceTypeConsole,
+		AgentCreatorResourceTypeCompanion,
+		AgentCreatorResourceTypePlan,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AgentCreatorResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case AgentCreatorResourceTypeConsole:
+		return []byte(s), nil
+	case AgentCreatorResourceTypeCompanion:
+		return []byte(s), nil
+	case AgentCreatorResourceTypePlan:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AgentCreatorResourceType) UnmarshalText(data []byte) error {
+	switch AgentCreatorResourceType(data) {
+	case AgentCreatorResourceTypeConsole:
+		*s = AgentCreatorResourceTypeConsole
+		return nil
+	case AgentCreatorResourceTypeCompanion:
+		*s = AgentCreatorResourceTypeCompanion
+		return nil
+	case AgentCreatorResourceTypePlan:
+		*s = AgentCreatorResourceTypePlan
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/AgentListResponseBody
+type AgentListResponseBody struct {
+	Agents []AgentResource `json:"agents"`
+}
+
+// GetAgents returns the value of Agents.
+func (s *AgentListResponseBody) GetAgents() []AgentResource {
+	return s.Agents
+}
+
+// SetAgents sets the value of Agents.
+func (s *AgentListResponseBody) SetAgents(val []AgentResource) {
+	s.Agents = val
+}
+
+// A resident project agent with a dedicated service account and single living main thread.
+// Ref: #/components/schemas/AgentResource
+type AgentResource struct {
+	ID string `json:"id"`
+	// Unique handle within the project, used in `@slug` mentions.
+	Slug         string       `json:"slug"`
+	Name         string       `json:"name"`
+	Description  string       `json:"description"`
+	Instructions string       `json:"instructions"`
+	Runtime      AgentRuntime `json:"runtime"`
+	// The IAM service account user id this agent acts as.
+	ServiceAccountId string `json:"serviceAccountId"`
+	// The Fleet machine this agent is locked to. Null when unbound.
+	MachineId NilString `json:"machineId"`
+	// Whether the agent's service account holds administrative sudo access on `machineId`.
+	MachineSudo bool `json:"machineSudo"`
+	// The single conversation thread belonging to this agent.
+	ThreadId        string                   `json:"threadId"`
+	ModelId         string                   `json:"modelId"`
+	ReasoningEffort NilReasoningEffort       `json:"reasoningEffort"`
+	ApprovalMode    ApprovalMode             `json:"approvalMode"`
+	Status          ThreadStatus             `json:"status"`
+	Activity        NilString                `json:"activity"`
+	RecentMessage   NilString                `json:"recentMessage"`
+	Unread          bool                     `json:"unread"`
+	Todos           []TodoResource           `json:"todos"`
+	PendingAction   NilPendingActionResource `json:"pendingAction"`
+	Subagents       SubagentCountResource    `json:"subagents"`
+	LastTurn        NilLastTurnResource      `json:"lastTurn"`
+	// Who created this agent and via which channel (`console`, `companion`, or `plan`). Null when unknown.
+	Creator   NilAgentCreatorResource `json:"creator"`
+	CreatedAt time.Time               `json:"createdAt"`
+	UpdatedAt time.Time               `json:"updatedAt"`
+}
+
+// GetID returns the value of ID.
+func (s *AgentResource) GetID() string {
+	return s.ID
+}
+
+// GetSlug returns the value of Slug.
+func (s *AgentResource) GetSlug() string {
+	return s.Slug
+}
+
+// GetName returns the value of Name.
+func (s *AgentResource) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *AgentResource) GetDescription() string {
+	return s.Description
+}
+
+// GetInstructions returns the value of Instructions.
+func (s *AgentResource) GetInstructions() string {
+	return s.Instructions
+}
+
+// GetRuntime returns the value of Runtime.
+func (s *AgentResource) GetRuntime() AgentRuntime {
+	return s.Runtime
+}
+
+// GetServiceAccountId returns the value of ServiceAccountId.
+func (s *AgentResource) GetServiceAccountId() string {
+	return s.ServiceAccountId
+}
+
+// GetMachineId returns the value of MachineId.
+func (s *AgentResource) GetMachineId() NilString {
+	return s.MachineId
+}
+
+// GetMachineSudo returns the value of MachineSudo.
+func (s *AgentResource) GetMachineSudo() bool {
+	return s.MachineSudo
+}
+
+// GetThreadId returns the value of ThreadId.
+func (s *AgentResource) GetThreadId() string {
+	return s.ThreadId
+}
+
+// GetModelId returns the value of ModelId.
+func (s *AgentResource) GetModelId() string {
+	return s.ModelId
+}
+
+// GetReasoningEffort returns the value of ReasoningEffort.
+func (s *AgentResource) GetReasoningEffort() NilReasoningEffort {
+	return s.ReasoningEffort
+}
+
+// GetApprovalMode returns the value of ApprovalMode.
+func (s *AgentResource) GetApprovalMode() ApprovalMode {
+	return s.ApprovalMode
+}
+
+// GetStatus returns the value of Status.
+func (s *AgentResource) GetStatus() ThreadStatus {
+	return s.Status
+}
+
+// GetActivity returns the value of Activity.
+func (s *AgentResource) GetActivity() NilString {
+	return s.Activity
+}
+
+// GetRecentMessage returns the value of RecentMessage.
+func (s *AgentResource) GetRecentMessage() NilString {
+	return s.RecentMessage
+}
+
+// GetUnread returns the value of Unread.
+func (s *AgentResource) GetUnread() bool {
+	return s.Unread
+}
+
+// GetTodos returns the value of Todos.
+func (s *AgentResource) GetTodos() []TodoResource {
+	return s.Todos
+}
+
+// GetPendingAction returns the value of PendingAction.
+func (s *AgentResource) GetPendingAction() NilPendingActionResource {
+	return s.PendingAction
+}
+
+// GetSubagents returns the value of Subagents.
+func (s *AgentResource) GetSubagents() SubagentCountResource {
+	return s.Subagents
+}
+
+// GetLastTurn returns the value of LastTurn.
+func (s *AgentResource) GetLastTurn() NilLastTurnResource {
+	return s.LastTurn
+}
+
+// GetCreator returns the value of Creator.
+func (s *AgentResource) GetCreator() NilAgentCreatorResource {
+	return s.Creator
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *AgentResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *AgentResource) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetID sets the value of ID.
+func (s *AgentResource) SetID(val string) {
+	s.ID = val
+}
+
+// SetSlug sets the value of Slug.
+func (s *AgentResource) SetSlug(val string) {
+	s.Slug = val
+}
+
+// SetName sets the value of Name.
+func (s *AgentResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *AgentResource) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetInstructions sets the value of Instructions.
+func (s *AgentResource) SetInstructions(val string) {
+	s.Instructions = val
+}
+
+// SetRuntime sets the value of Runtime.
+func (s *AgentResource) SetRuntime(val AgentRuntime) {
+	s.Runtime = val
+}
+
+// SetServiceAccountId sets the value of ServiceAccountId.
+func (s *AgentResource) SetServiceAccountId(val string) {
+	s.ServiceAccountId = val
+}
+
+// SetMachineId sets the value of MachineId.
+func (s *AgentResource) SetMachineId(val NilString) {
+	s.MachineId = val
+}
+
+// SetMachineSudo sets the value of MachineSudo.
+func (s *AgentResource) SetMachineSudo(val bool) {
+	s.MachineSudo = val
+}
+
+// SetThreadId sets the value of ThreadId.
+func (s *AgentResource) SetThreadId(val string) {
+	s.ThreadId = val
+}
+
+// SetModelId sets the value of ModelId.
+func (s *AgentResource) SetModelId(val string) {
+	s.ModelId = val
+}
+
+// SetReasoningEffort sets the value of ReasoningEffort.
+func (s *AgentResource) SetReasoningEffort(val NilReasoningEffort) {
+	s.ReasoningEffort = val
+}
+
+// SetApprovalMode sets the value of ApprovalMode.
+func (s *AgentResource) SetApprovalMode(val ApprovalMode) {
+	s.ApprovalMode = val
+}
+
+// SetStatus sets the value of Status.
+func (s *AgentResource) SetStatus(val ThreadStatus) {
+	s.Status = val
+}
+
+// SetActivity sets the value of Activity.
+func (s *AgentResource) SetActivity(val NilString) {
+	s.Activity = val
+}
+
+// SetRecentMessage sets the value of RecentMessage.
+func (s *AgentResource) SetRecentMessage(val NilString) {
+	s.RecentMessage = val
+}
+
+// SetUnread sets the value of Unread.
+func (s *AgentResource) SetUnread(val bool) {
+	s.Unread = val
+}
+
+// SetTodos sets the value of Todos.
+func (s *AgentResource) SetTodos(val []TodoResource) {
+	s.Todos = val
+}
+
+// SetPendingAction sets the value of PendingAction.
+func (s *AgentResource) SetPendingAction(val NilPendingActionResource) {
+	s.PendingAction = val
+}
+
+// SetSubagents sets the value of Subagents.
+func (s *AgentResource) SetSubagents(val SubagentCountResource) {
+	s.Subagents = val
+}
+
+// SetLastTurn sets the value of LastTurn.
+func (s *AgentResource) SetLastTurn(val NilLastTurnResource) {
+	s.LastTurn = val
+}
+
+// SetCreator sets the value of Creator.
+func (s *AgentResource) SetCreator(val NilAgentCreatorResource) {
+	s.Creator = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *AgentResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *AgentResource) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+// How the agent executes turns: `hosted` runs on the platform's built-in model runtime; `external`
+// reserves integration with external or local agent runtimes such as A2A endpoints.
+// Ref: #/components/schemas/AgentRuntime
+type AgentRuntime string
+
+const (
+	AgentRuntimeHosted   AgentRuntime = "hosted"
+	AgentRuntimeExternal AgentRuntime = "external"
+)
+
+// AllValues returns all AgentRuntime values.
+func (AgentRuntime) AllValues() []AgentRuntime {
+	return []AgentRuntime{
+		AgentRuntimeHosted,
+		AgentRuntimeExternal,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AgentRuntime) MarshalText() ([]byte, error) {
+	switch s {
+	case AgentRuntimeHosted:
+		return []byte(s), nil
+	case AgentRuntimeExternal:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AgentRuntime) UnmarshalText(data []byte) error {
+	switch AgentRuntime(data) {
+	case AgentRuntimeHosted:
+		*s = AgentRuntimeHosted
+		return nil
+	case AgentRuntimeExternal:
+		*s = AgentRuntimeExternal
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // AnswerQuestionNoContent is response for AnswerQuestion operation.
 type AnswerQuestionNoContent struct{}
 
@@ -1562,6 +2050,120 @@ func (s *ContextUsageResource) SetWindowTokens(val NilInt64) {
 	s.WindowTokens = val
 }
 
+// Ref: #/components/schemas/CreateAgentRequestBody
+type CreateAgentRequestBody struct {
+	Slug            string             `json:"slug"`
+	Name            string             `json:"name"`
+	Description     OptString          `json:"description"`
+	Instructions    OptString          `json:"instructions"`
+	Runtime         OptAgentRuntime    `json:"runtime"`
+	MachineId       OptNilString       `json:"machineId"`
+	MachineSudo     OptBool            `json:"machineSudo"`
+	ModelId         OptString          `json:"modelId"`
+	ReasoningEffort OptReasoningEffort `json:"reasoningEffort"`
+	ApprovalMode    OptApprovalMode    `json:"approvalMode"`
+}
+
+// GetSlug returns the value of Slug.
+func (s *CreateAgentRequestBody) GetSlug() string {
+	return s.Slug
+}
+
+// GetName returns the value of Name.
+func (s *CreateAgentRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *CreateAgentRequestBody) GetDescription() OptString {
+	return s.Description
+}
+
+// GetInstructions returns the value of Instructions.
+func (s *CreateAgentRequestBody) GetInstructions() OptString {
+	return s.Instructions
+}
+
+// GetRuntime returns the value of Runtime.
+func (s *CreateAgentRequestBody) GetRuntime() OptAgentRuntime {
+	return s.Runtime
+}
+
+// GetMachineId returns the value of MachineId.
+func (s *CreateAgentRequestBody) GetMachineId() OptNilString {
+	return s.MachineId
+}
+
+// GetMachineSudo returns the value of MachineSudo.
+func (s *CreateAgentRequestBody) GetMachineSudo() OptBool {
+	return s.MachineSudo
+}
+
+// GetModelId returns the value of ModelId.
+func (s *CreateAgentRequestBody) GetModelId() OptString {
+	return s.ModelId
+}
+
+// GetReasoningEffort returns the value of ReasoningEffort.
+func (s *CreateAgentRequestBody) GetReasoningEffort() OptReasoningEffort {
+	return s.ReasoningEffort
+}
+
+// GetApprovalMode returns the value of ApprovalMode.
+func (s *CreateAgentRequestBody) GetApprovalMode() OptApprovalMode {
+	return s.ApprovalMode
+}
+
+// SetSlug sets the value of Slug.
+func (s *CreateAgentRequestBody) SetSlug(val string) {
+	s.Slug = val
+}
+
+// SetName sets the value of Name.
+func (s *CreateAgentRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *CreateAgentRequestBody) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetInstructions sets the value of Instructions.
+func (s *CreateAgentRequestBody) SetInstructions(val OptString) {
+	s.Instructions = val
+}
+
+// SetRuntime sets the value of Runtime.
+func (s *CreateAgentRequestBody) SetRuntime(val OptAgentRuntime) {
+	s.Runtime = val
+}
+
+// SetMachineId sets the value of MachineId.
+func (s *CreateAgentRequestBody) SetMachineId(val OptNilString) {
+	s.MachineId = val
+}
+
+// SetMachineSudo sets the value of MachineSudo.
+func (s *CreateAgentRequestBody) SetMachineSudo(val OptBool) {
+	s.MachineSudo = val
+}
+
+// SetModelId sets the value of ModelId.
+func (s *CreateAgentRequestBody) SetModelId(val OptString) {
+	s.ModelId = val
+}
+
+// SetReasoningEffort sets the value of ReasoningEffort.
+func (s *CreateAgentRequestBody) SetReasoningEffort(val OptReasoningEffort) {
+	s.ReasoningEffort = val
+}
+
+// SetApprovalMode sets the value of ApprovalMode.
+func (s *CreateAgentRequestBody) SetApprovalMode(val OptApprovalMode) {
+	s.ApprovalMode = val
+}
+
 // Ref: #/components/schemas/CreateArtifactRequestBody
 type CreateArtifactRequestBody struct {
 	Title  string `json:"title"`
@@ -2154,6 +2756,9 @@ func (s *DefaultModelResourceSource) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
+
+// DeleteAgentNoContent is response for DeleteAgent operation.
+type DeleteAgentNoContent struct{}
 
 // DeleteArtifactNoContent is response for DeleteArtifact operation.
 type DeleteArtifactNoContent struct{}
@@ -2980,13 +3585,311 @@ func (s *FolderResourceType) UnmarshalText(data []byte) error {
 // InterruptThreadNoContent is response for InterruptThread operation.
 type InterruptThreadNoContent struct{}
 
+// Relational provenance of a cross-delivered item. Private companion conversation coordinates
+// (`threadId`, `turnId`, `itemId`, `itemOrdinal`, `threadTitle`) are populated only when `accessible`
+// is true for the current viewer.
+// Ref: #/components/schemas/ItemOriginResource
+type ItemOriginResource struct {
+	Type         ItemOriginResourceType `json:"type"`
+	AgentId      NilString              `json:"agentId"`
+	AgentSlug    NilString              `json:"agentSlug"`
+	AgentName    NilString              `json:"agentName"`
+	SubagentName NilString              `json:"subagentName"`
+	UserId       NilString              `json:"userId"`
+	ThreadTitle  NilString              `json:"threadTitle"`
+	// Whether the current viewer is permitted to open the origin conversation (`false` when sent from
+	// another member's private companion AI).
+	Accessible bool      `json:"accessible"`
+	ThreadId   NilString `json:"threadId"`
+	TurnId     NilString `json:"turnId"`
+	// 1-based turn number of `turnId` in the origin conversation.
+	TurnNumber       NilInt64                  `json:"turnNumber"`
+	ItemId           NilString                 `json:"itemId"`
+	ItemOrdinal      NilInt64                  `json:"itemOrdinal"`
+	ItemType         NilString                 `json:"itemType"`
+	ToolCall         NilOriginToolCallResource `json:"toolCall"`
+	TaskId           NilString                 `json:"taskId"`
+	DocumentId       NilString                 `json:"documentId"`
+	DocumentRevision NilInt64                  `json:"documentRevision"`
+	DispatchedAt     NilDateTime               `json:"dispatchedAt"`
+}
+
+// GetType returns the value of Type.
+func (s *ItemOriginResource) GetType() ItemOriginResourceType {
+	return s.Type
+}
+
+// GetAgentId returns the value of AgentId.
+func (s *ItemOriginResource) GetAgentId() NilString {
+	return s.AgentId
+}
+
+// GetAgentSlug returns the value of AgentSlug.
+func (s *ItemOriginResource) GetAgentSlug() NilString {
+	return s.AgentSlug
+}
+
+// GetAgentName returns the value of AgentName.
+func (s *ItemOriginResource) GetAgentName() NilString {
+	return s.AgentName
+}
+
+// GetSubagentName returns the value of SubagentName.
+func (s *ItemOriginResource) GetSubagentName() NilString {
+	return s.SubagentName
+}
+
+// GetUserId returns the value of UserId.
+func (s *ItemOriginResource) GetUserId() NilString {
+	return s.UserId
+}
+
+// GetThreadTitle returns the value of ThreadTitle.
+func (s *ItemOriginResource) GetThreadTitle() NilString {
+	return s.ThreadTitle
+}
+
+// GetAccessible returns the value of Accessible.
+func (s *ItemOriginResource) GetAccessible() bool {
+	return s.Accessible
+}
+
+// GetThreadId returns the value of ThreadId.
+func (s *ItemOriginResource) GetThreadId() NilString {
+	return s.ThreadId
+}
+
+// GetTurnId returns the value of TurnId.
+func (s *ItemOriginResource) GetTurnId() NilString {
+	return s.TurnId
+}
+
+// GetTurnNumber returns the value of TurnNumber.
+func (s *ItemOriginResource) GetTurnNumber() NilInt64 {
+	return s.TurnNumber
+}
+
+// GetItemId returns the value of ItemId.
+func (s *ItemOriginResource) GetItemId() NilString {
+	return s.ItemId
+}
+
+// GetItemOrdinal returns the value of ItemOrdinal.
+func (s *ItemOriginResource) GetItemOrdinal() NilInt64 {
+	return s.ItemOrdinal
+}
+
+// GetItemType returns the value of ItemType.
+func (s *ItemOriginResource) GetItemType() NilString {
+	return s.ItemType
+}
+
+// GetToolCall returns the value of ToolCall.
+func (s *ItemOriginResource) GetToolCall() NilOriginToolCallResource {
+	return s.ToolCall
+}
+
+// GetTaskId returns the value of TaskId.
+func (s *ItemOriginResource) GetTaskId() NilString {
+	return s.TaskId
+}
+
+// GetDocumentId returns the value of DocumentId.
+func (s *ItemOriginResource) GetDocumentId() NilString {
+	return s.DocumentId
+}
+
+// GetDocumentRevision returns the value of DocumentRevision.
+func (s *ItemOriginResource) GetDocumentRevision() NilInt64 {
+	return s.DocumentRevision
+}
+
+// GetDispatchedAt returns the value of DispatchedAt.
+func (s *ItemOriginResource) GetDispatchedAt() NilDateTime {
+	return s.DispatchedAt
+}
+
+// SetType sets the value of Type.
+func (s *ItemOriginResource) SetType(val ItemOriginResourceType) {
+	s.Type = val
+}
+
+// SetAgentId sets the value of AgentId.
+func (s *ItemOriginResource) SetAgentId(val NilString) {
+	s.AgentId = val
+}
+
+// SetAgentSlug sets the value of AgentSlug.
+func (s *ItemOriginResource) SetAgentSlug(val NilString) {
+	s.AgentSlug = val
+}
+
+// SetAgentName sets the value of AgentName.
+func (s *ItemOriginResource) SetAgentName(val NilString) {
+	s.AgentName = val
+}
+
+// SetSubagentName sets the value of SubagentName.
+func (s *ItemOriginResource) SetSubagentName(val NilString) {
+	s.SubagentName = val
+}
+
+// SetUserId sets the value of UserId.
+func (s *ItemOriginResource) SetUserId(val NilString) {
+	s.UserId = val
+}
+
+// SetThreadTitle sets the value of ThreadTitle.
+func (s *ItemOriginResource) SetThreadTitle(val NilString) {
+	s.ThreadTitle = val
+}
+
+// SetAccessible sets the value of Accessible.
+func (s *ItemOriginResource) SetAccessible(val bool) {
+	s.Accessible = val
+}
+
+// SetThreadId sets the value of ThreadId.
+func (s *ItemOriginResource) SetThreadId(val NilString) {
+	s.ThreadId = val
+}
+
+// SetTurnId sets the value of TurnId.
+func (s *ItemOriginResource) SetTurnId(val NilString) {
+	s.TurnId = val
+}
+
+// SetTurnNumber sets the value of TurnNumber.
+func (s *ItemOriginResource) SetTurnNumber(val NilInt64) {
+	s.TurnNumber = val
+}
+
+// SetItemId sets the value of ItemId.
+func (s *ItemOriginResource) SetItemId(val NilString) {
+	s.ItemId = val
+}
+
+// SetItemOrdinal sets the value of ItemOrdinal.
+func (s *ItemOriginResource) SetItemOrdinal(val NilInt64) {
+	s.ItemOrdinal = val
+}
+
+// SetItemType sets the value of ItemType.
+func (s *ItemOriginResource) SetItemType(val NilString) {
+	s.ItemType = val
+}
+
+// SetToolCall sets the value of ToolCall.
+func (s *ItemOriginResource) SetToolCall(val NilOriginToolCallResource) {
+	s.ToolCall = val
+}
+
+// SetTaskId sets the value of TaskId.
+func (s *ItemOriginResource) SetTaskId(val NilString) {
+	s.TaskId = val
+}
+
+// SetDocumentId sets the value of DocumentId.
+func (s *ItemOriginResource) SetDocumentId(val NilString) {
+	s.DocumentId = val
+}
+
+// SetDocumentRevision sets the value of DocumentRevision.
+func (s *ItemOriginResource) SetDocumentRevision(val NilInt64) {
+	s.DocumentRevision = val
+}
+
+// SetDispatchedAt sets the value of DispatchedAt.
+func (s *ItemOriginResource) SetDispatchedAt(val NilDateTime) {
+	s.DispatchedAt = val
+}
+
+type ItemOriginResourceType string
+
+const (
+	ItemOriginResourceTypeCompanion ItemOriginResourceType = "companion"
+	ItemOriginResourceTypeAgent     ItemOriginResourceType = "agent"
+	ItemOriginResourceTypeSubagent  ItemOriginResourceType = "subagent"
+	ItemOriginResourceTypeTask      ItemOriginResourceType = "task"
+	ItemOriginResourceTypeChannel   ItemOriginResourceType = "channel"
+	ItemOriginResourceTypePlan      ItemOriginResourceType = "plan"
+	ItemOriginResourceTypeDocument  ItemOriginResourceType = "document"
+)
+
+// AllValues returns all ItemOriginResourceType values.
+func (ItemOriginResourceType) AllValues() []ItemOriginResourceType {
+	return []ItemOriginResourceType{
+		ItemOriginResourceTypeCompanion,
+		ItemOriginResourceTypeAgent,
+		ItemOriginResourceTypeSubagent,
+		ItemOriginResourceTypeTask,
+		ItemOriginResourceTypeChannel,
+		ItemOriginResourceTypePlan,
+		ItemOriginResourceTypeDocument,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ItemOriginResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case ItemOriginResourceTypeCompanion:
+		return []byte(s), nil
+	case ItemOriginResourceTypeAgent:
+		return []byte(s), nil
+	case ItemOriginResourceTypeSubagent:
+		return []byte(s), nil
+	case ItemOriginResourceTypeTask:
+		return []byte(s), nil
+	case ItemOriginResourceTypeChannel:
+		return []byte(s), nil
+	case ItemOriginResourceTypePlan:
+		return []byte(s), nil
+	case ItemOriginResourceTypeDocument:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ItemOriginResourceType) UnmarshalText(data []byte) error {
+	switch ItemOriginResourceType(data) {
+	case ItemOriginResourceTypeCompanion:
+		*s = ItemOriginResourceTypeCompanion
+		return nil
+	case ItemOriginResourceTypeAgent:
+		*s = ItemOriginResourceTypeAgent
+		return nil
+	case ItemOriginResourceTypeSubagent:
+		*s = ItemOriginResourceTypeSubagent
+		return nil
+	case ItemOriginResourceTypeTask:
+		*s = ItemOriginResourceTypeTask
+		return nil
+	case ItemOriginResourceTypeChannel:
+		*s = ItemOriginResourceTypeChannel
+		return nil
+	case ItemOriginResourceTypePlan:
+		*s = ItemOriginResourceTypePlan
+		return nil
+	case ItemOriginResourceTypeDocument:
+		*s = ItemOriginResourceTypeDocument
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/ItemSourceResource
 type ItemSourceResource struct {
-	// `subagent` for a subagent reporting to its parent, `thread` for another of the person's
-	// conversations, `task` for a task, `channel` for a chat app.
+	// `subagent` for a subagent or its parent conversation, `thread` for another conversation, `agent` for
+	// a project agent, `task` for a task, `channel` for a chat app, `plan` or `document` for a structured
+	// plan or collaborative document notification.
 	Type ItemSourceResourceType `json:"type"`
-	// The conversation, task or channel the message came from.
+	// The conversation, agent, task, channel, plan or document the message came from.
 	ID string `json:"id"`
+	// For `agent` sources or agent-owned subagents, the sending agent's slug.
+	Slug OptNilString `json:"slug"`
 }
 
 // GetType returns the value of Type.
@@ -2999,6 +3902,11 @@ func (s *ItemSourceResource) GetID() string {
 	return s.ID
 }
 
+// GetSlug returns the value of Slug.
+func (s *ItemSourceResource) GetSlug() OptNilString {
+	return s.Slug
+}
+
 // SetType sets the value of Type.
 func (s *ItemSourceResource) SetType(val ItemSourceResourceType) {
 	s.Type = val
@@ -3009,15 +3917,24 @@ func (s *ItemSourceResource) SetID(val string) {
 	s.ID = val
 }
 
-// `subagent` for a subagent reporting to its parent, `thread` for another of the person's
-// conversations, `task` for a task, `channel` for a chat app.
+// SetSlug sets the value of Slug.
+func (s *ItemSourceResource) SetSlug(val OptNilString) {
+	s.Slug = val
+}
+
+// `subagent` for a subagent or its parent conversation, `thread` for another conversation, `agent` for
+// a project agent, `task` for a task, `channel` for a chat app, `plan` or `document` for a structured
+// plan or collaborative document notification.
 type ItemSourceResourceType string
 
 const (
 	ItemSourceResourceTypeSubagent ItemSourceResourceType = "subagent"
 	ItemSourceResourceTypeThread   ItemSourceResourceType = "thread"
+	ItemSourceResourceTypeAgent    ItemSourceResourceType = "agent"
 	ItemSourceResourceTypeTask     ItemSourceResourceType = "task"
 	ItemSourceResourceTypeChannel  ItemSourceResourceType = "channel"
+	ItemSourceResourceTypePlan     ItemSourceResourceType = "plan"
+	ItemSourceResourceTypeDocument ItemSourceResourceType = "document"
 )
 
 // AllValues returns all ItemSourceResourceType values.
@@ -3025,8 +3942,11 @@ func (ItemSourceResourceType) AllValues() []ItemSourceResourceType {
 	return []ItemSourceResourceType{
 		ItemSourceResourceTypeSubagent,
 		ItemSourceResourceTypeThread,
+		ItemSourceResourceTypeAgent,
 		ItemSourceResourceTypeTask,
 		ItemSourceResourceTypeChannel,
+		ItemSourceResourceTypePlan,
+		ItemSourceResourceTypeDocument,
 	}
 }
 
@@ -3037,9 +3957,15 @@ func (s ItemSourceResourceType) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case ItemSourceResourceTypeThread:
 		return []byte(s), nil
+	case ItemSourceResourceTypeAgent:
+		return []byte(s), nil
 	case ItemSourceResourceTypeTask:
 		return []byte(s), nil
 	case ItemSourceResourceTypeChannel:
+		return []byte(s), nil
+	case ItemSourceResourceTypePlan:
+		return []byte(s), nil
+	case ItemSourceResourceTypeDocument:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -3055,11 +3981,20 @@ func (s *ItemSourceResourceType) UnmarshalText(data []byte) error {
 	case ItemSourceResourceTypeThread:
 		*s = ItemSourceResourceTypeThread
 		return nil
+	case ItemSourceResourceTypeAgent:
+		*s = ItemSourceResourceTypeAgent
+		return nil
 	case ItemSourceResourceTypeTask:
 		*s = ItemSourceResourceTypeTask
 		return nil
 	case ItemSourceResourceTypeChannel:
 		*s = ItemSourceResourceTypeChannel
+		return nil
+	case ItemSourceResourceTypePlan:
+		*s = ItemSourceResourceTypePlan
+		return nil
+	case ItemSourceResourceTypeDocument:
+		*s = ItemSourceResourceTypeDocument
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -3383,6 +4318,8 @@ func (s *MemoryListResponseBody) SetItems(val []MemoryResource) {
 
 // Ref: #/components/schemas/MemoryResource
 type MemoryResource struct {
+	// The project agent this memory belongs to. Null for a person's private memory.
+	AgentId OptNilString `json:"agentId"`
 	// The fact itself.
 	Body      string    `json:"body"`
 	CreatedAt time.Time `json:"createdAt"`
@@ -3392,6 +4329,11 @@ type MemoryResource struct {
 	// Which conversation the assistant learned it in. That conversation may since have been deleted.
 	SourceThreadId OptString `json:"sourceThreadId"`
 	UpdatedAt      time.Time `json:"updatedAt"`
+}
+
+// GetAgentId returns the value of AgentId.
+func (s *MemoryResource) GetAgentId() OptNilString {
+	return s.AgentId
 }
 
 // GetBody returns the value of Body.
@@ -3424,6 +4366,11 @@ func (s *MemoryResource) GetUpdatedAt() time.Time {
 	return s.UpdatedAt
 }
 
+// SetAgentId sets the value of AgentId.
+func (s *MemoryResource) SetAgentId(val OptNilString) {
+	s.AgentId = val
+}
+
 // SetBody sets the value of Body.
 func (s *MemoryResource) SetBody(val string) {
 	s.Body = val
@@ -3454,10 +4401,48 @@ func (s *MemoryResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
 }
 
+// Ref: #/components/schemas/MentionResource
+type MentionResource struct {
+	AgentId string `json:"agentId"`
+	Slug    string `json:"slug"`
+	Name    string `json:"name"`
+}
+
+// GetAgentId returns the value of AgentId.
+func (s *MentionResource) GetAgentId() string {
+	return s.AgentId
+}
+
+// GetSlug returns the value of Slug.
+func (s *MentionResource) GetSlug() string {
+	return s.Slug
+}
+
+// GetName returns the value of Name.
+func (s *MentionResource) GetName() string {
+	return s.Name
+}
+
+// SetAgentId sets the value of AgentId.
+func (s *MentionResource) SetAgentId(val string) {
+	s.AgentId = val
+}
+
+// SetSlug sets the value of Slug.
+func (s *MentionResource) SetSlug(val string) {
+	s.Slug = val
+}
+
+// SetName sets the value of Name.
+func (s *MentionResource) SetName(val string) {
+	s.Name = val
+}
+
 // One piece of a message. `type` says which field carries it:
 //
 //   - `text` — the words, in `text`
 //   - `file` — a file uploaded earlier, by id in `fileId`
+//   - `mention` — a project agent, by `agentId` or `slug`
 //   - `data-<name>` — context from the client, in `data`. The name is shown to the assistant so it
 //     can tell one block from another.
 //
@@ -3466,8 +4451,12 @@ type MessagePart struct {
 	Type string       `json:"type"`
 	Text OptNilString `json:"text"`
 	// The file must have been uploaded and not yet sent with another message.
-	FileId OptNilString          `json:"fileId"`
-	Data   OptNilMessagePartData `json:"data"`
+	FileId OptNilString `json:"fileId"`
+	// For `mention` parts. Identifies the project agent by id.
+	AgentId OptNilString `json:"agentId"`
+	// For `mention` parts. Identifies the project agent by slug without `@`.
+	Slug OptNilString          `json:"slug"`
+	Data OptNilMessagePartData `json:"data"`
 }
 
 // GetType returns the value of Type.
@@ -3483,6 +4472,16 @@ func (s *MessagePart) GetText() OptNilString {
 // GetFileId returns the value of FileId.
 func (s *MessagePart) GetFileId() OptNilString {
 	return s.FileId
+}
+
+// GetAgentId returns the value of AgentId.
+func (s *MessagePart) GetAgentId() OptNilString {
+	return s.AgentId
+}
+
+// GetSlug returns the value of Slug.
+func (s *MessagePart) GetSlug() OptNilString {
+	return s.Slug
 }
 
 // GetData returns the value of Data.
@@ -3503,6 +4502,16 @@ func (s *MessagePart) SetText(val OptNilString) {
 // SetFileId sets the value of FileId.
 func (s *MessagePart) SetFileId(val OptNilString) {
 	s.FileId = val
+}
+
+// SetAgentId sets the value of AgentId.
+func (s *MessagePart) SetAgentId(val OptNilString) {
+	s.AgentId = val
+}
+
+// SetSlug sets the value of Slug.
+func (s *MessagePart) SetSlug(val OptNilString) {
+	s.Slug = val
 }
 
 // SetData sets the value of Data.
@@ -3545,6 +4554,51 @@ func (s *MoveFolderRequestBody) SetBeforeFolderId(val NilString) {
 // SetExpectedVersion sets the value of ExpectedVersion.
 func (s *MoveFolderRequestBody) SetExpectedVersion(val int64) {
 	s.ExpectedVersion = val
+}
+
+// NewNilAgentCreatorResource returns new NilAgentCreatorResource with value set to v.
+func NewNilAgentCreatorResource(v AgentCreatorResource) NilAgentCreatorResource {
+	return NilAgentCreatorResource{
+		Value: v,
+	}
+}
+
+// NilAgentCreatorResource is nullable AgentCreatorResource.
+type NilAgentCreatorResource struct {
+	Value AgentCreatorResource
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilAgentCreatorResource) SetTo(v AgentCreatorResource) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilAgentCreatorResource) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilAgentCreatorResource) SetToNull() {
+	o.Null = true
+	var v AgentCreatorResource
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilAgentCreatorResource) Get() (v AgentCreatorResource, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilAgentCreatorResource) Or(d AgentCreatorResource) AgentCreatorResource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
 }
 
 // NewNilDateTime returns new NilDateTime with value set to v.
@@ -3862,6 +4916,96 @@ func (o NilLastTurnResource) Or(d LastTurnResource) LastTurnResource {
 	return d
 }
 
+// NewNilMentionResource returns new NilMentionResource with value set to v.
+func NewNilMentionResource(v MentionResource) NilMentionResource {
+	return NilMentionResource{
+		Value: v,
+	}
+}
+
+// NilMentionResource is nullable MentionResource.
+type NilMentionResource struct {
+	Value MentionResource
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilMentionResource) SetTo(v MentionResource) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilMentionResource) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilMentionResource) SetToNull() {
+	o.Null = true
+	var v MentionResource
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilMentionResource) Get() (v MentionResource, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilMentionResource) Or(d MentionResource) MentionResource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilOriginToolCallResource returns new NilOriginToolCallResource with value set to v.
+func NewNilOriginToolCallResource(v OriginToolCallResource) NilOriginToolCallResource {
+	return NilOriginToolCallResource{
+		Value: v,
+	}
+}
+
+// NilOriginToolCallResource is nullable OriginToolCallResource.
+type NilOriginToolCallResource struct {
+	Value OriginToolCallResource
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilOriginToolCallResource) SetTo(v OriginToolCallResource) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilOriginToolCallResource) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilOriginToolCallResource) SetToNull() {
+	o.Null = true
+	var v OriginToolCallResource
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilOriginToolCallResource) Get() (v OriginToolCallResource, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilOriginToolCallResource) Or(d OriginToolCallResource) OriginToolCallResource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilPendingActionResource returns new NilPendingActionResource with value set to v.
 func NewNilPendingActionResource(v PendingActionResource) NilPendingActionResource {
 	return NilPendingActionResource{
@@ -4036,6 +5180,51 @@ func (o NilString) Get() (v string, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilSubagentSummaryResourcePendingActionType returns new NilSubagentSummaryResourcePendingActionType with value set to v.
+func NewNilSubagentSummaryResourcePendingActionType(v SubagentSummaryResourcePendingActionType) NilSubagentSummaryResourcePendingActionType {
+	return NilSubagentSummaryResourcePendingActionType{
+		Value: v,
+	}
+}
+
+// NilSubagentSummaryResourcePendingActionType is nullable SubagentSummaryResourcePendingActionType.
+type NilSubagentSummaryResourcePendingActionType struct {
+	Value SubagentSummaryResourcePendingActionType
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilSubagentSummaryResourcePendingActionType) SetTo(v SubagentSummaryResourcePendingActionType) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilSubagentSummaryResourcePendingActionType) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilSubagentSummaryResourcePendingActionType) SetToNull() {
+	o.Null = true
+	var v SubagentSummaryResourcePendingActionType
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilSubagentSummaryResourcePendingActionType) Get() (v SubagentSummaryResourcePendingActionType, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilSubagentSummaryResourcePendingActionType) Or(d SubagentSummaryResourcePendingActionType) SubagentSummaryResourcePendingActionType {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4351,6 +5540,97 @@ func (o NilToolCallResourceApprovalStatus) Get() (v ToolCallResourceApprovalStat
 
 // Or returns value if set, or given parameter if does not.
 func (o NilToolCallResourceApprovalStatus) Or(d ToolCallResourceApprovalStatus) ToolCallResourceApprovalStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilTurnStatus returns new NilTurnStatus with value set to v.
+func NewNilTurnStatus(v TurnStatus) NilTurnStatus {
+	return NilTurnStatus{
+		Value: v,
+	}
+}
+
+// NilTurnStatus is nullable TurnStatus.
+type NilTurnStatus struct {
+	Value TurnStatus
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilTurnStatus) SetTo(v TurnStatus) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilTurnStatus) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilTurnStatus) SetToNull() {
+	o.Null = true
+	var v TurnStatus
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilTurnStatus) Get() (v TurnStatus, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilTurnStatus) Or(d TurnStatus) TurnStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptAgentRuntime returns new OptAgentRuntime with value set to v.
+func NewOptAgentRuntime(v AgentRuntime) OptAgentRuntime {
+	return OptAgentRuntime{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptAgentRuntime is optional AgentRuntime.
+type OptAgentRuntime struct {
+	Value AgentRuntime
+	Set   bool
+}
+
+// IsSet returns true if OptAgentRuntime was set.
+func (o OptAgentRuntime) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptAgentRuntime) Reset() {
+	var v AgentRuntime
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptAgentRuntime) SetTo(v AgentRuntime) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptAgentRuntime) Get() (v AgentRuntime, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptAgentRuntime) Or(d AgentRuntime) AgentRuntime {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -5105,6 +6385,74 @@ func (o OptNilInt64) Get() (v int64, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilInt64) Or(d int64) int64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilItemOriginResource returns new OptNilItemOriginResource with value set to v.
+func NewOptNilItemOriginResource(v ItemOriginResource) OptNilItemOriginResource {
+	return OptNilItemOriginResource{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilItemOriginResource is optional nullable ItemOriginResource.
+type OptNilItemOriginResource struct {
+	Value ItemOriginResource
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilItemOriginResource was set.
+func (o OptNilItemOriginResource) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilItemOriginResource) Reset() {
+	var v ItemOriginResource
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilItemOriginResource) SetTo(v ItemOriginResource) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilItemOriginResource) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilItemOriginResource) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v ItemOriginResource
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilItemOriginResource) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilItemOriginResource) Get() (v ItemOriginResource, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilItemOriginResource) Or(d ItemOriginResource) ItemOriginResource {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -6095,6 +7443,52 @@ func (o OptTaskTriggerOverlapPolicy) Or(d TaskTriggerOverlapPolicy) TaskTriggerO
 	return d
 }
 
+// NewOptThreadItemResource returns new OptThreadItemResource with value set to v.
+func NewOptThreadItemResource(v ThreadItemResource) OptThreadItemResource {
+	return OptThreadItemResource{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptThreadItemResource is optional ThreadItemResource.
+type OptThreadItemResource struct {
+	Value ThreadItemResource
+	Set   bool
+}
+
+// IsSet returns true if OptThreadItemResource was set.
+func (o OptThreadItemResource) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptThreadItemResource) Reset() {
+	var v ThreadItemResource
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptThreadItemResource) SetTo(v ThreadItemResource) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptThreadItemResource) Get() (v ThreadItemResource, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptThreadItemResource) Or(d ThreadItemResource) ThreadItemResource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptUUID returns new OptUUID with value set to v.
 func NewOptUUID(v uuid.UUID) OptUUID {
 	return OptUUID{
@@ -6233,6 +7627,34 @@ func (o OptUpdateChannelRequestBodySenderPolicy) Or(d UpdateChannelRequestBodySe
 	return d
 }
 
+// Canonical `(namespace, tool)` identifier of the causal tool call item in the origin conversation,
+// resolved directly from that item rather than stored as a mutable display string.
+// Ref: #/components/schemas/OriginToolCallResource
+type OriginToolCallResource struct {
+	Namespace string `json:"namespace"`
+	Tool      string `json:"tool"`
+}
+
+// GetNamespace returns the value of Namespace.
+func (s *OriginToolCallResource) GetNamespace() string {
+	return s.Namespace
+}
+
+// GetTool returns the value of Tool.
+func (s *OriginToolCallResource) GetTool() string {
+	return s.Tool
+}
+
+// SetNamespace sets the value of Namespace.
+func (s *OriginToolCallResource) SetNamespace(val string) {
+	s.Namespace = val
+}
+
+// SetTool sets the value of Tool.
+func (s *OriginToolCallResource) SetTool(val string) {
+	s.Tool = val
+}
+
 // Ref: #/components/schemas/PartResource
 type PartResource struct {
 	// Addresses this part in the realtime stream: text arrives as `append` frames pointing at
@@ -6243,6 +7665,8 @@ type PartResource struct {
 	Text NilString `json:"text"`
 	// For `file` parts. A file the person attached.
 	File NilFileResource `json:"file"`
+	// For `mention` parts. A project agent referenced inline.
+	Mention NilMentionResource `json:"mention"`
 }
 
 // GetID returns the value of ID.
@@ -6265,6 +7689,11 @@ func (s *PartResource) GetFile() NilFileResource {
 	return s.File
 }
 
+// GetMention returns the value of Mention.
+func (s *PartResource) GetMention() NilMentionResource {
+	return s.Mention
+}
+
 // SetID sets the value of ID.
 func (s *PartResource) SetID(val string) {
 	s.ID = val
@@ -6285,11 +7714,17 @@ func (s *PartResource) SetFile(val NilFileResource) {
 	s.File = val
 }
 
+// SetMention sets the value of Mention.
+func (s *PartResource) SetMention(val NilMentionResource) {
+	s.Mention = val
+}
+
 type PartResourceType string
 
 const (
-	PartResourceTypeText PartResourceType = "text"
-	PartResourceTypeFile PartResourceType = "file"
+	PartResourceTypeText    PartResourceType = "text"
+	PartResourceTypeFile    PartResourceType = "file"
+	PartResourceTypeMention PartResourceType = "mention"
 )
 
 // AllValues returns all PartResourceType values.
@@ -6297,6 +7732,7 @@ func (PartResourceType) AllValues() []PartResourceType {
 	return []PartResourceType{
 		PartResourceTypeText,
 		PartResourceTypeFile,
+		PartResourceTypeMention,
 	}
 }
 
@@ -6306,6 +7742,8 @@ func (s PartResourceType) MarshalText() ([]byte, error) {
 	case PartResourceTypeText:
 		return []byte(s), nil
 	case PartResourceTypeFile:
+		return []byte(s), nil
+	case PartResourceTypeMention:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -6320,6 +7758,9 @@ func (s *PartResourceType) UnmarshalText(data []byte) error {
 		return nil
 	case PartResourceTypeFile:
 		*s = PartResourceTypeFile
+		return nil
+	case PartResourceTypeMention:
+		*s = PartResourceTypeMention
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -7202,6 +8643,8 @@ func (s *SearchFilesRequestBodyType) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/SearchTasksRequestBody
 type SearchTasksRequestBody struct {
+	// Only the tasks belonging to this project agent.
+	AgentId OptString `json:"agentId"`
 	// Only the tasks that report to this conversation.
 	ThreadId    OptString                            `json:"threadId"`
 	Status      OptSearchTasksRequestBodyStatus      `json:"status"`
@@ -7209,6 +8652,11 @@ type SearchTasksRequestBody struct {
 	ActionType  OptSearchTasksRequestBodyActionType  `json:"actionType"`
 	Cursor      OptString                            `json:"cursor"`
 	Limit       OptInt                               `json:"limit"`
+}
+
+// GetAgentId returns the value of AgentId.
+func (s *SearchTasksRequestBody) GetAgentId() OptString {
+	return s.AgentId
 }
 
 // GetThreadId returns the value of ThreadId.
@@ -7239,6 +8687,11 @@ func (s *SearchTasksRequestBody) GetCursor() OptString {
 // GetLimit returns the value of Limit.
 func (s *SearchTasksRequestBody) GetLimit() OptInt {
 	return s.Limit
+}
+
+// SetAgentId sets the value of AgentId.
+func (s *SearchTasksRequestBody) SetAgentId(val OptString) {
+	s.AgentId = val
 }
 
 // SetThreadId sets the value of ThreadId.
@@ -7435,6 +8888,8 @@ type SearchThreadsRequestBody struct {
 	Ids []string `json:"ids"`
 	// Only conversations in this folder.
 	FolderId OptString `json:"folderId"`
+	// Only conversations belonging to this project agent.
+	AgentId OptString `json:"agentId"`
 	// Only the subagents of this conversation.
 	ParentId OptString `json:"parentId"`
 	// Defaults to main unless parentId is given.
@@ -7463,6 +8918,11 @@ func (s *SearchThreadsRequestBody) GetIds() []string {
 // GetFolderId returns the value of FolderId.
 func (s *SearchThreadsRequestBody) GetFolderId() OptString {
 	return s.FolderId
+}
+
+// GetAgentId returns the value of AgentId.
+func (s *SearchThreadsRequestBody) GetAgentId() OptString {
+	return s.AgentId
 }
 
 // GetParentId returns the value of ParentId.
@@ -7518,6 +8978,11 @@ func (s *SearchThreadsRequestBody) SetIds(val []string) {
 // SetFolderId sets the value of FolderId.
 func (s *SearchThreadsRequestBody) SetFolderId(val OptString) {
 	s.FolderId = val
+}
+
+// SetAgentId sets the value of AgentId.
+func (s *SearchThreadsRequestBody) SetAgentId(val OptString) {
+	s.AgentId = val
 }
 
 // SetParentId sets the value of ParentId.
@@ -7775,6 +9240,8 @@ type SendMessageResponseBody struct {
 	Queued bool      `json:"queued"`
 	// How many messages were waiting ahead of this one when it was queued.
 	QueuedAhead int64 `json:"queuedAhead"`
+	// The accepted user message item written to the transcript or input queue.
+	Item OptThreadItemResource `json:"item"`
 }
 
 // GetTurnId returns the value of TurnId.
@@ -7792,6 +9259,11 @@ func (s *SendMessageResponseBody) GetQueuedAhead() int64 {
 	return s.QueuedAhead
 }
 
+// GetItem returns the value of Item.
+func (s *SendMessageResponseBody) GetItem() OptThreadItemResource {
+	return s.Item
+}
+
 // SetTurnId sets the value of TurnId.
 func (s *SendMessageResponseBody) SetTurnId(val NilString) {
 	s.TurnId = val
@@ -7805,6 +9277,11 @@ func (s *SendMessageResponseBody) SetQueued(val bool) {
 // SetQueuedAhead sets the value of QueuedAhead.
 func (s *SendMessageResponseBody) SetQueuedAhead(val int64) {
 	s.QueuedAhead = val
+}
+
+// SetItem sets the value of Item.
+func (s *SendMessageResponseBody) SetItem(val OptThreadItemResource) {
+	s.Item = val
 }
 
 // Ref: #/components/schemas/SenderCheckResource
@@ -8243,8 +9720,11 @@ func (s *SkillResourceOrigin) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/SubagentCountResource
 type SubagentCountResource struct {
-	Total   int64 `json:"total"`
-	Running int64 `json:"running"`
+	Total       int64 `json:"total"`
+	Running     int64 `json:"running"`
+	NeedsAction int64 `json:"needsAction"`
+	// Up to 20 subagents of this conversation, ordered by creation time.
+	Items []SubagentSummaryResource `json:"items"`
 }
 
 // GetTotal returns the value of Total.
@@ -8257,6 +9737,16 @@ func (s *SubagentCountResource) GetRunning() int64 {
 	return s.Running
 }
 
+// GetNeedsAction returns the value of NeedsAction.
+func (s *SubagentCountResource) GetNeedsAction() int64 {
+	return s.NeedsAction
+}
+
+// GetItems returns the value of Items.
+func (s *SubagentCountResource) GetItems() []SubagentSummaryResource {
+	return s.Items
+}
+
 // SetTotal sets the value of Total.
 func (s *SubagentCountResource) SetTotal(val int64) {
 	s.Total = val
@@ -8265,6 +9755,150 @@ func (s *SubagentCountResource) SetTotal(val int64) {
 // SetRunning sets the value of Running.
 func (s *SubagentCountResource) SetRunning(val int64) {
 	s.Running = val
+}
+
+// SetNeedsAction sets the value of NeedsAction.
+func (s *SubagentCountResource) SetNeedsAction(val int64) {
+	s.NeedsAction = val
+}
+
+// SetItems sets the value of Items.
+func (s *SubagentCountResource) SetItems(val []SubagentSummaryResource) {
+	s.Items = val
+}
+
+// Lightweight live summary of a subagent conversation for sidebar navigation and status indicators.
+// Ref: #/components/schemas/SubagentSummaryResource
+type SubagentSummaryResource struct {
+	ID                string                                      `json:"id"`
+	Name              string                                      `json:"name"`
+	Status            ThreadStatus                                `json:"status"`
+	Activity          NilString                                   `json:"activity"`
+	PendingActionType NilSubagentSummaryResourcePendingActionType `json:"pendingActionType"`
+	LastTurnStatus    NilTurnStatus                               `json:"lastTurnStatus"`
+	Unread            bool                                        `json:"unread"`
+	UpdatedAt         time.Time                                   `json:"updatedAt"`
+}
+
+// GetID returns the value of ID.
+func (s *SubagentSummaryResource) GetID() string {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *SubagentSummaryResource) GetName() string {
+	return s.Name
+}
+
+// GetStatus returns the value of Status.
+func (s *SubagentSummaryResource) GetStatus() ThreadStatus {
+	return s.Status
+}
+
+// GetActivity returns the value of Activity.
+func (s *SubagentSummaryResource) GetActivity() NilString {
+	return s.Activity
+}
+
+// GetPendingActionType returns the value of PendingActionType.
+func (s *SubagentSummaryResource) GetPendingActionType() NilSubagentSummaryResourcePendingActionType {
+	return s.PendingActionType
+}
+
+// GetLastTurnStatus returns the value of LastTurnStatus.
+func (s *SubagentSummaryResource) GetLastTurnStatus() NilTurnStatus {
+	return s.LastTurnStatus
+}
+
+// GetUnread returns the value of Unread.
+func (s *SubagentSummaryResource) GetUnread() bool {
+	return s.Unread
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *SubagentSummaryResource) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetID sets the value of ID.
+func (s *SubagentSummaryResource) SetID(val string) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *SubagentSummaryResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetStatus sets the value of Status.
+func (s *SubagentSummaryResource) SetStatus(val ThreadStatus) {
+	s.Status = val
+}
+
+// SetActivity sets the value of Activity.
+func (s *SubagentSummaryResource) SetActivity(val NilString) {
+	s.Activity = val
+}
+
+// SetPendingActionType sets the value of PendingActionType.
+func (s *SubagentSummaryResource) SetPendingActionType(val NilSubagentSummaryResourcePendingActionType) {
+	s.PendingActionType = val
+}
+
+// SetLastTurnStatus sets the value of LastTurnStatus.
+func (s *SubagentSummaryResource) SetLastTurnStatus(val NilTurnStatus) {
+	s.LastTurnStatus = val
+}
+
+// SetUnread sets the value of Unread.
+func (s *SubagentSummaryResource) SetUnread(val bool) {
+	s.Unread = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *SubagentSummaryResource) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+type SubagentSummaryResourcePendingActionType string
+
+const (
+	SubagentSummaryResourcePendingActionTypeApproval SubagentSummaryResourcePendingActionType = "approval"
+	SubagentSummaryResourcePendingActionTypeQuestion SubagentSummaryResourcePendingActionType = "question"
+)
+
+// AllValues returns all SubagentSummaryResourcePendingActionType values.
+func (SubagentSummaryResourcePendingActionType) AllValues() []SubagentSummaryResourcePendingActionType {
+	return []SubagentSummaryResourcePendingActionType{
+		SubagentSummaryResourcePendingActionTypeApproval,
+		SubagentSummaryResourcePendingActionTypeQuestion,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SubagentSummaryResourcePendingActionType) MarshalText() ([]byte, error) {
+	switch s {
+	case SubagentSummaryResourcePendingActionTypeApproval:
+		return []byte(s), nil
+	case SubagentSummaryResourcePendingActionTypeQuestion:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SubagentSummaryResourcePendingActionType) UnmarshalText(data []byte) error {
+	switch SubagentSummaryResourcePendingActionType(data) {
+	case SubagentSummaryResourcePendingActionTypeApproval:
+		*s = SubagentSummaryResourcePendingActionTypeApproval
+		return nil
+	case SubagentSummaryResourcePendingActionTypeQuestion:
+		*s = SubagentSummaryResourcePendingActionTypeQuestion
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // SubmitToolResultNoContent is response for SubmitToolResult operation.
@@ -8278,6 +9912,8 @@ type TaskAction struct {
 	Prompt OptNilString `json:"prompt"`
 	// For `command`. The instance that runs it.
 	InstanceId OptNilString `json:"instanceId"`
+	// For `command`. The Fleet machine that runs it.
+	MachineId OptNilString `json:"machineId"`
 	// For `command`. A shell command.
 	Command OptNilString `json:"command"`
 	// For `command`. The run fails with status timed_out after this long.
@@ -8297,6 +9933,11 @@ func (s *TaskAction) GetPrompt() OptNilString {
 // GetInstanceId returns the value of InstanceId.
 func (s *TaskAction) GetInstanceId() OptNilString {
 	return s.InstanceId
+}
+
+// GetMachineId returns the value of MachineId.
+func (s *TaskAction) GetMachineId() OptNilString {
+	return s.MachineId
 }
 
 // GetCommand returns the value of Command.
@@ -8322,6 +9963,11 @@ func (s *TaskAction) SetPrompt(val OptNilString) {
 // SetInstanceId sets the value of InstanceId.
 func (s *TaskAction) SetInstanceId(val OptNilString) {
 	s.InstanceId = val
+}
+
+// SetMachineId sets the value of MachineId.
+func (s *TaskAction) SetMachineId(val OptNilString) {
+	s.MachineId = val
 }
 
 // SetCommand sets the value of Command.
@@ -8404,6 +10050,8 @@ func (s *TaskListResponseBody) SetNextCursor(val NilString) {
 // Ref: #/components/schemas/TaskResource
 type TaskResource struct {
 	ID string `json:"id"`
+	// The project agent this task belongs to. Null for a person's private task.
+	AgentId NilString `json:"agentId"`
 	// The conversation the task reports to.
 	ThreadId string `json:"threadId"`
 	Name     string `json:"name"`
@@ -8427,6 +10075,11 @@ type TaskResource struct {
 // GetID returns the value of ID.
 func (s *TaskResource) GetID() string {
 	return s.ID
+}
+
+// GetAgentId returns the value of AgentId.
+func (s *TaskResource) GetAgentId() NilString {
+	return s.AgentId
 }
 
 // GetThreadId returns the value of ThreadId.
@@ -8487,6 +10140,11 @@ func (s *TaskResource) GetUpdatedAt() time.Time {
 // SetID sets the value of ID.
 func (s *TaskResource) SetID(val string) {
 	s.ID = val
+}
+
+// SetAgentId sets the value of AgentId.
+func (s *TaskResource) SetAgentId(val NilString) {
+	s.AgentId = val
 }
 
 // SetThreadId sets the value of ThreadId.
@@ -9421,6 +11079,12 @@ type ThreadItemResource struct {
 	Truncated bool `json:"truncated"`
 	// Who wrote an `external_message`. Null for other items.
 	Source NilItemSourceResource `json:"source"`
+	// Structured relational provenance for cross-delivered items (such as messages sent by a parent
+	// conversation, subagent, project agent, personal companion AI, task, or future plan/document
+	// notification). Omitted or null for ordinary in-conversation items.
+	Origin OptNilItemOriginResource `json:"origin"`
+	// The project member who sent a `user_message`. Null for other items.
+	AuthorUserId NilString `json:"authorUserId"`
 	// The Canopy model that produced this item. Null for messages a person or another source sent.
 	ModelId NilString `json:"modelId"`
 	// How long the reasoning or the tool call took. Null while it runs and for other items.
@@ -9478,6 +11142,16 @@ func (s *ThreadItemResource) GetTruncated() bool {
 // GetSource returns the value of Source.
 func (s *ThreadItemResource) GetSource() NilItemSourceResource {
 	return s.Source
+}
+
+// GetOrigin returns the value of Origin.
+func (s *ThreadItemResource) GetOrigin() OptNilItemOriginResource {
+	return s.Origin
+}
+
+// GetAuthorUserId returns the value of AuthorUserId.
+func (s *ThreadItemResource) GetAuthorUserId() NilString {
+	return s.AuthorUserId
 }
 
 // GetModelId returns the value of ModelId.
@@ -9553,6 +11227,16 @@ func (s *ThreadItemResource) SetTruncated(val bool) {
 // SetSource sets the value of Source.
 func (s *ThreadItemResource) SetSource(val NilItemSourceResource) {
 	s.Source = val
+}
+
+// SetOrigin sets the value of Origin.
+func (s *ThreadItemResource) SetOrigin(val OptNilItemOriginResource) {
+	s.Origin = val
+}
+
+// SetAuthorUserId sets the value of AuthorUserId.
+func (s *ThreadItemResource) SetAuthorUserId(val NilString) {
+	s.AuthorUserId = val
 }
 
 // SetModelId sets the value of ModelId.
@@ -9909,12 +11593,14 @@ func (s *ThreadMessageResource) SetCreatedAt(val time.Time) {
 // Ref: #/components/schemas/ThreadResource
 type ThreadResource struct {
 	ID string `json:"id"`
+	// The project agent this conversation belongs to. Null for personal conversations.
+	AgentId NilString `json:"agentId"`
 	// `main` for a conversation with a person, `subagent` for one started by another agent.
 	Role ThreadResourceRole `json:"role"`
 	// The conversation that started this subagent. Null for main conversations.
 	ParentId NilString `json:"parentId"`
 	// The subagent's name, unique among the subagents of its parent. Null for main conversations.
-	AgentName NilString `json:"agentName"`
+	SubagentName NilString `json:"subagentName"`
 	// Null until the conversation has a name.
 	Title NilString `json:"title"`
 	// The folder that holds this conversation. Null for subagents, which are not filed.
@@ -9956,6 +11642,11 @@ func (s *ThreadResource) GetID() string {
 	return s.ID
 }
 
+// GetAgentId returns the value of AgentId.
+func (s *ThreadResource) GetAgentId() NilString {
+	return s.AgentId
+}
+
 // GetRole returns the value of Role.
 func (s *ThreadResource) GetRole() ThreadResourceRole {
 	return s.Role
@@ -9966,9 +11657,9 @@ func (s *ThreadResource) GetParentId() NilString {
 	return s.ParentId
 }
 
-// GetAgentName returns the value of AgentName.
-func (s *ThreadResource) GetAgentName() NilString {
-	return s.AgentName
+// GetSubagentName returns the value of SubagentName.
+func (s *ThreadResource) GetSubagentName() NilString {
+	return s.SubagentName
 }
 
 // GetTitle returns the value of Title.
@@ -10076,6 +11767,11 @@ func (s *ThreadResource) SetID(val string) {
 	s.ID = val
 }
 
+// SetAgentId sets the value of AgentId.
+func (s *ThreadResource) SetAgentId(val NilString) {
+	s.AgentId = val
+}
+
 // SetRole sets the value of Role.
 func (s *ThreadResource) SetRole(val ThreadResourceRole) {
 	s.Role = val
@@ -10086,9 +11782,9 @@ func (s *ThreadResource) SetParentId(val NilString) {
 	s.ParentId = val
 }
 
-// SetAgentName sets the value of AgentName.
-func (s *ThreadResource) SetAgentName(val NilString) {
-	s.AgentName = val
+// SetSubagentName sets the value of SubagentName.
+func (s *ThreadResource) SetSubagentName(val NilString) {
+	s.SubagentName = val
 }
 
 // SetTitle sets the value of Title.
@@ -11145,6 +12841,120 @@ func (s *TurnType) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Ref: #/components/schemas/UpdateAgentRequestBody
+type UpdateAgentRequestBody struct {
+	Slug            OptString             `json:"slug"`
+	Name            OptString             `json:"name"`
+	Description     OptString             `json:"description"`
+	Instructions    OptString             `json:"instructions"`
+	Runtime         OptAgentRuntime       `json:"runtime"`
+	MachineId       OptNilString          `json:"machineId"`
+	MachineSudo     OptBool               `json:"machineSudo"`
+	ModelId         OptString             `json:"modelId"`
+	ReasoningEffort OptNilReasoningEffort `json:"reasoningEffort"`
+	ApprovalMode    OptApprovalMode       `json:"approvalMode"`
+}
+
+// GetSlug returns the value of Slug.
+func (s *UpdateAgentRequestBody) GetSlug() OptString {
+	return s.Slug
+}
+
+// GetName returns the value of Name.
+func (s *UpdateAgentRequestBody) GetName() OptString {
+	return s.Name
+}
+
+// GetDescription returns the value of Description.
+func (s *UpdateAgentRequestBody) GetDescription() OptString {
+	return s.Description
+}
+
+// GetInstructions returns the value of Instructions.
+func (s *UpdateAgentRequestBody) GetInstructions() OptString {
+	return s.Instructions
+}
+
+// GetRuntime returns the value of Runtime.
+func (s *UpdateAgentRequestBody) GetRuntime() OptAgentRuntime {
+	return s.Runtime
+}
+
+// GetMachineId returns the value of MachineId.
+func (s *UpdateAgentRequestBody) GetMachineId() OptNilString {
+	return s.MachineId
+}
+
+// GetMachineSudo returns the value of MachineSudo.
+func (s *UpdateAgentRequestBody) GetMachineSudo() OptBool {
+	return s.MachineSudo
+}
+
+// GetModelId returns the value of ModelId.
+func (s *UpdateAgentRequestBody) GetModelId() OptString {
+	return s.ModelId
+}
+
+// GetReasoningEffort returns the value of ReasoningEffort.
+func (s *UpdateAgentRequestBody) GetReasoningEffort() OptNilReasoningEffort {
+	return s.ReasoningEffort
+}
+
+// GetApprovalMode returns the value of ApprovalMode.
+func (s *UpdateAgentRequestBody) GetApprovalMode() OptApprovalMode {
+	return s.ApprovalMode
+}
+
+// SetSlug sets the value of Slug.
+func (s *UpdateAgentRequestBody) SetSlug(val OptString) {
+	s.Slug = val
+}
+
+// SetName sets the value of Name.
+func (s *UpdateAgentRequestBody) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetDescription sets the value of Description.
+func (s *UpdateAgentRequestBody) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetInstructions sets the value of Instructions.
+func (s *UpdateAgentRequestBody) SetInstructions(val OptString) {
+	s.Instructions = val
+}
+
+// SetRuntime sets the value of Runtime.
+func (s *UpdateAgentRequestBody) SetRuntime(val OptAgentRuntime) {
+	s.Runtime = val
+}
+
+// SetMachineId sets the value of MachineId.
+func (s *UpdateAgentRequestBody) SetMachineId(val OptNilString) {
+	s.MachineId = val
+}
+
+// SetMachineSudo sets the value of MachineSudo.
+func (s *UpdateAgentRequestBody) SetMachineSudo(val OptBool) {
+	s.MachineSudo = val
+}
+
+// SetModelId sets the value of ModelId.
+func (s *UpdateAgentRequestBody) SetModelId(val OptString) {
+	s.ModelId = val
+}
+
+// SetReasoningEffort sets the value of ReasoningEffort.
+func (s *UpdateAgentRequestBody) SetReasoningEffort(val OptNilReasoningEffort) {
+	s.ReasoningEffort = val
+}
+
+// SetApprovalMode sets the value of ApprovalMode.
+func (s *UpdateAgentRequestBody) SetApprovalMode(val OptApprovalMode) {
+	s.ApprovalMode = val
 }
 
 // Ref: #/components/schemas/UpdateArtifactRequestBody

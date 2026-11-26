@@ -92,6 +92,19 @@ func encodeCompleteUploadResponse(response *FileResource, w http.ResponseWriter,
 	return nil
 }
 
+func encodeCreateAgentResponse(response *AgentResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeCreateArtifactResponse(response *ArtifactResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
@@ -197,6 +210,12 @@ func encodeCreateUploadResponse(response *UploadResource, w http.ResponseWriter,
 }
 
 func encodeDecideToolCallsResponse(response *DecideToolCallsNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
+}
+
+func encodeDeleteAgentResponse(response *DeleteAgentNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
 	return nil
@@ -317,6 +336,19 @@ func encodeDownloadFileResponse(response *DownloadFileOKHeaders, w http.Response
 		defer closer.Close()
 	}
 	if _, err := io.Copy(writer, response.Response); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetAgentResponse(response *AgentResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
 		return errors.Wrap(err, "write")
 	}
 
@@ -520,6 +552,19 @@ func encodeGetWeixinLoginResponse(response *LoginResource, w http.ResponseWriter
 
 func encodeInterruptThreadResponse(response *InterruptThreadNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
+
+	return nil
+}
+
+func encodeListAgentsResponse(response *AgentListResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
 
 	return nil
 }
@@ -920,6 +965,19 @@ func encodeSubmitToolResultResponse(response *SubmitToolResultNoContent, w http.
 }
 
 func encodeSubmitWeixinVerifyCodeResponse(response *LoginResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeUpdateAgentResponse(response *AgentResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

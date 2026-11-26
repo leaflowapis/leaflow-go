@@ -84,6 +84,14 @@ type Invoker interface {
 	//
 	// POST /api/v1/uploads/{upload}:complete
 	CompleteUpload(ctx context.Context, request *CompleteUploadRequestBody, params CompleteUploadParams) (*FileResource, error)
+	// CreateAgent invokes create-agent operation.
+	//
+	// Creates a resident agent visible to the whole project, provisions its dedicated IAM service account,
+	// grants machine login (and optional sudo) when `machineId` is bound, and creates its single
+	// conversation thread.
+	//
+	// POST /api/v1/agents
+	CreateAgent(ctx context.Context, request *CreateAgentRequestBody) (*AgentResource, error)
 	// CreateArtifact invokes create-artifact operation.
 	//
 	// Makes a file the first version of a new artifact. The file must belong to the caller in this
@@ -173,6 +181,13 @@ type Invoker interface {
 	//
 	// POST /api/v1/threads/{thread}/approvals
 	DecideToolCalls(ctx context.Context, request *DecideToolCallsRequestBody, params DecideToolCallsParams) error
+	// DeleteAgent invokes delete-agent operation.
+	//
+	// Removes the agent and its conversation when idle. Fails with 409 and code THREAD_RUNNING while its
+	// conversation is running.
+	//
+	// DELETE /api/v1/agents/{agent}
+	DeleteAgent(ctx context.Context, params DeleteAgentParams) error
 	// DeleteArtifact invokes delete-artifact operation.
 	//
 	// Removes the artifact and its versions from lists, and the assistant can no longer add versions to
@@ -212,8 +227,8 @@ type Invoker interface {
 	DeleteFolder(ctx context.Context, params DeleteFolderParams) error
 	// DeleteMemory invokes delete-memory operation.
 	//
-	// The assistant stops remembering this. It takes effect at once, so the next conversation will not
-	// carry it. The assistant may well learn the same thing again.
+	// Removes a stored memory immediately. Pass `agentId` when deleting a memory belonging to a project
+	// agent.
 	//
 	// DELETE /api/v1/memories/{memory}
 	DeleteMemory(ctx context.Context, params DeleteMemoryParams) error
@@ -259,6 +274,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/files/{file}:download
 	DownloadFile(ctx context.Context, params DownloadFileParams) (*DownloadFileOKHeaders, error)
+	// GetAgent invokes get-agent operation.
+	//
+	// Get a project agent.
+	//
+	// GET /api/v1/agents/{agent}
+	GetAgent(ctx context.Context, params GetAgentParams) (*AgentResource, error)
 	// GetArtifact invokes get-artifact operation.
 	//
 	// Get an artifact.
@@ -368,6 +389,14 @@ type Invoker interface {
 	//
 	// POST /api/v1/threads/{thread}:interrupt
 	InterruptThread(ctx context.Context, params InterruptThreadParams) error
+	// ListAgents invokes list-agents operation.
+	//
+	// Lists the resident agents in this project, ordered by name. Each agent has a single living
+	// conversation (`threadId`), an isolated service account (`serviceAccountId`), and an optional Fleet
+	// machine binding (`machineId`).
+	//
+	// GET /api/v1/agents
+	ListAgents(ctx context.Context) (*AgentListResponseBody, error)
 	// ListArtifactVersions invokes list-artifact-versions operation.
 	//
 	// The versions of an artifact, newest first.
@@ -414,13 +443,11 @@ type Invoker interface {
 	ListFolders(ctx context.Context) (*FolderListResponseBody, error)
 	// ListMemories invokes list-memories operation.
 	//
-	// Facts the assistant has written down for the current account in this project. They appear at the
-	// start of every later conversation. Members of the same project each have their own, and this returns
-	// only the current account's. Not paginated: there is a cap on how many there can be, and all of them
-	// come back at once.
+	// Facts the assistant has written down in this project. Without `agentId`, returns the current
+	// account's private memories; with `agentId`, returns that project agent's memories.
 	//
 	// GET /api/v1/memories
-	ListMemories(ctx context.Context) (*MemoryListResponseBody, error)
+	ListMemories(ctx context.Context, params ListMemoriesParams) (*MemoryListResponseBody, error)
 	// ListPlatforms invokes list-platforms operation.
 	//
 	// The instant messaging platforms that can currently be connected, along with the flow and the
@@ -662,6 +689,13 @@ type Invoker interface {
 	//
 	// POST /api/v1/weixin-logins/{login}:verifyCode
 	SubmitWeixinVerifyCode(ctx context.Context, request *VerifyCodeRequestBody, params SubmitWeixinVerifyCodeParams) (*LoginResource, error)
+	// UpdateAgent invokes update-agent operation.
+	//
+	// Updates the agent's profile, instructions, machine binding, or conversation model settings. Omitted
+	// fields stay as they are; setting `machineId` to null unbinds the Fleet machine.
+	//
+	// PATCH /api/v1/agents/{agent}
+	UpdateAgent(ctx context.Context, request *UpdateAgentRequestBody, params UpdateAgentParams) (*AgentResource, error)
 	// UpdateArtifact invokes update-artifact operation.
 	//
 	// Changes the title shown for every version. The versions and their files do not change.
@@ -1775,6 +1809,133 @@ func (c *Client) sendCompleteUpload(ctx context.Context, request *CompleteUpload
 
 	stage = "DecodeResponse"
 	result, err := decodeCompleteUploadResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateAgent invokes create-agent operation.
+//
+// Creates a resident agent visible to the whole project, provisions its dedicated IAM service account,
+// grants machine login (and optional sudo) when `machineId` is bound, and creates its single
+// conversation thread.
+//
+// POST /api/v1/agents
+func (c *Client) CreateAgent(ctx context.Context, request *CreateAgentRequestBody) (*AgentResource, error) {
+	res, err := c.sendCreateAgent(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateAgent(ctx context.Context, request *CreateAgentRequestBody) (res *AgentResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-agent"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/agents"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateAgentOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/agents"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateAgentRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreateAgentOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateAgentResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2987,6 +3148,138 @@ func (c *Client) sendDecideToolCalls(ctx context.Context, request *DecideToolCal
 	return result, nil
 }
 
+// DeleteAgent invokes delete-agent operation.
+//
+// Removes the agent and its conversation when idle. Fails with 409 and code THREAD_RUNNING while its
+// conversation is running.
+//
+// DELETE /api/v1/agents/{agent}
+func (c *Client) DeleteAgent(ctx context.Context, params DeleteAgentParams) error {
+	_, err := c.sendDeleteAgent(ctx, params)
+	return err
+}
+
+func (c *Client) sendDeleteAgent(ctx context.Context, params DeleteAgentParams) (res *DeleteAgentNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-agent"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/agents/{agent}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteAgentOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/agents/"
+	{
+		// Encode "agent" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "agent",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Agent))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, DeleteAgentOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteAgentResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // DeleteArtifact invokes delete-artifact operation.
 //
 // Removes the artifact and its versions from lists, and the assistant can no longer add versions to
@@ -3651,8 +3944,8 @@ func (c *Client) sendDeleteFolder(ctx context.Context, params DeleteFolderParams
 
 // DeleteMemory invokes delete-memory operation.
 //
-// The assistant stops remembering this. It takes effect at once, so the next conversation will not
-// carry it. The assistant may well learn the same thing again.
+// Removes a stored memory immediately. Pass `agentId` when deleting a memory belonging to a project
+// agent.
 //
 // DELETE /api/v1/memories/{memory}
 func (c *Client) DeleteMemory(ctx context.Context, params DeleteMemoryParams) error {
@@ -3718,6 +4011,27 @@ func (c *Client) sendDeleteMemory(ctx context.Context, params DeleteMemoryParams
 		pathParts[1] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "agentId" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "agentId",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.AgentId.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "DELETE", u)
@@ -4442,6 +4756,137 @@ func (c *Client) sendDownloadFile(ctx context.Context, params DownloadFileParams
 
 	stage = "DecodeResponse"
 	result, err := decodeDownloadFileResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetAgent invokes get-agent operation.
+//
+// Get a project agent.
+//
+// GET /api/v1/agents/{agent}
+func (c *Client) GetAgent(ctx context.Context, params GetAgentParams) (*AgentResource, error) {
+	res, err := c.sendGetAgent(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetAgent(ctx context.Context, params GetAgentParams) (res *AgentResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-agent"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/agents/{agent}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetAgentOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/agents/"
+	{
+		// Encode "agent" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "agent",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Agent))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetAgentOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetAgentResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -6580,6 +7025,121 @@ func (c *Client) sendInterruptThread(ctx context.Context, params InterruptThread
 	return result, nil
 }
 
+// ListAgents invokes list-agents operation.
+//
+// Lists the resident agents in this project, ordered by name. Each agent has a single living
+// conversation (`threadId`), an isolated service account (`serviceAccountId`), and an optional Fleet
+// machine binding (`machineId`).
+//
+// GET /api/v1/agents
+func (c *Client) ListAgents(ctx context.Context) (*AgentListResponseBody, error) {
+	res, err := c.sendListAgents(ctx)
+	return res, err
+}
+
+func (c *Client) sendListAgents(ctx context.Context) (res *AgentListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-agents"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/agents"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListAgentsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/agents"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListAgentsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListAgentsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListArtifactVersions invokes list-artifact-versions operation.
 //
 // The versions of an artifact, newest first.
@@ -7581,18 +8141,16 @@ func (c *Client) sendListFolders(ctx context.Context) (res *FolderListResponseBo
 
 // ListMemories invokes list-memories operation.
 //
-// Facts the assistant has written down for the current account in this project. They appear at the
-// start of every later conversation. Members of the same project each have their own, and this returns
-// only the current account's. Not paginated: there is a cap on how many there can be, and all of them
-// come back at once.
+// Facts the assistant has written down in this project. Without `agentId`, returns the current
+// account's private memories; with `agentId`, returns that project agent's memories.
 //
 // GET /api/v1/memories
-func (c *Client) ListMemories(ctx context.Context) (*MemoryListResponseBody, error) {
-	res, err := c.sendListMemories(ctx)
+func (c *Client) ListMemories(ctx context.Context, params ListMemoriesParams) (*MemoryListResponseBody, error) {
+	res, err := c.sendListMemories(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListMemories(ctx context.Context) (res *MemoryListResponseBody, err error) {
+func (c *Client) sendListMemories(ctx context.Context, params ListMemoriesParams) (res *MemoryListResponseBody, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-memories"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -7632,6 +8190,27 @@ func (c *Client) sendListMemories(ctx context.Context) (res *MemoryListResponseB
 	var pathParts [1]string
 	pathParts[0] = "/api/v1/memories"
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "agentId" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "agentId",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.AgentId.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "GET", u)
@@ -11511,6 +12090,150 @@ func (c *Client) sendSubmitWeixinVerifyCode(ctx context.Context, request *Verify
 
 	stage = "DecodeResponse"
 	result, err := decodeSubmitWeixinVerifyCodeResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateAgent invokes update-agent operation.
+//
+// Updates the agent's profile, instructions, machine binding, or conversation model settings. Omitted
+// fields stay as they are; setting `machineId` to null unbinds the Fleet machine.
+//
+// PATCH /api/v1/agents/{agent}
+func (c *Client) UpdateAgent(ctx context.Context, request *UpdateAgentRequestBody, params UpdateAgentParams) (*AgentResource, error) {
+	res, err := c.sendUpdateAgent(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateAgent(ctx context.Context, request *UpdateAgentRequestBody, params UpdateAgentParams) (res *AgentResource, err error) {
+	// Validate request before sending.
+	if err := func() error {
+		if err := request.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return res, errors.Wrap(err, "validate")
+	}
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-agent"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/agents/{agent}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateAgentOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/agents/"
+	{
+		// Encode "agent" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "agent",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Agent))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateAgentRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, UpdateAgentOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateAgentResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

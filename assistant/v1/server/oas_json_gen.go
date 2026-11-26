@@ -14,6 +14,888 @@ import (
 )
 
 // Encode implements json.Marshaler.
+func (s *AgentCreatorResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *AgentCreatorResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("userId")
+		s.UserId.Encode(e)
+	}
+	{
+		e.FieldStart("type")
+		s.Type.Encode(e)
+	}
+	{
+		e.FieldStart("accessible")
+		e.Bool(s.Accessible)
+	}
+	{
+		e.FieldStart("threadId")
+		s.ThreadId.Encode(e)
+	}
+	{
+		e.FieldStart("turnId")
+		s.TurnId.Encode(e)
+	}
+	{
+		e.FieldStart("turnNumber")
+		s.TurnNumber.Encode(e)
+	}
+	{
+		e.FieldStart("itemId")
+		s.ItemId.Encode(e)
+	}
+	{
+		e.FieldStart("itemOrdinal")
+		s.ItemOrdinal.Encode(e)
+	}
+	{
+		e.FieldStart("toolCall")
+		s.ToolCall.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfAgentCreatorResource = [9]string{
+	0: "userId",
+	1: "type",
+	2: "accessible",
+	3: "threadId",
+	4: "turnId",
+	5: "turnNumber",
+	6: "itemId",
+	7: "itemOrdinal",
+	8: "toolCall",
+}
+
+// Decode decodes AgentCreatorResource from json.
+func (s *AgentCreatorResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode AgentCreatorResource to nil")
+	}
+	var requiredBitSet [2]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "userId":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.UserId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"userId\"")
+			}
+		case "type":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.Type.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"type\"")
+			}
+		case "accessible":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Bool()
+				s.Accessible = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"accessible\"")
+			}
+		case "threadId":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.ThreadId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"threadId\"")
+			}
+		case "turnId":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.TurnId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"turnId\"")
+			}
+		case "turnNumber":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.TurnNumber.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"turnNumber\"")
+			}
+		case "itemId":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				if err := s.ItemId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"itemId\"")
+			}
+		case "itemOrdinal":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				if err := s.ItemOrdinal.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"itemOrdinal\"")
+			}
+		case "toolCall":
+			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				if err := s.ToolCall.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"toolCall\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode AgentCreatorResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [2]uint8{
+		0b11111111,
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfAgentCreatorResource) {
+					name = jsonFieldsNameOfAgentCreatorResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *AgentCreatorResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *AgentCreatorResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes AgentCreatorResourceType as json.
+func (s AgentCreatorResourceType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes AgentCreatorResourceType from json.
+func (s *AgentCreatorResourceType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode AgentCreatorResourceType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch AgentCreatorResourceType(v) {
+	case AgentCreatorResourceTypeConsole:
+		*s = AgentCreatorResourceTypeConsole
+	case AgentCreatorResourceTypeCompanion:
+		*s = AgentCreatorResourceTypeCompanion
+	case AgentCreatorResourceTypePlan:
+		*s = AgentCreatorResourceTypePlan
+	default:
+		*s = AgentCreatorResourceType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s AgentCreatorResourceType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *AgentCreatorResourceType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *AgentListResponseBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *AgentListResponseBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("agents")
+		e.ArrStart()
+		for _, elem := range s.Agents {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+}
+
+var jsonFieldsNameOfAgentListResponseBody = [1]string{
+	0: "agents",
+}
+
+// Decode decodes AgentListResponseBody from json.
+func (s *AgentListResponseBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode AgentListResponseBody to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "agents":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				s.Agents = make([]AgentResource, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem AgentResource
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Agents = append(s.Agents, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"agents\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode AgentListResponseBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfAgentListResponseBody) {
+					name = jsonFieldsNameOfAgentListResponseBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *AgentListResponseBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *AgentListResponseBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *AgentResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *AgentResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("id")
+		e.Str(s.ID)
+	}
+	{
+		e.FieldStart("slug")
+		e.Str(s.Slug)
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		e.FieldStart("description")
+		e.Str(s.Description)
+	}
+	{
+		e.FieldStart("instructions")
+		e.Str(s.Instructions)
+	}
+	{
+		e.FieldStart("runtime")
+		s.Runtime.Encode(e)
+	}
+	{
+		e.FieldStart("serviceAccountId")
+		e.Str(s.ServiceAccountId)
+	}
+	{
+		e.FieldStart("machineId")
+		s.MachineId.Encode(e)
+	}
+	{
+		e.FieldStart("machineSudo")
+		e.Bool(s.MachineSudo)
+	}
+	{
+		e.FieldStart("threadId")
+		e.Str(s.ThreadId)
+	}
+	{
+		e.FieldStart("modelId")
+		e.Str(s.ModelId)
+	}
+	{
+		e.FieldStart("reasoningEffort")
+		s.ReasoningEffort.Encode(e)
+	}
+	{
+		e.FieldStart("approvalMode")
+		s.ApprovalMode.Encode(e)
+	}
+	{
+		e.FieldStart("status")
+		s.Status.Encode(e)
+	}
+	{
+		e.FieldStart("activity")
+		s.Activity.Encode(e)
+	}
+	{
+		e.FieldStart("recentMessage")
+		s.RecentMessage.Encode(e)
+	}
+	{
+		e.FieldStart("unread")
+		e.Bool(s.Unread)
+	}
+	{
+		e.FieldStart("todos")
+		e.ArrStart()
+		for _, elem := range s.Todos {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("pendingAction")
+		s.PendingAction.Encode(e)
+	}
+	{
+		e.FieldStart("subagents")
+		s.Subagents.Encode(e)
+	}
+	{
+		e.FieldStart("lastTurn")
+		s.LastTurn.Encode(e)
+	}
+	{
+		e.FieldStart("creator")
+		s.Creator.Encode(e)
+	}
+	{
+		e.FieldStart("createdAt")
+		json.EncodeDateTime(e, s.CreatedAt)
+	}
+	{
+		e.FieldStart("updatedAt")
+		json.EncodeDateTime(e, s.UpdatedAt)
+	}
+}
+
+var jsonFieldsNameOfAgentResource = [24]string{
+	0:  "id",
+	1:  "slug",
+	2:  "name",
+	3:  "description",
+	4:  "instructions",
+	5:  "runtime",
+	6:  "serviceAccountId",
+	7:  "machineId",
+	8:  "machineSudo",
+	9:  "threadId",
+	10: "modelId",
+	11: "reasoningEffort",
+	12: "approvalMode",
+	13: "status",
+	14: "activity",
+	15: "recentMessage",
+	16: "unread",
+	17: "todos",
+	18: "pendingAction",
+	19: "subagents",
+	20: "lastTurn",
+	21: "creator",
+	22: "createdAt",
+	23: "updatedAt",
+}
+
+// Decode decodes AgentResource from json.
+func (s *AgentResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode AgentResource to nil")
+	}
+	var requiredBitSet [3]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.ID = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"id\"")
+			}
+		case "slug":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Slug = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"slug\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "description":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Str()
+				s.Description = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"description\"")
+			}
+		case "instructions":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Str()
+				s.Instructions = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"instructions\"")
+			}
+		case "runtime":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.Runtime.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"runtime\"")
+			}
+		case "serviceAccountId":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := d.Str()
+				s.ServiceAccountId = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"serviceAccountId\"")
+			}
+		case "machineId":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				if err := s.MachineId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"machineId\"")
+			}
+		case "machineSudo":
+			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				v, err := d.Bool()
+				s.MachineSudo = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"machineSudo\"")
+			}
+		case "threadId":
+			requiredBitSet[1] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.ThreadId = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"threadId\"")
+			}
+		case "modelId":
+			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.ModelId = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"modelId\"")
+			}
+		case "reasoningEffort":
+			requiredBitSet[1] |= 1 << 3
+			if err := func() error {
+				if err := s.ReasoningEffort.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"reasoningEffort\"")
+			}
+		case "approvalMode":
+			requiredBitSet[1] |= 1 << 4
+			if err := func() error {
+				if err := s.ApprovalMode.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"approvalMode\"")
+			}
+		case "status":
+			requiredBitSet[1] |= 1 << 5
+			if err := func() error {
+				if err := s.Status.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"status\"")
+			}
+		case "activity":
+			requiredBitSet[1] |= 1 << 6
+			if err := func() error {
+				if err := s.Activity.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"activity\"")
+			}
+		case "recentMessage":
+			requiredBitSet[1] |= 1 << 7
+			if err := func() error {
+				if err := s.RecentMessage.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"recentMessage\"")
+			}
+		case "unread":
+			requiredBitSet[2] |= 1 << 0
+			if err := func() error {
+				v, err := d.Bool()
+				s.Unread = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"unread\"")
+			}
+		case "todos":
+			requiredBitSet[2] |= 1 << 1
+			if err := func() error {
+				s.Todos = make([]TodoResource, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem TodoResource
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Todos = append(s.Todos, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"todos\"")
+			}
+		case "pendingAction":
+			requiredBitSet[2] |= 1 << 2
+			if err := func() error {
+				if err := s.PendingAction.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"pendingAction\"")
+			}
+		case "subagents":
+			requiredBitSet[2] |= 1 << 3
+			if err := func() error {
+				if err := s.Subagents.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"subagents\"")
+			}
+		case "lastTurn":
+			requiredBitSet[2] |= 1 << 4
+			if err := func() error {
+				if err := s.LastTurn.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"lastTurn\"")
+			}
+		case "creator":
+			requiredBitSet[2] |= 1 << 5
+			if err := func() error {
+				if err := s.Creator.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"creator\"")
+			}
+		case "createdAt":
+			requiredBitSet[2] |= 1 << 6
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.CreatedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"createdAt\"")
+			}
+		case "updatedAt":
+			requiredBitSet[2] |= 1 << 7
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.UpdatedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"updatedAt\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode AgentResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [3]uint8{
+		0b11111111,
+		0b11111111,
+		0b11111111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfAgentResource) {
+					name = jsonFieldsNameOfAgentResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *AgentResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *AgentResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes AgentRuntime as json.
+func (s AgentRuntime) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes AgentRuntime from json.
+func (s *AgentRuntime) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode AgentRuntime to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch AgentRuntime(v) {
+	case AgentRuntimeHosted:
+		*s = AgentRuntimeHosted
+	case AgentRuntimeExternal:
+		*s = AgentRuntimeExternal
+	default:
+		*s = AgentRuntime(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s AgentRuntime) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *AgentRuntime) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *AnswerQuestionRequestBody) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -3260,6 +4142,256 @@ func (s *ContextUsageResource) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *ContextUsageResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *CreateAgentRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *CreateAgentRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("slug")
+		e.Str(s.Slug)
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		if s.Description.Set {
+			e.FieldStart("description")
+			s.Description.Encode(e)
+		}
+	}
+	{
+		if s.Instructions.Set {
+			e.FieldStart("instructions")
+			s.Instructions.Encode(e)
+		}
+	}
+	{
+		if s.Runtime.Set {
+			e.FieldStart("runtime")
+			s.Runtime.Encode(e)
+		}
+	}
+	{
+		if s.MachineId.Set {
+			e.FieldStart("machineId")
+			s.MachineId.Encode(e)
+		}
+	}
+	{
+		if s.MachineSudo.Set {
+			e.FieldStart("machineSudo")
+			s.MachineSudo.Encode(e)
+		}
+	}
+	{
+		if s.ModelId.Set {
+			e.FieldStart("modelId")
+			s.ModelId.Encode(e)
+		}
+	}
+	{
+		if s.ReasoningEffort.Set {
+			e.FieldStart("reasoningEffort")
+			s.ReasoningEffort.Encode(e)
+		}
+	}
+	{
+		if s.ApprovalMode.Set {
+			e.FieldStart("approvalMode")
+			s.ApprovalMode.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfCreateAgentRequestBody = [10]string{
+	0: "slug",
+	1: "name",
+	2: "description",
+	3: "instructions",
+	4: "runtime",
+	5: "machineId",
+	6: "machineSudo",
+	7: "modelId",
+	8: "reasoningEffort",
+	9: "approvalMode",
+}
+
+// Decode decodes CreateAgentRequestBody from json.
+func (s *CreateAgentRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode CreateAgentRequestBody to nil")
+	}
+	var requiredBitSet [2]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "slug":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.Slug = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"slug\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "description":
+			if err := func() error {
+				s.Description.Reset()
+				if err := s.Description.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"description\"")
+			}
+		case "instructions":
+			if err := func() error {
+				s.Instructions.Reset()
+				if err := s.Instructions.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"instructions\"")
+			}
+		case "runtime":
+			if err := func() error {
+				s.Runtime.Reset()
+				if err := s.Runtime.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"runtime\"")
+			}
+		case "machineId":
+			if err := func() error {
+				s.MachineId.Reset()
+				if err := s.MachineId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"machineId\"")
+			}
+		case "machineSudo":
+			if err := func() error {
+				s.MachineSudo.Reset()
+				if err := s.MachineSudo.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"machineSudo\"")
+			}
+		case "modelId":
+			if err := func() error {
+				s.ModelId.Reset()
+				if err := s.ModelId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"modelId\"")
+			}
+		case "reasoningEffort":
+			if err := func() error {
+				s.ReasoningEffort.Reset()
+				if err := s.ReasoningEffort.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"reasoningEffort\"")
+			}
+		case "approvalMode":
+			if err := func() error {
+				s.ApprovalMode.Reset()
+				if err := s.ApprovalMode.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"approvalMode\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode CreateAgentRequestBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [2]uint8{
+		0b00000011,
+		0b00000000,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfCreateAgentRequestBody) {
+					name = jsonFieldsNameOfCreateAgentRequestBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *CreateAgentRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *CreateAgentRequestBody) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -6594,6 +7726,424 @@ func (s *FolderResourceType) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *ItemOriginResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *ItemOriginResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("type")
+		s.Type.Encode(e)
+	}
+	{
+		e.FieldStart("agentId")
+		s.AgentId.Encode(e)
+	}
+	{
+		e.FieldStart("agentSlug")
+		s.AgentSlug.Encode(e)
+	}
+	{
+		e.FieldStart("agentName")
+		s.AgentName.Encode(e)
+	}
+	{
+		e.FieldStart("subagentName")
+		s.SubagentName.Encode(e)
+	}
+	{
+		e.FieldStart("userId")
+		s.UserId.Encode(e)
+	}
+	{
+		e.FieldStart("threadTitle")
+		s.ThreadTitle.Encode(e)
+	}
+	{
+		e.FieldStart("accessible")
+		e.Bool(s.Accessible)
+	}
+	{
+		e.FieldStart("threadId")
+		s.ThreadId.Encode(e)
+	}
+	{
+		e.FieldStart("turnId")
+		s.TurnId.Encode(e)
+	}
+	{
+		e.FieldStart("turnNumber")
+		s.TurnNumber.Encode(e)
+	}
+	{
+		e.FieldStart("itemId")
+		s.ItemId.Encode(e)
+	}
+	{
+		e.FieldStart("itemOrdinal")
+		s.ItemOrdinal.Encode(e)
+	}
+	{
+		e.FieldStart("itemType")
+		s.ItemType.Encode(e)
+	}
+	{
+		e.FieldStart("toolCall")
+		s.ToolCall.Encode(e)
+	}
+	{
+		e.FieldStart("taskId")
+		s.TaskId.Encode(e)
+	}
+	{
+		e.FieldStart("documentId")
+		s.DocumentId.Encode(e)
+	}
+	{
+		e.FieldStart("documentRevision")
+		s.DocumentRevision.Encode(e)
+	}
+	{
+		e.FieldStart("dispatchedAt")
+		s.DispatchedAt.Encode(e, json.EncodeDateTime)
+	}
+}
+
+var jsonFieldsNameOfItemOriginResource = [19]string{
+	0:  "type",
+	1:  "agentId",
+	2:  "agentSlug",
+	3:  "agentName",
+	4:  "subagentName",
+	5:  "userId",
+	6:  "threadTitle",
+	7:  "accessible",
+	8:  "threadId",
+	9:  "turnId",
+	10: "turnNumber",
+	11: "itemId",
+	12: "itemOrdinal",
+	13: "itemType",
+	14: "toolCall",
+	15: "taskId",
+	16: "documentId",
+	17: "documentRevision",
+	18: "dispatchedAt",
+}
+
+// Decode decodes ItemOriginResource from json.
+func (s *ItemOriginResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ItemOriginResource to nil")
+	}
+	var requiredBitSet [3]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "type":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Type.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"type\"")
+			}
+		case "agentId":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.AgentId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"agentId\"")
+			}
+		case "agentSlug":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.AgentSlug.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"agentSlug\"")
+			}
+		case "agentName":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.AgentName.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"agentName\"")
+			}
+		case "subagentName":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.SubagentName.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"subagentName\"")
+			}
+		case "userId":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.UserId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"userId\"")
+			}
+		case "threadTitle":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				if err := s.ThreadTitle.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"threadTitle\"")
+			}
+		case "accessible":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				v, err := d.Bool()
+				s.Accessible = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"accessible\"")
+			}
+		case "threadId":
+			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				if err := s.ThreadId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"threadId\"")
+			}
+		case "turnId":
+			requiredBitSet[1] |= 1 << 1
+			if err := func() error {
+				if err := s.TurnId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"turnId\"")
+			}
+		case "turnNumber":
+			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				if err := s.TurnNumber.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"turnNumber\"")
+			}
+		case "itemId":
+			requiredBitSet[1] |= 1 << 3
+			if err := func() error {
+				if err := s.ItemId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"itemId\"")
+			}
+		case "itemOrdinal":
+			requiredBitSet[1] |= 1 << 4
+			if err := func() error {
+				if err := s.ItemOrdinal.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"itemOrdinal\"")
+			}
+		case "itemType":
+			requiredBitSet[1] |= 1 << 5
+			if err := func() error {
+				if err := s.ItemType.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"itemType\"")
+			}
+		case "toolCall":
+			requiredBitSet[1] |= 1 << 6
+			if err := func() error {
+				if err := s.ToolCall.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"toolCall\"")
+			}
+		case "taskId":
+			requiredBitSet[1] |= 1 << 7
+			if err := func() error {
+				if err := s.TaskId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"taskId\"")
+			}
+		case "documentId":
+			requiredBitSet[2] |= 1 << 0
+			if err := func() error {
+				if err := s.DocumentId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"documentId\"")
+			}
+		case "documentRevision":
+			requiredBitSet[2] |= 1 << 1
+			if err := func() error {
+				if err := s.DocumentRevision.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"documentRevision\"")
+			}
+		case "dispatchedAt":
+			requiredBitSet[2] |= 1 << 2
+			if err := func() error {
+				if err := s.DispatchedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"dispatchedAt\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode ItemOriginResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [3]uint8{
+		0b11111111,
+		0b11111111,
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfItemOriginResource) {
+					name = jsonFieldsNameOfItemOriginResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *ItemOriginResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ItemOriginResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes ItemOriginResourceType as json.
+func (s ItemOriginResourceType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes ItemOriginResourceType from json.
+func (s *ItemOriginResourceType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ItemOriginResourceType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch ItemOriginResourceType(v) {
+	case ItemOriginResourceTypeCompanion:
+		*s = ItemOriginResourceTypeCompanion
+	case ItemOriginResourceTypeAgent:
+		*s = ItemOriginResourceTypeAgent
+	case ItemOriginResourceTypeSubagent:
+		*s = ItemOriginResourceTypeSubagent
+	case ItemOriginResourceTypeTask:
+		*s = ItemOriginResourceTypeTask
+	case ItemOriginResourceTypeChannel:
+		*s = ItemOriginResourceTypeChannel
+	case ItemOriginResourceTypePlan:
+		*s = ItemOriginResourceTypePlan
+	case ItemOriginResourceTypeDocument:
+		*s = ItemOriginResourceTypeDocument
+	default:
+		*s = ItemOriginResourceType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s ItemOriginResourceType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ItemOriginResourceType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *ItemSourceResource) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -6610,11 +8160,18 @@ func (s *ItemSourceResource) encodeFields(e *jx.Encoder) {
 		e.FieldStart("id")
 		e.Str(s.ID)
 	}
+	{
+		if s.Slug.Set {
+			e.FieldStart("slug")
+			s.Slug.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfItemSourceResource = [2]string{
+var jsonFieldsNameOfItemSourceResource = [3]string{
 	0: "type",
 	1: "id",
+	2: "slug",
 }
 
 // Decode decodes ItemSourceResource from json.
@@ -6647,6 +8204,16 @@ func (s *ItemSourceResource) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"id\"")
+			}
+		case "slug":
+			if err := func() error {
+				s.Slug.Reset()
+				if err := s.Slug.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"slug\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -6724,10 +8291,16 @@ func (s *ItemSourceResourceType) Decode(d *jx.Decoder) error {
 		*s = ItemSourceResourceTypeSubagent
 	case ItemSourceResourceTypeThread:
 		*s = ItemSourceResourceTypeThread
+	case ItemSourceResourceTypeAgent:
+		*s = ItemSourceResourceTypeAgent
 	case ItemSourceResourceTypeTask:
 		*s = ItemSourceResourceTypeTask
 	case ItemSourceResourceTypeChannel:
 		*s = ItemSourceResourceTypeChannel
+	case ItemSourceResourceTypePlan:
+		*s = ItemSourceResourceTypePlan
+	case ItemSourceResourceTypeDocument:
+		*s = ItemSourceResourceTypeDocument
 	default:
 		*s = ItemSourceResourceType(v)
 	}
@@ -7544,6 +9117,12 @@ func (s *MemoryResource) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *MemoryResource) encodeFields(e *jx.Encoder) {
 	{
+		if s.AgentId.Set {
+			e.FieldStart("agentId")
+			s.AgentId.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("body")
 		e.Str(s.Body)
 	}
@@ -7571,13 +9150,14 @@ func (s *MemoryResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfMemoryResource = [6]string{
-	0: "body",
-	1: "createdAt",
-	2: "id",
-	3: "name",
-	4: "sourceThreadId",
-	5: "updatedAt",
+var jsonFieldsNameOfMemoryResource = [7]string{
+	0: "agentId",
+	1: "body",
+	2: "createdAt",
+	3: "id",
+	4: "name",
+	5: "sourceThreadId",
+	6: "updatedAt",
 }
 
 // Decode decodes MemoryResource from json.
@@ -7589,8 +9169,18 @@ func (s *MemoryResource) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "agentId":
+			if err := func() error {
+				s.AgentId.Reset()
+				if err := s.AgentId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"agentId\"")
+			}
 		case "body":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.Body = string(v)
@@ -7602,7 +9192,7 @@ func (s *MemoryResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"body\"")
 			}
 		case "createdAt":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -7614,7 +9204,7 @@ func (s *MemoryResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"createdAt\"")
 			}
 		case "id":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := d.Str()
 				s.ID = string(v)
@@ -7626,7 +9216,7 @@ func (s *MemoryResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "name":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -7648,7 +9238,7 @@ func (s *MemoryResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"sourceThreadId\"")
 			}
 		case "updatedAt":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -7669,7 +9259,7 @@ func (s *MemoryResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00101111,
+		0b01011110,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -7716,6 +9306,136 @@ func (s *MemoryResource) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *MentionResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *MentionResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("agentId")
+		e.Str(s.AgentId)
+	}
+	{
+		e.FieldStart("slug")
+		e.Str(s.Slug)
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+}
+
+var jsonFieldsNameOfMentionResource = [3]string{
+	0: "agentId",
+	1: "slug",
+	2: "name",
+}
+
+// Decode decodes MentionResource from json.
+func (s *MentionResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode MentionResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "agentId":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.AgentId = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"agentId\"")
+			}
+		case "slug":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Slug = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"slug\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode MentionResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfMentionResource) {
+					name = jsonFieldsNameOfMentionResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *MentionResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *MentionResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *MessagePart) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -7741,6 +9461,18 @@ func (s *MessagePart) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.AgentId.Set {
+			e.FieldStart("agentId")
+			s.AgentId.Encode(e)
+		}
+	}
+	{
+		if s.Slug.Set {
+			e.FieldStart("slug")
+			s.Slug.Encode(e)
+		}
+	}
+	{
 		if s.Data.Set {
 			e.FieldStart("data")
 			s.Data.Encode(e)
@@ -7748,11 +9480,13 @@ func (s *MessagePart) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfMessagePart = [4]string{
+var jsonFieldsNameOfMessagePart = [6]string{
 	0: "type",
 	1: "text",
 	2: "fileId",
-	3: "data",
+	3: "agentId",
+	4: "slug",
+	5: "data",
 }
 
 // Decode decodes MessagePart from json.
@@ -7795,6 +9529,26 @@ func (s *MessagePart) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"fileId\"")
+			}
+		case "agentId":
+			if err := func() error {
+				s.AgentId.Reset()
+				if err := s.AgentId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"agentId\"")
+			}
+		case "slug":
+			if err := func() error {
+				s.Slug.Reset()
+				if err := s.Slug.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"slug\"")
 			}
 		case "data":
 			if err := func() error {
@@ -8027,6 +9781,50 @@ func (s *MoveFolderRequestBody) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *MoveFolderRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes AgentCreatorResource as json.
+func (o NilAgentCreatorResource) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes AgentCreatorResource from json.
+func (o *NilAgentCreatorResource) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilAgentCreatorResource to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v AgentCreatorResource
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilAgentCreatorResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilAgentCreatorResource) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -8343,6 +10141,94 @@ func (s *NilLastTurnResource) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes MentionResource as json.
+func (o NilMentionResource) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes MentionResource from json.
+func (o *NilMentionResource) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilMentionResource to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v MentionResource
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilMentionResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilMentionResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes OriginToolCallResource as json.
+func (o NilOriginToolCallResource) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes OriginToolCallResource from json.
+func (o *NilOriginToolCallResource) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilOriginToolCallResource to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v OriginToolCallResource
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilOriginToolCallResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilOriginToolCallResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes PendingActionResource as json.
 func (o NilPendingActionResource) Encode(e *jx.Encoder) {
 	if o.Null {
@@ -8517,6 +10403,50 @@ func (s NilString) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NilString) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes SubagentSummaryResourcePendingActionType as json.
+func (o NilSubagentSummaryResourcePendingActionType) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes SubagentSummaryResourcePendingActionType from json.
+func (o *NilSubagentSummaryResourcePendingActionType) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilSubagentSummaryResourcePendingActionType to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v SubagentSummaryResourcePendingActionType
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilSubagentSummaryResourcePendingActionType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilSubagentSummaryResourcePendingActionType) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -8827,6 +10757,83 @@ func (s NilToolCallResourceApprovalStatus) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NilToolCallResourceApprovalStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes TurnStatus as json.
+func (o NilTurnStatus) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes TurnStatus from json.
+func (o *NilTurnStatus) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilTurnStatus to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v TurnStatus
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilTurnStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilTurnStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes AgentRuntime as json.
+func (o OptAgentRuntime) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes AgentRuntime from json.
+func (o *OptAgentRuntime) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptAgentRuntime to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptAgentRuntime) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptAgentRuntime) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -9395,6 +11402,55 @@ func (s OptNilInt64) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptNilInt64) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes ItemOriginResource as json.
+func (o OptNilItemOriginResource) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	if o.Null {
+		e.Null()
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes ItemOriginResource from json.
+func (o *OptNilItemOriginResource) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptNilItemOriginResource to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v ItemOriginResource
+		o.Value = v
+		o.Set = true
+		o.Null = true
+		return nil
+	}
+	o.Set = true
+	o.Null = false
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptNilItemOriginResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptNilItemOriginResource) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -10126,6 +12182,39 @@ func (s *OptTaskTriggerOverlapPolicy) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes ThreadItemResource as json.
+func (o OptThreadItemResource) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes ThreadItemResource from json.
+func (o *OptThreadItemResource) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptThreadItemResource to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptThreadItemResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptThreadItemResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes UpdateChannelRequestBodyCredentials as json.
 func (o OptUpdateChannelRequestBodyCredentials) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -10194,6 +12283,119 @@ func (s *OptUpdateChannelRequestBodySenderPolicy) UnmarshalJSON(data []byte) err
 }
 
 // Encode implements json.Marshaler.
+func (s *OriginToolCallResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *OriginToolCallResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("namespace")
+		e.Str(s.Namespace)
+	}
+	{
+		e.FieldStart("tool")
+		e.Str(s.Tool)
+	}
+}
+
+var jsonFieldsNameOfOriginToolCallResource = [2]string{
+	0: "namespace",
+	1: "tool",
+}
+
+// Decode decodes OriginToolCallResource from json.
+func (s *OriginToolCallResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode OriginToolCallResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "namespace":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.Namespace = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"namespace\"")
+			}
+		case "tool":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Tool = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"tool\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode OriginToolCallResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfOriginToolCallResource) {
+					name = jsonFieldsNameOfOriginToolCallResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *OriginToolCallResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OriginToolCallResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *PartResource) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -10218,13 +12420,18 @@ func (s *PartResource) encodeFields(e *jx.Encoder) {
 		e.FieldStart("file")
 		s.File.Encode(e)
 	}
+	{
+		e.FieldStart("mention")
+		s.Mention.Encode(e)
+	}
 }
 
-var jsonFieldsNameOfPartResource = [4]string{
+var jsonFieldsNameOfPartResource = [5]string{
 	0: "id",
 	1: "type",
 	2: "text",
 	3: "file",
+	4: "mention",
 }
 
 // Decode decodes PartResource from json.
@@ -10278,6 +12485,16 @@ func (s *PartResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"file\"")
 			}
+		case "mention":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.Mention.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"mention\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -10288,7 +12505,7 @@ func (s *PartResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00001111,
+		0b00011111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -10354,6 +12571,8 @@ func (s *PartResourceType) Decode(d *jx.Decoder) error {
 		*s = PartResourceTypeText
 	case PartResourceTypeFile:
 		*s = PartResourceTypeFile
+	case PartResourceTypeMention:
+		*s = PartResourceTypeMention
 	default:
 		*s = PartResourceType(v)
 	}
@@ -12412,6 +14631,12 @@ func (s *SearchTasksRequestBody) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *SearchTasksRequestBody) encodeFields(e *jx.Encoder) {
 	{
+		if s.AgentId.Set {
+			e.FieldStart("agentId")
+			s.AgentId.Encode(e)
+		}
+	}
+	{
 		if s.ThreadId.Set {
 			e.FieldStart("threadId")
 			s.ThreadId.Encode(e)
@@ -12449,13 +14674,14 @@ func (s *SearchTasksRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfSearchTasksRequestBody = [6]string{
-	0: "threadId",
-	1: "status",
-	2: "triggerType",
-	3: "actionType",
-	4: "cursor",
-	5: "limit",
+var jsonFieldsNameOfSearchTasksRequestBody = [7]string{
+	0: "agentId",
+	1: "threadId",
+	2: "status",
+	3: "triggerType",
+	4: "actionType",
+	5: "cursor",
+	6: "limit",
 }
 
 // Decode decodes SearchTasksRequestBody from json.
@@ -12467,6 +14693,16 @@ func (s *SearchTasksRequestBody) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "agentId":
+			if err := func() error {
+				s.AgentId.Reset()
+				if err := s.AgentId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"agentId\"")
+			}
 		case "threadId":
 			if err := func() error {
 				s.ThreadId.Reset()
@@ -12707,6 +14943,12 @@ func (s *SearchThreadsRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.AgentId.Set {
+			e.FieldStart("agentId")
+			s.AgentId.Encode(e)
+		}
+	}
+	{
 		if s.ParentId.Set {
 			e.FieldStart("parentId")
 			s.ParentId.Encode(e)
@@ -12766,18 +15008,19 @@ func (s *SearchThreadsRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfSearchThreadsRequestBody = [11]string{
+var jsonFieldsNameOfSearchThreadsRequestBody = [12]string{
 	0:  "ids",
 	1:  "folderId",
-	2:  "parentId",
-	3:  "role",
-	4:  "state",
-	5:  "archived",
-	6:  "q",
-	7:  "sort",
-	8:  "cursor",
-	9:  "limit",
-	10: "include",
+	2:  "agentId",
+	3:  "parentId",
+	4:  "role",
+	5:  "state",
+	6:  "archived",
+	7:  "q",
+	8:  "sort",
+	9:  "cursor",
+	10: "limit",
+	11: "include",
 }
 
 // Decode decodes SearchThreadsRequestBody from json.
@@ -12817,6 +15060,16 @@ func (s *SearchThreadsRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"folderId\"")
+			}
+		case "agentId":
+			if err := func() error {
+				s.AgentId.Reset()
+				if err := s.AgentId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"agentId\"")
 			}
 		case "parentId":
 			if err := func() error {
@@ -13245,12 +15498,19 @@ func (s *SendMessageResponseBody) encodeFields(e *jx.Encoder) {
 		e.FieldStart("queuedAhead")
 		e.Int64(s.QueuedAhead)
 	}
+	{
+		if s.Item.Set {
+			e.FieldStart("item")
+			s.Item.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfSendMessageResponseBody = [3]string{
+var jsonFieldsNameOfSendMessageResponseBody = [4]string{
 	0: "turnId",
 	1: "queued",
 	2: "queuedAhead",
+	3: "item",
 }
 
 // Decode decodes SendMessageResponseBody from json.
@@ -13295,6 +15555,16 @@ func (s *SendMessageResponseBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"queuedAhead\"")
+			}
+		case "item":
+			if err := func() error {
+				s.Item.Reset()
+				if err := s.Item.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"item\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -14461,11 +16731,25 @@ func (s *SubagentCountResource) encodeFields(e *jx.Encoder) {
 		e.FieldStart("running")
 		e.Int64(s.Running)
 	}
+	{
+		e.FieldStart("needsAction")
+		e.Int64(s.NeedsAction)
+	}
+	{
+		e.FieldStart("items")
+		e.ArrStart()
+		for _, elem := range s.Items {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
 }
 
-var jsonFieldsNameOfSubagentCountResource = [2]string{
+var jsonFieldsNameOfSubagentCountResource = [4]string{
 	0: "total",
 	1: "running",
+	2: "needsAction",
+	3: "items",
 }
 
 // Decode decodes SubagentCountResource from json.
@@ -14501,6 +16785,36 @@ func (s *SubagentCountResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"running\"")
 			}
+		case "needsAction":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Int64()
+				s.NeedsAction = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"needsAction\"")
+			}
+		case "items":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				s.Items = make([]SubagentSummaryResource, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem SubagentSummaryResource
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Items = append(s.Items, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"items\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -14511,7 +16825,7 @@ func (s *SubagentCountResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -14558,6 +16872,253 @@ func (s *SubagentCountResource) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *SubagentSummaryResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *SubagentSummaryResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("id")
+		e.Str(s.ID)
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		e.FieldStart("status")
+		s.Status.Encode(e)
+	}
+	{
+		e.FieldStart("activity")
+		s.Activity.Encode(e)
+	}
+	{
+		e.FieldStart("pendingActionType")
+		s.PendingActionType.Encode(e)
+	}
+	{
+		e.FieldStart("lastTurnStatus")
+		s.LastTurnStatus.Encode(e)
+	}
+	{
+		e.FieldStart("unread")
+		e.Bool(s.Unread)
+	}
+	{
+		e.FieldStart("updatedAt")
+		json.EncodeDateTime(e, s.UpdatedAt)
+	}
+}
+
+var jsonFieldsNameOfSubagentSummaryResource = [8]string{
+	0: "id",
+	1: "name",
+	2: "status",
+	3: "activity",
+	4: "pendingActionType",
+	5: "lastTurnStatus",
+	6: "unread",
+	7: "updatedAt",
+}
+
+// Decode decodes SubagentSummaryResource from json.
+func (s *SubagentSummaryResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SubagentSummaryResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.ID = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"id\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "status":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.Status.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"status\"")
+			}
+		case "activity":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.Activity.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"activity\"")
+			}
+		case "pendingActionType":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.PendingActionType.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"pendingActionType\"")
+			}
+		case "lastTurnStatus":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.LastTurnStatus.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"lastTurnStatus\"")
+			}
+		case "unread":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := d.Bool()
+				s.Unread = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"unread\"")
+			}
+		case "updatedAt":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.UpdatedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"updatedAt\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode SubagentSummaryResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b11111111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfSubagentSummaryResource) {
+					name = jsonFieldsNameOfSubagentSummaryResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *SubagentSummaryResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SubagentSummaryResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes SubagentSummaryResourcePendingActionType as json.
+func (s SubagentSummaryResourcePendingActionType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes SubagentSummaryResourcePendingActionType from json.
+func (s *SubagentSummaryResourcePendingActionType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SubagentSummaryResourcePendingActionType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch SubagentSummaryResourcePendingActionType(v) {
+	case SubagentSummaryResourcePendingActionTypeApproval:
+		*s = SubagentSummaryResourcePendingActionTypeApproval
+	case SubagentSummaryResourcePendingActionTypeQuestion:
+		*s = SubagentSummaryResourcePendingActionTypeQuestion
+	default:
+		*s = SubagentSummaryResourcePendingActionType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s SubagentSummaryResourcePendingActionType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SubagentSummaryResourcePendingActionType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *TaskAction) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -14583,6 +17144,12 @@ func (s *TaskAction) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.MachineId.Set {
+			e.FieldStart("machineId")
+			s.MachineId.Encode(e)
+		}
+	}
+	{
 		if s.Command.Set {
 			e.FieldStart("command")
 			s.Command.Encode(e)
@@ -14596,12 +17163,13 @@ func (s *TaskAction) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTaskAction = [5]string{
+var jsonFieldsNameOfTaskAction = [6]string{
 	0: "type",
 	1: "prompt",
 	2: "instanceId",
-	3: "command",
-	4: "timeoutSeconds",
+	3: "machineId",
+	4: "command",
+	5: "timeoutSeconds",
 }
 
 // Decode decodes TaskAction from json.
@@ -14643,6 +17211,16 @@ func (s *TaskAction) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"instanceId\"")
+			}
+		case "machineId":
+			if err := func() error {
+				s.MachineId.Reset()
+				if err := s.MachineId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"machineId\"")
 			}
 		case "command":
 			if err := func() error {
@@ -14895,6 +17473,10 @@ func (s *TaskResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.ID)
 	}
 	{
+		e.FieldStart("agentId")
+		s.AgentId.Encode(e)
+	}
+	{
 		e.FieldStart("threadId")
 		e.Str(s.ThreadId)
 	}
@@ -14940,19 +17522,20 @@ func (s *TaskResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTaskResource = [12]string{
+var jsonFieldsNameOfTaskResource = [13]string{
 	0:  "id",
-	1:  "threadId",
-	2:  "name",
-	3:  "status",
-	4:  "trigger",
-	5:  "action",
-	6:  "nextRunAt",
-	7:  "eventVersion",
-	8:  "eventRunCount",
-	9:  "lastRun",
-	10: "createdAt",
-	11: "updatedAt",
+	1:  "agentId",
+	2:  "threadId",
+	3:  "name",
+	4:  "status",
+	5:  "trigger",
+	6:  "action",
+	7:  "nextRunAt",
+	8:  "eventVersion",
+	9:  "eventRunCount",
+	10: "lastRun",
+	11: "createdAt",
+	12: "updatedAt",
 }
 
 // Decode decodes TaskResource from json.
@@ -14976,8 +17559,18 @@ func (s *TaskResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
-		case "threadId":
+		case "agentId":
 			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.AgentId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"agentId\"")
+			}
+		case "threadId":
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.ThreadId = string(v)
@@ -14989,7 +17582,7 @@ func (s *TaskResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"threadId\"")
 			}
 		case "name":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -15001,7 +17594,7 @@ func (s *TaskResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "status":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -15011,7 +17604,7 @@ func (s *TaskResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "trigger":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.Trigger.Decode(d); err != nil {
 					return err
@@ -15021,7 +17614,7 @@ func (s *TaskResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"trigger\"")
 			}
 		case "action":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.Action.Decode(d); err != nil {
 					return err
@@ -15031,7 +17624,7 @@ func (s *TaskResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"action\"")
 			}
 		case "nextRunAt":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.NextRunAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -15041,7 +17634,7 @@ func (s *TaskResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"nextRunAt\"")
 			}
 		case "eventVersion":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.EventVersion.Decode(d); err != nil {
 					return err
@@ -15051,7 +17644,7 @@ func (s *TaskResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"eventVersion\"")
 			}
 		case "eventRunCount":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Int64()
 				s.EventRunCount = int64(v)
@@ -15063,7 +17656,7 @@ func (s *TaskResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"eventRunCount\"")
 			}
 		case "lastRun":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				if err := s.LastRun.Decode(d); err != nil {
 					return err
@@ -15073,7 +17666,7 @@ func (s *TaskResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"lastRun\"")
 			}
 		case "createdAt":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -15085,7 +17678,7 @@ func (s *TaskResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"createdAt\"")
 			}
 		case "updatedAt":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -15107,7 +17700,7 @@ func (s *TaskResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00001111,
+		0b00011111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -16742,6 +19335,16 @@ func (s *ThreadItemResource) encodeFields(e *jx.Encoder) {
 		s.Source.Encode(e)
 	}
 	{
+		if s.Origin.Set {
+			e.FieldStart("origin")
+			s.Origin.Encode(e)
+		}
+	}
+	{
+		e.FieldStart("authorUserId")
+		s.AuthorUserId.Encode(e)
+	}
+	{
 		e.FieldStart("modelId")
 		s.ModelId.Encode(e)
 	}
@@ -16779,7 +19382,7 @@ func (s *ThreadItemResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfThreadItemResource = [15]string{
+var jsonFieldsNameOfThreadItemResource = [17]string{
 	0:  "id",
 	1:  "ordinal",
 	2:  "turnId",
@@ -16788,13 +19391,15 @@ var jsonFieldsNameOfThreadItemResource = [15]string{
 	5:  "reverted",
 	6:  "truncated",
 	7:  "source",
-	8:  "modelId",
-	9:  "durationMs",
-	10: "parts",
-	11: "clientContext",
-	12: "toolCall",
-	13: "messageIndex",
-	14: "createdAt",
+	8:  "origin",
+	9:  "authorUserId",
+	10: "modelId",
+	11: "durationMs",
+	12: "parts",
+	13: "clientContext",
+	14: "toolCall",
+	15: "messageIndex",
+	16: "createdAt",
 }
 
 // Decode decodes ThreadItemResource from json.
@@ -16802,7 +19407,7 @@ func (s *ThreadItemResource) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode ThreadItemResource to nil")
 	}
-	var requiredBitSet [2]uint8
+	var requiredBitSet [3]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -16892,8 +19497,28 @@ func (s *ThreadItemResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"source\"")
 			}
+		case "origin":
+			if err := func() error {
+				s.Origin.Reset()
+				if err := s.Origin.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"origin\"")
+			}
+		case "authorUserId":
+			requiredBitSet[1] |= 1 << 1
+			if err := func() error {
+				if err := s.AuthorUserId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"authorUserId\"")
+			}
 		case "modelId":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				if err := s.ModelId.Decode(d); err != nil {
 					return err
@@ -16903,7 +19528,7 @@ func (s *ThreadItemResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"modelId\"")
 			}
 		case "durationMs":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.DurationMs.Decode(d); err != nil {
 					return err
@@ -16913,7 +19538,7 @@ func (s *ThreadItemResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"durationMs\"")
 			}
 		case "parts":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				s.Parts = make([]PartResource, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -16931,7 +19556,7 @@ func (s *ThreadItemResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"parts\"")
 			}
 		case "clientContext":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				s.ClientContext = make([]ClientContextPart, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -16949,7 +19574,7 @@ func (s *ThreadItemResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"clientContext\"")
 			}
 		case "toolCall":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				if err := s.ToolCall.Decode(d); err != nil {
 					return err
@@ -16959,7 +19584,7 @@ func (s *ThreadItemResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"toolCall\"")
 			}
 		case "messageIndex":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				if err := s.MessageIndex.Decode(d); err != nil {
 					return err
@@ -16969,7 +19594,7 @@ func (s *ThreadItemResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"messageIndex\"")
 			}
 		case "createdAt":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -16989,9 +19614,10 @@ func (s *ThreadItemResource) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [2]uint8{
+	for i, mask := range [3]uint8{
 		0b11111111,
-		0b01111111,
+		0b11111110,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -17610,6 +20236,10 @@ func (s *ThreadResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.ID)
 	}
 	{
+		e.FieldStart("agentId")
+		s.AgentId.Encode(e)
+	}
+	{
 		e.FieldStart("role")
 		s.Role.Encode(e)
 	}
@@ -17618,8 +20248,8 @@ func (s *ThreadResource) encodeFields(e *jx.Encoder) {
 		s.ParentId.Encode(e)
 	}
 	{
-		e.FieldStart("agentName")
-		s.AgentName.Encode(e)
+		e.FieldStart("subagentName")
+		s.SubagentName.Encode(e)
 	}
 	{
 		e.FieldStart("title")
@@ -17707,31 +20337,32 @@ func (s *ThreadResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfThreadResource = [24]string{
+var jsonFieldsNameOfThreadResource = [25]string{
 	0:  "id",
-	1:  "role",
-	2:  "parentId",
-	3:  "agentName",
-	4:  "title",
-	5:  "folderId",
-	6:  "orderVersion",
-	7:  "modelId",
-	8:  "reasoningEffort",
-	9:  "approvalMode",
-	10: "status",
-	11: "activity",
-	12: "recentMessage",
-	13: "todos",
-	14: "pendingAction",
-	15: "subagents",
-	16: "lastTurn",
-	17: "context",
-	18: "usage",
-	19: "unread",
-	20: "archived",
-	21: "messageCount",
-	22: "createdAt",
-	23: "updatedAt",
+	1:  "agentId",
+	2:  "role",
+	3:  "parentId",
+	4:  "subagentName",
+	5:  "title",
+	6:  "folderId",
+	7:  "orderVersion",
+	8:  "modelId",
+	9:  "reasoningEffort",
+	10: "approvalMode",
+	11: "status",
+	12: "activity",
+	13: "recentMessage",
+	14: "todos",
+	15: "pendingAction",
+	16: "subagents",
+	17: "lastTurn",
+	18: "context",
+	19: "usage",
+	20: "unread",
+	21: "archived",
+	22: "messageCount",
+	23: "createdAt",
+	24: "updatedAt",
 }
 
 // Decode decodes ThreadResource from json.
@@ -17739,7 +20370,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode ThreadResource to nil")
 	}
-	var requiredBitSet [3]uint8
+	var requiredBitSet [4]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -17755,8 +20386,18 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
-		case "role":
+		case "agentId":
 			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.AgentId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"agentId\"")
+			}
+		case "role":
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				if err := s.Role.Decode(d); err != nil {
 					return err
@@ -17766,7 +20407,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"role\"")
 			}
 		case "parentId":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				if err := s.ParentId.Decode(d); err != nil {
 					return err
@@ -17775,18 +20416,18 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"parentId\"")
 			}
-		case "agentName":
-			requiredBitSet[0] |= 1 << 3
+		case "subagentName":
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
-				if err := s.AgentName.Decode(d); err != nil {
+				if err := s.SubagentName.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"agentName\"")
+				return errors.Wrap(err, "decode field \"subagentName\"")
 			}
 		case "title":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.Title.Decode(d); err != nil {
 					return err
@@ -17796,7 +20437,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"title\"")
 			}
 		case "folderId":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.FolderId.Decode(d); err != nil {
 					return err
@@ -17806,7 +20447,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"folderId\"")
 			}
 		case "orderVersion":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Int64()
 				s.OrderVersion = int64(v)
@@ -17818,7 +20459,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"orderVersion\"")
 			}
 		case "modelId":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.ModelId = string(v)
@@ -17830,7 +20471,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"modelId\"")
 			}
 		case "reasoningEffort":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				if err := s.ReasoningEffort.Decode(d); err != nil {
 					return err
@@ -17840,7 +20481,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"reasoningEffort\"")
 			}
 		case "approvalMode":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				if err := s.ApprovalMode.Decode(d); err != nil {
 					return err
@@ -17850,7 +20491,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"approvalMode\"")
 			}
 		case "status":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -17860,7 +20501,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "activity":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				if err := s.Activity.Decode(d); err != nil {
 					return err
@@ -17870,7 +20511,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"activity\"")
 			}
 		case "recentMessage":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				if err := s.RecentMessage.Decode(d); err != nil {
 					return err
@@ -17880,7 +20521,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"recentMessage\"")
 			}
 		case "todos":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				s.Todos = make([]TodoResource, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -17898,7 +20539,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"todos\"")
 			}
 		case "pendingAction":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				if err := s.PendingAction.Decode(d); err != nil {
 					return err
@@ -17908,7 +20549,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"pendingAction\"")
 			}
 		case "subagents":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				if err := s.Subagents.Decode(d); err != nil {
 					return err
@@ -17918,7 +20559,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"subagents\"")
 			}
 		case "lastTurn":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				if err := s.LastTurn.Decode(d); err != nil {
 					return err
@@ -17928,7 +20569,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"lastTurn\"")
 			}
 		case "context":
-			requiredBitSet[2] |= 1 << 1
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				if err := s.Context.Decode(d); err != nil {
 					return err
@@ -17938,7 +20579,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"context\"")
 			}
 		case "usage":
-			requiredBitSet[2] |= 1 << 2
+			requiredBitSet[2] |= 1 << 3
 			if err := func() error {
 				if err := s.Usage.Decode(d); err != nil {
 					return err
@@ -17948,7 +20589,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"usage\"")
 			}
 		case "unread":
-			requiredBitSet[2] |= 1 << 3
+			requiredBitSet[2] |= 1 << 4
 			if err := func() error {
 				v, err := d.Bool()
 				s.Unread = bool(v)
@@ -17960,7 +20601,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"unread\"")
 			}
 		case "archived":
-			requiredBitSet[2] |= 1 << 4
+			requiredBitSet[2] |= 1 << 5
 			if err := func() error {
 				v, err := d.Bool()
 				s.Archived = bool(v)
@@ -17972,7 +20613,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"archived\"")
 			}
 		case "messageCount":
-			requiredBitSet[2] |= 1 << 5
+			requiredBitSet[2] |= 1 << 6
 			if err := func() error {
 				v, err := d.Int64()
 				s.MessageCount = int64(v)
@@ -17984,7 +20625,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"messageCount\"")
 			}
 		case "createdAt":
-			requiredBitSet[2] |= 1 << 6
+			requiredBitSet[2] |= 1 << 7
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -17996,7 +20637,7 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"createdAt\"")
 			}
 		case "updatedAt":
-			requiredBitSet[2] |= 1 << 7
+			requiredBitSet[3] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -18016,10 +20657,11 @@ func (s *ThreadResource) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [3]uint8{
+	for i, mask := range [4]uint8{
 		0b11111111,
 		0b11111111,
 		0b11111111,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -19653,6 +22295,222 @@ func (s TurnType) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *TurnType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *UpdateAgentRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *UpdateAgentRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		if s.Slug.Set {
+			e.FieldStart("slug")
+			s.Slug.Encode(e)
+		}
+	}
+	{
+		if s.Name.Set {
+			e.FieldStart("name")
+			s.Name.Encode(e)
+		}
+	}
+	{
+		if s.Description.Set {
+			e.FieldStart("description")
+			s.Description.Encode(e)
+		}
+	}
+	{
+		if s.Instructions.Set {
+			e.FieldStart("instructions")
+			s.Instructions.Encode(e)
+		}
+	}
+	{
+		if s.Runtime.Set {
+			e.FieldStart("runtime")
+			s.Runtime.Encode(e)
+		}
+	}
+	{
+		if s.MachineId.Set {
+			e.FieldStart("machineId")
+			s.MachineId.Encode(e)
+		}
+	}
+	{
+		if s.MachineSudo.Set {
+			e.FieldStart("machineSudo")
+			s.MachineSudo.Encode(e)
+		}
+	}
+	{
+		if s.ModelId.Set {
+			e.FieldStart("modelId")
+			s.ModelId.Encode(e)
+		}
+	}
+	{
+		if s.ReasoningEffort.Set {
+			e.FieldStart("reasoningEffort")
+			s.ReasoningEffort.Encode(e)
+		}
+	}
+	{
+		if s.ApprovalMode.Set {
+			e.FieldStart("approvalMode")
+			s.ApprovalMode.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfUpdateAgentRequestBody = [10]string{
+	0: "slug",
+	1: "name",
+	2: "description",
+	3: "instructions",
+	4: "runtime",
+	5: "machineId",
+	6: "machineSudo",
+	7: "modelId",
+	8: "reasoningEffort",
+	9: "approvalMode",
+}
+
+// Decode decodes UpdateAgentRequestBody from json.
+func (s *UpdateAgentRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode UpdateAgentRequestBody to nil")
+	}
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "slug":
+			if err := func() error {
+				s.Slug.Reset()
+				if err := s.Slug.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"slug\"")
+			}
+		case "name":
+			if err := func() error {
+				s.Name.Reset()
+				if err := s.Name.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "description":
+			if err := func() error {
+				s.Description.Reset()
+				if err := s.Description.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"description\"")
+			}
+		case "instructions":
+			if err := func() error {
+				s.Instructions.Reset()
+				if err := s.Instructions.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"instructions\"")
+			}
+		case "runtime":
+			if err := func() error {
+				s.Runtime.Reset()
+				if err := s.Runtime.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"runtime\"")
+			}
+		case "machineId":
+			if err := func() error {
+				s.MachineId.Reset()
+				if err := s.MachineId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"machineId\"")
+			}
+		case "machineSudo":
+			if err := func() error {
+				s.MachineSudo.Reset()
+				if err := s.MachineSudo.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"machineSudo\"")
+			}
+		case "modelId":
+			if err := func() error {
+				s.ModelId.Reset()
+				if err := s.ModelId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"modelId\"")
+			}
+		case "reasoningEffort":
+			if err := func() error {
+				s.ReasoningEffort.Reset()
+				if err := s.ReasoningEffort.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"reasoningEffort\"")
+			}
+		case "approvalMode":
+			if err := func() error {
+				s.ApprovalMode.Reset()
+				if err := s.ApprovalMode.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"approvalMode\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode UpdateAgentRequestBody")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *UpdateAgentRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *UpdateAgentRequestBody) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

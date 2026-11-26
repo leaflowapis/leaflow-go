@@ -943,6 +943,92 @@ func decodeDecideToolCallsParams(args [1]string, argsEscaped bool, r *http.Reque
 	return params, nil
 }
 
+// DeleteAgentParams is parameters of delete-agent operation.
+type DeleteAgentParams struct {
+	// A project agent id or slug.
+	Agent string
+}
+
+func unpackDeleteAgentParams(packed middleware.Parameters) (params DeleteAgentParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "agent",
+			In:   "path",
+		}
+		params.Agent = packed[key].(string)
+	}
+	return params
+}
+
+func decodeDeleteAgentParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteAgentParams, _ error) {
+	// Decode path: agent.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "agent",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Agent = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Agent)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "agent",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // DeleteArtifactParams is parameters of delete-artifact operation.
 type DeleteArtifactParams struct {
 	// An artifact id.
@@ -1312,7 +1398,8 @@ func decodeDeleteFolderParams(args [1]string, argsEscaped bool, r *http.Request)
 
 // DeleteMemoryParams is parameters of delete-memory operation.
 type DeleteMemoryParams struct {
-	Memory string
+	Memory  string
+	AgentId OptString `json:",omitempty,omitzero"`
 }
 
 func unpackDeleteMemoryParams(packed middleware.Parameters) (params DeleteMemoryParams) {
@@ -1323,10 +1410,20 @@ func unpackDeleteMemoryParams(packed middleware.Parameters) (params DeleteMemory
 		}
 		params.Memory = packed[key].(string)
 	}
+	{
+		key := middleware.ParameterKey{
+			Name: "agentId",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.AgentId = v.(OptString)
+		}
+	}
 	return params
 }
 
 func decodeDeleteMemoryParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteMemoryParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
 	// Decode path: memory.
 	if err := func() error {
 		param := args[0]
@@ -1369,6 +1466,74 @@ func decodeDeleteMemoryParams(args [1]string, argsEscaped bool, r *http.Request)
 		return params, &ogenerrors.DecodeParamError{
 			Name: "memory",
 			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: agentId.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "agentId",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotAgentIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotAgentIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.AgentId.SetTo(paramsDotAgentIdVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.AgentId.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     0,
+							MinLengthSet:  false,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "agentId",
+			In:   "query",
 			Err:  err,
 		}
 	}
@@ -1735,6 +1900,92 @@ func decodeDownloadFileParams(args [1]string, argsEscaped bool, r *http.Request)
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "file",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetAgentParams is parameters of get-agent operation.
+type GetAgentParams struct {
+	// A project agent id or slug.
+	Agent string
+}
+
+func unpackGetAgentParams(packed middleware.Parameters) (params GetAgentParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "agent",
+			In:   "path",
+		}
+		params.Agent = packed[key].(string)
+	}
+	return params
+}
+
+func decodeGetAgentParams(args [1]string, argsEscaped bool, r *http.Request) (params GetAgentParams, _ error) {
+	// Decode path: agent.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "agent",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Agent = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Agent)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "agent",
 			In:   "path",
 			Err:  err,
 		}
@@ -4295,6 +4546,98 @@ func decodeListChannelsParams(args [0]string, argsEscaped bool, r *http.Request)
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "active",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListMemoriesParams is parameters of list-memories operation.
+type ListMemoriesParams struct {
+	// Return memories belonging to this project agent instead of the caller's personal assistant.
+	AgentId OptString `json:",omitempty,omitzero"`
+}
+
+func unpackListMemoriesParams(packed middleware.Parameters) (params ListMemoriesParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "agentId",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.AgentId = v.(OptString)
+		}
+	}
+	return params
+}
+
+func decodeListMemoriesParams(args [0]string, argsEscaped bool, r *http.Request) (params ListMemoriesParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: agentId.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "agentId",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotAgentIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotAgentIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.AgentId.SetTo(paramsDotAgentIdVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.AgentId.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     0,
+							MinLengthSet:  false,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "agentId",
 			In:   "query",
 			Err:  err,
 		}
@@ -7046,6 +7389,92 @@ func decodeSubmitWeixinVerifyCodeParams(args [1]string, argsEscaped bool, r *htt
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "login",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UpdateAgentParams is parameters of update-agent operation.
+type UpdateAgentParams struct {
+	// A project agent id or slug.
+	Agent string
+}
+
+func unpackUpdateAgentParams(packed middleware.Parameters) (params UpdateAgentParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "agent",
+			In:   "path",
+		}
+		params.Agent = packed[key].(string)
+	}
+	return params
+}
+
+func decodeUpdateAgentParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateAgentParams, _ error) {
+	// Decode path: agent.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "agent",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Agent = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Agent)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "agent",
 			In:   "path",
 			Err:  err,
 		}

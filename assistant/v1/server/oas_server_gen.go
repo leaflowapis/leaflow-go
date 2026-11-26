@@ -63,6 +63,14 @@ type Handler interface {
 	//
 	// POST /api/v1/uploads/{upload}:complete
 	CompleteUpload(ctx context.Context, req *CompleteUploadRequestBody, params CompleteUploadParams) (*FileResource, error)
+	// CreateAgent implements create-agent operation.
+	//
+	// Creates a resident agent visible to the whole project, provisions its dedicated IAM service account,
+	// grants machine login (and optional sudo) when `machineId` is bound, and creates its single
+	// conversation thread.
+	//
+	// POST /api/v1/agents
+	CreateAgent(ctx context.Context, req *CreateAgentRequestBody) (*AgentResource, error)
 	// CreateArtifact implements create-artifact operation.
 	//
 	// Makes a file the first version of a new artifact. The file must belong to the caller in this
@@ -152,6 +160,13 @@ type Handler interface {
 	//
 	// POST /api/v1/threads/{thread}/approvals
 	DecideToolCalls(ctx context.Context, req *DecideToolCallsRequestBody, params DecideToolCallsParams) error
+	// DeleteAgent implements delete-agent operation.
+	//
+	// Removes the agent and its conversation when idle. Fails with 409 and code THREAD_RUNNING while its
+	// conversation is running.
+	//
+	// DELETE /api/v1/agents/{agent}
+	DeleteAgent(ctx context.Context, params DeleteAgentParams) error
 	// DeleteArtifact implements delete-artifact operation.
 	//
 	// Removes the artifact and its versions from lists, and the assistant can no longer add versions to
@@ -191,8 +206,8 @@ type Handler interface {
 	DeleteFolder(ctx context.Context, params DeleteFolderParams) error
 	// DeleteMemory implements delete-memory operation.
 	//
-	// The assistant stops remembering this. It takes effect at once, so the next conversation will not
-	// carry it. The assistant may well learn the same thing again.
+	// Removes a stored memory immediately. Pass `agentId` when deleting a memory belonging to a project
+	// agent.
 	//
 	// DELETE /api/v1/memories/{memory}
 	DeleteMemory(ctx context.Context, params DeleteMemoryParams) error
@@ -238,6 +253,12 @@ type Handler interface {
 	//
 	// GET /api/v1/files/{file}:download
 	DownloadFile(ctx context.Context, params DownloadFileParams) (*DownloadFileOKHeaders, error)
+	// GetAgent implements get-agent operation.
+	//
+	// Get a project agent.
+	//
+	// GET /api/v1/agents/{agent}
+	GetAgent(ctx context.Context, params GetAgentParams) (*AgentResource, error)
 	// GetArtifact implements get-artifact operation.
 	//
 	// Get an artifact.
@@ -347,6 +368,14 @@ type Handler interface {
 	//
 	// POST /api/v1/threads/{thread}:interrupt
 	InterruptThread(ctx context.Context, params InterruptThreadParams) error
+	// ListAgents implements list-agents operation.
+	//
+	// Lists the resident agents in this project, ordered by name. Each agent has a single living
+	// conversation (`threadId`), an isolated service account (`serviceAccountId`), and an optional Fleet
+	// machine binding (`machineId`).
+	//
+	// GET /api/v1/agents
+	ListAgents(ctx context.Context) (*AgentListResponseBody, error)
 	// ListArtifactVersions implements list-artifact-versions operation.
 	//
 	// The versions of an artifact, newest first.
@@ -393,13 +422,11 @@ type Handler interface {
 	ListFolders(ctx context.Context) (*FolderListResponseBody, error)
 	// ListMemories implements list-memories operation.
 	//
-	// Facts the assistant has written down for the current account in this project. They appear at the
-	// start of every later conversation. Members of the same project each have their own, and this returns
-	// only the current account's. Not paginated: there is a cap on how many there can be, and all of them
-	// come back at once.
+	// Facts the assistant has written down in this project. Without `agentId`, returns the current
+	// account's private memories; with `agentId`, returns that project agent's memories.
 	//
 	// GET /api/v1/memories
-	ListMemories(ctx context.Context) (*MemoryListResponseBody, error)
+	ListMemories(ctx context.Context, params ListMemoriesParams) (*MemoryListResponseBody, error)
 	// ListPlatforms implements list-platforms operation.
 	//
 	// The instant messaging platforms that can currently be connected, along with the flow and the
@@ -641,6 +668,13 @@ type Handler interface {
 	//
 	// POST /api/v1/weixin-logins/{login}:verifyCode
 	SubmitWeixinVerifyCode(ctx context.Context, req *VerifyCodeRequestBody, params SubmitWeixinVerifyCodeParams) (*LoginResource, error)
+	// UpdateAgent implements update-agent operation.
+	//
+	// Updates the agent's profile, instructions, machine binding, or conversation model settings. Omitted
+	// fields stay as they are; setting `machineId` to null unbinds the Fleet machine.
+	//
+	// PATCH /api/v1/agents/{agent}
+	UpdateAgent(ctx context.Context, req *UpdateAgentRequestBody, params UpdateAgentParams) (*AgentResource, error)
 	// UpdateArtifact implements update-artifact operation.
 	//
 	// Changes the title shown for every version. The versions and their files do not change.
