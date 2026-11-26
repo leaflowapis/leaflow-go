@@ -405,6 +405,91 @@ func (x *ForwardSpec) GetProtocol() ForwardProtocol {
 	return ForwardProtocol_FORWARD_PROTOCOL_UNSPECIFIED
 }
 
+// An address a session or participant can bind or connect.
+type SocketAddress struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Address:
+	//
+	//	*SocketAddress_Tcp
+	//	*SocketAddress_UnixPath
+	Address       isSocketAddress_Address `protobuf_oneof:"address"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SocketAddress) Reset() {
+	*x = SocketAddress{}
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SocketAddress) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SocketAddress) ProtoMessage() {}
+
+func (x *SocketAddress) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SocketAddress.ProtoReflect.Descriptor instead.
+func (*SocketAddress) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *SocketAddress) GetAddress() isSocketAddress_Address {
+	if x != nil {
+		return x.Address
+	}
+	return nil
+}
+
+func (x *SocketAddress) GetTcp() *Endpoint {
+	if x != nil {
+		if x, ok := x.Address.(*SocketAddress_Tcp); ok {
+			return x.Tcp
+		}
+	}
+	return nil
+}
+
+func (x *SocketAddress) GetUnixPath() string {
+	if x != nil {
+		if x, ok := x.Address.(*SocketAddress_UnixPath); ok {
+			return x.UnixPath
+		}
+	}
+	return ""
+}
+
+type isSocketAddress_Address interface {
+	isSocketAddress_Address()
+}
+
+type SocketAddress_Tcp struct {
+	// An IP literal and port.
+	Tcp *Endpoint `protobuf:"bytes,1,opt,name=tcp,proto3,oneof"`
+}
+
+type SocketAddress_UnixPath struct {
+	// An absolute filesystem Unix Socket path.
+	UnixPath string `protobuf:"bytes,2,opt,name=unix_path,json=unixPath,proto3,oneof"`
+}
+
+func (*SocketAddress_Tcp) isSocketAddress_Address() {}
+
+func (*SocketAddress_UnixPath) isSocketAddress_Address() {}
+
 // A forward of this connection.
 type Forward struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -426,7 +511,7 @@ type Forward struct {
 
 func (x *Forward) Reset() {
 	*x = Forward{}
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[3]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -438,7 +523,7 @@ func (x *Forward) String() string {
 func (*Forward) ProtoMessage() {}
 
 func (x *Forward) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[3]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -451,7 +536,7 @@ func (x *Forward) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Forward.ProtoReflect.Descriptor instead.
 func (*Forward) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{3}
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Forward) GetForwardId() uint64 {
@@ -505,7 +590,7 @@ type SnapshotEnd struct {
 
 func (x *SnapshotEnd) Reset() {
 	*x = SnapshotEnd{}
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[4]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -517,7 +602,7 @@ func (x *SnapshotEnd) String() string {
 func (*SnapshotEnd) ProtoMessage() {}
 
 func (x *SnapshotEnd) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[4]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -530,7 +615,7 @@ func (x *SnapshotEnd) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SnapshotEnd.ProtoReflect.Descriptor instead.
 func (*SnapshotEnd) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{4}
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{5}
 }
 
 // The request of CreateForward.
@@ -544,7 +629,7 @@ type CreateForwardRequest struct {
 
 func (x *CreateForwardRequest) Reset() {
 	*x = CreateForwardRequest{}
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[5]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -556,7 +641,7 @@ func (x *CreateForwardRequest) String() string {
 func (*CreateForwardRequest) ProtoMessage() {}
 
 func (x *CreateForwardRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[5]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -569,7 +654,7 @@ func (x *CreateForwardRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateForwardRequest.ProtoReflect.Descriptor instead.
 func (*CreateForwardRequest) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{5}
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *CreateForwardRequest) GetSpec() *ForwardSpec {
@@ -590,7 +675,7 @@ type CreateForwardResponse struct {
 
 func (x *CreateForwardResponse) Reset() {
 	*x = CreateForwardResponse{}
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[6]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -602,7 +687,7 @@ func (x *CreateForwardResponse) String() string {
 func (*CreateForwardResponse) ProtoMessage() {}
 
 func (x *CreateForwardResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[6]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -615,7 +700,7 @@ func (x *CreateForwardResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateForwardResponse.ProtoReflect.Descriptor instead.
 func (*CreateForwardResponse) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{6}
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CreateForwardResponse) GetForward() *Forward {
@@ -641,7 +726,7 @@ type ReportListenerReadyRequest struct {
 
 func (x *ReportListenerReadyRequest) Reset() {
 	*x = ReportListenerReadyRequest{}
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[7]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -653,7 +738,7 @@ func (x *ReportListenerReadyRequest) String() string {
 func (*ReportListenerReadyRequest) ProtoMessage() {}
 
 func (x *ReportListenerReadyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[7]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -666,7 +751,7 @@ func (x *ReportListenerReadyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportListenerReadyRequest.ProtoReflect.Descriptor instead.
 func (*ReportListenerReadyRequest) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{7}
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ReportListenerReadyRequest) GetForwardId() uint64 {
@@ -701,7 +786,7 @@ type ReportListenerReadyResponse struct {
 
 func (x *ReportListenerReadyResponse) Reset() {
 	*x = ReportListenerReadyResponse{}
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[8]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -713,7 +798,7 @@ func (x *ReportListenerReadyResponse) String() string {
 func (*ReportListenerReadyResponse) ProtoMessage() {}
 
 func (x *ReportListenerReadyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[8]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -726,7 +811,7 @@ func (x *ReportListenerReadyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportListenerReadyResponse.ProtoReflect.Descriptor instead.
 func (*ReportListenerReadyResponse) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{8}
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ReportListenerReadyResponse) GetForward() *Forward {
@@ -747,7 +832,7 @@ type DeleteForwardRequest struct {
 
 func (x *DeleteForwardRequest) Reset() {
 	*x = DeleteForwardRequest{}
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[9]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -759,7 +844,7 @@ func (x *DeleteForwardRequest) String() string {
 func (*DeleteForwardRequest) ProtoMessage() {}
 
 func (x *DeleteForwardRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[9]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -772,7 +857,7 @@ func (x *DeleteForwardRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteForwardRequest.ProtoReflect.Descriptor instead.
 func (*DeleteForwardRequest) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{9}
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *DeleteForwardRequest) GetForwardId() uint64 {
@@ -791,7 +876,7 @@ type DeleteForwardResponse struct {
 
 func (x *DeleteForwardResponse) Reset() {
 	*x = DeleteForwardResponse{}
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[10]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -803,7 +888,7 @@ func (x *DeleteForwardResponse) String() string {
 func (*DeleteForwardResponse) ProtoMessage() {}
 
 func (x *DeleteForwardResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[10]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -816,7 +901,7 @@ func (x *DeleteForwardResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteForwardResponse.ProtoReflect.Descriptor instead.
 func (*DeleteForwardResponse) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{10}
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{11}
 }
 
 // The first message of a TCP channel.
@@ -832,7 +917,7 @@ type TcpOpen struct {
 
 func (x *TcpOpen) Reset() {
 	*x = TcpOpen{}
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[11]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -844,7 +929,7 @@ func (x *TcpOpen) String() string {
 func (*TcpOpen) ProtoMessage() {}
 
 func (x *TcpOpen) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[11]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -857,7 +942,7 @@ func (x *TcpOpen) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TcpOpen.ProtoReflect.Descriptor instead.
 func (*TcpOpen) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{11}
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *TcpOpen) GetForwardId() uint64 {
@@ -890,7 +975,7 @@ type TcpMessage struct {
 
 func (x *TcpMessage) Reset() {
 	*x = TcpMessage{}
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[12]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -902,7 +987,7 @@ func (x *TcpMessage) String() string {
 func (*TcpMessage) ProtoMessage() {}
 
 func (x *TcpMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[12]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -915,7 +1000,7 @@ func (x *TcpMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TcpMessage.ProtoReflect.Descriptor instead.
 func (*TcpMessage) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{12}
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *TcpMessage) GetMessage() isTcpMessage_Message {
@@ -973,7 +1058,7 @@ type TcpShutdown struct {
 
 func (x *TcpShutdown) Reset() {
 	*x = TcpShutdown{}
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[13]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -985,7 +1070,7 @@ func (x *TcpShutdown) String() string {
 func (*TcpShutdown) ProtoMessage() {}
 
 func (x *TcpShutdown) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[13]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -998,7 +1083,172 @@ func (x *TcpShutdown) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TcpShutdown.ProtoReflect.Descriptor instead.
 func (*TcpShutdown) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{13}
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{14}
+}
+
+// The first message of a direct_dial channel.
+type DirectDialOpen struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Target        *SocketAddress         `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DirectDialOpen) Reset() {
+	*x = DirectDialOpen{}
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DirectDialOpen) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DirectDialOpen) ProtoMessage() {}
+
+func (x *DirectDialOpen) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DirectDialOpen.ProtoReflect.Descriptor instead.
+func (*DirectDialOpen) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *DirectDialOpen) GetTarget() *SocketAddress {
+	if x != nil {
+		return x.Target
+	}
+	return nil
+}
+
+// A byte stream message for direct_dial.
+type StreamMessage struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Message:
+	//
+	//	*StreamMessage_Data
+	//	*StreamMessage_Shutdown
+	Message       isStreamMessage_Message `protobuf_oneof:"message"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StreamMessage) Reset() {
+	*x = StreamMessage{}
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StreamMessage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StreamMessage) ProtoMessage() {}
+
+func (x *StreamMessage) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StreamMessage.ProtoReflect.Descriptor instead.
+func (*StreamMessage) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *StreamMessage) GetMessage() isStreamMessage_Message {
+	if x != nil {
+		return x.Message
+	}
+	return nil
+}
+
+func (x *StreamMessage) GetData() []byte {
+	if x != nil {
+		if x, ok := x.Message.(*StreamMessage_Data); ok {
+			return x.Data
+		}
+	}
+	return nil
+}
+
+func (x *StreamMessage) GetShutdown() *StreamShutdown {
+	if x != nil {
+		if x, ok := x.Message.(*StreamMessage_Shutdown); ok {
+			return x.Shutdown
+		}
+	}
+	return nil
+}
+
+type isStreamMessage_Message interface {
+	isStreamMessage_Message()
+}
+
+type StreamMessage_Data struct {
+	// The next bytes of the stream. At most 64 KiB.
+	Data []byte `protobuf:"bytes,1,opt,name=data,proto3,oneof"`
+}
+
+type StreamMessage_Shutdown struct {
+	Shutdown *StreamShutdown `protobuf:"bytes,2,opt,name=shutdown,proto3,oneof"`
+}
+
+func (*StreamMessage_Data) isStreamMessage_Message() {}
+
+func (*StreamMessage_Shutdown) isStreamMessage_Message() {}
+
+type StreamShutdown struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StreamShutdown) Reset() {
+	*x = StreamShutdown{}
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StreamShutdown) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StreamShutdown) ProtoMessage() {}
+
+func (x *StreamShutdown) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StreamShutdown.ProtoReflect.Descriptor instead.
+func (*StreamShutdown) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{17}
 }
 
 // The first message of a UDP channel.
@@ -1014,7 +1264,7 @@ type UdpOpen struct {
 
 func (x *UdpOpen) Reset() {
 	*x = UdpOpen{}
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[14]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1026,7 +1276,7 @@ func (x *UdpOpen) String() string {
 func (*UdpOpen) ProtoMessage() {}
 
 func (x *UdpOpen) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[14]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1039,7 +1289,7 @@ func (x *UdpOpen) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UdpOpen.ProtoReflect.Descriptor instead.
 func (*UdpOpen) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{14}
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *UdpOpen) GetForwardId() uint64 {
@@ -1068,7 +1318,7 @@ type UdpPacket struct {
 
 func (x *UdpPacket) Reset() {
 	*x = UdpPacket{}
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[15]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1080,7 +1330,7 @@ func (x *UdpPacket) String() string {
 func (*UdpPacket) ProtoMessage() {}
 
 func (x *UdpPacket) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[15]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1093,7 +1343,7 @@ func (x *UdpPacket) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UdpPacket.ProtoReflect.Descriptor instead.
 func (*UdpPacket) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{15}
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *UdpPacket) GetData() []byte {
@@ -1137,13 +1387,16 @@ type PortForwardPolicy struct {
 	// The longest a UDP association may stay idle, at most 5 minutes. Unset:
 	// 60 seconds.
 	UdpIdleTimeout *durationpb.Duration `protobuf:"bytes,14,opt,name=udp_idle_timeout,json=udpIdleTimeout,proto3" json:"udp_idle_timeout,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Allows direct_dial. Its target is checked against remote_targets and the
+	// Unix path fields of that policy.
+	DirectDialAllowed bool `protobuf:"varint,15,opt,name=direct_dial_allowed,json=directDialAllowed,proto3" json:"direct_dial_allowed,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *PortForwardPolicy) Reset() {
 	*x = PortForwardPolicy{}
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[16]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1155,7 +1408,7 @@ func (x *PortForwardPolicy) String() string {
 func (*PortForwardPolicy) ProtoMessage() {}
 
 func (x *PortForwardPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[16]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1168,7 +1421,7 @@ func (x *PortForwardPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PortForwardPolicy.ProtoReflect.Descriptor instead.
 func (*PortForwardPolicy) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{16}
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *PortForwardPolicy) GetLocalToRemoteAllowed() bool {
@@ -1269,23 +1522,35 @@ func (x *PortForwardPolicy) GetUdpIdleTimeout() *durationpb.Duration {
 	return nil
 }
 
-// The addresses and ports a side may listen on or connect to. An endpoint is
-// allowed when its address lies in one of the prefixes and its port in one
-// of the ranges; empty lists allow nothing.
+func (x *PortForwardPolicy) GetDirectDialAllowed() bool {
+	if x != nil {
+		return x.DirectDialAllowed
+	}
+	return false
+}
+
+// The addresses, ports, and Unix Socket paths a side may listen on or connect
+// to. An IP endpoint is allowed when its address lies in one of the prefixes
+// and its port in one of the ranges. Unix Socket paths are allowed by exact
+// path or prefix. Empty lists allow nothing.
 type EndpointPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// IPv4 or IPv6 prefixes in CIDR notation (RFC 4632), such as "127.0.0.0/8";
 	// "0.0.0.0/0" and "::/0" allow any address.
 	Prefixes []string `protobuf:"bytes,1,rep,name=prefixes,proto3" json:"prefixes,omitempty"`
 	// The ports.
-	Ports         []*PortRange `protobuf:"bytes,2,rep,name=ports,proto3" json:"ports,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Ports []*PortRange `protobuf:"bytes,2,rep,name=ports,proto3" json:"ports,omitempty"`
+	// Exact absolute Unix Socket paths.
+	UnixPaths []string `protobuf:"bytes,3,rep,name=unix_paths,json=unixPaths,proto3" json:"unix_paths,omitempty"`
+	// Absolute Unix Socket path prefixes.
+	UnixPathPrefixes []string `protobuf:"bytes,4,rep,name=unix_path_prefixes,json=unixPathPrefixes,proto3" json:"unix_path_prefixes,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *EndpointPolicy) Reset() {
 	*x = EndpointPolicy{}
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[17]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1297,7 +1562,7 @@ func (x *EndpointPolicy) String() string {
 func (*EndpointPolicy) ProtoMessage() {}
 
 func (x *EndpointPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[17]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1310,7 +1575,7 @@ func (x *EndpointPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EndpointPolicy.ProtoReflect.Descriptor instead.
 func (*EndpointPolicy) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{17}
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *EndpointPolicy) GetPrefixes() []string {
@@ -1323,6 +1588,20 @@ func (x *EndpointPolicy) GetPrefixes() []string {
 func (x *EndpointPolicy) GetPorts() []*PortRange {
 	if x != nil {
 		return x.Ports
+	}
+	return nil
+}
+
+func (x *EndpointPolicy) GetUnixPaths() []string {
+	if x != nil {
+		return x.UnixPaths
+	}
+	return nil
+}
+
+func (x *EndpointPolicy) GetUnixPathPrefixes() []string {
+	if x != nil {
+		return x.UnixPathPrefixes
 	}
 	return nil
 }
@@ -1340,7 +1619,7 @@ type PortRange struct {
 
 func (x *PortRange) Reset() {
 	*x = PortRange{}
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[18]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1352,7 +1631,7 @@ func (x *PortRange) String() string {
 func (*PortRange) ProtoMessage() {}
 
 func (x *PortRange) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[18]
+	mi := &file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1365,7 +1644,7 @@ func (x *PortRange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PortRange.ProtoReflect.Descriptor instead.
 func (*PortRange) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{18}
+	return file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *PortRange) GetFirst() uint32 {
@@ -1398,7 +1677,11 @@ const file_leaflow_fleet_portforward_v1_portforward_proto_rawDesc = "" +
 	"\tdirection\x18\x01 \x01(\x0e2..leaflow.fleet.portforward.v1.ForwardDirectionR\tdirection\x12O\n" +
 	"\x0flisten_endpoint\x18\x02 \x01(\v2&.leaflow.fleet.portforward.v1.EndpointR\x0elistenEndpoint\x12O\n" +
 	"\x0ftarget_endpoint\x18\x03 \x01(\v2&.leaflow.fleet.portforward.v1.EndpointR\x0etargetEndpoint\x12I\n" +
-	"\bprotocol\x18\x04 \x01(\x0e2-.leaflow.fleet.portforward.v1.ForwardProtocolR\bprotocol\"\xcd\x02\n" +
+	"\bprotocol\x18\x04 \x01(\x0e2-.leaflow.fleet.portforward.v1.ForwardProtocolR\bprotocol\"u\n" +
+	"\rSocketAddress\x12:\n" +
+	"\x03tcp\x18\x01 \x01(\v2&.leaflow.fleet.portforward.v1.EndpointH\x00R\x03tcp\x12\x1d\n" +
+	"\tunix_path\x18\x02 \x01(\tH\x00R\bunixPathB\t\n" +
+	"\aaddress\"\xcd\x02\n" +
 	"\aForward\x12\x1d\n" +
 	"\n" +
 	"forward_id\x18\x01 \x01(\x04R\tforwardId\x12=\n" +
@@ -1434,7 +1717,14 @@ const file_leaflow_fleet_portforward_v1_portforward_proto_rawDesc = "" +
 	"\x04data\x18\x01 \x01(\fH\x00R\x04data\x12G\n" +
 	"\bshutdown\x18\x02 \x01(\v2).leaflow.fleet.portforward.v1.TcpShutdownH\x00R\bshutdownB\t\n" +
 	"\amessage\"\r\n" +
-	"\vTcpShutdown\"p\n" +
+	"\vTcpShutdown\"U\n" +
+	"\x0eDirectDialOpen\x12C\n" +
+	"\x06target\x18\x01 \x01(\v2+.leaflow.fleet.portforward.v1.SocketAddressR\x06target\"|\n" +
+	"\rStreamMessage\x12\x14\n" +
+	"\x04data\x18\x01 \x01(\fH\x00R\x04data\x12J\n" +
+	"\bshutdown\x18\x02 \x01(\v2,.leaflow.fleet.portforward.v1.StreamShutdownH\x00R\bshutdownB\t\n" +
+	"\amessage\"\x10\n" +
+	"\x0eStreamShutdown\"p\n" +
 	"\aUdpOpen\x12\x1d\n" +
 	"\n" +
 	"forward_id\x18\x01 \x01(\x04R\tforwardId\x12F\n" +
@@ -1442,7 +1732,7 @@ const file_leaflow_fleet_portforward_v1_portforward_proto_rawDesc = "" +
 	"originator\x18\x02 \x01(\v2&.leaflow.fleet.portforward.v1.EndpointR\n" +
 	"originator\"\x1f\n" +
 	"\tUdpPacket\x12\x12\n" +
-	"\x04data\x18\x01 \x01(\fR\x04data\"\x95\a\n" +
+	"\x04data\x18\x01 \x01(\fR\x04data\"\xc5\a\n" +
 	"\x11PortForwardPolicy\x125\n" +
 	"\x17local_to_remote_allowed\x18\x01 \x01(\bR\x14localToRemoteAllowed\x125\n" +
 	"\x17remote_to_local_allowed\x18\x02 \x01(\bR\x14remoteToLocalAllowed\x12U\n" +
@@ -1459,10 +1749,14 @@ const file_leaflow_fleet_portforward_v1_portforward_proto_rawDesc = "" +
 	"\vudp_allowed\x18\f \x01(\bR\n" +
 	"udpAllowed\x123\n" +
 	"\x16max_udp_datagram_bytes\x18\r \x01(\rR\x13maxUdpDatagramBytes\x12C\n" +
-	"\x10udp_idle_timeout\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\x0eudpIdleTimeout\"k\n" +
+	"\x10udp_idle_timeout\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\x0eudpIdleTimeout\x12.\n" +
+	"\x13direct_dial_allowed\x18\x0f \x01(\bR\x11directDialAllowed\"\xb8\x01\n" +
 	"\x0eEndpointPolicy\x12\x1a\n" +
 	"\bprefixes\x18\x01 \x03(\tR\bprefixes\x12=\n" +
-	"\x05ports\x18\x02 \x03(\v2'.leaflow.fleet.portforward.v1.PortRangeR\x05ports\"5\n" +
+	"\x05ports\x18\x02 \x03(\v2'.leaflow.fleet.portforward.v1.PortRangeR\x05ports\x12\x1d\n" +
+	"\n" +
+	"unix_paths\x18\x03 \x03(\tR\tunixPaths\x12,\n" +
+	"\x12unix_path_prefixes\x18\x04 \x03(\tR\x10unixPathPrefixes\"5\n" +
 	"\tPortRange\x12\x14\n" +
 	"\x05first\x18\x01 \x01(\rR\x05first\x12\x12\n" +
 	"\x04last\x18\x02 \x01(\rR\x04last*\x83\x01\n" +
@@ -1498,7 +1792,7 @@ func file_leaflow_fleet_portforward_v1_portforward_proto_rawDescGZIP() []byte {
 }
 
 var file_leaflow_fleet_portforward_v1_portforward_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_leaflow_fleet_portforward_v1_portforward_proto_goTypes = []any{
 	(ForwardDirection)(0),               // 0: leaflow.fleet.portforward.v1.ForwardDirection
 	(ForwardProtocol)(0),                // 1: leaflow.fleet.portforward.v1.ForwardProtocol
@@ -1506,64 +1800,71 @@ var file_leaflow_fleet_portforward_v1_portforward_proto_goTypes = []any{
 	(*ServerMessage)(nil),               // 3: leaflow.fleet.portforward.v1.ServerMessage
 	(*Endpoint)(nil),                    // 4: leaflow.fleet.portforward.v1.Endpoint
 	(*ForwardSpec)(nil),                 // 5: leaflow.fleet.portforward.v1.ForwardSpec
-	(*Forward)(nil),                     // 6: leaflow.fleet.portforward.v1.Forward
-	(*SnapshotEnd)(nil),                 // 7: leaflow.fleet.portforward.v1.SnapshotEnd
-	(*CreateForwardRequest)(nil),        // 8: leaflow.fleet.portforward.v1.CreateForwardRequest
-	(*CreateForwardResponse)(nil),       // 9: leaflow.fleet.portforward.v1.CreateForwardResponse
-	(*ReportListenerReadyRequest)(nil),  // 10: leaflow.fleet.portforward.v1.ReportListenerReadyRequest
-	(*ReportListenerReadyResponse)(nil), // 11: leaflow.fleet.portforward.v1.ReportListenerReadyResponse
-	(*DeleteForwardRequest)(nil),        // 12: leaflow.fleet.portforward.v1.DeleteForwardRequest
-	(*DeleteForwardResponse)(nil),       // 13: leaflow.fleet.portforward.v1.DeleteForwardResponse
-	(*TcpOpen)(nil),                     // 14: leaflow.fleet.portforward.v1.TcpOpen
-	(*TcpMessage)(nil),                  // 15: leaflow.fleet.portforward.v1.TcpMessage
-	(*TcpShutdown)(nil),                 // 16: leaflow.fleet.portforward.v1.TcpShutdown
-	(*UdpOpen)(nil),                     // 17: leaflow.fleet.portforward.v1.UdpOpen
-	(*UdpPacket)(nil),                   // 18: leaflow.fleet.portforward.v1.UdpPacket
-	(*PortForwardPolicy)(nil),           // 19: leaflow.fleet.portforward.v1.PortForwardPolicy
-	(*EndpointPolicy)(nil),              // 20: leaflow.fleet.portforward.v1.EndpointPolicy
-	(*PortRange)(nil),                   // 21: leaflow.fleet.portforward.v1.PortRange
-	(*status.Status)(nil),               // 22: google.rpc.Status
-	(*durationpb.Duration)(nil),         // 23: google.protobuf.Duration
+	(*SocketAddress)(nil),               // 6: leaflow.fleet.portforward.v1.SocketAddress
+	(*Forward)(nil),                     // 7: leaflow.fleet.portforward.v1.Forward
+	(*SnapshotEnd)(nil),                 // 8: leaflow.fleet.portforward.v1.SnapshotEnd
+	(*CreateForwardRequest)(nil),        // 9: leaflow.fleet.portforward.v1.CreateForwardRequest
+	(*CreateForwardResponse)(nil),       // 10: leaflow.fleet.portforward.v1.CreateForwardResponse
+	(*ReportListenerReadyRequest)(nil),  // 11: leaflow.fleet.portforward.v1.ReportListenerReadyRequest
+	(*ReportListenerReadyResponse)(nil), // 12: leaflow.fleet.portforward.v1.ReportListenerReadyResponse
+	(*DeleteForwardRequest)(nil),        // 13: leaflow.fleet.portforward.v1.DeleteForwardRequest
+	(*DeleteForwardResponse)(nil),       // 14: leaflow.fleet.portforward.v1.DeleteForwardResponse
+	(*TcpOpen)(nil),                     // 15: leaflow.fleet.portforward.v1.TcpOpen
+	(*TcpMessage)(nil),                  // 16: leaflow.fleet.portforward.v1.TcpMessage
+	(*TcpShutdown)(nil),                 // 17: leaflow.fleet.portforward.v1.TcpShutdown
+	(*DirectDialOpen)(nil),              // 18: leaflow.fleet.portforward.v1.DirectDialOpen
+	(*StreamMessage)(nil),               // 19: leaflow.fleet.portforward.v1.StreamMessage
+	(*StreamShutdown)(nil),              // 20: leaflow.fleet.portforward.v1.StreamShutdown
+	(*UdpOpen)(nil),                     // 21: leaflow.fleet.portforward.v1.UdpOpen
+	(*UdpPacket)(nil),                   // 22: leaflow.fleet.portforward.v1.UdpPacket
+	(*PortForwardPolicy)(nil),           // 23: leaflow.fleet.portforward.v1.PortForwardPolicy
+	(*EndpointPolicy)(nil),              // 24: leaflow.fleet.portforward.v1.EndpointPolicy
+	(*PortRange)(nil),                   // 25: leaflow.fleet.portforward.v1.PortRange
+	(*status.Status)(nil),               // 26: google.rpc.Status
+	(*durationpb.Duration)(nil),         // 27: google.protobuf.Duration
 }
 var file_leaflow_fleet_portforward_v1_portforward_proto_depIdxs = []int32{
-	6,  // 0: leaflow.fleet.portforward.v1.ServerMessage.forward:type_name -> leaflow.fleet.portforward.v1.Forward
-	7,  // 1: leaflow.fleet.portforward.v1.ServerMessage.snapshot_end:type_name -> leaflow.fleet.portforward.v1.SnapshotEnd
+	7,  // 0: leaflow.fleet.portforward.v1.ServerMessage.forward:type_name -> leaflow.fleet.portforward.v1.Forward
+	8,  // 1: leaflow.fleet.portforward.v1.ServerMessage.snapshot_end:type_name -> leaflow.fleet.portforward.v1.SnapshotEnd
 	0,  // 2: leaflow.fleet.portforward.v1.ForwardSpec.direction:type_name -> leaflow.fleet.portforward.v1.ForwardDirection
 	4,  // 3: leaflow.fleet.portforward.v1.ForwardSpec.listen_endpoint:type_name -> leaflow.fleet.portforward.v1.Endpoint
 	4,  // 4: leaflow.fleet.portforward.v1.ForwardSpec.target_endpoint:type_name -> leaflow.fleet.portforward.v1.Endpoint
 	1,  // 5: leaflow.fleet.portforward.v1.ForwardSpec.protocol:type_name -> leaflow.fleet.portforward.v1.ForwardProtocol
-	5,  // 6: leaflow.fleet.portforward.v1.Forward.spec:type_name -> leaflow.fleet.portforward.v1.ForwardSpec
-	2,  // 7: leaflow.fleet.portforward.v1.Forward.state:type_name -> leaflow.fleet.portforward.v1.ForwardState
-	4,  // 8: leaflow.fleet.portforward.v1.Forward.bound_endpoint:type_name -> leaflow.fleet.portforward.v1.Endpoint
-	22, // 9: leaflow.fleet.portforward.v1.Forward.error:type_name -> google.rpc.Status
-	5,  // 10: leaflow.fleet.portforward.v1.CreateForwardRequest.spec:type_name -> leaflow.fleet.portforward.v1.ForwardSpec
-	6,  // 11: leaflow.fleet.portforward.v1.CreateForwardResponse.forward:type_name -> leaflow.fleet.portforward.v1.Forward
-	4,  // 12: leaflow.fleet.portforward.v1.ReportListenerReadyRequest.bound_endpoint:type_name -> leaflow.fleet.portforward.v1.Endpoint
-	22, // 13: leaflow.fleet.portforward.v1.ReportListenerReadyRequest.error:type_name -> google.rpc.Status
-	6,  // 14: leaflow.fleet.portforward.v1.ReportListenerReadyResponse.forward:type_name -> leaflow.fleet.portforward.v1.Forward
-	4,  // 15: leaflow.fleet.portforward.v1.TcpOpen.originator:type_name -> leaflow.fleet.portforward.v1.Endpoint
-	16, // 16: leaflow.fleet.portforward.v1.TcpMessage.shutdown:type_name -> leaflow.fleet.portforward.v1.TcpShutdown
-	4,  // 17: leaflow.fleet.portforward.v1.UdpOpen.originator:type_name -> leaflow.fleet.portforward.v1.Endpoint
-	20, // 18: leaflow.fleet.portforward.v1.PortForwardPolicy.local_listeners:type_name -> leaflow.fleet.portforward.v1.EndpointPolicy
-	20, // 19: leaflow.fleet.portforward.v1.PortForwardPolicy.remote_targets:type_name -> leaflow.fleet.portforward.v1.EndpointPolicy
-	20, // 20: leaflow.fleet.portforward.v1.PortForwardPolicy.remote_listeners:type_name -> leaflow.fleet.portforward.v1.EndpointPolicy
-	20, // 21: leaflow.fleet.portforward.v1.PortForwardPolicy.local_targets:type_name -> leaflow.fleet.portforward.v1.EndpointPolicy
-	23, // 22: leaflow.fleet.portforward.v1.PortForwardPolicy.connect_timeout:type_name -> google.protobuf.Duration
-	23, // 23: leaflow.fleet.portforward.v1.PortForwardPolicy.max_connection_duration:type_name -> google.protobuf.Duration
-	23, // 24: leaflow.fleet.portforward.v1.PortForwardPolicy.idle_timeout:type_name -> google.protobuf.Duration
-	23, // 25: leaflow.fleet.portforward.v1.PortForwardPolicy.udp_idle_timeout:type_name -> google.protobuf.Duration
-	21, // 26: leaflow.fleet.portforward.v1.EndpointPolicy.ports:type_name -> leaflow.fleet.portforward.v1.PortRange
-	8,  // 27: leaflow.fleet.portforward.v1.PortForwardService.CreateForward:input_type -> leaflow.fleet.portforward.v1.CreateForwardRequest
-	10, // 28: leaflow.fleet.portforward.v1.PortForwardService.ReportListenerReady:input_type -> leaflow.fleet.portforward.v1.ReportListenerReadyRequest
-	12, // 29: leaflow.fleet.portforward.v1.PortForwardService.DeleteForward:input_type -> leaflow.fleet.portforward.v1.DeleteForwardRequest
-	9,  // 30: leaflow.fleet.portforward.v1.PortForwardService.CreateForward:output_type -> leaflow.fleet.portforward.v1.CreateForwardResponse
-	11, // 31: leaflow.fleet.portforward.v1.PortForwardService.ReportListenerReady:output_type -> leaflow.fleet.portforward.v1.ReportListenerReadyResponse
-	13, // 32: leaflow.fleet.portforward.v1.PortForwardService.DeleteForward:output_type -> leaflow.fleet.portforward.v1.DeleteForwardResponse
-	30, // [30:33] is the sub-list for method output_type
-	27, // [27:30] is the sub-list for method input_type
-	27, // [27:27] is the sub-list for extension type_name
-	27, // [27:27] is the sub-list for extension extendee
-	0,  // [0:27] is the sub-list for field type_name
+	4,  // 6: leaflow.fleet.portforward.v1.SocketAddress.tcp:type_name -> leaflow.fleet.portforward.v1.Endpoint
+	5,  // 7: leaflow.fleet.portforward.v1.Forward.spec:type_name -> leaflow.fleet.portforward.v1.ForwardSpec
+	2,  // 8: leaflow.fleet.portforward.v1.Forward.state:type_name -> leaflow.fleet.portforward.v1.ForwardState
+	4,  // 9: leaflow.fleet.portforward.v1.Forward.bound_endpoint:type_name -> leaflow.fleet.portforward.v1.Endpoint
+	26, // 10: leaflow.fleet.portforward.v1.Forward.error:type_name -> google.rpc.Status
+	5,  // 11: leaflow.fleet.portforward.v1.CreateForwardRequest.spec:type_name -> leaflow.fleet.portforward.v1.ForwardSpec
+	7,  // 12: leaflow.fleet.portforward.v1.CreateForwardResponse.forward:type_name -> leaflow.fleet.portforward.v1.Forward
+	4,  // 13: leaflow.fleet.portforward.v1.ReportListenerReadyRequest.bound_endpoint:type_name -> leaflow.fleet.portforward.v1.Endpoint
+	26, // 14: leaflow.fleet.portforward.v1.ReportListenerReadyRequest.error:type_name -> google.rpc.Status
+	7,  // 15: leaflow.fleet.portforward.v1.ReportListenerReadyResponse.forward:type_name -> leaflow.fleet.portforward.v1.Forward
+	4,  // 16: leaflow.fleet.portforward.v1.TcpOpen.originator:type_name -> leaflow.fleet.portforward.v1.Endpoint
+	17, // 17: leaflow.fleet.portforward.v1.TcpMessage.shutdown:type_name -> leaflow.fleet.portforward.v1.TcpShutdown
+	6,  // 18: leaflow.fleet.portforward.v1.DirectDialOpen.target:type_name -> leaflow.fleet.portforward.v1.SocketAddress
+	20, // 19: leaflow.fleet.portforward.v1.StreamMessage.shutdown:type_name -> leaflow.fleet.portforward.v1.StreamShutdown
+	4,  // 20: leaflow.fleet.portforward.v1.UdpOpen.originator:type_name -> leaflow.fleet.portforward.v1.Endpoint
+	24, // 21: leaflow.fleet.portforward.v1.PortForwardPolicy.local_listeners:type_name -> leaflow.fleet.portforward.v1.EndpointPolicy
+	24, // 22: leaflow.fleet.portforward.v1.PortForwardPolicy.remote_targets:type_name -> leaflow.fleet.portforward.v1.EndpointPolicy
+	24, // 23: leaflow.fleet.portforward.v1.PortForwardPolicy.remote_listeners:type_name -> leaflow.fleet.portforward.v1.EndpointPolicy
+	24, // 24: leaflow.fleet.portforward.v1.PortForwardPolicy.local_targets:type_name -> leaflow.fleet.portforward.v1.EndpointPolicy
+	27, // 25: leaflow.fleet.portforward.v1.PortForwardPolicy.connect_timeout:type_name -> google.protobuf.Duration
+	27, // 26: leaflow.fleet.portforward.v1.PortForwardPolicy.max_connection_duration:type_name -> google.protobuf.Duration
+	27, // 27: leaflow.fleet.portforward.v1.PortForwardPolicy.idle_timeout:type_name -> google.protobuf.Duration
+	27, // 28: leaflow.fleet.portforward.v1.PortForwardPolicy.udp_idle_timeout:type_name -> google.protobuf.Duration
+	25, // 29: leaflow.fleet.portforward.v1.EndpointPolicy.ports:type_name -> leaflow.fleet.portforward.v1.PortRange
+	9,  // 30: leaflow.fleet.portforward.v1.PortForwardService.CreateForward:input_type -> leaflow.fleet.portforward.v1.CreateForwardRequest
+	11, // 31: leaflow.fleet.portforward.v1.PortForwardService.ReportListenerReady:input_type -> leaflow.fleet.portforward.v1.ReportListenerReadyRequest
+	13, // 32: leaflow.fleet.portforward.v1.PortForwardService.DeleteForward:input_type -> leaflow.fleet.portforward.v1.DeleteForwardRequest
+	10, // 33: leaflow.fleet.portforward.v1.PortForwardService.CreateForward:output_type -> leaflow.fleet.portforward.v1.CreateForwardResponse
+	12, // 34: leaflow.fleet.portforward.v1.PortForwardService.ReportListenerReady:output_type -> leaflow.fleet.portforward.v1.ReportListenerReadyResponse
+	14, // 35: leaflow.fleet.portforward.v1.PortForwardService.DeleteForward:output_type -> leaflow.fleet.portforward.v1.DeleteForwardResponse
+	33, // [33:36] is the sub-list for method output_type
+	30, // [30:33] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_leaflow_fleet_portforward_v1_portforward_proto_init() }
@@ -1575,9 +1876,17 @@ func file_leaflow_fleet_portforward_v1_portforward_proto_init() {
 		(*ServerMessage_Forward)(nil),
 		(*ServerMessage_SnapshotEnd)(nil),
 	}
-	file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[12].OneofWrappers = []any{
+	file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[3].OneofWrappers = []any{
+		(*SocketAddress_Tcp)(nil),
+		(*SocketAddress_UnixPath)(nil),
+	}
+	file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[13].OneofWrappers = []any{
 		(*TcpMessage_Data)(nil),
 		(*TcpMessage_Shutdown)(nil),
+	}
+	file_leaflow_fleet_portforward_v1_portforward_proto_msgTypes[16].OneofWrappers = []any{
+		(*StreamMessage_Data)(nil),
+		(*StreamMessage_Shutdown)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1585,7 +1894,7 @@ func file_leaflow_fleet_portforward_v1_portforward_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_leaflow_fleet_portforward_v1_portforward_proto_rawDesc), len(file_leaflow_fleet_portforward_v1_portforward_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   19,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

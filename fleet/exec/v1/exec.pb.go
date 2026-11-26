@@ -85,6 +85,8 @@ type ClientMessage struct {
 	//	*ClientMessage_Start
 	//	*ClientMessage_Input
 	//	*ClientMessage_InputEnd
+	//	*ClientMessage_Attach
+	//	*ClientMessage_Stop
 	Message       isClientMessage_Message `protobuf_oneof:"message"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -154,6 +156,24 @@ func (x *ClientMessage) GetInputEnd() *ExecInputEnd {
 	return nil
 }
 
+func (x *ClientMessage) GetAttach() *ExecAttach {
+	if x != nil {
+		if x, ok := x.Message.(*ClientMessage_Attach); ok {
+			return x.Attach
+		}
+	}
+	return nil
+}
+
+func (x *ClientMessage) GetStop() *ExecStop {
+	if x != nil {
+		if x, ok := x.Message.(*ClientMessage_Stop); ok {
+			return x.Stop
+		}
+	}
+	return nil
+}
+
 type isClientMessage_Message interface {
 	isClientMessage_Message()
 }
@@ -174,11 +194,25 @@ type ClientMessage_InputEnd struct {
 	InputEnd *ExecInputEnd `protobuf:"bytes,3,opt,name=input_end,json=inputEnd,proto3,oneof"`
 }
 
+type ClientMessage_Attach struct {
+	// Reattaches to a background process. Only on the background channel.
+	Attach *ExecAttach `protobuf:"bytes,4,opt,name=attach,proto3,oneof"`
+}
+
+type ClientMessage_Stop struct {
+	// Stops a background process. Only on the background channel.
+	Stop *ExecStop `protobuf:"bytes,5,opt,name=stop,proto3,oneof"`
+}
+
 func (*ClientMessage_Start) isClientMessage_Message() {}
 
 func (*ClientMessage_Input) isClientMessage_Message() {}
 
 func (*ClientMessage_InputEnd) isClientMessage_Message() {}
+
+func (*ClientMessage_Attach) isClientMessage_Message() {}
+
+func (*ClientMessage_Stop) isClientMessage_Message() {}
 
 // A message from the session.
 type ServerMessage struct {
@@ -189,6 +223,7 @@ type ServerMessage struct {
 	//
 	//	*ServerMessage_Output
 	//	*ServerMessage_Exit
+	//	*ServerMessage_Started
 	Message       isServerMessage_Message `protobuf_oneof:"message"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -249,6 +284,15 @@ func (x *ServerMessage) GetExit() *ExecExit {
 	return nil
 }
 
+func (x *ServerMessage) GetStarted() *ExecStarted {
+	if x != nil {
+		if x, ok := x.Message.(*ServerMessage_Started); ok {
+			return x.Started
+		}
+	}
+	return nil
+}
+
 type isServerMessage_Message interface {
 	isServerMessage_Message()
 }
@@ -263,9 +307,16 @@ type ServerMessage_Exit struct {
 	Exit *ExecExit `protobuf:"bytes,2,opt,name=exit,proto3,oneof"`
 }
 
+type ServerMessage_Started struct {
+	// Identifies a background process for later attachment.
+	Started *ExecStarted `protobuf:"bytes,3,opt,name=started,proto3,oneof"`
+}
+
 func (*ServerMessage_Output) isServerMessage_Message() {}
 
 func (*ServerMessage_Exit) isServerMessage_Message() {}
+
+func (*ServerMessage_Started) isServerMessage_Message() {}
 
 // Starts a program. No shell interprets the arguments; a participant that wants
 // one runs it, such as ["/bin/sh", "-lc", "ls | wc -l"].
@@ -276,8 +327,10 @@ type ExecStart struct {
 	Argv []string `protobuf:"bytes,1,rep,name=argv,proto3" json:"argv,omitempty"`
 	// The working directory. Empty: the user's home directory.
 	WorkingDirectory string `protobuf:"bytes,2,opt,name=working_directory,json=workingDirectory,proto3" json:"working_directory,omitempty"`
-	// Kills the program when it runs longer, at most 10 minutes. Unset: 120
-	// seconds.
+	// The requested execution timeout, at most 10 minutes. Unset: 120 seconds
+	// for foreground execution. A background execution with
+	// ExecPolicy.unlimited_lifetime may leave this unset to run until it exits,
+	// is explicitly stopped, the session ends, or its authorization is revoked.
 	Timeout *durationpb.Duration `protobuf:"bytes,3,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	// The program reads standard input from ExecInput. Otherwise its
 	// standard input is empty.
@@ -436,9 +489,151 @@ func (*ExecInputEnd) Descriptor() ([]byte, []int) {
 	return file_leaflow_fleet_exec_v1_exec_proto_rawDescGZIP(), []int{4}
 }
 
+// A background process handle. Both values are opaque to participants.
+type ExecStarted struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ExecutionId   []byte                 `protobuf:"bytes,1,opt,name=execution_id,json=executionId,proto3" json:"execution_id,omitempty"`
+	AttachToken   []byte                 `protobuf:"bytes,2,opt,name=attach_token,json=attachToken,proto3" json:"attach_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecStarted) Reset() {
+	*x = ExecStarted{}
+	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecStarted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecStarted) ProtoMessage() {}
+
+func (x *ExecStarted) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecStarted.ProtoReflect.Descriptor instead.
+func (*ExecStarted) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_exec_v1_exec_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ExecStarted) GetExecutionId() []byte {
+	if x != nil {
+		return x.ExecutionId
+	}
+	return nil
+}
+
+func (x *ExecStarted) GetAttachToken() []byte {
+	if x != nil {
+		return x.AttachToken
+	}
+	return nil
+}
+
+// Reattaches to a background process.
+type ExecAttach struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ExecutionId   []byte                 `protobuf:"bytes,1,opt,name=execution_id,json=executionId,proto3" json:"execution_id,omitempty"`
+	AttachToken   []byte                 `protobuf:"bytes,2,opt,name=attach_token,json=attachToken,proto3" json:"attach_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecAttach) Reset() {
+	*x = ExecAttach{}
+	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecAttach) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecAttach) ProtoMessage() {}
+
+func (x *ExecAttach) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecAttach.ProtoReflect.Descriptor instead.
+func (*ExecAttach) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_exec_v1_exec_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ExecAttach) GetExecutionId() []byte {
+	if x != nil {
+		return x.ExecutionId
+	}
+	return nil
+}
+
+func (x *ExecAttach) GetAttachToken() []byte {
+	if x != nil {
+		return x.AttachToken
+	}
+	return nil
+}
+
+// Stops a background process owned by the session.
+type ExecStop struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecStop) Reset() {
+	*x = ExecStop{}
+	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecStop) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecStop) ProtoMessage() {}
+
+func (x *ExecStop) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecStop.ProtoReflect.Descriptor instead.
+func (*ExecStop) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_exec_v1_exec_proto_rawDescGZIP(), []int{7}
+}
+
 // Bytes the program wrote (RFC 4254 §5.2 data and extended data). Each
-// stream keeps its own order. A run writes at most 16 MiB in total; then the
-// session kills it.
+// stream keeps its own order. The output limit comes from ExecPolicy.
 type ExecOutput struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Where it wrote them.
@@ -451,7 +646,7 @@ type ExecOutput struct {
 
 func (x *ExecOutput) Reset() {
 	*x = ExecOutput{}
-	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[5]
+	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -463,7 +658,7 @@ func (x *ExecOutput) String() string {
 func (*ExecOutput) ProtoMessage() {}
 
 func (x *ExecOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[5]
+	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -476,7 +671,7 @@ func (x *ExecOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecOutput.ProtoReflect.Descriptor instead.
 func (*ExecOutput) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_exec_v1_exec_proto_rawDescGZIP(), []int{5}
+	return file_leaflow_fleet_exec_v1_exec_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ExecOutput) GetStream() OutputStream {
@@ -516,7 +711,7 @@ type ExecExit struct {
 
 func (x *ExecExit) Reset() {
 	*x = ExecExit{}
-	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[6]
+	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -528,7 +723,7 @@ func (x *ExecExit) String() string {
 func (*ExecExit) ProtoMessage() {}
 
 func (x *ExecExit) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[6]
+	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -541,7 +736,7 @@ func (x *ExecExit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecExit.ProtoReflect.Descriptor instead.
 func (*ExecExit) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_exec_v1_exec_proto_rawDescGZIP(), []int{6}
+	return file_leaflow_fleet_exec_v1_exec_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ExecExit) GetStatus() isExecExit_Status {
@@ -604,16 +799,27 @@ func (*ExecExit_ExitCode) isExecExit_Status() {}
 func (*ExecExit_SignalName) isExecExit_Status() {}
 
 // Allows a participant to run commands. Carried in the participant's signed
-// authorization.
+// authorization. Limits that are absent use the Agent's defaults. The
+// unlimited flags explicitly remove the corresponding application limit.
 type ExecPolicy struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	MaxProcesses      uint32                 `protobuf:"varint,1,opt,name=max_processes,json=maxProcesses,proto3" json:"max_processes,omitempty"`
+	MaxLifetime       *durationpb.Duration   `protobuf:"bytes,2,opt,name=max_lifetime,json=maxLifetime,proto3" json:"max_lifetime,omitempty"`
+	MaxOutputBytes    uint64                 `protobuf:"varint,3,opt,name=max_output_bytes,json=maxOutputBytes,proto3" json:"max_output_bytes,omitempty"`
+	UnlimitedLifetime bool                   `protobuf:"varint,4,opt,name=unlimited_lifetime,json=unlimitedLifetime,proto3" json:"unlimited_lifetime,omitempty"`
+	UnlimitedOutput   bool                   `protobuf:"varint,5,opt,name=unlimited_output,json=unlimitedOutput,proto3" json:"unlimited_output,omitempty"`
+	BackgroundAllowed bool                   `protobuf:"varint,6,opt,name=background_allowed,json=backgroundAllowed,proto3" json:"background_allowed,omitempty"`
+	// Allows the Agent to start the process without PR_SET_NO_NEW_PRIVS. This
+	// is required when it must invoke sudo or another set-user-ID helper. Any
+	// elevation still goes through the machine's PAM and Fleet approval policy.
+	AllowPrivilegeEscalation bool `protobuf:"varint,7,opt,name=allow_privilege_escalation,json=allowPrivilegeEscalation,proto3" json:"allow_privilege_escalation,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *ExecPolicy) Reset() {
 	*x = ExecPolicy{}
-	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[7]
+	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -625,7 +831,7 @@ func (x *ExecPolicy) String() string {
 func (*ExecPolicy) ProtoMessage() {}
 
 func (x *ExecPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[7]
+	mi := &file_leaflow_fleet_exec_v1_exec_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -638,22 +844,74 @@ func (x *ExecPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExecPolicy.ProtoReflect.Descriptor instead.
 func (*ExecPolicy) Descriptor() ([]byte, []int) {
-	return file_leaflow_fleet_exec_v1_exec_proto_rawDescGZIP(), []int{7}
+	return file_leaflow_fleet_exec_v1_exec_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ExecPolicy) GetMaxProcesses() uint32 {
+	if x != nil {
+		return x.MaxProcesses
+	}
+	return 0
+}
+
+func (x *ExecPolicy) GetMaxLifetime() *durationpb.Duration {
+	if x != nil {
+		return x.MaxLifetime
+	}
+	return nil
+}
+
+func (x *ExecPolicy) GetMaxOutputBytes() uint64 {
+	if x != nil {
+		return x.MaxOutputBytes
+	}
+	return 0
+}
+
+func (x *ExecPolicy) GetUnlimitedLifetime() bool {
+	if x != nil {
+		return x.UnlimitedLifetime
+	}
+	return false
+}
+
+func (x *ExecPolicy) GetUnlimitedOutput() bool {
+	if x != nil {
+		return x.UnlimitedOutput
+	}
+	return false
+}
+
+func (x *ExecPolicy) GetBackgroundAllowed() bool {
+	if x != nil {
+		return x.BackgroundAllowed
+	}
+	return false
+}
+
+func (x *ExecPolicy) GetAllowPrivilegeEscalation() bool {
+	if x != nil {
+		return x.AllowPrivilegeEscalation
+	}
+	return false
 }
 
 var File_leaflow_fleet_exec_v1_exec_proto protoreflect.FileDescriptor
 
 const file_leaflow_fleet_exec_v1_exec_proto_rawDesc = "" +
 	"\n" +
-	" leaflow/fleet/exec/v1/exec.proto\x12\x15leaflow.fleet.exec.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\"\xd2\x01\n" +
+	" leaflow/fleet/exec/v1/exec.proto\x12\x15leaflow.fleet.exec.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\"\xc6\x02\n" +
 	"\rClientMessage\x128\n" +
 	"\x05start\x18\x01 \x01(\v2 .leaflow.fleet.exec.v1.ExecStartH\x00R\x05start\x128\n" +
 	"\x05input\x18\x02 \x01(\v2 .leaflow.fleet.exec.v1.ExecInputH\x00R\x05input\x12B\n" +
-	"\tinput_end\x18\x03 \x01(\v2#.leaflow.fleet.exec.v1.ExecInputEndH\x00R\binputEndB\t\n" +
-	"\amessage\"\x8e\x01\n" +
+	"\tinput_end\x18\x03 \x01(\v2#.leaflow.fleet.exec.v1.ExecInputEndH\x00R\binputEnd\x12;\n" +
+	"\x06attach\x18\x04 \x01(\v2!.leaflow.fleet.exec.v1.ExecAttachH\x00R\x06attach\x125\n" +
+	"\x04stop\x18\x05 \x01(\v2\x1f.leaflow.fleet.exec.v1.ExecStopH\x00R\x04stopB\t\n" +
+	"\amessage\"\xce\x01\n" +
 	"\rServerMessage\x12;\n" +
 	"\x06output\x18\x01 \x01(\v2!.leaflow.fleet.exec.v1.ExecOutputH\x00R\x06output\x125\n" +
-	"\x04exit\x18\x02 \x01(\v2\x1f.leaflow.fleet.exec.v1.ExecExitH\x00R\x04exitB\t\n" +
+	"\x04exit\x18\x02 \x01(\v2\x1f.leaflow.fleet.exec.v1.ExecExitH\x00R\x04exit\x12>\n" +
+	"\astarted\x18\x03 \x01(\v2\".leaflow.fleet.exec.v1.ExecStartedH\x00R\astartedB\t\n" +
 	"\amessage\"\xac\x02\n" +
 	"\tExecStart\x12\x12\n" +
 	"\x04argv\x18\x01 \x03(\tR\x04argv\x12+\n" +
@@ -666,7 +924,16 @@ const file_leaflow_fleet_exec_v1_exec_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x1f\n" +
 	"\tExecInput\x12\x12\n" +
 	"\x04data\x18\x01 \x01(\fR\x04data\"\x0e\n" +
-	"\fExecInputEnd\"]\n" +
+	"\fExecInputEnd\"S\n" +
+	"\vExecStarted\x12!\n" +
+	"\fexecution_id\x18\x01 \x01(\fR\vexecutionId\x12!\n" +
+	"\fattach_token\x18\x02 \x01(\fR\vattachToken\"R\n" +
+	"\n" +
+	"ExecAttach\x12!\n" +
+	"\fexecution_id\x18\x01 \x01(\fR\vexecutionId\x12!\n" +
+	"\fattach_token\x18\x02 \x01(\fR\vattachToken\"\n" +
+	"\n" +
+	"\bExecStop\"]\n" +
 	"\n" +
 	"ExecOutput\x12;\n" +
 	"\x06stream\x18\x01 \x01(\x0e2#.leaflow.fleet.exec.v1.OutputStreamR\x06stream\x12\x12\n" +
@@ -678,9 +945,16 @@ const file_leaflow_fleet_exec_v1_exec_proto_rawDesc = "" +
 	"\vcore_dumped\x18\x03 \x01(\bR\n" +
 	"coreDumped\x12(\n" +
 	"\x05error\x18\x04 \x01(\v2\x12.google.rpc.StatusR\x05errorB\b\n" +
-	"\x06status\"\f\n" +
+	"\x06status\"\xe0\x02\n" +
 	"\n" +
-	"ExecPolicy*a\n" +
+	"ExecPolicy\x12#\n" +
+	"\rmax_processes\x18\x01 \x01(\rR\fmaxProcesses\x12<\n" +
+	"\fmax_lifetime\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\vmaxLifetime\x12(\n" +
+	"\x10max_output_bytes\x18\x03 \x01(\x04R\x0emaxOutputBytes\x12-\n" +
+	"\x12unlimited_lifetime\x18\x04 \x01(\bR\x11unlimitedLifetime\x12)\n" +
+	"\x10unlimited_output\x18\x05 \x01(\bR\x0funlimitedOutput\x12-\n" +
+	"\x12background_allowed\x18\x06 \x01(\bR\x11backgroundAllowed\x12<\n" +
+	"\x1aallow_privilege_escalation\x18\a \x01(\bR\x18allowPrivilegeEscalation*a\n" +
 	"\fOutputStream\x12\x1d\n" +
 	"\x19OUTPUT_STREAM_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14OUTPUT_STREAM_STDOUT\x10\x01\x12\x18\n" +
@@ -699,7 +973,7 @@ func file_leaflow_fleet_exec_v1_exec_proto_rawDescGZIP() []byte {
 }
 
 var file_leaflow_fleet_exec_v1_exec_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_leaflow_fleet_exec_v1_exec_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_leaflow_fleet_exec_v1_exec_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_leaflow_fleet_exec_v1_exec_proto_goTypes = []any{
 	(OutputStream)(0),           // 0: leaflow.fleet.exec.v1.OutputStream
 	(*ClientMessage)(nil),       // 1: leaflow.fleet.exec.v1.ClientMessage
@@ -707,28 +981,35 @@ var file_leaflow_fleet_exec_v1_exec_proto_goTypes = []any{
 	(*ExecStart)(nil),           // 3: leaflow.fleet.exec.v1.ExecStart
 	(*ExecInput)(nil),           // 4: leaflow.fleet.exec.v1.ExecInput
 	(*ExecInputEnd)(nil),        // 5: leaflow.fleet.exec.v1.ExecInputEnd
-	(*ExecOutput)(nil),          // 6: leaflow.fleet.exec.v1.ExecOutput
-	(*ExecExit)(nil),            // 7: leaflow.fleet.exec.v1.ExecExit
-	(*ExecPolicy)(nil),          // 8: leaflow.fleet.exec.v1.ExecPolicy
-	nil,                         // 9: leaflow.fleet.exec.v1.ExecStart.EnvironmentEntry
-	(*durationpb.Duration)(nil), // 10: google.protobuf.Duration
-	(*status.Status)(nil),       // 11: google.rpc.Status
+	(*ExecStarted)(nil),         // 6: leaflow.fleet.exec.v1.ExecStarted
+	(*ExecAttach)(nil),          // 7: leaflow.fleet.exec.v1.ExecAttach
+	(*ExecStop)(nil),            // 8: leaflow.fleet.exec.v1.ExecStop
+	(*ExecOutput)(nil),          // 9: leaflow.fleet.exec.v1.ExecOutput
+	(*ExecExit)(nil),            // 10: leaflow.fleet.exec.v1.ExecExit
+	(*ExecPolicy)(nil),          // 11: leaflow.fleet.exec.v1.ExecPolicy
+	nil,                         // 12: leaflow.fleet.exec.v1.ExecStart.EnvironmentEntry
+	(*durationpb.Duration)(nil), // 13: google.protobuf.Duration
+	(*status.Status)(nil),       // 14: google.rpc.Status
 }
 var file_leaflow_fleet_exec_v1_exec_proto_depIdxs = []int32{
 	3,  // 0: leaflow.fleet.exec.v1.ClientMessage.start:type_name -> leaflow.fleet.exec.v1.ExecStart
 	4,  // 1: leaflow.fleet.exec.v1.ClientMessage.input:type_name -> leaflow.fleet.exec.v1.ExecInput
 	5,  // 2: leaflow.fleet.exec.v1.ClientMessage.input_end:type_name -> leaflow.fleet.exec.v1.ExecInputEnd
-	6,  // 3: leaflow.fleet.exec.v1.ServerMessage.output:type_name -> leaflow.fleet.exec.v1.ExecOutput
-	7,  // 4: leaflow.fleet.exec.v1.ServerMessage.exit:type_name -> leaflow.fleet.exec.v1.ExecExit
-	10, // 5: leaflow.fleet.exec.v1.ExecStart.timeout:type_name -> google.protobuf.Duration
-	9,  // 6: leaflow.fleet.exec.v1.ExecStart.environment:type_name -> leaflow.fleet.exec.v1.ExecStart.EnvironmentEntry
-	0,  // 7: leaflow.fleet.exec.v1.ExecOutput.stream:type_name -> leaflow.fleet.exec.v1.OutputStream
-	11, // 8: leaflow.fleet.exec.v1.ExecExit.error:type_name -> google.rpc.Status
-	9,  // [9:9] is the sub-list for method output_type
-	9,  // [9:9] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	7,  // 3: leaflow.fleet.exec.v1.ClientMessage.attach:type_name -> leaflow.fleet.exec.v1.ExecAttach
+	8,  // 4: leaflow.fleet.exec.v1.ClientMessage.stop:type_name -> leaflow.fleet.exec.v1.ExecStop
+	9,  // 5: leaflow.fleet.exec.v1.ServerMessage.output:type_name -> leaflow.fleet.exec.v1.ExecOutput
+	10, // 6: leaflow.fleet.exec.v1.ServerMessage.exit:type_name -> leaflow.fleet.exec.v1.ExecExit
+	6,  // 7: leaflow.fleet.exec.v1.ServerMessage.started:type_name -> leaflow.fleet.exec.v1.ExecStarted
+	13, // 8: leaflow.fleet.exec.v1.ExecStart.timeout:type_name -> google.protobuf.Duration
+	12, // 9: leaflow.fleet.exec.v1.ExecStart.environment:type_name -> leaflow.fleet.exec.v1.ExecStart.EnvironmentEntry
+	0,  // 10: leaflow.fleet.exec.v1.ExecOutput.stream:type_name -> leaflow.fleet.exec.v1.OutputStream
+	14, // 11: leaflow.fleet.exec.v1.ExecExit.error:type_name -> google.rpc.Status
+	13, // 12: leaflow.fleet.exec.v1.ExecPolicy.max_lifetime:type_name -> google.protobuf.Duration
+	13, // [13:13] is the sub-list for method output_type
+	13, // [13:13] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_leaflow_fleet_exec_v1_exec_proto_init() }
@@ -740,12 +1021,15 @@ func file_leaflow_fleet_exec_v1_exec_proto_init() {
 		(*ClientMessage_Start)(nil),
 		(*ClientMessage_Input)(nil),
 		(*ClientMessage_InputEnd)(nil),
+		(*ClientMessage_Attach)(nil),
+		(*ClientMessage_Stop)(nil),
 	}
 	file_leaflow_fleet_exec_v1_exec_proto_msgTypes[1].OneofWrappers = []any{
 		(*ServerMessage_Output)(nil),
 		(*ServerMessage_Exit)(nil),
+		(*ServerMessage_Started)(nil),
 	}
-	file_leaflow_fleet_exec_v1_exec_proto_msgTypes[6].OneofWrappers = []any{
+	file_leaflow_fleet_exec_v1_exec_proto_msgTypes[9].OneofWrappers = []any{
 		(*ExecExit_ExitCode)(nil),
 		(*ExecExit_SignalName)(nil),
 	}
@@ -755,7 +1039,7 @@ func file_leaflow_fleet_exec_v1_exec_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_leaflow_fleet_exec_v1_exec_proto_rawDesc), len(file_leaflow_fleet_exec_v1_exec_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   9,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
