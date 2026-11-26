@@ -4064,10 +4064,11 @@ func (s *Server) handleGetModelRequest(args [1]string, argsEscaped bool, w http.
 // not count again, and rate-limit rejections do not consume capacity.
 //
 // `rpm` is the exact count of project model-call arrivals that passed the project rate limiter in the
-// last 60 seconds, including attempts rejected before model admission. `tps` is the output throughput
-// in tokens per second across completed project requests with reported output or reasoning tokens in
-// the last 60 seconds, computed as total reported output tokens divided by total end-to-end request
-// duration. TPS is observational only and is not enforced.
+// last 60 seconds, including attempts rejected before model admission. `tps` is the project's output
+// throughput in tokens per second across completed project requests with reported output or reasoning
+// tokens in the last 60 seconds, computed as total reported output tokens divided by active wall-clock
+// output duration (concurrent requests add together rather than averaging out). TPS is observational
+// only and is not enforced.
 //
 // Live metrics remain available when the limit is 0. If the live store is unavailable, `rpm` and `tps`
 // are null, not zero; the configured limit is still returned. When the live store is available and no

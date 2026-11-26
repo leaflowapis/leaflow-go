@@ -192,6 +192,12 @@ func encodeDeleteMachineResponse(response *DeleteMachineNoContent, w http.Respon
 	return nil
 }
 
+func encodeDeleteMachineLocalAccountResponse(response *DeleteMachineLocalAccountNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
+}
+
 func encodeDeleteMachineRegistrationResponse(response *DeleteMachineRegistrationNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
@@ -295,6 +301,19 @@ func encodeGetGroupResponse(response *GroupResource, w http.ResponseWriter, span
 }
 
 func encodeGetMachineResponse(response *MachineResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetMachineLocalAccountResponse(response *MachineLocalAccountResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -451,6 +470,19 @@ func encodeListGroupsResponse(response *GroupList, w http.ResponseWriter, span t
 }
 
 func encodeListMachineEventsResponse(response *MachineEventList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListMachineLocalAccountsResponse(response *MachineLocalAccountList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -672,6 +704,19 @@ func encodeUpdateGroupResponse(response *GroupResource, w http.ResponseWriter, s
 }
 
 func encodeUpdateMachineResponse(response *MachineResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeUpdateMachineLocalAccountResponse(response *MachineLocalAccountResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

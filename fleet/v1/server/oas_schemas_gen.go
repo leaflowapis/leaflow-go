@@ -866,6 +866,9 @@ type DeleteGroupMemberNoContent struct{}
 // DeleteGroupNoContent is response for DeleteGroup operation.
 type DeleteGroupNoContent struct{}
 
+// DeleteMachineLocalAccountNoContent is response for DeleteMachineLocalAccount operation.
+type DeleteMachineLocalAccountNoContent struct{}
+
 // DeleteMachineNoContent is response for DeleteMachine operation.
 type DeleteMachineNoContent struct{}
 
@@ -1753,13 +1756,17 @@ func (s *MachineEventResourceMetadata) init() MachineEventResourceMetadata {
 // its name or uid, or its uid is among the subordinate ids of a local user; metadata `username`, and
 // `conflict` `name`, `uid` or `subordinate`. `directory_group_conflict`: a group is not served because
 // a local group uses its name or gid, or its gid is among the subordinate ids of a local user;
-// metadata `groupName`, and `conflict` `name`, `gid` or `subordinate`.
+// metadata `groupName`, and `conflict` `name`, `gid` or `subordinate`. `local_account_refused`: a
+// bound local account is not served on the machine because no such local user exists, because it is
+// `root` or a system or non-login account, or because the machine's local configuration disallows
+// binding it; metadata `username`, and `reason` `missing`, `system` or `disallowed`.
 // Ref: #/components/schemas/MachineEventType
 type MachineEventType string
 
 const (
 	MachineEventTypeDirectoryAccountConflict MachineEventType = "directory_account_conflict"
 	MachineEventTypeDirectoryGroupConflict   MachineEventType = "directory_group_conflict"
+	MachineEventTypeLocalAccountRefused      MachineEventType = "local_account_refused"
 )
 
 // AllValues returns all MachineEventType values.
@@ -1767,6 +1774,7 @@ func (MachineEventType) AllValues() []MachineEventType {
 	return []MachineEventType{
 		MachineEventTypeDirectoryAccountConflict,
 		MachineEventTypeDirectoryGroupConflict,
+		MachineEventTypeLocalAccountRefused,
 	}
 }
 
@@ -1776,6 +1784,8 @@ func (s MachineEventType) MarshalText() ([]byte, error) {
 	case MachineEventTypeDirectoryAccountConflict:
 		return []byte(s), nil
 	case MachineEventTypeDirectoryGroupConflict:
+		return []byte(s), nil
+	case MachineEventTypeLocalAccountRefused:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1790,6 +1800,9 @@ func (s *MachineEventType) UnmarshalText(data []byte) error {
 		return nil
 	case MachineEventTypeDirectoryGroupConflict:
 		*s = MachineEventTypeDirectoryGroupConflict
+		return nil
+	case MachineEventTypeLocalAccountRefused:
+		*s = MachineEventTypeLocalAccountRefused
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -1893,6 +1906,137 @@ func (s *MachineList) SetPage(val int64) {
 // SetPageSize sets the value of PageSize.
 func (s *MachineList) SetPageSize(val int64) {
 	s.PageSize = val
+}
+
+// Ref: #/components/schemas/MachineLocalAccountList
+type MachineLocalAccountList struct {
+	Items      []MachineLocalAccountResource `json:"items"`
+	TotalCount int64                         `json:"total_count"`
+	Page       int64                         `json:"page"`
+	PageSize   int64                         `json:"page_size"`
+}
+
+// GetItems returns the value of Items.
+func (s *MachineLocalAccountList) GetItems() []MachineLocalAccountResource {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *MachineLocalAccountList) GetTotalCount() int64 {
+	return s.TotalCount
+}
+
+// GetPage returns the value of Page.
+func (s *MachineLocalAccountList) GetPage() int64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *MachineLocalAccountList) GetPageSize() int64 {
+	return s.PageSize
+}
+
+// SetItems sets the value of Items.
+func (s *MachineLocalAccountList) SetItems(val []MachineLocalAccountResource) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *MachineLocalAccountList) SetTotalCount(val int64) {
+	s.TotalCount = val
+}
+
+// SetPage sets the value of Page.
+func (s *MachineLocalAccountList) SetPage(val int64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *MachineLocalAccountList) SetPageSize(val int64) {
+	s.PageSize = val
+}
+
+// Ref: #/components/schemas/MachineLocalAccountResource
+type MachineLocalAccountResource struct {
+	ID        uuid.UUID `json:"id"`
+	MachineID uuid.UUID `json:"machine_id"`
+	// The existing local login name on the machine (`/etc/passwd`).
+	Username string `json:"username"`
+	// The bound member's account id.
+	AccountID uuid.UUID     `json:"account_id"`
+	User      NamedIdentity `json:"user"`
+	CreatedAt time.Time     `json:"created_at"`
+	UpdatedAt time.Time     `json:"updated_at"`
+}
+
+// GetID returns the value of ID.
+func (s *MachineLocalAccountResource) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetMachineID returns the value of MachineID.
+func (s *MachineLocalAccountResource) GetMachineID() uuid.UUID {
+	return s.MachineID
+}
+
+// GetUsername returns the value of Username.
+func (s *MachineLocalAccountResource) GetUsername() string {
+	return s.Username
+}
+
+// GetAccountID returns the value of AccountID.
+func (s *MachineLocalAccountResource) GetAccountID() uuid.UUID {
+	return s.AccountID
+}
+
+// GetUser returns the value of User.
+func (s *MachineLocalAccountResource) GetUser() NamedIdentity {
+	return s.User
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *MachineLocalAccountResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *MachineLocalAccountResource) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetID sets the value of ID.
+func (s *MachineLocalAccountResource) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetMachineID sets the value of MachineID.
+func (s *MachineLocalAccountResource) SetMachineID(val uuid.UUID) {
+	s.MachineID = val
+}
+
+// SetUsername sets the value of Username.
+func (s *MachineLocalAccountResource) SetUsername(val string) {
+	s.Username = val
+}
+
+// SetAccountID sets the value of AccountID.
+func (s *MachineLocalAccountResource) SetAccountID(val uuid.UUID) {
+	s.AccountID = val
+}
+
+// SetUser sets the value of User.
+func (s *MachineLocalAccountResource) SetUser(val NamedIdentity) {
+	s.User = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *MachineLocalAccountResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *MachineLocalAccountResource) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
 }
 
 // Ref: #/components/schemas/MachineRegistrationList
@@ -6743,6 +6887,22 @@ func (s *UpdateGroupRequest) GetName() DirectoryName {
 // SetName sets the value of Name.
 func (s *UpdateGroupRequest) SetName(val DirectoryName) {
 	s.Name = val
+}
+
+// Ref: #/components/schemas/UpdateMachineLocalAccountRequest
+type UpdateMachineLocalAccountRequest struct {
+	// The project member to bind to this local account on the machine.
+	UserID uuid.UUID `json:"user_id"`
+}
+
+// GetUserID returns the value of UserID.
+func (s *UpdateMachineLocalAccountRequest) GetUserID() uuid.UUID {
+	return s.UserID
+}
+
+// SetUserID sets the value of UserID.
+func (s *UpdateMachineLocalAccountRequest) SetUserID(val uuid.UUID) {
+	s.UserID = val
 }
 
 // Ref: #/components/schemas/UpdateMachineRequest

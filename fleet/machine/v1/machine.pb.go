@@ -146,6 +146,12 @@ const (
 	// user. Metadata "groupName", and "conflict": "name", "gid" or
 	// "subordinate".
 	MachineEventType_MACHINE_EVENT_TYPE_DIRECTORY_GROUP_CONFLICT MachineEventType = 2
+	// A bound local account (leaflow.fleet.directory.v1 LocalAccount) is not
+	// served because no such local user exists on the machine, because it is
+	// root or a system or non-login account, or because the machine's local
+	// configuration does not allow binding it. Metadata "username", and
+	// "reason": "missing", "system" or "disallowed".
+	MachineEventType_MACHINE_EVENT_TYPE_LOCAL_ACCOUNT_REFUSED MachineEventType = 3
 )
 
 // Enum value maps for MachineEventType.
@@ -154,11 +160,13 @@ var (
 		0: "MACHINE_EVENT_TYPE_UNSPECIFIED",
 		1: "MACHINE_EVENT_TYPE_DIRECTORY_ACCOUNT_CONFLICT",
 		2: "MACHINE_EVENT_TYPE_DIRECTORY_GROUP_CONFLICT",
+		3: "MACHINE_EVENT_TYPE_LOCAL_ACCOUNT_REFUSED",
 	}
 	MachineEventType_value = map[string]int32{
 		"MACHINE_EVENT_TYPE_UNSPECIFIED":                0,
 		"MACHINE_EVENT_TYPE_DIRECTORY_ACCOUNT_CONFLICT": 1,
 		"MACHINE_EVENT_TYPE_DIRECTORY_GROUP_CONFLICT":   2,
+		"MACHINE_EVENT_TYPE_LOCAL_ACCOUNT_REFUSED":      3,
 	}
 )
 
@@ -831,11 +839,12 @@ const file_leaflow_fleet_machine_v1_machine_proto_rawDesc = "" +
 	"\fFeatureState\x12\x1d\n" +
 	"\x19FEATURE_STATE_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17FEATURE_STATE_AVAILABLE\x10\x01\x12\x1d\n" +
-	"\x19FEATURE_STATE_UNAVAILABLE\x10\x02*\x9a\x01\n" +
+	"\x19FEATURE_STATE_UNAVAILABLE\x10\x02*\xc8\x01\n" +
 	"\x10MachineEventType\x12\"\n" +
 	"\x1eMACHINE_EVENT_TYPE_UNSPECIFIED\x10\x00\x121\n" +
 	"-MACHINE_EVENT_TYPE_DIRECTORY_ACCOUNT_CONFLICT\x10\x01\x12/\n" +
-	"+MACHINE_EVENT_TYPE_DIRECTORY_GROUP_CONFLICT\x10\x022\xa3\x03\n" +
+	"+MACHINE_EVENT_TYPE_DIRECTORY_GROUP_CONFLICT\x10\x02\x12,\n" +
+	"(MACHINE_EVENT_TYPE_LOCAL_ACCOUNT_REFUSED\x10\x032\xa3\x03\n" +
 	"\x16MachineRegistryService\x12u\n" +
 	"\rEnrollMachine\x12..leaflow.fleet.machine.v1.EnrollMachineRequest\x1a/.leaflow.fleet.machine.v1.EnrollMachineResponse\"\x03\x90\x02\x02\x12\x87\x01\n" +
 	"\x13ReportMachineStatus\x124.leaflow.fleet.machine.v1.ReportMachineStatusRequest\x1a5.leaflow.fleet.machine.v1.ReportMachineStatusResponse\"\x03\x90\x02\x02\x12\x87\x01\n" +

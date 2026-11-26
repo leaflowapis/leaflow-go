@@ -499,11 +499,15 @@ func (*UpdateDirectoryResponse) Descriptor() ([]byte, []int) {
 	return file_leaflow_fleet_directory_v1_directory_proto_rawDescGZIP(), []int{6}
 }
 
-// The request of GetAccount.
+// The request of GetAccount. Exactly one of username or uid is set.
 type GetAccountRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The account's login name.
-	Username      string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	// The login name to look up: either a bound local account of this machine or
+	// a directory account of the project.
+	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	// A directory account's uid, from 65536 to 2147483647, when looking up by
+	// uid instead of username.
+	Uid           uint32 `protobuf:"varint,2,opt,name=uid,proto3" json:"uid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -545,11 +549,25 @@ func (x *GetAccountRequest) GetUsername() string {
 	return ""
 }
 
-// The response of GetAccount.
+func (x *GetAccountRequest) GetUid() uint32 {
+	if x != nil {
+		return x.Uid
+	}
+	return 0
+}
+
+// The response of GetAccount. Exactly one of account or local_account is set.
 type GetAccountResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The account as the calling machine's directory has it now.
-	Account       *Account `protobuf:"bytes,1,opt,name=account,proto3" json:"account,omitempty"`
+	// Set when the resolved account on this machine is a directory account
+	// served through NSS.
+	Account *Account `protobuf:"bytes,1,opt,name=account,proto3" json:"account,omitempty"`
+	// Set instead of account when this machine binds an existing local account
+	// of /etc/passwd to a platform user.
+	LocalAccount *LocalAccount `protobuf:"bytes,2,opt,name=local_account,json=localAccount,proto3" json:"local_account,omitempty"`
+	// The groups of the project's directory that this account belongs to,
+	// ordered by name, so that initgroups(3) needs no separate call.
+	Groups        []*AccountGroup `protobuf:"bytes,3,rep,name=groups,proto3" json:"groups,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -587,6 +605,20 @@ func (*GetAccountResponse) Descriptor() ([]byte, []int) {
 func (x *GetAccountResponse) GetAccount() *Account {
 	if x != nil {
 		return x.Account
+	}
+	return nil
+}
+
+func (x *GetAccountResponse) GetLocalAccount() *LocalAccount {
+	if x != nil {
+		return x.LocalAccount
+	}
+	return nil
+}
+
+func (x *GetAccountResponse) GetGroups() []*AccountGroup {
+	if x != nil {
+		return x.Groups
 	}
 	return nil
 }
@@ -687,6 +719,408 @@ func (*ReportDirectoryStatusResponse) Descriptor() ([]byte, []int) {
 	return file_leaflow_fleet_directory_v1_directory_proto_rawDescGZIP(), []int{10}
 }
 
+// An existing local account of the machine (/etc/passwd) bound 1:1 to a
+// platform user on this machine.
+//
+// Its uid, primary group, local supplementary groups, GECOS name, home
+// directory and login shell come from the machine's own account files and are
+// never overwritten. The Agent refuses to serve a LocalAccount when no local
+// user of that name exists on the machine, when it is root (uid 0 or gid 0) or
+// a system or non-login account (uid below UID_MIN, nobody, the Agent's own
+// user, or a non-interactive shell), or when the machine's local configuration
+// disallows binding it, and reports MACHINE_EVENT_TYPE_LOCAL_ACCOUNT_REFUSED
+// (leaflow.fleet.machine.v1).
+type LocalAccount struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The local login name on this machine, by the rules of Account.username,
+	// never "root".
+	Username string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	// The platform user bound to this local account on this machine.
+	UserId string `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// The SSH public keys of the platform user, each an authorized_keys(5) key
+	// without options. sshd(8) accepts them through the Agent's
+	// AuthorizedKeysCommand in addition to the local account's own
+	// authorized_keys files while login_allowed is set.
+	SshPublicKeys []string `protobuf:"bytes,3,rep,name=ssh_public_keys,json=sshPublicKeys,proto3" json:"ssh_public_keys,omitempty"`
+	// The platform user may open Fleet sessions, run commands, start MCP servers
+	// and log in with ssh_public_keys as this local account on this machine.
+	// Local passwords, local authorized_keys and non-Fleet PAM services of the
+	// local account are unaffected.
+	LoginAllowed bool `protobuf:"varint,4,opt,name=login_allowed,json=loginAllowed,proto3" json:"login_allowed,omitempty"`
+	// The platform user may become root as this local account through Fleet's
+	// sudo approval (leaflow.fleet.privilege.v1) and inside Fleet commands
+	// (leaflow.fleet.command.v1).
+	Admin         bool `protobuf:"varint,5,opt,name=admin,proto3" json:"admin,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LocalAccount) Reset() {
+	*x = LocalAccount{}
+	mi := &file_leaflow_fleet_directory_v1_directory_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LocalAccount) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LocalAccount) ProtoMessage() {}
+
+func (x *LocalAccount) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_directory_v1_directory_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LocalAccount.ProtoReflect.Descriptor instead.
+func (*LocalAccount) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_directory_v1_directory_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *LocalAccount) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *LocalAccount) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *LocalAccount) GetSshPublicKeys() []string {
+	if x != nil {
+		return x.SshPublicKeys
+	}
+	return nil
+}
+
+func (x *LocalAccount) GetLoginAllowed() bool {
+	if x != nil {
+		return x.LoginAllowed
+	}
+	return false
+}
+
+func (x *LocalAccount) GetAdmin() bool {
+	if x != nil {
+		return x.Admin
+	}
+	return false
+}
+
+// A project group an account belongs to.
+type AccountGroup struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The group name, by the rules of Group.name.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The group id, from 65536 to 2147483647.
+	Gid           uint32 `protobuf:"varint,2,opt,name=gid,proto3" json:"gid,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AccountGroup) Reset() {
+	*x = AccountGroup{}
+	mi := &file_leaflow_fleet_directory_v1_directory_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AccountGroup) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AccountGroup) ProtoMessage() {}
+
+func (x *AccountGroup) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_directory_v1_directory_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AccountGroup.ProtoReflect.Descriptor instead.
+func (*AccountGroup) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_directory_v1_directory_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *AccountGroup) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *AccountGroup) GetGid() uint32 {
+	if x != nil {
+		return x.Gid
+	}
+	return 0
+}
+
+// The request of GetGroup.
+type GetGroupRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Which group to look up; set one.
+	//
+	// Types that are valid to be assigned to Query:
+	//
+	//	*GetGroupRequest_Name
+	//	*GetGroupRequest_Gid
+	Query         isGetGroupRequest_Query `protobuf_oneof:"query"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetGroupRequest) Reset() {
+	*x = GetGroupRequest{}
+	mi := &file_leaflow_fleet_directory_v1_directory_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetGroupRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetGroupRequest) ProtoMessage() {}
+
+func (x *GetGroupRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_directory_v1_directory_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetGroupRequest.ProtoReflect.Descriptor instead.
+func (*GetGroupRequest) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_directory_v1_directory_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *GetGroupRequest) GetQuery() isGetGroupRequest_Query {
+	if x != nil {
+		return x.Query
+	}
+	return nil
+}
+
+func (x *GetGroupRequest) GetName() string {
+	if x != nil {
+		if x, ok := x.Query.(*GetGroupRequest_Name); ok {
+			return x.Name
+		}
+	}
+	return ""
+}
+
+func (x *GetGroupRequest) GetGid() uint32 {
+	if x != nil {
+		if x, ok := x.Query.(*GetGroupRequest_Gid); ok {
+			return x.Gid
+		}
+	}
+	return 0
+}
+
+type isGetGroupRequest_Query interface {
+	isGetGroupRequest_Query()
+}
+
+type GetGroupRequest_Name struct {
+	// The group name, by the rules of Group.name.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3,oneof"`
+}
+
+type GetGroupRequest_Gid struct {
+	// The group id, from 65536 to 2147483647.
+	Gid uint32 `protobuf:"varint,2,opt,name=gid,proto3,oneof"`
+}
+
+func (*GetGroupRequest_Name) isGetGroupRequest_Query() {}
+
+func (*GetGroupRequest_Gid) isGetGroupRequest_Query() {}
+
+// The response of GetGroup.
+type GetGroupResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The group as the calling machine's project directory has it now, with the
+	// effective usernames on this machine of its members.
+	Group         *Group `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetGroupResponse) Reset() {
+	*x = GetGroupResponse{}
+	mi := &file_leaflow_fleet_directory_v1_directory_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetGroupResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetGroupResponse) ProtoMessage() {}
+
+func (x *GetGroupResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_directory_v1_directory_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetGroupResponse.ProtoReflect.Descriptor instead.
+func (*GetGroupResponse) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_directory_v1_directory_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *GetGroupResponse) GetGroup() *Group {
+	if x != nil {
+		return x.Group
+	}
+	return nil
+}
+
+// The request of InvalidateDirectory.
+type InvalidateDirectoryRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Platform user ids whose resolved account, permissions, SSH keys or
+	// local-account binding changed.
+	UserIds []string `protobuf:"bytes,1,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty"`
+	// Account usernames (directory or local) that changed or were unbound on
+	// this machine.
+	Usernames []string `protobuf:"bytes,2,rep,name=usernames,proto3" json:"usernames,omitempty"`
+	// Project group names that were renamed, removed or had membership changes.
+	GroupNames []string `protobuf:"bytes,3,rep,name=group_names,json=groupNames,proto3" json:"group_names,omitempty"`
+	// When true, invalidates every cached directory entry on the machine.
+	All           bool `protobuf:"varint,4,opt,name=all,proto3" json:"all,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InvalidateDirectoryRequest) Reset() {
+	*x = InvalidateDirectoryRequest{}
+	mi := &file_leaflow_fleet_directory_v1_directory_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InvalidateDirectoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InvalidateDirectoryRequest) ProtoMessage() {}
+
+func (x *InvalidateDirectoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_directory_v1_directory_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InvalidateDirectoryRequest.ProtoReflect.Descriptor instead.
+func (*InvalidateDirectoryRequest) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_directory_v1_directory_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *InvalidateDirectoryRequest) GetUserIds() []string {
+	if x != nil {
+		return x.UserIds
+	}
+	return nil
+}
+
+func (x *InvalidateDirectoryRequest) GetUsernames() []string {
+	if x != nil {
+		return x.Usernames
+	}
+	return nil
+}
+
+func (x *InvalidateDirectoryRequest) GetGroupNames() []string {
+	if x != nil {
+		return x.GroupNames
+	}
+	return nil
+}
+
+func (x *InvalidateDirectoryRequest) GetAll() bool {
+	if x != nil {
+		return x.All
+	}
+	return false
+}
+
+// The response of InvalidateDirectory.
+type InvalidateDirectoryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InvalidateDirectoryResponse) Reset() {
+	*x = InvalidateDirectoryResponse{}
+	mi := &file_leaflow_fleet_directory_v1_directory_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InvalidateDirectoryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InvalidateDirectoryResponse) ProtoMessage() {}
+
+func (x *InvalidateDirectoryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_leaflow_fleet_directory_v1_directory_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InvalidateDirectoryResponse.ProtoReflect.Descriptor instead.
+func (*InvalidateDirectoryResponse) Descriptor() ([]byte, []int) {
+	return file_leaflow_fleet_directory_v1_directory_proto_rawDescGZIP(), []int{16}
+}
+
 var File_leaflow_fleet_directory_v1_directory_proto protoreflect.FileDescriptor
 
 const file_leaflow_fleet_directory_v1_directory_proto_rawDesc = "" +
@@ -722,21 +1156,48 @@ const file_leaflow_fleet_directory_v1_directory_proto_rawDesc = "" +
 	"\x06groups\x18\x04 \x03(\v2!.leaflow.fleet.directory.v1.GroupR\x06groups\x12)\n" +
 	"\x10removed_accounts\x18\x05 \x03(\tR\x0fremovedAccounts\x12%\n" +
 	"\x0eremoved_groups\x18\x06 \x03(\tR\rremovedGroups\"\x19\n" +
-	"\x17UpdateDirectoryResponse\"/\n" +
+	"\x17UpdateDirectoryResponse\"A\n" +
 	"\x11GetAccountRequest\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\"S\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12\x10\n" +
+	"\x03uid\x18\x02 \x01(\rR\x03uid\"\xe4\x01\n" +
 	"\x12GetAccountResponse\x12=\n" +
-	"\aaccount\x18\x01 \x01(\v2#.leaflow.fleet.directory.v1.AccountR\aaccount\"V\n" +
+	"\aaccount\x18\x01 \x01(\v2#.leaflow.fleet.directory.v1.AccountR\aaccount\x12M\n" +
+	"\rlocal_account\x18\x02 \x01(\v2(.leaflow.fleet.directory.v1.LocalAccountR\flocalAccount\x12@\n" +
+	"\x06groups\x18\x03 \x03(\v2(.leaflow.fleet.directory.v1.AccountGroupR\x06groups\"V\n" +
 	"\x1cReportDirectoryStatusRequest\x12\x1a\n" +
 	"\brevision\x18\x01 \x01(\tR\brevision\x12\x1a\n" +
 	"\bsequence\x18\x02 \x01(\x04R\bsequence\"\x1f\n" +
-	"\x1dReportDirectoryStatusResponse2\x92\x02\n" +
+	"\x1dReportDirectoryStatusResponse\"\xa6\x01\n" +
+	"\fLocalAccount\x12\x1a\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12&\n" +
+	"\x0fssh_public_keys\x18\x03 \x03(\tR\rsshPublicKeys\x12#\n" +
+	"\rlogin_allowed\x18\x04 \x01(\bR\floginAllowed\x12\x14\n" +
+	"\x05admin\x18\x05 \x01(\bR\x05admin\"4\n" +
+	"\fAccountGroup\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x10\n" +
+	"\x03gid\x18\x02 \x01(\rR\x03gid\"D\n" +
+	"\x0fGetGroupRequest\x12\x14\n" +
+	"\x04name\x18\x01 \x01(\tH\x00R\x04name\x12\x12\n" +
+	"\x03gid\x18\x02 \x01(\rH\x00R\x03gidB\a\n" +
+	"\x05query\"K\n" +
+	"\x10GetGroupResponse\x127\n" +
+	"\x05group\x18\x01 \x01(\v2!.leaflow.fleet.directory.v1.GroupR\x05group\"\x88\x01\n" +
+	"\x1aInvalidateDirectoryRequest\x12\x19\n" +
+	"\buser_ids\x18\x01 \x03(\tR\auserIds\x12\x1c\n" +
+	"\tusernames\x18\x02 \x03(\tR\tusernames\x12\x1f\n" +
+	"\vgroup_names\x18\x03 \x03(\tR\n" +
+	"groupNames\x12\x10\n" +
+	"\x03all\x18\x04 \x01(\bR\x03all\"\x1d\n" +
+	"\x1bInvalidateDirectoryResponse2\xa0\x03\n" +
 	"\x17MachineDirectoryService\x12v\n" +
 	"\fSetDirectory\x12/.leaflow.fleet.directory.v1.SetDirectoryRequest\x1a0.leaflow.fleet.directory.v1.SetDirectoryResponse\"\x03\x90\x02\x02\x12\x7f\n" +
-	"\x0fUpdateDirectory\x122.leaflow.fleet.directory.v1.UpdateDirectoryRequest\x1a3.leaflow.fleet.directory.v1.UpdateDirectoryResponse\"\x03\x90\x02\x022\x98\x02\n" +
+	"\x0fUpdateDirectory\x122.leaflow.fleet.directory.v1.UpdateDirectoryRequest\x1a3.leaflow.fleet.directory.v1.UpdateDirectoryResponse\"\x03\x90\x02\x02\x12\x8b\x01\n" +
+	"\x13InvalidateDirectory\x126.leaflow.fleet.directory.v1.InvalidateDirectoryRequest\x1a7.leaflow.fleet.directory.v1.InvalidateDirectoryResponse\"\x03\x90\x02\x022\x84\x03\n" +
 	"\x10DirectoryService\x12p\n" +
 	"\n" +
-	"GetAccount\x12-.leaflow.fleet.directory.v1.GetAccountRequest\x1a..leaflow.fleet.directory.v1.GetAccountResponse\"\x03\x90\x02\x01\x12\x91\x01\n" +
+	"GetAccount\x12-.leaflow.fleet.directory.v1.GetAccountRequest\x1a..leaflow.fleet.directory.v1.GetAccountResponse\"\x03\x90\x02\x01\x12j\n" +
+	"\bGetGroup\x12+.leaflow.fleet.directory.v1.GetGroupRequest\x1a,.leaflow.fleet.directory.v1.GetGroupResponse\"\x03\x90\x02\x01\x12\x91\x01\n" +
 	"\x15ReportDirectoryStatus\x128.leaflow.fleet.directory.v1.ReportDirectoryStatusRequest\x1a9.leaflow.fleet.directory.v1.ReportDirectoryStatusResponse\"\x03\x90\x02\x02BBZ@github.com/leaflowapis/leaflow-go/fleet/directory/v1;directoryv1b\x06proto3"
 
 var (
@@ -751,7 +1212,7 @@ func file_leaflow_fleet_directory_v1_directory_proto_rawDescGZIP() []byte {
 	return file_leaflow_fleet_directory_v1_directory_proto_rawDescData
 }
 
-var file_leaflow_fleet_directory_v1_directory_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_leaflow_fleet_directory_v1_directory_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_leaflow_fleet_directory_v1_directory_proto_goTypes = []any{
 	(*Directory)(nil),                     // 0: leaflow.fleet.directory.v1.Directory
 	(*Account)(nil),                       // 1: leaflow.fleet.directory.v1.Account
@@ -764,6 +1225,12 @@ var file_leaflow_fleet_directory_v1_directory_proto_goTypes = []any{
 	(*GetAccountResponse)(nil),            // 8: leaflow.fleet.directory.v1.GetAccountResponse
 	(*ReportDirectoryStatusRequest)(nil),  // 9: leaflow.fleet.directory.v1.ReportDirectoryStatusRequest
 	(*ReportDirectoryStatusResponse)(nil), // 10: leaflow.fleet.directory.v1.ReportDirectoryStatusResponse
+	(*LocalAccount)(nil),                  // 11: leaflow.fleet.directory.v1.LocalAccount
+	(*AccountGroup)(nil),                  // 12: leaflow.fleet.directory.v1.AccountGroup
+	(*GetGroupRequest)(nil),               // 13: leaflow.fleet.directory.v1.GetGroupRequest
+	(*GetGroupResponse)(nil),              // 14: leaflow.fleet.directory.v1.GetGroupResponse
+	(*InvalidateDirectoryRequest)(nil),    // 15: leaflow.fleet.directory.v1.InvalidateDirectoryRequest
+	(*InvalidateDirectoryResponse)(nil),   // 16: leaflow.fleet.directory.v1.InvalidateDirectoryResponse
 }
 var file_leaflow_fleet_directory_v1_directory_proto_depIdxs = []int32{
 	1,  // 0: leaflow.fleet.directory.v1.Directory.accounts:type_name -> leaflow.fleet.directory.v1.Account
@@ -772,19 +1239,26 @@ var file_leaflow_fleet_directory_v1_directory_proto_depIdxs = []int32{
 	1,  // 3: leaflow.fleet.directory.v1.UpdateDirectoryRequest.accounts:type_name -> leaflow.fleet.directory.v1.Account
 	2,  // 4: leaflow.fleet.directory.v1.UpdateDirectoryRequest.groups:type_name -> leaflow.fleet.directory.v1.Group
 	1,  // 5: leaflow.fleet.directory.v1.GetAccountResponse.account:type_name -> leaflow.fleet.directory.v1.Account
-	3,  // 6: leaflow.fleet.directory.v1.MachineDirectoryService.SetDirectory:input_type -> leaflow.fleet.directory.v1.SetDirectoryRequest
-	5,  // 7: leaflow.fleet.directory.v1.MachineDirectoryService.UpdateDirectory:input_type -> leaflow.fleet.directory.v1.UpdateDirectoryRequest
-	7,  // 8: leaflow.fleet.directory.v1.DirectoryService.GetAccount:input_type -> leaflow.fleet.directory.v1.GetAccountRequest
-	9,  // 9: leaflow.fleet.directory.v1.DirectoryService.ReportDirectoryStatus:input_type -> leaflow.fleet.directory.v1.ReportDirectoryStatusRequest
-	4,  // 10: leaflow.fleet.directory.v1.MachineDirectoryService.SetDirectory:output_type -> leaflow.fleet.directory.v1.SetDirectoryResponse
-	6,  // 11: leaflow.fleet.directory.v1.MachineDirectoryService.UpdateDirectory:output_type -> leaflow.fleet.directory.v1.UpdateDirectoryResponse
-	8,  // 12: leaflow.fleet.directory.v1.DirectoryService.GetAccount:output_type -> leaflow.fleet.directory.v1.GetAccountResponse
-	10, // 13: leaflow.fleet.directory.v1.DirectoryService.ReportDirectoryStatus:output_type -> leaflow.fleet.directory.v1.ReportDirectoryStatusResponse
-	10, // [10:14] is the sub-list for method output_type
-	6,  // [6:10] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	11, // 6: leaflow.fleet.directory.v1.GetAccountResponse.local_account:type_name -> leaflow.fleet.directory.v1.LocalAccount
+	12, // 7: leaflow.fleet.directory.v1.GetAccountResponse.groups:type_name -> leaflow.fleet.directory.v1.AccountGroup
+	2,  // 8: leaflow.fleet.directory.v1.GetGroupResponse.group:type_name -> leaflow.fleet.directory.v1.Group
+	3,  // 9: leaflow.fleet.directory.v1.MachineDirectoryService.SetDirectory:input_type -> leaflow.fleet.directory.v1.SetDirectoryRequest
+	5,  // 10: leaflow.fleet.directory.v1.MachineDirectoryService.UpdateDirectory:input_type -> leaflow.fleet.directory.v1.UpdateDirectoryRequest
+	15, // 11: leaflow.fleet.directory.v1.MachineDirectoryService.InvalidateDirectory:input_type -> leaflow.fleet.directory.v1.InvalidateDirectoryRequest
+	7,  // 12: leaflow.fleet.directory.v1.DirectoryService.GetAccount:input_type -> leaflow.fleet.directory.v1.GetAccountRequest
+	13, // 13: leaflow.fleet.directory.v1.DirectoryService.GetGroup:input_type -> leaflow.fleet.directory.v1.GetGroupRequest
+	9,  // 14: leaflow.fleet.directory.v1.DirectoryService.ReportDirectoryStatus:input_type -> leaflow.fleet.directory.v1.ReportDirectoryStatusRequest
+	4,  // 15: leaflow.fleet.directory.v1.MachineDirectoryService.SetDirectory:output_type -> leaflow.fleet.directory.v1.SetDirectoryResponse
+	6,  // 16: leaflow.fleet.directory.v1.MachineDirectoryService.UpdateDirectory:output_type -> leaflow.fleet.directory.v1.UpdateDirectoryResponse
+	16, // 17: leaflow.fleet.directory.v1.MachineDirectoryService.InvalidateDirectory:output_type -> leaflow.fleet.directory.v1.InvalidateDirectoryResponse
+	8,  // 18: leaflow.fleet.directory.v1.DirectoryService.GetAccount:output_type -> leaflow.fleet.directory.v1.GetAccountResponse
+	14, // 19: leaflow.fleet.directory.v1.DirectoryService.GetGroup:output_type -> leaflow.fleet.directory.v1.GetGroupResponse
+	10, // 20: leaflow.fleet.directory.v1.DirectoryService.ReportDirectoryStatus:output_type -> leaflow.fleet.directory.v1.ReportDirectoryStatusResponse
+	15, // [15:21] is the sub-list for method output_type
+	9,  // [9:15] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_leaflow_fleet_directory_v1_directory_proto_init() }
@@ -792,13 +1266,17 @@ func file_leaflow_fleet_directory_v1_directory_proto_init() {
 	if File_leaflow_fleet_directory_v1_directory_proto != nil {
 		return
 	}
+	file_leaflow_fleet_directory_v1_directory_proto_msgTypes[13].OneofWrappers = []any{
+		(*GetGroupRequest_Name)(nil),
+		(*GetGroupRequest_Gid)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_leaflow_fleet_directory_v1_directory_proto_rawDesc), len(file_leaflow_fleet_directory_v1_directory_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

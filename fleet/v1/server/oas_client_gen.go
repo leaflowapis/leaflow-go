@@ -284,6 +284,16 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/machines/{machineId}
 	DeleteMachine(ctx context.Context, params DeleteMachineParams) error
+	// DeleteMachineLocalAccount invokes delete-machine-local-account operation.
+	//
+	// Removes the binding of `username` on the machine; removing one that is not bound succeeds. Open
+	// Fleet sessions and MCP servers running under the binding end, while the local account on the machine
+	// itself is left untouched.
+	//
+	// Requires `fleet:machines.login` and `fleet:machines.admin` on the machine.
+	//
+	// DELETE /api/v1/machines/{machineId}/local-accounts/{username}
+	DeleteMachineLocalAccount(ctx context.Context, params DeleteMachineLocalAccountParams) error
 	// DeleteMachineRegistration invokes delete-machine-registration operation.
 	//
 	// Revokes the registration: its token no longer enrolls a machine. Revoking a registration that is
@@ -380,6 +390,13 @@ type Invoker interface {
 	//
 	// GET /api/v1/machines/{machineId}
 	GetMachine(ctx context.Context, params GetMachineParams) (*MachineResource, error)
+	// GetMachineLocalAccount invokes get-machine-local-account operation.
+	//
+	// Returns the binding of a local account on the machine. Fails with `LOCAL_ACCOUNT_NOT_FOUND` when the
+	// local username is not bound on this machine.
+	//
+	// GET /api/v1/machines/{machineId}/local-accounts/{username}
+	GetMachineLocalAccount(ctx context.Context, params GetMachineLocalAccountParams) (*MachineLocalAccountResource, error)
 	// GetMachineRegistration invokes get-machine-registration operation.
 	//
 	// Requires `fleet:machines.manage`.
@@ -493,6 +510,13 @@ type Invoker interface {
 	//
 	// GET /api/v1/machines/{machineId}/events
 	ListMachineEvents(ctx context.Context, params ListMachineEventsParams) (*MachineEventList, error)
+	// ListMachineLocalAccounts invokes list-machine-local-accounts operation.
+	//
+	// Returns the existing local Linux accounts on the machine that are bound to members of the project,
+	// ordered by `username`.
+	//
+	// GET /api/v1/machines/{machineId}/local-accounts
+	ListMachineLocalAccounts(ctx context.Context, params ListMachineLocalAccountsParams) (*MachineLocalAccountList, error)
 	// ListMachineRegistrations invokes list-machine-registrations operation.
 	//
 	// Returns the registrations of the current project, newest first. Registrations are kept for 30 days.
@@ -727,6 +751,31 @@ type Invoker interface {
 	//
 	// PATCH /api/v1/machines/{machineId}
 	UpdateMachine(ctx context.Context, request *UpdateMachineRequest, params UpdateMachineParams) (*MachineResource, error)
+	// UpdateMachineLocalAccount invokes update-machine-local-account operation.
+	//
+	// Binds the existing local Linux account `username` on the machine to the project member `user_id`, or
+	// replaces which member `username` is bound to. On this machine, Fleet opens sessions, runs commands,
+	// starts MCP servers and approves `sudo` for that member as `username`, keeping the local account's
+	// existing uid, home directory, shell, local groups and `~/.ssh/authorized_keys`, while `sshd` also
+	// accepts the member's SSH keys from the platform. The member's directory account is created if they
+	// have none yet.
+	//
+	// If the machine has no such local user in `/etc/passwd`, if it is a system or non-login account, or
+	// if the machine's local configuration disallows binding it, the machine refuses to serve it and
+	// records a `local_account_refused` event.
+	//
+	// Requires `fleet:machines.login` and `fleet:machines.admin` on the machine, since whoever is bound to
+	// a local account inherits its existing files, groups and local `sudoers` rules.
+	//
+	// Fails with:
+	//
+	//  - `USER_NOT_PROJECT_MEMBER` when `user_id` is not an active member of the project;
+	//  - `LOCAL_ACCOUNT_RESERVED` when `username` is `root` or a reserved system account name;
+	//  - `LOCAL_ACCOUNT_USER_BOUND` when `user_id` is already bound to another local account on this
+	//    machine, with `metadata.username` naming it; remove that binding first.
+	//
+	// PUT /api/v1/machines/{machineId}/local-accounts/{username}
+	UpdateMachineLocalAccount(ctx context.Context, request *UpdateMachineLocalAccountRequest, params UpdateMachineLocalAccountParams) (*MachineLocalAccountResource, error)
 	// UpdateMcpServer invokes update-mcp-server operation.
 	//
 	// Adds a server to the caller's MCP configuration on the machine, or replaces the one with the same
@@ -3269,6 +3318,160 @@ func (c *Client) sendDeleteMachine(ctx context.Context, params DeleteMachinePara
 	return result, nil
 }
 
+// DeleteMachineLocalAccount invokes delete-machine-local-account operation.
+//
+// Removes the binding of `username` on the machine; removing one that is not bound succeeds. Open
+// Fleet sessions and MCP servers running under the binding end, while the local account on the machine
+// itself is left untouched.
+//
+// Requires `fleet:machines.login` and `fleet:machines.admin` on the machine.
+//
+// DELETE /api/v1/machines/{machineId}/local-accounts/{username}
+func (c *Client) DeleteMachineLocalAccount(ctx context.Context, params DeleteMachineLocalAccountParams) error {
+	_, err := c.sendDeleteMachineLocalAccount(ctx, params)
+	return err
+}
+
+func (c *Client) sendDeleteMachineLocalAccount(ctx context.Context, params DeleteMachineLocalAccountParams) (res *DeleteMachineLocalAccountNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-machine-local-account"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/local-accounts/{username}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteMachineLocalAccountOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/machines/"
+	{
+		// Encode "machineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "machineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/local-accounts/"
+	{
+		// Encode "username" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "username",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Username))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, DeleteMachineLocalAccountOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteMachineLocalAccountResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // DeleteMachineRegistration invokes delete-machine-registration operation.
 //
 // Revokes the registration: its token no longer enrolls a machine. Revoking a registration that is
@@ -4852,6 +5055,157 @@ func (c *Client) sendGetMachine(ctx context.Context, params GetMachineParams) (r
 
 	stage = "DecodeResponse"
 	result, err := decodeGetMachineResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetMachineLocalAccount invokes get-machine-local-account operation.
+//
+// Returns the binding of a local account on the machine. Fails with `LOCAL_ACCOUNT_NOT_FOUND` when the
+// local username is not bound on this machine.
+//
+// GET /api/v1/machines/{machineId}/local-accounts/{username}
+func (c *Client) GetMachineLocalAccount(ctx context.Context, params GetMachineLocalAccountParams) (*MachineLocalAccountResource, error) {
+	res, err := c.sendGetMachineLocalAccount(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetMachineLocalAccount(ctx context.Context, params GetMachineLocalAccountParams) (res *MachineLocalAccountResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-machine-local-account"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/local-accounts/{username}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetMachineLocalAccountOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/machines/"
+	{
+		// Encode "machineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "machineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/local-accounts/"
+	{
+		// Encode "username" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "username",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Username))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetMachineLocalAccountOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetMachineLocalAccountResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -6715,6 +7069,211 @@ func (c *Client) sendListMachineEvents(ctx context.Context, params ListMachineEv
 
 	stage = "DecodeResponse"
 	result, err := decodeListMachineEventsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListMachineLocalAccounts invokes list-machine-local-accounts operation.
+//
+// Returns the existing local Linux accounts on the machine that are bound to members of the project,
+// ordered by `username`.
+//
+// GET /api/v1/machines/{machineId}/local-accounts
+func (c *Client) ListMachineLocalAccounts(ctx context.Context, params ListMachineLocalAccountsParams) (*MachineLocalAccountList, error) {
+	res, err := c.sendListMachineLocalAccounts(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListMachineLocalAccounts(ctx context.Context, params ListMachineLocalAccountsParams) (res *MachineLocalAccountList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-machine-local-accounts"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/local-accounts"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListMachineLocalAccountsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/machines/"
+	{
+		// Encode "machineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "machineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/local-accounts"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "user_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "user_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.UserID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "keyword" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "keyword",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Keyword.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListMachineLocalAccountsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListMachineLocalAccountsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -9558,6 +10117,178 @@ func (c *Client) sendUpdateMachine(ctx context.Context, request *UpdateMachineRe
 
 	stage = "DecodeResponse"
 	result, err := decodeUpdateMachineResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateMachineLocalAccount invokes update-machine-local-account operation.
+//
+// Binds the existing local Linux account `username` on the machine to the project member `user_id`, or
+// replaces which member `username` is bound to. On this machine, Fleet opens sessions, runs commands,
+// starts MCP servers and approves `sudo` for that member as `username`, keeping the local account's
+// existing uid, home directory, shell, local groups and `~/.ssh/authorized_keys`, while `sshd` also
+// accepts the member's SSH keys from the platform. The member's directory account is created if they
+// have none yet.
+//
+// If the machine has no such local user in `/etc/passwd`, if it is a system or non-login account, or
+// if the machine's local configuration disallows binding it, the machine refuses to serve it and
+// records a `local_account_refused` event.
+//
+// Requires `fleet:machines.login` and `fleet:machines.admin` on the machine, since whoever is bound to
+// a local account inherits its existing files, groups and local `sudoers` rules.
+//
+// Fails with:
+//
+//   - `USER_NOT_PROJECT_MEMBER` when `user_id` is not an active member of the project;
+//   - `LOCAL_ACCOUNT_RESERVED` when `username` is `root` or a reserved system account name;
+//   - `LOCAL_ACCOUNT_USER_BOUND` when `user_id` is already bound to another local account on this
+//     machine, with `metadata.username` naming it; remove that binding first.
+//
+// PUT /api/v1/machines/{machineId}/local-accounts/{username}
+func (c *Client) UpdateMachineLocalAccount(ctx context.Context, request *UpdateMachineLocalAccountRequest, params UpdateMachineLocalAccountParams) (*MachineLocalAccountResource, error) {
+	res, err := c.sendUpdateMachineLocalAccount(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateMachineLocalAccount(ctx context.Context, request *UpdateMachineLocalAccountRequest, params UpdateMachineLocalAccountParams) (res *MachineLocalAccountResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-machine-local-account"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/local-accounts/{username}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateMachineLocalAccountOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/machines/"
+	{
+		// Encode "machineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "machineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/local-accounts/"
+	{
+		// Encode "username" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "username",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Username))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateMachineLocalAccountRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, UpdateMachineLocalAccountOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateMachineLocalAccountResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

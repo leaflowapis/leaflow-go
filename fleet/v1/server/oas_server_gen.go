@@ -263,6 +263,16 @@ type Handler interface {
 	//
 	// DELETE /api/v1/machines/{machineId}
 	DeleteMachine(ctx context.Context, params DeleteMachineParams) error
+	// DeleteMachineLocalAccount implements delete-machine-local-account operation.
+	//
+	// Removes the binding of `username` on the machine; removing one that is not bound succeeds. Open
+	// Fleet sessions and MCP servers running under the binding end, while the local account on the machine
+	// itself is left untouched.
+	//
+	// Requires `fleet:machines.login` and `fleet:machines.admin` on the machine.
+	//
+	// DELETE /api/v1/machines/{machineId}/local-accounts/{username}
+	DeleteMachineLocalAccount(ctx context.Context, params DeleteMachineLocalAccountParams) error
 	// DeleteMachineRegistration implements delete-machine-registration operation.
 	//
 	// Revokes the registration: its token no longer enrolls a machine. Revoking a registration that is
@@ -359,6 +369,13 @@ type Handler interface {
 	//
 	// GET /api/v1/machines/{machineId}
 	GetMachine(ctx context.Context, params GetMachineParams) (*MachineResource, error)
+	// GetMachineLocalAccount implements get-machine-local-account operation.
+	//
+	// Returns the binding of a local account on the machine. Fails with `LOCAL_ACCOUNT_NOT_FOUND` when the
+	// local username is not bound on this machine.
+	//
+	// GET /api/v1/machines/{machineId}/local-accounts/{username}
+	GetMachineLocalAccount(ctx context.Context, params GetMachineLocalAccountParams) (*MachineLocalAccountResource, error)
 	// GetMachineRegistration implements get-machine-registration operation.
 	//
 	// Requires `fleet:machines.manage`.
@@ -472,6 +489,13 @@ type Handler interface {
 	//
 	// GET /api/v1/machines/{machineId}/events
 	ListMachineEvents(ctx context.Context, params ListMachineEventsParams) (*MachineEventList, error)
+	// ListMachineLocalAccounts implements list-machine-local-accounts operation.
+	//
+	// Returns the existing local Linux accounts on the machine that are bound to members of the project,
+	// ordered by `username`.
+	//
+	// GET /api/v1/machines/{machineId}/local-accounts
+	ListMachineLocalAccounts(ctx context.Context, params ListMachineLocalAccountsParams) (*MachineLocalAccountList, error)
 	// ListMachineRegistrations implements list-machine-registrations operation.
 	//
 	// Returns the registrations of the current project, newest first. Registrations are kept for 30 days.
@@ -706,6 +730,31 @@ type Handler interface {
 	//
 	// PATCH /api/v1/machines/{machineId}
 	UpdateMachine(ctx context.Context, req *UpdateMachineRequest, params UpdateMachineParams) (*MachineResource, error)
+	// UpdateMachineLocalAccount implements update-machine-local-account operation.
+	//
+	// Binds the existing local Linux account `username` on the machine to the project member `user_id`, or
+	// replaces which member `username` is bound to. On this machine, Fleet opens sessions, runs commands,
+	// starts MCP servers and approves `sudo` for that member as `username`, keeping the local account's
+	// existing uid, home directory, shell, local groups and `~/.ssh/authorized_keys`, while `sshd` also
+	// accepts the member's SSH keys from the platform. The member's directory account is created if they
+	// have none yet.
+	//
+	// If the machine has no such local user in `/etc/passwd`, if it is a system or non-login account, or
+	// if the machine's local configuration disallows binding it, the machine refuses to serve it and
+	// records a `local_account_refused` event.
+	//
+	// Requires `fleet:machines.login` and `fleet:machines.admin` on the machine, since whoever is bound to
+	// a local account inherits its existing files, groups and local `sudoers` rules.
+	//
+	// Fails with:
+	//
+	//  - `USER_NOT_PROJECT_MEMBER` when `user_id` is not an active member of the project;
+	//  - `LOCAL_ACCOUNT_RESERVED` when `username` is `root` or a reserved system account name;
+	//  - `LOCAL_ACCOUNT_USER_BOUND` when `user_id` is already bound to another local account on this
+	//    machine, with `metadata.username` naming it; remove that binding first.
+	//
+	// PUT /api/v1/machines/{machineId}/local-accounts/{username}
+	UpdateMachineLocalAccount(ctx context.Context, req *UpdateMachineLocalAccountRequest, params UpdateMachineLocalAccountParams) (*MachineLocalAccountResource, error)
 	// UpdateMcpServer implements update-mcp-server operation.
 	//
 	// Adds a server to the caller's MCP configuration on the machine, or replaces the one with the same
