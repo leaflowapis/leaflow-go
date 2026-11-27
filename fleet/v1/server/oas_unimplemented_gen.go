@@ -561,6 +561,15 @@ func (UnimplementedHandler) GetSession(ctx context.Context, params GetSessionPar
 	return r, ht.ErrNotImplemented
 }
 
+// GetSessionExecution implements get-session-execution operation.
+//
+// Queries the session process live for the current metadata and status of one background execution.
+//
+// GET /api/v1/sessions/{sessionId}/executions/{executionId}
+func (UnimplementedHandler) GetSessionExecution(ctx context.Context, params GetSessionExecutionParams) (r *ExecutionResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetSessionRtcConfiguration implements get-session-rtc-configuration operation.
 //
 // Returns the STUN and TURN servers for the PeerConnections the caller starts to the session, with
@@ -617,6 +626,18 @@ func (UnimplementedHandler) ListMachineEvents(ctx context.Context, params ListMa
 	return r, ht.ErrNotImplemented
 }
 
+// ListMachineExecutions implements list-machine-executions operation.
+//
+// Queries all open sessions belonging to the caller on the machine in parallel and merges their live
+// background executions, newest first. Does not store process state in Fleet; sessions that are
+// temporarily unreachable or run an older Agent are reported in `unavailable_sessions` rather than
+// failing the whole response. Requires `fleet:machines.login` on the machine.
+//
+// GET /api/v1/machines/{machineId}/executions
+func (UnimplementedHandler) ListMachineExecutions(ctx context.Context, params ListMachineExecutionsParams) (r *ExecutionList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListMachineLocalAccounts implements list-machine-local-accounts operation.
 //
 // Returns the existing local Linux accounts on the machine that are bound to members of the project,
@@ -664,6 +685,16 @@ func (UnimplementedHandler) ListPrivilegeAutoApprovals(ctx context.Context, para
 //
 // GET /api/v1/privilege-requests
 func (UnimplementedHandler) ListPrivilegeRequests(ctx context.Context, params ListPrivilegeRequestsParams) (r *PrivilegeRequestList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListSessionExecutions implements list-session-executions operation.
+//
+// Queries the session process live for its background executions, newest first. Returns an empty list
+// when the session is already closed (for example after the machine rebooted).
+//
+// GET /api/v1/sessions/{sessionId}/executions
+func (UnimplementedHandler) ListSessionExecutions(ctx context.Context, params ListSessionExecutionsParams) (r *ExecutionList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -735,6 +766,18 @@ func (UnimplementedHandler) PollToolActivities(ctx context.Context, params PollT
 //
 // POST /api/v1/sessions/{sessionId}/participants/{participantId}:prepareMigration
 func (UnimplementedHandler) PrepareParticipantMigration(ctx context.Context, req *MigrationStep, params PrepareParticipantMigrationParams) (r *MigrationStep, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ReadSessionExecutionOutput implements read-session-execution-output operation.
+//
+// Reads a bounded slice of a background execution's persisted output file from the session process.
+// Choose at most one addressing mode: `tail_lines`, `start_line` (with optional `max_lines`), or
+// `offset` (with optional `max_bytes`). When none is specified, returns the last 200 lines of the
+// combined output stream.
+//
+// GET /api/v1/sessions/{sessionId}/executions/{executionId}/output
+func (UnimplementedHandler) ReadSessionExecutionOutput(ctx context.Context, params ReadSessionExecutionOutputParams) (r *ExecutionOutput, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -860,6 +903,16 @@ func (UnimplementedHandler) RunMachineCommand(ctx context.Context, req *RunComma
 //
 // POST /api/v1/machines/{machineId}/mcp-servers/{serverName}:send
 func (UnimplementedHandler) SendMcpRequest(ctx context.Context, req *SendMcpRequestRequest, params SendMcpRequestParams) (r *SendMcpRequestResponse, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StopSessionExecution implements stop-session-execution operation.
+//
+// Stops a running background execution in the session. Stopping an already exited execution succeeds
+// and returns its final metadata.
+//
+// POST /api/v1/sessions/{sessionId}/executions/{executionId}:stop
+func (UnimplementedHandler) StopSessionExecution(ctx context.Context, params StopSessionExecutionParams) (r *ExecutionResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

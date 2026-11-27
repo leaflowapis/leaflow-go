@@ -1307,6 +1307,518 @@ func (s *ErrorStatusMetadata) init() ErrorStatusMetadata {
 	return m
 }
 
+// Ref: #/components/schemas/ExecutionExit
+type ExecutionExit struct {
+	// Exit status (0–255) when the process exited normally; null otherwise.
+	ExitCode NilInt32 `json:"exit_code"`
+	// Signal name without "SIG" (for example `KILL`) when terminated by a signal; null otherwise.
+	SignalName NilString `json:"signal_name"`
+	CoreDumped bool      `json:"core_dumped"`
+	// Machine-readable termination reason (`exited`, `signaled`, `stopped`, `timed_out`, `output_limit`,
+	// `start_failed`, or `failed`).
+	Reason string `json:"reason"`
+}
+
+// GetExitCode returns the value of ExitCode.
+func (s *ExecutionExit) GetExitCode() NilInt32 {
+	return s.ExitCode
+}
+
+// GetSignalName returns the value of SignalName.
+func (s *ExecutionExit) GetSignalName() NilString {
+	return s.SignalName
+}
+
+// GetCoreDumped returns the value of CoreDumped.
+func (s *ExecutionExit) GetCoreDumped() bool {
+	return s.CoreDumped
+}
+
+// GetReason returns the value of Reason.
+func (s *ExecutionExit) GetReason() string {
+	return s.Reason
+}
+
+// SetExitCode sets the value of ExitCode.
+func (s *ExecutionExit) SetExitCode(val NilInt32) {
+	s.ExitCode = val
+}
+
+// SetSignalName sets the value of SignalName.
+func (s *ExecutionExit) SetSignalName(val NilString) {
+	s.SignalName = val
+}
+
+// SetCoreDumped sets the value of CoreDumped.
+func (s *ExecutionExit) SetCoreDumped(val bool) {
+	s.CoreDumped = val
+}
+
+// SetReason sets the value of Reason.
+func (s *ExecutionExit) SetReason(val string) {
+	s.Reason = val
+}
+
+// Ref: #/components/schemas/ExecutionList
+type ExecutionList struct {
+	Items []ExecutionResource `json:"items"`
+	// Open sessions that could not be queried during a machine-wide fan-out.
+	UnavailableSessions []UnavailableExecutionSession `json:"unavailable_sessions"`
+}
+
+// GetItems returns the value of Items.
+func (s *ExecutionList) GetItems() []ExecutionResource {
+	return s.Items
+}
+
+// GetUnavailableSessions returns the value of UnavailableSessions.
+func (s *ExecutionList) GetUnavailableSessions() []UnavailableExecutionSession {
+	return s.UnavailableSessions
+}
+
+// SetItems sets the value of Items.
+func (s *ExecutionList) SetItems(val []ExecutionResource) {
+	s.Items = val
+}
+
+// SetUnavailableSessions sets the value of UnavailableSessions.
+func (s *ExecutionList) SetUnavailableSessions(val []UnavailableExecutionSession) {
+	s.UnavailableSessions = val
+}
+
+// Ref: #/components/schemas/ExecutionOutput
+type ExecutionOutput struct {
+	MachineID   uuid.UUID       `json:"machine_id"`
+	SessionID   string          `json:"session_id"`
+	ExecutionID string          `json:"execution_id"`
+	Stream      ExecutionStream `json:"stream"`
+	// Output bytes in standard Base64 (RFC 4648).
+	Data            []byte `json:"data"`
+	StartLine       int64  `json:"start_line"`
+	EndLine         int64  `json:"end_line"`
+	TotalLines      int64  `json:"total_lines"`
+	StartOffset     int64  `json:"start_offset"`
+	NextOffset      int64  `json:"next_offset"`
+	TotalBytes      int64  `json:"total_bytes"`
+	HasMore         bool   `json:"has_more"`
+	OutputTruncated bool   `json:"output_truncated"`
+	OutputPath      string `json:"output_path"`
+}
+
+// GetMachineID returns the value of MachineID.
+func (s *ExecutionOutput) GetMachineID() uuid.UUID {
+	return s.MachineID
+}
+
+// GetSessionID returns the value of SessionID.
+func (s *ExecutionOutput) GetSessionID() string {
+	return s.SessionID
+}
+
+// GetExecutionID returns the value of ExecutionID.
+func (s *ExecutionOutput) GetExecutionID() string {
+	return s.ExecutionID
+}
+
+// GetStream returns the value of Stream.
+func (s *ExecutionOutput) GetStream() ExecutionStream {
+	return s.Stream
+}
+
+// GetData returns the value of Data.
+func (s *ExecutionOutput) GetData() []byte {
+	return s.Data
+}
+
+// GetStartLine returns the value of StartLine.
+func (s *ExecutionOutput) GetStartLine() int64 {
+	return s.StartLine
+}
+
+// GetEndLine returns the value of EndLine.
+func (s *ExecutionOutput) GetEndLine() int64 {
+	return s.EndLine
+}
+
+// GetTotalLines returns the value of TotalLines.
+func (s *ExecutionOutput) GetTotalLines() int64 {
+	return s.TotalLines
+}
+
+// GetStartOffset returns the value of StartOffset.
+func (s *ExecutionOutput) GetStartOffset() int64 {
+	return s.StartOffset
+}
+
+// GetNextOffset returns the value of NextOffset.
+func (s *ExecutionOutput) GetNextOffset() int64 {
+	return s.NextOffset
+}
+
+// GetTotalBytes returns the value of TotalBytes.
+func (s *ExecutionOutput) GetTotalBytes() int64 {
+	return s.TotalBytes
+}
+
+// GetHasMore returns the value of HasMore.
+func (s *ExecutionOutput) GetHasMore() bool {
+	return s.HasMore
+}
+
+// GetOutputTruncated returns the value of OutputTruncated.
+func (s *ExecutionOutput) GetOutputTruncated() bool {
+	return s.OutputTruncated
+}
+
+// GetOutputPath returns the value of OutputPath.
+func (s *ExecutionOutput) GetOutputPath() string {
+	return s.OutputPath
+}
+
+// SetMachineID sets the value of MachineID.
+func (s *ExecutionOutput) SetMachineID(val uuid.UUID) {
+	s.MachineID = val
+}
+
+// SetSessionID sets the value of SessionID.
+func (s *ExecutionOutput) SetSessionID(val string) {
+	s.SessionID = val
+}
+
+// SetExecutionID sets the value of ExecutionID.
+func (s *ExecutionOutput) SetExecutionID(val string) {
+	s.ExecutionID = val
+}
+
+// SetStream sets the value of Stream.
+func (s *ExecutionOutput) SetStream(val ExecutionStream) {
+	s.Stream = val
+}
+
+// SetData sets the value of Data.
+func (s *ExecutionOutput) SetData(val []byte) {
+	s.Data = val
+}
+
+// SetStartLine sets the value of StartLine.
+func (s *ExecutionOutput) SetStartLine(val int64) {
+	s.StartLine = val
+}
+
+// SetEndLine sets the value of EndLine.
+func (s *ExecutionOutput) SetEndLine(val int64) {
+	s.EndLine = val
+}
+
+// SetTotalLines sets the value of TotalLines.
+func (s *ExecutionOutput) SetTotalLines(val int64) {
+	s.TotalLines = val
+}
+
+// SetStartOffset sets the value of StartOffset.
+func (s *ExecutionOutput) SetStartOffset(val int64) {
+	s.StartOffset = val
+}
+
+// SetNextOffset sets the value of NextOffset.
+func (s *ExecutionOutput) SetNextOffset(val int64) {
+	s.NextOffset = val
+}
+
+// SetTotalBytes sets the value of TotalBytes.
+func (s *ExecutionOutput) SetTotalBytes(val int64) {
+	s.TotalBytes = val
+}
+
+// SetHasMore sets the value of HasMore.
+func (s *ExecutionOutput) SetHasMore(val bool) {
+	s.HasMore = val
+}
+
+// SetOutputTruncated sets the value of OutputTruncated.
+func (s *ExecutionOutput) SetOutputTruncated(val bool) {
+	s.OutputTruncated = val
+}
+
+// SetOutputPath sets the value of OutputPath.
+func (s *ExecutionOutput) SetOutputPath(val string) {
+	s.OutputPath = val
+}
+
+// Ref: #/components/schemas/ExecutionResource
+type ExecutionResource struct {
+	MachineID   uuid.UUID `json:"machine_id"`
+	SessionID   string    `json:"session_id"`
+	ExecutionID string    `json:"execution_id"`
+	UserID      uuid.UUID `json:"user_id"`
+	Username    string    `json:"username"`
+	// Full argument vector of the background command.
+	Argv             []string       `json:"argv"`
+	WorkingDirectory string         `json:"working_directory"`
+	State            ExecutionState `json:"state"`
+	StartedAt        time.Time      `json:"started_at"`
+	FinishedAt       NilDateTime    `json:"finished_at"`
+	// Elapsed runtime in seconds (while running) or total runtime in seconds (once exited).
+	DurationSeconds float64          `json:"duration_seconds"`
+	Exit            NilExecutionExit `json:"exit"`
+	// Absolute path on the machine where the combined output file is persisted.
+	OutputPath      string `json:"output_path"`
+	OutputBytes     int64  `json:"output_bytes"`
+	OutputLines     int64  `json:"output_lines"`
+	OutputTruncated bool   `json:"output_truncated"`
+}
+
+// GetMachineID returns the value of MachineID.
+func (s *ExecutionResource) GetMachineID() uuid.UUID {
+	return s.MachineID
+}
+
+// GetSessionID returns the value of SessionID.
+func (s *ExecutionResource) GetSessionID() string {
+	return s.SessionID
+}
+
+// GetExecutionID returns the value of ExecutionID.
+func (s *ExecutionResource) GetExecutionID() string {
+	return s.ExecutionID
+}
+
+// GetUserID returns the value of UserID.
+func (s *ExecutionResource) GetUserID() uuid.UUID {
+	return s.UserID
+}
+
+// GetUsername returns the value of Username.
+func (s *ExecutionResource) GetUsername() string {
+	return s.Username
+}
+
+// GetArgv returns the value of Argv.
+func (s *ExecutionResource) GetArgv() []string {
+	return s.Argv
+}
+
+// GetWorkingDirectory returns the value of WorkingDirectory.
+func (s *ExecutionResource) GetWorkingDirectory() string {
+	return s.WorkingDirectory
+}
+
+// GetState returns the value of State.
+func (s *ExecutionResource) GetState() ExecutionState {
+	return s.State
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *ExecutionResource) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// GetFinishedAt returns the value of FinishedAt.
+func (s *ExecutionResource) GetFinishedAt() NilDateTime {
+	return s.FinishedAt
+}
+
+// GetDurationSeconds returns the value of DurationSeconds.
+func (s *ExecutionResource) GetDurationSeconds() float64 {
+	return s.DurationSeconds
+}
+
+// GetExit returns the value of Exit.
+func (s *ExecutionResource) GetExit() NilExecutionExit {
+	return s.Exit
+}
+
+// GetOutputPath returns the value of OutputPath.
+func (s *ExecutionResource) GetOutputPath() string {
+	return s.OutputPath
+}
+
+// GetOutputBytes returns the value of OutputBytes.
+func (s *ExecutionResource) GetOutputBytes() int64 {
+	return s.OutputBytes
+}
+
+// GetOutputLines returns the value of OutputLines.
+func (s *ExecutionResource) GetOutputLines() int64 {
+	return s.OutputLines
+}
+
+// GetOutputTruncated returns the value of OutputTruncated.
+func (s *ExecutionResource) GetOutputTruncated() bool {
+	return s.OutputTruncated
+}
+
+// SetMachineID sets the value of MachineID.
+func (s *ExecutionResource) SetMachineID(val uuid.UUID) {
+	s.MachineID = val
+}
+
+// SetSessionID sets the value of SessionID.
+func (s *ExecutionResource) SetSessionID(val string) {
+	s.SessionID = val
+}
+
+// SetExecutionID sets the value of ExecutionID.
+func (s *ExecutionResource) SetExecutionID(val string) {
+	s.ExecutionID = val
+}
+
+// SetUserID sets the value of UserID.
+func (s *ExecutionResource) SetUserID(val uuid.UUID) {
+	s.UserID = val
+}
+
+// SetUsername sets the value of Username.
+func (s *ExecutionResource) SetUsername(val string) {
+	s.Username = val
+}
+
+// SetArgv sets the value of Argv.
+func (s *ExecutionResource) SetArgv(val []string) {
+	s.Argv = val
+}
+
+// SetWorkingDirectory sets the value of WorkingDirectory.
+func (s *ExecutionResource) SetWorkingDirectory(val string) {
+	s.WorkingDirectory = val
+}
+
+// SetState sets the value of State.
+func (s *ExecutionResource) SetState(val ExecutionState) {
+	s.State = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *ExecutionResource) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// SetFinishedAt sets the value of FinishedAt.
+func (s *ExecutionResource) SetFinishedAt(val NilDateTime) {
+	s.FinishedAt = val
+}
+
+// SetDurationSeconds sets the value of DurationSeconds.
+func (s *ExecutionResource) SetDurationSeconds(val float64) {
+	s.DurationSeconds = val
+}
+
+// SetExit sets the value of Exit.
+func (s *ExecutionResource) SetExit(val NilExecutionExit) {
+	s.Exit = val
+}
+
+// SetOutputPath sets the value of OutputPath.
+func (s *ExecutionResource) SetOutputPath(val string) {
+	s.OutputPath = val
+}
+
+// SetOutputBytes sets the value of OutputBytes.
+func (s *ExecutionResource) SetOutputBytes(val int64) {
+	s.OutputBytes = val
+}
+
+// SetOutputLines sets the value of OutputLines.
+func (s *ExecutionResource) SetOutputLines(val int64) {
+	s.OutputLines = val
+}
+
+// SetOutputTruncated sets the value of OutputTruncated.
+func (s *ExecutionResource) SetOutputTruncated(val bool) {
+	s.OutputTruncated = val
+}
+
+// Ref: #/components/schemas/ExecutionState
+type ExecutionState string
+
+const (
+	ExecutionStateRunning ExecutionState = "running"
+	ExecutionStateExited  ExecutionState = "exited"
+)
+
+// AllValues returns all ExecutionState values.
+func (ExecutionState) AllValues() []ExecutionState {
+	return []ExecutionState{
+		ExecutionStateRunning,
+		ExecutionStateExited,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ExecutionState) MarshalText() ([]byte, error) {
+	switch s {
+	case ExecutionStateRunning:
+		return []byte(s), nil
+	case ExecutionStateExited:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ExecutionState) UnmarshalText(data []byte) error {
+	switch ExecutionState(data) {
+	case ExecutionStateRunning:
+		*s = ExecutionStateRunning
+		return nil
+	case ExecutionStateExited:
+		*s = ExecutionStateExited
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/ExecutionStream
+type ExecutionStream string
+
+const (
+	ExecutionStreamCombined ExecutionStream = "combined"
+	ExecutionStreamStdout   ExecutionStream = "stdout"
+	ExecutionStreamStderr   ExecutionStream = "stderr"
+)
+
+// AllValues returns all ExecutionStream values.
+func (ExecutionStream) AllValues() []ExecutionStream {
+	return []ExecutionStream{
+		ExecutionStreamCombined,
+		ExecutionStreamStdout,
+		ExecutionStreamStderr,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ExecutionStream) MarshalText() ([]byte, error) {
+	switch s {
+	case ExecutionStreamCombined:
+		return []byte(s), nil
+	case ExecutionStreamStdout:
+		return []byte(s), nil
+	case ExecutionStreamStderr:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ExecutionStream) UnmarshalText(data []byte) error {
+	switch ExecutionStream(data) {
+	case ExecutionStreamCombined:
+		*s = ExecutionStreamCombined
+		return nil
+	case ExecutionStreamStdout:
+		*s = ExecutionStreamStdout
+		return nil
+	case ExecutionStreamStderr:
+		*s = ExecutionStreamStderr
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // `available` can be used now. `unavailable` is installed but cannot be used, as `reason` says.
 // Ref: #/components/schemas/FeatureState
 type FeatureState string
@@ -3081,6 +3593,51 @@ func (o NilDesktopState) Or(d DesktopState) DesktopState {
 	return d
 }
 
+// NewNilExecutionExit returns new NilExecutionExit with value set to v.
+func NewNilExecutionExit(v ExecutionExit) NilExecutionExit {
+	return NilExecutionExit{
+		Value: v,
+	}
+}
+
+// NilExecutionExit is nullable ExecutionExit.
+type NilExecutionExit struct {
+	Value ExecutionExit
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilExecutionExit) SetTo(v ExecutionExit) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilExecutionExit) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilExecutionExit) SetToNull() {
+	o.Null = true
+	var v ExecutionExit
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilExecutionExit) Get() (v ExecutionExit, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilExecutionExit) Or(d ExecutionExit) ExecutionExit {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewNilInt32 returns new NilInt32 with value set to v.
 func NewNilInt32(v int32) NilInt32 {
 	return NilInt32{
@@ -3935,6 +4492,98 @@ func (o OptErrorStatusMetadata) Get() (v ErrorStatusMetadata, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptErrorStatusMetadata) Or(d ErrorStatusMetadata) ErrorStatusMetadata {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptExecutionState returns new OptExecutionState with value set to v.
+func NewOptExecutionState(v ExecutionState) OptExecutionState {
+	return OptExecutionState{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptExecutionState is optional ExecutionState.
+type OptExecutionState struct {
+	Value ExecutionState
+	Set   bool
+}
+
+// IsSet returns true if OptExecutionState was set.
+func (o OptExecutionState) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptExecutionState) Reset() {
+	var v ExecutionState
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptExecutionState) SetTo(v ExecutionState) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptExecutionState) Get() (v ExecutionState, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptExecutionState) Or(d ExecutionState) ExecutionState {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptExecutionStream returns new OptExecutionStream with value set to v.
+func NewOptExecutionStream(v ExecutionStream) OptExecutionStream {
+	return OptExecutionStream{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptExecutionStream is optional ExecutionStream.
+type OptExecutionStream struct {
+	Value ExecutionStream
+	Set   bool
+}
+
+// IsSet returns true if OptExecutionStream was set.
+func (o OptExecutionStream) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptExecutionStream) Reset() {
+	var v ExecutionStream
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptExecutionStream) SetTo(v ExecutionStream) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptExecutionStream) Get() (v ExecutionStream, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptExecutionStream) Or(d ExecutionStream) ExecutionStream {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -6845,6 +7494,32 @@ func (s *ToolListUnavailableSourcesItemSource) UnmarshalText(data []byte) error 
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Ref: #/components/schemas/UnavailableExecutionSession
+type UnavailableExecutionSession struct {
+	SessionID string `json:"session_id"`
+	Reason    string `json:"reason"`
+}
+
+// GetSessionID returns the value of SessionID.
+func (s *UnavailableExecutionSession) GetSessionID() string {
+	return s.SessionID
+}
+
+// GetReason returns the value of Reason.
+func (s *UnavailableExecutionSession) GetReason() string {
+	return s.Reason
+}
+
+// SetSessionID sets the value of SessionID.
+func (s *UnavailableExecutionSession) SetSessionID(val string) {
+	s.SessionID = val
+}
+
+// SetReason sets the value of Reason.
+func (s *UnavailableExecutionSession) SetReason(val string) {
+	s.Reason = val
 }
 
 // Ref: #/components/schemas/UpdateAccountRequest

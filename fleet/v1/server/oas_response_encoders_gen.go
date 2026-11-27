@@ -417,6 +417,19 @@ func encodeGetSessionResponse(response *SessionResource, w http.ResponseWriter, 
 	return nil
 }
 
+func encodeGetSessionExecutionResponse(response *ExecutionResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeGetSessionRtcConfigurationResponse(response *RtcConfiguration, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -470,6 +483,19 @@ func encodeListGroupsResponse(response *GroupList, w http.ResponseWriter, span t
 }
 
 func encodeListMachineEventsResponse(response *MachineEventList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListMachineExecutionsResponse(response *ExecutionList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -547,6 +573,19 @@ func encodeListPrivilegeRequestsResponse(response *PrivilegeRequestList, w http.
 	return nil
 }
 
+func encodeListSessionExecutionsResponse(response *ExecutionList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeListSessionParticipantsResponse(response *ParticipantList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -612,6 +651,19 @@ func encodePrepareParticipantMigrationResponse(response *MigrationStep, w http.R
 	return nil
 }
 
+func encodeReadSessionExecutionOutputResponse(response *ExecutionOutput, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeRenewParticipantResponse(response *RenewParticipantResponse, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -652,6 +704,19 @@ func encodeRunMachineCommandResponse(response *RunCommandResponse, w http.Respon
 }
 
 func encodeSendMcpRequestResponse(response *SendMcpRequestResponse, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeStopSessionExecutionResponse(response *ExecutionResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
