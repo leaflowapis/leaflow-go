@@ -390,6 +390,13 @@ type Invoker interface {
 	//
 	// GET /api/v1/machines/{machineId}
 	GetMachine(ctx context.Context, params GetMachineParams) (*MachineResource, error)
+	// GetMachineCommand invokes get-machine-command operation.
+	//
+	// Queries the machine's Agent live for the current metadata, duration, exit status, and output file
+	// path of one background command. Requires `fleet:machines.login` on the machine.
+	//
+	// GET /api/v1/machines/{machineId}/commands/{commandId}
+	GetMachineCommand(ctx context.Context, params GetMachineCommandParams) (*MachineCommandResource, error)
 	// GetMachineLocalAccount invokes get-machine-local-account operation.
 	//
 	// Returns the binding of a local account on the machine. Fails with `LOCAL_ACCOUNT_NOT_FOUND` when the
@@ -412,7 +419,7 @@ type Invoker interface {
 	// Fails with:
 	//
 	//  - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-	//  - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+	//  - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.controlplane.mcp.v1`;
 	//  - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 	//    machine refuses the account, as for opening a session;
 	//  - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
@@ -469,12 +476,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/sessions/{sessionId}
 	GetSession(ctx context.Context, params GetSessionParams) (*SessionResource, error)
-	// GetSessionExecution invokes get-session-execution operation.
-	//
-	// Queries the session process live for the current metadata and status of one background execution.
-	//
-	// GET /api/v1/sessions/{sessionId}/executions/{executionId}
-	GetSessionExecution(ctx context.Context, params GetSessionExecutionParams) (*ExecutionResource, error)
 	// GetSessionRtcConfiguration invokes get-session-rtc-configuration operation.
 	//
 	// Returns the STUN and TURN servers for the PeerConnections the caller starts to the session, with
@@ -509,6 +510,14 @@ type Invoker interface {
 	//
 	// GET /api/v1/groups
 	ListGroups(ctx context.Context, params ListGroupsParams) (*GroupList, error)
+	// ListMachineCommands invokes list-machine-commands operation.
+	//
+	// Queries the machine's Agent live for background commands belonging to the caller since the machine
+	// booted, newest first. Fleet does not store command state in its database; after a machine reboot, no
+	// running commands remain. Requires `fleet:machines.login` on the machine.
+	//
+	// GET /api/v1/machines/{machineId}/commands
+	ListMachineCommands(ctx context.Context, params ListMachineCommandsParams) (*MachineCommandList, error)
 	// ListMachineEvents invokes list-machine-events operation.
 	//
 	// Returns what the machine reported about itself, newest first, such as a directory account it does
@@ -516,15 +525,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/machines/{machineId}/events
 	ListMachineEvents(ctx context.Context, params ListMachineEventsParams) (*MachineEventList, error)
-	// ListMachineExecutions invokes list-machine-executions operation.
-	//
-	// Queries all open sessions belonging to the caller on the machine in parallel and merges their live
-	// background executions, newest first. Does not store process state in Fleet; sessions that are
-	// temporarily unreachable or run an older Agent are reported in `unavailable_sessions` rather than
-	// failing the whole response. Requires `fleet:machines.login` on the machine.
-	//
-	// GET /api/v1/machines/{machineId}/executions
-	ListMachineExecutions(ctx context.Context, params ListMachineExecutionsParams) (*ExecutionList, error)
 	// ListMachineLocalAccounts invokes list-machine-local-accounts operation.
 	//
 	// Returns the existing local Linux accounts on the machine that are bound to members of the project,
@@ -560,13 +560,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/privilege-requests
 	ListPrivilegeRequests(ctx context.Context, params ListPrivilegeRequestsParams) (*PrivilegeRequestList, error)
-	// ListSessionExecutions invokes list-session-executions operation.
-	//
-	// Queries the session process live for its background executions, newest first. Returns an empty list
-	// when the session is already closed (for example after the machine rebooted).
-	//
-	// GET /api/v1/sessions/{sessionId}/executions
-	ListSessionExecutions(ctx context.Context, params ListSessionExecutionsParams) (*ExecutionList, error)
 	// ListSessionParticipants invokes list-session-participants operation.
 	//
 	// Returns the participants of the session, in the order they joined.
@@ -623,15 +616,15 @@ type Invoker interface {
 	//
 	// POST /api/v1/sessions/{sessionId}/participants/{participantId}:prepareMigration
 	PrepareParticipantMigration(ctx context.Context, request *MigrationStep, params PrepareParticipantMigrationParams) (*MigrationStep, error)
-	// ReadSessionExecutionOutput invokes read-session-execution-output operation.
+	// ReadMachineCommandOutput invokes read-machine-command-output operation.
 	//
-	// Reads a bounded slice of a background execution's persisted output file from the session process.
+	// Reads a bounded slice of a background command's persisted output file from the machine's Agent.
 	// Choose at most one addressing mode: `tail_lines`, `start_line` (with optional `max_lines`), or
 	// `offset` (with optional `max_bytes`). When none is specified, returns the last 200 lines of the
-	// combined output stream.
+	// combined output stream. Requires `fleet:machines.login` on the machine.
 	//
-	// GET /api/v1/sessions/{sessionId}/executions/{executionId}/output
-	ReadSessionExecutionOutput(ctx context.Context, params ReadSessionExecutionOutputParams) (*ExecutionOutput, error)
+	// GET /api/v1/machines/{machineId}/commands/{commandId}/output
+	ReadMachineCommandOutput(ctx context.Context, params ReadMachineCommandOutputParams) (*MachineCommandOutput, error)
 	// RenewParticipant invokes renew-participant operation.
 	//
 	// Extends the participant's lease and returns renewed PeerAuthorizations for the PeerConnections whose
@@ -670,7 +663,7 @@ type Invoker interface {
 	//    `metadata.line` and `metadata.column`;
 	//  - `MCP_CONFIGURATION_WRITE_FAILED` when the machine could not write the file;
 	//  - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-	//  - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+	//  - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.controlplane.mcp.v1`;
 	//  - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 	//    machine refuses the account, as for opening a session;
 	//  - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
@@ -693,9 +686,14 @@ type Invoker interface {
 	// Inside the command, `sudo` works without a prompt while the caller has `fleet:machines.admin` on the
 	// machine, and refuses otherwise.
 	//
-	// After any required context preparation, the request is held until the command ends, at most
-	// `timeout_seconds` and a few seconds more. Neither the command nor its output is hidden from the
-	// platform: do not put secrets into either.
+	// After any required context preparation, a foreground request is held until the command ends, at most
+	// `timeout_seconds` and a few seconds more. When `background` is true, the Agent starts the command
+	// detached, persists its output to a per-boot runtime file, and returns immediately with `command`
+	// (including `command_id` and `output_path`); while it runs, the Agent proactively reports a
+	// `leaflow.fleet.command.running` EventBus heartbeat every 30 minutes and a terminal
+	// `leaflow.fleet.command.exited` EventBus event upon completion. Fleet keeps no database table for
+	// background commands; rebooting the machine clears all running commands. Neither the command nor its
+	// output is hidden from the platform: do not put secrets into either.
 	//
 	// Requires `fleet:machines.login` on the machine.
 	//
@@ -745,13 +743,14 @@ type Invoker interface {
 	//
 	// POST /api/v1/machines/{machineId}/mcp-servers/{serverName}:send
 	SendMcpRequest(ctx context.Context, request *SendMcpRequestRequest, params SendMcpRequestParams) (*SendMcpRequestResponse, error)
-	// StopSessionExecution invokes stop-session-execution operation.
+	// StopMachineCommand invokes stop-machine-command operation.
 	//
-	// Stops a running background execution in the session. Stopping an already exited execution succeeds
-	// and returns its final metadata.
+	// Stops a running background command belonging to the caller on the machine. Stopping an already
+	// exited command succeeds and returns its final metadata. Requires `fleet:machines.login` on the
+	// machine.
 	//
-	// POST /api/v1/sessions/{sessionId}/executions/{executionId}:stop
-	StopSessionExecution(ctx context.Context, params StopSessionExecutionParams) (*ExecutionResource, error)
+	// POST /api/v1/machines/{machineId}/commands/{commandId}:stop
+	StopMachineCommand(ctx context.Context, params StopMachineCommandParams) (*MachineCommandResource, error)
 	// TerminateSession invokes terminate-session operation.
 	//
 	// Ends the session at once, killing every process in it. Returns once the session is closed.
@@ -827,7 +826,7 @@ type Invoker interface {
 	//  - `MCP_CONFIGURATION_INVALID` when the file cannot be read or is not valid; replace it whole first;
 	//  - `MCP_CONFIGURATION_WRITE_FAILED` when the machine could not write the file;
 	//  - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-	//  - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+	//  - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.controlplane.mcp.v1`;
 	//  - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 	//    machine refuses the account, as for opening a session;
 	//  - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
@@ -5100,6 +5099,157 @@ func (c *Client) sendGetMachine(ctx context.Context, params GetMachineParams) (r
 	return result, nil
 }
 
+// GetMachineCommand invokes get-machine-command operation.
+//
+// Queries the machine's Agent live for the current metadata, duration, exit status, and output file
+// path of one background command. Requires `fleet:machines.login` on the machine.
+//
+// GET /api/v1/machines/{machineId}/commands/{commandId}
+func (c *Client) GetMachineCommand(ctx context.Context, params GetMachineCommandParams) (*MachineCommandResource, error) {
+	res, err := c.sendGetMachineCommand(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetMachineCommand(ctx context.Context, params GetMachineCommandParams) (res *MachineCommandResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-machine-command"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/commands/{commandId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetMachineCommandOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/machines/"
+	{
+		// Encode "machineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "machineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/commands/"
+	{
+		// Encode "commandId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "commandId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.CommandId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetMachineCommandOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetMachineCommandResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetMachineLocalAccount invokes get-machine-local-account operation.
 //
 // Returns the binding of a local account on the machine. Fails with `LOCAL_ACCOUNT_NOT_FOUND` when the
@@ -5391,7 +5541,7 @@ func (c *Client) sendGetMachineRegistration(ctx context.Context, params GetMachi
 // Fails with:
 //
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.controlplane.mcp.v1`;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;
 //   - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
@@ -6278,156 +6428,6 @@ func (c *Client) sendGetSession(ctx context.Context, params GetSessionParams) (r
 	return result, nil
 }
 
-// GetSessionExecution invokes get-session-execution operation.
-//
-// Queries the session process live for the current metadata and status of one background execution.
-//
-// GET /api/v1/sessions/{sessionId}/executions/{executionId}
-func (c *Client) GetSessionExecution(ctx context.Context, params GetSessionExecutionParams) (*ExecutionResource, error) {
-	res, err := c.sendGetSessionExecution(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetSessionExecution(ctx context.Context, params GetSessionExecutionParams) (res *ExecutionResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-session-execution"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/executions/{executionId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetSessionExecutionOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/api/v1/sessions/"
-	{
-		// Encode "sessionId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "sessionId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.SessionId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/executions/"
-	{
-		// Encode "executionId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "executionId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.ExecutionId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetSessionExecutionOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetSessionExecutionResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // GetSessionRtcConfiguration invokes get-session-rtc-configuration operation.
 //
 // Returns the STUN and TURN servers for the PeerConnections the caller starts to the session, with
@@ -7076,6 +7076,161 @@ func (c *Client) sendListGroups(ctx context.Context, params ListGroupsParams) (r
 	return result, nil
 }
 
+// ListMachineCommands invokes list-machine-commands operation.
+//
+// Queries the machine's Agent live for background commands belonging to the caller since the machine
+// booted, newest first. Fleet does not store command state in its database; after a machine reboot, no
+// running commands remain. Requires `fleet:machines.login` on the machine.
+//
+// GET /api/v1/machines/{machineId}/commands
+func (c *Client) ListMachineCommands(ctx context.Context, params ListMachineCommandsParams) (*MachineCommandList, error) {
+	res, err := c.sendListMachineCommands(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListMachineCommands(ctx context.Context, params ListMachineCommandsParams) (res *MachineCommandList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-machine-commands"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/commands"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListMachineCommandsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/machines/"
+	{
+		// Encode "machineId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "machineId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/commands"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "state" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "state",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.State.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListMachineCommandsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListMachineCommandsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListMachineEvents invokes list-machine-events operation.
 //
 // Returns what the machine reported about itself, newest first, such as a directory account it does
@@ -7257,162 +7412,6 @@ func (c *Client) sendListMachineEvents(ctx context.Context, params ListMachineEv
 
 	stage = "DecodeResponse"
 	result, err := decodeListMachineEventsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListMachineExecutions invokes list-machine-executions operation.
-//
-// Queries all open sessions belonging to the caller on the machine in parallel and merges their live
-// background executions, newest first. Does not store process state in Fleet; sessions that are
-// temporarily unreachable or run an older Agent are reported in `unavailable_sessions` rather than
-// failing the whole response. Requires `fleet:machines.login` on the machine.
-//
-// GET /api/v1/machines/{machineId}/executions
-func (c *Client) ListMachineExecutions(ctx context.Context, params ListMachineExecutionsParams) (*ExecutionList, error) {
-	res, err := c.sendListMachineExecutions(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListMachineExecutions(ctx context.Context, params ListMachineExecutionsParams) (res *ExecutionList, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-machine-executions"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/executions"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListMachineExecutionsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/machines/"
-	{
-		// Encode "machineId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "machineId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.MachineId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/executions"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "state" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "state",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.State.Get(); ok {
-				return e.EncodeValue(conv.StringToString(string(val)))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListMachineExecutionsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListMachineExecutionsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -8277,160 +8276,6 @@ func (c *Client) sendListPrivilegeRequests(ctx context.Context, params ListPrivi
 
 	stage = "DecodeResponse"
 	result, err := decodeListPrivilegeRequestsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListSessionExecutions invokes list-session-executions operation.
-//
-// Queries the session process live for its background executions, newest first. Returns an empty list
-// when the session is already closed (for example after the machine rebooted).
-//
-// GET /api/v1/sessions/{sessionId}/executions
-func (c *Client) ListSessionExecutions(ctx context.Context, params ListSessionExecutionsParams) (*ExecutionList, error) {
-	res, err := c.sendListSessionExecutions(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListSessionExecutions(ctx context.Context, params ListSessionExecutionsParams) (res *ExecutionList, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-session-executions"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/executions"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListSessionExecutionsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/sessions/"
-	{
-		// Encode "sessionId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "sessionId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.SessionId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/executions"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "state" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "state",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.State.Get(); ok {
-				return e.EncodeValue(conv.StringToString(string(val)))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListSessionExecutionsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListSessionExecutionsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -9345,24 +9190,24 @@ func (c *Client) sendPrepareParticipantMigration(ctx context.Context, request *M
 	return result, nil
 }
 
-// ReadSessionExecutionOutput invokes read-session-execution-output operation.
+// ReadMachineCommandOutput invokes read-machine-command-output operation.
 //
-// Reads a bounded slice of a background execution's persisted output file from the session process.
+// Reads a bounded slice of a background command's persisted output file from the machine's Agent.
 // Choose at most one addressing mode: `tail_lines`, `start_line` (with optional `max_lines`), or
 // `offset` (with optional `max_bytes`). When none is specified, returns the last 200 lines of the
-// combined output stream.
+// combined output stream. Requires `fleet:machines.login` on the machine.
 //
-// GET /api/v1/sessions/{sessionId}/executions/{executionId}/output
-func (c *Client) ReadSessionExecutionOutput(ctx context.Context, params ReadSessionExecutionOutputParams) (*ExecutionOutput, error) {
-	res, err := c.sendReadSessionExecutionOutput(ctx, params)
+// GET /api/v1/machines/{machineId}/commands/{commandId}/output
+func (c *Client) ReadMachineCommandOutput(ctx context.Context, params ReadMachineCommandOutputParams) (*MachineCommandOutput, error) {
+	res, err := c.sendReadMachineCommandOutput(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendReadSessionExecutionOutput(ctx context.Context, params ReadSessionExecutionOutputParams) (res *ExecutionOutput, err error) {
+func (c *Client) sendReadMachineCommandOutput(ctx context.Context, params ReadMachineCommandOutputParams) (res *MachineCommandOutput, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("read-session-execution-output"),
+		otelogen.OperationID("read-machine-command-output"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/executions/{executionId}/output"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/commands/{commandId}/output"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -9378,7 +9223,7 @@ func (c *Client) sendReadSessionExecutionOutput(ctx context.Context, params Read
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ReadSessionExecutionOutputOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ReadMachineCommandOutputOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -9396,16 +9241,16 @@ func (c *Client) sendReadSessionExecutionOutput(ctx context.Context, params Read
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [5]string
-	pathParts[0] = "/api/v1/sessions/"
+	pathParts[0] = "/api/v1/machines/"
 	{
-		// Encode "sessionId" parameter.
+		// Encode "machineId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "sessionId",
+			Param:   "machineId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.SessionId))
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -9415,16 +9260,16 @@ func (c *Client) sendReadSessionExecutionOutput(ctx context.Context, params Read
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/executions/"
+	pathParts[2] = "/commands/"
 	{
-		// Encode "executionId" parameter.
+		// Encode "commandId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "executionId",
+			Param:   "commandId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.ExecutionId))
+			return e.EncodeValue(conv.StringToString(params.CommandId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -9554,7 +9399,7 @@ func (c *Client) sendReadSessionExecutionOutput(ctx context.Context, params Read
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ReadSessionExecutionOutputOperation, r); {
+			switch err := c.securityBearerAuth(ctx, ReadMachineCommandOutputOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -9597,7 +9442,7 @@ func (c *Client) sendReadSessionExecutionOutput(ctx context.Context, params Read
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeReadSessionExecutionOutputResponse(resp)
+	result, err := decodeReadMachineCommandOutputResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -9800,7 +9645,7 @@ func (c *Client) sendRenewParticipant(ctx context.Context, request *RenewPartici
 //     `metadata.line` and `metadata.column`;
 //   - `MCP_CONFIGURATION_WRITE_FAILED` when the machine could not write the file;
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.controlplane.mcp.v1`;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;
 //   - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
@@ -9961,9 +9806,14 @@ func (c *Client) sendReplaceMcpConfiguration(ctx context.Context, request *Repla
 // Inside the command, `sudo` works without a prompt while the caller has `fleet:machines.admin` on the
 // machine, and refuses otherwise.
 //
-// After any required context preparation, the request is held until the command ends, at most
-// `timeout_seconds` and a few seconds more. Neither the command nor its output is hidden from the
-// platform: do not put secrets into either.
+// After any required context preparation, a foreground request is held until the command ends, at most
+// `timeout_seconds` and a few seconds more. When `background` is true, the Agent starts the command
+// detached, persists its output to a per-boot runtime file, and returns immediately with `command`
+// (including `command_id` and `output_path`); while it runs, the Agent proactively reports a
+// `leaflow.fleet.command.running` EventBus heartbeat every 30 minutes and a terminal
+// `leaflow.fleet.command.exited` EventBus event upon completion. Fleet keeps no database table for
+// background commands; rebooting the machine clears all running commands. Neither the command nor its
+// output is hidden from the platform: do not put secrets into either.
 //
 // Requires `fleet:machines.login` on the machine.
 //
@@ -10308,22 +10158,23 @@ func (c *Client) sendSendMcpRequest(ctx context.Context, request *SendMcpRequest
 	return result, nil
 }
 
-// StopSessionExecution invokes stop-session-execution operation.
+// StopMachineCommand invokes stop-machine-command operation.
 //
-// Stops a running background execution in the session. Stopping an already exited execution succeeds
-// and returns its final metadata.
+// Stops a running background command belonging to the caller on the machine. Stopping an already
+// exited command succeeds and returns its final metadata. Requires `fleet:machines.login` on the
+// machine.
 //
-// POST /api/v1/sessions/{sessionId}/executions/{executionId}:stop
-func (c *Client) StopSessionExecution(ctx context.Context, params StopSessionExecutionParams) (*ExecutionResource, error) {
-	res, err := c.sendStopSessionExecution(ctx, params)
+// POST /api/v1/machines/{machineId}/commands/{commandId}:stop
+func (c *Client) StopMachineCommand(ctx context.Context, params StopMachineCommandParams) (*MachineCommandResource, error) {
+	res, err := c.sendStopMachineCommand(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendStopSessionExecution(ctx context.Context, params StopSessionExecutionParams) (res *ExecutionResource, err error) {
+func (c *Client) sendStopMachineCommand(ctx context.Context, params StopMachineCommandParams) (res *MachineCommandResource, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("stop-session-execution"),
+		otelogen.OperationID("stop-machine-command"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/sessions/{sessionId}/executions/{executionId}:stop"),
+		semconv.URLTemplateKey.String("/api/v1/machines/{machineId}/commands/{commandId}:stop"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -10339,7 +10190,7 @@ func (c *Client) sendStopSessionExecution(ctx context.Context, params StopSessio
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, StopSessionExecutionOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, StopMachineCommandOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -10357,16 +10208,16 @@ func (c *Client) sendStopSessionExecution(ctx context.Context, params StopSessio
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [5]string
-	pathParts[0] = "/api/v1/sessions/"
+	pathParts[0] = "/api/v1/machines/"
 	{
-		// Encode "sessionId" parameter.
+		// Encode "machineId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "sessionId",
+			Param:   "machineId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.SessionId))
+			return e.EncodeValue(conv.UUIDToString(params.MachineId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -10376,16 +10227,16 @@ func (c *Client) sendStopSessionExecution(ctx context.Context, params StopSessio
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/executions/"
+	pathParts[2] = "/commands/"
 	{
-		// Encode "executionId" parameter.
+		// Encode "commandId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "executionId",
+			Param:   "commandId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.ExecutionId))
+			return e.EncodeValue(conv.StringToString(params.CommandId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -10409,7 +10260,7 @@ func (c *Client) sendStopSessionExecution(ctx context.Context, params StopSessio
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, StopSessionExecutionOperation, r); {
+			switch err := c.securityBearerAuth(ctx, StopMachineCommandOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -10452,7 +10303,7 @@ func (c *Client) sendStopSessionExecution(ctx context.Context, params StopSessio
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeStopSessionExecutionResponse(resp)
+	result, err := decodeStopMachineCommandResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -11219,7 +11070,7 @@ func (c *Client) sendUpdateMachineLocalAccount(ctx context.Context, request *Upd
 //   - `MCP_CONFIGURATION_INVALID` when the file cannot be read or is not valid; replace it whole first;
 //   - `MCP_CONFIGURATION_WRITE_FAILED` when the machine could not write the file;
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.controlplane.mcp.v1`;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;
 //   - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;

@@ -33,8 +33,8 @@ func (s *CreateMachineRegistrationRequest) setDefaults() {
 // setDefaults set default value of fields.
 func (s *RunCommandRequest) setDefaults() {
 	{
-		val := int64(60)
-		s.TimeoutSeconds.SetTo(val)
+		val := bool(false)
+		s.Background.SetTo(val)
 	}
 }
 

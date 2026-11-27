@@ -6013,6 +6013,211 @@ func (s *Server) handleGetMachineRequest(args [1]string, argsEscaped bool, w htt
 	}
 }
 
+// handleGetMachineCommandRequest handles get-machine-command operation.
+//
+// Queries the machine's Agent live for the current metadata, duration, exit status, and output file
+// path of one background command. Requires `fleet:machines.login` on the machine.
+//
+// GET /api/v1/machines/{machineId}/commands/{commandId}
+func (s *Server) handleGetMachineCommandRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-machine-command"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/machines/{machineId}/commands/{commandId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetMachineCommandOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetMachineCommandOperation,
+			ID:   "get-machine-command",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, GetMachineCommandOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetMachineCommandParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *MachineCommandResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetMachineCommandOperation,
+			OperationSummary: "Get a background command",
+			OperationID:      "get-machine-command",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "machineId",
+					In:   "path",
+				}: params.MachineId,
+				{
+					Name: "commandId",
+					In:   "path",
+				}: params.CommandId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetMachineCommandParams
+			Response = *MachineCommandResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetMachineCommandParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetMachineCommand(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetMachineCommand(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetMachineCommandResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleGetMachineLocalAccountRequest handles get-machine-local-account operation.
 //
 // Returns the binding of a local account on the machine. Fails with `LOCAL_ACCOUNT_NOT_FOUND` when the
@@ -6427,7 +6632,7 @@ func (s *Server) handleGetMachineRegistrationRequest(args [1]string, argsEscaped
 // Fails with:
 //
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.controlplane.mcp.v1`;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;
 //   - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
@@ -7664,210 +7869,6 @@ func (s *Server) handleGetSessionRequest(args [1]string, argsEscaped bool, w htt
 	}
 }
 
-// handleGetSessionExecutionRequest handles get-session-execution operation.
-//
-// Queries the session process live for the current metadata and status of one background execution.
-//
-// GET /api/v1/sessions/{sessionId}/executions/{executionId}
-func (s *Server) handleGetSessionExecutionRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-session-execution"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/executions/{executionId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetSessionExecutionOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetSessionExecutionOperation,
-			ID:   "get-session-execution",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetSessionExecutionOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetSessionExecutionParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *ExecutionResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetSessionExecutionOperation,
-			OperationSummary: "Get a background execution",
-			OperationID:      "get-session-execution",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "sessionId",
-					In:   "path",
-				}: params.SessionId,
-				{
-					Name: "executionId",
-					In:   "path",
-				}: params.ExecutionId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetSessionExecutionParams
-			Response = *ExecutionResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetSessionExecutionParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetSessionExecution(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetSessionExecution(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetSessionExecutionResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleGetSessionRtcConfigurationRequest handles get-session-rtc-configuration operation.
 //
 // Returns the STUN and TURN servers for the PeerConnections the caller starts to the session, with
@@ -8702,6 +8703,212 @@ func (s *Server) handleListGroupsRequest(args [0]string, argsEscaped bool, w htt
 	}
 }
 
+// handleListMachineCommandsRequest handles list-machine-commands operation.
+//
+// Queries the machine's Agent live for background commands belonging to the caller since the machine
+// booted, newest first. Fleet does not store command state in its database; after a machine reboot, no
+// running commands remain. Requires `fleet:machines.login` on the machine.
+//
+// GET /api/v1/machines/{machineId}/commands
+func (s *Server) handleListMachineCommandsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-machine-commands"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/machines/{machineId}/commands"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListMachineCommandsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListMachineCommandsOperation,
+			ID:   "list-machine-commands",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, ListMachineCommandsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListMachineCommandsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *MachineCommandList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListMachineCommandsOperation,
+			OperationSummary: "List background commands on a machine",
+			OperationID:      "list-machine-commands",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "machineId",
+					In:   "path",
+				}: params.MachineId,
+				{
+					Name: "state",
+					In:   "query",
+				}: params.State,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListMachineCommandsParams
+			Response = *MachineCommandList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListMachineCommandsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListMachineCommands(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListMachineCommands(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListMachineCommandsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleListMachineEventsRequest handles list-machine-events operation.
 //
 // Returns what the machine reported about itself, newest first, such as a directory account it does
@@ -8907,213 +9114,6 @@ func (s *Server) handleListMachineEventsRequest(args [1]string, argsEscaped bool
 	}
 
 	if err := encodeListMachineEventsResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListMachineExecutionsRequest handles list-machine-executions operation.
-//
-// Queries all open sessions belonging to the caller on the machine in parallel and merges their live
-// background executions, newest first. Does not store process state in Fleet; sessions that are
-// temporarily unreachable or run an older Agent are reported in `unavailable_sessions` rather than
-// failing the whole response. Requires `fleet:machines.login` on the machine.
-//
-// GET /api/v1/machines/{machineId}/executions
-func (s *Server) handleListMachineExecutionsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-machine-executions"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/machines/{machineId}/executions"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListMachineExecutionsOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListMachineExecutionsOperation,
-			ID:   "list-machine-executions",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListMachineExecutionsOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListMachineExecutionsParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *ExecutionList
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListMachineExecutionsOperation,
-			OperationSummary: "List background executions on a machine",
-			OperationID:      "list-machine-executions",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "machineId",
-					In:   "path",
-				}: params.MachineId,
-				{
-					Name: "state",
-					In:   "query",
-				}: params.State,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListMachineExecutionsParams
-			Response = *ExecutionList
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListMachineExecutionsParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListMachineExecutions(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListMachineExecutions(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListMachineExecutionsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -10163,211 +10163,6 @@ func (s *Server) handleListPrivilegeRequestsRequest(args [0]string, argsEscaped 
 	}
 
 	if err := encodeListPrivilegeRequestsResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListSessionExecutionsRequest handles list-session-executions operation.
-//
-// Queries the session process live for its background executions, newest first. Returns an empty list
-// when the session is already closed (for example after the machine rebooted).
-//
-// GET /api/v1/sessions/{sessionId}/executions
-func (s *Server) handleListSessionExecutionsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-session-executions"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/executions"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListSessionExecutionsOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListSessionExecutionsOperation,
-			ID:   "list-session-executions",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListSessionExecutionsOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListSessionExecutionsParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *ExecutionList
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListSessionExecutionsOperation,
-			OperationSummary: "List background executions in a session",
-			OperationID:      "list-session-executions",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "sessionId",
-					In:   "path",
-				}: params.SessionId,
-				{
-					Name: "state",
-					In:   "query",
-				}: params.State,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListSessionExecutionsParams
-			Response = *ExecutionList
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListSessionExecutionsParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListSessionExecutions(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListSessionExecutions(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListSessionExecutionsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -11465,27 +11260,27 @@ func (s *Server) handlePrepareParticipantMigrationRequest(args [2]string, argsEs
 	}
 }
 
-// handleReadSessionExecutionOutputRequest handles read-session-execution-output operation.
+// handleReadMachineCommandOutputRequest handles read-machine-command-output operation.
 //
-// Reads a bounded slice of a background execution's persisted output file from the session process.
+// Reads a bounded slice of a background command's persisted output file from the machine's Agent.
 // Choose at most one addressing mode: `tail_lines`, `start_line` (with optional `max_lines`), or
 // `offset` (with optional `max_bytes`). When none is specified, returns the last 200 lines of the
-// combined output stream.
+// combined output stream. Requires `fleet:machines.login` on the machine.
 //
-// GET /api/v1/sessions/{sessionId}/executions/{executionId}/output
-func (s *Server) handleReadSessionExecutionOutputRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/machines/{machineId}/commands/{commandId}/output
+func (s *Server) handleReadMachineCommandOutputRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("read-session-execution-output"),
+		otelogen.OperationID("read-machine-command-output"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/executions/{executionId}/output"),
+		semconv.HTTPRouteKey.String("/api/v1/machines/{machineId}/commands/{commandId}/output"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ReadSessionExecutionOutputOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ReadMachineCommandOutputOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -11540,15 +11335,15 @@ func (s *Server) handleReadSessionExecutionOutputRequest(args [2]string, argsEsc
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ReadSessionExecutionOutputOperation,
-			ID:   "read-session-execution-output",
+			Name: ReadMachineCommandOutputOperation,
+			ID:   "read-machine-command-output",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ReadSessionExecutionOutputOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, ReadMachineCommandOutputOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -11590,7 +11385,7 @@ func (s *Server) handleReadSessionExecutionOutputRequest(args [2]string, argsEsc
 			return
 		}
 	}
-	params, err := decodeReadSessionExecutionOutputParams(args, argsEscaped, r)
+	params, err := decodeReadMachineCommandOutputParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -11603,24 +11398,24 @@ func (s *Server) handleReadSessionExecutionOutputRequest(args [2]string, argsEsc
 
 	var rawBody []byte
 
-	var response *ExecutionOutput
+	var response *MachineCommandOutput
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ReadSessionExecutionOutputOperation,
-			OperationSummary: "Read output of a background execution",
-			OperationID:      "read-session-execution-output",
+			OperationName:    ReadMachineCommandOutputOperation,
+			OperationSummary: "Read output of a background command",
+			OperationID:      "read-machine-command-output",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "sessionId",
+					Name: "machineId",
 					In:   "path",
-				}: params.SessionId,
+				}: params.MachineId,
 				{
-					Name: "executionId",
+					Name: "commandId",
 					In:   "path",
-				}: params.ExecutionId,
+				}: params.CommandId,
 				{
 					Name: "stream",
 					In:   "query",
@@ -11651,8 +11446,8 @@ func (s *Server) handleReadSessionExecutionOutputRequest(args [2]string, argsEsc
 
 		type (
 			Request  = struct{}
-			Params   = ReadSessionExecutionOutputParams
-			Response = *ExecutionOutput
+			Params   = ReadMachineCommandOutputParams
+			Response = *MachineCommandOutput
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -11661,14 +11456,14 @@ func (s *Server) handleReadSessionExecutionOutputRequest(args [2]string, argsEsc
 		](
 			m,
 			mreq,
-			unpackReadSessionExecutionOutputParams,
+			unpackReadMachineCommandOutputParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ReadSessionExecutionOutput(ctx, params)
+				response, err = s.h.ReadMachineCommandOutput(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ReadSessionExecutionOutput(ctx, params)
+		response, err = s.h.ReadMachineCommandOutput(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -11687,7 +11482,7 @@ func (s *Server) handleReadSessionExecutionOutputRequest(args [2]string, argsEsc
 		return
 	}
 
-	if err := encodeReadSessionExecutionOutputResponse(response, w, span); err != nil {
+	if err := encodeReadMachineCommandOutputResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -11947,7 +11742,7 @@ func (s *Server) handleRenewParticipantRequest(args [2]string, argsEscaped bool,
 //     `metadata.line` and `metadata.column`;
 //   - `MCP_CONFIGURATION_WRITE_FAILED` when the machine could not write the file;
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.controlplane.mcp.v1`;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;
 //   - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
@@ -12179,9 +11974,14 @@ func (s *Server) handleReplaceMcpConfigurationRequest(args [1]string, argsEscape
 // Inside the command, `sudo` works without a prompt while the caller has `fleet:machines.admin` on the
 // machine, and refuses otherwise.
 //
-// After any required context preparation, the request is held until the command ends, at most
-// `timeout_seconds` and a few seconds more. Neither the command nor its output is hidden from the
-// platform: do not put secrets into either.
+// After any required context preparation, a foreground request is held until the command ends, at most
+// `timeout_seconds` and a few seconds more. When `background` is true, the Agent starts the command
+// detached, persists its output to a per-boot runtime file, and returns immediately with `command`
+// (including `command_id` and `output_path`); while it runs, the Agent proactively reports a
+// `leaflow.fleet.command.running` EventBus heartbeat every 30 minutes and a terminal
+// `leaflow.fleet.command.exited` EventBus event upon completion. Fleet keeps no database table for
+// background commands; rebooting the machine clears all running commands. Neither the command nor its
+// output is hidden from the platform: do not put secrets into either.
 //
 // Requires `fleet:machines.login` on the machine.
 //
@@ -12653,25 +12453,26 @@ func (s *Server) handleSendMcpRequestRequest(args [2]string, argsEscaped bool, w
 	}
 }
 
-// handleStopSessionExecutionRequest handles stop-session-execution operation.
+// handleStopMachineCommandRequest handles stop-machine-command operation.
 //
-// Stops a running background execution in the session. Stopping an already exited execution succeeds
-// and returns its final metadata.
+// Stops a running background command belonging to the caller on the machine. Stopping an already
+// exited command succeeds and returns its final metadata. Requires `fleet:machines.login` on the
+// machine.
 //
-// POST /api/v1/sessions/{sessionId}/executions/{executionId}:stop
-func (s *Server) handleStopSessionExecutionRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/machines/{machineId}/commands/{commandId}:stop
+func (s *Server) handleStopMachineCommandRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("stop-session-execution"),
+		otelogen.OperationID("stop-machine-command"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/sessions/{sessionId}/executions/{executionId}:stop"),
+		semconv.HTTPRouteKey.String("/api/v1/machines/{machineId}/commands/{commandId}:stop"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), StopSessionExecutionOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), StopMachineCommandOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -12726,15 +12527,15 @@ func (s *Server) handleStopSessionExecutionRequest(args [2]string, argsEscaped b
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: StopSessionExecutionOperation,
-			ID:   "stop-session-execution",
+			Name: StopMachineCommandOperation,
+			ID:   "stop-machine-command",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, StopSessionExecutionOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, StopMachineCommandOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -12776,7 +12577,7 @@ func (s *Server) handleStopSessionExecutionRequest(args [2]string, argsEscaped b
 			return
 		}
 	}
-	params, err := decodeStopSessionExecutionParams(args, argsEscaped, r)
+	params, err := decodeStopMachineCommandParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -12789,32 +12590,32 @@ func (s *Server) handleStopSessionExecutionRequest(args [2]string, argsEscaped b
 
 	var rawBody []byte
 
-	var response *ExecutionResource
+	var response *MachineCommandResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    StopSessionExecutionOperation,
-			OperationSummary: "Stop a background execution",
-			OperationID:      "stop-session-execution",
+			OperationName:    StopMachineCommandOperation,
+			OperationSummary: "Stop a background command",
+			OperationID:      "stop-machine-command",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "sessionId",
+					Name: "machineId",
 					In:   "path",
-				}: params.SessionId,
+				}: params.MachineId,
 				{
-					Name: "executionId",
+					Name: "commandId",
 					In:   "path",
-				}: params.ExecutionId,
+				}: params.CommandId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = StopSessionExecutionParams
-			Response = *ExecutionResource
+			Params   = StopMachineCommandParams
+			Response = *MachineCommandResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -12823,14 +12624,14 @@ func (s *Server) handleStopSessionExecutionRequest(args [2]string, argsEscaped b
 		](
 			m,
 			mreq,
-			unpackStopSessionExecutionParams,
+			unpackStopMachineCommandParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.StopSessionExecution(ctx, params)
+				response, err = s.h.StopMachineCommand(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.StopSessionExecution(ctx, params)
+		response, err = s.h.StopMachineCommand(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -12849,7 +12650,7 @@ func (s *Server) handleStopSessionExecutionRequest(args [2]string, argsEscaped b
 		return
 	}
 
-	if err := encodeStopSessionExecutionResponse(response, w, span); err != nil {
+	if err := encodeStopMachineCommandResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -13967,7 +13768,7 @@ func (s *Server) handleUpdateMachineLocalAccountRequest(args [2]string, argsEsca
 //   - `MCP_CONFIGURATION_INVALID` when the file cannot be read or is not valid; replace it whole first;
 //   - `MCP_CONFIGURATION_WRITE_FAILED` when the machine could not write the file;
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.controlplane.mcp.v1`;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;
 //   - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;

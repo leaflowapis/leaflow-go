@@ -2685,6 +2685,144 @@ func decodeGetMachineParams(args [1]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
+// GetMachineCommandParams is parameters of get-machine-command operation.
+type GetMachineCommandParams struct {
+	MachineId uuid.UUID
+	CommandId string
+}
+
+func unpackGetMachineCommandParams(packed middleware.Parameters) (params GetMachineCommandParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "machineId",
+			In:   "path",
+		}
+		params.MachineId = packed[key].(uuid.UUID)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "commandId",
+			In:   "path",
+		}
+		params.CommandId = packed[key].(string)
+	}
+	return params
+}
+
+func decodeGetMachineCommandParams(args [2]string, argsEscaped bool, r *http.Request) (params GetMachineCommandParams, _ error) {
+	// Decode path: machineId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "machineId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.MachineId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "machineId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: commandId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "commandId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.CommandId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     1,
+					MinLengthSet:  true,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^[A-Za-z0-9-]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.CommandId)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "commandId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetMachineLocalAccountParams is parameters of get-machine-local-account operation.
 type GetMachineLocalAccountParams struct {
 	MachineId uuid.UUID
@@ -3615,164 +3753,6 @@ func decodeGetSessionParams(args [1]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
-// GetSessionExecutionParams is parameters of get-session-execution operation.
-type GetSessionExecutionParams struct {
-	SessionId   string
-	ExecutionId string
-}
-
-func unpackGetSessionExecutionParams(packed middleware.Parameters) (params GetSessionExecutionParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "sessionId",
-			In:   "path",
-		}
-		params.SessionId = packed[key].(string)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "executionId",
-			In:   "path",
-		}
-		params.ExecutionId = packed[key].(string)
-	}
-	return params
-}
-
-func decodeGetSessionExecutionParams(args [2]string, argsEscaped bool, r *http.Request) (params GetSessionExecutionParams, _ error) {
-	// Decode path: sessionId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "sessionId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.SessionId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     40,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         regexMap["^[a-z0-9-]+$"],
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.SessionId)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "sessionId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode path: executionId.
-	if err := func() error {
-		param := args[1]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[1])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "executionId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.ExecutionId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     64,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         regexMap["^[A-Za-z0-9-]+$"],
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.ExecutionId)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "executionId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // GetSessionRtcConfigurationParams is parameters of get-session-rtc-configuration operation.
 type GetSessionRtcConfigurationParams struct {
 	SessionId string
@@ -4573,6 +4553,139 @@ func decodeListGroupsParams(args [0]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
+// ListMachineCommandsParams is parameters of list-machine-commands operation.
+type ListMachineCommandsParams struct {
+	MachineId uuid.UUID
+	// Filter by background command state.
+	State OptCommandState `json:",omitempty,omitzero"`
+}
+
+func unpackListMachineCommandsParams(packed middleware.Parameters) (params ListMachineCommandsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "machineId",
+			In:   "path",
+		}
+		params.MachineId = packed[key].(uuid.UUID)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "state",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.State = v.(OptCommandState)
+		}
+	}
+	return params
+}
+
+func decodeListMachineCommandsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListMachineCommandsParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode path: machineId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "machineId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.MachineId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "machineId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: state.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "state",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotStateVal CommandState
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotStateVal = CommandState(c)
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.State.SetTo(paramsDotStateVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.State.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "state",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // ListMachineEventsParams is parameters of list-machine-events operation.
 type ListMachineEventsParams struct {
 	MachineId uuid.UUID
@@ -4863,139 +4976,6 @@ func decodeListMachineEventsParams(args [1]string, argsEscaped bool, r *http.Req
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "type",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// ListMachineExecutionsParams is parameters of list-machine-executions operation.
-type ListMachineExecutionsParams struct {
-	MachineId uuid.UUID
-	// Filter by execution state.
-	State OptExecutionState `json:",omitempty,omitzero"`
-}
-
-func unpackListMachineExecutionsParams(packed middleware.Parameters) (params ListMachineExecutionsParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "machineId",
-			In:   "path",
-		}
-		params.MachineId = packed[key].(uuid.UUID)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "state",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.State = v.(OptExecutionState)
-		}
-	}
-	return params
-}
-
-func decodeListMachineExecutionsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListMachineExecutionsParams, _ error) {
-	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode path: machineId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "machineId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToUUID(val)
-				if err != nil {
-					return err
-				}
-
-				params.MachineId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "machineId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode query: state.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "state",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotStateVal ExecutionState
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotStateVal = ExecutionState(c)
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.State.SetTo(paramsDotStateVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.State.Get(); ok {
-					if err := func() error {
-						if err := value.Validate(); err != nil {
-							return err
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "state",
 			In:   "query",
 			Err:  err,
 		}
@@ -6270,159 +6250,6 @@ func decodeListPrivilegeRequestsParams(args [0]string, argsEscaped bool, r *http
 	return params, nil
 }
 
-// ListSessionExecutionsParams is parameters of list-session-executions operation.
-type ListSessionExecutionsParams struct {
-	SessionId string
-	// Filter by execution state.
-	State OptExecutionState `json:",omitempty,omitzero"`
-}
-
-func unpackListSessionExecutionsParams(packed middleware.Parameters) (params ListSessionExecutionsParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "sessionId",
-			In:   "path",
-		}
-		params.SessionId = packed[key].(string)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "state",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.State = v.(OptExecutionState)
-		}
-	}
-	return params
-}
-
-func decodeListSessionExecutionsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListSessionExecutionsParams, _ error) {
-	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode path: sessionId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "sessionId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.SessionId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     40,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         regexMap["^[a-z0-9-]+$"],
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.SessionId)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "sessionId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode query: state.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "state",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotStateVal ExecutionState
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotStateVal = ExecutionState(c)
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.State.SetTo(paramsDotStateVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if value, ok := params.State.Get(); ok {
-					if err := func() error {
-						if err := value.Validate(); err != nil {
-							return err
-						}
-						return nil
-					}(); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "state",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // ListSessionParticipantsParams is parameters of list-session-participants operation.
 type ListSessionParticipantsParams struct {
 	SessionId string
@@ -7645,12 +7472,12 @@ func decodePrepareParticipantMigrationParams(args [2]string, argsEscaped bool, r
 	return params, nil
 }
 
-// ReadSessionExecutionOutputParams is parameters of read-session-execution-output operation.
-type ReadSessionExecutionOutputParams struct {
-	SessionId   string
-	ExecutionId string
+// ReadMachineCommandOutputParams is parameters of read-machine-command-output operation.
+type ReadMachineCommandOutputParams struct {
+	MachineId uuid.UUID
+	CommandId string
 	// Which output stream to read; defaults to `combined`.
-	Stream OptExecutionStream `json:",omitempty,omitzero"`
+	Stream OptCommandOutputStream `json:",omitempty,omitzero"`
 	// Return at most the last N lines.
 	TailLines OptInt32 `json:",omitempty,omitzero"`
 	// 1-based starting line number.
@@ -7663,20 +7490,20 @@ type ReadSessionExecutionOutputParams struct {
 	MaxBytes OptInt32 `json:",omitempty,omitzero"`
 }
 
-func unpackReadSessionExecutionOutputParams(packed middleware.Parameters) (params ReadSessionExecutionOutputParams) {
+func unpackReadMachineCommandOutputParams(packed middleware.Parameters) (params ReadMachineCommandOutputParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "sessionId",
+			Name: "machineId",
 			In:   "path",
 		}
-		params.SessionId = packed[key].(string)
+		params.MachineId = packed[key].(uuid.UUID)
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "executionId",
+			Name: "commandId",
 			In:   "path",
 		}
-		params.ExecutionId = packed[key].(string)
+		params.CommandId = packed[key].(string)
 	}
 	{
 		key := middleware.ParameterKey{
@@ -7684,7 +7511,7 @@ func unpackReadSessionExecutionOutputParams(packed middleware.Parameters) (param
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.Stream = v.(OptExecutionStream)
+			params.Stream = v.(OptCommandOutputStream)
 		}
 	}
 	{
@@ -7735,9 +7562,9 @@ func unpackReadSessionExecutionOutputParams(packed middleware.Parameters) (param
 	return params
 }
 
-func decodeReadSessionExecutionOutputParams(args [2]string, argsEscaped bool, r *http.Request) (params ReadSessionExecutionOutputParams, _ error) {
+func decodeReadMachineCommandOutputParams(args [2]string, argsEscaped bool, r *http.Request) (params ReadMachineCommandOutputParams, _ error) {
 	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode path: sessionId.
+	// Decode path: machineId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -7749,7 +7576,7 @@ func decodeReadSessionExecutionOutputParams(args [2]string, argsEscaped bool, r 
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "sessionId",
+				Param:   "machineId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -7761,32 +7588,12 @@ func decodeReadSessionExecutionOutputParams(args [2]string, argsEscaped bool, r 
 					return err
 				}
 
-				c, err := conv.ToString(val)
+				c, err := conv.ToUUID(val)
 				if err != nil {
 					return err
 				}
 
-				params.SessionId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     40,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         regexMap["^[a-z0-9-]+$"],
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.SessionId)); err != nil {
-					return errors.Wrap(err, "string")
-				}
+				params.MachineId = c
 				return nil
 			}(); err != nil {
 				return err
@@ -7797,12 +7604,12 @@ func decodeReadSessionExecutionOutputParams(args [2]string, argsEscaped bool, r 
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "sessionId",
+			Name: "machineId",
 			In:   "path",
 			Err:  err,
 		}
 	}
-	// Decode path: executionId.
+	// Decode path: commandId.
 	if err := func() error {
 		param := args[1]
 		if argsEscaped {
@@ -7814,7 +7621,7 @@ func decodeReadSessionExecutionOutputParams(args [2]string, argsEscaped bool, r 
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "executionId",
+				Param:   "commandId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -7831,7 +7638,7 @@ func decodeReadSessionExecutionOutputParams(args [2]string, argsEscaped bool, r 
 					return err
 				}
 
-				params.ExecutionId = c
+				params.CommandId = c
 				return nil
 			}(); err != nil {
 				return err
@@ -7849,7 +7656,7 @@ func decodeReadSessionExecutionOutputParams(args [2]string, argsEscaped bool, r 
 					MinNumericSet: false,
 					MaxNumeric:    0,
 					MaxNumericSet: false,
-				}).Validate(string(params.ExecutionId)); err != nil {
+				}).Validate(string(params.CommandId)); err != nil {
 					return errors.Wrap(err, "string")
 				}
 				return nil
@@ -7862,7 +7669,7 @@ func decodeReadSessionExecutionOutputParams(args [2]string, argsEscaped bool, r 
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "executionId",
+			Name: "commandId",
 			In:   "path",
 			Err:  err,
 		}
@@ -7877,7 +7684,7 @@ func decodeReadSessionExecutionOutputParams(args [2]string, argsEscaped bool, r 
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotStreamVal ExecutionStream
+				var paramsDotStreamVal CommandOutputStream
 				if err := func() error {
 					val, err := d.DecodeValue()
 					if err != nil {
@@ -7889,7 +7696,7 @@ func decodeReadSessionExecutionOutputParams(args [2]string, argsEscaped bool, r 
 						return err
 					}
 
-					paramsDotStreamVal = ExecutionStream(c)
+					paramsDotStreamVal = CommandOutputStream(c)
 					return nil
 				}(); err != nil {
 					return err
@@ -8682,32 +8489,32 @@ func decodeSendMcpRequestParams(args [2]string, argsEscaped bool, r *http.Reques
 	return params, nil
 }
 
-// StopSessionExecutionParams is parameters of stop-session-execution operation.
-type StopSessionExecutionParams struct {
-	SessionId   string
-	ExecutionId string
+// StopMachineCommandParams is parameters of stop-machine-command operation.
+type StopMachineCommandParams struct {
+	MachineId uuid.UUID
+	CommandId string
 }
 
-func unpackStopSessionExecutionParams(packed middleware.Parameters) (params StopSessionExecutionParams) {
+func unpackStopMachineCommandParams(packed middleware.Parameters) (params StopMachineCommandParams) {
 	{
 		key := middleware.ParameterKey{
-			Name: "sessionId",
+			Name: "machineId",
 			In:   "path",
 		}
-		params.SessionId = packed[key].(string)
+		params.MachineId = packed[key].(uuid.UUID)
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "executionId",
+			Name: "commandId",
 			In:   "path",
 		}
-		params.ExecutionId = packed[key].(string)
+		params.CommandId = packed[key].(string)
 	}
 	return params
 }
 
-func decodeStopSessionExecutionParams(args [2]string, argsEscaped bool, r *http.Request) (params StopSessionExecutionParams, _ error) {
-	// Decode path: sessionId.
+func decodeStopMachineCommandParams(args [2]string, argsEscaped bool, r *http.Request) (params StopMachineCommandParams, _ error) {
+	// Decode path: machineId.
 	if err := func() error {
 		param := args[0]
 		if argsEscaped {
@@ -8719,7 +8526,7 @@ func decodeStopSessionExecutionParams(args [2]string, argsEscaped bool, r *http.
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "sessionId",
+				Param:   "machineId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -8731,32 +8538,12 @@ func decodeStopSessionExecutionParams(args [2]string, argsEscaped bool, r *http.
 					return err
 				}
 
-				c, err := conv.ToString(val)
+				c, err := conv.ToUUID(val)
 				if err != nil {
 					return err
 				}
 
-				params.SessionId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     40,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         regexMap["^[a-z0-9-]+$"],
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.SessionId)); err != nil {
-					return errors.Wrap(err, "string")
-				}
+				params.MachineId = c
 				return nil
 			}(); err != nil {
 				return err
@@ -8767,12 +8554,12 @@ func decodeStopSessionExecutionParams(args [2]string, argsEscaped bool, r *http.
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "sessionId",
+			Name: "machineId",
 			In:   "path",
 			Err:  err,
 		}
 	}
-	// Decode path: executionId.
+	// Decode path: commandId.
 	if err := func() error {
 		param := args[1]
 		if argsEscaped {
@@ -8784,7 +8571,7 @@ func decodeStopSessionExecutionParams(args [2]string, argsEscaped bool, r *http.
 		}
 		if len(param) > 0 {
 			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "executionId",
+				Param:   "commandId",
 				Value:   param,
 				Style:   uri.PathStyleSimple,
 				Explode: false,
@@ -8801,7 +8588,7 @@ func decodeStopSessionExecutionParams(args [2]string, argsEscaped bool, r *http.
 					return err
 				}
 
-				params.ExecutionId = c
+				params.CommandId = c
 				return nil
 			}(); err != nil {
 				return err
@@ -8819,7 +8606,7 @@ func decodeStopSessionExecutionParams(args [2]string, argsEscaped bool, r *http.
 					MinNumericSet: false,
 					MaxNumeric:    0,
 					MaxNumericSet: false,
-				}).Validate(string(params.ExecutionId)); err != nil {
+				}).Validate(string(params.CommandId)); err != nil {
 					return errors.Wrap(err, "string")
 				}
 				return nil
@@ -8832,7 +8619,7 @@ func decodeStopSessionExecutionParams(args [2]string, argsEscaped bool, r *http.
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "executionId",
+			Name: "commandId",
 			In:   "path",
 			Err:  err,
 		}

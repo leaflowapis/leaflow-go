@@ -458,6 +458,16 @@ func (UnimplementedHandler) GetMachine(ctx context.Context, params GetMachinePar
 	return r, ht.ErrNotImplemented
 }
 
+// GetMachineCommand implements get-machine-command operation.
+//
+// Queries the machine's Agent live for the current metadata, duration, exit status, and output file
+// path of one background command. Requires `fleet:machines.login` on the machine.
+//
+// GET /api/v1/machines/{machineId}/commands/{commandId}
+func (UnimplementedHandler) GetMachineCommand(ctx context.Context, params GetMachineCommandParams) (r *MachineCommandResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetMachineLocalAccount implements get-machine-local-account operation.
 //
 // Returns the binding of a local account on the machine. Fails with `LOCAL_ACCOUNT_NOT_FOUND` when the
@@ -486,7 +496,7 @@ func (UnimplementedHandler) GetMachineRegistration(ctx context.Context, params G
 // Fails with:
 //
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.controlplane.mcp.v1`;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;
 //   - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
@@ -561,15 +571,6 @@ func (UnimplementedHandler) GetSession(ctx context.Context, params GetSessionPar
 	return r, ht.ErrNotImplemented
 }
 
-// GetSessionExecution implements get-session-execution operation.
-//
-// Queries the session process live for the current metadata and status of one background execution.
-//
-// GET /api/v1/sessions/{sessionId}/executions/{executionId}
-func (UnimplementedHandler) GetSessionExecution(ctx context.Context, params GetSessionExecutionParams) (r *ExecutionResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // GetSessionRtcConfiguration implements get-session-rtc-configuration operation.
 //
 // Returns the STUN and TURN servers for the PeerConnections the caller starts to the session, with
@@ -616,6 +617,17 @@ func (UnimplementedHandler) ListGroups(ctx context.Context, params ListGroupsPar
 	return r, ht.ErrNotImplemented
 }
 
+// ListMachineCommands implements list-machine-commands operation.
+//
+// Queries the machine's Agent live for background commands belonging to the caller since the machine
+// booted, newest first. Fleet does not store command state in its database; after a machine reboot, no
+// running commands remain. Requires `fleet:machines.login` on the machine.
+//
+// GET /api/v1/machines/{machineId}/commands
+func (UnimplementedHandler) ListMachineCommands(ctx context.Context, params ListMachineCommandsParams) (r *MachineCommandList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListMachineEvents implements list-machine-events operation.
 //
 // Returns what the machine reported about itself, newest first, such as a directory account it does
@@ -623,18 +635,6 @@ func (UnimplementedHandler) ListGroups(ctx context.Context, params ListGroupsPar
 //
 // GET /api/v1/machines/{machineId}/events
 func (UnimplementedHandler) ListMachineEvents(ctx context.Context, params ListMachineEventsParams) (r *MachineEventList, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListMachineExecutions implements list-machine-executions operation.
-//
-// Queries all open sessions belonging to the caller on the machine in parallel and merges their live
-// background executions, newest first. Does not store process state in Fleet; sessions that are
-// temporarily unreachable or run an older Agent are reported in `unavailable_sessions` rather than
-// failing the whole response. Requires `fleet:machines.login` on the machine.
-//
-// GET /api/v1/machines/{machineId}/executions
-func (UnimplementedHandler) ListMachineExecutions(ctx context.Context, params ListMachineExecutionsParams) (r *ExecutionList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -685,16 +685,6 @@ func (UnimplementedHandler) ListPrivilegeAutoApprovals(ctx context.Context, para
 //
 // GET /api/v1/privilege-requests
 func (UnimplementedHandler) ListPrivilegeRequests(ctx context.Context, params ListPrivilegeRequestsParams) (r *PrivilegeRequestList, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListSessionExecutions implements list-session-executions operation.
-//
-// Queries the session process live for its background executions, newest first. Returns an empty list
-// when the session is already closed (for example after the machine rebooted).
-//
-// GET /api/v1/sessions/{sessionId}/executions
-func (UnimplementedHandler) ListSessionExecutions(ctx context.Context, params ListSessionExecutionsParams) (r *ExecutionList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -769,15 +759,15 @@ func (UnimplementedHandler) PrepareParticipantMigration(ctx context.Context, req
 	return r, ht.ErrNotImplemented
 }
 
-// ReadSessionExecutionOutput implements read-session-execution-output operation.
+// ReadMachineCommandOutput implements read-machine-command-output operation.
 //
-// Reads a bounded slice of a background execution's persisted output file from the session process.
+// Reads a bounded slice of a background command's persisted output file from the machine's Agent.
 // Choose at most one addressing mode: `tail_lines`, `start_line` (with optional `max_lines`), or
 // `offset` (with optional `max_bytes`). When none is specified, returns the last 200 lines of the
-// combined output stream.
+// combined output stream. Requires `fleet:machines.login` on the machine.
 //
-// GET /api/v1/sessions/{sessionId}/executions/{executionId}/output
-func (UnimplementedHandler) ReadSessionExecutionOutput(ctx context.Context, params ReadSessionExecutionOutputParams) (r *ExecutionOutput, _ error) {
+// GET /api/v1/machines/{machineId}/commands/{commandId}/output
+func (UnimplementedHandler) ReadMachineCommandOutput(ctx context.Context, params ReadMachineCommandOutputParams) (r *MachineCommandOutput, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -822,7 +812,7 @@ func (UnimplementedHandler) RenewParticipant(ctx context.Context, req *RenewPart
 //     `metadata.line` and `metadata.column`;
 //   - `MCP_CONFIGURATION_WRITE_FAILED` when the machine could not write the file;
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.controlplane.mcp.v1`;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;
 //   - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
@@ -848,9 +838,14 @@ func (UnimplementedHandler) ReplaceMcpConfiguration(ctx context.Context, req *Re
 // Inside the command, `sudo` works without a prompt while the caller has `fleet:machines.admin` on the
 // machine, and refuses otherwise.
 //
-// After any required context preparation, the request is held until the command ends, at most
-// `timeout_seconds` and a few seconds more. Neither the command nor its output is hidden from the
-// platform: do not put secrets into either.
+// After any required context preparation, a foreground request is held until the command ends, at most
+// `timeout_seconds` and a few seconds more. When `background` is true, the Agent starts the command
+// detached, persists its output to a per-boot runtime file, and returns immediately with `command`
+// (including `command_id` and `output_path`); while it runs, the Agent proactively reports a
+// `leaflow.fleet.command.running` EventBus heartbeat every 30 minutes and a terminal
+// `leaflow.fleet.command.exited` EventBus event upon completion. Fleet keeps no database table for
+// background commands; rebooting the machine clears all running commands. Neither the command nor its
+// output is hidden from the platform: do not put secrets into either.
 //
 // Requires `fleet:machines.login` on the machine.
 //
@@ -906,13 +901,14 @@ func (UnimplementedHandler) SendMcpRequest(ctx context.Context, req *SendMcpRequ
 	return r, ht.ErrNotImplemented
 }
 
-// StopSessionExecution implements stop-session-execution operation.
+// StopMachineCommand implements stop-machine-command operation.
 //
-// Stops a running background execution in the session. Stopping an already exited execution succeeds
-// and returns its final metadata.
+// Stops a running background command belonging to the caller on the machine. Stopping an already
+// exited command succeeds and returns its final metadata. Requires `fleet:machines.login` on the
+// machine.
 //
-// POST /api/v1/sessions/{sessionId}/executions/{executionId}:stop
-func (UnimplementedHandler) StopSessionExecution(ctx context.Context, params StopSessionExecutionParams) (r *ExecutionResource, _ error) {
+// POST /api/v1/machines/{machineId}/commands/{commandId}:stop
+func (UnimplementedHandler) StopMachineCommand(ctx context.Context, params StopMachineCommandParams) (r *MachineCommandResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -1006,7 +1002,7 @@ func (UnimplementedHandler) UpdateMachineLocalAccount(ctx context.Context, req *
 //   - `MCP_CONFIGURATION_INVALID` when the file cannot be read or is not valid; replace it whole first;
 //   - `MCP_CONFIGURATION_WRITE_FAILED` when the machine could not write the file;
 //   - `MACHINE_OFFLINE` when the machine is not connected and does not connect again in time;
-//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.mcp.v1`;
+//   - `FEATURE_UNAVAILABLE` when the machine does not offer `leaflow.fleet.controlplane.mcp.v1`;
 //   - `USER_NOT_FOUND`, `USER_NOT_ALLOWED`, `ACCOUNT_EXPIRED` or `PAM_PERMISSION_DENIED` when the
 //     machine refuses the account, as for opening a session;
 //   - `MCP_START_FAILED` when the machine could not start MCP for the caller's account;
