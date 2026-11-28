@@ -2711,7 +2711,7 @@ type ListServiceAccountsParams struct {
 	Limit OptInt64 `json:",omitempty,omitzero"`
 	// Items to skip. Defaults to 0; at most 10000.
 	Offset OptInt64 `json:",omitempty,omitzero"`
-	// Matches against service account id, name, email or description.
+	// Matches against service account id, name or description.
 	Keyword OptString `json:",omitempty,omitzero"`
 	// Include service accounts that have been deleted.
 	IncludeDeleted OptBool `json:",omitempty,omitzero"`

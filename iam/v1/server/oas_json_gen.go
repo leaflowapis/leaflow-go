@@ -1683,12 +1683,6 @@ func (s *CreateServiceAccountRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.Email.Set {
-			e.FieldStart("email")
-			s.Email.Encode(e)
-		}
-	}
-	{
 		if s.Roles != nil {
 			e.FieldStart("roles")
 			e.ArrStart()
@@ -1700,11 +1694,10 @@ func (s *CreateServiceAccountRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateServiceAccountRequestBody = [4]string{
+var jsonFieldsNameOfCreateServiceAccountRequestBody = [3]string{
 	0: "name",
 	1: "description",
-	2: "email",
-	3: "roles",
+	2: "roles",
 }
 
 // Decode decodes CreateServiceAccountRequestBody from json.
@@ -1737,16 +1730,6 @@ func (s *CreateServiceAccountRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"description\"")
-			}
-		case "email":
-			if err := func() error {
-				s.Email.Reset()
-				if err := s.Email.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"email\"")
 			}
 		case "roles":
 			if err := func() error {
@@ -7884,10 +7867,6 @@ func (s *ServiceAccountCredentialsResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.Name)
 	}
 	{
-		e.FieldStart("email")
-		e.Str(s.Email)
-	}
-	{
 		e.FieldStart("key_id")
 		json.EncodeUUID(e, s.KeyID)
 	}
@@ -7905,16 +7884,15 @@ func (s *ServiceAccountCredentialsResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfServiceAccountCredentialsResource = [9]string{
+var jsonFieldsNameOfServiceAccountCredentialsResource = [8]string{
 	0: "type",
 	1: "project_id",
 	2: "service_account_id",
 	3: "name",
-	4: "email",
-	5: "key_id",
-	6: "algorithm",
-	7: "private_key",
-	8: "token_uri",
+	4: "key_id",
+	5: "algorithm",
+	6: "private_key",
+	7: "token_uri",
 }
 
 // Decode decodes ServiceAccountCredentialsResource from json.
@@ -7922,7 +7900,7 @@ func (s *ServiceAccountCredentialsResource) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode ServiceAccountCredentialsResource to nil")
 	}
-	var requiredBitSet [2]uint8
+	var requiredBitSet [1]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -7974,20 +7952,8 @@ func (s *ServiceAccountCredentialsResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
-		case "email":
-			requiredBitSet[0] |= 1 << 4
-			if err := func() error {
-				v, err := d.Str()
-				s.Email = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"email\"")
-			}
 		case "key_id":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.KeyID = v
@@ -7999,7 +7965,7 @@ func (s *ServiceAccountCredentialsResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"key_id\"")
 			}
 		case "algorithm":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := d.Str()
 				s.Algorithm = string(v)
@@ -8011,7 +7977,7 @@ func (s *ServiceAccountCredentialsResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"algorithm\"")
 			}
 		case "private_key":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := d.Str()
 				s.PrivateKey = string(v)
@@ -8023,7 +7989,7 @@ func (s *ServiceAccountCredentialsResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"private_key\"")
 			}
 		case "token_uri":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Str()
 				s.TokenURI = string(v)
@@ -8043,9 +8009,8 @@ func (s *ServiceAccountCredentialsResource) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [2]uint8{
+	for i, mask := range [1]uint8{
 		0b11111111,
-		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -8484,10 +8449,6 @@ func (s *ServiceAccountResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.Description)
 	}
 	{
-		e.FieldStart("email")
-		e.Str(s.Email)
-	}
-	{
 		e.FieldStart("status")
 		s.Status.Encode(e)
 	}
@@ -8517,18 +8478,17 @@ func (s *ServiceAccountResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfServiceAccountResource = [11]string{
-	0:  "id",
-	1:  "project_id",
-	2:  "name",
-	3:  "description",
-	4:  "email",
-	5:  "status",
-	6:  "roles",
-	7:  "created_by",
-	8:  "created_at",
-	9:  "updated_at",
-	10: "deleted_at",
+var jsonFieldsNameOfServiceAccountResource = [10]string{
+	0: "id",
+	1: "project_id",
+	2: "name",
+	3: "description",
+	4: "status",
+	5: "roles",
+	6: "created_by",
+	7: "created_at",
+	8: "updated_at",
+	9: "deleted_at",
 }
 
 // Decode decodes ServiceAccountResource from json.
@@ -8588,20 +8548,8 @@ func (s *ServiceAccountResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"description\"")
 			}
-		case "email":
-			requiredBitSet[0] |= 1 << 4
-			if err := func() error {
-				v, err := d.Str()
-				s.Email = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"email\"")
-			}
 		case "status":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -8611,7 +8559,7 @@ func (s *ServiceAccountResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "roles":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				s.Roles = make([]string, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -8631,7 +8579,7 @@ func (s *ServiceAccountResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"roles\"")
 			}
 		case "created_by":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.CreatedBy.Decode(d); err != nil {
 					return err
@@ -8641,7 +8589,7 @@ func (s *ServiceAccountResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_by\"")
 			}
 		case "created_at":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -8653,7 +8601,7 @@ func (s *ServiceAccountResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "updated_at":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -8665,7 +8613,7 @@ func (s *ServiceAccountResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"updated_at\"")
 			}
 		case "deleted_at":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				if err := s.DeletedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -8685,7 +8633,7 @@ func (s *ServiceAccountResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000111,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -9687,18 +9635,11 @@ func (s *UpdateServiceAccountRequestBody) encodeFields(e *jx.Encoder) {
 			s.Description.Encode(e)
 		}
 	}
-	{
-		if s.Email.Set {
-			e.FieldStart("email")
-			s.Email.Encode(e)
-		}
-	}
 }
 
-var jsonFieldsNameOfUpdateServiceAccountRequestBody = [3]string{
+var jsonFieldsNameOfUpdateServiceAccountRequestBody = [2]string{
 	0: "name",
 	1: "description",
-	2: "email",
 }
 
 // Decode decodes UpdateServiceAccountRequestBody from json.
@@ -9730,16 +9671,6 @@ func (s *UpdateServiceAccountRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"description\"")
-			}
-		case "email":
-			if err := func() error {
-				s.Email.Reset()
-				if err := s.Email.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"email\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)

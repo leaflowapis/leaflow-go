@@ -402,8 +402,8 @@ type Invoker interface {
 	UpdateRole(ctx context.Context, request *UpdateRoleRequestBody, params UpdateRoleParams) (*RoleResource, error)
 	// UpdateServiceAccount invokes update-service-account operation.
 	//
-	// Updates the display name, description or optional email address of an active or suspended service
-	// account. Requires `iam:service_accounts.manage`.
+	// Updates the display name or description of an active or suspended service account. Requires
+	// `iam:service_accounts.manage`.
 	//
 	// PATCH /api/v1/service-accounts/{serviceAccountId}
 	UpdateServiceAccount(ctx context.Context, request *UpdateServiceAccountRequestBody, params UpdateServiceAccountParams) (*ServiceAccountResource, error)
@@ -6849,8 +6849,8 @@ func (c *Client) sendUpdateRole(ctx context.Context, request *UpdateRoleRequestB
 
 // UpdateServiceAccount invokes update-service-account operation.
 //
-// Updates the display name, description or optional email address of an active or suspended service
-// account. Requires `iam:service_accounts.manage`.
+// Updates the display name or description of an active or suspended service account. Requires
+// `iam:service_accounts.manage`.
 //
 // PATCH /api/v1/service-accounts/{serviceAccountId}
 func (c *Client) UpdateServiceAccount(ctx context.Context, request *UpdateServiceAccountRequestBody, params UpdateServiceAccountParams) (*ServiceAccountResource, error) {

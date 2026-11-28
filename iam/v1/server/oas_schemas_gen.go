@@ -714,8 +714,6 @@ func (s *CreateServiceAccountKeyResponseBody) SetCredentials(val OptServiceAccou
 type CreateServiceAccountRequestBody struct {
 	Name        string    `json:"name"`
 	Description OptString `json:"description"`
-	// Optional email address; omit or leave empty unless using an allowed domain.
-	Email OptString `json:"email"`
 	// Optional initial role codes to assign at creation; `OWNER` is not accepted.
 	Roles []string `json:"roles"`
 }
@@ -728,11 +726,6 @@ func (s *CreateServiceAccountRequestBody) GetName() string {
 // GetDescription returns the value of Description.
 func (s *CreateServiceAccountRequestBody) GetDescription() OptString {
 	return s.Description
-}
-
-// GetEmail returns the value of Email.
-func (s *CreateServiceAccountRequestBody) GetEmail() OptString {
-	return s.Email
 }
 
 // GetRoles returns the value of Roles.
@@ -748,11 +741,6 @@ func (s *CreateServiceAccountRequestBody) SetName(val string) {
 // SetDescription sets the value of Description.
 func (s *CreateServiceAccountRequestBody) SetDescription(val OptString) {
 	s.Description = val
-}
-
-// SetEmail sets the value of Email.
-func (s *CreateServiceAccountRequestBody) SetEmail(val OptString) {
-	s.Email = val
 }
 
 // SetRoles sets the value of Roles.
@@ -3410,7 +3398,6 @@ type ServiceAccountCredentialsResource struct {
 	ProjectID        uuid.UUID `json:"project_id"`
 	ServiceAccountID uuid.UUID `json:"service_account_id"`
 	Name             string    `json:"name"`
-	Email            string    `json:"email"`
 	KeyID            uuid.UUID `json:"key_id"`
 	Algorithm        string    `json:"algorithm"`
 	// PKCS#8 PEM Ed25519 private key, returned once and never stored.
@@ -3437,11 +3424,6 @@ func (s *ServiceAccountCredentialsResource) GetServiceAccountID() uuid.UUID {
 // GetName returns the value of Name.
 func (s *ServiceAccountCredentialsResource) GetName() string {
 	return s.Name
-}
-
-// GetEmail returns the value of Email.
-func (s *ServiceAccountCredentialsResource) GetEmail() string {
-	return s.Email
 }
 
 // GetKeyID returns the value of KeyID.
@@ -3482,11 +3464,6 @@ func (s *ServiceAccountCredentialsResource) SetServiceAccountID(val uuid.UUID) {
 // SetName sets the value of Name.
 func (s *ServiceAccountCredentialsResource) SetName(val string) {
 	s.Name = val
-}
-
-// SetEmail sets the value of Email.
-func (s *ServiceAccountCredentialsResource) SetEmail(val string) {
-	s.Email = val
 }
 
 // SetKeyID sets the value of KeyID.
@@ -3744,13 +3721,11 @@ func (s *ServiceAccountKeyResourceStatus) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/ServiceAccountResource
 type ServiceAccountResource struct {
 	// Platform user id of this service account.
-	ID          uuid.UUID `json:"id"`
-	ProjectID   uuid.UUID `json:"project_id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	// Optional email address; empty when not configured.
-	Email  string                       `json:"email"`
-	Status ServiceAccountResourceStatus `json:"status"`
+	ID          uuid.UUID                    `json:"id"`
+	ProjectID   uuid.UUID                    `json:"project_id"`
+	Name        string                       `json:"name"`
+	Description string                       `json:"description"`
+	Status      ServiceAccountResourceStatus `json:"status"`
 	// Role codes currently assigned to this service account in the project.
 	Roles     []string    `json:"roles"`
 	CreatedBy NilString   `json:"created_by"`
@@ -3777,11 +3752,6 @@ func (s *ServiceAccountResource) GetName() string {
 // GetDescription returns the value of Description.
 func (s *ServiceAccountResource) GetDescription() string {
 	return s.Description
-}
-
-// GetEmail returns the value of Email.
-func (s *ServiceAccountResource) GetEmail() string {
-	return s.Email
 }
 
 // GetStatus returns the value of Status.
@@ -3832,11 +3802,6 @@ func (s *ServiceAccountResource) SetName(val string) {
 // SetDescription sets the value of Description.
 func (s *ServiceAccountResource) SetDescription(val string) {
 	s.Description = val
-}
-
-// SetEmail sets the value of Email.
-func (s *ServiceAccountResource) SetEmail(val string) {
-	s.Email = val
 }
 
 // SetStatus sets the value of Status.
@@ -4203,8 +4168,6 @@ func (s *UpdateRoleRequestBody) SetPermissions(val OptNilStringArray) {
 type UpdateServiceAccountRequestBody struct {
 	Name        OptString `json:"name"`
 	Description OptString `json:"description"`
-	// Optional email address; pass an empty string to clear it.
-	Email OptString `json:"email"`
 }
 
 // GetName returns the value of Name.
@@ -4217,11 +4180,6 @@ func (s *UpdateServiceAccountRequestBody) GetDescription() OptString {
 	return s.Description
 }
 
-// GetEmail returns the value of Email.
-func (s *UpdateServiceAccountRequestBody) GetEmail() OptString {
-	return s.Email
-}
-
 // SetName sets the value of Name.
 func (s *UpdateServiceAccountRequestBody) SetName(val OptString) {
 	s.Name = val
@@ -4230,9 +4188,4 @@ func (s *UpdateServiceAccountRequestBody) SetName(val OptString) {
 // SetDescription sets the value of Description.
 func (s *UpdateServiceAccountRequestBody) SetDescription(val OptString) {
 	s.Description = val
-}
-
-// SetEmail sets the value of Email.
-func (s *UpdateServiceAccountRequestBody) SetEmail(val OptString) {
-	s.Email = val
 }
